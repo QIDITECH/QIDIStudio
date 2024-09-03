@@ -210,17 +210,17 @@ void CalibrationPAStartPage::create_page(wxWindow* parent)
     m_top_sizer->Add(m_tips_panel, 0);
     m_top_sizer->AddSpacer(PRESET_GAP);
 
-#ifdef __linux__
-    wxGetApp().CallAfter([this, title_1, title_2, content_1, content_2, introduce]() {
-        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        introduce->SetMinSize(introduce_text->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        Layout();
-        Fit();
-        });
-#endif
+//#ifdef __linux__
+//    wxGetApp().CallAfter([this, title_1, title_2, content_1, content_2, introduce]() {
+//        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        introduce->SetMinSize(introduce_text->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        Layout();
+//        Fit();
+//        });
+//#endif
 }
 //w29
 

@@ -443,16 +443,16 @@ void CalibrationPresetPage::create_page_flow_coarse(wxWindow* parent, wxBoxSizer
     create_paragraph(parent, title_2, title_text_2, content_2, content_text_2);
 
     create_gif_images(parent, m_top_sizer, "flowratiocoarseset");
-#ifdef __linux__
-    wxGetApp().CallAfter([this, title_1, title_2, content_1, content_2]() {
-        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        Layout();
-        Fit();
-        });
-#endif
+//#ifdef __linux__
+//    wxGetApp().CallAfter([this, title_1, title_2, content_1, content_2]() {
+//        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        Layout();
+//        Fit();
+//        });
+//#endif
     
 }
 
@@ -485,18 +485,18 @@ void CalibrationPresetPage::create_page_flow_fine(wxWindow* parent, wxBoxSizer* 
     create_paragraph(parent, title_3, title_text_3, content_3, content_text_3);
 
     create_gif_images(parent, m_top_sizer, "flowratioset");
-#ifdef __linux__
-    wxGetApp().CallAfter([this, title_1, title_2, title_3, content_1, content_2, content_3]() {
-        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        title_3->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_3->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        Layout();
-        Fit();
-        });
-#endif
+//#ifdef __linux__
+//    wxGetApp().CallAfter([this, title_1, title_2, title_3, content_1, content_2, content_3]() {
+//        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        title_3->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        content_3->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        Layout();
+//        Fit();
+//        });
+//#endif
 }
 
 //w29
@@ -530,17 +530,17 @@ void CalibrationPresetPage::create_page_pa_line(wxWindow* parent, wxBoxSizer* m_
     create_paragraph(parent, title_2, title_text_2, content_2, content_text_2);
 
     create_gif_images(parent, m_top_sizer, "pavalue03");   
-#ifdef __linux__
-    wxGetApp().CallAfter([this, title_1, title_2, content_1, content_2, introduce_1]() {
-        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        introduce_1->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        Layout();
-        Fit();
-        });
-#endif
+//#ifdef __linux__
+//    wxGetApp().CallAfter([this, title_1, title_2, content_1, content_2, introduce_1]() {
+//        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        introduce_1->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//       Layout();
+//       Fit();
+//        });
+//#endif
 }
 
 //w29
@@ -577,17 +577,17 @@ void CalibrationPresetPage::create_page_pa_pattern(wxWindow* parent, wxBoxSizer*
     create_paragraph(parent, title_2, title_text_2, content_2, content_text_2);
 
     create_gif_images(parent, m_top_sizer, "pavalue03");
-#ifdef __linux__
-    wxGetApp().CallAfter([this, title_1, title_2, content_1, content_2, introduce_1]() {
-        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        introduce_1->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        Layout();
-        Fit();
-        });
-#endif
+//#ifdef __linux__
+//    wxGetApp().CallAfter([this, title_1, title_2, content_1, content_2, introduce_1]() {
+//        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//       content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        introduce_1->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        Layout();
+//        Fit();
+//        });
+//#endif
 }
 
 //w29
@@ -631,19 +631,19 @@ void CalibrationPresetPage::create_page_pa_tower(wxWindow* parent, wxBoxSizer* m
     create_paragraph(parent, title_3, title_text_3, content_3, content_text_3);
 
     create_gif_images(parent, m_top_sizer, "pavalue02");
-#ifdef __linux__
-    wxGetApp().CallAfter([this, title_1, title_2, title_3, content_1, content_2, content_3, introduce_1]() {
-        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        title_3->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_3->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        introduce_1->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        Layout();
-        Fit();
-        });
-#endif
+//#ifdef __linux__
+//    wxGetApp().CallAfter([this, title_1, title_2, title_3, content_1, content_2, content_3, introduce_1]() {
+//        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//       title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        title_3->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        content_3->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        introduce_1->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        Layout();
+//        Fit();
+//        });
+//#endif
 }
 
 void CalibrationPresetPage::create_page_max_volumetric_speed(wxWindow* parent, wxBoxSizer* m_top_sizer) {
@@ -685,17 +685,17 @@ void CalibrationPresetPage::create_page_max_volumetric_speed(wxWindow* parent, w
     create_paragraph(parent, title_2, title_text_2, content_2, content_text_2);
 
     create_gif_images(parent, m_top_sizer, "Volumetricspeedset");
-#ifdef __linux__
-    wxGetApp().CallAfter([this, title_1, title_2, content_1, content_2, introduce_1]() {
-        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        introduce_1->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        Layout();
-        Fit();
-        });
-#endif
+//#ifdef __linux__
+//    wxGetApp().CallAfter([this, title_1, title_2, content_1, content_2, introduce_1]() {
+//        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        introduce_1->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+//        Layout();
+//        Fit();
+//        });
+//#endif
 }
 
 
