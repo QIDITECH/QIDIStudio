@@ -1,0 +1,11 @@
+{
+    "type": "filament",
+    "filament_id": "GPC99",
+    "setting_id": "GPC99",
+    "instantiation": "true",
+    "filament_settings_id": ["QIDI PLA-CF @Qidi Q1 Pro 0.6 nozzle"],
+    "inherits": "QIDI PLA-CF@Q-Series",
+    "name": "QIDI PLA-CF @Qidi Q1 Pro 0.6 nozzle",
+    "pressure_advance": ["0.012"],
+    "compatible_printers": ["Q1 Pro 0.6 nozzle"]
+}

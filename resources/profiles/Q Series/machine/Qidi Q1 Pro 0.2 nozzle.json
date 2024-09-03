@@ -1,0 +1,16 @@
+{
+    "type": "machine",
+    "setting_id": "GM008",
+    "name": "Q1 Pro 0.2 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "Q1 Pro 0.4 nozzle",
+    "printer_model": "Q1 Pro",
+    "printer_variant": "0.2",
+    "default_filament_profile": ["QIDI PLA Rapido;QIDI PETG;QIDI ABS Rapido;QIDI ABS Odorless"],
+    "default_print_profile": "0.10mm Standard @Q1 Pro 0.2 nozzle",
+    "max_layer_height": ["0.14"],
+    "min_layer_height": ["0.04"],
+    "nozzle_diameter": ["0.2"],
+    "retraction_length": ["0.4"]
+}

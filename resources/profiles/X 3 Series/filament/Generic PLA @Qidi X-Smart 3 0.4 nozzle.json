@@ -1,0 +1,12 @@
+{
+    "type": "filament",
+	"filament_id": "GFL99",
+    "setting_id": "GFSL99",
+    "name": "Generic PLA @Qidi X-Smart 3 0.4 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "Generic PLA@X3",
+    "additional_cooling_fan_speed": ["0"],
+    "additional_cooling_fan_speed_unseal": ["0"],
+	"compatible_printers": ["X-Smart 3 0.4 nozzle"]
+}

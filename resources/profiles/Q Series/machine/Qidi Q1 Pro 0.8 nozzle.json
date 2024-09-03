@@ -1,0 +1,17 @@
+{
+    "type": "machine",
+    "setting_id": "GM008",
+    "name": "Q1 Pro 0.8 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "Q1 Pro 0.4 nozzle",
+    "default_filament_profile": ["QIDI PLA Rapido"],
+    "default_print_profile": "0.40mm Standard @Q1 Pro 0.8 nozzle",
+    "max_layer_height": ["0.56"],
+    "min_layer_height": ["0.16"],
+    "nozzle_diameter": ["0.8"],
+    "printer_model": "Q1 Pro",
+    "printer_variant": "0.8",
+    "retract_length_toolchange": ["3"],
+    "retraction_length": ["3"]
+}

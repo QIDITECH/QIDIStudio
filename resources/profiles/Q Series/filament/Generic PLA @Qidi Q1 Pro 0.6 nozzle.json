@@ -1,0 +1,11 @@
+{
+    "type": "filament",
+	"filament_id": "GFL99",
+    "setting_id": "GFSL99",
+    "name": "Generic PLA @Qidi Q1 Pro 0.6 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "Generic PLA@Q-Series",
+    "pressure_advance": ["0.016"],
+	"compatible_printers": ["Q1 Pro 0.6 nozzle"]
+}

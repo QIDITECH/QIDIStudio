@@ -1,0 +1,18 @@
+{
+    "type": "filament",
+    "filament_id": "GFL99",
+    "setting_id": "GFSL99",
+    "name": "Generic PLA@Q-Series",
+    "from": "system",
+    "instantiation": "false",
+    "inherits": "fdm_filament_common",
+    "filament_density": ["1.2"],
+    "filament_max_volumetric_speed": ["14"],
+    "filament_type": ["PLA"],
+    "filament_vendor": ["Generic"],
+    "nozzle_temperature_range_high": ["240"],
+    "nozzle_temperature_range_low": ["190"],
+    "slow_down_layer_time": ["8"],
+    "temperature_vitrification": ["45"],
+    "compatible_printers": []
+}

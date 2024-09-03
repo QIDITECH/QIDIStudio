@@ -1,0 +1,10 @@
+{
+    "type": "filament",
+    "filament_id": "GFU99",
+    "setting_id": "GFSR99",
+    "name": "Generic TPU 95A @Qidi X-Max 3 0.4 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "Generic TPU 95A@X3",
+	"compatible_printers": ["X-Max 3 0.4 nozzle"]
+}

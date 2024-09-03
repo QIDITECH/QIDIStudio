@@ -1,0 +1,11 @@
+{"type": "filament",
+"filament_id": "GFB99",
+"setting_id": "GFSA04",
+"name": "Generic ABS @Qidi Q1 Pro 0.4 nozzle",
+"filament_settings_id": ["Generic ABS @Qidi Q1 Pro 0.4 nozzle"],
+"instantiation": "true",
+"inherits": "Generic ABS@Q-Series",
+"during_print_exhaust_fan_speed": ["0"],
+"pressure_advance": ["0.035"],
+"compatible_printers": ["Q1 Pro 0.4 nozzle"]
+}

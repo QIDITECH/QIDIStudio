@@ -1,0 +1,11 @@
+{
+    "type": "machine_model",
+    "name": "Q1 Pro",
+    "model_id": "Qidi-Q1Pro",
+    "nozzle_diameter": "0.4;0.2;0.6;0.8",
+    "machine_tech": "FFF",
+    "family": "Qidi",
+    "bed_model": "Q1 Pro_bed.stl",
+    "hotend_model": "X-Series_gen3_hotend.stl",
+	"default_materials": "Generic ABS @Qidi Q1 Pro 0.4 nozzle;Generic PLA @Qidi Q1 Pro 0.4 nozzle;QIDI ABS Odorless @Qidi Q1 Pro 0.4 nozzle;QIDI ABS Rapido @Qidi Q1 Pro 0.4 nozzle;QIDI PLA Rapido @Qidi Q1 Pro 0.4 nozzle;QIDI PLA Rapido Matte @Qidi Q1 Pro 0.4 nozzle;QIDI PLA-CF @Qidi Q1 Pro 0.4 nozzle"
+}

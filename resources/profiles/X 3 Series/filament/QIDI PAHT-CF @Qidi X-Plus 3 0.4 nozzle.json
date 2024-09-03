@@ -1,0 +1,10 @@
+{
+    "type": "filament",
+    "filament_id": "GFN98",
+    "setting_id": "GFSN99",
+    "name": "QIDI PAHT-CF @Qidi X-Plus 3 0.4 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PAHT-CF@X3",
+	"compatible_printers": ["X-Plus 3 0.4 nozzle"]
+}

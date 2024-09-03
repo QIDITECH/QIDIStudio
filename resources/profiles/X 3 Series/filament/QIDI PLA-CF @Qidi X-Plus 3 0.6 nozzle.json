@@ -1,0 +1,11 @@
+{
+    "type": "filament",
+	"filament_id": "GFL98",
+	"setting_id": "GFSL98",
+    "name": "QIDI PLA-CF @Qidi X-Plus 3 0.6 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PLA-CF@X3",
+    "pressure_advance": ["0.01"],
+	"compatible_printers": ["X-Plus 3 0.6 nozzle"]
+}

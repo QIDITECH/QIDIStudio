@@ -1,0 +1,14 @@
+{
+    "type": "filament",
+	"filament_id": "GFL99",
+    "setting_id": "GFSL99",
+    "name": "QIDI PLA Rapido Matte @Qidi X-Smart 3 0.4 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PLA Rapido Matte@X3",
+    "additional_cooling_fan_speed_unseal": ["0"],
+    "additional_cooling_fan_speed": ["0"],
+    "filament_max_volumetric_speed": ["20"],
+    "slow_down_layer_time": ["8"],
+	"compatible_printers": ["X-Smart 3 0.4 nozzle"]
+}

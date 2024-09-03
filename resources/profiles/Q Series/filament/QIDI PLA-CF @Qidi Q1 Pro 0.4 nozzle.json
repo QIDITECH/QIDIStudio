@@ -1,0 +1,10 @@
+{
+    "type": "filament",
+    "filament_id": "GPC99",
+    "setting_id": "GPC99",
+    "instantiation": "true",
+    "filament_settings_id": ["QIDI PLA-CF @Qidi Q1 Pro 0.4 nozzle"],
+    "inherits": "QIDI PLA-CF@Q-Series",
+    "name": "QIDI PLA-CF @Qidi Q1 Pro 0.4 nozzle",
+    "compatible_printers": ["Q1 Pro 0.4 nozzle"]
+}

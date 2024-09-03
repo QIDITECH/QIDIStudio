@@ -1,0 +1,10 @@
+{
+    "type": "filament",
+    "filament_id": "GFB99",
+    "setting_id": "GFSA04",
+    "instantiation": "true",
+    "filament_settings_id": ["QIDI PLA Rapido @Qidi Q1 Pro 0.4 nozzle"],
+    "inherits": "QIDI PLA Rapido@Q-Series",
+    "name": "QIDI PLA Rapido @Qidi Q1 Pro 0.4 nozzle",
+    "compatible_printers": ["Q1 Pro 0.4 nozzle"]
+}

@@ -1,0 +1,11 @@
+{
+    "type": "filament",
+	"filament_id": "GFA05",
+    "setting_id": "GFSL99_01",
+    "name": "Generic PLA Silk @Qidi X-Max 3 0.6 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "Generic PLA Silk@X3",
+    "pressure_advance": ["0.016"],
+	"compatible_printers": ["X-Max 3 0.6 nozzle"]
+}

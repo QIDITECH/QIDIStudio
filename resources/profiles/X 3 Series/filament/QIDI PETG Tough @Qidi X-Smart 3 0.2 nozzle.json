@@ -1,0 +1,13 @@
+{
+    "type": "filament",
+	"filament_id": "GFG99",
+    "setting_id": "GFSG99",
+    "name": "QIDI PETG Tough @Qidi X-Smart 3 0.2 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PETG Tough@X3",
+    "additional_cooling_fan_speed_unseal": ["0"],
+    "additional_cooling_fan_speed": ["0"],
+    "filament_max_volumetric_speed": ["1"],
+	"compatible_printers": ["X-Smart 3 0.2 nozzle"]
+}
