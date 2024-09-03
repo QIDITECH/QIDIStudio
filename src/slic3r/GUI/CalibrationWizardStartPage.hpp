@@ -37,6 +37,8 @@ protected:
     void create_bitmap(wxWindow* parent, std::string img);
     //w29
     void add_bitmap(wxWindow* parent, wxBoxSizer* m_top_sizer, std::string img,bool can_modify = false , int modify_size =350);
+    void create_paragraph(wxWindow* parent, Label* title, std::string title_txt, Label* content, std::string content_txt);
+    void create_txt(wxWindow* parent, Label* label, std::string label_txt);
 };
 
 class CalibrationPAStartPage : public CalibrationStartPage

@@ -107,7 +107,7 @@ public:
     wxWindow *     stb;
     const wxString  icon;
     const wxString  title;
-    size_t			label_width = 15 ;// {200};
+    size_t			label_width = 20 ;// {200};
     wxSizer*		sizer {nullptr};
 	OG_CustomCtrl*  custom_ctrl{ nullptr };
 	int				ctrl_horiz_alignment{ wxALIGN_LEFT};

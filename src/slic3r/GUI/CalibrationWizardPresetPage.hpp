@@ -119,6 +119,8 @@ public:
     void msw_rescale() override;
 
     //w29
+    void create_paragraph(wxWindow* parent, Label* title, std::string title_txt, Label* content, std::string content_txt);
+    void create_txt(wxWindow* parent, Label* label, std::string label_txt);
     void create_paph(wxWindow* parent, wxString title, wxString content)
     {
         m_txt_title = new Label(this, title);
