@@ -471,7 +471,8 @@ protected:
     std::string                         preset_typename;
 
 public:
-    SelectMachineDialog(Plater *plater = nullptr);
+    //y30
+    SelectMachineDialog(Plater *plater, wxString title);
     ~SelectMachineDialog();
 
     void init_bind();

@@ -3532,19 +3532,21 @@ void GLCanvas3D::on_key(wxKeyEvent& evt)
                     {
                     case WXK_NUMPAD_PAGEUP:   case WXK_PAGEUP:
                     case WXK_NUMPAD_PAGEDOWN: case WXK_PAGEDOWN:
-                    {
-                        do_rotate(L("Tool Rotate"));
-                        m_gizmos.update_data();
+                    {   
+                        //1.9.5
+                        if (m_gizmos.get_gizmo_active_condition(GLGizmosManager::EType::Rotate)) {
+                            do_rotate(L("Tool Rotate"));
+                            m_gizmos.update_data();
 
-                        // QDS
-                        //wxGetApp().obj_manipul()->set_dirty();
-                        // Let the plater know that the dragging finished, so a delayed refresh
-                        // of the scene with the background processing data should be performed.
-                        post_event(SimpleEvent(EVT_GLCANVAS_MOUSE_DRAGGING_FINISHED));
-                        // updates camera target constraints
-                        refresh_camera_scene_box();
-                        m_dirty = true;
-
+                            // QDS
+                            //wxGetApp().obj_manipul()->set_dirty();
+                            // Let the plater know that the dragging finished, so a delayed refresh
+                            // of the scene with the background processing data should be performed.
+                            post_event(SimpleEvent(EVT_GLCANVAS_MOUSE_DRAGGING_FINISHED));
+                            // updates camera target constraints
+                            refresh_camera_scene_box();
+                            m_dirty = true;
+                        }
                         break;
                     }
                     default: { break; }

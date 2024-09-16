@@ -361,11 +361,11 @@ void OG_CustomCtrl::OnMotion(wxMouseEvent& event)
         if (!line.is_visible) continue;
         line.is_focused = is_point_in_rect(pos, line.rect_label);
         if (line.is_focused) {
-            // y8
-            // if (!suppress_hyperlinks && !line.og_line.label_path.empty())
-                // tooltip = OptionsGroup::get_url(line.og_line.label_path) + "\n\n";
-            // tooltip += line.og_line.label_tooltip;
-            tooltip = line.og_line.label_tooltip;
+            // y8   //y32
+            if (!suppress_hyperlinks && !line.og_line.label_path.empty())
+                tooltip = OptionsGroup::get_url(line.og_line.label_path) + "\n\n";
+            tooltip += line.og_line.label_tooltip;
+
 
             // QDS: markdown tip
             focusedLine = &line;
@@ -425,9 +425,9 @@ void OG_CustomCtrl::OnLeftDown(wxMouseEvent& event)
 
     for (const CtrlLine& line : ctrl_lines) {
         if (!line.is_visible) continue;
-        // y8
-        // if (line.launch_browser())
-        //     return;
+        // y8 //y32
+        if (line.launch_browser())
+            return;
 
         for (size_t opt_idx = 0; opt_idx < line.rects_undo_icon.size(); opt_idx++)
             if (is_point_in_rect(pos, line.rects_undo_icon[opt_idx])) {
@@ -910,16 +910,16 @@ wxCoord OG_CustomCtrl::CtrlLine::draw_text(wxDC &dc, wxPoint pos, const wxString
         wxColour old_clr = dc.GetTextForeground();
         wxFont old_font = dc.GetFont();
         wxColor clr_url = StateColor::darkModeColorFor("#4479FB");
-        // y8
-//         if (is_focused && is_url) {
-//         // temporary workaround for the OSX because of strange Bold font behavior on BigSerf
-// #ifdef __APPLE__
-//             dc.SetFont(old_font.Underlined());
-// #else
-//             dc.SetFont(old_font.Bold().Underlined());
-// #endif            
-//             color = &clr_url;
-//         }
+        // y8   //y32
+        if (is_focused && is_url) {
+        // temporary workaround for the OSX because of strange Bold font behavior on BigSerf
+#ifdef __APPLE__
+            dc.SetFont(old_font.Underlined());
+#else
+            dc.SetFont(old_font.Bold().Underlined());
+#endif            
+            color = &clr_url;
+        }
         dc.SetTextForeground(color ? *color :
 #ifdef _WIN32
             wxGetApp().get_label_clr_default());

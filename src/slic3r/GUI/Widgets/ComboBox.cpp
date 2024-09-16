@@ -52,10 +52,10 @@ ComboBox::ComboBox(wxWindow *parent,
         GetTextCtrl()->Hide();
         TextInput::SetFont(Label::Body_14);
         TextInput::SetBorderColor(StateColor(std::make_pair(0xDBDBDB, (int) StateColor::Disabled),
-            std::make_pair(0x4479FB, (int) StateColor::Hovered),    // y96
+            std::make_pair(0x4479FB, (int) StateColor::Hovered),    // y35
             std::make_pair(0xDBDBDB, (int) StateColor::Normal)));
         TextInput::SetBackgroundColor(StateColor(std::make_pair(0xF0F0F1, (int) StateColor::Disabled),
-            std::make_pair(0x4479FB , (int) StateColor::Focused),    // y96
+            std::make_pair(0xe0ffff , (int) StateColor::Focused),    // y35
             std::make_pair(*wxWHITE, (int) StateColor::Normal)));
         TextInput::SetLabelColor(StateColor(std::make_pair(0x909090, (int) StateColor::Disabled),
             std::make_pair(0x262E30, (int) StateColor::Normal)));

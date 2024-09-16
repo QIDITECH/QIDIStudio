@@ -96,6 +96,8 @@
 #include "Notebook.hpp"
 #include "Widgets/Label.hpp"
 #include "Widgets/ProgressDialog.hpp"
+#include <io.h>
+#include <cstdio>
 
 //QDS: DailyTip and UserGuide Dialog
 #include "WebDownPluginDlg.hpp"
@@ -780,6 +782,8 @@ static const FileWildcards file_wildcards_by_type[FT_SIZE] = {
     /* FT_OBJ */     { "OBJ files"sv,       { ".obj"sv } },
     /* FT_AMF */     { "AMF files"sv,       { ".amf"sv, ".zip.amf"sv, ".xml"sv } },
     /* FT_3MF */     { "3MF files"sv,       { ".3mf"sv } },
+    //1.9.5
+    /* FT_GCODE_3MF */ {"Gcode 3MF files"sv, {".gcode.3mf"sv}},
     /* FT_GCODE */   { "G-code files"sv,    { ".gcode"sv } },
 #ifdef __APPLE__
     /* FT_MODEL */
@@ -2435,7 +2439,9 @@ bool GUI_App::OnInit()
 {
     try {
         return on_init_inner();
-    } catch (const std::exception&) {
+    //1.9.5
+    } catch (const std::exception& e) {
+        BOOST_LOG_TRIVIAL(fatal) << "OnInit Got Fatal error: " << e.what();
         generic_exception_handle();
         return false;
     }
@@ -3943,33 +3949,76 @@ void GUI_App::get_login_info()
             wxString    msg;
             QIDINetwork m_qidinetwork;
             m_user_name = m_qidinetwork.user_info(msg);
+            //y33
+            std::string head_name = wxGetApp().app_config->get("user_head_name");
             // y21
             if (m_user_name.empty())
             {
                 m_user_name = "";
                 wxGetApp().app_config->set("user_token", "");
+                wxGetApp().app_config->set("user_head_url", "");
+                wxGetApp().app_config->set("user_head_name", "");
+                wxString user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
                 wxString strJS = wxString::Format("SetUserOffline()");
                 GUI::wxGetApp().run_script_left(strJS);
+                //y34
+                std::ifstream file(user_head_path);
+                if (file.good())
+                {
+                    file.close();
+                    remove(user_head_path.c_str());
+                }
                 m_qidi_login = false;
             }
             else
             {
-                wxString strJS = wxString::Format("SetLoginInfo('%s', '%s');", "", from_u8(m_user_name));
+                //y34
+                wxString user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
+                if (!wxGetApp().app_config->get("user_head_name").empty()) {
+                    user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
+                    std::replace(user_head_path.begin(), user_head_path.end(), '\\', '/');
+                }
+                else
+                    user_head_path = "";
+                wxString strJS = wxString::Format("SetLoginInfo('%s', '%s');", user_head_path, from_u8(m_user_name));
                 GUI::wxGetApp().run_script_left(strJS);
                 m_qidi_login = true;
             }
         }
         else
         {
-            wxString strJS = wxString::Format("SetLoginInfo('%s', '%s');", "", from_u8(m_user_name));
+            std::string head_name = wxGetApp().app_config->get("user_head_name");
+            //y34
+            wxString user_head_path;
+            if (!head_name.empty()) {
+                user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
+                std::replace(user_head_path.begin(), user_head_path.end(), '\\', '/');
+            }
+            else
+                user_head_path = "";
+            wxString strJS = wxString::Format("SetLoginInfo('%s', '%s');", user_head_path, from_u8(m_user_name));
             GUI::wxGetApp().run_script_left(strJS);
             m_qidi_login = true;
         }
     }
     else 
     {
+        std::string head_name = wxGetApp().app_config->get("user_head_name");
+        //y34
+        if (!head_name.empty())
+        {
+            wxString user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
+            std::ifstream file(user_head_path);
+            if (file.good())
+            {
+                file.close();
+                remove(user_head_path.c_str());
+            }   
+        }  
         m_user_name = "";
         wxGetApp().app_config->set("user_token", "");
+        wxGetApp().app_config->set("user_head_url", "");
+        wxGetApp().app_config->set("user_head_name", "");
         wxString strJS = wxString::Format("SetUserOffline()");
         GUI::wxGetApp().run_script_left(strJS);
         m_qidi_login = false;
@@ -6530,6 +6579,8 @@ wxString GUI_App::current_language_code_safe() const
 		{ "ru", 	"ru_RU", },
         { "tr",     "tr_TR", },
         { "pt",     "pt_BR", },
+        //1.9.5
+        { "hu",     "hu_HU", },
 	};
 	wxString language_code = this->current_language_code().BeforeFirst('_');
 	auto it = mapping.find(language_code);

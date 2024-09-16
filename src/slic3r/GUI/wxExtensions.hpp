@@ -63,6 +63,14 @@ wxBitmap create_scaled_bitmap(const std::string& bmp_name, wxWindow *win = nullp
     const bool menu_bitmap = false, const bool resize = false,
     const bool bitmap2 = false,// for create_scaled_bitmap2
     const std::vector<std::string>& array_new_color = std::vector<std::string>());
+//y33
+wxBitmap create_scaled_bitmap_of_login(const std::string& bmp_name, wxWindow* win = nullptr,
+    const int px_cnt = 16, const bool grayscale = false,
+    const std::string& new_color = std::string(), // color witch will used instead of orange
+    const bool menu_bitmap = false, const bool resize = false,
+    const bool bitmap2 = false,// for create_scaled_bitmap2
+    const std::vector<std::string>& array_new_color = std::vector<std::string>());
+
 //used for semi transparent material
 wxBitmap create_scaled_bitmap2(const std::string& bmp_name_in, Slic3r::GUI::BitmapCache& cache, wxWindow* win = nullptr,
     const int px_cnt = 16, const bool grayscale = false, const bool resize = false,

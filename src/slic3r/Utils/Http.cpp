@@ -15,6 +15,8 @@
 
 #include <curl/curl.h>
 
+#include "../GUI/PrinterWebView.hpp"
+
 #ifdef OPENSSL_CERT_OVERRIDE
 #include <openssl/x509.h>
 #endif
@@ -232,6 +234,9 @@ int Http::priv::xfercb(void *userp, curl_off_t dltotal, curl_off_t dlnow, curl_o
 {
 	auto self = static_cast<priv*>(userp);
 	bool cb_cancel = false;
+	//y36
+	if (PrintHost::GetStop())
+		cb_cancel = true;
 
 	if (self->progressfn) {
 		double speed;

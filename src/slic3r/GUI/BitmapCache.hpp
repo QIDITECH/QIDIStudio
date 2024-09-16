@@ -35,6 +35,8 @@ public:
 	// QDS: support resize by fill border  (scale_in_center)
 	// Load png from resources/icons. bitmap_key is given without the .png suffix. Bitmap will be rescaled to provided height/width if nonzero.
     wxBitmap* 		load_png(const std::string &bitmap_key, unsigned width = 0, unsigned height = 0, const bool grayscale = false, const float scale_in_center = 0.f);
+	//y33
+	wxBitmap*		load_login_png(const std::string& bitmap_key, unsigned width = 0, unsigned height = 0, const bool grayscale = false, const float scale_in_center = 0.f);
 
 	// Parses SVG file from a file, returns SVG image as paths.
 	// And makes replases befor parsing

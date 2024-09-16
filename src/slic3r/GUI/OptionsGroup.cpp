@@ -1284,7 +1284,7 @@ wxString OptionsGroup::get_url(const std::string& path_end)
     wxString    region    = L"en";
     if (language.find("zh") == 0)
         region = L"zh";
-    return wxString::Format(L"https://wiki.qidilab.com/%s/software/qidi-studio/%s", region, str);
+    return wxString::Format(L"https://wiki.qidi3d.com/%s/software/qidi-studio/%s", region, str);    //y32
 }
 
 bool OptionsGroup::launch_browser(const std::string& path_end)

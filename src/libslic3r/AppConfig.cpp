@@ -181,6 +181,10 @@ void AppConfig::set_defaults()
     if (get("enable_multi_machine").empty())
         set_bool("enable_multi_machine", false);
 
+    //w13
+    if (get("enable_seal").empty())
+        set_bool("enable_seal", true);
+
 
 #ifdef _WIN32
 
@@ -335,6 +339,13 @@ void AppConfig::set_defaults()
     // 10
     if (get("user_token").empty())
         set("user_token", "");
+
+    //y33
+    if(get("user_head_url").empty())
+        set("user_head_url", "");
+
+    if(get("user_head_name").empty())
+        set("user_head_name", "");    
 
     if (get("sending_interval").empty()) {
         set("sending_interval", "5");

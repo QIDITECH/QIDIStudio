@@ -100,6 +100,8 @@ class MainFrame : public DPIFrame
     //wxMenu* publishMenu{ nullptr };
     wxMenu *    m_calib_menu{nullptr};
     bool        enable_multi_machine{ false };
+    //w13
+    bool  enable_seal{ true };
 
 #if 0
     wxMenuItem* m_menu_item_repeat { nullptr }; // doesn't used now

@@ -200,7 +200,10 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
         m_printhost_browse_btn->Bind(wxEVT_BUTTON, [=](wxCommandEvent& e) {
             BonjourDialog dialog(this, Preset::printer_technology(*m_config));
             if (dialog.show_and_lookup()) {
-                m_optgroup->set_value("print_host", dialog.get_selected(), true);
+                //y32
+                std::string get_host = into_u8(dialog.get_selected());
+                boost::trim(get_host);
+                m_optgroup->set_value("print_host", from_u8(get_host), true);
                 m_optgroup->get_field("print_host")->field_changed();
             }
         });
@@ -465,12 +468,23 @@ void PhysicalPrinterDialog::OnOK(wxMouseEvent& event)
         msg_wingow.ShowModal();
         return;
     }
-    if (m_exit_host.find(now_host) != m_exit_host.end())
+    //31
+    std::string ip = now_host;
+    if (now_host.find(":") != std::string::npos)
     {
-        MessageDialog msg_wingow(nullptr, _L("A device with the same host (IP or URL) already exists, please re-enter."), "", wxICON_WARNING | wxOK);
-        msg_wingow.ShowModal();
-        return;
+        size_t pos = now_host.find(":");
+        ip = now_host.substr(0, pos);
     }
+    for (auto exit_host : m_exit_host)
+    {
+        if (exit_host.find(ip) != std::string::npos)
+        {
+            MessageDialog msg_wingow(nullptr, _L("A device with the same host (IP or URL) already exists, please re-enter."), "", wxICON_WARNING | wxOK);
+            msg_wingow.ShowModal();
+            return;
+        }
+    }
+
     // y3
     m_printer_name = into_u8(m_input_ctrl->GetValue());
     m_printer_host = boost::any_cast<std::string>(m_optgroup->get_field("print_host")->get_value());

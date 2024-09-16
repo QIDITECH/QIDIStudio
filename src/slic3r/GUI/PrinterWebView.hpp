@@ -105,9 +105,12 @@ public:
     void StopStatusThread()
     {
         m_stopThread = true;
+        //y36
+        PrintHost::SetStop(true);
         if (m_statusThread.joinable()) {
             m_statusThread.join();
         }
+        PrintHost::SetStop(false);
     };
     void SetPauseThread(bool status) { m_pauseThread = status; };
     void SetPresetChanged(bool status);
@@ -164,6 +167,8 @@ private:
     std::string select_machine_name;
     WebState webisNetMode = isDisconnect;
     std::set<std::string> m_exit_host;
+    std::string m_user_head_name;   //y33
+    bool m_isfluidd_1;             //y35
 };
 
 // y13

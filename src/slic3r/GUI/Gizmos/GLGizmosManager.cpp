@@ -684,6 +684,14 @@ bool GLGizmosManager::is_show_only_active_plate()
     return false;
 }
 
+//1.9.5
+bool GLGizmosManager::get_gizmo_active_condition(GLGizmosManager::EType type) {
+    if (auto cur_gizmo = get_gizmo(type)) {
+        return cur_gizmo->is_activable();
+    }
+    return false;
+}
+
 void GLGizmosManager::check_object_located_outside_plate() {
     PartPlateList &plate_list       = wxGetApp().plater()->get_partplate_list();
     auto           curr_plate_index = plate_list.get_curr_plate_index();
@@ -1065,7 +1073,8 @@ bool GLGizmosManager::on_mouse(wxMouseEvent& evt)
             && (m_current == SlaSupports || m_current == Hollow || m_current == FdmSupports || m_current == Seam || m_current == MmuSegmentation))
             // don't allow dragging objects with the Sla gizmo on
             processed = true;
-        else if (evt.Dragging() && !control_down 
+        //1.9.5
+        else if (evt.Dragging() && !control_down
             && (m_current == SlaSupports || m_current == Hollow || m_current == FdmSupports || m_current == Seam  || m_current == MmuSegmentation || m_current == Cut)
             && gizmo_event(SLAGizmoEventType::Dragging, mouse_pos, evt.ShiftDown(), evt.AltDown())) {
             // the gizmo got the event and took some action, no need to do anything more here

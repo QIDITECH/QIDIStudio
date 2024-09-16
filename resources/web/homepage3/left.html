@@ -37,12 +37,21 @@
 				justify-content: center;
 				margin-right: 10px;
 			}
-	
+
 			#UserAvatarIcon {
 				max-width: 100%;
 				max-height: 100%;
 			}
-	
+
+			#UserAvatarIconLogin {
+				width: 80px;
+				height: 80px;
+				max-width: 100%;
+				max-height: 100%;
+				border-radius: 50%;
+				overflow: hidden;
+			}
+
 			#LoginBtn {
 				font-size: 16px;
 				font-weight: 700;
@@ -62,7 +71,7 @@
 		
 	<div id="Login2">
 		<div>
-			<img id="UserAvatarIcon" src="../image/userdark.png" onerror="this.onerror=null;this.src='image/userdark.png';" />
+			<img id="UserAvatarIconLogin" src="../image/userdark.png" onerror="this.onerror=null;this.src='image/userdark.png';" />
 		</div>
 		<div id="UserName" class="TextS1"></div>
 		<div id="LogoutBtn" class="Btn trans" tid="t50" onClick="OnLogOut()">log out</div>

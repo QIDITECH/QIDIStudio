@@ -72,6 +72,10 @@ public:
     virtual bool get_storage(wxArrayString& /*storage_path*/, wxArrayString& /*storage_name*/) const { return false; }
     static PrintHost *get_print_host_url(std::string url, std::string local_ip);
     static PrintHost* get_print_host(DynamicPrintConfig *config);
+    //y36
+    static void SetStop(bool isStop) { m_isStop = isStop; };
+    static bool GetStop() { return m_isStop; };
+    static bool m_isStop;
 
 protected:
     virtual wxString format_error(const std::string &body, const std::string &error, unsigned status) const;

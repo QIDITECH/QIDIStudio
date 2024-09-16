@@ -1681,7 +1681,8 @@ void PlateData::parse_filament_info(GCodeProcessorResult *result)
         /*if (m_qidislicer_generator_version) {
             Semver app_version = *(Semver::parse(SLIC3R_VERSION));
             Semver file_version = *m_qidislicer_generator_version;
-            if (file_version.maj() != app_version.maj())
+            //1.9.5
+            if (file_version.maj() > app_version.maj())
                 dont_load_config = true;
         }
         else {
@@ -7326,7 +7327,14 @@ void PlateData::parse_filament_info(GCodeProcessorResult *result)
                         else if (obj){
                             inst =  obj->instances[inst_id];
                             if (use_loaded_id && (inst->loaded_id > 0))
+                            {
+                                //1.9.5
                                 identify_id = inst->loaded_id;
+                                if (identify_id & 0xFF000000) {
+                                    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ":" << __LINE__ << boost::format(", identify_id %1%, too big, limit the high bits to 0\n") % identify_id;
+                                    identify_id = identify_id & 0x00FFFFFF;
+                                }
+                            }
                             else
                                 identify_id = inst->id().id;
                         }
@@ -7515,8 +7523,18 @@ void PlateData::parse_filament_info(GCodeProcessorResult *result)
                             continue;
                         }
                         inst =  obj->instances[inst_id];
+                        //1.9.5
+                        if (!inst->printable)
+                            continue;
                         if (m_use_loaded_id && (inst->loaded_id > 0))
+                        {
                             identify_id = inst->loaded_id;
+                            if (identify_id & 0xFF000000) {
+                                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ":" << __LINE__ << boost::format(", identify_id %1%, too big, limit the high bits to 0\n") % identify_id;
+                                identify_id = identify_id & 0x00FFFFFF;
+                            }
+                        }
+                            
                         else
                             identify_id = inst->id().id;
                         bool skipped = std::find(plate_data->skipped_objects.begin(), plate_data->skipped_objects.end(), identify_id) !=

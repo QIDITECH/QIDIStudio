@@ -362,25 +362,42 @@ void CalibrationPresetPage::msw_rescale()
 float nozzle_diameter_list[NOZZLE_LIST_COUNT] = {0.2, 0.4, 0.6, 0.8 };
 
 void CalibrationPresetPage::create_paragraph(wxWindow* parent, Label* title, std::string title_txt, Label* content, std::string content_txt) {
+    
     title = new Label(this, _L(title_txt));
     title->SetFont(Label::Head_14);
     title->Wrap(FromDIP(1100));
     title->SetMinSize({ FromDIP(1100), -1 });
 
-    content = new Label(this, _L(content_txt));;
+    content = new Label(this, _L(content_txt));
     content->SetFont(Label::Body_14);
     content->Wrap(FromDIP(1100));
     content->SetMinSize({ FromDIP(1100), -1 });
     m_top_sizer->Add(title);
     m_top_sizer->Add(content);
+#ifdef __linux__
+    wxGetApp().CallAfter([this, content, title]() {
+        content->SetMinSize(content->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+        title->SetMinSize(title->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+        Layout();
+        Fit();
+});
+#endif
     m_top_sizer->AddSpacer(PRESET_GAP);
 }
 void CalibrationPresetPage::create_txt(wxWindow* parent, Label* label, std::string label_txt) {
+
     label = new Label(parent, _L(label_txt));
     label->SetFont(Label::Body_14);
     label->Wrap(FromDIP(1100));
     label->SetMinSize({ FromDIP(1100), -1 });
     m_top_sizer->Add(label);
+#ifdef __linux__
+    wxGetApp().CallAfter([this, label]() {
+        label->SetMinSize(label->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+        Layout();
+        Fit();
+});
+#endif
     m_top_sizer->AddSpacer(PRESET_GAP);
 }
 
@@ -423,11 +440,11 @@ void CalibrationPresetPage::create_page_flow_coarse(wxWindow* parent, wxBoxSizer
     std::string title_text_1 = "Step 1";
     Label* content_1{ nullptr };
     std::string content_text_1 = "You only need to click the \"Calibrate\" button below and wait for a short time.After successful slicing, you have three ways to print:\
-        \n1. Directly send the sliced file and print it;\
-        \n2. Send the sliced file to the printer via the network and manually select the sliced file for printing;.\
-        \n3. Send the sliced file to a storage medium and print it through the storage medium.\
-        \nAfter successful printing, you will receive the model as shown in the picture. Choose the number with the smoothest surface. \
-        \nThe value of the number \"0\" in the figure has the smoothest surface, so the value obtained from coarse calibration is \"1 + 0.00 = 1\", which can be used as the intermediate value for fine calibration.";
+\n1. Directly send the sliced file and print it;\
+\n2. Send the sliced file to the printer via the network and manually select the sliced file for printing;\
+\n3. Send the sliced file to a storage medium and print it through the storage medium;\
+\nAfter successful printing, you will receive the model as shown in the picture. Choose the number with the smoothest surface; \
+\nThe value of the number \"0\" in the figure has the smoothest surface, so the value obtained from coarse calibration is \"1 + 0.00 = 1\", which can be used as the intermediate value for fine calibration.";
     create_paragraph(parent, title_1, title_text_1, content_1, content_text_1);
 
     add_bitmap(parent, m_top_sizer, "flowcoarseresult", true, 400);
@@ -442,18 +459,7 @@ void CalibrationPresetPage::create_page_flow_coarse(wxWindow* parent, wxBoxSizer
     std::string content_text_2 = "You can also directly apply this value to your printing configuration, return to the \"Prepare\" interface, enter the filaments parameters to make modifications, and then click the save button to save your configuration.";
     create_paragraph(parent, title_2, title_text_2, content_2, content_text_2);
 
-    create_gif_images(parent, m_top_sizer, "flowratiocoarseset");
-//#ifdef __linux__
-//    wxGetApp().CallAfter([this, title_1, title_2, content_1, content_2]() {
-//        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        Layout();
-//        Fit();
-//        });
-//#endif
-    
+    create_gif_images(parent, m_top_sizer, "flowratiocoarseset"); 
 }
 
 //w29
@@ -485,18 +491,6 @@ void CalibrationPresetPage::create_page_flow_fine(wxWindow* parent, wxBoxSizer* 
     create_paragraph(parent, title_3, title_text_3, content_3, content_text_3);
 
     create_gif_images(parent, m_top_sizer, "flowratioset");
-//#ifdef __linux__
-//    wxGetApp().CallAfter([this, title_1, title_2, title_3, content_1, content_2, content_3]() {
-//        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        title_3->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        content_3->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        Layout();
-//        Fit();
-//        });
-//#endif
 }
 
 //w29
@@ -505,7 +499,7 @@ void CalibrationPresetPage::create_page_pa_line(wxWindow* parent, wxBoxSizer* m_
     Label* title_1{ nullptr };
     std::string title_text_1 = "Step 1";
     Label* content_1{ nullptr };
-    std::string content_text_1 = "Enter the minimum pressure advance value, maximum pressure advance value, and step size at the bottom of the current page, click the \"Calibrate\" button at the bottom of the page, and wait for a little time.The software will automatically set the calibration configuration.";
+    std::string content_text_1 = "Enter the minimum pressure advance value, maximum pressure advance value, and step size at the bottom of the current page, click the \"Calibrate\" button at the bottom of the page, and wait for a little time. The software will automatically set the calibration configuration.";
     create_paragraph(parent, title_1, title_text_1, content_1, content_text_1);
 
     m_custom_range_panel = new CaliPresetCustomRangePanel(parent);
@@ -514,10 +508,10 @@ void CalibrationPresetPage::create_page_pa_line(wxWindow* parent, wxBoxSizer* m_
 
     Label* introduce_1{ nullptr };
     std::string introduce_text_1 = "After successful slicing, you have three methods to perform the operation:\
-        \n1. Directly send the sliced file and print it;\
-        \n2. Send the sliced file to the printer via the network and manually select the sliced file for printing;\
-        \n3. Send the sliced file to a storage medium and print it through the storage medium.\
-        \nReferring to the process in the \"PA Line\", you will print the calibration model as shown in the following figure.";
+\n1. Directly send the sliced file and print it;\
+\n2. Send the sliced file to the printer via the network and manually select the sliced file for printing;\
+\n3. Send the sliced file to a storage medium and print it through the storage medium.\
+\nReferring to this process, you will print the calibration model as shown in the following figure.";
     create_txt(parent, introduce_1, introduce_text_1);
 
     add_bitmap(parent, m_top_sizer, "PressureAdvanceLine", true, 400);
@@ -530,17 +524,6 @@ void CalibrationPresetPage::create_page_pa_line(wxWindow* parent, wxBoxSizer* m_
     create_paragraph(parent, title_2, title_text_2, content_2, content_text_2);
 
     create_gif_images(parent, m_top_sizer, "pavalue03");   
-//#ifdef __linux__
-//    wxGetApp().CallAfter([this, title_1, title_2, content_1, content_2, introduce_1]() {
-//        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        introduce_1->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//       Layout();
-//       Fit();
-//        });
-//#endif
 }
 
 //w29
@@ -549,7 +532,7 @@ void CalibrationPresetPage::create_page_pa_pattern(wxWindow* parent, wxBoxSizer*
     Label* title_1{ nullptr };
     std::string title_text_1 = "Step 1";
     Label* content_1{ nullptr };
-    std::string content_text_1 = "Enter the minimum pressure advance value, maximum pressure advance value, and step size at the bottom of the current page, click the \"Calibrate\" button at the bottom of the page, and wait for a little time.The software will automatically set the calibration configuration.";
+    std::string content_text_1 = "Enter the minimum pressure advance value, maximum pressure advance value, and step size at the bottom of the current page, click the \"Calibrate\" button at the bottom of the page, and wait for a little time. The software will automatically set the calibration configuration.";
     create_paragraph(parent, title_1, title_text_1, content_1, content_text_1);
 
     m_custom_range_panel = new CaliPresetCustomRangePanel(parent);
@@ -558,10 +541,10 @@ void CalibrationPresetPage::create_page_pa_pattern(wxWindow* parent, wxBoxSizer*
 
     Label* introduce_1{ nullptr };
     std::string introduce_text_1 = "After successful slicing, you have three methods to perform the operation:\
-        \n1. Directly send the sliced file and print it;\
-        \n2. Send the sliced file to the printer via the network and manually select the sliced file for printing;\
-        \n3. Send the sliced file to a storage medium and print it through the storage medium.\
-        \nReferring to the process in the \"PA Pattern\", you will print the calibration model as shown in the following figure.";
+\n1. Directly send the sliced file and print it;\
+\n2. Send the sliced file to the printer via the network and manually select the sliced file for printing;\
+\n3. Send the sliced file to a storage medium and print it through the storage medium.\
+\nReferring to this process, you will print the calibration model as shown in the following figure.";
     create_txt(parent, introduce_1, introduce_text_1);
 
     add_bitmap(parent, m_top_sizer, "PressureAdvancePattern", true, 350);
@@ -571,23 +554,12 @@ void CalibrationPresetPage::create_page_pa_pattern(wxWindow* parent, wxBoxSizer*
     std::string title_text_2 = "Step 2";
     Label* content_2{ nullptr };
     std::string content_text_2 = "There are three feature regions in this model that need to be observed:\
-        \n1. In regions 1 and 3 of the figure, when the pressure advance value is too small, material stacking will occur and the endpoints will exceed the bounding box. When the pressure advance value is too high, there may be a shortage of wire and the endpoint has not reached the bounding box.\
-        \n2. In region 2 of the figure, when the pressure advance value is too small, material stacking may occur, which can cause excessive overflow at corners during actual printing. When the pressure value is too high, there may be missing threads. In actual printing, it can cause corners to become rounded and lead to missing threads.\
-        \nFinally, save the value with the best surface effect.";
+\n1. In regions 1 and 3 of the figure, when the pressure advance value is too small, material stacking will occur and the endpoints will exceed the bounding box. When the pressure advance value is too high, there may be a shortage of wire and the endpoint has not reached the bounding box.\
+\n2. In region 2 of the figure, when the pressure advance value is too small, material stacking may occur, which can cause excessive overflow at corners during actual printing. When the pressure value is too high, there may be missing threads. In actual printing, it can cause corners to become rounded and lead to missing threads.\
+\nFinally, save the value with the best surface effect.";
     create_paragraph(parent, title_2, title_text_2, content_2, content_text_2);
 
     create_gif_images(parent, m_top_sizer, "pavalue03");
-//#ifdef __linux__
-//    wxGetApp().CallAfter([this, title_1, title_2, content_1, content_2, introduce_1]() {
-//        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//       content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        introduce_1->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        Layout();
-//        Fit();
-//        });
-//#endif
 }
 
 //w29
@@ -605,10 +577,10 @@ void CalibrationPresetPage::create_page_pa_tower(wxWindow* parent, wxBoxSizer* m
 
     Label* introduce_1{ nullptr };
     std::string introduce_text_1 = "After successful slicing, you have three methods to perform the operation:\
-        \n1. Directly send the sliced file and print it;\
-        \n2. Send the sliced file to the printer via the network and manually select the sliced file for printing;\
-        \n3. Send the sliced file to a storage medium and print it through the storage medium.\
-        \nReferring to the process in the \"PA Tower\", you will print the calibration model as shown in the following figure.";
+\n1. Directly send the sliced file and print it;\
+\n2. Send the sliced file to the printer via the network and manually select the sliced file for printing;\
+\n3. Send the sliced file to a storage medium and print it through the storage medium.\
+\nReferring to this process, you will print the calibration model as shown in the following figure.";
     create_txt(parent, introduce_1, introduce_text_1);
 
     add_bitmap(parent, m_top_sizer, "patowermodel", true, 350);
@@ -624,26 +596,13 @@ void CalibrationPresetPage::create_page_pa_tower(wxWindow* parent, wxBoxSizer* m
     std::string title_text_3 = "Step 3";
     Label* content_3{ nullptr };
     std::string content_text_3 = "Calculate the optimal pressure advance value using the given formula:\
-        \nPressure Advance = k_Start + floor(height ÷ 5) × k_Step\
-        \nNOTICE: floor() represents rounding downwards\
-        \nAccording to the measured values, the pressure advance value in the figure is : 0.00 + floor(22.7 ÷ 5) × 0.005 = 0.02\
-        \nFinally, save the value with the best surface effect.";
+\nPressure Advance = k_Start + floor(height ÷ 5) × k_Step\
+\nNOTICE: floor() represents rounding downwards\
+\nAccording to the measured values, the pressure advance value in the figure is : 0.00 + floor(22.7 ÷ 5) × 0.005 = 0.02\
+\nFinally, save the value with the best surface effect.";
     create_paragraph(parent, title_3, title_text_3, content_3, content_text_3);
 
     create_gif_images(parent, m_top_sizer, "pavalue02");
-//#ifdef __linux__
-//    wxGetApp().CallAfter([this, title_1, title_2, title_3, content_1, content_2, content_3, introduce_1]() {
-//        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//       title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        title_3->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        content_3->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        introduce_1->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        Layout();
-//        Fit();
-//        });
-//#endif
 }
 
 void CalibrationPresetPage::create_page_max_volumetric_speed(wxWindow* parent, wxBoxSizer* m_top_sizer) {
@@ -660,42 +619,24 @@ void CalibrationPresetPage::create_page_max_volumetric_speed(wxWindow* parent, w
 
     Label* introduce_1{ nullptr };
     std::string introduce_text_1 = "After successful slicing, you have three methods to perform the operation:\
-        \n1. Directly send the sliced file and print it;\
-        \n2. Send the sliced file to the printer via the network and manually select the sliced file for printing;\
-        \n3. Send the sliced file to a storage medium and print it through the storage medium.\
-        \nReferring to the process in the \"Max Volumetric Speed Calibration\", you will print the calibration model as shown in the following figure.";
+\n1. Directly send the sliced file and print it;\
+\n2. Send the sliced file to the printer via the network and manually select the sliced file for printing;\
+\n3. Send the sliced file to a storage medium and print it through the storage medium.\
+\nReferring to this process, you will print the calibration model as shown in the following figure.";
     create_txt(parent, introduce_1, introduce_text_1);
 
     add_bitmap(parent, m_top_sizer, "Volumetricspeedmodel", true, 350);
-    m_top_sizer->AddSpacer(PRESET_GAP);
-    
-    create_paph(parent, _L("Step 2"), _L("It can be observed that at a certain height, the model begins to show missing fibers. There are two methods to measure the maximum volumetric velocity:\
-        \n1. Observing the number of notches nums on the right side, you can use StartV + (step * 2) = Max Volumetric Speed.\
-        \n2. In the \"Preview\" interface, view the Gcode of the model, find the \"Flow\" value corresponding to the missing part, and save it."));
-    m_top_sizer->Add(m_txt_title);
-    m_top_sizer->Add(m_txt_content);
     m_top_sizer->AddSpacer(PRESET_GAP);
 
     Label* title_2{ nullptr };
     std::string title_text_2 = "Step 2";
     Label* content_2{ nullptr };
     std::string content_text_2 = "It can be observed that at a certain height, the model begins to show missing fibers. There are two methods to measure the maximum volumetric velocity:\
-        \n1. Observing the number of notches nums on the right side, you can use StartV + (step * 2) = Max Volumetric Speed.\
-        \n2. In the \"Preview\" interface, view the Gcode of the model, find the \"Flow\" value corresponding to the missing part, and save it.";
+\n1. Observing the number of notches nums on the right side, you can use StartV + (step * 2) = Max Volumetric Speed.\
+\n2. In the \"Preview\" interface, view the Gcode of the model, find the \"Flow\" value corresponding to the missing part, and save it.";
     create_paragraph(parent, title_2, title_text_2, content_2, content_text_2);
 
     create_gif_images(parent, m_top_sizer, "Volumetricspeedset");
-//#ifdef __linux__
-//    wxGetApp().CallAfter([this, title_1, title_2, content_1, content_2, introduce_1]() {
-//        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        introduce_1->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        Layout();
-//        Fit();
-//        });
-//#endif
 }
 
 

@@ -268,7 +268,7 @@ void PressureAdvanceWizard::on_cali_start()
     calib_info.params.print_numbers = true;
 
     if (calib_info.params.start < 0 || calib_info.params.step < 0.001 || calib_info.params.end < calib_info.params.start + calib_info.params.step) {
-        MessageDialog msg_dlg(nullptr, _L("Please input valid values:\nStart PA: >= 0.0\nEnd PA: > Start PA\nPA step: >= 0.001)"), wxEmptyString, wxICON_WARNING | wxOK);
+        MessageDialog msg_dlg(nullptr, _L("Please input valid values:\nStart PA: >= 0.0\nEnd PA: > Start PA\nPA step: >= 0.001"), wxEmptyString, wxICON_WARNING | wxOK);
         msg_dlg.ShowModal();
         return;
     }
@@ -383,6 +383,11 @@ void FlowRateWizard::cali_start_pass(int road) {
     else {
         values[0].ToDouble(&input_value);
     }
+    if (input_value <= 0 || input_value >= 2) {
+        MessageDialog msg_dlg(nullptr, _L("Please input valid values:\n0.0< Flow Ratio < 2"), wxEmptyString, wxICON_WARNING | wxOK);
+        msg_dlg.ShowModal();
+        return;
+    }
     wxGetApp().plater_->calib_flowrate(road, input_value);
 }
 //w29
@@ -476,7 +481,7 @@ void MaxVolumetricSpeedWizard::on_cali_start()
     m_paramas.step = calib_info.params.step;
 
     if (m_paramas.start <= 0 || m_paramas.step < 0.01 || m_paramas.end < (m_paramas.start + m_paramas.step)) {
-        MessageDialog msg_dlg(nullptr, _L("Please input valid values:\nstart > 0 \nstep >= 0\nend > start + step)"), wxEmptyString, wxICON_WARNING | wxOK);
+        MessageDialog msg_dlg(nullptr, _L("Please input valid values:\nstart > 0 \nstep >= 0.01\nend >= start + step"), wxEmptyString, wxICON_WARNING | wxOK);
         msg_dlg.ShowModal();
         return;
     }

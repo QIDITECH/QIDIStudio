@@ -636,8 +636,8 @@ void SelectMachinePopup::update_other_devices()
 
     m_placeholder_panel = new wxWindow(m_scrolledWindow, wxID_ANY, wxDefaultPosition, wxSize(-1,FromDIP(26)));
     wxBoxSizer* placeholder_sizer = new wxBoxSizer(wxVERTICAL);
-
-    m_hyperlink = new wxHyperlinkCtrl(m_placeholder_panel, wxID_ANY, _L("Can't find my devices?"), wxT("https://wiki.qidilab.com/en/software/qidi-studio/failed-to-connect-printer"), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
+    //y36
+    m_hyperlink = new wxHyperlinkCtrl(m_placeholder_panel, wxID_ANY, _L("Can't find my devices?"), wxT("https://wiki.qidi3d.com/en/software/qidi-studio/fluidd"), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
     placeholder_sizer->Add(m_hyperlink, 0, wxALIGN_CENTER | wxALL, 5);
 
 
@@ -888,7 +888,8 @@ void SelectMachinePopup::OnLeftUp(wxMouseEvent &event)
         //hyper link
         auto h_rect = m_hyperlink->ClientToScreen(wxPoint(0, 0));
         if (mouse_pos.x > h_rect.x && mouse_pos.y > h_rect.y && mouse_pos.x < (h_rect.x + m_hyperlink->GetSize().x) && mouse_pos.y < (h_rect.y + m_hyperlink->GetSize().y)) {
-          wxLaunchDefaultBrowser(wxT("https://wiki.qidilab.com/en/software/qidi-studio/failed-to-connect-printer"));
+          //y36
+          wxLaunchDefaultBrowser(wxT("https://wiki.qidi3d.com/en/software/qidi-studio/fluidd"));
         }
     }
 }
@@ -946,8 +947,9 @@ wxString SelectMachineDialog::format_text(wxString &m_msg)
     return out_txt;
 }
 
-SelectMachineDialog::SelectMachineDialog(Plater *plater)
-    : DPIDialog(static_cast<wxWindow *>(wxGetApp().mainframe), wxID_ANY, _L("Send print job to"), wxDefaultPosition, wxDefaultSize, wxCAPTION | wxCLOSE_BOX)
+//y30
+SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
+    : DPIDialog(static_cast<wxWindow *>(wxGetApp().mainframe), wxID_ANY, _L(title), wxDefaultPosition, wxDefaultSize, wxCAPTION | wxCLOSE_BOX)
     , m_plater(plater), m_export_3mf_cancel(false)
     , m_mapping_popup(AmsMapingPopup(this))
     , m_mapping_tip_popup(AmsMapingTipPopup(this))
@@ -1306,8 +1308,16 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater)
 
     m_sizer_prepare->Add(0, 0, 1, wxTOP, FromDIP(12));
 
-    auto hyperlink_sizer = new wxBoxSizer( wxHORIZONTAL );
-    m_hyperlink = new wxHyperlinkCtrl(m_panel_prepare, wxID_ANY, _L("Click here if you can't connect to the printer"), wxT("https://wiki.qidilab.com/en/software/qidi-studio/failed-to-connect-printer"), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
+    auto hyperlink_sizer = new wxBoxSizer(wxHORIZONTAL);
+    //y36
+    std::string language = wxGetApp().app_config->get("language");
+    wxString    region    = L"en";
+    if (language.find("zh") == 0)
+        region = L"zh";
+    // wxString hyperlink_1 = wxString::Format(L"https://wiki.qidi3d.com/%s/software/qidi-studio/fluidd", region);
+    // m_hyperlink = new wxHyperlinkCtrl(m_panel_prepare, wxID_ANY, _L("Click here if you can't connect to the printer"), hyperlink_1, wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
+    wxString hyperlink_2 = wxString::Format(L"https://wiki.qidi3d.com/%s/software/qidi-studio/troubleshooting/connect-send-problem", region);
+    m_hyperlink = new wxHyperlinkCtrl(m_panel_prepare, wxID_ANY, _L("Click here if you failed to send the task"), hyperlink_2, wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
 
     hyperlink_sizer->Add(m_hyperlink, 0, wxALIGN_CENTER | wxALL, 5);
     m_sizer_prepare->Add(hyperlink_sizer, 0, wxALIGN_CENTER | wxALL, 5);

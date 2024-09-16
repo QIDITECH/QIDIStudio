@@ -762,7 +762,6 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloat,              tree_support_branch_diameter))
     ((ConfigOptionFloat,              tree_support_branch_angle))
     ((ConfigOptionInt,                tree_support_wall_count))
-    ((ConfigOptionFloat,              tree_support_brim_width))
     ((ConfigOptionBool,               detect_narrow_internal_solid_infill))
     // ((ConfigOptionBool,               adaptive_layer_height))
     ((ConfigOptionFloat,              support_bottom_interface_spacing))
@@ -791,6 +790,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloat, bottom_shell_thickness))
     ((ConfigOptionFloat, bridge_angle))
     ((ConfigOptionFloat, bridge_flow))
+    ((ConfigOptionFloat, overhang_totally_speed))   //1.9.5
     ((ConfigOptionFloat, bridge_speed))
     ((ConfigOptionBool, ensure_vertical_shell_thickness))
     ((ConfigOptionEnum<InfillPattern>, top_surface_pattern))
@@ -820,6 +820,8 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloat, ironing_speed))
     // Detect bridging perimeters
     ((ConfigOptionBool, detect_overhang_wall))
+    ((ConfigOptionBool, smooth_speed_discontinuity_area))   //1.9.5
+    ((ConfigOptionFloat, smooth_coefficient))               //1.9.5
     ((ConfigOptionInt, wall_filament))
     ((ConfigOptionFloat, inner_wall_line_width))
     ((ConfigOptionFloat, inner_wall_speed))

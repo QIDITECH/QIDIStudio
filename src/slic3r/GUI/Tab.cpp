@@ -1925,21 +1925,23 @@ void TabPrint::build()
 
     auto page = add_options_page(L("Quality"), "empty");
         auto optgroup = page->new_optgroup(L("Layer height"), L"param_layer_height");
-    optgroup->append_single_option_line("layer_height", "layer-height");
-        optgroup->append_single_option_line("initial_layer_print_height", "layer-height");
+        //y32
+        optgroup->append_single_option_line("layer_height", "print-settings/layer-height");
+        optgroup->append_single_option_line("initial_layer_print_height", "print-settings/layer-height");
         optgroup = page->new_optgroup(L("Line width"), L"param_line_width");
-        optgroup->append_single_option_line("line_width","parameter/line-width");
-        optgroup->append_single_option_line("initial_layer_line_width","parameter/line-width");
-        optgroup->append_single_option_line("outer_wall_line_width","parameter/line-width");
-        optgroup->append_single_option_line("inner_wall_line_width","parameter/line-width");
-        optgroup->append_single_option_line("top_surface_line_width","parameter/line-width");
-        optgroup->append_single_option_line("sparse_infill_line_width","parameter/line-width");
-        optgroup->append_single_option_line("internal_solid_infill_line_width","parameter/line-width");
-        optgroup->append_single_option_line("support_line_width","parameter/line-width");
+        optgroup->append_single_option_line("line_width","print-settings/line-width");
+        optgroup->append_single_option_line("initial_layer_line_width","print-settings/line-width");
+        optgroup->append_single_option_line("outer_wall_line_width","print-settings/line-width");
+        optgroup->append_single_option_line("inner_wall_line_width","print-settings/line-width");
+        optgroup->append_single_option_line("top_surface_line_width","print-settings/line-width");
+        optgroup->append_single_option_line("sparse_infill_line_width","print-settings/line-width");
+        optgroup->append_single_option_line("internal_solid_infill_line_width","print-settings/line-width");
+        optgroup->append_single_option_line("support_line_width","print-settings/line-width");
 
         optgroup = page->new_optgroup(L("Seam"), L"param_seam");
-        optgroup->append_single_option_line("seam_position", "Seam");
-        optgroup->append_single_option_line("seam_gap", "Seam");
+        //y32
+        optgroup->append_single_option_line("seam_position", "print-settings/seam");
+        optgroup->append_single_option_line("seam_gap", "print-settings/seam");
         optgroup->append_single_option_line("seam_slope_type");
         optgroup->append_single_option_line("seam_slope_conditional");
         optgroup->append_single_option_line("scarf_angle_threshold");
@@ -1948,19 +1950,21 @@ void TabPrint::build()
         optgroup->append_single_option_line("seam_slope_min_length");
         optgroup->append_single_option_line("seam_slope_steps");
         optgroup->append_single_option_line("seam_slope_inner_walls");
-        optgroup->append_single_option_line("wipe_speed", "Seam");
+        optgroup->append_single_option_line("wipe_speed", "print-settings/seam");
 
         optgroup = page->new_optgroup(L("Precision"), L"param_precision");
         optgroup->append_single_option_line("slice_closing_radius");
-        optgroup->append_single_option_line("resolution","acr-move");
-        optgroup->append_single_option_line("enable_arc_fitting", "acr-move");
-        optgroup->append_single_option_line("xy_hole_compensation", "xy-hole-contour-compensation");
-        optgroup->append_single_option_line("xy_contour_compensation", "xy-hole-contour-compensation");
-        optgroup->append_single_option_line("elefant_foot_compensation", "parameter/elephant-foot");
+        //32
+        optgroup->append_single_option_line("resolution","print-settings/arc-move");
+        optgroup->append_single_option_line("enable_arc_fitting", "print-settings/arc-move");
+        optgroup->append_single_option_line("xy_hole_compensation", "print-settings/xy-hole-contour-compensation");
+        optgroup->append_single_option_line("xy_contour_compensation", "print-settings/xy-hole-contour-compensation");
+        optgroup->append_single_option_line("elefant_foot_compensation", "print-settings/elephant-foot");
         optgroup->append_single_option_line("precise_z_height");
 
         optgroup = page->new_optgroup(L("Ironing"), L"param_ironing");
-        optgroup->append_single_option_line("ironing_type", "parameter/ironing");
+        //y32
+        optgroup->append_single_option_line("ironing_type", "print-settings/ironing");
         optgroup->append_single_option_line("ironing_pattern");
         optgroup->append_single_option_line("ironing_speed");
         optgroup->append_single_option_line("ironing_flow");
@@ -1968,7 +1972,8 @@ void TabPrint::build()
         optgroup->append_single_option_line("ironing_direction");
 
         optgroup = page->new_optgroup(L("Wall generator"), L"param_wall");
-        optgroup->append_single_option_line("wall_generator", "wall-generator");
+        //y32
+        optgroup->append_single_option_line("wall_generator", "print-settings/wall-generator");
         optgroup->append_single_option_line("wall_transition_angle");
         optgroup->append_single_option_line("wall_transition_filter_deviation");
         optgroup->append_single_option_line("wall_transition_length");
@@ -1979,47 +1984,56 @@ void TabPrint::build()
         optgroup = page->new_optgroup(L("Advanced"), L"param_advanced");
         optgroup->append_single_option_line("wall_sequence");
         optgroup->append_single_option_line("is_infill_first");
-        optgroup->append_single_option_line("bridge_flow","parameter/bridge");
-        optgroup->append_single_option_line("thick_bridges","parameter/bridge");
+        //y32
+        optgroup->append_single_option_line("bridge_flow","print-settings/bridge");
+        optgroup->append_single_option_line("thick_bridges","print-settings/bridge");
         optgroup->append_single_option_line("top_solid_infill_flow_ratio");
         optgroup->append_single_option_line("initial_layer_flow_ratio");
         optgroup->append_single_option_line("top_one_wall_type");
         optgroup->append_single_option_line("top_area_threshold");
         optgroup->append_single_option_line("only_one_wall_first_layer");
         optgroup->append_single_option_line("detect_overhang_wall");
+        //1.9.5
+        optgroup->append_single_option_line("smooth_speed_discontinuity_area");
+        optgroup->append_single_option_line("smooth_coefficient");
         optgroup->append_single_option_line("reduce_crossing_wall");
         optgroup->append_single_option_line("max_travel_detour_distance");
 
     page = add_options_page(L("Strength"), "empty");
         optgroup = page->new_optgroup(L("Walls"), L"param_wall");
-        optgroup->append_single_option_line("wall_loops","wall-generator");
-        optgroup->append_single_option_line("detect_thin_wall","wall-generator");
+        //y32
+        optgroup->append_single_option_line("wall_loops","print-settings/wall-generator");
+        optgroup->append_single_option_line("detect_thin_wall","print-settings/wall-generator");
 
         optgroup = page->new_optgroup(L("Top/bottom shells"), L"param_shell");
         optgroup->append_single_option_line("interface_shells");
-        optgroup->append_single_option_line("top_surface_pattern", "fill-patterns#Infill of the top surface and bottom surface");
+        //y32
+        optgroup->append_single_option_line("top_surface_pattern", "print-settings/fill-patterns");
         optgroup->append_single_option_line("top_shell_layers");
         optgroup->append_single_option_line("top_shell_thickness");
-        optgroup->append_single_option_line("bottom_surface_pattern", "fill-patterns#Infill of the top surface and bottom surface");
+        //y32
+        optgroup->append_single_option_line("bottom_surface_pattern", "print-settings/fill-patterns");
         optgroup->append_single_option_line("bottom_shell_layers");
         optgroup->append_single_option_line("bottom_shell_thickness");
         optgroup->append_single_option_line("internal_solid_infill_pattern");
 
         optgroup = page->new_optgroup(L("Sparse infill"), L"param_infill");
         optgroup->append_single_option_line("sparse_infill_density");
-        optgroup->append_single_option_line("sparse_infill_pattern", "fill-patterns#infill types and their properties of sparse");
+        //y32
+        optgroup->append_single_option_line("sparse_infill_pattern", "print-settings/fill-patterns");
         optgroup->append_single_option_line("sparse_infill_anchor");
         optgroup->append_single_option_line("sparse_infill_anchor_max");
         optgroup->append_single_option_line("filter_out_gap_fill");
 
         optgroup = page->new_optgroup(L("Advanced"), L"param_advanced");
-        optgroup->append_single_option_line("infill_wall_overlap","parameter/strength-advance-settings");
-        optgroup->append_single_option_line("infill_direction","parameter/strength-advance-settings");
-        optgroup->append_single_option_line("bridge_angle","parameter/strength-advance-settings");
-        optgroup->append_single_option_line("minimum_sparse_infill_area","parameter/strength-advance-settings");
-        optgroup->append_single_option_line("infill_combination","parameter/strength-advance-settings");
-        optgroup->append_single_option_line("detect_narrow_internal_solid_infill","parameter/strength-advance-settings");
-        optgroup->append_single_option_line("ensure_vertical_shell_thickness","parameter/strength-advance-settings");
+        //y32
+        optgroup->append_single_option_line("infill_wall_overlap","print-settings/strength-advance-settings");
+        optgroup->append_single_option_line("infill_direction","print-settings/strength-advance-settings");
+        optgroup->append_single_option_line("bridge_angle","print-settings/strength-advance-settings");
+        optgroup->append_single_option_line("minimum_sparse_infill_area","print-settings/strength-advance-settings");
+        optgroup->append_single_option_line("infill_combination","print-settings/strength-advance-settings");
+        optgroup->append_single_option_line("detect_narrow_internal_solid_infill","print-settings/strength-advance-settings");
+        optgroup->append_single_option_line("ensure_vertical_shell_thickness","print-settings/strength-advance-settings");
         //optgroup->append_single_option_line("internal_bridge_support_thickness","parameter/strength-advance-settings");
 
     page = add_options_page(L("Speed"), "empty");
@@ -2034,14 +2048,18 @@ void TabPrint::build()
         optgroup->append_single_option_line("sparse_infill_speed");
         optgroup->append_single_option_line("internal_solid_infill_speed");
         optgroup->append_single_option_line("top_surface_speed");
-        optgroup->append_single_option_line("enable_overhang_speed", "slow-down-for-overhang");
+        //y32
+        optgroup->append_single_option_line("enable_overhang_speed", "print-settings/slow-down-for-overhang");
         Line line = { L("Overhang speed"), L("This is the speed for various overhang degrees. Overhang degrees are expressed as a percentage of line width. 0 speed means no slowing down for the overhang degree range and wall speed is used") };
-        line.label_path = "slow-down-for-overhang";
+        //y32
+        line.label_path = "print-settings/slow-down-for-overhang";
         line.append_option(optgroup->get_option("overhang_1_4_speed"));
         line.append_option(optgroup->get_option("overhang_2_4_speed"));
         line.append_option(optgroup->get_option("overhang_3_4_speed"));
         line.append_option(optgroup->get_option("overhang_4_4_speed"));
         optgroup->append_line(line);
+        //1.9.5
+        optgroup->append_single_option_line("overhang_totally_speed");
         optgroup->append_single_option_line("bridge_speed");
         optgroup->append_single_option_line("gap_infill_speed");
         optgroup->append_single_option_line("support_speed");
@@ -2082,10 +2100,11 @@ void TabPrint::build()
 
     page = add_options_page(L("Support"), "support");
         optgroup = page->new_optgroup(L("Support"), L"param_support");
-    optgroup->append_single_option_line("enable_support", "support");
-        optgroup->append_single_option_line("support_type", "support#support-types");
-        optgroup->append_single_option_line("support_style", "support#support-styles");
-        optgroup->append_single_option_line("support_threshold_angle", "support#threshold-angle");
+        //y32
+        optgroup->append_single_option_line("enable_support", "print-settings/support");
+        optgroup->append_single_option_line("support_type", "print-settings/support");
+        optgroup->append_single_option_line("support_style", "print-settings/support");
+        optgroup->append_single_option_line("support_threshold_angle", "print-settings/support");
         optgroup->append_single_option_line("support_on_build_plate_only");
         optgroup->append_single_option_line("support_critical_regions_only");
         optgroup->append_single_option_line("support_remove_small_overhang");
@@ -2095,40 +2114,48 @@ void TabPrint::build()
         optgroup->append_single_option_line("raft_layers");
         optgroup->append_single_option_line("raft_contact_distance");
         optgroup->append_single_option_line("raft_first_layer_density");
-        optgroup->append_single_option_line("raft_first_layer_expansion");
 
         optgroup = page->new_optgroup(L("Support filament"), L"param_support_filament");
-        optgroup->append_single_option_line("support_filament", "support#support-filament");
-        optgroup->append_single_option_line("support_interface_filament", "support#support-filament");
-        optgroup->append_single_option_line("support_interface_not_for_body", "support#support-filament");
+        //y32
+        optgroup->append_single_option_line("support_filament", "print-settings/support");
+        optgroup->append_single_option_line("support_interface_filament", "print-settings/support");
+        optgroup->append_single_option_line("support_interface_not_for_body", "print-settings/support");
 
         //optgroup = page->new_optgroup(L("Options for support material and raft"));
 
         //QDS
         optgroup = page->new_optgroup(L("Advanced"), L"param_advanced");
-        optgroup->append_single_option_line("tree_support_branch_distance", "support#tree-support-only-options");
-        optgroup->append_single_option_line("tree_support_branch_diameter", "support#tree-support-only-options");
-        optgroup->append_single_option_line("tree_support_branch_angle", "support#tree-support-only-options");
+        //1.9.5
+        optgroup->append_single_option_line("raft_first_layer_expansion");  // not only for raft, but for support too
         optgroup->append_single_option_line("tree_support_wall_count");
-        optgroup->append_single_option_line("tree_support_brim_width");
-        optgroup->append_single_option_line("support_top_z_distance", "support#top-z-distance");
-        optgroup->append_single_option_line("support_bottom_z_distance", "support#bottom-z-distance");
-        optgroup->append_single_option_line("support_base_pattern", "support#base-pattern");
-        optgroup->append_single_option_line("support_base_pattern_spacing", "support#base-pattern");
+        //y32
+        optgroup->append_single_option_line("support_top_z_distance", "print-settings/support");
+        optgroup->append_single_option_line("support_bottom_z_distance", "print-settings/support");
+        optgroup->append_single_option_line("support_base_pattern", "print-settings/support");
+        optgroup->append_single_option_line("support_base_pattern_spacing", "print-settings/support");
         optgroup->append_single_option_line("support_angle");
-        optgroup->append_single_option_line("support_interface_top_layers", "support#base-pattern");
-        optgroup->append_single_option_line("support_interface_bottom_layers", "support#base-pattern");
-        optgroup->append_single_option_line("support_interface_pattern", "support#base-pattern");
-        optgroup->append_single_option_line("support_interface_spacing", "support#base-pattern");
+        //y32
+        optgroup->append_single_option_line("support_interface_top_layers", "print-settings/support");
+        optgroup->append_single_option_line("support_interface_bottom_layers", "print-settings/support");
+        optgroup->append_single_option_line("support_interface_pattern", "print-settings/support");
+        optgroup->append_single_option_line("support_interface_spacing", "print-settings/support");
         optgroup->append_single_option_line("support_bottom_interface_spacing");
-        optgroup->append_single_option_line("support_expansion", "support#base-pattern");
+        //y32
+        optgroup->append_single_option_line("support_expansion", "print-settings/support");
         //optgroup->append_single_option_line("support_interface_loop_pattern");
+        //y32
+        optgroup->append_single_option_line("support_object_xy_distance", "print-settings/support");
+        optgroup->append_single_option_line("support_object_first_layer_gap", "print-settings/support");
+        optgroup->append_single_option_line("bridge_no_support", "print-settings/support");
+        optgroup->append_single_option_line("max_bridge_length", "print-settings/support");
+        optgroup->append_single_option_line("independent_support_layer_height", "print-settings/support");
 
-        optgroup->append_single_option_line("support_object_xy_distance", "support");
-        optgroup->append_single_option_line("support_object_first_layer_gap", "support");
-        optgroup->append_single_option_line("bridge_no_support", "support#base-pattern");
-        optgroup->append_single_option_line("max_bridge_length", "support#base-pattern");
-        optgroup->append_single_option_line("independent_support_layer_height", "support");
+        //1.9.5
+        optgroup = page->new_optgroup(L("Tree Support"), L"param_advanced");
+        //y32
+        optgroup->append_single_option_line("tree_support_branch_distance", "print-settings/support");
+        optgroup->append_single_option_line("tree_support_branch_diameter", "print-settings/support");
+        optgroup->append_single_option_line("tree_support_branch_angle", "print-settings/support");
 
     page = add_options_page(L("Others"), "advanced");
         optgroup = page->new_optgroup(L("Bed adhension"), L"param_adhension");
@@ -2136,30 +2163,37 @@ void TabPrint::build()
         optgroup->append_single_option_line("skirt_height");
         optgroup->append_single_option_line("skirt_distance");
         //optgroup->append_single_option_line("draft_shield");
-        optgroup->append_single_option_line("brim_type", "auto-brim");
-        optgroup->append_single_option_line("brim_width", "auto-brim#manual");
-        optgroup->append_single_option_line("brim_object_gap", "auto-brim#brim-object-gap");
+        //y32
+        optgroup->append_single_option_line("brim_type", "print-settings/brim");
+        optgroup->append_single_option_line("brim_width", "print-settings/brim");
+        optgroup->append_single_option_line("brim_object_gap", "print-settings/brim");
 
         optgroup = page->new_optgroup(L("Prime tower"), L"param_tower");
-        optgroup->append_single_option_line("enable_prime_tower","parameter/prime-tower");
-        optgroup->append_single_option_line("prime_tower_width","parameter/prime-tower");
-        optgroup->append_single_option_line("prime_volume","parameter/prime-tower");
-        optgroup->append_single_option_line("prime_tower_brim_width","parameter/prime-tower");
+        //y32
+        optgroup->append_single_option_line("enable_prime_tower","print-settings/prime-tower");
+        optgroup->append_single_option_line("prime_tower_width","print-settings/prime-tower");
+        optgroup->append_single_option_line("prime_volume","print-settings/prime-tower");
+        optgroup->append_single_option_line("prime_tower_brim_width","print-settings/prime-tower");
 
         optgroup = page->new_optgroup(L("Flush options"), L"param_flush");
-        optgroup->append_single_option_line("flush_into_infill", "reduce-wasting-during-filament-change#wipe-into-infill");
-        optgroup->append_single_option_line("flush_into_objects", "reduce-wasting-during-filament-change#wipe-into-object");
-        optgroup->append_single_option_line("flush_into_support", "reduce-wasting-during-filament-change#wipe-into-support-enabled-by-default");
+        //y32
+        // optgroup->append_single_option_line("flush_into_infill", "reduce-wasting-during-filament-change#wipe-into-infill");
+        // optgroup->append_single_option_line("flush_into_objects", "reduce-wasting-during-filament-change#wipe-into-object");
+        // optgroup->append_single_option_line("flush_into_support", "reduce-wasting-during-filament-change#wipe-into-support-enabled-by-default");
+        optgroup->append_single_option_line("flush_into_infill");
+        optgroup->append_single_option_line("flush_into_objects");
+        optgroup->append_single_option_line("flush_into_support");
 
         optgroup = page->new_optgroup(L("Special mode"), L"param_special");
         optgroup->append_single_option_line("slicing_mode");
-        optgroup->append_single_option_line("print_sequence", "sequent-print");
-        optgroup->append_single_option_line("spiral_mode", "spiral-vase");
-        optgroup->append_single_option_line("spiral_mode_smooth", "spiral-vase#smooth");
-        optgroup->append_single_option_line("spiral_mode_max_xy_smoothing", "spiral-vase#max-xy-smoothing");
-        optgroup->append_single_option_line("timelapse_type", "Timelapse");
+        //y32
+        optgroup->append_single_option_line("print_sequence", "print-settings/print-by-object");
+        optgroup->append_single_option_line("spiral_mode", "print-settings/spiral-print");
+        optgroup->append_single_option_line("spiral_mode_smooth", "print-settings/spiral-print");
+        optgroup->append_single_option_line("spiral_mode_max_xy_smoothing", "print-settings/spiral-print");
+        optgroup->append_single_option_line("timelapse_type", "print-settings/timelapse");
 
-        optgroup->append_single_option_line("fuzzy_skin", "parameter/fuzzy-skin");
+        optgroup->append_single_option_line("fuzzy_skin", "print-settings/fuzzy-skin");
         optgroup->append_single_option_line("fuzzy_skin_point_distance");
         optgroup->append_single_option_line("fuzzy_skin_thickness");
 
@@ -2606,8 +2640,9 @@ void TabPrintPlate::build()
     auto page = add_options_page(L("Plate Settings"), "empty");
     auto optgroup = page->new_optgroup("");
     optgroup->append_single_option_line("curr_bed_type");
-    optgroup->append_single_option_line("print_sequence", "sequent-print");
-    optgroup->append_single_option_line("spiral_mode", "spiral-vase");
+    //y32
+    optgroup->append_single_option_line("print_sequence", "print-settings/print-by-object");
+    optgroup->append_single_option_line("spiral_mode", "print-settings/spiral-print");
     optgroup->append_single_option_line("first_layer_sequence_choice", "parameter/filament-sequence-for-different-layers");
     optgroup->append_single_option_line("other_layers_sequence_choice", "parameter/filament-sequence-for-different-layers");
 
@@ -3036,7 +3071,8 @@ void TabFilament::build()
 
 
         optgroup = page->new_optgroup(L("Print temperature"), L"param_temperature");
-        optgroup->append_single_option_line("chamber_temperatures","chamber-temperature");
+        //y32
+        optgroup->append_single_option_line("chamber_temperatures");
 
         line = { L("Nozzle"), L("Nozzle temperature when printing") };
         line.append_option(optgroup->get_option("nozzle_temperature_initial_layer"));
@@ -3113,29 +3149,31 @@ void TabFilament::build()
         //};
         //optgroup->append_line(line);
         optgroup = page->new_optgroup(L("Cooling for specific layer"), L"param_cooling");
-    optgroup->append_single_option_line("close_fan_the_first_x_layers", "auto-cooling");
+        //y32
+    optgroup->append_single_option_line("close_fan_the_first_x_layers", "print-settings/auto-cooling");
         //optgroup->append_single_option_line("full_fan_speed_layer");
 
         optgroup = page->new_optgroup(L("Part cooling fan"), L"param_cooling_fan");
         line = { L("Min fan speed threshold"), L("Part cooling fan speed will start to run at min speed when the estimated layer time is no longer than the layer time in setting. When layer time is shorter than threshold, fan speed is interpolated between the minimum and maximum fan speed according to layer printing time") };
-        line.label_path = "auto-cooling";
+        //y32
+        line.label_path = "print-settings/auto-cooling";
         line.append_option(optgroup->get_option("fan_min_speed"));
         line.append_option(optgroup->get_option("fan_cooling_layer_time"));
         optgroup->append_line(line);
         line = { L("Max fan speed threshold"), L("Part cooling fan speed will be max when the estimated layer time is shorter than the setting value") };
-        line.label_path = "auto-cooling";
+        line.label_path = "print-settings/auto-cooling";
         line.append_option(optgroup->get_option("fan_max_speed"));
         line.append_option(optgroup->get_option("slow_down_layer_time"));
         optgroup->append_line(line);
-        optgroup->append_single_option_line("reduce_fan_stop_start_freq", "auto-cooling");
-        optgroup->append_single_option_line("slow_down_for_layer_cooling", "auto-cooling");
+        optgroup->append_single_option_line("reduce_fan_stop_start_freq", "print-settings/auto-cooling");
+        optgroup->append_single_option_line("slow_down_for_layer_cooling", "print-settings/auto-cooling");
         //w14
         optgroup->append_single_option_line("dont_slow_down_outer_wall");
-        optgroup->append_single_option_line("slow_down_min_speed","auto-cooling");
+        optgroup->append_single_option_line("slow_down_min_speed","print-settings/auto-cooling");
 
-        optgroup->append_single_option_line("enable_overhang_bridge_fan", "auto-cooling");
-        optgroup->append_single_option_line("overhang_fan_threshold", "auto-cooling");
-        optgroup->append_single_option_line("overhang_fan_speed", "auto-cooling");
+        optgroup->append_single_option_line("enable_overhang_bridge_fan", "print-settings/auto-cooling");
+        optgroup->append_single_option_line("overhang_fan_threshold", "print-settings/auto-cooling");
+        optgroup->append_single_option_line("overhang_fan_speed", "print-settings/auto-cooling");
 
         optgroup = page->new_optgroup(L("Auxiliary part cooling fan"), L"param_cooling_fan");
         optgroup->append_single_option_line("additional_cooling_fan_speed");
@@ -3280,7 +3318,7 @@ void TabFilament::toggle_options()
             toggle_line(elem, m_config->opt_bool("activate_air_filtration",0)&&support_air_filtration);
 
         //w13
-        bool support_seal = wxGetApp().app_config->get_seal();
+        bool support_seal = wxGetApp().enable_seal();
         bool has_auxiliary_fan = m_preset_bundle->printers.get_edited_preset().config.opt_bool("auxiliary_fan");
         toggle_option("additional_cooling_fan_speed",  has_auxiliary_fan& support_seal);
         toggle_option("additional_cooling_fan_speed_unseal", !support_seal & has_auxiliary_fan);
@@ -3519,7 +3557,7 @@ void TabPrinter::build_fff()
         //w12
         option = optgroup->get_option("thumbnail_size");
         option.opt.full_width = true;
-        optgroup->append_single_option_line(option, "thumbnail_size");
+        optgroup->append_single_option_line(option, "");
         optgroup->m_on_change = [this](t_config_option_key opt_key, boost::any value) {
             wxTheApp->CallAfter([this, opt_key, value]() {
                 if (opt_key == "thumbnail_size" && m_config->has("thumbnails_formats")) {
@@ -3976,27 +4014,29 @@ void TabPrinter::build_unregular_pages(bool from_initial_build/* = false*/)
             };
 
             optgroup = page->new_optgroup(L("Layer height limits"), L"param_layer_height", -1, true);
-            optgroup->append_single_option_line("min_layer_height", "adaptive-layer-height", extruder_idx);
-            optgroup->append_single_option_line("max_layer_height", "adaptive-layer-height", extruder_idx);
+            //y32
+            optgroup->append_single_option_line("min_layer_height", "toolbar/variable-layer-height", extruder_idx);
+            optgroup->append_single_option_line("max_layer_height", "toolbar/variable-layer-height", extruder_idx);
 
             optgroup = page->new_optgroup(L("Position"), L"param_retraction", -1, true);
             optgroup->append_single_option_line("extruder_offset", "", extruder_idx);
 
             //QDS: don't show retract related config menu in machine page
             optgroup = page->new_optgroup(L("Retraction"), L"param_retraction");
-            optgroup->append_single_option_line("retraction_length", "parameter/retraction#length", extruder_idx);
-            optgroup->append_single_option_line("z_hop", "parameter/retraction#z-hop-when-retracting", extruder_idx);
-            optgroup->append_single_option_line("retract_lift_above", "parameter/retraction#z-hop-upper-and-lower-boundary", extruder_idx);
-            optgroup->append_single_option_line("retract_lift_below", "parameter/retraction#z-hop-upper-and-lower-boundary", extruder_idx);
-            optgroup->append_single_option_line("z_hop_types", "parameter/retraction#z-hop-type", extruder_idx);
-            optgroup->append_single_option_line("retraction_speed", "parameter/retraction#retraction-speed", extruder_idx);
-            optgroup->append_single_option_line("deretraction_speed", "parameter/retraction#deretraction-speed", extruder_idx);
+            //y32
+            optgroup->append_single_option_line("retraction_length", "print-settings/retract-setting", extruder_idx);
+            optgroup->append_single_option_line("z_hop", "print-settings/retract-setting", extruder_idx);
+            optgroup->append_single_option_line("retract_lift_above", "print-settings/retract-setting", extruder_idx);
+            optgroup->append_single_option_line("retract_lift_below", "print-settings/retract-setting", extruder_idx);
+            optgroup->append_single_option_line("z_hop_types", "print-settings/retract-setting", extruder_idx);
+            optgroup->append_single_option_line("retraction_speed", "print-settings/retract-setting", extruder_idx);
+            optgroup->append_single_option_line("deretraction_speed", "print-settings/retract-setting", extruder_idx);
             //optgroup->append_single_option_line("retract_restart_extra", "", extruder_idx);
-            optgroup->append_single_option_line("retraction_minimum_travel", "parameter/retraction#travel-distance-threshold", extruder_idx);
-            optgroup->append_single_option_line("retract_when_changing_layer", "parameter/retraction#retract-on-layer-change", extruder_idx);
-            optgroup->append_single_option_line("wipe", "parameter/retraction#wipe-while-retracting", extruder_idx);
-            optgroup->append_single_option_line("wipe_distance", "parameter/retraction#wipe-distance", extruder_idx);
-            optgroup->append_single_option_line("retract_before_wipe", "parameter/retraction#retract-amount-before-wipe", extruder_idx);
+            optgroup->append_single_option_line("retraction_minimum_travel", "print-settings/retract-setting", extruder_idx);
+            optgroup->append_single_option_line("retract_when_changing_layer", "print-settings/retract-setting", extruder_idx);
+            optgroup->append_single_option_line("wipe", "print-settings/retract-setting", extruder_idx);
+            optgroup->append_single_option_line("wipe_distance", "print-settings/retract-setting", extruder_idx);
+            optgroup->append_single_option_line("retract_before_wipe", "print-settings/retract-setting", extruder_idx);
 
             optgroup = page->new_optgroup(L("Retraction when switching material"), L"param_retraction", -1, true);
             optgroup->append_single_option_line("retract_length_toolchange", "", extruder_idx);

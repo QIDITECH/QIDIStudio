@@ -268,6 +268,66 @@ wxBitmap* BitmapCache::load_png(const std::string &bitmap_name, unsigned width, 
     return this->insert(bitmap_key, wxImage_to_wxBitmap_with_alpha(std::move(image)));
 }
 
+//y33
+wxBitmap* BitmapCache::load_login_png(const std::string& bitmap_name, unsigned width, unsigned height,
+    const bool grayscale/* = false*/, const float scale_in_center/* = 0*/) // QDS: support resize by fill border
+{
+    std::string bitmap_key = bitmap_name + (height != 0 ?
+        "-h" + std::to_string(height) :
+        "-w" + std::to_string(width))
+        + (grayscale ? "-gs" : "");
+
+    auto it = m_map.find(bitmap_key);
+    if (it != m_map.end())
+        return it->second;
+
+    wxImage image;
+    std::string imgge_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / bitmap_name).make_preferred().string();
+    if (!image.LoadFile(imgge_path, wxBITMAP_TYPE_ANY) ||
+        image.GetWidth() == 0 || image.GetHeight() == 0)
+        return nullptr;
+
+    if (height == 0 && width == 0)
+        height = image.GetHeight();
+
+    if (height != 0 && unsigned(image.GetHeight()) != height)
+        width = unsigned(0.5f + float(image.GetWidth()) * height / image.GetHeight());
+    else if (width != 0 && unsigned(image.GetWidth()) != width)
+        height = unsigned(0.5f + float(image.GetHeight()) * width / image.GetWidth());
+
+    if (height != 0 && width != 0) {
+        // QDS: support resize by fill border
+        if (scale_in_center > 0)
+            image.Resize({ (int)width, (int)height }, { (int)(width - image.GetWidth()) / 2, (int)(height - image.GetHeight()) / 2 });
+        else
+            image.Rescale(width, height, wxIMAGE_QUALITY_BILINEAR);
+    }
+
+    if (grayscale)
+        image = image.ConvertToGreyscale(m_gs, m_gs, m_gs);
+
+    int radius = height / 2;
+    int cx = image.GetWidth() / 2;
+    int cy = image.GetHeight() / 2;
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < height; ++x) {
+            int dx = x - radius;
+            int dy = y - radius;
+            if (dx * dx + dy * dy <= radius * radius) {
+                image.SetRGB(x, y, image.GetRed(cx + dx, cy + dy), image.GetGreen(cx + dx, cy + dy), image.GetBlue(cx + dx, cy + dy));
+                image.SetAlpha(x, y, 255);
+            }
+            else {
+                image.SetRGB(x, y, 38, 38, 41);
+                image.SetAlpha(x, y, 0);
+            }
+        }
+    }
+
+    return this->insert(bitmap_key, wxImage_to_wxBitmap_with_alpha(std::move(image)));
+}
+
+
 NSVGimage* BitmapCache::nsvgParseFromFileWithReplace(const char* filename, const char* units, float dpi, const std::map<std::string, std::string>& replaces)
 {
     std::string str;

@@ -480,7 +480,8 @@ void GCodeProcessor::TimeProcessor::post_process(const std::string& filename, st
                     PrintEstimatedStatistics::ETimeMode mode = static_cast<PrintEstimatedStatistics::ETimeMode>(i);
                     if (mode == PrintEstimatedStatistics::ETimeMode::Normal || machine.enabled) {
                         char buf[128];
-                        if (!s_IsQDTPrinter) {
+                        //w30
+                        if (s_IsQDTPrinter) {
                             // Klipper estimator
                             sprintf(buf, "; estimated printing time (normal mode) = %s\n",
                                 get_time_dhms(machine.time).c_str());

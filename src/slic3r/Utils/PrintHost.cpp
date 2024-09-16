@@ -27,7 +27,8 @@ using boost::optional;
 using Slic3r::GUI::PrintHostQueueDialog;
 
 namespace Slic3r {
-
+//y36
+bool PrintHost::m_isStop = false;
 
 PrintHost::~PrintHost() {}
 
@@ -95,7 +96,6 @@ std::string PrintHost::get_status(wxString &msg, const wxString &buttonText, con
     // Since the request is performed synchronously here,
     // it is ok to refer to `msg` from within the closure
     const std::string name = buttonText.ToStdString();
-
     bool res = true;
     std::string print_state = "standby";
     std::string m_host = ip.ToStdString();
@@ -105,7 +105,9 @@ std::string PrintHost::get_status(wxString &msg, const wxString &buttonText, con
 
     auto http = Http::get(std::move(url));
     // set_auth(http);
-    http.on_error([&](std::string body, std::string error, unsigned status) {
+    //y36
+    http.timeout_connect(4)
+        .on_error([&](std::string body, std::string error, unsigned status) {
             BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error getting version: %2%, HTTP %3%, body: `%4%`") % name % error % status %
                                             body;
             print_state = "offline";
@@ -166,7 +168,8 @@ float PrintHost::get_progress(wxString &msg, const wxString &buttonText, const w
 
     auto http = Http::get(std::move(url));
     // set_auth(http);
-    http.on_error([&](std::string body, std::string error, unsigned status) {
+    http.timeout_connect(4)
+        .on_error([&](std::string body, std::string error, unsigned status) {
             BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error getting version: %2%, HTTP %3%, body: `%4%`") % name % error % status %
                                             body;
             res = false;

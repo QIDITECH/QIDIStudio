@@ -32,6 +32,9 @@ PrinterWebView::PrinterWebView(wxWindow *parent) : wxPanel(parent, wxID_ANY, wxD
     // y21
     wxGetApp().get_login_info();
     m_isloginin = wxGetApp().is_QIDILogin();
+    //y33
+    if (m_isloginin)
+        m_user_head_name = wxGetApp().app_config->get("user_head_name");
 
     m_select_type  = "null";
 
@@ -84,7 +87,11 @@ PrinterWebView::PrinterWebView(wxWindow *parent) : wxPanel(parent, wxID_ANY, wxD
             //y23 //y24
             if (into_u8(m_web).find("missing_connection") != std::string::npos)
             {
+                //y30
                 wxString url = wxString::Format("file://%s/web/qidi/missing_connection.html", from_u8(resources_dir()));
+                wxString strlang = wxGetApp().current_language_code_safe();
+                if (strlang != "")
+                    url = wxString::Format("file://%s/web/qidi/missing_connection.html?lang=%s", from_u8(resources_dir()), strlang);
                 load_disconnect_url(url);
             }
         } else {
@@ -93,7 +100,11 @@ PrinterWebView::PrinterWebView(wxWindow *parent) : wxPanel(parent, wxID_ANY, wxD
             //y23 //y24
             if (into_u8(m_web).find("missing_connection") != std::string::npos)
             {
+                //y30
                 wxString url = wxString::Format("file://%s/web/qidi/link_missing_connection.html", from_u8(resources_dir()));
+                wxString strlang = wxGetApp().current_language_code_safe();
+                if (strlang != "")
+                    url = wxString::Format("file://%s/web/qidi/link_missing_connection.html?lang=%s", from_u8(resources_dir()), strlang);
                 load_disconnect_url(url);
             }
         }
@@ -158,11 +169,12 @@ PrinterWebView::PrinterWebView(wxWindow *parent) : wxPanel(parent, wxID_ANY, wxD
 wxBoxSizer *PrinterWebView::init_login_bar(wxPanel *Panel)
 {
     wxBoxSizer *buttonsizer = new wxBoxSizer(wxHORIZONTAL);
-
+    //y33
     if (m_isSimpleMode)
-        staticBitmap = new wxStaticBitmap(Panel, wxID_ANY, ScalableBitmap(this, "user_dark_tiny", 40).bmp());
-    else
-        staticBitmap = new wxStaticBitmap(Panel, wxID_ANY, ScalableBitmap(this, "user_dark", 60).bmp());
+        staticBitmap = new wxStaticBitmap(Panel, wxID_ANY, create_scaled_bitmap_of_login(m_user_head_name, this, 40));
+    else 
+        staticBitmap = new wxStaticBitmap(Panel, wxID_ANY, create_scaled_bitmap_of_login(m_user_head_name, this, 60));
+
 
     StateColor  text_color(std::pair<wxColour, int>(wxColour(57, 57, 61), StateColor::Disabled),
                           std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Pressed),
@@ -323,6 +335,7 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
                      wxString    msg;
                      std::string state    = "standby";
                      float       progress = 0;
+                     //y34
                      state                = printhost->get_status(msg, device.device_name, device.url);
                      BOOST_LOG_TRIVIAL(error) << ("State:", state);
                      if ((m_net_buttons[count]->GetStateText()).ToStdString() != state)
@@ -353,100 +366,108 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
          m_machine.clear();
          m_exit_host.clear();
          //ShowLocalPrinterButton();
-         PresetBundle &preset_bundle = *wxGetApp().preset_bundle;
-         PhysicalPrinterCollection &ph_printers = preset_bundle.physical_printers;
+         PresetBundle& preset_bundle = *wxGetApp().preset_bundle;
+         PhysicalPrinterCollection& ph_printers = preset_bundle.physical_printers;
          std::set<std::string> qidi_printers = preset_bundle.get_vendors();
          std::string actice_url = "";
          for (PhysicalPrinterCollection::ConstIterator it = ph_printers.begin(); it != ph_printers.end(); ++it) {
-            std::string host = (it->config.opt_string("print_host"));
-            std::string preset_name = (it->config.opt_string("preset_name"));
-            bool isQIDI_printer = false;
-            if(qidi_printers.find(preset_name) != qidi_printers.end())
-                isQIDI_printer = true;
-   
-            std::string full_name = it->get_full_name(preset_name);
-            std::string model_id;
-            if (isQIDI_printer)
-                model_id = preset_name;
-            else
-                model_id = "my_printer";
-            const DynamicPrintConfig *cfg_t = &(it->config);
+             std::string host = (it->config.opt_string("print_host"));
+             std::string preset_name = (it->config.opt_string("preset_name"));
+             bool isQIDI_printer = false;
+             if (qidi_printers.find(preset_name) != qidi_printers.end())
+                 isQIDI_printer = true;
 
-            const auto        opt       = cfg_t->option<ConfigOptionEnum<PrintHostType>>("host_type");
-            auto       host_type = opt != nullptr ? opt->value : htOctoPrint;
-            
-            // y13
-            bool is_selected = false;
-            if (!select_machine_name.empty())
-                if (select_machine_name == it->get_short_name(full_name))
-                {
-                    is_selected = true;
-                    select_machine_name = "";
-                }
-                    
+             std::string full_name = it->get_full_name(preset_name);
+             std::string model_id;
+             if (isQIDI_printer)
+                 model_id = preset_name;
+             else
+                 model_id = "my_printer";
+             const DynamicPrintConfig* cfg_t = &(it->config);
 
-            //BOOST_LOG_TRIVIAL(error) << preset_name;
-            //BOOST_LOG_TRIVIAL(error) << full_name;
-            //BOOST_LOG_TRIVIAL(error) << (it->get_short_name(full_name));
-            //BOOST_LOG_TRIVIAL(error) << (it->get_preset_name(full_name));
-            //BOOST_LOG_TRIVIAL(error) << model_id;
-            AddButton((it->get_short_name(full_name)), host, model_id, full_name, is_selected,
-                    (host_type == htOctoPrint));
-            m_machine.insert(std::make_pair((it->get_short_name(full_name)), *cfg_t));
-            //y25
-            m_exit_host.insert(host);
+             const auto        opt = cfg_t->option<ConfigOptionEnum<PrintHostType>>("host_type");
+             auto       host_type = opt != nullptr ? opt->value : htOctoPrint;
+
+             // y13
+             bool is_selected = false;
+             if (!select_machine_name.empty())
+                 if (select_machine_name == it->get_short_name(full_name))
+                 {
+                     is_selected = true;
+                     select_machine_name = "";
+                 }
+
+
+             //BOOST_LOG_TRIVIAL(error) << preset_name;
+             //BOOST_LOG_TRIVIAL(error) << full_name;
+             //BOOST_LOG_TRIVIAL(error) << (it->get_short_name(full_name));
+             //BOOST_LOG_TRIVIAL(error) << (it->get_preset_name(full_name));
+             //BOOST_LOG_TRIVIAL(error) << model_id;
+             AddButton((it->get_short_name(full_name)), host, model_id, full_name, is_selected,
+                 (host_type == htOctoPrint));
+             m_machine.insert(std::make_pair((it->get_short_name(full_name)), *cfg_t));
+             //y25
+             m_exit_host.insert(host);
          }
- #if QDT_RELEASE_TO_PUBLIC
+#if QDT_RELEASE_TO_PUBLIC
          auto m_devices = wxGetApp().get_devices();
 
-         for (const auto &device : m_devices) {
+         for (const auto& device : m_devices) {
              AddNetButton(device);
          }
- #endif
- 
-        //y23 //y28
-         if (webisNetMode == isNetWeb) {
-             ShowNetPrinterButton();
-             for (DeviceButton* button : m_net_buttons) {
-                 if (m_ip == (button->getIPLabel())) {
-                     button->SetIsSelected(true);
-                     wxCommandEvent event(wxEVT_BUTTON, button->GetId());
-                     wxPostEvent(button, event);
-                     break;
-                 }
-             }
-             toggleBar->SetValue(true);
-             m_isNetMode = true;
-         } else if (webisNetMode == isLocalWeb) {
-             ShowLocalPrinterButton();
-             for (DeviceButton* button : m_buttons) {
-                 if (m_ip == (button->getIPLabel())) {
-                     button->SetIsSelected(true);
-                     break;
-                 }
-             }
-             toggleBar->SetValue(false);
-             m_isNetMode = false;
-         }
-         else
-         {
-             if (m_isNetMode)
-             {
-                 ShowNetPrinterButton();
-                 wxString host = wxString::Format("file://%s/web/qidi/link_missing_connection.html", from_u8(resources_dir()));
-                 load_disconnect_url(host);
-             }
-             else
-             {
-                 ShowLocalPrinterButton();
-                 wxString host = wxString::Format("file://%s/web/qidi/missing_connection.html", from_u8(resources_dir()));
-                 load_disconnect_url(host);
-             }
-         }
+#endif
          CreatThread();
-         UpdateState();
-         UpdateLayout();
      }
+    //y23 //y28 //y31
+    if (webisNetMode == isNetWeb) {
+        ShowNetPrinterButton();
+        for (DeviceButton* button : m_net_buttons) {
+            if (button->getIPLabel().find(m_ip) != std::string::npos) {
+                button->SetIsSelected(true);
+                wxCommandEvent event(wxEVT_BUTTON, button->GetId());
+                wxPostEvent(button, event);
+                break;
+            }
+        }
+        toggleBar->SetValue(true);
+        m_isNetMode = true;
+        wxGetApp().app_config->set("machine_list_net", "1");
+    } else if (webisNetMode == isLocalWeb) {
+        ShowLocalPrinterButton();
+        for (DeviceButton* button : m_buttons) {
+            if (button->getIPLabel().find(m_ip) != std::string::npos) {
+                button->SetIsSelected(true);
+                break;
+            }
+        }
+        toggleBar->SetValue(false);
+        m_isNetMode = false;
+        wxGetApp().app_config->set("machine_list_net", "0");
+    }
+    else
+    {
+        wxString strlang = wxGetApp().current_language_code_safe();
+        if (m_isNetMode)
+        {
+        //y30
+            ShowNetPrinterButton();
+            wxString url = wxString::Format("file://%s/web/qidi/link_missing_connection.html", from_u8(resources_dir()));
+            if(strlang != "")
+                url = wxString::Format("file://%s/web/qidi/link_missing_connection.html?lang=%s", from_u8(resources_dir()), strlang);
+            load_disconnect_url(url);
+        }
+        else
+        {
+            ShowLocalPrinterButton();
+        //y30
+            wxString url = wxString::Format("file://%s/web/qidi/missing_connection.html", from_u8(resources_dir()));
+            if (strlang != "")
+                url = wxString::Format("file://%s/web/qidi/missing_connection.html?lang=%s", from_u8(resources_dir()), strlang);
+            load_disconnect_url(url);
+        }
+    }
+    UpdateState();
+    UpdateLayout();
  }
  void PrinterWebView::SetLoginStatus(bool status) { 
      m_isloginin = status;
@@ -460,6 +481,8 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
          wxString wxname = from_u8(name);
          login_button->SetLabel(wxname);
          std::vector<Device> m_devices = m_qidinetwork.get_device_list(msg);
+         //y33
+         m_user_head_name = wxGetApp().app_config->get("user_head_name");
          SetPresetChanged(true);
  #endif
          m_isloginin = true;
@@ -473,8 +496,10 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
         // y28
          if (webisNetMode == isNetWeb)
              webisNetMode = isDisconnect;
+        m_user_head_name = "";
          SetPresetChanged(true);
          UpdateState();
+         wxGetApp().get_login_info();
      }
  }
 
@@ -596,7 +621,28 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
      machine_button->SetIsSimpleMode(m_isSimpleMode);
 
      machine_button->Bind(wxEVT_BUTTON, [this, device](wxCommandEvent &event) {
-         std::string formattedHost = "http://" + device.url;
+        //y34 //y35
+         std::string formattedHost;
+         if(wxGetApp().app_config->get("dark_color_mode") == "1")
+            formattedHost = device.link_url + "&theme=dark";
+         else
+             formattedHost = device.link_url + "&theme=light";
+
+         std::string formattedHost1 = "http://fluidd_" + formattedHost;
+         std::string formattedHost2 = "http://fluidd2_" + formattedHost;
+         if (formattedHost1 == m_web || formattedHost2 == m_web)
+             return;
+
+         if (m_isfluidd_1)
+         {
+            formattedHost = "http://fluidd_" + formattedHost;
+            m_isfluidd_1 = false;
+         }
+         else
+         {
+             formattedHost = "http://fluidd2_" + formattedHost;
+             m_isfluidd_1 = true;
+         }
          load_net_url(formattedHost, device.local_ip);
      });
 
@@ -700,7 +746,8 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
      m_isSimpleMode = !m_isSimpleMode;
      if (!m_isSimpleMode) {
          text_static->Show();
-         staticBitmap->SetBitmap(create_scaled_bitmap("user_dark", this, 60));
+         //y33
+         staticBitmap->SetBitmap(create_scaled_bitmap_of_login(m_user_head_name, this, 60));
          login_button->SetIsSimpleMode(m_isSimpleMode);
          wxGetApp().app_config->set("machine_list_minification", "0");
          toggleBar->SetSize(327);
@@ -715,7 +762,8 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
          }
      } else {
          text_static->Hide();
-         staticBitmap->SetBitmap(create_scaled_bitmap("user_dark_tiny", this, 40));
+         //y33
+        staticBitmap->SetBitmap(create_scaled_bitmap_of_login(m_user_head_name, this, 40));
          login_button->SetIsSimpleMode(m_isSimpleMode);
 
          wxGetApp().app_config->set("machine_list_minification", "1");
@@ -952,6 +1000,11 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
              button->Refresh();
          }
      }
+     //y33
+     if (!m_isSimpleMode) 
+        staticBitmap->SetBitmap(create_scaled_bitmap_of_login(m_user_head_name, this, 60));
+     else 
+        staticBitmap->SetBitmap(create_scaled_bitmap_of_login(m_user_head_name, this, 40));
  }
  void PrinterWebView::OnScrollup(wxScrollWinEvent &event)
  {
@@ -1002,7 +1055,8 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
      }
 
      for (DeviceButton *button : m_buttons) {
-         if (url == (button->getIPLabel()))
+        //y31
+         if ((button->getIPLabel()).find(m_ip) != std::string::npos)
              button->SetIsSelected(true);
          else
              button->SetIsSelected(false);
@@ -1011,12 +1065,12 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
  }
  void PrinterWebView::load_net_url(std::string url, std::string ip)
  {
-    if (m_browser == nullptr || m_web == url)
+     if (m_browser == nullptr || m_web == url)
         return;
-
     // y13
     m_web = url;
     m_ip = ip;
+    //y34
     m_browser->LoadURL(m_web);
     //y28
     webisNetMode = isNetWeb;

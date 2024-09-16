@@ -81,6 +81,9 @@ static const float g_min_purge_volume = 100.f;
 static const float g_purge_volume_one_time = 135.f;
 static const int g_max_flush_count = 4;
 static const size_t g_max_label_object = 64;
+//1.9.5
+static const double smooth_speed_step = 10;
+static const double not_split_length = scale_(1.0);
 
 Vec2d travel_point_1;
 Vec2d travel_point_2;
@@ -588,7 +591,8 @@ static std::vector<Vec2d> get_path_of_change_filament(const Print& print)
         check_add_eol(toolchange_gcode_str);
 
         //OrcaSlicer: set new PA for new filament. QDS: never use for QIDI Printer
-        if (!gcodegen.is_QDT_Printer() && gcodegen.config().enable_pressure_advance.get_at(new_extruder_id))
+        //w30
+        if ( gcodegen.config().enable_pressure_advance.get_at(new_extruder_id))
             gcode += gcodegen.writer().set_pressure_advance(gcodegen.config().pressure_advance.get_at(new_extruder_id));
 
         // A phony move to the end position at the wipe tower.
@@ -2178,7 +2182,8 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
     {
         // QDS: open spaghetti detector
         // if (print.config().spaghetti_detector.value)
-        if (print.is_QDT_Printer()) file.write("M981 S1 P20000 ;open spaghetti detector\n");
+        //w30
+        //if (print.is_QDT_Printer()) file.write("M981 S1 P20000 ;open spaghetti detector\n");
 
         // Do all objects for each layer.
         if (print.config().print_sequence == PrintSequence::ByObject && !has_wipe_tower) {
@@ -2240,12 +2245,13 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
                 this->process_layers(print, tool_ordering, collect_layers_to_print(object), *print_object_instance_sequential_active - object.instances().data(), file,
                                      prime_extruder);
                 // QDS: close powerlost recovery
-                {
-                    if (m_second_layer_things_done && print.is_QDT_Printer()) {
-                        file.write("; close powerlost recovery\n");
-                        file.write("M1003 S0\n");
-                    }
-                }
+                //w30
+                //{
+                //    if (m_second_layer_things_done && print.is_QDT_Printer()) {
+                //        file.write("; close powerlost recovery\n");
+                //        file.write("M1003 S0\n");
+                //    }
+                //}
 #ifdef HAS_PRESSURE_EQUALIZER
                 if (m_pressure_equalizer) file.write(m_pressure_equalizer->process("", true));
 #endif /* HAS_PRESSURE_EQUALIZER */
@@ -2311,12 +2317,13 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
             // and export G-code into file.
             this->process_layers(print, tool_ordering, print_object_instances_ordering, layers_to_print, file);
             // QDS: close powerlost recovery
-            {
-                if (m_second_layer_things_done && print.is_QDT_Printer()) {
-                    file.write("; close powerlost recovery\n");
-                    file.write("M1003 S0\n");
-                }
-            }
+            //w30
+            //{
+            //    if (m_second_layer_things_done && print.is_QDT_Printer()) {
+            //        file.write("; close powerlost recovery\n");
+            //        file.write("M1003 S0\n");
+            //    }
+            //}
 #ifdef HAS_PRESSURE_EQUALIZER
             if (m_pressure_equalizer) file.write(m_pressure_equalizer->process("", true));
 #endif /* HAS_PRESSURE_EQUALIZER */
@@ -2343,8 +2350,9 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
     //QDS: close spaghetti detector
     //Note: M981 is also used to tell xcam the last layer is finished, so we need always send it even if spaghetti option is disabled.
     //if (print.config().spaghetti_detector.value)
-    if (print.is_QDT_Printer())
-        file.write("M981 S0 P20000 ; close spaghetti detector\n");
+    //w30
+    //if (print.is_QDT_Printer())
+    //    file.write("M981 S0 P20000 ; close spaghetti detector\n");
 
     // adds tag for processor
     file.write_format(";%s%s\n", GCodeProcessor::reserved_tag(GCodeProcessor::ETags::Role).c_str(), ExtrusionEntity::role_to_string(erCustom).c_str());
@@ -3209,18 +3217,19 @@ GCode::LayerResult GCode::process_layer(
             double acceleration = m_config.initial_layer_acceleration.value;
             gcode += m_writer.set_acceleration((unsigned int)floor(acceleration + 0.5));
         }
-
-        if (m_config.default_jerk.value > 0 && m_config.initial_layer_jerk.value > 0 && !this->is_QDT_Printer())
+        //w30
+        if (m_config.default_jerk.value > 0 && m_config.initial_layer_jerk.value > 0 && this->is_QDT_Printer())
             gcode += m_writer.set_jerk_xy(m_config.initial_layer_jerk.value);
     }
 
     if (! first_layer && ! m_second_layer_things_done) {
         //QDS: open powerlost recovery
         {
-            if (print.is_QDT_Printer()) {
-                gcode += "; open powerlost recovery\n";
-                gcode += "M1003 S1\n";
-            }
+            //w30
+            //if (print.is_QDT_Printer()) {
+            //    gcode += "; open powerlost recovery\n";
+            //    gcode += "M1003 S1\n";
+            //}
         }
         // QDS: open first layer inspection at second layer
         if (print.config().scan_first_layer.value) {
@@ -3236,8 +3245,8 @@ GCode::LayerResult GCode::process_layer(
             double acceleration = m_config.default_acceleration.value;
             gcode += m_writer.set_acceleration((unsigned int)floor(acceleration + 0.5));
         }
-
-        if (m_config.default_jerk.value > 0 && m_config.initial_layer_jerk.value > 0 && !this->is_QDT_Printer())
+        //w30
+        if (m_config.default_jerk.value > 0 && m_config.initial_layer_jerk.value > 0 && this->is_QDT_Printer())
             gcode += m_writer.set_jerk_xy(m_config.default_jerk.value);
 
         // Transition from 1st to 2nd layer. Adjust nozzle temperatures as prescribed by the nozzle dependent
@@ -3623,7 +3632,8 @@ GCode::LayerResult GCode::process_layer(
                 std::string temp_start_str;
                 if (m_enable_label_object) {
                     std::string start_str = std::string("; start printing object, unique label id: ") + std::to_string(instance_to_print.label_object_id) + "\n";
-                    if (print.is_QDT_Printer()) {
+                    //w30
+                    if (!print.is_QDT_Printer()) {
                         start_str += ("M624 " + _encode_label_ids_to_base64({ instance_to_print.label_object_id }));
                         start_str += "\n";
                     } else {
@@ -3731,8 +3741,9 @@ GCode::LayerResult GCode::process_layer(
                             gcode += this->retract(false, false, LiftType::NormalLift);
                             if (!temp_start_str.empty() && m_writer.empty_object_start_str()) {
                                 std::string end_str = std::string("; stop printing object, unique label id: ") + std::to_string(instance_to_print.label_object_id) + "\n";
-                                if (print.is_QDT_Printer())
-                                    end_str += "M625\n";
+                                //w30
+                                //if (print.is_QDT_Printer())
+                                //    end_str += "M625\n";
                                 gcode += end_str;
                             }
 
@@ -3760,8 +3771,9 @@ GCode::LayerResult GCode::process_layer(
                             gcode += this->retract(false, false, LiftType::NormalLift);
                             if (!temp_start_str.empty() && m_writer.empty_object_start_str()) {
                                 std::string end_str = std::string("; stop printing object, unique label id: ") + std::to_string(instance_to_print.label_object_id) + "\n";
-                                if (print.is_QDT_Printer())
-                                    end_str += "M625\n";
+                                //w30
+                                //if (print.is_QDT_Printer())
+                                //    end_str += "M625\n";
                                 gcode += end_str;
                             }
 
@@ -3791,8 +3803,9 @@ GCode::LayerResult GCode::process_layer(
                     m_writer.set_object_start_str("");
                 } else if (m_enable_label_object) {
                     std::string end_str = std::string("; stop printing object, unique label id: ") + std::to_string(instance_to_print.label_object_id) + "\n";
-                    if (print.is_QDT_Printer())
-                        end_str += "M625\n";
+                    //w30
+                    //if (print.is_QDT_Printer())
+                    //    end_str += "M625\n";
                     m_writer.set_object_end_str(end_str);
                 }
                 //Orca's implementation for skipping object, for klipper firmware printer only
@@ -4014,6 +4027,17 @@ static bool has_overhang_path_on_slope(const ExtrusionLoop &loop, double slope_l
     return false;
 }
 
+//1.9.5
+static std::map<int, std::string> overhang_speed_key_map =
+{
+    {1, "overhang_1_4_speed"},
+    {2, "overhang_2_4_speed"},
+    {3, "overhang_3_4_speed"},
+    {4, "overhang_4_4_speed"},
+    {5, "overhang_totally_speed"},
+    {6, "bridge_speed"},
+};
+
 double GCode::get_path_speed(const ExtrusionPath &path)
 {
     double min_speed = double(m_config.slow_down_min_speed.get_at(m_writer.extruder()->id()));
@@ -4033,7 +4057,10 @@ double GCode::get_path_speed(const ExtrusionPath &path)
             new_speed        = get_overhang_degree_corr_speed(speed, path.overhang_degree);
             speed            = new_speed == 0.0 ? speed : new_speed;
         }
-    } else if (path.role() == erOverhangPerimeter || path.role() == erBridgeInfill || path.role() == erSupportTransition) {
+    // 1.9.5
+    } else if (path.role() == erOverhangPerimeter && path.overhang_degree == 5)
+        speed = m_config.get_abs_value("overhang_totally_speed"); 
+    else if (path.role() == erOverhangPerimeter || path.role() == erBridgeInfill || path.role() == erSupportTransition) {
         speed = m_config.get_abs_value("bridge_speed");
     }
     auto _mm3_per_mm = path.mm3_per_mm * double(m_curr_print->calib_mode() == CalibMode::Calib_Flow_Rate ? this->config().print_flow_ratio.value : 1);
@@ -4156,6 +4183,10 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
             // QDS: slowdown speed to improve seam, to be fix, cooling need to be apply correctly
             //new_loop.target_speed = get_path_speed(new_loop.starts.back());
             //new_loop.slowdown_slope_speed();
+            //1.9.5
+            // QDS: smooth speed of discontinuity areas
+            if (m_config.detect_overhang_wall && m_config.smooth_speed_discontinuity_area && (loop.role() == erExternalPerimeter || loop.role() == erPerimeter))
+                smooth_speed_discontinuity_area(new_loop.paths);
             // Then extrude it
             for (const auto &p : new_loop.get_all_paths()) {
                 //w16
@@ -4179,6 +4210,10 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
     }
 
     if (!enable_seam_slope || slope_has_overhang) {
+        //1.9.5
+        // QDS: smooth speed of discontinuity areas
+        if (m_config.detect_overhang_wall && m_config.smooth_speed_discontinuity_area && (loop.role() == erExternalPerimeter || loop.role() == erPerimeter))
+            smooth_speed_discontinuity_area(paths);
         for (ExtrusionPaths::iterator path = paths.begin(); path != paths.end(); ++path) {
             //w16
             m_resonance_avoidance = m_config.resonance_avoidance;
@@ -4190,7 +4225,8 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
     if (!this->on_first_layer()) {
         // reset acceleration
         gcode += m_writer.set_acceleration((unsigned int) (m_config.default_acceleration.value + 0.5));
-        if (!this->is_QDT_Printer())
+        //w30
+        if (this->is_QDT_Printer())
             gcode += m_writer.set_jerk_xy(m_config.default_jerk.value);
     }
 
@@ -4275,7 +4311,8 @@ std::string GCode::extrude_multi_path(ExtrusionMultiPath multipath, std::string 
     if (!this->on_first_layer()) {
         // reset acceleration
         gcode += m_writer.set_acceleration((unsigned int) floor(m_config.default_acceleration.value + 0.5));
-        if (!this->is_QDT_Printer())
+        //w30
+        if (this->is_QDT_Printer())
             gcode += m_writer.set_jerk_xy(m_config.default_jerk.value);
     }
     return gcode;
@@ -4306,7 +4343,8 @@ std::string GCode::extrude_path(ExtrusionPath path, std::string description, dou
     if (!this->on_first_layer()) {
         // reset acceleration
         gcode += m_writer.set_acceleration((unsigned int) floor(m_config.default_acceleration.value + 0.5));
-        if (!this->is_QDT_Printer())
+        //w30
+        if (this->is_QDT_Printer())
             gcode += m_writer.set_jerk_xy(m_config.default_jerk.value);
     }
     return gcode;
@@ -4463,14 +4501,20 @@ void GCode::GCodeOutputStream::write_format(const char* format, ...)
     va_end(args);
 }
 
-static std::map<int, std::string> overhang_speed_key_map =
+//1.9.5
+// QDS: f(x)=2x^2
+double GCode::mapping_speed(double dist)
 {
-    {1, "overhang_1_4_speed"},
-    {2, "overhang_2_4_speed"},
-    {3, "overhang_3_4_speed"},
-    {4, "overhang_4_4_speed"},
-    {5, "bridge_speed"},
-};
+    if (dist <= 0)
+        return 0;
+    return this->config().smooth_coefficient * pow(dist, 2);
+}
+
+double GCode::get_speed_coor_x(double speed){
+
+    double temp = speed / this->config().smooth_coefficient;
+    return sqrt(temp);
+}
 
 double GCode::get_overhang_degree_corr_speed(float normal_speed, double path_degree) {
 
@@ -4493,6 +4537,238 @@ double GCode::get_overhang_degree_corr_speed(float normal_speed, double path_deg
 
     double speed_out = lower_speed_bound + (upper_speed_bound - lower_speed_bound) * (path_degree - lower_degree_bound);
     return speed_out;
+}
+
+//1.9.5
+static bool need_smooth_speed(const ExtrusionPath &other_path, const ExtrusionPath &this_path)
+{
+    if (this_path.smooth_speed - other_path.smooth_speed > smooth_speed_step)
+        return true;
+
+    return false;
+}
+
+static void append_split_line(bool split_from_left, Polyline &polyline, Point p1, Point p2)
+{
+    if (split_from_left) {
+        polyline.append(p1);
+        polyline.append(p2);
+    } else {
+        polyline.append(p2);
+        polyline.append(p1);
+    }
+}
+
+ExtrusionPaths GCode::split_and_mapping_speed(double &other_path_v, double &final_v, ExtrusionPath &this_path, double max_smooth_length, bool split_from_left)
+{
+    ExtrusionPaths splited_path;
+    if (this_path.length() <= 0 || this_path.polyline.points.size() < 2) {
+        return splited_path;
+    }
+
+    // reverse if this slowdown the speed
+    Polyline input_polyline = this_path.polyline;
+    if (!split_from_left)
+        std::reverse(input_polyline.begin(), input_polyline.end());
+
+    double this_path_x = scale_(get_speed_coor_x(final_v));
+    double x_base      = scale_(get_speed_coor_x(other_path_v));
+
+    double smooth_length = this_path_x - x_base;
+
+    // this length not support to get final v, adjust final v
+    if (smooth_length > max_smooth_length)
+        final_v = mapping_speed(unscale_(x_base + max_smooth_length));
+
+    double max_step_length = scale_(1.0); // cut path if the path too long
+    double min_step_length = scale_(0.4); // cut step
+
+    double smooth_length_count = 0;
+    double split_line_speed    = 0;
+    Point  line_start_pt       = input_polyline.points.front();
+    Point  line_end_pt         = input_polyline.points[1];
+    bool   get_next_line       = false;
+    size_t end_pt_idx          = 1;
+
+    auto insert_speed = [this](double line_lenght, double &pos_x, double &smooth_length_count, double target_v) {
+        pos_x += line_lenght;
+        double pos_x_speed = mapping_speed(unscale_(pos_x));
+        smooth_length_count += line_lenght;
+
+        if (pos_x_speed > target_v)
+            pos_x_speed = target_v;
+
+        return pos_x_speed;
+    };
+
+    while (end_pt_idx < input_polyline.points.size()) {
+        // move to next line
+        if (get_next_line) {
+            line_start_pt = input_polyline.points[end_pt_idx - 1];
+            line_end_pt   = input_polyline.points[end_pt_idx];
+        }
+
+        Polyline polyline;
+        Line     line(line_start_pt, line_end_pt);
+
+        // split polyline and set speed
+        if (line.length() < max_step_length || line.length() - min_step_length < min_step_length / 2) {
+            split_line_speed = insert_speed(line.length(), x_base, smooth_length_count, final_v);
+            append_split_line(split_from_left, polyline, line_start_pt, line_end_pt);
+            end_pt_idx++;
+            get_next_line = true;
+        } else {
+            // path is too long, split it
+            double rate     = min_step_length / line.length();
+            Point  insert_p = line.a + (line.b - line.a) * rate;
+
+            split_line_speed = insert_speed(min_step_length, x_base, smooth_length_count, final_v);
+            append_split_line(split_from_left, polyline, line_start_pt, insert_p);
+
+            line_start_pt = insert_p;
+            get_next_line = false;
+        }
+
+        ExtrusionPath path_step(polyline, this_path);
+        path_step.smooth_speed = split_line_speed;
+        splited_path.push_back(std::move(path_step));
+
+        // stop condition
+        if (split_line_speed >= final_v) break;
+    }
+
+    if (!split_from_left)
+        std::reverse(input_polyline.points.begin(), input_polyline.points.end());
+    // get_remain_path
+    if (end_pt_idx < input_polyline.points.size()) {
+        // split at index or split at corr length
+        Polyline p1, p2;
+        if( !split_from_left ) {
+            input_polyline.split_at_length(input_polyline.length() - smooth_length_count, &p1, &p2);
+            this_path.polyline = p1;
+        } else {
+            input_polyline.split_at_length(smooth_length_count, &p1, &p2);
+            this_path.polyline = p2;
+        }
+
+    } else {
+        this_path.polyline.clear();
+    }
+
+    // reverse paths if this start from right
+    if (!split_from_left)
+        std::reverse(splited_path.begin(), splited_path.end());
+
+    return splited_path;
+}
+
+ExtrusionPaths GCode::merge_same_speed_paths(const ExtrusionPaths &paths)
+{
+    ExtrusionPaths output_paths;
+
+    size_t path_idx = 0;
+    int merge_start = 0;
+    ExtrusionPath merge_path;
+    for (; path_idx < paths.size(); path_idx++) {
+        ExtrusionPath path = paths[path_idx];
+        path.smooth_speed  = get_path_speed(path);
+
+        // 100% overhang speed will not to set smooth speed
+        if (path.role() == erOverhangPerimeter) {
+            if (!merge_path.empty()) {
+                output_paths.push_back(std::move(merge_path));
+                merge_path.polyline.clear();
+            }
+            output_paths.push_back(std::move(path));
+            merge_start = path_idx + 1;
+            continue;
+        }
+
+        if (merge_start == path_idx) {
+            merge_path = path;
+            continue;
+        }
+
+        // merge path with same speed
+        if (merge_path.smooth_speed == path.smooth_speed) {
+            merge_path.polyline.append(path.polyline);
+        } else {
+            output_paths.push_back(std::move(merge_path));
+            merge_path = path;
+        }
+    }
+
+    if (!merge_path.empty() && merge_start < paths.size())
+        output_paths.push_back(std::move(merge_path));
+
+    return output_paths;
+}
+
+ExtrusionPaths GCode::set_speed_transition(ExtrusionPaths &paths)
+{
+    ExtrusionPaths interpolated_paths;
+    for (int path_idx = 0; path_idx < paths.size(); path_idx++) {
+        // update path
+        ExtrusionPath &path = paths[path_idx];
+
+        double this_path_speed = 0;
+        // 100% overhang speed will not to set smooth speed
+        if (path.role() == erOverhangPerimeter) {
+            interpolated_paths.push_back(path);
+            continue;
+        }
+
+        bool smooth_left_path  = false;
+        bool smooth_right_path = false;
+        // first line do not need to smooth speed on left
+        // prev line speed may change
+        if (path_idx > 0)
+            smooth_left_path = need_smooth_speed(paths[path_idx - 1], path);
+
+        // first line do not need to smooth speed on right
+        if (path_idx < paths.size() - 1)
+            smooth_right_path = need_smooth_speed(paths[path_idx + 1], path);
+
+        // get smooth length
+        double max_smooth_path_length = path.length();
+        if (smooth_right_path && smooth_left_path) max_smooth_path_length /= 2;
+
+        // smooth left
+        ExtrusionPaths left_split_paths;
+        if (smooth_left_path) {
+            left_split_paths = split_and_mapping_speed(paths[path_idx - 1].smooth_speed, path.smooth_speed, path, max_smooth_path_length);
+            if (!left_split_paths.empty()) interpolated_paths.insert(interpolated_paths.end(), left_split_paths.begin(), left_split_paths.end());
+            max_smooth_path_length = path.length();
+        }
+
+        // smooth right
+        ExtrusionPaths right_split_paths;
+        if (smooth_right_path) {
+            right_split_paths = split_and_mapping_speed(paths[path_idx + 1].smooth_speed, path.smooth_speed, path, max_smooth_path_length, false); }
+
+        if (!path.empty())
+            interpolated_paths.push_back(path);
+
+        if (!right_split_paths.empty())
+            interpolated_paths.insert(interpolated_paths.end(), right_split_paths.begin(), right_split_paths.end());
+    }
+
+    return interpolated_paths;
+}
+
+void GCode::smooth_speed_discontinuity_area(ExtrusionPaths &paths) {
+
+    if (paths.size() <= 1)
+        return;
+
+    //step 1 merge same speed path
+    size_t path_tail_pos = 0;
+    ExtrusionPaths prepare_paths = merge_same_speed_paths(paths);
+
+    //step 2 split path
+    ExtrusionPaths inter_paths;
+    inter_paths =set_speed_transition(prepare_paths);
+    paths = std::move(inter_paths);
 }
 
 std::string GCode::_extrude(const ExtrusionPath &path, std::string description, double speed, bool is_first_slope)
@@ -4557,7 +4833,8 @@ std::string GCode::_extrude(const ExtrusionPath &path, std::string description, 
         gcode += m_writer.set_acceleration((unsigned int)floor(acceleration + 0.5));
     }
 
-    if (m_config.default_jerk.value > 0 && !this->is_QDT_Printer()) {
+    //w30
+    if (m_config.default_jerk.value > 0 && this->is_QDT_Printer()) {
         double jerk = m_config.default_jerk.value;
         if (this->on_first_layer() && m_config.initial_layer_jerk.value > 0)
             jerk = m_config.initial_layer_jerk.value;
@@ -4588,14 +4865,20 @@ std::string GCode::_extrude(const ExtrusionPath &path, std::string description, 
     if (speed == -1) {
         if (path.role() == erPerimeter) {
             speed = m_config.get_abs_value("inner_wall_speed");
-            if (m_config.enable_overhang_speed.value) {
+            //1.9.5
+            if (m_config.detect_overhang_wall && m_config.smooth_speed_discontinuity_area && path.smooth_speed != 0)
+                speed = path.smooth_speed;
+            else if (m_config.enable_overhang_speed.value) {
                 double new_speed = 0;
                 new_speed = get_overhang_degree_corr_speed(speed, path.overhang_degree);
                 speed = new_speed == 0.0 ? speed : new_speed;
             }
         } else if (path.role() == erExternalPerimeter) {
             speed = m_config.get_abs_value("outer_wall_speed");
-            if (m_config.enable_overhang_speed.value ) {
+            //1.9.5
+            if (m_config.detect_overhang_wall && m_config.smooth_speed_discontinuity_area && path.smooth_speed != 0)
+                speed = path.smooth_speed;
+            else if (m_config.enable_overhang_speed.value ) {
                 double new_speed = 0;
                 new_speed = get_overhang_degree_corr_speed(speed, path.overhang_degree);
                 //w16
@@ -4607,6 +4890,9 @@ std::string GCode::_extrude(const ExtrusionPath &path, std::string description, 
                 }
                 speed = new_speed == 0.0 ? speed : new_speed;
             }
+        //1.9.5
+        } else if (path.role() == erOverhangPerimeter && path.overhang_degree == 5) {
+            speed = m_config.get_abs_value("overhang_totally_speed");
         } else if (path.role() == erOverhangPerimeter || path.role() == erBridgeInfill || path.role() == erSupportTransition) {
             speed = m_config.get_abs_value("bridge_speed");
         } else if (path.role() == erInternalInfill) {
@@ -4768,7 +5054,8 @@ std::string GCode::_extrude(const ExtrusionPath &path, std::string description, 
                     gcode += m_writer.extrude_to_xy(
                         this->point_to_gcode(line.b),
                         e_per_mm * line_length,
-                        comment);
+                        //w31
+                        comment, path.is_force_no_extrusion());
                 } else {
                     // Sloped extrusion
                     auto dE = e_per_mm * line_length;
@@ -4947,9 +5234,10 @@ std::string GCode::travel_to(const Point &point, ExtrusionRole role, std::string
     if (travel.size() >= 2) {
         // OrcaSlicer
         if (this->on_first_layer()) {
-            if (m_config.default_jerk.value > 0 && m_config.initial_layer_jerk.value > 0 && !this->is_QDT_Printer())
+            //w30
+            if (m_config.default_jerk.value > 0 && m_config.initial_layer_jerk.value > 0 && this->is_QDT_Printer())
                 gcode += m_writer.set_jerk_xy(m_config.initial_layer_jerk.value);
-        } else if (m_config.default_jerk.value > 0 && m_config.travel_jerk.value > 0 && !this->is_QDT_Printer())
+        } else if (m_config.default_jerk.value > 0 && m_config.travel_jerk.value > 0 && this->is_QDT_Printer())
                 gcode += m_writer.set_jerk_xy(m_config.travel_jerk.value);
 
         if (m_spiral_vase) {
@@ -5178,7 +5466,8 @@ std::string GCode::set_extruder(unsigned int extruder_id, double print_z, bool b
             check_add_eol(gcode);
         }
         //QDS: never use for QIDI Printer
-        if (!this->is_QDT_Printer() && m_config.enable_pressure_advance.get_at(extruder_id))
+        //w30
+        if (m_config.enable_pressure_advance.get_at(extruder_id))
             gcode += m_writer.set_pressure_advance(m_config.pressure_advance.get_at(extruder_id));
 
         gcode += m_writer.toolchange(extruder_id);
@@ -5368,7 +5657,8 @@ std::string GCode::set_extruder(unsigned int extruder_id, double print_z, bool b
     if (m_ooze_prevention.enable)
         gcode += m_ooze_prevention.post_toolchange(*this);
     //QDS: never use for QIDI Printer
-    if (!this->is_QDT_Printer() && m_config.enable_pressure_advance.get_at(extruder_id))
+    //w30
+    if (m_config.enable_pressure_advance.get_at(extruder_id))
         gcode += m_writer.set_pressure_advance(m_config.pressure_advance.get_at(extruder_id));
 
     return gcode;

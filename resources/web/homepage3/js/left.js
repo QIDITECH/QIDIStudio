@@ -134,13 +134,13 @@ function SetLoginInfo( strAvatar, strName )
 	
 	$("#UserName").text(strName);
 	
-    let OriginAvatar=$("#UserAvatarIcon").prop("src");
+    let OriginAvatar=$("#Login2 #UserAvatarIconLogin").prop("src");
 	if(strAvatar!=OriginAvatar && strAvatar.length != 0)
-		$("#UserAvatarIcon").prop("src",strAvatar);
-	else
 	{
-		//alert('Avatar is Same');
+		$("#Login2 #UserAvatarIconLogin").prop("src",strAvatar);
 	}
+	else
+		$("#Login2 #UserAvatarIconLogin").prop("src", "../image/userdark.png");
 	
 	$("#Login2").show();
 	$("#Login2").css("display","flex");
@@ -148,8 +148,8 @@ function SetLoginInfo( strAvatar, strName )
 
 function SetUserOffline()
 {
-	// $("#UserAvatarIcon").prop("src","../image/logo2.png");
-	// $("#UserName").text('');
+	$("#UserAvatarIconLogin").prop("src","../image/logo2.png");
+	$("#UserName").text('');
 	$("#Login2").hide();	
 	
 	$("#Login1").show();

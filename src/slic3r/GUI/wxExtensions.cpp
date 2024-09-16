@@ -465,6 +465,55 @@ wxBitmap create_scaled_bitmap(  const std::string& bmp_name_in,
     return *bmp;
 }
 
+//y33
+wxBitmap create_scaled_bitmap_of_login(const std::string& bmp_name_in,
+    wxWindow* win/* = nullptr*/,
+    const int px_cnt/* = 16*/,
+    const bool grayscale/* = false*/,
+    const std::string& new_color/* = std::string()*/, // color witch will used instead of orange
+    const bool menu_bitmap/* = false*/,
+    const bool resize/* = false*/,
+    const bool bitmap2/* = false*/,
+    const vector<std::string>& array_new_color/* = vector<std::string>*/)//used for semi transparent material)
+{
+    static Slic3r::GUI::BitmapCache cache;
+    if (bitmap2) {
+        return create_scaled_bitmap2(bmp_name_in, cache, win, px_cnt, grayscale, resize, array_new_color);
+    }
+    unsigned int width = 0;
+    unsigned int height = (unsigned int)(win->FromDIP(px_cnt) + 0.5f);
+
+    std::string bmp_name = bmp_name_in;
+
+    bool dark_mode =
+#ifdef _WIN32
+        menu_bitmap ? Slic3r::GUI::check_dark_mode() :
+#endif
+        Slic3r::GUI::wxGetApp().dark_mode();
+
+    // Try loading an SVG first, then PNG if SVG is not found:
+    wxBitmap* bmp;
+    if(!bmp_name.empty())
+        bmp = cache.load_login_png(bmp_name, width, height, grayscale, resize ? win->FromDIP(10) * 0.1f : 0.f);
+    else
+    {
+        if(px_cnt > 50)
+            bmp = cache.load_png("user_dark", width, height, grayscale, resize ? win->FromDIP(10) * 0.1f : 0.f);
+        else
+        {
+            height = (unsigned int)(win->FromDIP(40) + 0.5f);
+            bmp = cache.load_png("user_dark_tiny", width, height, grayscale, resize ? win->FromDIP(10) * 0.1f : 0.f);
+        }
+    }
+
+    if (bmp == nullptr) {
+        // Neither SVG nor PNG has been found, raise error
+        throw Slic3r::RuntimeError("Could not load bitmap: " + bmp_name);
+    }
+
+    return *bmp;
+}
+
 wxBitmap create_scaled_bitmap2(const std::string& bmp_name_in, Slic3r::GUI::BitmapCache& cache, wxWindow* win/* = nullptr*/ ,
     const int px_cnt/* = 16*/, const bool grayscale/* = false*/ , const bool resize/* = false*/ ,
     const vector<std::string>& array_new_color/* = vector<std::string>()*/) // color witch will used instead of orange

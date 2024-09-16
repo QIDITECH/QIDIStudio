@@ -96,25 +96,42 @@ void CalibrationStartPage::add_bitmap(wxWindow* parent, wxBoxSizer* m_top_sizer,
     m_images_sizer_temp = { nullptr };
 }
 void CalibrationStartPage::create_paragraph(wxWindow* parent, Label* title, std::string title_txt, Label* content, std::string content_txt) {
+
     title = new Label(this, _L(title_txt));
     title->SetFont(Label::Head_14);
     title->Wrap(FromDIP(1100));
     title->SetMinSize({ FromDIP(1100), -1 });
 
-    content = new Label(this, _L(content_txt));;
+    content = new Label(this, _L(content_txt));
     content->SetFont(Label::Body_14);
     content->Wrap(FromDIP(1100));
     content->SetMinSize({ FromDIP(1100), -1 });
     m_top_sizer->Add(title);
     m_top_sizer->Add(content);
+#ifdef __linux__
+    wxGetApp().CallAfter([this, content, title]() {
+        content->SetMinSize(content->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+        title->SetMinSize(title->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+        Layout();
+        Fit();
+        });
+#endif
     m_top_sizer->AddSpacer(PRESET_GAP);
 }
 void CalibrationStartPage::create_txt(wxWindow* parent, Label* label, std::string label_txt) {
+
     label = new Label(parent, _L(label_txt));
     label->SetFont(Label::Body_14);
     label->Wrap(FromDIP(1100));
     label->SetMinSize({ FromDIP(1100), -1 });
     m_top_sizer->Add(label);
+#ifdef __linux__
+    wxGetApp().CallAfter([this, label]() {
+        label->SetMinSize(label->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
+        Layout();
+        Fit();
+        });
+#endif
     m_top_sizer->AddSpacer(PRESET_GAP);
 }
 
@@ -182,7 +199,7 @@ void CalibrationPAStartPage::create_page(wxWindow* parent)
     std::string title_text_1 = "What is Pressure Advance Calibration ?";
     Label* content_1{ nullptr };
     std::string content_text_1 = "From fluid mechanics, when a newtonian fluid flow through a hole, it needs pressure, and the pressure is proportional to the flow rate.\
-            \nAs the filament is not rigid body, when the extruder starts to extrude, the filament will be compressed to generate the pressure. The compression process will delay the response of the real flow, as the extruder only provides the amount of the filament that needs to extrude, no extra.";
+\nAs the filament is not rigid body, when the extruder starts to extrude, the filament will be compressed to generate the pressure. The compression process will delay the response of the real flow, as the extruder only provides the amount of the filament that needs to extrude, no extra.";
     create_paragraph(parent, title_1, title_text_1, content_1, content_text_1);
 
     add_bitmap(parent, m_top_sizer, "PressureAdvanceCompare",true, 346);
@@ -192,14 +209,14 @@ void CalibrationPAStartPage::create_page(wxWindow* parent)
     std::string title_text_2 = "When to Calibrate Pressure in Advance";
     Label* content_2{ nullptr };
     std::string content_text_2 = "1.Use different brands of filaments, or the filaments are damp;\
-        \n2.The nozzle is worn or replaced with a different size nozzle;\
-        \n3.Use different printing parameters such as temperature and line width;\
-        \n4.PA calibration does not work with PETG.";
+\n2.The nozzle is worn or replaced with a different size nozzle;\
+\n3.Use different printing parameters such as temperature and line width;\
+\n4.PA calibration does not work with PETG.";
     create_paragraph(parent, title_2, title_text_2, content_2, content_text_2);
 
     Label* introduce{ nullptr };
     std::string introduce_text = "We have provided 3 calibration modes. Click the button below to enter the corresponding calibration page.\
-        \nBefore calibration, you need to select the printer you are using, the consumables that need to be calibrated, and the process. You can directly select them in the upper left corner of the current page.";
+\nBefore calibration, you need to select the printer you are using, the consumables that need to be calibrated, and the process. You can directly select them in the upper left corner of the current page.";
     create_txt(parent, introduce, introduce_text);
     
     //w29
@@ -209,18 +226,6 @@ void CalibrationPAStartPage::create_page(wxWindow* parent)
     CaliPresetTipsstartPanel* m_tips_panel = new CaliPresetTipsstartPanel(parent);
     m_top_sizer->Add(m_tips_panel, 0);
     m_top_sizer->AddSpacer(PRESET_GAP);
-
-//#ifdef __linux__
-//    wxGetApp().CallAfter([this, title_1, title_2, content_1, content_2, introduce]() {
-//        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        introduce->SetMinSize(introduce_text->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-//        Layout();
-//        Fit();
-//        });
-//#endif
 }
 //w29
 
@@ -262,38 +267,28 @@ void CalibrationFlowRateStartPage::create_page(wxWindow* parent)
     std::string title_text_1 = "When do you need Flowrate Calibration";
     Label* content_1{ nullptr };
     std::string content_text_1 = "If you notice the following signs and other uncertain reasons during printing, you may consider performing flowrate calibration:\
-            \n1. Over-Extrusion: If you see excess material on your printed object, forming blobs or zits, or the layers seem too thick, it could be a sign of over-extrusion;\
-            \n2. Under-Extrusion: This is the opposite of over - extrusion.Signs include missing layers, weak infill, or gaps in the print.This could mean that your printer isn't extruding enough filament;\
-            \n3. Poor Surface Quality : If the surface of your prints seems rough or uneven, this could be a result of an incorrect flow rate;\
-            \n4. Weak Structural Integrity : If your prints break easily or don't seem as sturdy as they should be, this might be due to under-extrusion or poor layer adhesion, which can be improved by flow rate calibration;\
-            \n5. When using third-party filaments";
+\n1.Over-Extrusion: If you see excess material on your printed object, blotches form, or layers that look too thick, it could be a sign of over-extrusion;\
+\n2.Under-Extrusion: This is the opposite of over - extrusion.Signs include missing layers, weak infill, or gaps in the print.This could mean that your printer isn't extruding enough filament;\
+\n3.Poor Surface Quality : If the surface of your prints seems rough or uneven, this could be a result of an incorrect flow rate;\
+\n4.Weak Structural Integrity : If your prints break easily or don't seem as sturdy as they should be, this might be due to under-extrusion or poor layer adhesion, which can be improved by flow rate calibration;\
+\n5.When using third-party filaments";
     create_paragraph(parent, title_1, title_text_1, content_1, content_text_1);
 
     add_bitmap(parent, m_top_sizer, "FlowrateCompare",true,290);
+    m_top_sizer->AddSpacer(PRESET_GAP);
 
     Label* title_2{ nullptr };
     std::string title_text_2 = "Calibration process";
     Label* content_2{ nullptr };
     std::string content_text_2 = "The calibration process includes two types: coarse calibration and fine calibration.\
-            \nUsually, we first use coarse calibration to obtain a range, and then perform fine calibration to obtain precise values. You can also directly use the values of coarse calibration.\
-            \nBefore calibration, you need to select the printer you are using, the consumables that need to be calibrated, and the process. You can directly select them in the upper left corner of the current page.";
+\nUsually, we first use coarse calibration to obtain a range, and then perform fine calibration to obtain precise values. You can also directly use the values of coarse calibration.\
+\nBefore calibration, you need to select the printer you are using, the consumables that need to be calibrated, and the process. You can directly select them in the upper left corner of the current page.";
     create_paragraph(parent, title_2, title_text_2, content_2, content_text_2);
 
     m_action_panel = new CaliPageActionPanel(parent, CalibMode::Calib_Flow_Rate, CaliPageType::CALI_PAGE_START);
 
     m_top_sizer->Add(m_action_panel, 0, wxEXPAND, 0);
 
-#ifdef __linux__
-    wxGetApp().CallAfter([this, title_1, title_2, content_1, content_2, introduce]() {
-        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        introduce->SetMinSize(introduce_text->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        Layout();
-        Fit();
-        });
-#endif
 }
 //w29
 
@@ -330,20 +325,20 @@ void CalibrationMaxVolumetricSpeedStartPage::create_page(wxWindow* parent)
     std::string title_text_1 = "What is Max Volumetric Speed Calibration ?";
     Label* content_1{ nullptr };
     std::string content_text_1 = "Different filaments have different maximum volume speed.\
-        \nNozzle material, caliber, printing temperature, etc., will affect the maximum volume speed.\
-        \nWhen the maximum volume velocity is set too high and does not match the filament properties, there may be missing threads during the printing process, resulting in a deterioration of the surface texture of the model.\
-        \nThis is a test designed to calibrate the maximum volumetric speed of the specific filament. The generic or 3rd party filament types may not have the correct volumetric flow rate set in the filament. This test will help you to find the maximum volumetric speed of the filament.";
+\nNozzle material, caliber, printing temperature, etc., will affect the maximum volume speed.\
+\nWhen the maximum volume velocity is set too high and does not match the filament properties, there may be missing threads during the printing process, resulting in a deterioration of the surface texture of the model.\
+\nThis is a test designed to calibrate the maximum volumetric speed of the specific filament. The generic or 3rd party filament types may not have the correct volumetric flow rate set in the filament. This test will help you to find the maximum volumetric speed of the filament.";
     create_paragraph(parent, title_1, title_text_1, content_1, content_text_1);
 
     Label* title_2{ nullptr };
     std::string title_text_2 = "When to Calibrate Max Volumetric Speed ?";
     Label* content_2{ nullptr };
     std::string content_text_2 = "We have configured corresponding values for our official consumables in the software. When you have the following situations, you need to calibrate the Max Volumetric Speed:\
-        \n1.Use different brands of filaments;\
-        \n2.Replaced nozzles with different materials and diameters;\
-        \n3.You have changed the printing temperature;\
-        \n4.During the printing process, it was found that there were missing threads, insufficient extrusion, or broken filling.\
-        \nBefore calibration, you need to select the printer you are using, the consumables that need to be calibrated, and the process. You can directly select them in the upper left corner of the current page.";
+\n1.Use different brands of filaments;\
+\n2.Replaced nozzles with different materials and diameters;\
+\n3.You have changed the printing temperature;\
+\n4.During the printing process, it was found that there were missing threads, insufficient extrusion, or broken filling;\
+\nBefore calibration, you need to select the printer you are using, the consumables that need to be calibrated, and the process. You can directly select them in the upper left corner of the current page.";
     create_paragraph(parent, title_2, title_text_2, content_2, content_text_2);
 
     add_bitmap(parent, m_top_sizer, "maxvolumetricspeedmodel", true, 300);
@@ -355,16 +350,7 @@ void CalibrationMaxVolumetricSpeedStartPage::create_page(wxWindow* parent)
     CaliPresetTipsstartPanel* m_tips_panel = new CaliPresetTipsstartPanel(parent);
     m_top_sizer->Add(m_tips_panel, 0);
     m_top_sizer->AddSpacer(PRESET_GAP);
-#ifdef __linux__
-    wxGetApp().CallAfter([this, title_1, title_2, content_1, content_2]() {
-        title_1->SetMinSize(title_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        title_2->SetMinSize(title_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_1->SetMinSize(content_1->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        content_2->SetMinSize(content_2->GetSize() + wxSize{ 0, wxWindow::GetCharHeight() });
-        Layout();
-        Fit();
-        });
-#endif
+
 }
 
 void CalibrationMaxVolumetricSpeedStartPage::msw_rescale()

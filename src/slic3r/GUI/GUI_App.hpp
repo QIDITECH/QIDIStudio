@@ -93,6 +93,7 @@ enum FileType
     FT_OBJ,
     FT_AMF,
     FT_3MF,
+    FT_GCODE_3MF,
     FT_GCODE,
     FT_MODEL,
     FT_PROJECT,
@@ -324,6 +325,10 @@ public:
     int             OnExit() override;
     bool            initialized() const { return m_initialized; }
     inline bool     is_enable_multi_machine() { return this->app_config&& this->app_config->get("enable_multi_machine") == "true"; }
+
+    //w13
+    void set_seal_an(bool val) { this->app_config->set_bool("enable_seal", val); }
+    bool            enable_seal()  { return  this->app_config && this->app_config->get("enable_seal") == "true"; }
 
     std::map<std::string, bool> test_url_state;
 

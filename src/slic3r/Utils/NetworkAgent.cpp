@@ -145,6 +145,31 @@ NetworkAgent::~NetworkAgent()
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", this %1%, network_agent=%2%, destroy_agent_ptr=%3%, ret %4%")%this %network_agent %destroy_agent_ptr %ret;
 }
 
+//1.9.5
+std::string NetworkAgent::get_libpath_in_current_directory(std::string library_name)
+{
+    std::string lib_path;
+#if defined(_MSC_VER) || defined(_WIN32)
+    wchar_t file_name[512];
+    DWORD ret = GetModuleFileNameW(NULL, file_name, 512);
+    if (!ret) {
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", GetModuleFileNameW return error, can not Load Library for %1%") % library_name;
+        return lib_path;
+    }
+    int size_needed = ::WideCharToMultiByte(0, 0, file_name, wcslen(file_name), nullptr, 0, nullptr, nullptr);
+    std::string file_name_string(size_needed, 0);
+    ::WideCharToMultiByte(0, 0, file_name, wcslen(file_name), file_name_string.data(), size_needed, nullptr, nullptr);
+
+    std::size_t found = file_name_string.find("qidi-studio.exe");
+    if (found == (file_name_string.size() - 16)) {
+        lib_path = library_name + ".dll";
+        lib_path = file_name_string.replace(found, 16, lib_path);
+    }
+#else
+#endif
+    return lib_path;
+}
+
 int NetworkAgent::initialize_network_module(bool using_backup)
 {
     //int ret = -1;
@@ -159,7 +184,7 @@ int NetworkAgent::initialize_network_module(bool using_backup)
 
     //first load the library
 #if defined(_MSC_VER) || defined(_WIN32)
-    library = plugin_folder.string() + "/" + std::string(QIDI_NETWORK_LIBRARY) + ".dll";
+    library = plugin_folder.string() + "\\" + std::string(QIDI_NETWORK_LIBRARY) + ".dll";   //1.9.5
     wchar_t lib_wstr[128];
     memset(lib_wstr, 0, sizeof(lib_wstr));
     ::MultiByteToWideChar(CP_UTF8, NULL, library.c_str(), strlen(library.c_str())+1, lib_wstr, sizeof(lib_wstr) / sizeof(lib_wstr[0]));
@@ -170,6 +195,20 @@ int NetworkAgent::initialize_network_module(bool using_backup)
         ::MultiByteToWideChar(CP_UTF8, NULL, library.c_str(), strlen(library.c_str()) + 1, lib_wstr, sizeof(lib_wstr) / sizeof(lib_wstr[0]));
         netwoking_module = LoadLibrary(lib_wstr);
     }*/
+   //1.9.5
+   if (!netwoking_module) {
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", try load library directly from current directory");
+
+        std::string library_path = get_libpath_in_current_directory(std::string(QIDI_NETWORK_LIBRARY));
+        if (library_path.empty()) {
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", can not get path in current directory for %1%") % QIDI_NETWORK_LIBRARY;
+            return -1;
+        }
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", current path %1%")%library_path;
+        memset(lib_wstr, 0, sizeof(lib_wstr));
+        ::MultiByteToWideChar(CP_UTF8, NULL, library_path.c_str(), strlen(library_path.c_str())+1, lib_wstr, sizeof(lib_wstr) / sizeof(lib_wstr[0]));
+        netwoking_module = LoadLibrary(lib_wstr);
+    }
 #else
     #if defined(__WXMAC__)
     library = plugin_folder.string() + "/" + std::string("lib") + std::string(QIDI_NETWORK_LIBRARY) + ".dylib";
@@ -298,7 +337,7 @@ int NetworkAgent::initialize_network_module(bool using_backup)
     get_model_mall_rating_result_ptr  = reinterpret_cast<func_get_model_mall_rating_result>(get_network_function("qidi_network_get_model_mall_rating"));
 
     get_mw_user_preference_ptr = reinterpret_cast<func_get_mw_user_preference>(get_network_function("qidi_network_get_mw_user_preference"));
-    get_mw_user_4ulist_ptr     = reinterpret_cast<func_get_mw_user_4ulist>(get_network_function("qidi_network_get_mw_user_4ulist")); 
+    get_mw_user_4ulist_ptr     = reinterpret_cast<func_get_mw_user_4ulist>(get_network_function("qidi_network_get_mw_user_4ulist"));    //1.9.5
 
     return 0;
 }
@@ -446,12 +485,19 @@ void* NetworkAgent::get_qidi_source_entry()
     memset(lib_wstr, 0, sizeof(lib_wstr));
     ::MultiByteToWideChar(CP_UTF8, NULL, library.c_str(), strlen(library.c_str())+1, lib_wstr, sizeof(lib_wstr) / sizeof(lib_wstr[0]));
     source_module = LoadLibrary(lib_wstr);
-    /*if (!source_module) {
-        library = std::string(QIDI_SOURCE_LIBRARY) + ".dll";
+    //1.9.5
+    if (!source_module) {
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", try load QIDISource directly from current directory");
+        std::string library_path = get_libpath_in_current_directory(std::string(QIDI_SOURCE_LIBRARY));
+        if (library_path.empty()) {
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", can not get path in current directory for %1%") % QIDI_SOURCE_LIBRARY;
+            return source_module;
+        }
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", current path %1%")%library_path;
         memset(lib_wstr, 0, sizeof(lib_wstr));
-        ::MultiByteToWideChar(CP_UTF8, NULL, library.c_str(), strlen(library.c_str()) + 1, lib_wstr, sizeof(lib_wstr) / sizeof(lib_wstr[0]));
+        ::MultiByteToWideChar(CP_UTF8, NULL, library_path.c_str(), strlen(library_path.c_str()) + 1, lib_wstr, sizeof(lib_wstr) / sizeof(lib_wstr[0]));     //1.9.5
         source_module = LoadLibrary(lib_wstr);
-    }*/
+    }
 #else
 #if defined(__WXMAC__)
     library = plugin_folder.string() + "/" + std::string("lib") + std::string(QIDI_SOURCE_LIBRARY) + ".dylib";
