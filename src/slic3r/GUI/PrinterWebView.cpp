@@ -527,6 +527,7 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
 
      DeviceButton *machine_button = new DeviceButton(leftScrolledWindow, fullname, Machine_Name, wxBU_LEFT, wxSize(80, 80), device_name, ip);
      machine_button->SetBackgroundColor(mac_btn_bg);
+     machine_button->SetBorderColor(wxColour(57, 51, 55));
      machine_button->SetCanFocus(false);
      machine_button->SetIsSimpleMode(m_isSimpleMode);
      wxString formattedHost = ip;

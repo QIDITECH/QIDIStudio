@@ -344,14 +344,27 @@ AboutDialog::AboutDialog()
           m_html->SetFonts(font.GetFaceName(), font.GetFaceName(), size);
           m_html->SetMinSize(wxSize(FromDIP(-1), FromDIP(16)));
           m_html->SetBorders(2);
-          const auto text = from_u8(
-              (boost::format(
-              "<html>"
-              "<body>"
-              "<p style=\"text-align:left\"><a  href=\"www.qidi3d.com\">www.qidi3d.com</ a></p>"
-              "</body>"
-              "</html>")
-            ).str());
+          wxString text;
+          if (wxGetApp().dark_mode()) {
+              text = from_u8(
+                  (boost::format(
+                      "<html>"
+                      "<body>"
+                      "<p style=\"text-align:left\"><a  href=\"www.qidi3d.com\" style=\"color: white;\">www.qidi3d.com</ a></p>"
+                      "</body>"
+                      "</html>")
+                      ).str());
+          }
+          else {
+              text = from_u8(
+                  (boost::format(
+                      "<html>"
+                      "<body>"
+                      "<p style=\"text-align:left\"><a  href=\"www.qidi3d.com\";\">www.qidi3d.com</ a></p>"
+                      "</body>"
+                      "</html>")
+                      ).str());
+          }
           m_html->SetPage(text);
           copyright_ver_sizer->Add(m_html, 0, wxEXPAND, 0);
           m_html->Bind(wxEVT_HTML_LINK_CLICKED, &AboutDialog::onLinkClicked, this);

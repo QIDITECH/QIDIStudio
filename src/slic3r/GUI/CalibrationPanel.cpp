@@ -148,7 +148,13 @@ void CalibrationPanel::create_preset_box(wxWindow* parent, wxBoxSizer* sizer_sid
     h_process_sizer->Add(m_process_title, 0, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL | wxLEFT, 5);
     h_process_sizer->AddStretchSpacer(1);
 
-    wxColour bg(243, 243, 243);
+    wxColour bg(241, 241, 241);
+    m_printer_icon->SetBackgroundColour(bg);
+    m_filament_icon->SetBackgroundColour(bg);
+    m_process_icon->SetBackgroundColour(bg);
+    m_printer_title->SetBackgroundColour(bg);
+    m_filament_title->SetBackgroundColour(bg);
+    m_process_title->SetBackgroundColour(bg);
     m_printer_panel->SetBackgroundColour(bg);
     m_filament_panel->SetBackgroundColour(bg);
     m_process_panel->SetBackgroundColour(bg);
@@ -164,7 +170,8 @@ void CalibrationPanel::create_preset_box(wxWindow* parent, wxBoxSizer* sizer_sid
     sizer_side_tools->Add(m_print_choice, 0, wxEXPAND  | wxLEFT | wxRIGHT, 5);
 
     wxStaticLine* line = new wxStaticLine(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL);
-    line->SetBackgroundColour(wxColour(192, 192, 192));
+    line->SetForegroundColour(bg);
+    line->SetBackgroundColour(bg);
 
     sizer_side_tools->Add(line, 0, wxEXPAND | wxTOP, 10);
     

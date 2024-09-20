@@ -33,6 +33,10 @@ html,body
 
 
 /*----Left Menu Button----*/
+#LoginBtn .trans
+{
+	color: #efeff0;
+}
 #LogoutBtn:hover
 {	
 	/* y6 */

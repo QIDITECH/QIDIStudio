@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="text/javascript" src="../include/jquery-2.1.1.min.js"></script>
+    <script type="text/javascript" src="../include/json2.js"></script>	
+    <script type="text/javascript" src="../include/globalapi.js"></script>	
+
+    <script type="text/javascript" src="../data/text.js"></script>
+
+    <script type="text/javascript" src="js/home.js"></script>
     <title>Connect Device</title>
     <style>
         body {
@@ -10,6 +17,7 @@
             text-align: center;
             margin: 0;
             padding: 0;
+			background-color: #EEEEEE;
         }
         h1 {
             color: #3366ff;
@@ -26,9 +34,13 @@
         }
     </style>
 </head>
-<body>
-    <h1>Connect Device</h1>
-    <p>Please set up your printer connection to view the device.</p>
+<body onLoad="OnHomeInit()">
+    <h1 >
+        <span class="trans" tid='t117'>Connect Device</span>
+    </h1>
+    <p>
+        <span class="trans" tid='t118'>Please set up your printer connection to view the device.</span>
+    </p>
     <img src="setup_connection.gif" alt="Device Connection Image">
 </body>
 </html>
