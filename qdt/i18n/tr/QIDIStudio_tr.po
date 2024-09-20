@@ -14,6 +14,9 @@ msgstr ""
 "X-Generator: Poedit 3.4.4\n"
 "X-Poedit-Basepath: .\n"
 
+msgid "Click here if you failed to send the print job"
+msgstr "Yazdırma işini gönderemezseniz buraya tıklayın"
+
 msgid "Login/Register"
 msgstr "Giriş/Kayıt"
 

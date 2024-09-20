@@ -27,6 +27,9 @@ msgstr "If enabled, this setting will ensure external perimeters are not slowed 
 "2. To avoid changes in external wall speed which may create slight wall artefacts that appear like z banding \n"
 "3. To avoid printing at speeds which cause VFAs (fine artefacts) on the external walls\n\n"
 
+msgid "Click here if you failed to send the print job"
+msgstr "Click here if you failed to send the print job"
+
 msgid "Login/Register"
 msgstr "Login/Register"
 

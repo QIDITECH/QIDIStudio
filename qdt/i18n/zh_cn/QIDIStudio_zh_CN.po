@@ -17,6 +17,9 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: Poedit 3.4.4\n"
 
+msgid "Click here if you failed to send the print job"
+msgstr "如果您发送打印任务失败，请点击这儿"
+
 msgid "Login/Register"
 msgstr "登录/注册"
 

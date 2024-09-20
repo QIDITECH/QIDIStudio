@@ -13,6 +13,9 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n==1) ? 0 : 1;\n"
 "X-Generator: Poedit 3.4.4\n"
 
+msgid "Click here if you failed to send the print job"
+msgstr "Kattintson ide, ha nem sikerült elküldeni a nyomtatási feladatot"
+
 msgid "Login/Register"
 msgstr "Bejelentkezés/Regisztráció"
 

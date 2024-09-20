@@ -19,6 +19,9 @@ msgstr ""
 "n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
 "X-Generator: Poedit 3.4.4\n"
 
+msgid "Click here if you failed to send the print job"
+msgstr "Нажмите здесь, если не удалось отправить задание на печать"
+
 msgid "Login/Register"
 msgstr "Вход/Регистрация"
 
