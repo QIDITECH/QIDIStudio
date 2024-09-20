@@ -1,0 +1,13 @@
+{
+    "type": "filament",
+    "filament_id": "GFN98",
+    "setting_id": "GFSN99",
+    "name": "QIDI PPS-CF @Qidi X-Smart 3 0.8 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PPS-CF@X3",
+    "additional_cooling_fan_speed": ["0"],
+    "additional_cooling_fan_speed_unseal": ["0"],
+    "pressure_advance": ["0.008"],
+	"compatible_printers": ["X-Smart 3 0.8 nozzle"]
+}

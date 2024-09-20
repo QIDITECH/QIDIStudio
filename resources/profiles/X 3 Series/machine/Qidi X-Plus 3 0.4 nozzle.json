@@ -18,12 +18,11 @@
 	"nozzle_diameter": ["0.4"],
 	"printable_area": ["0x0","280x0","280x280","0x280"],
 	"printable_height": "270",
-	"retract_length_toolchange": ["10"],
+	"retract_length_toolchange": ["2"],
 	"retract_lift_below":["269"],
 	"retraction_length": ["1"],
 	"retraction_minimum_travel": ["1"],
 	"extruder_clearance_height_to_lid": "110",
     "extruder_clearance_height_to_rod": "38",
-    "extruder_clearance_max_radius": "60",
-	"single_extruder_multi_material": "0"
+    "extruder_clearance_max_radius": "60"
 }

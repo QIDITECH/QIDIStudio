@@ -1,0 +1,15 @@
+{
+    "type": "filament",
+    "filament_id": "GFB99",
+    "setting_id": "GFSA04",
+    "name": "QIDI ABS Rapido Metal @Qidi X-Smart 3 0.2 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI ABS Rapido Metal@X3",
+    "additional_cooling_fan_speed_unseal": ["0"],
+    "additional_cooling_fan_speed": ["0"],
+    "chamber_temperatures": ["0"],
+    "during_print_exhaust_fan_speed": ["0"],
+    "filament_max_volumetric_speed": ["2"],
+	"compatible_printers": ["X-Smart 3 0.2 nozzle"]
+}

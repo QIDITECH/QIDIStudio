@@ -1,0 +1,11 @@
+{
+    "type": "filament",
+    "filament_id": "GFU99",
+    "setting_id": "GFSR99",
+    "name": "QIDI TPU 95A-HF @Qidi X-Plus 3 0.8 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI TPU 95A-HF@X3",
+    "nozzle_temperature": ["220"],
+	"compatible_printers": ["X-Plus 3 0.8 nozzle"]
+}

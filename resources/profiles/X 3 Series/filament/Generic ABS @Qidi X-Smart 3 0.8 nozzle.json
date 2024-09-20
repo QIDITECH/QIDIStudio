@@ -10,5 +10,5 @@
     "additional_cooling_fan_speed": ["0"],
     "during_print_exhaust_fan_speed": ["0"],
     "pressure_advance": ["0.011"],
-	"compatible_printers": ["X-Smart 3 0.2 nozzle"]
+	"compatible_printers": ["X-Smart 3 0.8 nozzle"]
 }

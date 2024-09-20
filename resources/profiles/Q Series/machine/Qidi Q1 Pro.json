@@ -1,7 +1,7 @@
 {
     "type": "machine_model",
     "name": "Q1 Pro",
-    "model_id": "Qidi-Q1Pro",
+    "model_id": "Q1 Pro",
     "nozzle_diameter": "0.4;0.2;0.6;0.8",
     "machine_tech": "FFF",
     "family": "Qidi",

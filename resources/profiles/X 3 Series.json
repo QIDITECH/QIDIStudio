@@ -1,6 +1,6 @@
 {
     "name": "X-3-Series",
-    "version": "01.09.00.01",
+    "version": "01.09.05.51",
     "force_update": "0",
     "description": "X-3-Series configurations",
     "machine_model_list": [
@@ -902,6 +902,10 @@
             "sub_path": "filament/Generic TPU 95A.json"
         },
         {
+            "name": "QIDI TPU 95A-HF@X3",
+            "sub_path": "filament/QIDI TPU 95A-HF.json"
+        },
+        {
             "name": "QIDI PC-ABS-FR@X3",
             "sub_path": "filament/QIDI PC-ABS-FR.json"
         },
@@ -1211,7 +1215,219 @@
         {
             "name": "Generic TPU 95A @Qidi X-Smart 3 0.8 nozzle",
             "sub_path": "filament/Generic TPU 95A @Qidi X-Smart 3 0.8 nozzle.json"
+        },
+
+        {
+            "name": "QIDI TPU 95A-HF @Qidi X-Max 3 0.4 nozzle",
+            "sub_path": "filament/QIDI TPU 95A-HF @Qidi X-Max 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI TPU 95A-HF @Qidi X-Plus 3 0.4 nozzle",
+            "sub_path": "filament/QIDI TPU 95A-HF @Qidi X-Plus 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI TPU 95A-HF @Qidi X-Smart 3 0.4 nozzle",
+            "sub_path": "filament/QIDI TPU 95A-HF @Qidi X-Smart 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI TPU 95A-HF @Qidi X-Max 3 0.6 nozzle",
+            "sub_path": "filament/QIDI TPU 95A-HF @Qidi X-Max 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI TPU 95A-HF @Qidi X-Plus 3 0.6 nozzle",
+            "sub_path": "filament/QIDI TPU 95A-HF @Qidi X-Plus 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI TPU 95A-HF @Qidi X-Smart 3 0.6 nozzle",
+            "sub_path": "filament/QIDI TPU 95A-HF @Qidi X-Smart 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI TPU 95A-HF @Qidi X-Max 3 0.8 nozzle",
+            "sub_path": "filament/QIDI TPU 95A-HF @Qidi X-Max 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI TPU 95A-HF @Qidi X-Plus 3 0.8 nozzle",
+            "sub_path": "filament/QIDI TPU 95A-HF @Qidi X-Plus 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI TPU 95A-HF @Qidi X-Smart 3 0.8 nozzle",
+            "sub_path": "filament/QIDI TPU 95A-HF @Qidi X-Smart 3 0.8 nozzle.json"
+        },
+
+
+        {
+            "name": "QIDI ABS Rapido Metal@X3",
+            "sub_path": "filament/QIDI ABS Rapido Metal.json"
+        },
+        {
+            "name": "QIDI ABS Rapido Metal @Qidi X-Max 3 0.2 nozzle",
+            "sub_path": "filament/QIDI ABS Rapido Metal @Qidi X-Max 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI ABS Rapido Metal @Qidi X-Plus 3 0.2 nozzle",
+            "sub_path": "filament/QIDI ABS Rapido Metal @Qidi X-Plus 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI ABS Rapido Metal @Qidi X-Smart 3 0.2 nozzle",
+            "sub_path": "filament/QIDI ABS Rapido Metal @Qidi X-Smart 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI ABS Rapido Metal @Qidi X-Max 3 0.4 nozzle",
+            "sub_path": "filament/QIDI ABS Rapido Metal @Qidi X-Max 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI ABS Rapido Metal @Qidi X-Plus 3 0.4 nozzle",
+            "sub_path": "filament/QIDI ABS Rapido Metal @Qidi X-Plus 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI ABS Rapido Metal @Qidi X-Smart 3 0.4 nozzle",
+            "sub_path": "filament/QIDI ABS Rapido Metal @Qidi X-Smart 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI ABS Rapido Metal @Qidi X-Max 3 0.6 nozzle",
+            "sub_path": "filament/QIDI ABS Rapido Metal @Qidi X-Max 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI ABS Rapido Metal @Qidi X-Plus 3 0.6 nozzle",
+            "sub_path": "filament/QIDI ABS Rapido Metal @Qidi X-Plus 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI ABS Rapido Metal @Qidi X-Smart 3 0.6 nozzle",
+            "sub_path": "filament/QIDI ABS Rapido Metal @Qidi X-Smart 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI ABS Rapido Metal @Qidi X-Max 3 0.8 nozzle",
+            "sub_path": "filament/QIDI ABS Rapido Metal @Qidi X-Max 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI ABS Rapido Metal @Qidi X-Plus 3 0.8 nozzle",
+            "sub_path": "filament/QIDI ABS Rapido Metal @Qidi X-Plus 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI ABS Rapido Metal @Qidi X-Smart 3 0.8 nozzle",
+            "sub_path": "filament/QIDI ABS Rapido Metal @Qidi X-Smart 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Metal@X3",
+            "sub_path": "filament/QIDI PLA Rapido Metal.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Metal @Qidi X-Max 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Metal @Qidi X-Max 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Metal @Qidi X-Plus 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Metal @Qidi X-Plus 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Metal @Qidi X-Smart 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Metal @Qidi X-Smart 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Metal @Qidi X-Max 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Metal @Qidi X-Max 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Metal @Qidi X-Plus 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Metal @Qidi X-Plus 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Metal @Qidi X-Smart 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Metal @Qidi X-Smart 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Metal @Qidi X-Max 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Metal @Qidi X-Max 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Metal @Qidi X-Plus 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Metal @Qidi X-Plus 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Metal @Qidi X-Smart 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Metal @Qidi X-Smart 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Metal @Qidi X-Max 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Metal @Qidi X-Max 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Metal @Qidi X-Plus 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Metal @Qidi X-Plus 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Metal @Qidi X-Smart 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Metal @Qidi X-Smart 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Silk@X3",
+            "sub_path": "filament/QIDI PLA Rapido Silk.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Silk @Qidi X-Max 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Silk @Qidi X-Max 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Silk @Qidi X-Plus 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Silk @Qidi X-Plus 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Silk @Qidi X-Smart 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Silk @Qidi X-Smart 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Silk @Qidi X-Max 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Silk @Qidi X-Max 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Silk @Qidi X-Plus 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Silk @Qidi X-Plus 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Rapido Silk @Qidi X-Smart 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PLA Rapido Silk @Qidi X-Smart 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PPS-CF@X3",
+            "sub_path": "filament/QIDI PPS-CF.json"
+        },
+        {
+            "name": "QIDI PPS-CF @Qidi X-Max 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PPS-CF @Qidi X-Max 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PPS-CF @Qidi X-Plus 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PPS-CF @Qidi X-Plus 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PPS-CF @Qidi X-Smart 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PPS-CF @Qidi X-Smart 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PPS-CF @Qidi X-Max 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PPS-CF @Qidi X-Max 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PPS-CF @Qidi X-Plus 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PPS-CF @Qidi X-Plus 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PPS-CF @Qidi X-Smart 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PPS-CF @Qidi X-Smart 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PPS-CF @Qidi X-Max 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PPS-CF @Qidi X-Max 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PPS-CF @Qidi X-Plus 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PPS-CF @Qidi X-Plus 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PPS-CF @Qidi X-Smart 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PPS-CF @Qidi X-Smart 3 0.8 nozzle.json"
         }
+        
         
     ],
     "machine_list": [
