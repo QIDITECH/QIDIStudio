@@ -492,12 +492,12 @@ wxBitmap create_scaled_bitmap_of_login(const std::string& bmp_name_in,
         Slic3r::GUI::wxGetApp().dark_mode();
 
     // Try loading an SVG first, then PNG if SVG is not found:
-    wxBitmap* bmp;
+    wxBitmap* bmp{nullptr};
     if(!bmp_name.empty())
         bmp = cache.load_login_png(bmp_name, width, height, grayscale, resize ? win->FromDIP(10) * 0.1f : 0.f);
     else
     {
-        if(px_cnt > 50)
+        if (px_cnt > 50)
             bmp = cache.load_png("user_dark", width, height, grayscale, resize ? win->FromDIP(10) * 0.1f : 0.f);
         else
         {
@@ -505,11 +505,8 @@ wxBitmap create_scaled_bitmap_of_login(const std::string& bmp_name_in,
             bmp = cache.load_png("user_dark_tiny", width, height, grayscale, resize ? win->FromDIP(10) * 0.1f : 0.f);
         }
     }
-
-    if (bmp == nullptr) {
-        // Neither SVG nor PNG has been found, raise error
+    if (bmp == nullptr)
         throw Slic3r::RuntimeError("Could not load bitmap: " + bmp_name);
-    }
 
     return *bmp;
 }

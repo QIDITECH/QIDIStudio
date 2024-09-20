@@ -96,8 +96,6 @@
 #include "Notebook.hpp"
 #include "Widgets/Label.hpp"
 #include "Widgets/ProgressDialog.hpp"
-#include <io.h>
-#include <cstdio>
 
 //QDS: DailyTip and UserGuide Dialog
 #include "WebDownPluginDlg.hpp"
@@ -3956,18 +3954,9 @@ void GUI_App::get_login_info()
             {
                 m_user_name = "";
                 wxGetApp().app_config->set("user_token", "");
-                wxGetApp().app_config->set("user_head_url", "");
-                wxGetApp().app_config->set("user_head_name", "");
                 wxString user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
                 wxString strJS = wxString::Format("SetUserOffline()");
                 GUI::wxGetApp().run_script_left(strJS);
-                //y34
-                std::ifstream file(user_head_path);
-                if (file.good())
-                {
-                    file.close();
-                    remove(user_head_path.c_str());
-                }
                 m_qidi_login = false;
             }
             else
@@ -4003,22 +3992,8 @@ void GUI_App::get_login_info()
     }
     else 
     {
-        std::string head_name = wxGetApp().app_config->get("user_head_name");
-        //y34
-        if (!head_name.empty())
-        {
-            wxString user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
-            std::ifstream file(user_head_path);
-            if (file.good())
-            {
-                file.close();
-                remove(user_head_path.c_str());
-            }   
-        }  
         m_user_name = "";
         wxGetApp().app_config->set("user_token", "");
-        wxGetApp().app_config->set("user_head_url", "");
-        wxGetApp().app_config->set("user_head_name", "");
         wxString strJS = wxString::Format("SetUserOffline()");
         GUI::wxGetApp().run_script_left(strJS);
         m_qidi_login = false;

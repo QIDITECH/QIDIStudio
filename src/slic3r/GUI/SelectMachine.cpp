@@ -1317,7 +1317,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     // wxString hyperlink_1 = wxString::Format(L"https://wiki.qidi3d.com/%s/software/qidi-studio/fluidd", region);
     // m_hyperlink = new wxHyperlinkCtrl(m_panel_prepare, wxID_ANY, _L("Click here if you can't connect to the printer"), hyperlink_1, wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
     wxString hyperlink_2 = wxString::Format(L"https://wiki.qidi3d.com/%s/software/qidi-studio/troubleshooting/connect-send-problem", region);
-    m_hyperlink = new wxHyperlinkCtrl(m_panel_prepare, wxID_ANY, _L("Click here if you failed to send the task"), hyperlink_2, wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
+    m_hyperlink = new wxHyperlinkCtrl(m_panel_prepare, wxID_ANY, _L("Click here if you failed to send the print job"), hyperlink_2, wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
 
     hyperlink_sizer->Add(m_hyperlink, 0, wxALIGN_CENTER | wxALL, 5);
     m_sizer_prepare->Add(hyperlink_sizer, 0, wxALIGN_CENTER | wxALL, 5);

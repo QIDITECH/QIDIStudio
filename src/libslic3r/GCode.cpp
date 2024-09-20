@@ -3263,6 +3263,18 @@ GCode::LayerResult GCode::process_layer(
         // QDS
         int bed_temp = get_bed_temperature(first_extruder_id, false, print.config().curr_bed_type);
         gcode += m_writer.set_bed_temperature(bed_temp);
+
+        //w32
+        {
+            int min_chamber_temp = 0;
+            min_chamber_temp = m_config.chamber_temperatures.get_at(m_writer.extruders().front().id()); 
+            for (const auto& extruder : m_writer.extruders())
+                min_chamber_temp = std::min(min_chamber_temp, m_config.chamber_temperatures.get_at(extruder.id()));
+            if ( print.config().support_chamber_temp_control.value && min_chamber_temp > 0) {
+                gcode += m_writer.set_chamber_temperature(min_chamber_temp, false);
+            }
+        }
+        
         // Mark the temperature transition from 1st to 2nd layer to be finished.
         m_second_layer_things_done = true;
     }

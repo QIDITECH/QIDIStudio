@@ -1950,6 +1950,9 @@ bool MainFrame::get_enable_print_status()
        {
            enable = false;
        }
+       //y37
+       if(m_plater->only_gcode_mode())
+           enable = false;
        enable = enable && !is_all_plates;
     }
     else if (m_print_select == eExportGcode)

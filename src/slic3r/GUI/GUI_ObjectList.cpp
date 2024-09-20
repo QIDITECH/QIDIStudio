@@ -2106,6 +2106,9 @@ static TriangleMesh create_mesh(const std::string& type_name, const BoundingBoxf
         mesh.ReadSTLFile((Slic3r::resources_dir() + "/model/torus.stl").c_str(), true, nullptr);
     else if (type_name == "Rounded Rectangle")
         mesh.ReadSTLFile((Slic3r::resources_dir() + "/model/rounded_rectangle.stl").c_str(), true, nullptr);
+//ZY3
+    else if (type_name == "QIDI")
+        mesh.ReadSTLFile((Slic3r::resources_dir() + "/model/QIDI.stl").c_str(), true, nullptr);
     else if (type_name == "3DBenchy")
         mesh.ReadSTLFile((Slic3r::resources_dir() + "/model/3DBenchy.stl").c_str(), true, nullptr);
     else if (type_name == "ksr FDMTest")

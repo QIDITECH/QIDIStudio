@@ -500,7 +500,7 @@ wxMenu* MenuFactory::append_submenu_add_generic(wxMenu* menu, ModelVolumeType ty
     //B
     if (type == ModelVolumeType::INVALID) {
         sub_menu->AppendSeparator();
-        for (auto &item : { L("3DBenchy"), L("ksr FDMTest")}) {
+        for (auto &item : { L("QIDI"), L("3DBenchy"), L("ksr FDMTest")}) {
             append_menu_item(
                 sub_menu, wxID_ANY, _(item), "", [type, item](wxCommandEvent &) { obj_list()->load_generic_subobject(item, type); }, "", menu);
         }

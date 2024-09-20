@@ -242,7 +242,7 @@ AboutDialog::AboutDialog()
     //B
     // version
     {
-        vesizer->Add(0, FromDIP(165), 1, wxEXPAND, FromDIP(5));
+        vesizer->Add(0, FromDIP(190), 1, wxEXPAND, FromDIP(5));
         auto version_text = GUI_App::format_display_version();
 #if QDT_INTERNAL_TESTING
         wxString versionText    = QDT_INTERNAL_TESTING == 1 ? _L("Internal Version") : _L("Beta Version");
@@ -260,19 +260,19 @@ AboutDialog::AboutDialog()
         version_font.SetPointSize(FromDIP(16));
         version->SetFont(version_font);
         version->SetForegroundColour(wxColour("#FFFFFD"));
-        version->SetBackgroundColour(wxColour("#4479FB"));
+        version->SetBackgroundColour(wxColour("#303ab2"));
         vesizer->Add(version, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, FromDIP(5));
 #if QDT_INTERNAL_TESTING
         wxString plugin_version = wxString::Format("Plugin Version: %s", wxGetApp().getAgent() ? wxGetApp().getAgent()->get_version() : "");
         wxStaticText *plugin_version_text = new wxStaticText(this, wxID_ANY, plugin_version, wxDefaultPosition, wxDefaultSize);
         plugin_version_text->SetForegroundColour(wxColour("#FFFFFE"));
-        plugin_version_text->SetBackgroundColour(wxColour("#4479FB"));
+        plugin_version_text->SetBackgroundColour(wxColour("#303ab2"));
         vesizer->Add(plugin_version_text, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, FromDIP(5));
 
         wxString build_time = wxString::Format("Build Time: %s", std::string(SLIC3R_BUILD_TIME));
         wxStaticText* build_time_text = new wxStaticText(this, wxID_ANY, build_time, wxDefaultPosition, wxDefaultSize);
         build_time_text->SetForegroundColour(wxColour("#FFFFFE"));
-        build_time_text->SetBackgroundColour(wxColour("#4479FB"));
+        build_time_text->SetBackgroundColour(wxColour("#303ab2"));
         vesizer->Add(build_time_text, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, FromDIP(5));
 #endif
         vesizer->Add(0, 0, 1, wxEXPAND, FromDIP(5));
@@ -331,7 +331,7 @@ AboutDialog::AboutDialog()
 
     copyright_hor_sizer->Add(copyright_ver_sizer, 0, wxLEFT, FromDIP(20));
 
-    wxStaticText *html_text = new wxStaticText(this, wxID_ANY, "Copyright(C) 2021-2024 Lunkuo All Rights Reserved", wxDefaultPosition, wxDefaultSize);
+    wxStaticText *html_text = new wxStaticText(this, wxID_ANY, "Copyright(C) 2024 QIDI All Rights Reserved", wxDefaultPosition, wxDefaultSize);
     html_text->SetForegroundColour(wxColour(107, 107, 107));
 
     copyright_ver_sizer->Add(html_text, 0, wxALL , 0);
