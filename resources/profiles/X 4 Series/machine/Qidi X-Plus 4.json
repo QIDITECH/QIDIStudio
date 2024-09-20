@@ -1,0 +1,11 @@
+{
+    "type": "machine_model",
+    "name": "X-Plus 4",
+    "model_id": "X-Plus 4",
+    "nozzle_diameter": "0.4;0.2;0.6;0.8",
+    "machine_tech": "FFF",
+    "family": "Qidi",
+    "bed_model": "X-Plus 4_bed.stl",
+    "hotend_model": "X-Series_gen3_hotend.stl",
+	"default_materials": "Generic ABS @Qidi X-Plus 4 0.4 nozzle;Generic PLA @Qidi X-Plus 4 0.4 nozzle;QIDI ABS Odorless @Qidi X-Plus 4 0.4 nozzle;QIDI ABS Rapido @Qidi X-Plus 4 0.4 nozzle;QIDI PLA Rapido @Qidi X-Plus 4 0.4 nozzle;QIDI PLA Rapido Matte @Qidi X-Plus 4 0.4 nozzle;QIDI PLA-CF @Qidi X-Plus 4 0.4 nozzle"
+}
