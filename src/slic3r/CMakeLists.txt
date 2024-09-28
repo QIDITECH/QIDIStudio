@@ -502,6 +502,8 @@ set(SLIC3R_GUI_SOURCES
 	Utils/FontConfigHelp.hpp
 	Utils/FontUtils.cpp
 	Utils/FontUtils.hpp
+    GUI/Filament_web.hpp
+    GUI/Filament_web.cpp
 )
 
 if(QDT_RELEASE_TO_PUBLIC)

@@ -24,6 +24,7 @@
 #include "Auxiliary.hpp"
 #include "Project.hpp"
 #include "CalibrationPanel.hpp"
+#include "Filament_web.hpp"
 #include "UnsavedChangesDialog.hpp"
 #include "Widgets/SideButton.hpp"
 #include "Widgets/SideMenuPopup.hpp"
@@ -224,6 +225,7 @@ public:
         tpProject = 4,
         tpCalibration = 5,
         tpMultiDevice = 6,  // none
+        tpFilamentweb = 7,
     };
 
     //QDS: add slice&&print status update logic
@@ -377,6 +379,7 @@ public:
     ProjectPanel*         m_project{ nullptr };
 
     CalibrationPanel*     m_calibration{ nullptr };
+    FilamentPanel*        m_filament{nullptr};
     WebViewPanel*         m_webview { nullptr };
     PrinterWebView*       m_printer_view{nullptr};
     wxLogWindow*          m_log_window { nullptr };

@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filament</title>
+    <style>
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .table-container {
+            width: 100%;
+            max-width: 1800px;
+            min-width: 900px;
+            height: auto;
+            max-height: 85vh;
+            min-height: 300px;
+            overflow-x: auto; 
+            overflow-y: auto; 
+            border: 1px solid #ccc;
+            position: relative;
+            margin: 0 auto;
+            padding: 0;
+        }
+        table {
+            width: 100%; 
+            border-collapse: collapse;
+            table-layout: fixed; 
+            user-select: none;
+        }
+        th, td {
+            width: 230px; 
+            height: 50px; 
+            padding: 8px;
+            text-align: center;
+            border: none; 
+        }
+        
+        tr:nth-child(2) td, tr:nth-child(3) td, tr:nth-child(4) td, tr:nth-child(5) td, tr:nth-child(6) td, tr:nth-child(9) td, tr:nth-child(13) td, tr:nth-child(14) td, tr:nth-child(15) td, tr:nth-child(16) td, tr:nth-child(17) td, tr:nth-child(18) td, tr:nth-child(19) td {
+            height: 20px; 
+        }
+
+        td:nth-child(n+2), th:nth-child(n+2) {
+            border-top: 1px solid #ccc;
+            border-right: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+        }
+        th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0; 
+            z-index: 2; 
+            color: white;
+        }
+
+        tr:nth-child(1) th {
+            background-color: #333333;
+            color: white; 
+        }
+
+        .unselected {
+            background-color: #dcdcdc !important; 
+            color: black; 
+        }
+
+        .unselected th {
+            background-color: #dcdcdc !important;
+        }
+
+        .unselected td {
+            background-color: #dcdcdc !important;
+        }
+
+        td:first-child,
+        th:first-child {
+            position: sticky;
+            left: 0;
+            background-color: #f2f2f2; 
+            z-index: 3; 
+        }
+
+        td:nth-child(2),
+        th:nth-child(2) {
+            position: sticky;
+            left: 246px;
+            background-color: #f2f2f2;
+            z-index: 3;
+            border-left: none;
+        }
+        td:nth-child(2)::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background-color: #ccc; 
+            z-index: 5; 
+        }
+
+        th:nth-child(2)::before {
+            content: none;
+        }
+        
+        td:nth-child(1),
+        th:nth-child(2) {
+            border-left: none;
+            z-index: 4;
+        }
+
+        th:first-child {
+            z-index: 10; 
+        }
+        
+
+        
+
+        tr:nth-child(1),tr:nth-child(1) td:nth-child(1) {
+            border-bottom: 1px solid #ccc;
+        }
+
+        tr:nth-child(12),tr:nth-child(12) td:nth-child(1) {
+            border-bottom: 1px solid #ccc;
+        }
+        tr:nth-child(15),tr:nth-child(15) td:nth-child(1) {
+            border-bottom: 1px solid #ccc;
+        }
+        tr:nth-child(18),tr:nth-child(18) td:nth-child(1) {
+            border-bottom: 1px solid #ccc;
+        }
+        
+ 
+        .unselected {
+            background-color: #dcdcdc; 
+        }
+        .container {
+            width: 100%;
+            max-width: 1760px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background-color: white; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); 
+        }
+        h2 {
+            margin: 0 15px 0 0;
+            font-size: 16px;
+            white-space: nowrap;
+        }
+        label {
+            margin-right: 10px;
+        }
+        .checkbox-container {
+            display: flex;
+            flex-wrap: wrap; 
+            gap: 10px; 
+            align-items: center; 
+        }
+
+        .progress-container {
+            display: flex;
+            width: 110px; 
+            height: 15px;
+            overflow: hidden;
+        }
+
+        .progress-segment {
+            flex: 1;
+            margin: 0 2px; 
+            position: relative;
+            background-color: grey; 
+        }
+
+        .progress-segment:first-child {
+            border-top-left-radius: 15px;
+            border-bottom-left-radius: 15px;
+        }
+
+        .progress-segment:last-child {
+            border-top-right-radius: 15px;
+            border-bottom-right-radius: 15px;
+        }
+
+        .progress-segment-fill {
+            height: 100%;
+            width: 0%; 
+            border-radius: inherit; 
+            transition: width 0.3s ease;
+        }
+
+        td {
+            text-align: center; 
+            vertical-align: middle; 
+        }
+
+        .progress-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0; 
+            padding: 0; 
+        }
+
+        td {
+            position: relative; 
+        }
+
+        .highlight {
+            background-color: #d0f0c0 !important; 
+        }
+
+        .hover-cell {
+            background-color: #a0e0f0 !important; 
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div style="display: flex; align-items: center;">
+            <h2 id="filamentTitle"></h2> 
+            <div class="checkbox-container">
+                <label><input type="checkbox" value="all" checked> All</label>
+                <label><input type="checkbox" value="filament1"> PLA</label>
+                <label><input type="checkbox" value="filament2"> PLA Matte</label>
+                <label><input type="checkbox" value="filament3"> PLA Metal</label>
+                <label><input type="checkbox" value="filament4"> PLA Silk</label>
+                <label><input type="checkbox" value="filament5"> PLA-CF</label>
+                <label><input type="checkbox" value="filament6"> ABS</label>
+                <label><input type="checkbox" value="filament7"> ABS Odorless</label>
+                <label><input type="checkbox" value="filament8"> ABS Metal</label>
+                <label><input type="checkbox" value="filament9"> ABS-GF</label>
+                <label><input type="checkbox" value="filament10"> ASA</label>
+                <label><input type="checkbox" value="filament11"> ASA-Aero</label>
+                <label><input type="checkbox" value="filament12"> PA12-CF</label>
+                <label><input type="checkbox" value="filament13"> PAHT-CF</label>
+                <label><input type="checkbox" value="filament14"> PC-ABS-FR</label>
+                <label><input type="checkbox" value="filament15"> PET-CF</label>
+                <label><input type="checkbox" value="filament16"> PETG Tough</label>
+                <label><input type="checkbox" value="filament17"> PPS-CF</label>
+                <label><input type="checkbox" value="filament18"> TPU 95A-HF</label>
+                <label><input type="checkbox" value="filament19"> UltraPA</label>
+            </div>
+        </div>
+    </div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th></th>
+                <th></th>
+                <th class="filament1">PLA</th>
+                <th class="filament2">PLA Matte</th>
+                <th class="filament3">PLA Metal</th>
+                <th class="filament4">PLA Silk</th>
+                <th class="filament5">PLA-CF</th>
+                <th class="filament6">ABS</th>
+                <th class="filament7">ABS Odorless</th>
+                <th class="filament8">ABS Metal</th>
+                <th class="filament9">ABS-GF</th>
+                <th class="filament10">ASA</th>
+                <th class="filament11">ASA-Aero</th>
+                <th class="filament12">PA12-CF</th>
+                <th class="filament13">PAHT-CF</th>
+                <th class="filament14">PC-ABS-FR</th>
+                <th class="filament15">PET-CF</th>
+                <th class="filament16">PETG Tough</th>
+                <th class="filament17">PPS-CF</th>
+                <th class="filament18">TPU 95A-HF</th>
+                <th class="filament19">UltraPA</th>
+            </tr>
+        </thead>
+        <tbody>
+            <script>
+                let numRows = 18;
+                let numCols = 21;
+                function createProgressBar(value, color) {
+                    let progressBarHtml = '<div class="progress-wrapper"><div class="progress-container">';
+
+                    const totalSegments = 4; 
+                    const segmentSize = 100 / totalSegments;
+
+                    const segment1Fill = Math.min(value, segmentSize);
+                    const segment2Fill = Math.max(0, Math.min(value - segmentSize, segmentSize)); 
+                    const segment3Fill = Math.max(0, Math.min(value - 2 * segmentSize, segmentSize)); 
+                    const segment4Fill = Math.max(0, Math.min(value - 3 * segmentSize, segmentSize));
+
+                    progressBarHtml += `<div class="progress-segment">
+                           <div class="progress-segment-fill" style="background-color:${color}; width:${(segment1Fill / segmentSize) * 100}%"></div>
+                        </div>`;
+                    progressBarHtml += `<div class="progress-segment">
+                           <div class="progress-segment-fill" style="background-color:${color}; width:${(segment2Fill / segmentSize) * 100}%"></div>
+                        </div>`;
+                    progressBarHtml += `<div class="progress-segment">
+                           <div class="progress-segment-fill" style="background-color:${color}; width:${(segment3Fill / segmentSize) * 100}%"></div>
+                        </div>`;
+                    progressBarHtml += `<div class="progress-segment">
+                           <div class="progress-segment-fill" style="background-color:${color}; width:${(segment4Fill / segmentSize) * 100}%"></div>
+                        </div>`;
+
+                    progressBarHtml += '</div></div>'; 
+                    return progressBarHtml;
+                }
+
+                const translations = {
+                    en: {
+                        "Water resistance": "Water resistance",
+                        "Corrosion resistance": "Corrosion resistance",
+                        "Creep resistance": "Creep resistance",
+                        "Filaments characteristics": "Filaments characteristics",
+                        "Tensile strength": "Tensile strength",
+                        "Tensile modulus": "Tensile modulus",
+                        "Elongation at break": "Elongation at break",
+                        "Flexural strength": "Flexural strength",
+                        "Flexural modulus": "Flexural modulus",
+                        "Notch impact strength": "Notch impact strength",
+                        "Drying": "Drying",
+                        "Recommended drying": "Recommended drying",
+                        "Need to dry": "Need to dry",
+                        "Preparation for printing": "Preparation for printing",
+                        "Dry conditions": "Dry conditions",
+                        "Suitable hot bed temperature": "Suitable hot bed temperature",
+                        "Sealed box": "Sealed box",
+                        "Print settings": "Print settings",
+                        "Nozzle temperature": "Nozzle temperature",
+                        "Print speed": "Print speed",
+                        "Post processing": "Post processing",
+                        "Anneal": "Anneal",
+                        "Compare filaments": "Compare filaments:"
+                    },
+                    zh_CN: {
+                        "Water resistance": "耐水性",
+                        "Corrosion resistance": "耐腐蚀性",
+                        "Creep resistance": "蠕变性能",
+                        "Filaments characteristics": "耗材特性",
+                        "Tensile strength": "抗拉强度",
+                        "Tensile modulus": "拉伸模量",
+                        "Elongation at break": "断裂伸长率",
+                        "Flexural strength": "抗弯强度",
+                        "Flexural modulus": "弯曲模量",
+                        "Notch impact strength": "缺口冲击强度",
+                        "Drying": "干燥",
+                        "Recommended drying": "建议烘干",
+                        "Need to dry": "需要烘干",
+                        "Preparation for printing": "打印前准备",
+                        "Dry conditions": "烘干条件",
+                        "Suitable hot bed temperature": "合适的热床温度",
+                        "Sealed box": "是否封箱",
+                        "Print settings": "打印设置",
+                        "Nozzle temperature": "喷嘴温度",
+                        "Print speed": "打印速度d",
+                        "Post processing": "打印后处理",
+                        "Anneal": "退火",
+                        "Compare filaments": "比较耗材:"
+                    },
+                    fr_FR: { 
+                        "Water resistance": "Propriétés imperméables",
+                        "Corrosion resistance": "Résistance à la corrosion",
+                        "Creep resistance": "Résistance au fluage",
+                        "Filaments characteristics": "Caractéristiques du filament",
+                        "Tensile strength": "Résistance à la traction",
+                        "Tensile modulus": "Module d'étirement",
+                        "Elongation at break": "Allongement à la rupture",
+                        "Flexural strength": "Résistance à la flexion",
+                        "Flexural modulus": "Module de flexion",
+                        "Notch impact strength": "Force d'impact de l'encoche",
+                        "Drying": "Séchage",
+                        "Recommended drying": "Séchage recommandé",
+                        "Need to dry": "Besoin de séchage",
+                        "Preparation for printing": "Préparation à l'impression",
+                        "Dry conditions": "Conditions de séchage",
+                        "Suitable hot bed temperature": "Température appropriée du lit chaud",
+                        "Sealed box": "Boîte scellée",
+                        "Print settings": "Paramètres d'impression",
+                        "Nozzle temperature": "Température de la buse",
+                        "Print speed": "Vitesse d'impression",
+                        "Post processing": "Post - traitement",
+                        "Anneal": "Anneal",
+                        "Compare filaments": "Comparer les filaments:"
+                    },
+                    cs_CZ: {
+                        "Water resistance": "Vododolnost",
+                        "Corrosion resistance": "odolnost proti korozi",
+                        "Creep resistance": "Odolnost proti plazování",
+                        "Filaments characteristics": "Vlastnosti vláken",
+                        "Tensile strength": "Pevnost v tahu",
+                        "Tensile modulus": "Modul tahu",
+                        "Elongation at break": "Prodloužení při přestávce",
+                        "Flexural strength": "Pevnost v ohybu",
+                        "Flexural modulus": "Modul ohybu",
+                        "Notch impact strength": "Pevnost při nárazu zářezu",
+                        "Drying": "Sušení",
+                        "Recommended drying": "Doporučené sušení",
+                        "Need to dry": "Potřeba uschnout",
+                        "Preparation for printing": "Příprava pro tisk",
+                        "Dry conditions": "Suché podmínky",
+                        "Suitable hot bed temperature": "Vhodná teplota horkého lůžka",
+                        "Sealed box": "Uzavřená krabice",
+                        "Print settings": "Nastavení tisku",
+                        "Nozzle temperature": "Teplota trysky",
+                        "Print speed": "Rychlost tisku",
+                        "Post processing": "Pozpracování",
+                        "Anneal": "Rozšíření",
+                        "Compare filaments": "Porovnat vlákna:"
+                    },
+                    de_DE: {
+                        "Water resistance": "Wasserbeständigkeit",
+                        "Corrosion resistance": "Korrosionsbeständigkeit",
+                        "Creep resistance": "Kriechfestigkeit",
+                        "Filaments characteristics": "Eigenschaften von Filamenten",
+                        "Tensile strength": "Zugfestigkeit",
+                        "Tensile modulus": "Zugmodul",
+                        "Elongation at break": "Verlängerung bei Pause",
+                        "Flexural strength": "Biegefestigkeit",
+                        "Flexural modulus": "Biegemodul",
+                        "Notch impact strength": "Kerbschlagfestigkeit",
+                        "Drying": "Trocknen",
+                        "Recommended drying": "Empfohlene Trocknung",
+                        "Need to dry": "Muss getrocknet werden",
+                        "Preparation for printing": "Vorbereitung für den Druck",
+                        "Dry conditions": "Trockene Bedingungen",
+                        "Suitable hot bed temperature": "Geeignete Warmbetttemperatur",
+                        "Sealed box": "Versiegelte Box",
+                        "Print settings": "Druckeinstellungen",
+                        "Nozzle temperature": "Düsentemperatur",
+                        "Print speed": "Druckgeschwindigkeit",
+                        "Post processing": "Nachbearbeitung",
+                        "Anneal": "Anneal",
+                        "Compare filaments": "Filamente vergleichen:"
+                    },
+                    es_ES: {
+                        "Water resistance": "Propiedades impermeables",
+                        "Corrosion resistance": "Resistencia a la corrosión",
+                        "Creep resistance": "Resistencia al arrastre",
+                        "Filaments characteristics": "Características de los filamentos",
+                        "Tensile strength": "Resistencia a la tracción",
+                        "Tensile modulus": "Módulo de tracción",
+                        "Elongation at break": "Tasa de extensión de rotura",
+                        "Flexural strength": "Resistencia a la flexión",
+                        "Flexural modulus": "Módulo de flexión",
+                        "Notch impact strength": "Resistencia al impacto de la brecha",
+                        "Drying": "Secado",
+                        "Recommended drying": "Se recomienda secar",
+                        "Need to dry": "Necesita secarse",
+                        "Preparation for printing": "Preparación de la impresión",
+                        "Dry conditions": "Condiciones de secado",
+                        "Suitable hot bed temperature": "Temperatura adecuada de la cama caliente",
+                        "Sealed box": "Caja sellada",
+                        "Print settings": "Configuración de impresión",
+                        "Nozzle temperature": "Temperatura de la boquilla",
+                        "Print speed": "Velocidad de impresión",
+                        "Post processing": "Reprocesamiento",
+                        "Anneal": "Anneal",
+                        "Compare filaments": "Filamentos comparativos:"
+                    },
+                    hu_HU: {
+                        "Water resistance": "Vízállóság",
+                        "Corrosion resistance": "Korrózióállóság",
+                        "Creep resistance": "Mászásállóság",
+                        "Filaments characteristics": "Filamentek jellemzői",
+                        "Tensile strength": "Szakítószilárdság",
+                        "Tensile modulus": "Szakítómodul",
+                        "Elongation at break": "Nyúlás szünetben",
+                        "Flexural strength": "Hajlékonysági szilárdság",
+                        "Flexural modulus": "Rugalmas modulus",
+                        "Notch impact strength": "Az ütközési erősség",
+                        "Drying": "Szárítás",
+                        "Recommended drying": "Ajánlott szárítás",
+                        "Need to dry": "Meg kell száradni.",
+                        "Preparation for printing": "Nyomtatásra való előkészítés",
+                        "Dry conditions": "Száraz körülmények",
+                        "Suitable hot bed temperature": "Megfelelő melegágyhőmérséklet",
+                        "Sealed box": "Zárt doboz",
+                        "Print settings": "Nyomtatási beállítások",
+                        "Nozzle temperature": "Fúvókák hőmérséklete",
+                        "Print speed": "Nyomtatási sebesség",
+                        "Post processing": "Utófeldolgozás",
+                        "Anneal": "Melléklet",
+                        "Compare filaments": "Szálak összehasonlítása:"
+                    },
+                    it_IT: {
+                        "Water resistance": "Resistenza all'acqua",
+                        "Corrosion resistance": "Resistenza alla corrosione",
+                        "Creep resistance": "Resistenza al creep",
+                        "Filaments characteristics": "Caratteristiche dei filamenti",
+                        "Tensile strength": "Resistenza alla trazione",
+                        "Tensile modulus": "Modulo di trazione",
+                        "Elongation at break": "Allungamento in pausa",
+                        "Flexural strength": "Resistenza alla flessione",
+                        "Flexural modulus": "Modulo flessibile",
+                        "Notch impact strength": "Resistenza all'impatto della tacca",
+                        "Drying": "Essiccazione",
+                        "Recommended drying": "Asciugatura consigliata",
+                        "Need to dry": "Necessità di asciugare",
+                        "Preparation for printing": "Preparazione per la stampa",
+                        "Dry conditions": "Condizioni di asciutto",
+                        "Suitable hot bed temperature": "Temperatura adatta del letto caldo",
+                        "Sealed box": "Scatola sigillata",
+                        "Print settings": "Impostazioni di stampa",
+                        "Nozzle temperature": "Temperatura dell'ugello",
+                        "Print speed": "Velocità di stampa",
+                        "Post processing": "Post-elaborazione",
+                        "Anneal": "Allegato",
+                        "Compare filaments": "Confronta filamenti:"
+                    },
+                    ja_JP: {
+                        "Water resistance": "防水性",
+                        "Corrosion resistance": "たいふしょくせい",
+                        "Creep resistance": "クリープ抵抗",
+                        "Filaments characteristics": "フィラメント特性",
+                        "Tensile strength": "ひっぱりつよさ",
+                        "Tensile modulus": "ひっぱりけいすう",
+                        "Elongation at break": "はだんのび",
+                        "Flexural strength": "まげつよさ",
+                        "Flexural modulus": "まげけいすう",
+                        "Notch impact strength": "ノッチ衝撃強度",
+                        "Drying": "かんそう",
+                        "Recommended drying": "推奨乾燥",
+                        "Need to dry": "乾燥が必要",
+                        "Preparation for printing": "印刷の準備",
+                        "Dry conditions": "乾燥条件",
+                        "Suitable hot bed temperature": "適切な熱床温度",
+                        "Sealed box": "シールボックス",
+                        "Print settings": "印刷設定",
+                        "Nozzle temperature": "ノズル温度",
+                        "Print speed": "印刷速度",
+                        "Post processing": "後処理",
+                        "Anneal": "Anneal",
+                        "Compare filaments": "ひかくフィラメント:"
+                    },
+                    ko_KR: {
+                        "Water resistance": "방수 성능",
+                        "Corrosion resistance": "내부식성",
+                        "Creep resistance": "내연성",
+                        "Filaments characteristics": "장사 특성",
+                        "Tensile strength": "인장 강도",
+                        "Tensile modulus": "스트레치 메트릭",
+                        "Elongation at break": "단열 신장률",
+                        "Flexural strength": "굽힘 저항 강도",
+                        "Flexural modulus": "커브 계량",
+                        "Notch impact strength": "갭 충격 강도",
+                        "Drying": "건조",
+                        "Recommended drying": "건조 권장",
+                        "Need to dry": "건조가 필요하다",
+                        "Preparation for printing": "인쇄 준비",
+                        "Dry conditions": "건조 조건",
+                        "Suitable hot bed temperature": "적절한 온상 온도",
+                        "Sealed box": "밀봉함",
+                        "Print settings": "인쇄 설정",
+                        "Nozzle temperature": "노즐 온도",
+                        "Print speed": "인쇄 속도",
+                        "Post processing": "후처리",
+                        "Anneal": "Anneal",
+                        "Compare filaments": "비교적 긴 실:"
+                    },
+                    nl_NL: {
+                        "Water resistance": "Waterbestendigheid",
+                        "Corrosion resistance": "Corrosiebestendigheid",
+                        "Creep resistance": "Krijpweerstand",
+                        "Filaments characteristics": "Eigenschappen van vezels",
+                        "Tensile strength": "Treksterkte",
+                        "Tensile modulus": "Trekmodulus",
+                        "Elongation at break": "Verlenging bij pauze",
+                        "Flexural strength": "Biegssterkte",
+                        "Flexural modulus": "Biegemodulus",
+                        "Notch impact strength": "Stevigheid van de sleuf",
+                        "Drying": "Droogen",
+                        "Recommended drying": "Aanbevolen drogen",
+                        "Need to dry": "Noodzaak om te drogen",
+                        "Preparation for printing": "Voorbereiding voor drukwerk",
+                        "Dry conditions": "Droge omstandigheden",
+                        "Suitable hot bed temperature": "Geschikt warm bed temperatuur",
+                        "Sealed box": "Verzegelde doos",
+                        "Print settings": "Afdrukinstellingen",
+                        "Nozzle temperature": "Nozzletemperatuur",
+                        "Print speed": "Afdruksnelheid",
+                        "Post processing": "Postverwerking",
+                        "Anneal": "Anneal",
+                        "Compare filaments": "Filamenten vergelijken:"
+                    },
+                    pl_PL: {
+                        "Water resistance": "Wodoodporność",
+                        "Corrosion resistance": "Odporność na korozję",
+                        "Creep resistance": "Odporność na pełzanie",
+                        "Filaments characteristics": "Charakterystyka włókien",
+                        "Tensile strength": "Wytrzymałość na rozciąganie",
+                        "Tensile modulus": "Moduł rozciągania",
+                        "Elongation at break": "Przedłużenie w przerwie",
+                        "Flexural strength": "Wytrzymałość na zginanie",
+                        "Flexural modulus": "Moduł zginania",
+                        "Notch impact strength": "Wytrzymałość uderzeniowa",
+                        "Drying": "Suszenie",
+                        "Recommended drying": "Zalecane suszenie",
+                        "Need to dry": "Trzeba wyschnąć",
+                        "Preparation for printing": "Przygotowanie do druku",
+                        "Dry conditions": "Suchość",
+                        "Suitable hot bed temperature": "Odpowiednia temperatura gorącego łóżka",
+                        "Sealed box": "Zamknięte pudełko",
+                        "Print settings": "Ustawienia drukowania",
+                        "Nozzle temperature": "Temperatura dyszy",
+                        "Print speed": "Szybkość drukowania",
+                        "Post processing": "Przetwarzanie po przetwarzaniu",
+                        "Anneal": "Wyżej",
+                        "Compare filaments": "Porównaj filamenty:"
+                    },
+                    ru_RU: {
+                        "Water resistance": "Resistência à água",
+                        "Corrosion resistance": "Resistência à corrosão",
+                        "Creep resistance": "Resistência ao arrasto",
+                        "Filaments characteristics": "Características dos filamentos",
+                        "Tensile strength": "Resistência à tracção",
+                        "Tensile modulus": "Módulo de tração",
+                        "Elongation at break": "Alongamento no intervalo",
+                        "Flexural strength": "Resistência à flexão",
+                        "Flexural modulus": "Módulo de flexão",
+                        "Notch impact strength": "Resistência ao impacto do entalhe",
+                        "Drying": "Secagem",
+                        "Recommended drying": "Secagem recomendada",
+                        "Need to dry": "Necessidade de secar",
+                        "Preparation for printing": "Preparação para impressão",
+                        "Dry conditions": "Condições secas",
+                        "Suitable hot bed temperature": "Temperatura adequada do leito quente",
+                        "Sealed box": "Caixa selada",
+                        "Print settings": "Configuração de impressão",
+                        "Nozzle temperature": "Temperatura do bico",
+                        "Print speed": "Velocidade de impressão",
+                        "Post processing": "Pós-processamento",
+                        "Anneal": "Anexo",
+                        "Compare filaments": "Более длинный шелк:"
+                    },
+                    sv_SE: {
+                        "Water resistance": "Vattentålighet",
+                        "Corrosion resistance": "Korrosionsbeständighet",
+                        "Creep resistance": "Krypbeständighet",
+                        "Filaments characteristics": "Filamentens egenskaper",
+                        "Tensile strength": "Draghållfasthet",
+                        "Tensile modulus": "Dragmodul",
+                        "Elongation at break": "Förlängning vid paus",
+                        "Flexural strength": "Flexibilitet",
+                        "Flexural modulus": "Flexibilitetsmodul",
+                        "Notch impact strength": "Slagstyrka",
+                        "Drying": "Torkning",
+                        "Recommended drying": "Rekommenderad torkning",
+                        "Need to dry": "Behov av att torka",
+                        "Preparation for printing": "Förberedelse för tryckning",
+                        "Dry conditions": "Torra förhållanden",
+                        "Suitable hot bed temperature": "Lämplig varmbäddstemperatur",
+                        "Sealed box": "Förseglad låda",
+                        "Print settings": "Utskriftsinställningar",
+                        "Nozzle temperature": "Munstycketemperatur",
+                        "Print speed": "Utskriftshastighet",
+                        "Post processing": "Efterbehandling",
+                        "Anneal": "Bilaga",
+                        "Compare filaments": "Jämför glödtrådar:"
+                    },
+                    tr_TR: {
+                        "Water resistance": "Su dirençliği",
+                        "Corrosion resistance": "Korozyon dirençliği",
+                        "Creep resistance": "Krep dirençliği",
+                        "Filaments characteristics": "Özellikleri düzenleyici",
+                        "Tensile strength": "Tensile gücü",
+                        "Tensile modulus": "Tensil modulusu",
+                        "Elongation at break": "Aralıkta uzun süre",
+                        "Flexural strength": "Eksiksel güç",
+                        "Flexural modulus": "Çoklu modüller",
+                        "Notch impact strength": "Notch etkisi gücü",
+                        "Drying": "Çürüyorum",
+                        "Recommended drying": "Suyu teklif edildi",
+                        "Need to dry": "Kurtmak zorundayım.",
+                        "Preparation for printing": "Yazım için hazırlık",
+                        "Dry conditions": "Kirli şartlar",
+                        "Suitable hot bed temperature": "Yeterli sıcak yatak sıcaklığı",
+                        "Sealed box": "Kutusu kapalı",
+                        "Print settings": "Yazım ayarları",
+                        "Nozzle temperature": "Boz sıcaklığı",
+                        "Print speed": "Bastırma hızı",
+                        "Post processing": "İşlemi",
+                        "Anneal": "Annealfrance. kgm",
+                        "Compare filaments": "Kıyafetleri karşılaştır:"
+                    },
+                    uk_UA: {
+                        "Water resistance": "Отпор води",
+                        "Corrosion resistance": "Вірність корозії",
+                        "Creep resistance": "Опорність групи",
+                        "Filaments characteristics": "Карактеристики фільментів",
+                        "Tensile strength": "Сила тензиї",
+                        "Tensile modulus": "Модуль тензилу",
+                        "Elongation at break": "Здовження під час перерви",
+                        "Flexural strength": "Флексуальна сила",
+                        "Flexural modulus": "Флексуальний модуль",
+                        "Notch impact strength": "Сильність удару",
+                        "Drying": "Сушення",
+                        "Recommended drying": "Рекомендується сушення",
+                        "Need to dry": "Потрібно висушити",
+                        "Preparation for printing": "Приготування до друку",
+                        "Dry conditions": "Суші умови",
+                        "Suitable hot bed temperature": "Придатна температура гарячого ліжка",
+                        "Sealed box": "Запечаток",
+                        "Print settings": "Параметри друку",
+                        "Nozzle temperature": "Температура вузла",
+                        "Print speed": "Швидкість друку",
+                        "Post processing": "Посля обробки",
+                        "Anneal": "Анналstar name",
+                        "Compare filaments": "Порівняти гілки:"
+                    },
+                    pt_BR: {
+                        "Water resistance": "Resistência à água",
+                        "Corrosion resistance": "Resistência à corrosão",
+                        "Creep resistance": "Resistência ao arrasto",
+                        "Filaments characteristics": "Características dos filamentos",
+                        "Tensile strength": "Resistência à tracção",
+                        "Tensile modulus": "Módulo de tração",
+                        "Elongation at break": "Alongamento no intervalo",
+                        "Flexural strength": "Resistência à flexão",
+                        "Flexural modulus": "Módulo de flexão",
+                        "Notch impact strength": "Resistência ao impacto do entalhe",
+                        "Drying": "Secagem",
+                        "Recommended drying": "Secagem recomendada",
+                        "Need to dry": "Necessidade de secar",
+                        "Preparation for printing": "Preparação para impressão",
+                        "Dry conditions": "Condições secas",
+                        "Suitable hot bed temperature": "Temperatura adequada do leito quente",
+                        "Sealed box": "Caixa selada",
+                        "Print settings": "Configuração de impressão",
+                        "Nozzle temperature": "Temperatura do bico",
+                        "Print speed": "Velocidade de impressão",
+                        "Post processing": "Pós-processamento",
+                        "Anneal": "Anexo",
+                        "Compare filaments": "Comparar filamentos:"
+                    },
+                    
+                };
+
+                function getTranslation(text, lang) {
+    
+                    if (translations[lang] && translations[lang][text]) {
+                        return translations[lang][text];  
+                    } else {
+                        return text;  
+                    }
+                }
+
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang') || 'en'; 
+                document.getElementById('filamentTitle').innerText = getTranslation('Compare filaments', lang);
+                /*Water resistance*/
+                document.write('<tr>');
+                document.write('<td></td>');
+                document.write('<td>' + getTranslation('Water resistance', lang) + '</td>');
+                document.write('<td>'+ createProgressBar(25,"#0784FF")+ '</td>');//pla
+                document.write('<td>'+ createProgressBar(25,"#0784FF")+ '</td>');//pla matte
+                document.write('<td>/</td>');//pla metal
+                document.write('<td>/</td>');//pla silk
+                document.write('<td>'+ createProgressBar(25,"#0784FF")+ '</td>');//pla cf
+                document.write('<td>'+ createProgressBar(50,"#0784FF")+ '</td>');//abs
+                document.write('<td>'+ createProgressBar(50,"#0784FF")+ '</td>');//abs odorless
+                document.write('<td>/</td>');//abs metal
+                document.write('<td>'+ createProgressBar(75,"#0784FF")+ '</td>');//abs gf
+                document.write('<td>'+ createProgressBar(75,"#0784FF")+ '</td>');//asa
+                document.write('<td>'+ createProgressBar(50,"#0784FF")+ '</td>');//asa aero
+                document.write('<td>'+ createProgressBar(25,"#0784FF")+ '</td>');//pa12 cf
+                document.write('<td>'+ createProgressBar(50,"#0784FF")+ '</td>');//paht cf
+                document.write('<td>'+ createProgressBar(75,"#0784FF")+ '</td>');//pc abs fr
+                document.write('<td>'+ createProgressBar(75,"#0784FF")+ '</td>');//pet cf
+                document.write('<td>'+ createProgressBar(75,"#0784FF")+ '</td>');//petg
+                document.write('<td>/</td>');//pps-cf
+                document.write('<td>/</td>');//tpu
+                document.write('<td>'+ createProgressBar(50,"#0784FF")+ '</td>');//ultra pa
+                document.write('</tr>');
+                
+                /*Corrosion resistance*/
+                document.write('<tr>');
+                document.write('<td></td>');
+                document.write('<td>' + getTranslation('Corrosion resistance', lang) + '</td>');
+                document.write('<td>'+ createProgressBar(25,"#5cb85c")+ '</td>');//pla
+                document.write('<td>'+ createProgressBar(25,"#5cb85c")+ '</td>');//pla matte
+                document.write('<td>/</td>');//pla metal
+                document.write('<td>/</td>');//pla silk
+                document.write('<td>'+ createProgressBar(25,"#5cb85c")+ '</td>');//pla cf
+                document.write('<td>'+ createProgressBar(25,"#5cb85c")+ '</td>');//abs
+                document.write('<td>'+ createProgressBar(25,"#5cb85c")+ '</td>');//abs odorless
+                document.write('<td>/</td>');//abs metal
+                document.write('<td>'+ createProgressBar(25,"#5cb85c")+ '</td>');//abs gf
+                document.write('<td>'+ createProgressBar(25,"#5cb85c")+ '</td>');//asa
+                document.write('<td>'+ createProgressBar(25,"#5cb85c")+ '</td>');//asa aero
+                document.write('<td>'+ createProgressBar(50,"#5cb85c")+ '</td>');//pa12 cf
+                document.write('<td>'+ createProgressBar(75,"#5cb85c")+ '</td>');//paht cf
+                document.write('<td>'+ createProgressBar(25,"#5cb85c")+ '</td>');//pc abs fr
+                document.write('<td>'+ createProgressBar(75,"#5cb85c")+ '</td>');//pet cf
+                document.write('<td>'+ createProgressBar(50,"#5cb85c")+ '</td>');//petg
+                document.write('<td>/</td>');//pps-cf
+                document.write('<td>/</td>');//tpu
+                document.write('<td>'+ createProgressBar(50,"#5cb85c")+ '</td>');//ultra pa
+                document.write('</tr>');
+
+                /*Creep resistance*/
+                document.write('<tr>');
+                document.write('<td></td>');
+                document.write('<td>' + getTranslation('Creep resistance', lang) + '</td>');
+                document.write('<td>'+ createProgressBar(25,"#CC6B36")+ '</td>');//pla
+                document.write('<td>'+ createProgressBar(25,"#CC6B36")+ '</td>');//pla matte
+                document.write('<td>/</td>');//pla metal
+                document.write('<td>/</td>');//pla silk
+                document.write('<td>'+ createProgressBar(50,"#CC6B36")+ '</td>');//pla cf
+                document.write('<td>'+ createProgressBar(75,"#CC6B36")+ '</td>');//abs
+                document.write('<td>'+ createProgressBar(75,"#CC6B36")+ '</td>');//abs odorless
+                document.write('<td>/</td>');//abs metal
+                document.write('<td>'+ createProgressBar(75,"#CC6B36")+ '</td>');//abs gf
+                document.write('<td>'+ createProgressBar(75,"#CC6B36")+ '</td>');//asa
+                document.write('<td>'+ createProgressBar(50,"#CC6B36")+ '</td>');//asa aero
+                document.write('<td>'+ createProgressBar(25,"#CC6B36")+ '</td>');//pa12 cf
+                document.write('<td>'+ createProgressBar(75,"#CC6B36")+ '</td>');//paht cf
+                document.write('<td>'+ createProgressBar(75,"#CC6B36")+ '</td>');//pc abs fr
+                document.write('<td>'+ createProgressBar(75,"#CC6B36")+ '</td>');//pet cf
+                document.write('<td>'+ createProgressBar(75,"#CC6B36")+ '</td>');//petg
+                document.write('<td>/</td>');//pps-cf
+                document.write('<td>/</td>');//tpu
+                document.write('<td>'+ createProgressBar(50,"#CC6B36")+ '</td>');//ultra pa
+                document.write('</tr>');
+
+                /*HDT 0.45*/
+                document.write('<tr>');
+                document.write('<td></td>');
+                document.write('<td>HDT 0.45</td>');
+                document.write('<td>57℃</td>');//pla
+                document.write('<td>58℃</td>');//pla matte
+                document.write('<td>58℃</td>');//pla metal
+                document.write('<td>53℃</td>');//pla silk
+                document.write('<td>55.2℃</td>');//pla cf
+                document.write('<td>85℃</td>');//abs
+                document.write('<td>92℃</td>');//abs odorless
+                document.write('<td>75℃</td>');//abs metal
+                document.write('<td>97℃</td>');//abs gf
+                document.write('<td>94℃</td>');//asa
+                document.write('<td>70℃</td>');//asa aero
+                document.write('<td>149.6℃</td>');//pa12 cf
+                document.write('<td>192.3℃</td>');//paht cf
+                document.write('<td>88℃</td>');//pc abs fr
+                document.write('<td>148.8℃</td>');//pet cf
+                document.write('<td>78℃</td>');//petg
+                document.write('<td>242.7℃</td>');//pps-cf
+                document.write('<td>/</td>');//tpu
+                document.write('<td>77.8℃</td>');//ultra pa
+                document.write('</tr>');
+
+                /*HDT 1.80*/
+                document.write('<tr>');
+                document.write('<td></td>');
+                document.write('<td>HDT 1.80</td>');
+                document.write('<td>/</td>');//pla
+                document.write('<td>/</td>');//pla matte
+                document.write('<td>/</td>');//pla metal
+                document.write('<td>/</td>');//pla silk
+                document.write('<td>52.6℃</td>');//pla cf
+                document.write('<td>/</td>');//abs
+                document.write('<td>86℃</td>');//abs odorless
+                document.write('<td>/</td>');//abs metal
+                document.write('<td>93℃</td>');//abs gf
+                document.write('<td>86℃</td>');//asa
+                document.write('<td>55℃</td>');//asa aero
+                document.write('<td>112.4℃</td>');//pa12 cf
+                document.write('<td>121.7℃</td>');//paht cf
+                document.write('<td>83℃</td>');//pc abs fr
+                document.write('<td>112.1℃</td>');//pet cf
+                document.write('<td>73℃</td>');//petg
+                document.write('<td>/</td>');//pps-cf
+                document.write('<td>/</td>');//tpu
+                document.write('<td>77.8℃</td>');//ultra pa
+                document.write('</tr>');
+
+                /*Tensile strength*/
+                document.write('<tr>');
+                document.write('<td>' + getTranslation('Filaments characteristics', lang) + '</td>');
+                document.write('<td>' + getTranslation('Tensile strength', lang) + '</td>');
+                document.write('<td>39 ± 3 MPa<br>'+ createProgressBar(39/150*100,"#CCB70B")+ '</td>');//pla
+                document.write('<td>39 ± 3 MPa<br>'+ createProgressBar(39/150*100,"#CCB70B")+ '</td>');//pla matte
+                document.write('<td>32 MPa<br>'+ createProgressBar(32/150*100,"#CCB70B")+ '</td>');//pla metal
+                document.write('<td>32 MPa<br>'+ createProgressBar(32/150*100,"#CCB70B")+ '</td>');//pla silk
+                document.write('<td>54.92 ± 0.22 MPa<br>'+ createProgressBar(54.92/150*100,"#CCB70B")+ '</td>');//pla cf
+                document.write('<td>41 ± 1 MPa<br>'+ createProgressBar(41/150*100,"#CCB70B")+ '</td>');//abs
+                document.write('<td>41.65 ± 0.27 MPa<br>'+ createProgressBar(41.65/150*100,"#CCB70B")+ '</td>');//abs odorless
+                document.write('<td>36 MPa<br>'+ createProgressBar(36/150*100,"#CCB70B")+ '</td>');//abs metal
+                document.write('<td>48.48 ± 0.61 MPa<br>'+ createProgressBar(48.48/150*100,"#CCB70B")+ '</td>');//abs gf
+                document.write('<td>38.50 ± 1.60 MPa<br>'+ createProgressBar(38.5/150*100,"#CCB70B")+ '</td>');//asa
+                document.write('<td>8.25 ± 0.15 MPa<br>'+ createProgressBar(8.25/150*100,"#CCB70B")+ '</td>');//asa aero
+                document.write('<td>87.49 ± 2.81 MPa<br>'+ createProgressBar(87.49/150*100,"#CCB70B")+ '</td>');//pa12 cf
+                document.write('<td>104.90 ± 1.99 MPa<br>'+ createProgressBar(104.9/150*100,"#CCB70B")+ '</td>');//paht cf
+                document.write('<td>52.51 ± 0.28 MPa<br>'+ createProgressBar(52.51/150*100,"#CCB70B")+ '</td>');//pc abs fr
+                document.write('<td>87.41 ± 3.57 MPa<br>'+ createProgressBar(87.41/150*100,"#CCB70B")+ '</td>');//pet cf
+                document.write('<td>40.3 ± 0.6 MPa<br>'+ createProgressBar(40.3/150*100,"#CCB70B")+ '</td>');//petg
+                document.write('<td>60 MPa<br>'+ createProgressBar(60/150*100,"#CCB70B")+ '</td>');//pps-cf
+                document.write('<td>31.81 MPa<br>'+ createProgressBar(31.81/150*100,"#CCB70B")+ '</td>');//tpu
+                document.write('<td>86.15 ± 0.56 MPa<br>'+ createProgressBar(86.15/150*100,"#CCB70B")+ '</td>');//ultra pa
+                document.write('</tr>');
+
+                /*Tensile modulus*/
+                document.write('<tr>');
+                document.write('<td></td>');
+                document.write('<td>' + getTranslation('Tensile modulus', lang) + '</td>');
+                document.write('<td>4650 ± 150 MPa<br>'+ createProgressBar(4650/10000*100,"#CC0003")+ '</td>');//pla
+                document.write('<td>2400 ± 200 MPa<br>'+ createProgressBar(2400/10000*100,"#CC0003")+ '</td>');//pla matte
+                document.write('<td>3400 MPa<br>'+ createProgressBar(3400/10000*100,"#CC0003")+ '</td>');//pla metal
+                document.write('<td>4000 MPa<br>'+ createProgressBar(4000/10000*100,"#CC0003")+ '</td>');//pla silk
+                document.write('<td>4020.55 ± 99.11 MPa<br>'+ createProgressBar(4020.55/10000*100,"#CC0003")+ '</td>');//pla cf
+                document.write('<td>3850 ± 150 MPa<br>'+ createProgressBar(3850/10000*100,"#CC0003")+ '</td>');//abs
+                document.write('<td>2350.00 ± 92.00 MPa<br>'+ createProgressBar(2350/10000*100,"#CC0003")+ '</td>');//abs odorless
+                document.write('<td>3700 MPa<br>'+ createProgressBar(3700/10000*100,"#CC0003")+ '</td>');//abs metal
+                document.write('<td>3752.13 ± 68.39 MPa<br>'+ createProgressBar(3752.13/10000*100,"#CC0003")+ '</td>');//abs gf
+                document.write('<td>2317.00 ± 246.00 MPa<br>'+ createProgressBar(2317/10000*100,"#CC0003")+ '</td>');//asa
+                document.write('<td>593.99 ± 24.34 MPa<br>'+ createProgressBar(593.99/10000*100,"#CC0003")+ '</td>');//asa aero
+                document.write('<td>5438.40 ± 282.82 MPa<br>'+ createProgressBar(5438.4/10000*100,"#CC0003")+ '</td>');//pa12 cf
+                document.write('<td>8383.26 ± 419.53 MPa<br>'+ createProgressBar(8383.26/10000*100,"#CC0003")+ '</td>');//paht cf
+                document.write('<td>2588.73 ± 64.81 MPa<br>'+ createProgressBar(2588.73/10000*100,"#CC0003")+ '</td>');//pc abs fr
+                document.write('<td>6025.53 ± 355.46 MPa<br>'+ createProgressBar(6025.53/10000*100,"#CC0003")+ '</td>');//pet cf
+                document.write('<td>1780 ± 80 MPa<br>'+ createProgressBar(1780/10000*100,"#CC0003")+ '</td>');//petg
+                document.write('<td>4800 MPa<br>'+ createProgressBar(4800/10000*100,"#CC0003")+ '</td>');//pps-cf
+                document.write('<td>/</td>');//tpu
+                document.write('<td>3609.22 ± 153.31 MPa<br>'+ createProgressBar(3609.22/10000*100,"#CC0003")+ '</td>');//ultra pa
+                document.write('</tr>');
+
+                /*Elongation at break*/
+                document.write('<tr>');
+                document.write('<td></td>');
+                document.write('<td>' + getTranslation('Elongation at break', lang) + '</td>');
+                document.write('<td>12.5 ± 2.5%</td>');//pla
+                document.write('<td>3 ± 1%</td>');//pla matte
+                document.write('<td>8%</td>');//pla metal
+                document.write('<td>>30%</td>');//pla silk
+                document.write('<td>4.90 ± 0.97%</td>');//pla cf
+                document.write('<td>11 ± 1%</td>');//abs
+                document.write('<td>7.95 ± 4.53%</td>');//abs odorless
+                document.write('<td>3%</td>');//abs metal
+                document.write('<td>2.10 ± 0.10%</td>');//abs gf
+                document.write('<td>5.20 ± 1.40%</td>');//asa
+                document.write('<td>11.52 ± 0.58%</td>');//asa aero
+                document.write('<td>2.59 ± 0.19%</td>');//pa12 cf
+                document.write('<td>1.60 ± 0.07%</td>');//paht cf
+                document.write('<td>5.55 ± 0.99%</td>');//pc abs fr
+                document.write('<td>1.99 ± 0.18%</td>');//pet cf
+                document.write('<td>4.0 ± 0.2%</td>');//petg
+                document.write('<td>6%</td>');//pps-cf
+                document.write('<td>471%</td>');//tpu
+                document.write('<td>11.68 ± 3.36%</td>');//ultra pa
+                document.write('</tr>');
+
+                /*Flexural strength*/
+                document.write('<tr>');
+                document.write('<td></td>');
+                document.write('<td>' + getTranslation('Flexural strength', lang) + '</td>');
+                document.write('<td>72.5 ± 2.5 MPa<br>'+ createProgressBar(72.5/200*100,"#16417C")+ '</td>');//pla
+                document.write('<td>77.5 ± 2.5 MPa<br>'+ createProgressBar(77.5/200*100,"#16417C")+ '</td>');//pla matte
+                document.write('<td>55 MPa<br>'+ createProgressBar(55/200*100,"#16417C")+ '</td>');//pla metal
+                document.write('<td>60 MPa<br>'+ createProgressBar(60/200*100,"#16417C")+ '</td>');//pla silk
+                document.write('<td>91.57 ± 0.31 MPa<br>'+ createProgressBar(91.57/200*100,"#16417C")+ '</td>');//pla cf
+                document.write('<td>77.5 ± 2.5 MPa<br>'+ createProgressBar(77.5/200*100,"#16417C")+ '</td>');//abs
+                document.write('<td>67.81 ± 0.54 MPa<br>'+ createProgressBar(67.81/200*100,"#16417C")+ '</td>');//abs odorless
+                document.write('<td>75 MPa<br>'+ createProgressBar(75/200*100,"#16417C")+ '</td>');//abs metal
+                document.write('<td>78.80 ± 1.26 MPa<br>'+ createProgressBar(78.8/200*100,"#16417C")+ '</td>');//abs gf
+                document.write('<td>64.49 ± 1.30 MPa<br>'+ createProgressBar(64.49/200*100,"#16417C")+ '</td>');//asa
+                document.write('<td>14.31 ± 1.66 MPa<br>'+ createProgressBar(14.31/200*100,"#16417C")+ '</td>');//asa aero
+                document.write('<td>133.17 ± 4.66 MPa<br>'+ createProgressBar(133.17/200*100,"#16417C")+ '</td>');//pa12 cf
+                document.write('<td>147.70 ± 4.09 MPa<br>'+ createProgressBar(144.7/200*100,"#16417C")+ '</td>');//paht cf
+                document.write('<td>85.95 ± 0.83 MPa<br>'+ createProgressBar(85.95/200*100,"#16417C")+ '</td>');//pc abs fr
+                document.write('<td>122.69 ± 5.19 MPa<br>'+ createProgressBar(122.69/200*100,"#16417C")+ '</td>');//pet cf
+                document.write('<td>62.8 ± 0.4 MPa<br>'+ createProgressBar(62.8/200*100,"#16417C")+ '</td>');//petg
+                document.write('<td>105 MPa<br>'+ createProgressBar(105/200*100,"#16417C")+ '</td>');//pps-cf
+                document.write('<td>/</td>');//tpu
+                document.write('<td>121.47 ± 3.14 MPa<br>'+ createProgressBar(121.47/200*100,"#16417C")+ '</td>');//ultra pa
+                document.write('</tr>');
+
+                /*Flexural modulus*/
+                document.write('<tr>');
+                document.write('<td></td>');
+                document.write('<td>' + getTranslation('Flexural modulus', lang) + '</td>');
+                document.write('<td>2850 ± 150 MPa<br>'+ createProgressBar(2850/8000*100,"#EA3FF7")+ '</td>');//pla
+                document.write('<td>2200 ± 200 MPa<br>'+ createProgressBar(2200/8000*100,"#EA3FF7")+ '</td>');//pla matte
+                document.write('<td>2300 MPa<br>'+ createProgressBar(2300/8000*100,"#EA3FF7")+ '</td>');//pla metal
+                document.write('<td>2100 MPa<br>'+ createProgressBar(2100/8000*100,"#EA3FF7")+ '</td>');//pla silk
+                document.write('<td>4197.66 ± 279.96 MPa<br>'+ createProgressBar(4197/8000*100,"#EA3FF7")+ '</td>');//pla cf
+                document.write('<td>77.5 ± 2.5 MPa<br>'+ createProgressBar(77.5/8000*100,"#EA3FF7")+ '</td>');//abs
+                document.write('<td>2400.00 ± 79.69 MPa<br>'+ createProgressBar(2400/8000*100,"#EA3FF7")+ '</td>');//abs odorless
+                document.write('<td>3300 MPa<br>'+ createProgressBar(3300/8000*100,"#EA3FF7")+ '</td>');//abs metal
+                document.write('<td>3531.71 ± 75.79 MPa<br>'+ createProgressBar(3531.71/8000*100,"#EA3FF7")+ '</td>');//abs gf
+                document.write('<td>2399.00 ± 147.00 MPa<br>'+ createProgressBar(2399/8000*100,"#EA3FF7")+ '</td>');//asa
+                document.write('<td>457.94 ± 20.84 MPa<br>'+ createProgressBar(457.94/8000*100,"#EA3FF7")+ '</td>');//asa aero
+                document.write('<td>4667.43 ± 339.80 MPa<br>'+ createProgressBar(4667.43/8000*100,"#EA3FF7")+ '</td>');//pa12 cf
+                document.write('<td>5969.35 ± 145.28 MPa<br>'+ createProgressBar(5969.33/8000*100,"#EA3FF7")+ '</td>');//paht cf
+                document.write('<td>2504.55 ± 22.88 MPa<br>'+ createProgressBar(2504.55/8000*100,"#EA3FF7")+ '</td>');//pc abs fr
+                document.write('<td>5313.21 ± 197.89 MPa<br>'+ createProgressBar(5313.21/8000*100,"#EA3FF7")+ '</td>');//pet cf
+                document.write('<td>1919 ± 54 MPa<br>'+ createProgressBar(1919/8000*100,"#EA3FF7")+ '</td>');//petg
+                document.write('<td>5500 MPa<br>'+ createProgressBar(5500/8000*100,"#EA3FF7")+ '</td>');//pps-cf
+                document.write('<td>/</td>');//tpu
+                document.write('<td>3314.03 ± 181.88 MPa<br>'+ createProgressBar(3314.03/8000*100,"#EA3FF7")+ '</td>');//ultra pa
+                document.write('</tr>');
+
+                /*Notch impact strength*/
+                document.write('<tr>');
+                document.write('<td></td>');
+                document.write('<td>' + getTranslation('Notch impact strength', lang) + '</td>');
+                document.write('<td>6 ± 2KJ/㎡<br>'+ createProgressBar(6/30*100,"#F77089")+ '</td>');//pla
+                document.write('<td>7.5 ± 1.5KJ/㎡<br>'+ createProgressBar(7.5/30*100,"#F77089")+ '</td>');//pla matte
+                document.write('<td>11KJ/㎡<br>'+ createProgressBar(11/30*100,"#F77089")+ '</td>');//pla metal
+                document.write('<td>5KJ/㎡<br>'+ createProgressBar(5/30*100,"#F77089")+ '</td>');//pla silk
+                document.write('<td>6.65 ± 0.38KJ/㎡<br>'+ createProgressBar(6.65/30*100,"#F77089")+ '</td>');//pla cf
+                document.write('<td>20 ± 2KJ/㎡<br>'+ createProgressBar(20/30*100,"#F77089")+ '</td>');//abs
+                document.write('<td>20.03 ± 1.32KJ/㎡<br>'+ createProgressBar(20.03/30*100,"#F77089")+ '</td>');//abs odorless
+                document.write('<td>8KJ/㎡<br>'+ createProgressBar(8/30*100,"#F77089")+ '</td>');//abs metal
+                document.write('<td>8.91 ± 0.63KJ/㎡<br>'+ createProgressBar(8.91/30*100,"#F77089")+ '</td>');//abs gf
+                document.write('<td>12.90 ± 0.90KJ/㎡<br>'+ createProgressBar(12.9/30*100,"#F77089")+ '</td>');//asa
+                document.write('<td>2.29 ± 0.13KJ/㎡<br>'+ createProgressBar(2.29/30*100,"#F77089")+ '</td>');//asa aero
+                document.write('<td>6.11 ± 1.45KJ/㎡<br>'+ createProgressBar(6.11/30*100,"#F77089")+ '</td>');//pa12 cf
+                document.write('<td>6.17 ± 0.2KJ/㎡<br>'+ createProgressBar(6.17/30*100,"#F77089")+ '</td>');//paht cf
+                document.write('<td>8.39 ± 0.46KJ/㎡<br>'+ createProgressBar(8.39/30*100,"#F77089")+ '</td>');//pc abs fr
+                document.write('<td>5.57 ± 0.58KJ/㎡<br>'+ createProgressBar(5.57/30*100,"#F77089")+ '</td>');//pet cf
+                document.write('<td>13.9 ± 2.3KJ/㎡<br>'+ createProgressBar(13.9/30*100,"#F77089")+ '</td>');//petg
+                document.write('<td>11KJ/㎡<br>'+ createProgressBar(11/30*100,"#F77089")+ '</td>');//pps-cf
+                document.write('<td>/</td>');//tpu
+                document.write('<td>5.78 ± 0.30KJ/㎡<br>'+ createProgressBar(5.78/30*100,"#F77089")+ '</td>');//ultra pa
+                document.write('</tr>');
+
+                /*Drying*/
+                document.write('<tr>');
+                document.write('<td></td>');
+                document.write('<td>' + getTranslation('Drying', lang) + '</td>');
+                document.write('<td>' + getTranslation('Recommended drying', lang) + '</td>');//pla
+                document.write('<td>' + getTranslation('Recommended drying', lang) + '</td>');//pla matte
+                document.write('<td>' + getTranslation('Recommended drying', lang) + '</td>');//pla metal
+                document.write('<td>' + getTranslation('Recommended drying', lang) + '</td>');//pla silk
+                document.write('<td>' + getTranslation('Recommended drying', lang) + '</td>');//pla cf
+                document.write('<td>' + getTranslation('Recommended drying', lang) + '</td>');//abs
+                document.write('<td>' + getTranslation('Recommended drying', lang) + '</td>');//abs odorless
+                document.write('<td>' + getTranslation('Need to dry', lang) + '</td>');//abs metal
+                document.write('<td>' + getTranslation('Recommended drying', lang) + '</td>');//abs gf
+                document.write('<td>' + getTranslation('Recommended drying', lang) + '</td>');//asa
+                document.write('<td>' + getTranslation('Recommended drying', lang) + '</td>');//asa aero
+                document.write('<td>' + getTranslation('Need to dry', lang) + '</td>');//pa12 cf
+                document.write('<td>' + getTranslation('Need to dry', lang) + '</td>');//paht cf
+                document.write('<td>' + getTranslation('Recommended drying', lang) + '</td>');//pc abs fr
+                document.write('<td>' + getTranslation('Need to dry', lang) + '</td>');//pet cf
+                document.write('<td>' + getTranslation('Recommended drying', lang) + '</td>');//petg
+                document.write('<td>' + getTranslation('Need to dry', lang) + '</td>');//pps-cf
+                document.write('<td>' + getTranslation('Need to dry', lang) + '</td>');//tpu
+                document.write('<td>' + getTranslation('Need to dry', lang) + '</td>');//ultra pa
+                document.write('</tr>');
+                
+                /*Dry conditions*/
+                document.write('<tr>');
+                document.write('<td>' + getTranslation('Preparation for printing', lang) + '</td>');
+                document.write('<td>' + getTranslation('Dry conditions', lang) + '</td>');
+                document.write('<td>/</td>');//pla
+                document.write('<td>/</td>');//pla matte
+                document.write('<td>/</td>');//pla metal
+                document.write('<td>/</td>');//pla silk
+                document.write('<td>/</td>');//pla cf
+                document.write('<td>70-80℃ 4-6h</td>');//abs
+                document.write('<td>70-80℃ 4-6h</td>');//abs odorless
+                document.write('<td>/</td>');//abs metal
+                document.write('<td>/</td>');//abs gf
+                document.write('<td>70-80℃ 4-6h</td>');//asa
+                document.write('<td>/</td>');//asa aero
+                document.write('<td>110-120℃ 4-6h</td>');//pa12 cf
+                document.write('<td>/</td>');//paht cf
+                document.write('<td>/</td>');//pc abs fr
+                document.write('<td>100℃ 4-6h</td>');//pet cf
+                document.write('<td>60-70℃ 4-6h</td>');//petg
+                document.write('<td>/</td>');//pps-cf
+                document.write('<td>70-80℃ 4-6h</td>');//tpu
+                document.write('<td>100-120℃ 4-6h</td>');//ultra pa
+                document.write('</tr>');
+                
+                /*Suitable hot bed temperature*/
+                document.write('<tr>');
+                document.write('<td></td>');
+                document.write('<td>' + getTranslation('Suitable hot bed temperature', lang) + '</td>');
+                document.write('<td>60℃</td>');//pla
+                document.write('<td>60℃</td>');//pla matte
+                document.write('<td>60℃</td>');//pla metal
+                document.write('<td>60℃</td>');//pla silk
+                document.write('<td>60℃</td>');//pla cf
+                document.write('<td>90℃</td>');//abs
+                document.write('<td>90℃</td>');//abs odorless
+                document.write('<td>90℃</td>');//abs metal
+                document.write('<td>100-110℃</td>');//abs gf
+                document.write('<td>90-110℃</td>');//asa
+                document.write('<td>80-90℃</td>');//asa aero
+                document.write('<td>40-80℃</td>');//pa12 cf
+                document.write('<td>70-80℃</td>');//paht cf
+                document.write('<td>100-110℃</td>');//pc abs fr
+                document.write('<td>70-80℃</td>');//pet cf
+                document.write('<td>70-80℃</td>');//petg
+                document.write('<td>80-110℃</td>');//pps-cf
+                document.write('<td>20-60℃</td>');//tpu
+                document.write('<td>70-80℃</td>');//ultra pa
+                document.write('</tr>');
+
+                /*Sealed box*/
+                document.write('<tr>');
+                document.write('<td></td>');
+                document.write('<td>' + getTranslation('Sealed box', lang) + '</td>');
+                document.write('<td>×</td>');//pla
+                document.write('<td>×</td>');//pla matte
+                document.write('<td>×</td>');//pla metal
+                document.write('<td>×</td>');//pla silk
+                document.write('<td>×</td>');//pla cf
+                document.write('<td>√</td>');//abs
+                document.write('<td>√</td>');//abs odorless
+                document.write('<td>√</td>');//abs metal
+                document.write('<td>√</td>');//abs gf
+                document.write('<td>√</td>');//asa
+                document.write('<td>√</td>');//asa aero
+                document.write('<td>×</td>');//pa12 cf
+                document.write('<td>×</td>');//paht cf
+                document.write('<td>√</td>');//pc abs fr
+                document.write('<td>×</td>');//pet cf
+                document.write('<td>×</td>');//petg
+                document.write('<td>√</td>');//pps-cf
+                document.write('<td>×</td>');//tpu
+                document.write('<td>×</td>');//ultra pa
+                document.write('</tr>');
+                
+                /*Print settings*/
+                document.write('<tr>');
+                document.write('<td>' + getTranslation('Print settings', lang) + '</td>');
+                document.write('<td>' + getTranslation('Nozzle temperature', lang) + '</td>');
+                document.write('<td>190-230℃</td>');//pla
+                document.write('<td>190-230℃</td>');//pla matte
+                document.write('<td>190-220℃</td>');//pla metal
+                document.write('<td>200-230℃</td>');//pla silk
+                document.write('<td>210-240℃</td>');//pla cf
+                document.write('<td>270℃</td>');//abs
+                document.write('<td>260-280℃</td>');//abs odorless
+                document.write('<td>240-270℃</td>');//abs metal
+                document.write('<td>250-270℃</td>');//abs gf
+                document.write('<td>240-280℃</td>');//asa
+                document.write('<td>240-280℃</td>');//asa aero
+                document.write('<td>280-300℃</td>');//pa12 cf
+                document.write('<td>300-320℃</td>');//paht cf
+                document.write('<td>240-270℃</td>');//pc abs fr
+                document.write('<td>280-320℃</td>');//pet cf
+                document.write('<td>240-280℃</td>');//petg
+                document.write('<td>300-370℃</td>');//pps-cf
+                document.write('<td>210-230℃</td>');//tpu
+                document.write('<td>280-300℃</td>');//ultra pa
+                document.write('</tr>');
+                
+                /*Print speed*/
+                document.write('<tr>');
+                document.write('<td></td>');
+                document.write('<td>' + getTranslation('Print speed', lang) + '</td>');
+                document.write('<td>＜300mm/s</td>');//pla
+                document.write('<td>＜300mm/s</td>');//pla matte
+                document.write('<td>＜300mm/s</td>');//pla metal
+                document.write('<td>＜200mm/s</td>');//pla silk
+                document.write('<td>＜200mm/s</td>');//pla cf
+                document.write('<td>＜300mm/s</td>');//abs
+                document.write('<td>＜300mm/s</td>');//abs odorless
+                document.write('<td>＜300mm/s</td>');//abs metal
+                document.write('<td>＜200mm/s</td>');//abs gf
+                document.write('<td>＜300mm/s</td>');//asa
+                document.write('<td>＜90mm/s</td>');//asa aero
+                document.write('<td>＜60mm/s</td>');//pa12 cf
+                document.write('<td>＜160mm/s</td>');//paht cf
+                document.write('<td>＜300mm/s</td>');//pc abs fr
+                document.write('<td>＜200mm/s</td>');//pet cf
+                document.write('<td>＜300mm/s</td>');//petg
+                document.write('<td>＜200mm/s</td>');//pps-cf
+                document.write('<td>＜120mm/s</td>');//tpu
+                document.write('<td>＜90mm/s</td>');//ultra pa
+                document.write('</tr>');
+                
+                /*Post processing*/
+                document.write('<tr>');
+                document.write('<td>' + getTranslation('Post processing', lang) + '</td>');
+                document.write('<td>' + getTranslation('Anneal', lang) + '</td>');
+                document.write('<td>/</td>');//pla
+                document.write('<td>/</td>');//pla matte
+                document.write('<td>/</td>');//pla metal
+                document.write('<td>/</td>');//pla silk
+                document.write('<td>/</td>');//pla cf
+                document.write('<td>/</td>');//abs
+                document.write('<td>/</td>');//abs odorless
+                document.write('<td>/</td>');//abs metal
+                document.write('<td>/</td>');//abs gf
+                document.write('<td>/</td>');//asa
+                document.write('<td>/</td>');//asa aero
+                document.write('<td>80-100℃</td>');//pa12 cf
+                document.write('<td>80-100℃</td>');//paht cf
+                document.write('<td>/</td>');//pc abs fr
+                document.write('<td>80-100℃</td>');//pet cf
+                document.write('<td>/</td>');//petg
+                document.write('<td>/</td>');//pps-cf
+                document.write('<td>/</td>');//tpu
+                document.write('<td>/</td>');//ultra pa
+                document.write('</tr>');
+                
+    
+                
+            </script>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const tableContainer = document.querySelector('.table-container');
+
+    let isDragging = false;
+    let startX, startY;
+    let scrollLeft, scrollTop;
+
+    tableContainer.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startX = e.pageX - tableContainer.offsetLeft;
+        startY = e.pageY - tableContainer.offsetTop;
+        scrollLeft = tableContainer.scrollLeft;
+        scrollTop = tableContainer.scrollTop;
+        tableContainer.style.cursor = 'grabbing'; 
+    });
+
+    tableContainer.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const x = e.pageX - tableContainer.offsetLeft;
+        const y = e.pageY - tableContainer.offsetTop;
+        const walkX = (x - startX) * 1.5; 
+        const walkY = (y - startY) * 1.5; 
+        tableContainer.scrollLeft = scrollLeft - walkX;
+        tableContainer.scrollTop = scrollTop - walkY;
+    });
+
+    tableContainer.addEventListener('mouseup', () => {
+        isDragging = false;
+        tableContainer.style.cursor = 'default'; 
+    });
+
+    tableContainer.addEventListener('mouseleave', () => {
+        isDragging = false;
+        tableContainer.style.cursor = 'default'; 
+    });
+
+
+
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const getAttributeCheckboxes = () => Array.from(checkboxes).filter(cb => cb.value !== 'all');
+
+    const reorderColumns = () => {
+        const selectedAttributes = [];
+        const unselectedAttributes = [];
+
+        const isAllChecked = document.querySelector('input[value="all"]').checked;
+
+        checkboxes.forEach(cb => {
+            if (cb.value !== 'all') {
+                const num = parseInt(cb.value.replace(/filament/, ''), 10);
+                if (cb.checked) {
+                    selectedAttributes.push({ num, value: cb.value });
+                } else {
+                    unselectedAttributes.push({ num, value: cb.value });
+                }
+            }
+        });
+
+        selectedAttributes.sort((a, b) => a.num - b.num);
+        unselectedAttributes.sort((a, b) => a.num - b.num);
+
+        const allAttributes = selectedAttributes.concat(unselectedAttributes);
+
+        const table = document.querySelector('table');
+        const headers = Array.from(table.querySelectorAll('thead th'));
+        const rows = Array.from(table.querySelectorAll('tbody tr'));
+
+        let reorderedIndexes = [0, 1];
+
+        headers.forEach(header => header.classList.remove('unselected'));
+        rows.forEach(row => {
+            row.querySelectorAll('td').forEach(cell => cell.classList.remove('unselected'));
+        });
+
+        allAttributes.forEach(attr => {
+            headers.forEach((header, index) => {
+                
+                if (header.classList.contains(attr.value)) {
+                    reorderedIndexes.push(index);
+                    if (!isAllChecked && unselectedAttributes.some(unselAttr => unselAttr.value === attr.value)) {
+                        header.classList.add('unselected'); 
+                        rows.forEach(row => {
+                            row.querySelectorAll('td')[index].classList.add('unselected'); 
+                        });
+                    }
+                }
+            });
+        });
+
+        const headerRow = table.querySelector('thead tr');
+        reorderedIndexes.forEach(newIndex => {
+            headerRow.appendChild(headers[newIndex]);
+        });
+
+        rows.forEach(row => {
+            const cells = Array.from(row.querySelectorAll('td'));
+            reorderedIndexes.forEach(newIndex => {
+                row.appendChild(cells[newIndex]);
+            });
+        });
+    };
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function () {
+            const isAllChecked = document.querySelector('input[value="all"]').checked;
+
+            if (this.value === 'all') {
+                checkboxes.forEach(cb => {
+                    if (cb.value !== 'all') cb.checked = false;
+                });
+            } else {
+                const selectedAttributes = Array.from(checkboxes).some(cb => cb.checked && cb.value !== 'all');
+                if (selectedAttributes) {
+                    document.querySelector('input[value="all"]').checked = false;
+                }
+            }
+
+            const attributesUnchecked = getAttributeCheckboxes().every(cb => !cb.checked);
+
+            if (attributesUnchecked) {
+                document.querySelector('input[value="all"]').checked = true;
+                checkboxes.forEach(cb => cb.checked = cb.value === 'all');
+            }
+
+            reorderColumns();
+        });
+    });
+
+    
+    document.querySelectorAll('td').forEach(cell => {
+    cell.addEventListener('mouseenter', function() {
+        const table = cell.closest('table');
+        const rowIndex = cell.parentElement.rowIndex;
+        const colIndex = cell.cellIndex;
+
+        
+        const columnClass = table.querySelectorAll('thead th')[colIndex].classList[0]; 
+        const checkbox = document.querySelector(`input[value="${columnClass}"]`); 
+        const showAllCheckbox = document.querySelector('input[value="all"]');
+
+        
+        if (colIndex === 0) {
+            return;
+        }
+
+        
+        if (!showAllCheckbox.checked && (checkbox && !checkbox.checked)) {
+            return;
+        }
+
+        
+        cell.classList.add('hover-cell');
+
+       
+        if (rowIndex > 0) { 
+            table.querySelectorAll('tr')[rowIndex].querySelectorAll('td').forEach((td, i) => {
+                if (i > 0) {
+                    td.classList.add('highlight');
+                }
+            });
+        }
+
+        if (colIndex > 1) { 
+            table.querySelectorAll('tr').forEach((row, i) => {
+                if (i > 0) { 
+                    const targetCell = row.querySelectorAll('td')[colIndex];
+                    if (targetCell && colIndex > 0) { // 排除第一列
+                        targetCell.classList.add('highlight');
+                    }
+                }
+            });
+        }
+    });
+
+    cell.addEventListener('mouseleave', function() {
+        const table = cell.closest('table');
+        const rowIndex = cell.parentElement.rowIndex;
+        const colIndex = cell.cellIndex;
+
+        const columnClass = table.querySelectorAll('thead th')[colIndex].classList[0]; 
+        const checkbox = document.querySelector(`input[value="${columnClass}"]`); 
+        const showAllCheckbox = document.querySelector('input[value="all"]'); 
+
+        if (colIndex === 0) {
+            return;
+        }
+
+        if (!showAllCheckbox.checked && (checkbox && !checkbox.checked)) {
+            return;
+        }
+
+        cell.classList.remove('hover-cell');
+
+        if (rowIndex > 0) { 
+            table.querySelectorAll('tr')[rowIndex].querySelectorAll('td').forEach((td, i) => {
+                if (i > 0) { 
+                    td.classList.remove('highlight');
+                }
+            });
+        }
+
+        
+        if (colIndex > 1) { 
+            table.querySelectorAll('tr').forEach((row, i) => {
+                if (i > 0) { 
+                    const targetCell = row.querySelectorAll('td')[colIndex];
+                    if (targetCell && colIndex > 0) { 
+                        targetCell.classList.remove('highlight');
+                    }
+                }
+            });
+        }
+    });
+});
+
+
+
+    
+</script>
+
+</body>
+</html>
