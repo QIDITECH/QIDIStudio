@@ -1307,8 +1307,23 @@ void Sidebar::update_all_preset_comboboxes()
             cb->update();
     }
 
-    if (p->combo_printer)
+    //w13
+    if (p->combo_printer) {
         p->combo_printer->update();
+        bool get_seal_status =wxGetApp().enable_seal();
+        auto print_config = &wxGetApp().preset_bundle->printers.get_edited_preset().config;
+        AppConfig* config = wxGetApp().app_config;
+        if (get_seal_status) {
+            print_config->set_key_value("seal", new ConfigOptionBool(true));
+            config->set_seal(true);
+            wxGetApp().set_seal_an(true);
+        }
+        else {
+            print_config->set_key_value("seal", new ConfigOptionBool(false));
+            config->set_seal(false);
+            wxGetApp().set_seal_an(false);
+        }
+    }
 }
 
 void Sidebar::update_presets(Preset::Type preset_type)
@@ -1830,7 +1845,8 @@ void Sidebar::sync_ams_list()
                 add_button(wxID_OK, true, _L("Sync"));
                 add_button(wxID_YES, false, _L("Resync"));
             }
-            add_button(wxID_CANCEL, false, _L("Cancel"));
+            //1.9.7.52
+            add_button(wxID_CANCEL, false, _L("No"));
         }
     } dlg(this, ams_filament_ids.empty());
     auto res = dlg.ShowModal();
@@ -7095,22 +7111,37 @@ void Plater::priv::on_action_print_plate(SimpleEvent&)
     }
 
     //QDS
-    //y30
+    //y40
     wxString title = "Send print job to";
     SelectMachineDialog* dlg = new SelectMachineDialog(q, title);
     if (dlg->ShowModal() == wxID_YES)
     {
         std::string send_ip = dlg->get_machine_url();
         std::string show_ip = dlg->get_machine_ip();
-        PrintHostJob upload_job(send_ip, show_ip);
+        std::string send_apikey = dlg->get_machine_apikey();
         std::string project_name = dlg->get_project_name();
         if (project_name.find(".gcode") == std::string::npos)
         {
             project_name += ".gcode";
         }
-        upload_job.upload_data.upload_path = project_name;
-        upload_job.upload_data.post_action = PrintHostPostUploadAction::StartPrint;
-        export_gcode(fs::path(), false, std::move(upload_job));
+        if (send_apikey.empty())
+        {
+            PrintHostJob upload_job(send_ip, show_ip);
+            upload_job.upload_data.upload_path = project_name;
+            upload_job.upload_data.post_action = PrintHostPostUploadAction::StartPrint;
+            export_gcode(fs::path(), false, std::move(upload_job));
+        }
+        else
+        {
+            DynamicPrintConfig cfg_t;
+            cfg_t.set_key_value("print_host", new ConfigOptionString(send_ip));
+            cfg_t.set_key_value("host_type", new ConfigOptionString("ptfff"));
+            cfg_t.set_key_value("printhost_apikey", new ConfigOptionString(send_apikey));
+            PrintHostJob upload_job(&cfg_t);
+            upload_job.upload_data.upload_path = project_name;
+            upload_job.upload_data.post_action = PrintHostPostUploadAction::StartPrint;
+            export_gcode(fs::path(), false, std::move(upload_job));
+        }
     }
     //if (!m_select_machine_dlg) m_select_machine_dlg = new SelectMachineDialog(q);
     //m_select_machine_dlg->set_print_type(PrintFromType::FROM_NORMAL);
@@ -7122,7 +7153,7 @@ void Plater::priv::on_action_print_plate(SimpleEvent&)
 void Plater::priv::on_action_send_to_multi_machine(SimpleEvent&)
 {
 
-    // y21
+    //y40
     // if (!m_send_multi_dlg)
     //     m_send_multi_dlg = new SendMultiMachinePage(q);
     // m_send_multi_dlg->prepare(partplate_list.get_curr_plate_index());
@@ -7139,29 +7170,55 @@ void Plater::priv::on_action_send_to_multi_machine(SimpleEvent&)
         std::map<std::string, std::vector<std::string>> send_machine_info = m_send_multi_dlg->get_selected_machine_info();
         for (auto it = send_machine_info.begin(); it != send_machine_info.end(); it++)
         {
-            std::string send_ip = it->second[0];
-            std::string show_ip = it->second[1];
-            PrintHostJob upload_job(send_ip, show_ip);
-     
             if (project_name.find(".gcode") == std::string::npos)
             {
                 project_name += ".gcode";
             }
-            upload_job.upload_data.upload_path = project_name;
-            upload_job.upload_data.post_action = PrintHostPostUploadAction::None;
-            upload_job.create_time = std::chrono::system_clock::now();
-            if (diff.count() < 0)
-                upload_job.sendinginterval = count / std::stoi(wxGetApp().app_config->get("max_send")) *
-                std::stoi(wxGetApp().app_config->get("sending_interval")) * 60 -
-                diff.count() + 4;
-            else
-                upload_job.sendinginterval = count / std::stoi(wxGetApp().app_config->get("max_send")) *
-                std::stoi(wxGetApp().app_config->get("sending_interval")) * 60;
-            std::chrono::seconds seconds_to_add(upload_job.sendinginterval);
+            std::string send_ip = it->second[0];
+            std::string show_ip = it->second[1];
+            std::string apikey = it->second[2];
+            if (apikey.empty())
+            {
+                PrintHostJob upload_job(send_ip, show_ip);
+                upload_job.upload_data.upload_path = project_name;
+                upload_job.upload_data.post_action = PrintHostPostUploadAction::None;
+                upload_job.create_time = std::chrono::system_clock::now();
+                if (diff.count() < 0)
+                    upload_job.sendinginterval = count / std::stoi(wxGetApp().app_config->get("max_send")) *
+                    std::stoi(wxGetApp().app_config->get("sending_interval")) * 60 -
+                    diff.count() + 4;
+                else
+                    upload_job.sendinginterval = count / std::stoi(wxGetApp().app_config->get("max_send")) *
+                    std::stoi(wxGetApp().app_config->get("sending_interval")) * 60;
+                std::chrono::seconds seconds_to_add(upload_job.sendinginterval);
 
-            m_time_p = upload_job.create_time + seconds_to_add;
-            export_gcode(fs::path(), false, std::move(upload_job));
-            count++;
+                m_time_p = upload_job.create_time + seconds_to_add;
+                export_gcode(fs::path(), false, std::move(upload_job));
+                count++;
+            }
+            else
+            {
+                DynamicPrintConfig cfg_t;
+                cfg_t.set_key_value("print_host", new ConfigOptionString(send_ip));
+                cfg_t.set_key_value("host_type", new ConfigOptionString("ptfff"));
+                cfg_t.set_key_value("printhost_apikey", new ConfigOptionString(apikey));
+                PrintHostJob upload_job(&cfg_t);
+                upload_job.upload_data.upload_path = project_name;
+                upload_job.upload_data.post_action = PrintHostPostUploadAction::None;
+                upload_job.create_time = std::chrono::system_clock::now();
+                if (diff.count() < 0)
+                    upload_job.sendinginterval = count / std::stoi(wxGetApp().app_config->get("max_send")) *
+                    std::stoi(wxGetApp().app_config->get("sending_interval")) * 60 -
+                    diff.count() + 4;
+                else
+                    upload_job.sendinginterval = count / std::stoi(wxGetApp().app_config->get("max_send")) *
+                    std::stoi(wxGetApp().app_config->get("sending_interval")) * 60;
+                std::chrono::seconds seconds_to_add(upload_job.sendinginterval);
+
+                m_time_p = upload_job.create_time + seconds_to_add;
+                export_gcode(fs::path(), false, std::move(upload_job));
+                count++;
+            }
         }
     }
 }
@@ -7277,22 +7334,38 @@ void Plater::priv::on_action_export_to_sdcard(SimpleEvent&)
 	// 	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ":received export sliced file event\n";
 	// 	q->send_to_printer();
 	// }
-    //y30
+    //y40
     wxString title = "Send to Printer SD card";
     SelectMachineDialog* dlg = new SelectMachineDialog(q, title);
     if (dlg->ShowModal() == wxID_YES)
     {
         std::string send_ip = dlg->get_machine_url();
         std::string show_ip = dlg->get_machine_ip();
-        PrintHostJob upload_job(send_ip, show_ip);
+        std::string send_apikey = dlg->get_machine_apikey();
         std::string project_name = dlg->get_project_name();
         if (project_name.find(".gcode") == std::string::npos)
         {
             project_name += ".gcode";
         }
-        upload_job.upload_data.upload_path = project_name;
-        upload_job.upload_data.post_action = PrintHostPostUploadAction::None;
-        export_gcode(fs::path(), false, std::move(upload_job));
+        if (send_apikey.empty())
+        {
+            PrintHostJob upload_job(send_ip, show_ip);
+            upload_job.upload_data.upload_path = project_name;
+            upload_job.upload_data.post_action = PrintHostPostUploadAction::None;
+            export_gcode(fs::path(), false, std::move(upload_job));
+        }
+        else
+        {
+            DynamicPrintConfig cfg_t;
+            cfg_t.set_key_value("print_host", new ConfigOptionString(send_ip));
+            cfg_t.set_key_value("host_type", new ConfigOptionString("ptfff"));
+            cfg_t.set_key_value("printhost_apikey", new ConfigOptionString(send_apikey));
+            PrintHostJob upload_job(&cfg_t);
+            upload_job.upload_data.upload_path = project_name;
+            upload_job.upload_data.post_action = PrintHostPostUploadAction::None;
+            export_gcode(fs::path(), false, std::move(upload_job));
+        }
+
     }
 }
 
@@ -8240,6 +8313,8 @@ void Plater::priv::on_create_filament(SimpleEvent &)
         CreatePresetSuccessfulDialog success_dlg(wxGetApp().mainframe, SuccessType::FILAMENT);
         int                          res = success_dlg.ShowModal();
     }
+    //1.9.7.52
+    wxGetApp().run_wizard(ConfigWizard::RR_USER, ConfigWizard::SP_FILAMENTS);
 }
 
 void Plater::priv::on_modify_filament(SimpleEvent &evt)
@@ -8267,7 +8342,8 @@ void Plater::priv::on_modify_filament(SimpleEvent &evt)
         tab->select_preset(need_edit_preset->name);
         // when some preset have modified, if the printer is not need_edit_preset_name compatible printer, the preset will jump to other preset, need select again
         if (!need_edit_preset->is_compatible) tab->select_preset(need_edit_preset->name);
-    }
+    } else
+        wxGetApp().run_wizard(ConfigWizard::RR_USER, ConfigWizard::SP_FILAMENTS);   //1.9.7.52
 
 }
 
@@ -13032,7 +13108,7 @@ int Plater::send_gcode(int plate_idx, Export3mfProgressFn proFn)
         return -1;
     }
 
-    SaveStrategy strategy = SaveStrategy::Silence | SaveStrategy::SkipModel | SaveStrategy::WithGcode;
+    SaveStrategy strategy = SaveStrategy::Silence | SaveStrategy::SkipModel | SaveStrategy::WithGcode | SaveStrategy::SkipAuxiliary;    //1.9.7.52
 #if !QDT_RELEASE_TO_PUBLIC
     //only save model in QA environment
     std::string sel = get_app_config()->get("iot_environment");
@@ -14531,16 +14607,38 @@ void Plater::show_object_info()
     wxString info_manifold;
     int non_manifold_edges = 0;
     auto mesh_errors = p->sidebar->obj_list()->get_mesh_errors_info(&info_manifold, &non_manifold_edges);
+    //1.9.7.52
+    bool warning = non_manifold_edges > 0;
+    wxString hyper_text;
+    std::function<bool(wxEvtHandler*)> callback;
+    if (warning) {
+        hyper_text = _L(" (Repair)");
+        callback = [](wxEvtHandler*) {
+            wxCommandEvent* evt = new wxCommandEvent(EVT_REPAIR_MODEL);
+            wxQueueEvent(wxGetApp().plater(), evt);
+            return false;
+        };
+    }
 
     #ifndef __WINDOWS__
     if (non_manifold_edges > 0) {
-        info_manifold += into_u8("\n" + _L("Tips:") + "\n" +_L("\"Fix Model\" feature is currently only on Windows. Please repair the model on QIDI Studio(windows) or CAD softwares."));
+        //1.9.7.52
+        info_manifold += into_u8("\n" + _L("Tips:") + "\n" +_L("\"Fix Model\" feature is currently only on Windows. Please use a third-party tool to repair the model before importing it into QIDI Studio, such as "));
+    }
+    if (warning) {
+        std::string repair_url = "https://www.formware.co/onlinestlrepair";
+        hyper_text = repair_url + ".";
+        callback = [repair_url](wxEvtHandler*) {
+            wxGetApp().open_browser_with_warning_dialog(repair_url);
+            return false;
+        };
     }
     #endif //APPLE & LINUX
 
     info_manifold = "<Error>" + info_manifold + "</Error>";
     info_text += into_u8(info_manifold);
-    notify_manager->qdt_show_objectsinfo_notification(info_text, is_windows10()&&(non_manifold_edges > 0), !(p->current_panel == p->view3D));
+    //1.9.7.52
+    notify_manager->qdt_show_objectsinfo_notification(info_text, warning, !(p->current_panel == p->view3D), into_u8(hyper_text), callback);
 }
 
 bool Plater::show_publish_dialog(bool show)

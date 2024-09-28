@@ -415,6 +415,7 @@ public:
     std::string dev_url;
     std::string dev_ip;
     std::string dev_id;
+    std::string dev_apikey;
     bool        local_use_ssl_for_mqtt { true };
     bool        local_use_ssl_for_ftp { true };
     float       nozzle_diameter { 0.0f };
@@ -811,8 +812,8 @@ public:
     bool is_recording_enable();
     bool is_recording();
 
-    // y21
-    MachineObject(std::string name, std::string url, std::string ip);
+    // y40
+    MachineObject(std::string name, std::string url, std::string ip, std::string apikey = "");
     MachineObject(NetworkAgent* agent, std::string name, std::string id, std::string ip);
     ~MachineObject();
 

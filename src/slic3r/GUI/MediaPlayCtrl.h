@@ -15,6 +15,7 @@
 #include <boost/thread.hpp>
 #include <boost/thread/condition_variable.hpp>
 
+#include <chrono>
 #include <deque>
 #include <set>
 
@@ -102,7 +103,11 @@ private:
     std::set<int> m_last_failed_codes;
     wxDateTime    m_last_user_play;
     wxDateTime    m_next_retry;
-
+    //1.9.7.52
+    std::chrono::system_clock::time_point m_play_timer;
+    int           m_print_idle = 0;
+    int           m_load_duration = 0;
+    
     ::Button *m_button_play;
     ::Label * m_label_stat;
     ::Label * m_label_status;

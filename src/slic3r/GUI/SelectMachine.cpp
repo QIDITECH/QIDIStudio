@@ -1212,7 +1212,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     // y21
     wxPanel* switch_button_panel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBU_LEFT | wxTAB_TRAVERSAL | wxBU_RIGHT);
     wxBoxSizer* printer_sizer = new wxBoxSizer(wxHORIZONTAL);
-    switch_button_panel->SetBackgroundColour(wxColor(255, 255, 255));
+    switch_button_panel->SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#FFFFFF")));
     m_switch_button = new SwitchButton(switch_button_panel);
     m_switch_button->SetMaxSize(wxSize(100, 100));
     m_switch_button->SetLabels(_L("Local"), _L("Link"));
@@ -1982,8 +1982,14 @@ bool SelectMachineDialog::get_ams_mapping_result(std::string &mapping_array_str,
     } else {
         json          j = json::array();
         json mapping_info_json = json::array();
-
-        for (int i = 0; i < wxGetApp().preset_bundle->filament_presets.size(); i++) {
+        //1.9.7.52
+        BOOST_LOG_TRIVIAL(info) << "filaments size = " << m_filaments.size();
+        int mapping_size = wxGetApp().preset_bundle->filament_presets.size();
+        for (size_t i = 0; i < m_ams_mapping_result.size(); i++) {
+            mapping_size = std::max(mapping_size, m_ams_mapping_result[i].id);
+        }
+        mapping_size = std::min(mapping_size, 16);
+        for (int i = 0; i <= mapping_size; i++) {
             int tray_id = -1;
             json mapping_item;
             mapping_item["ams"] = tray_id;
@@ -1996,9 +2002,12 @@ bool SelectMachineDialog::get_ams_mapping_result(std::string &mapping_array_str,
                     tray_id = m_ams_mapping_result[k].tray_id;
                     mapping_item["ams"]             = tray_id;
                     mapping_item["filamentType"]    = m_filaments[k].type;
-                    auto it = wxGetApp().preset_bundle->filaments.find_preset(wxGetApp().preset_bundle->filament_presets[i]);
-                    if (it != nullptr) {
-                        mapping_item["filamentId"] = it->filament_id;
+                    //1.9.7.52
+                    if (i >= 0 && i < wxGetApp().preset_bundle->filament_presets.size()) {
+                        auto it = wxGetApp().preset_bundle->filaments.find_preset(wxGetApp().preset_bundle->filament_presets[i]);
+                        if (it != nullptr) {
+                            mapping_item["filamentId"] = it->filament_id;
+                        }
                     }
                     //convert #RRGGBB to RRGGBBAA
                     mapping_item["sourceColor"]     = m_filaments[k].color;
@@ -2534,6 +2543,7 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
             {
                 machine_url = machine.url;
                 machine_ip = machine.ip;
+                machine_apikey = machine.apikey;
                 break;
             }
         }
@@ -2547,6 +2557,7 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
             {
                 machine_url = machine.url;
                 machine_ip = machine.ip;
+                machine_apikey = "";
                 break;
             }
         }
@@ -3163,6 +3174,7 @@ void SelectMachineDialog::update_user_printer()
         machine.ip = py_printer.config.opt_string("print_host");
         machine.type = py_printer.config.opt_string("preset_name");
         machine.display_name = machine.name + " (" + machine.ip + ")";
+        machine.apikey = py_printer.config.opt_string("printhost_apikey");
         machine_list_local.push_back(machine);
     }
 
@@ -4194,6 +4206,8 @@ void SelectMachineDialog::reset_and_sync_ams_list()
     m_sizer_material->Clear();
     m_materialList.clear();
     m_filaments.clear();
+
+    BOOST_LOG_TRIVIAL(info) << "extruders = " << extruders.size();
 
     for (auto i = 0; i < extruders.size(); i++) {
         auto          extruder = extruders[i] - 1;

@@ -23,7 +23,8 @@ END_EVENT_TABLE()
  * calling Refresh()/Update().
  */
 
-DeviceButton::DeviceButton(wxString name_text, wxString ip_text) : paddingSize(10, 8), m_name_text(name_text), m_ip_text(ip_text)
+//y40
+DeviceButton::DeviceButton(wxString name_text, wxString ip_text, wxString apikey_text) : paddingSize(10, 8), m_name_text(name_text), m_ip_text(ip_text), m_apikey(apikey_text)
 {
     background_color = StateColor(
         std::make_pair(0x262629, (int) StateColor::Disabled),
@@ -36,14 +37,16 @@ DeviceButton::DeviceButton(wxString name_text, wxString ip_text) : paddingSize(1
         std::make_pair(*wxBLACK, (int) StateColor::Normal));
 }
 
+//y40
 DeviceButton::DeviceButton(wxWindow *parent,
                              wxString  text,
                              wxString  icon,
                              long      style,
                              wxSize    iconSize /* = wxSize(16, 16)*/,
                              wxString  name_text,
-                             wxString  ip_text)
-    : DeviceButton(name_text,ip_text)
+                             wxString  ip_text,
+                             wxString  apikey_text)
+    : DeviceButton(name_text,ip_text, apikey_text)
 {
     Create(parent, text, icon, style, iconSize);
 }

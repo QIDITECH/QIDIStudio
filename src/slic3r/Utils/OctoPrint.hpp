@@ -33,6 +33,14 @@ public:
     std::string get_host() const override { return m_show_ip; }
     const std::string& get_apikey() const { return m_apikey; }
     const std::string& get_cafile() const { return m_cafile; }
+    //y40
+    virtual std::string get_status(wxString& curl_msg) const override;
+    virtual float       get_progress(wxString& curl_msg) const override;
+    virtual std::pair<std::string, float>       get_status_progress(wxString& curl_msg) const override;
+
+    static void                SetStop(bool isStop) { m_isStop = isStop; };
+    static bool                GetStop() { return m_isStop; };
+    static bool                m_isStop;
 
 protected:
     std::string m_show_ip;

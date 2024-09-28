@@ -50,9 +50,9 @@ public:
 
     virtual bool test(wxString &curl_msg) const = 0;
     //B45
-    std::string                get_status(wxString &msg, const wxString &buttonText, const wxString &ip) const;
-    float                      get_progress(wxString &msg, const wxString &buttonText, const wxString &ip) const;
-    std::string                make_url(const std::string &path, const std::string &m_host) const;
+    virtual std::string                get_status(wxString& curl_msg) const = 0;
+    virtual float                      get_progress(wxString& curl_msg) const = 0;
+    virtual std::pair<std::string, float>       get_status_progress(wxString& curl_msg) const = 0;
     virtual wxString get_test_ok_msg () const = 0;
     virtual wxString get_test_failed_msg (wxString &msg) const = 0;
     virtual bool upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, ErrorFn error_fn) const = 0;
@@ -72,14 +72,9 @@ public:
     virtual bool get_storage(wxArrayString& /*storage_path*/, wxArrayString& /*storage_name*/) const { return false; }
     static PrintHost *get_print_host_url(std::string url, std::string local_ip);
     static PrintHost* get_print_host(DynamicPrintConfig *config);
-    //y36
-    static void SetStop(bool isStop) { m_isStop = isStop; };
-    static bool GetStop() { return m_isStop; };
-    static bool m_isStop;
 
 protected:
     virtual wxString format_error(const std::string &body, const std::string &error, unsigned status) const;
-    bool        m_ssl_revoke_best_effort;
 };
 
 

@@ -806,6 +806,9 @@ void CalibrationPresetPage::set_cali_method(CalibrationMethod method)
                  m_cali_stage_panel->Show(false);
 
              if (m_custom_range_panel) {
+                 wxArrayString values;
+                 values.push_back(wxString::Format(wxT("%.0f"), 1.0));
+                 m_custom_range_panel->set_values(values);
                  m_custom_range_panel->Show(false);
              }
          }

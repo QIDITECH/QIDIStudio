@@ -315,7 +315,9 @@ public:
     void qdt_close_plugin_install_notification();
 
 	//QDS--Objects Info
-	void qdt_show_objectsinfo_notification(const std::string &text, bool is_warning, bool is_hidden);
+	//1.9.7.52
+	void qdt_show_objectsinfo_notification(const std::string &text, bool is_warning, bool is_hidden,
+		const std::string hypertext = "", std::function<bool(wxEvtHandler*)> callback = std::function<bool(wxEvtHandler*)>());
     void qdt_close_objectsinfo_notification();
 
     void qdt_show_seqprintinfo_notification(const std::string &text);

@@ -441,18 +441,19 @@ void PrintHostQueueDialog::on_error(Event &evt)
 
     set_state(evt.job_id, ST_ERROR);
     std::string response_msg = into_u8(evt.error);
-    size_t pos_404      = evt.error.find("HTTP 404:");
     wxString code_msg     = "";
-    if (pos_404 != std::string::npos) {
-        code_msg = _L("Network connection fails.");
+    //y40
+    if (response_msg.find("HTTP 404:") != std::string::npos) {
         size_t isAws = response_msg.find("AWS");
-        if(isAws != std::string::npos)
-            code_msg += _L("HTTP 404. Unable to get required resources from AWS server, please check your network settings.");
+        if (isAws != std::string::npos)
+            code_msg = _L("HTTP 404. Unable to get required resources from AWS server, please check your network settings.");
         else
-            code_msg += _L("HTTP 404. Unable to get required resources from Aliyun server, please check your network settings.");
-    } 
+            code_msg = _L("HTTP 404. Unable to get required resources from Aliyun server, please check your network settings.");
+    }
+    else if (response_msg.find("HTTP 401:") != std::string::npos)
+        code_msg = _L("HTTP 401: Unauthorized. Please check whether your physical printer has added users. If a user exists, add the APIKEY when adding/editing the printer.");
     else
-        code_msg = _L("Network connection times out. Please check the device network Settings.");
+        code_msg = response_msg;
     auto errormsg = format_wxstr("%1%\n%2%", _L("Error uploading to print host") + ":", code_msg);
     job_list->SetValue(wxVariant(0), evt.job_id, COL_PROGRESS);
     job_list->SetValue(wxVariant(errormsg), evt.job_id, COL_ERRORMSG);    // Stashes the error message into a hidden column for later

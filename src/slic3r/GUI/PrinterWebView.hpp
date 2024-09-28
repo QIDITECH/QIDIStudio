@@ -43,6 +43,9 @@
 #include <boost/thread.hpp>
 #include "./Widgets/SwitchButton.hpp"
 #include "./Widgets/DeviceButton.hpp"
+
+#include "OctoPrint.hpp"
+
 namespace Slic3r {
 namespace GUI {
 
@@ -90,7 +93,8 @@ public:
                     const wxString &                           machine_type,
                     const wxString &                           fullname,
                     bool                                       isSelected,
-                   bool                isQIDI);
+                   bool                                         isQIDI,
+                    const wxString &                            apikey);
     void                        DeleteButton();
     void                        UnSelectedButton();
     void ShowNetPrinterButton();
@@ -106,11 +110,11 @@ public:
     {
         m_stopThread = true;
         //y36
-        PrintHost::SetStop(true);
+        OctoPrint::SetStop(true);
         if (m_statusThread.joinable()) {
             m_statusThread.join();
         }
-        PrintHost::SetStop(false);
+        OctoPrint::SetStop(false);
     };
     void SetPauseThread(bool status) { m_pauseThread = status; };
     void SetPresetChanged(bool status);

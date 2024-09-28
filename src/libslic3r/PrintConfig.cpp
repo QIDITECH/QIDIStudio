@@ -559,7 +559,7 @@ void PrintConfigDef::init_fff_params()
 
     // Maximum extruder temperature, bumped to 1500 to support printing of glass.
     //w24
-    const int max_temp = 350;
+    const int max_temp = 370;
 
     def = this->add("reduce_crossing_wall", coBool);
     def->label = L("Avoid crossing wall");

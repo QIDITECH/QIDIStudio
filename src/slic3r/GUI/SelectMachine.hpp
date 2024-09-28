@@ -68,6 +68,7 @@ struct Machine_info {
     std::string ip;
     std::string type;
     std::string display_name;
+    std::string apikey;
 };
 
 
@@ -381,6 +382,7 @@ private:
     std::string                            machine_name;
     std::string                            machine_url;
     std::string                            machine_ip;
+    std::string                            machine_apikey;
 
     Slic3r::DynamicPrintConfig          m_required_data_config;
     Slic3r::Model                       m_required_data_model; 
@@ -561,6 +563,8 @@ public:
     std::string get_machine_ip() { return machine_ip; }
     std::string get_project_name() { return into_u8(m_current_project_name); }
     std::string NormalizeVendor(const std::string& str);
+    std::string get_machine_apikey() { return machine_apikey; }
+
 };
 
 wxDECLARE_EVENT(EVT_FINISHED_UPDATE_MACHINE_LIST, wxCommandEvent);

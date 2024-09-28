@@ -518,11 +518,12 @@ void MachineObject::reload_printer_settings()
     parse_json("{}");
 }
 
-// y21
-MachineObject::MachineObject(std::string name, std::string url, std::string ip)
+// y40
+MachineObject::MachineObject(std::string name, std::string url, std::string ip, std::string apikey)
     :dev_name(name),
     dev_url(url),
     dev_ip(ip),
+    dev_apikey(apikey),
     subtask_(nullptr),
     model_task(nullptr),
     slice_info(nullptr),

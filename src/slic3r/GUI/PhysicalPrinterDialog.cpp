@@ -117,10 +117,17 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_
     
     m_printer = PhysicalPrinter("Default Name", m_printer.config, sel_preset);
     m_config = &m_printer.config;
+    //y40
     if (printer)
+    {
         m_config->set_key_value("print_host", new ConfigOptionString(printer->config.opt_string("print_host")));
+        m_config->set_key_value("printhost_apikey", new ConfigOptionString(printer->config.opt_string("printhost_apikey")));
+    }
     else
+    {
         m_config->set_key_value("print_host", new ConfigOptionString(""));
+        m_config->set_key_value("printhost_apikey", new ConfigOptionString(""));
+    }
     m_optgroup = new ConfigOptionsGroup(this, _L("Print Host upload"), m_config);
 
     auto button_sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -247,6 +254,11 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
     host_line.append_widget(printhost_browse);
     host_line.append_widget(print_host_test);
     m_optgroup->append_line(host_line);
+
+    //y40
+    option = m_optgroup->get_option("printhost_apikey");
+    option.opt.width = 15;
+    m_optgroup->append_single_option_line(option);
 
     m_optgroup->activate();
 
@@ -488,10 +500,12 @@ void PhysicalPrinterDialog::OnOK(wxMouseEvent& event)
     // y3
     m_printer_name = into_u8(m_input_ctrl->GetValue());
     m_printer_host = boost::any_cast<std::string>(m_optgroup->get_field("print_host")->get_value());
+    std::string m_apikey = boost::any_cast<std::string>(m_optgroup->get_field("printhost_apikey")->get_value());
     m_config->set_key_value("name", new ConfigOptionString(into_u8(m_input_ctrl->GetValue())));
     m_config->set_key_value("preset_name", new ConfigOptionString(into_u8(pret_combobox->GetValue())));
     m_config->set_key_value("preset_names", new ConfigOptionString(into_u8(pret_combobox->GetValue())));
     m_config->set_key_value("print_host", new ConfigOptionString(m_printer_host));
+    m_config->set_key_value("printhost_apikey", new ConfigOptionString(m_apikey));
     PhysicalPrinterCollection& printers = wxGetApp().preset_bundle->physical_printers;
     m_printer.set_name(m_printer_name);
     if(!old_name.empty())

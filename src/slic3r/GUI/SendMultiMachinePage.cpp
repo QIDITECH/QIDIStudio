@@ -383,9 +383,9 @@ void SendMultiMachinePage::refresh_user_device()
             const std::string name = py_printer.name;
             const std::string url = py_printer.config.opt_string("print_host");
             const std::string ip = py_printer.config.opt_string("print_host");
-            //y24
+            const std::string apikey = py_printer.config.opt_string("printhost_apikey");
             std::string display_name = name + " (" + ip + ")";
-            MachineObject* obj = new MachineObject(display_name, url, ip);
+            MachineObject* obj = new MachineObject(display_name, url, ip, apikey);
             obj->printer_type = py_printer.config.opt_string("preset_name");
             obj->print_status = "IDLE";
             SendDeviceItem* di = new SendDeviceItem(scroll_macine_list, obj);
@@ -637,9 +637,11 @@ void SendMultiMachinePage::on_send(wxCommandEvent& event)
             std::string name = obj->dev_name;
             std::string url = obj->dev_url;
             std::string ip = obj->dev_ip;
+            std::string apikey = obj->dev_apikey;
             std::vector<std::string> host_vector;
             host_vector.push_back(url);
             host_vector.push_back(ip);
+            host_vector.push_back(apikey);
             m_machine_info.insert(std::make_pair(name, host_vector));
             select_num++;
         }
@@ -1050,7 +1052,7 @@ wxPanel* SendMultiMachinePage::create_page()
     m_table_head_panel = new wxPanel(main_page, wxID_ANY, wxDefaultPosition, wxDefaultSize);
     m_table_head_panel->SetMinSize(wxSize(FromDIP(DEVICE_ITEM_MAX_WIDTH), -1));
     m_table_head_panel->SetMaxSize(wxSize(FromDIP(DEVICE_ITEM_MAX_WIDTH), -1));
-    m_table_head_panel->SetBackgroundColour(TABLE_HEAR_NORMAL_COLOUR);
+    m_table_head_panel->SetBackgroundColour(StateColor::darkModeColorFor(TABLE_HEAR_NORMAL_COLOUR));
     m_table_head_sizer = new wxBoxSizer(wxHORIZONTAL);
 
     m_select_checkbox = new CheckBox(m_table_head_panel, wxID_ANY);

@@ -22,7 +22,8 @@ class DeviceButton : public StaticBox
     static const int buttonHeight = 50;
 
 public:
-    DeviceButton(wxString name_text, wxString ip_text);
+    //y40
+    DeviceButton(wxString name_text, wxString ip_text, wxString apikey_text);
 
     DeviceButton(wxWindow *parent,
                   wxString  text,
@@ -30,7 +31,8 @@ public:
                   long      style    = 0,
                   wxSize    iconSize = wxSize(16, 16),
                   wxString  name_text = "",
-                  wxString  ip_text   = "");
+                  wxString  ip_text   = "",
+                  wxString  apikey_text = "");
 
     DeviceButton(wxWindow* parent, wxString icon, long style);
 
@@ -77,7 +79,8 @@ public:
     wxString GetStateText() { return m_state_text; }
 
     wxString getNameLabel() { return m_name_text; }
-
+    //y40
+    wxString GetApikey() { return m_apikey; };
 
     void Rescale();
 
@@ -110,6 +113,7 @@ private:
     wxString m_progress_text = "(0%)";
     bool     m_isSimpleMode = true;
     bool     m_isSelected   = false;
+    wxString m_apikey;
 
     DECLARE_EVENT_TABLE()
 };
