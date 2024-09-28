@@ -66,6 +66,7 @@
     "skirt_distance": "2",
     "skirt_height": "1",
     "skirt_loops": "0",
+    "small_perimeter_threshold": "4",
     "smooth_coefficient": "90",
     "smooth_speed_discontinuity_area": "1",
     "sparse_infill_density": "15%",

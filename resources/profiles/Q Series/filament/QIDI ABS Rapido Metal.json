@@ -13,7 +13,7 @@
     "enable_overhang_bridge_fan": ["1"],
     "fan_max_speed": ["80"],
     "fan_min_speed": ["20"],
-    "filament_density": ["1.05"],
+    "filament_density": ["1.06"],
     "filament_flow_ratio": ["0.95"],
     "filament_max_volumetric_speed": ["24.5"],
     "filament_type": ["ABS"],

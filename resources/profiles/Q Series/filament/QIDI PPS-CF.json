@@ -14,7 +14,7 @@
     "fan_cooling_layer_time": ["5"],
     "fan_max_speed": ["30"],
     "fan_min_speed": ["0"],
-    "filament_density": ["1.26"],
+    "filament_density": ["1.3"],
     "filament_flow_ratio": ["0.97"],
     "filament_max_volumetric_speed": ["6"],
     "filament_type": ["PPS-CF"],

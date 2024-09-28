@@ -7,5 +7,5 @@
     "family": "Qidi",
     "bed_model": "X-Smart 3_bed.stl",
     "hotend_model": "X-Series_gen3_hotend.stl",
-	"default_materials": "Generic ABS @Qidi X-Smart 3 0.4 nozzle;Generic PLA @Qidi X-Smart 3 0.4 nozzle;QIDI ABS Odorless @Qidi X-Smart 3 0.4 nozzle;QIDI ABS Rapido @Qidi X-Smart 3 0.4 nozzle;QIDI PLA Rapido @Qidi X-Smart 3 0.4 nozzle;QIDI PLA Rapido Matte @Qidi X-Smart 3 0.4 nozzle;QIDI PLA-CF @Qidi X-Smart 3 0.4 nozzle"
+	"default_materials": "Generic ABS @Qidi X-Smart 3 0.4 nozzle;Generic PLA @Qidi X-Smart 3 0.4 nozzle;QIDI ABS Odorless @Qidi X-Smart 3 0.4 nozzle;QIDI ABS Rapido @Qidi X-Smart 3 0.4 nozzle;QIDI PLA Rapido @Qidi X-Smart 3 0.4 nozzle;QIDI PLA Rapido Matte @Qidi X-Smart 3 0.4 nozzle;QIDI PLA-CF @Qidi X-Smart 3 0.4 nozzle;QIDI PLA Rapido Silk @Qidi X-Smart 3 0.4 nozzle;Generic PLA Silk @Qidi X-Smart 3 0.4 nozzle"
 }

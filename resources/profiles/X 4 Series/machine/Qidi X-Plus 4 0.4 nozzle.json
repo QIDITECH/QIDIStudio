@@ -9,7 +9,7 @@
 	"gcode_flavor": "klipper",
 	"default_print_profile": "0.20mm Standard @XPlus4",
 	"printer_settings_id": "Qidi",
-	"bed_exclude_area": ["0x305", "0x300", "50x300", "50x305", "305x305", "305x305", "305x305", "305x10", "293x10", "293x0", "305x0", "305x10", "305x305"],
+	"bed_exclude_area": ["0x305", "0x302", "35x302", "35x305", "305x305", "305x305", "305x305", "305x20", "293x20", "293x0", "305x0", "305x20", "305x305"],
 	"change_filament_gcode": "G1 E{retraction_distances_when_cut[previous_extruder]} F[old_filament_e_feedrate]",
 	"default_filament_profile": ["QIDI PLA Rapido @Qidi X-Plus 4 0.4 nozzle"],
 	"deretraction_speed": ["0"],
