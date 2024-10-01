@@ -16,7 +16,7 @@
     "extruder_offset": ["0x0"],
     "gcode_flavor": "klipper",
     "layer_change_gcode": "G92 E0\nSET_PRINT_STATS_INFO CURRENT_LAYER={layer_num + 1}",
-	"machine_end_gcode": "M141 S0\nM104 S0\nM140 S0\nG1 E-3 F1800\nG0 Z{max_layer_z + 3} F600\nG0 X0 Y0 F12000\n{if max_layer_z < max_print_height / 2}G1 Z{max_print_height / 2 + 10} F600{else}G1 Z{min(max_print_height, max_layer_z + 3)}{endif}",
+	"machine_end_gcode": "M141 S0\nM104 S0\nM140 S0\nG1 E-3 F1800\nG0 Z{max_layer_z + 3} F600\nG0 X0 Y300 F12000\n{if max_layer_z < max_print_height / 2}G1 Z{max_print_height / 2 + 10} F600{else}G1 Z{min(max_print_height, max_layer_z + 3)}{endif}",
     "machine_max_acceleration_e": ["5000"],
     "machine_max_acceleration_extruding": ["20000"],
     "machine_max_acceleration_retracting": ["20000"],
