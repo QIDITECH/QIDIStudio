@@ -1009,6 +1009,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     m_rename_text = new wxStaticText(m_rename_normal_panel, wxID_ANY, wxT("MyLabel"), wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_END);
     m_rename_text->SetFont(::Label::Body_13);
     m_rename_text->SetMaxSize(wxSize(FromDIP(390), -1));
+    m_rename_text->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
     m_rename_button = new ScalableButton(m_rename_normal_panel, wxID_ANY, "ams_editable");
     ams_editable    = new ScalableBitmap(this, "ams_editable", 13);
     ams_editable_light    = new ScalableBitmap(this, "ams_editable_light", 13);
@@ -1027,6 +1028,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     auto rename_edit_sizer_v = new wxBoxSizer(wxVERTICAL);
 
     m_rename_input = new ::TextInput(m_rename_edit_panel, wxEmptyString, wxEmptyString, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
+    m_rename_input->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
     m_rename_input->GetTextCtrl()->SetFont(::Label::Body_13);
     m_rename_input->SetSize(wxSize(FromDIP(380), FromDIP(24)));
     m_rename_input->SetMinSize(wxSize(FromDIP(380), FromDIP(24)));
@@ -1106,6 +1108,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     timeimg = new wxStaticBitmap(m_scrollable_region, wxID_ANY, print_time->bmp(), wxDefaultPosition, wxSize(FromDIP(18), FromDIP(18)), 0);
     m_sizer_basic_weight->Add(timeimg, 1, wxEXPAND | wxALL, FromDIP(5));
     m_stext_time = new wxStaticText(m_scrollable_region, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT);
+    m_stext_time->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
     m_sizer_basic_weight->Add(m_stext_time, 0, wxALL, FromDIP(5));
     m_sizer_basic->Add(m_sizer_basic_weight, 0, wxALIGN_CENTER, 0);
     m_sizer_basic->Add(0, 0, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(30));
@@ -1114,6 +1117,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     weightimg = new wxStaticBitmap(m_scrollable_region, wxID_ANY, print_weight->bmp(), wxDefaultPosition, wxSize(FromDIP(18), FromDIP(18)), 0);
     m_sizer_basic_time->Add(weightimg, 1, wxEXPAND | wxALL, FromDIP(5));
     m_stext_weight = new wxStaticText(m_scrollable_region, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
+    m_stext_weight->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
     m_sizer_basic_time->Add(m_stext_weight, 0, wxALL, FromDIP(5));
     m_sizer_basic->Add(m_sizer_basic_time, 0, wxALIGN_CENTER, 0);
 
@@ -1266,7 +1270,15 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
         }
         });
 
+    m_isSwitch = new wxCheckBox(switch_button_panel, wxID_ANY, _L("Switch to Device tab"), wxDefaultPosition);
+    m_isSwitch->SetValue((wxGetApp().app_config->get("switch to device tab after upload") == "true") ? true : false);
+    m_isSwitch->SetForegroundColour(StateColor::darkModeColorFor(wxColour(0, 0, 0)));
+    wxToolTip* switch_tips = new wxToolTip(_L("Switch to Device tab after upload."));
+    m_isSwitch->SetToolTip(switch_tips);
+
     printer_sizer->Add(m_switch_button, 0, wxALIGN_CENTER);
+    printer_sizer->AddSpacer(20);
+    printer_sizer->Add(m_isSwitch, 1, wxALIGN_CENTER);
     switch_button_panel->SetSizer(printer_sizer);
     switch_button_panel->Layout();
 
@@ -1650,8 +1662,8 @@ wxWindow *SelectMachineDialog::create_ams_checkbox(wxString title, wxWindow *par
 
     auto text = new wxStaticText(checkbox, wxID_ANY, title, wxDefaultPosition, wxDefaultSize, 0);
     text->SetFont(::Label::Body_13);
-    text->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#323A3C")));
     text->Wrap(-1);
+    text->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#323A3C")));
     sizer_checkbox->Add(text, 0, wxALIGN_CENTER, 0);
 
     enable_ams       = new ScalableBitmap(this, "enable_ams", 16);
@@ -2531,6 +2543,12 @@ void SelectMachineDialog::show_errors(wxString &info)
 
 void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
 {
+    bool isSwitch = m_isSwitch->GetValue();
+    if (isSwitch)
+        wxGetApp().app_config->set_bool("switch to device tab after upload", true);
+    else
+        wxGetApp().app_config->set_bool("switch to device tab after upload", false);
+
     // y16
     machine_name = into_u8(m_comboBox_printer->GetValue());
 
@@ -2558,6 +2576,8 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
                 machine_url = machine.url;
                 machine_ip = machine.ip;
                 machine_apikey = "";
+                machine_link_url = machine.link_url;
+                machine_is_special = machine.is_special;
                 break;
             }
         }
@@ -3003,6 +3023,8 @@ void SelectMachineDialog::update_user_machine_list()
                 }
             }
             machine.display_name = machine.name + " (" + machine.ip + ")";
+            machine.link_url = device.link_url;
+            machine.is_special = device.isSpecialMachine;
             machine_list_link.push_back(machine);
         }
     }
@@ -3198,6 +3220,8 @@ void SelectMachineDialog::update_user_printer()
                 }
             }
             machine.display_name = machine.name + " (" + machine.ip + ")";
+            machine.link_url = device.link_url;
+            machine.is_special = device.isSpecialMachine;
             machine_list_link.push_back(machine);
         }
     }

@@ -960,7 +960,7 @@ bool GuideFrame::run()
             //we install the default here
             bool apply_keeped_changes = false;
             //clear filament section and use default materials
-            app.app_config->set_variant(PresetBundle::QDT_BUNDLE,
+            app.app_config->set_variant(PresetBundle::QDT_BUNDLE_X_4,
                 PresetBundle::QDT_DEFAULT_PRINTER_MODEL, PresetBundle::QDT_DEFAULT_PRINTER_VARIANT, "true");
             app.app_config->clear_section(AppConfig::SECTION_FILAMENTS);
             app.preset_bundle->load_selections(*app.app_config, {PresetBundle::QDT_DEFAULT_PRINTER_MODEL, PresetBundle::QDT_DEFAULT_PRINTER_VARIANT, PresetBundle::QDT_DEFAULT_FILAMENT, std::string()});
@@ -1102,7 +1102,7 @@ int GuideFrame::LoadProfile()
         // QDS: add json logic for vendor bundle
         auto qdt_bundle_path = vendor_dir;
         qdt_bundle_rsrc = false;
-        if (!boost::filesystem::exists((vendor_dir / PresetBundle::QDT_BUNDLE).replace_extension(".json"))) {
+        if (!boost::filesystem::exists((vendor_dir / PresetBundle::QDT_BUNDLE_X_4).replace_extension(".json"))) {
             qdt_bundle_path = rsrc_vendor_dir;
             qdt_bundle_rsrc = true;
         }

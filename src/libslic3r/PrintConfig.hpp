@@ -977,6 +977,8 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionEnumsGeneric,        extruder_type))
     //Orca
     ((ConfigOptionBool,                has_scarf_joint_seam))
+    //w34
+    ((ConfigOptionBool,                support_multi_bed_types))
 )
 
 // This object is mapped to Perl as Slic3r::Config::Print.

@@ -760,6 +760,8 @@ public:
     };
     std::atomic<bool> m_arrange_running{false};
 
+    void resetUploadCount();
+
 private:
     struct priv;
     std::unique_ptr<priv> p;

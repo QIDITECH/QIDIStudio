@@ -88,7 +88,8 @@ BonjourDialog::BonjourDialog(wxWindow *parent, Slic3r::PrinterTechnology tech)
 {
 	const int em = GUI::wxGetApp().em_unit();
 	list->SetMinSize(wxSize(40 * em, 30 * em));
-
+	list->SetTextColour(StateColor::darkModeColorFor(wxColour("#323A3C")));
+	list->SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#FFFFFF")));
 	wxBoxSizer *vsizer = new wxBoxSizer(wxVERTICAL);
 
 	vsizer->Add(label, 0, wxEXPAND | wxTOP | wxLEFT | wxRIGHT, em);
@@ -98,6 +99,7 @@ BonjourDialog::BonjourDialog(wxWindow *parent, Slic3r::PrinterTechnology tech)
 	//B29
 	list->AppendColumn(_(L("Address")), wxLIST_FORMAT_LEFT);
 	list->AppendColumn(_(L("Hostname")), wxLIST_FORMAT_LEFT);
+
 	// list->AppendColumn(_(L("Service name")), wxLIST_FORMAT_LEFT, 20 * em);
 
 	// if (tech == ptFFF) {
@@ -344,6 +346,11 @@ void BonjourDialog::on_timer_process()
         label->SetLabel(search_str + ": " + _L("Finished") + ".");
         timer->Stop();
     }
+#ifdef WIN32
+	label->SetForegroundColour(wxColour("#323A3C"));
+#else
+	label->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#323A3C")));
+#endif
 }
 
 IPListDialog::IPListDialog(wxWindow* parent, const wxString& hostname, const std::vector<boost::asio::ip::address>& ips, size_t& selected_index)

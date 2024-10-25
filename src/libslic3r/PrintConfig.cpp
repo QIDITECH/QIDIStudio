@@ -2071,6 +2071,13 @@ void PrintConfigDef::init_fff_params()
     def->readonly = false;
     def->set_default_value(new ConfigOptionEnum<GCodeFlavor>(gcfMarlinLegacy));
 
+    //w34
+    def = this->add("support_multi_bed_types", coBool);
+    def->label = L("Support multi bed types");
+    def->tooltip = L("Enable this option if you want to use multiple bed types");
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionBool(false));
+
     //OrcaSlicer
     def = this->add("exclude_object", coBool);
     def->label = L("Exclude objects");

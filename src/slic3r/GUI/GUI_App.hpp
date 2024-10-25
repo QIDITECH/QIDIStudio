@@ -668,6 +668,7 @@ public:
     void            cancel_networking_install();
     void            restart_networking();
     void            check_config_updates_from_updater() { check_updates(false); }
+    void            update_versioninfo(QIDIVersion version);
 
 private:
     int             updating_qidi_networking();

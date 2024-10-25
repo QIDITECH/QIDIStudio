@@ -2130,6 +2130,10 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
     if (m_config.support_air_filtration.getBool() && m_config.activate_air_filtration.get_at(initial_extruder_id)) {
         file.write(m_writer.set_exhaust_fan(m_config.during_print_exhaust_fan_speed.get_at(initial_extruder_id), true));
     }
+    //w36
+    else {
+        file.write(m_writer.set_exhaust_fan(0, true));
+    }
 
     print.throw_if_canceled();
 
@@ -2425,13 +2429,15 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
         activate_air_filtration |= m_config.activate_air_filtration.get_at(extruder.id());
     activate_air_filtration &= m_config.support_air_filtration.getBool();
 
-    if (activate_air_filtration) {
+    //w36
+    /*if (activate_air_filtration) {
         int complete_print_exhaust_fan_speed = 0;
         for (const auto& extruder : m_writer.extruders())
             if (m_config.activate_air_filtration.get_at(extruder.id()))
                 complete_print_exhaust_fan_speed = std::max(complete_print_exhaust_fan_speed, m_config.complete_print_exhaust_fan_speed.get_at(extruder.id()));
         file.write(m_writer.set_exhaust_fan(complete_print_exhaust_fan_speed, true));
-    }
+    }*/
+    file.write(m_writer.set_exhaust_fan(0, true));
     //w25
     file.write(DoExport::update_print_stats_and_format_filament_stats(
         // Const inputs
@@ -5720,8 +5726,103 @@ std::string GCode::set_object_info(Print* print)
                 gcode << "EXCLUDE_OBJECT_DEFINE NAME=" << get_instance_name(object, inst) << " CENTER=" << center.x()
                     << "," << center.y() << " POLYGON=" << polygon_to_string(inst.get_convex_hull_2d(), print)
                     << "\n";
+
+                //w33
+                std::string instance_name = get_instance_name(object, inst);
+                bool has_pa_pattern = false;
+                bool has_pa_line = false;
+                if (instance_name.find("pa_pattern") != std::string::npos) {
+                    has_pa_pattern = true;
+                }
+                else if(instance_name.find("pa_line") != std::string::npos){
+                    has_pa_line = true;
+                    
+                }
+                if ((has_pa_pattern == true || has_pa_line == true) &&(print->calib_params().mode == CalibMode::Calib_PA_Line || print->calib_params().mode == CalibMode::Calib_PA_Pattern)) {
+                    double ext_x = 0;
+                    double box_width = 0;
+                    
+                    double pa_line_width = print->default_region_config().outer_wall_line_width.value == 0 ?
+                        print->default_object_config().line_width.value == 0 ?
+                        EXTRUDER_CONFIG(nozzle_diameter) * 1.125 :
+                        print->default_object_config().line_width.value :
+                        print->default_region_config().outer_wall_line_width.value;
+                    if (has_pa_line)
+                        box_width = 80;
+                    else if(has_pa_pattern)
+                        box_width = 38 - pa_line_width - m_config.layer_height * (1 - M_PI / 4);
+
+                    
+                    PrintInstance inst = print->objects().front()->instances().front();
+                    auto bbox = inst.get_bounding_box();
+
+                    const Polygon polygon = inst.get_convex_hull_2d();
+
+                    ext_x = print->translate_to_print_space(polygon.points.at(1)).x() - print->translate_to_print_space(polygon.points.front()).x();
+
+                    std::ostringstream pa_area_poly_gcode;
+                    pa_area_poly_gcode << "[";
+
+                    double sum_x = 0;
+                    double sum_y = 0;
+                    Vec2d first_v(print->translate_to_print_space(polygon.points.at(0)).x()+ ext_x, print->translate_to_print_space(polygon.points.at(0)).y());
+                    
+                    for (int i = 0; i < polygon.points.size(); i++) {
+                        const auto v = print->translate_to_print_space(polygon.points.at(i));
+                        if (i == 0 || i == 3) {
+                            pa_area_poly_gcode << "[" << v.x() + ext_x << "," << v.y() << "],";
+                            sum_x += v.x() + ext_x;
+                            sum_y += v.y();
+                            first_v(v.x() + ext_x, v.y());
+                        }
+                        else if(i==1 || i == 2){
+                            pa_area_poly_gcode << "[" << v.x()+ box_width << "," << v.y() << "],";
+                            sum_x += v.x() + box_width;
+                            sum_y += v.y();
+                        }
+                    }
+                    double center_x = sum_x / 4;
+                    double center_y = sum_y / 4;
+                    pa_area_poly_gcode << "[" << first_v.x() << "," << first_v.y() << "]";
+                    pa_area_poly_gcode << "]";
+
+                    gcode << "EXCLUDE_OBJECT_DEFINE NAME=" << "calib_area_id_1_copy_0" << " CENTER=" << center_x
+                        << "," << center_y << " POLYGON=" << pa_area_poly_gcode.str()
+                        << "\n";
+
+                }
             }
         }
+    }
+    
+    if (print->m_tool_ordering.has_wipe_tower()&& print->config().enable_prime_tower) {
+        const FakeWipeTower wipe_tower_data =print->m_fake_wipe_tower;
+        double wipe_tower_width = wipe_tower_data.width;
+        double wipe_tower_depth = wipe_tower_data.depth;
+        double wipe_tower_x = wipe_tower_data.pos.x();
+        double wipe_tower_y = wipe_tower_data.pos.y();
+        double wipe_tower_brim_width = wipe_tower_data.brim_width;
+        double real_width = wipe_tower_width + 2 * wipe_tower_brim_width;
+        double real_depth = wipe_tower_depth + 2 * wipe_tower_brim_width;
+        double first_tower_x = wipe_tower_x - wipe_tower_brim_width;
+        double first_tower_y = wipe_tower_y - wipe_tower_brim_width;
+        double center_x = first_tower_x + real_width / 2;
+        double center_y = first_tower_y + real_depth / 2;
+
+        std::ostringstream wipe_tower_area_gcode;
+        wipe_tower_area_gcode << "[";
+
+        wipe_tower_area_gcode << "[" << first_tower_x << "," << first_tower_y << "],";
+        wipe_tower_area_gcode << "[" << first_tower_x + real_width << "," << first_tower_y << "],";
+        wipe_tower_area_gcode << "[" << first_tower_x + real_width << "," << first_tower_y + real_depth << "],";
+        wipe_tower_area_gcode << "[" << first_tower_x << "," << first_tower_y + real_depth << "],";
+
+        wipe_tower_area_gcode << "[" << first_tower_x << "," << first_tower_y << "]";
+        wipe_tower_area_gcode << "]";
+
+        gcode << "EXCLUDE_OBJECT_DEFINE NAME=" << "wipe_tower_area" << " CENTER=" << center_x
+            << "," << center_y << " POLYGON=" << wipe_tower_area_gcode.str()
+            << "\n";
     }
     return gcode.str();
 }

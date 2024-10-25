@@ -1217,6 +1217,8 @@ void Sidebar::update_all_preset_comboboxes()
     bool is_qdt_preset = preset_bundle.printers.get_edited_preset().is_qdt_vendor_preset(&preset_bundle);
     auto cur_preset_name = preset_bundle.printers.get_edited_preset().name;
     auto p_mainframe = wxGetApp().mainframe;
+    //w34
+    auto cfg = preset_bundle.printers.get_edited_preset().config;
 
     p_mainframe->show_device(is_qdt_preset);
     // y16
@@ -1236,35 +1238,12 @@ void Sidebar::update_all_preset_comboboxes()
             if (m_soft_first_start && !wxGetApp().get_app_conf_exists()) {
                 use_default_bed_type();
             } else {
-                auto user_bed_type_flag = config->get("user_bed_type") == "true";
-                if (!user_bed_type_flag) { //bed_type not follow machine
-                    set_bed_by_curr_bed_type(config);
-                } else {//bed_type follow machine
-                    if (m_is_gcode_file) {//.gcode.3mf case
-                        m_is_gcode_file = false;
-                        set_bed_by_curr_bed_type(config);
-                    }
-                    else if (user_bed_type_flag) {
-                        if (config->has_section("user_bed_type_list")) {
-                            auto user_bed_type_list = config->get_section("user_bed_type_list");
-                            if (user_bed_type_list.size() > 0 && user_bed_type_list[cur_preset_name].size() > 0) {
-                                set_bed_type(user_bed_type_list[cur_preset_name]);
-                            } else {
-                                use_default_bed_type();
-                            }
-                        } else {
-                            use_default_bed_type();
-                        }
-                    }
-                }
+                //w34
             }
         } else {
             BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ":error:AppConfig is nullptr";
         }
-        //m_bed_type_list->Enable();
-        //w30
-        m_bed_type_list->SelectAndNotify(btPEI);
-        m_bed_type_list->Disable();
+       //w34
     } else {
         // y5
         // connection_btn->Show();
@@ -1302,6 +1281,15 @@ void Sidebar::update_all_preset_comboboxes()
     //p->combo_printer->update();
     // Update the filament choosers to only contain the compatible presets, update the color preview,
     // update the dirty flags.
+    //w34
+    if (cfg.opt_bool("support_multi_bed_types")) {
+        m_bed_type_list->Enable();
+        m_bed_type_list->SelectAndNotify(btPEI);
+    }
+    else {
+        m_bed_type_list->SelectAndNotify(btPEI);
+        m_bed_type_list->Disable();
+    }
     if (print_tech == ptFFF) {
         for (PlaterPresetComboBox* cb : p->combos_filament)
             cb->update();
@@ -2419,6 +2407,7 @@ struct Plater::priv
     void set_plater_dirty(bool is_dirty) { dirty_state.set_plater_dirty(is_dirty); }
     bool is_project_dirty() const { return dirty_state.is_dirty(); }
     bool is_presets_dirty() const { return dirty_state.is_presets_dirty(); }
+    void        resetUploadCount();
     void update_project_dirty_from_presets()
     {
         // QDS: backup
@@ -2782,6 +2771,7 @@ struct Plater::priv
     bool PopupObjectTable(int object_id, int volume_id, const wxPoint& position);
     void on_action_send_to_printer(bool isall = false);
     void on_action_send_to_multi_machine(SimpleEvent&);
+
     int update_print_required_data(Slic3r::DynamicPrintConfig config, Slic3r::Model model, Slic3r::PlateDataPtrs plate_data_list, std::string file_name, std::string file_path);
 private:
     bool layers_height_allowed() const;
@@ -2821,6 +2811,9 @@ private:
     bool show_warning_dialog { false };
 
     std::chrono::system_clock::time_point m_time_p;
+    int                                   UploadCount = 0;
+    int                                   max_send_number = 1;
+    int                                   m_sending_interval = 0;
 
     //record print preset
     void record_start_print_preset(std::string action);
@@ -7120,16 +7113,26 @@ void Plater::priv::on_action_print_plate(SimpleEvent&)
         std::string show_ip = dlg->get_machine_ip();
         std::string send_apikey = dlg->get_machine_apikey();
         std::string project_name = dlg->get_project_name();
+        bool is_net_machine = dlg->GetMachineNetMode();
+
         if (project_name.find(".gcode") == std::string::npos)
         {
             project_name += ".gcode";
         }
-        if (send_apikey.empty())
+        if (is_net_machine)
         {
             PrintHostJob upload_job(send_ip, show_ip);
             upload_job.upload_data.upload_path = project_name;
             upload_job.upload_data.post_action = PrintHostPostUploadAction::StartPrint;
+            upload_job.create_time = std::chrono::system_clock::now();
+            upload_job.sendinginterval = m_sending_interval;
             export_gcode(fs::path(), false, std::move(upload_job));
+            std::string link_url = dlg->GetMachineLinkUrl();
+            bool is_special_machine = dlg->isSpecialMachine();
+            wxGetApp().mainframe->m_printer_view->FormatNetUrl(link_url, show_ip, is_special_machine);
+            wxGetApp().mainframe->m_printer_view->SetToggleBar(is_net_machine);
+            wxGetApp().app_config->set("machine_list_net", "1");
+            wxGetApp().mainframe->m_printer_view->ShowNetPrinterButton();
         }
         else
         {
@@ -7140,8 +7143,17 @@ void Plater::priv::on_action_print_plate(SimpleEvent&)
             PrintHostJob upload_job(&cfg_t);
             upload_job.upload_data.upload_path = project_name;
             upload_job.upload_data.post_action = PrintHostPostUploadAction::StartPrint;
+            upload_job.create_time = std::chrono::system_clock::now();
+            upload_job.sendinginterval = m_sending_interval;
             export_gcode(fs::path(), false, std::move(upload_job));
+            wxGetApp().mainframe->m_printer_view->FormatUrl(send_ip);
+            wxGetApp().mainframe->m_printer_view->SetToggleBar(is_net_machine);
+            wxGetApp().app_config->set("machine_list_net", "0");
+            wxGetApp().mainframe->m_printer_view->ShowLocalPrinterButton();
         }
+        bool is_switch_to_device = wxGetApp().app_config->get("switch to device tab after upload") == "true" ? true : false;
+        if (is_switch_to_device)
+            wxGetApp().mainframe->select_tab(size_t(3));
     }
     //if (!m_select_machine_dlg) m_select_machine_dlg = new SelectMachineDialog(q);
     //m_select_machine_dlg->set_print_type(PrintFromType::FROM_NORMAL);
@@ -7149,6 +7161,12 @@ void Plater::priv::on_action_print_plate(SimpleEvent&)
     //m_select_machine_dlg->ShowModal();
     //record_start_print_preset("print_plate");
 }
+
+void Plater::priv::resetUploadCount()
+{
+    UploadCount = 0;
+    m_sending_interval = 0;
+};
 
 void Plater::priv::on_action_send_to_multi_machine(SimpleEvent&)
 {
@@ -7160,20 +7178,25 @@ void Plater::priv::on_action_send_to_multi_machine(SimpleEvent&)
     // m_send_multi_dlg->ShowModal();
     if (!m_send_multi_dlg)
         m_send_multi_dlg = new SendMultiMachinePage(q);
+
+    max_send_number = std::stoi(wxGetApp().app_config->get("max_send"));
     if (m_send_multi_dlg->ShowModal() == wxID_YES) 
     {
-        int count = 0;
+        if (max_send_number != std::stoi(wxGetApp().app_config->get("max_send"))) {
+            float i = (std::stoi(wxGetApp().app_config->get("max_send")) * 1.0) / max_send_number;
+            UploadCount *= i;
+            max_send_number = std::stoi(wxGetApp().app_config->get("max_send"));
+        }
         std::string project_name = m_send_multi_dlg->get_project_name();
+        if (project_name.find(".gcode") == std::string::npos)
+        {
+            project_name += ".gcode";
+        }
         std::chrono::system_clock::time_point curr_time = std::chrono::system_clock::now();
-        auto diff = std::chrono::duration_cast<std::chrono::seconds>(curr_time - m_time_p);
 
         std::map<std::string, std::vector<std::string>> send_machine_info = m_send_multi_dlg->get_selected_machine_info();
         for (auto it = send_machine_info.begin(); it != send_machine_info.end(); it++)
         {
-            if (project_name.find(".gcode") == std::string::npos)
-            {
-                project_name += ".gcode";
-            }
             std::string send_ip = it->second[0];
             std::string show_ip = it->second[1];
             std::string apikey = it->second[2];
@@ -7183,18 +7206,13 @@ void Plater::priv::on_action_send_to_multi_machine(SimpleEvent&)
                 upload_job.upload_data.upload_path = project_name;
                 upload_job.upload_data.post_action = PrintHostPostUploadAction::None;
                 upload_job.create_time = std::chrono::system_clock::now();
-                if (diff.count() < 0)
-                    upload_job.sendinginterval = count / std::stoi(wxGetApp().app_config->get("max_send")) *
-                    std::stoi(wxGetApp().app_config->get("sending_interval")) * 60 -
-                    diff.count() + 4;
-                else
-                    upload_job.sendinginterval = count / std::stoi(wxGetApp().app_config->get("max_send")) *
-                    std::stoi(wxGetApp().app_config->get("sending_interval")) * 60;
-                std::chrono::seconds seconds_to_add(upload_job.sendinginterval);
+                if (UploadCount != 0 && UploadCount % std::stoi(wxGetApp().app_config->get("max_send")) == 0) {
+                    m_sending_interval += std::stoi(wxGetApp().app_config->get("sending_interval")) * 60;
+                }
+                upload_job.sendinginterval = m_sending_interval;
 
-                m_time_p = upload_job.create_time + seconds_to_add;
                 export_gcode(fs::path(), false, std::move(upload_job));
-                count++;
+                UploadCount++;
             }
             else
             {
@@ -7206,18 +7224,13 @@ void Plater::priv::on_action_send_to_multi_machine(SimpleEvent&)
                 upload_job.upload_data.upload_path = project_name;
                 upload_job.upload_data.post_action = PrintHostPostUploadAction::None;
                 upload_job.create_time = std::chrono::system_clock::now();
-                if (diff.count() < 0)
-                    upload_job.sendinginterval = count / std::stoi(wxGetApp().app_config->get("max_send")) *
-                    std::stoi(wxGetApp().app_config->get("sending_interval")) * 60 -
-                    diff.count() + 4;
-                else
-                    upload_job.sendinginterval = count / std::stoi(wxGetApp().app_config->get("max_send")) *
-                    std::stoi(wxGetApp().app_config->get("sending_interval")) * 60;
-                std::chrono::seconds seconds_to_add(upload_job.sendinginterval);
+                if (UploadCount != 0 && UploadCount % std::stoi(wxGetApp().app_config->get("max_send")) == 0) {
+                    m_sending_interval += std::stoi(wxGetApp().app_config->get("sending_interval")) * 60;
+                }
+                upload_job.sendinginterval = m_sending_interval;
 
-                m_time_p = upload_job.create_time + seconds_to_add;
                 export_gcode(fs::path(), false, std::move(upload_job));
-                count++;
+                UploadCount++;
             }
         }
     }
@@ -7343,16 +7356,26 @@ void Plater::priv::on_action_export_to_sdcard(SimpleEvent&)
         std::string show_ip = dlg->get_machine_ip();
         std::string send_apikey = dlg->get_machine_apikey();
         std::string project_name = dlg->get_project_name();
+        bool is_net_machine = dlg->GetMachineNetMode();
+
         if (project_name.find(".gcode") == std::string::npos)
         {
             project_name += ".gcode";
         }
-        if (send_apikey.empty())
+        if (is_net_machine)
         {
             PrintHostJob upload_job(send_ip, show_ip);
             upload_job.upload_data.upload_path = project_name;
             upload_job.upload_data.post_action = PrintHostPostUploadAction::None;
+            upload_job.create_time = std::chrono::system_clock::now();
+            upload_job.sendinginterval = m_sending_interval;
             export_gcode(fs::path(), false, std::move(upload_job));
+            std::string link_url = dlg->GetMachineLinkUrl();
+            bool is_special_machine = dlg->isSpecialMachine();
+            wxGetApp().mainframe->m_printer_view->FormatNetUrl(link_url, show_ip, is_special_machine);
+            wxGetApp().mainframe->m_printer_view->SetToggleBar(is_net_machine);
+            wxGetApp().app_config->set("machine_list_net", "1");
+            wxGetApp().mainframe->m_printer_view->ShowNetPrinterButton();
         }
         else
         {
@@ -7363,9 +7386,18 @@ void Plater::priv::on_action_export_to_sdcard(SimpleEvent&)
             PrintHostJob upload_job(&cfg_t);
             upload_job.upload_data.upload_path = project_name;
             upload_job.upload_data.post_action = PrintHostPostUploadAction::None;
+            upload_job.create_time = std::chrono::system_clock::now();
+            upload_job.sendinginterval = m_sending_interval;
             export_gcode(fs::path(), false, std::move(upload_job));
+            wxGetApp().mainframe->m_printer_view->FormatUrl(send_ip);
+            wxGetApp().mainframe->m_printer_view->SetToggleBar(is_net_machine);
+            wxGetApp().app_config->set("machine_list_net", "0");
+            wxGetApp().mainframe->m_printer_view->ShowLocalPrinterButton();
         }
-
+        bool is_switch_to_device = wxGetApp().app_config->get("switch to device tab after upload") == "true" ? true : false;
+        if (is_switch_to_device)
+            wxGetApp().mainframe->select_tab(size_t(3));
+            
     }
 }
 
@@ -8908,6 +8940,7 @@ void Plater::update_project_dirty_from_presets() { p->update_project_dirty_from_
 int  Plater::save_project_if_dirty(const wxString& reason) { return p->save_project_if_dirty(reason); }
 void Plater::reset_project_dirty_after_save() { p->reset_project_dirty_after_save(); }
 void Plater::reset_project_dirty_initial_presets() { p->reset_project_dirty_initial_presets(); }
+void Plater::resetUploadCount(){ p->resetUploadCount(); }
 #if ENABLE_PROJECT_DIRTY_STATE_DEBUG_WINDOW
 void Plater::render_project_state_debug_window() const { p->render_project_state_debug_window(); }
 #endif // ENABLE_PROJECT_DIRTY_STATE_DEBUG_WINDOW
@@ -9519,9 +9552,8 @@ std::string Plater::double_to_str(const double value)
 void Plater::calib_pa(const Calib_Params &params)
 {
     const auto calib_pa_name = wxString::Format(L"Pressure Advance Test");
-    if (new_project(false, false, calib_pa_name) == wxID_CANCEL)
+    if (new_project(false, true, calib_pa_name) == wxID_CANCEL)
         return;
-    wxGetApp().mainframe->select_tab(size_t(MainFrame::tp3DEditor));
     switch (params.mode) {
         case CalibMode::Calib_PA_Line:
             //w29
@@ -9602,9 +9634,10 @@ std::string Plater::set_pressure_advance(double pa)
 
 void Plater::_calib_pa_line(const Calib_Params& params)
 {
-    new_project();
+    const auto calib_temp_name = wxString::Format(L"pa_line");
+    new_project(false, true, calib_temp_name);
     //w29
-    wxGetApp().mainframe->select_tab(size_t(MainFrame::tp3DEditor));
+    //wxGetApp().mainframe->select_tab(size_t(MainFrame::tp3DEditor));
     std::string input_file;
     input_file = Slic3r::resources_dir() + "/calib/pressure_advance/pa_line.stl";
     std::vector<fs::path> normal_paths;
@@ -9670,8 +9703,8 @@ void Plater::_calib_pa_line(const Calib_Params& params)
         std::stringstream gcode2 = pa_pattern.generate_custom_nums_gcodes(full_config, true, model(), plate_origin, num_double, plate_center.x() - 57.5, start_y + (1 + i * 2) * step_spacing + step_spacing/2);
         gcode << gcode2.rdbuf();
     }
-    gcode << "\n;WIDTH:" << pa_line_width;
-    gcode << m_writer.set_acceleration(external_perimeter_acceleration);
+    gcode << "; LINE_WIDTH: " << pa_line_width << "\n";
+    gcode << "M204 S" << external_perimeter_acceleration;
     gcode << move_to(Vec2d(start_x + 80, start_y), pa_travel_speed, retract_length, retract_speed);
     gcode << move_to(pa_layer_height);
     gcode << move_to(Vec2d(start_x + 80, start_y + count * step_spacing), 3000, count * step_spacing * e_per_mm);
@@ -9774,10 +9807,10 @@ void Plater::_calib_pa_pattern(const Calib_Params &params)
     changed_objects({0});
     */
 
-
-    new_project();
+    const auto calib_temp_name = wxString::Format(L"pa_pattern");
+    new_project(false, true, calib_temp_name);
     //w29
-    wxGetApp().mainframe->select_tab(size_t(MainFrame::tp3DEditor));
+    //wxGetApp().mainframe->select_tab(size_t(MainFrame::tp3DEditor));
     std::string input_file;
     input_file = Slic3r::resources_dir() + "/calib/pressure_advance/pa_pattern.stl";
     std::vector<fs::path> normal_paths;
@@ -9859,14 +9892,13 @@ void Plater::_calib_pa_pattern(const Calib_Params &params)
         gcode << gcode2.rdbuf();
     }
     
-    gcode << "\n;WIDTH:" << pa_line_width;
-    gcode << m_writer.set_acceleration(external_perimeter_acceleration);
+    gcode << "; LINE_WIDTH: " << pa_line_width<< "\n";
+    gcode << "M204 S" << external_perimeter_acceleration;
 
     gcode << move_to(Vec2d(start_x + 2 * line_spacing, start_y - 2 * line_spacing), pa_travel_speed, retract_length, retract_speed);
     gcode << move_to(pa_layer_height);
 
     for (int i = 0; i < 3; i++) {
-        gcode << "\n;start:";
         gcode << move_to(Vec2d(start_x + pa_wall_length - (2 - i) * line_spacing, start_y - (2 - i) * line_spacing),
             speed_first_layer, (pa_wall_length - 2 * (2 - i) * line_spacing) * e_per_mm);
         gcode << move_to(Vec2d(start_x + pa_wall_length - (2 - i) * line_spacing, start_y - pa_wall_width + (2 - i) * line_spacing),
@@ -10003,9 +10035,10 @@ void Plater::_calib_pa_tower(const Calib_Params &params)
     }
 
     _calib_pa_select_added_objects();*/
-    new_project();
+    const auto calib_temp_name = wxString::Format(L"pa_tower");
+    new_project(false, true, calib_temp_name);
     //w29
-    wxGetApp().mainframe->select_tab(size_t(MainFrame::tp3DEditor));
+    //wxGetApp().mainframe->select_tab(size_t(MainFrame::tp3DEditor));
     std::string input_file;
     input_file = Slic3r::resources_dir() + "/calib/pressure_advance/pa_tower.stl";
     std::vector<fs::path> normal_paths;
@@ -10068,10 +10101,10 @@ void Plater::calib_flowrate(int pass,double input_value)
 {
     if (pass != 1 && pass != 2) return;
     const auto calib_name = wxString::Format(L"Flowrate Test - Pass%d", pass);
-    if (new_project(false, false, calib_name) == wxID_CANCEL)
+    if (new_project(false, true, calib_name) == wxID_CANCEL)
         return;
 
-    wxGetApp().mainframe->select_tab(size_t(MainFrame::tp3DEditor));
+    //wxGetApp().mainframe->select_tab(size_t(MainFrame::tp3DEditor));
 
     //if (pass == 1)
     //    add_model(false, (boost::filesystem::path(Slic3r::resources_dir()) / "calib" / "filament_flow" / "flowrate-test-pass1.3mf").string());
@@ -10331,8 +10364,7 @@ void Plater::calib_max_vol_speed(const Calib_Params &params)
 
     //w29
     const auto calib_vol_speed_name = wxString::Format(L"Max volumetric speed test");
-    new_project(false, false, calib_vol_speed_name);
-    wxGetApp().mainframe->select_tab(size_t(MainFrame::tp3DEditor));
+    new_project(false, true, calib_vol_speed_name);
     if (params.mode != CalibMode::Calib_Vol_speed_Tower)
         return;
     add_model(false, Slic3r::resources_dir() + "/calib/volumetric_speed/SpeedTestStructure.step");

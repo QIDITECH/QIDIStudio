@@ -3079,6 +3079,8 @@ void TabFilament::build()
         line.append_option(optgroup->get_option("nozzle_temperature"));
         optgroup->append_line(line);
 
+        //w34
+        optgroup = page->new_optgroup(L("Bed temperature"), L"param_temperature");
         line = { L("Cool Plate / PLA Plate"), L("Bed temperature when cool plate is installed. Value 0 means the filament does not support to print on the Cool Plate") };
         line.append_option(optgroup->get_option("cool_plate_temp_initial_layer"));
         line.append_option(optgroup->get_option("cool_plate_temp"));
@@ -3301,6 +3303,8 @@ void TabFilament::toggle_options()
                 m_preset_bundle);
     }
 
+    //w34
+    auto cfg = m_preset_bundle->printers.get_edited_preset().config;
     if (m_active_page->title() == "Cooling")
     {
         bool cooling = m_config->opt_bool("slow_down_for_layer_cooling", 0);
@@ -3345,9 +3349,11 @@ void TabFilament::toggle_options()
         toggle_line("chamber_temperatures", support_chamber_temp_control);
 
         //w19
+        //w34
+        auto support_multi_bed_types = cfg.opt_bool("support_multi_bed_types");
         for (auto el :
              {"cool_plate_temp", "cool_plate_temp_initial_layer", "eng_plate_temp", "eng_plate_temp_initial_layer","hot_plate_temp_initial_layer","hot_plate_temp"})
-            toggle_line(el, is_QDT_printer);
+            toggle_line(el, support_multi_bed_types);
     }
 
     if (m_active_page->title() == "Setting Overrides")
@@ -3451,6 +3457,8 @@ void TabPrinter::build_fff()
         option.opt.full_width = true;
         optgroup->append_single_option_line(option);
         optgroup->append_single_option_line("printable_height");
+        //w34
+        optgroup->append_single_option_line("support_multi_bed_types");
         optgroup->append_single_option_line("nozzle_volume");
         optgroup->append_single_option_line("best_object_pos");
         // QDS
@@ -3592,7 +3600,7 @@ void TabPrinter::build_fff()
                 });
         };
 
-        optgroup->append_single_option_line("scan_first_layer");
+        //optgroup->append_single_option_line("scan_first_layer");
         optgroup->append_single_option_line("use_relative_e_distances");
         optgroup->append_single_option_line("use_firmware_retraction");
         // optgroup->append_single_option_line("spaghetti_detector");

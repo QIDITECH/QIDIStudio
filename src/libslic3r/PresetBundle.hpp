@@ -243,6 +243,9 @@ public:
 
     //QDS: add QDT as default
     static const char *QDT_BUNDLE;
+    static const char *QDT_BUNDLE_Q;
+    static const char *QDT_BUNDLE_X_3;
+    static const char *QDT_BUNDLE_X_4;
 	static const char *QDT_DEFAULT_PRINTER_MODEL;
 	static const char *QDT_DEFAULT_PRINTER_VARIANT;
 	static const char *QDT_DEFAULT_FILAMENT;

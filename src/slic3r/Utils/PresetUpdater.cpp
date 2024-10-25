@@ -1217,6 +1217,9 @@ void PresetUpdater::priv::check_installed_vendor_profiles() const
                 else if ((vendor_name == PresetBundle::QDT_BUNDLE) || (enabled_vendors.find(vendor_name) != enabled_vendors.end())) {//if vendor has no file, copy it from resource for QDT
                     bundles.push_back(vendor_name);
                 }
+                else if (vendor_name == PresetBundle::QDT_BUNDLE_Q || vendor_name == PresetBundle::QDT_BUNDLE_X_3 || vendor_name == PresetBundle::QDT_BUNDLE_X_4) {
+                    bundles.push_back(vendor_name);
+                }
             }
             else if ((vendor_name == PresetBundle::QDT_BUNDLE) || (enabled_vendors.find(vendor_name) != enabled_vendors.end())) { //always update configs from resource to vendor for QDT
                 bundles.push_back(vendor_name);

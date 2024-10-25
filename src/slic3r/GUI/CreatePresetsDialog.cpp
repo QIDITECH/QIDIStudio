@@ -3925,7 +3925,7 @@ ExportConfigsDialog::ExportCase ExportConfigsDialog::archive_filament_bundle_to_
                 std::string printer_vendor = printer_name_to_preset.first;
                 if (printer_vendor.empty()) continue;
                 Preset *    filament_preset = printer_name_to_preset.second;
-                if (preset_is_not_compatible_qdt_printer(filament_preset)) continue;
+                // if (preset_is_not_compatible_qdt_printer(filament_preset)) continue;
                 if (vendor_to_filament_name.find(std::make_pair(printer_vendor, filament_preset->name)) != vendor_to_filament_name.end()) continue;
                 vendor_to_filament_name.insert(std::make_pair(printer_vendor, filament_preset->name));
                 std::string preset_path     = boost::filesystem::path(filament_preset->file).make_preferred().string();

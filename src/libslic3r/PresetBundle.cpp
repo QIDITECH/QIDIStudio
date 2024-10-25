@@ -45,9 +45,12 @@ static std::vector<std::string> s_project_options {
 
 //QDS: add QDT as default
 const char *PresetBundle::QDT_BUNDLE = "QDT";
-const char *PresetBundle::QDT_DEFAULT_PRINTER_MODEL = "QIDI Lab X1 Carbon";
+const char *PresetBundle::QDT_BUNDLE_Q = "Q Series";
+const char *PresetBundle::QDT_BUNDLE_X_3 = "X 3 Series";
+const char *PresetBundle::QDT_BUNDLE_X_4 = "X 4 Series";
+const char *PresetBundle::QDT_DEFAULT_PRINTER_MODEL = "X-Plus 4";
 const char *PresetBundle::QDT_DEFAULT_PRINTER_VARIANT = "0.4";
-const char *PresetBundle::QDT_DEFAULT_FILAMENT = "Generic PLA";
+const char *PresetBundle::QDT_DEFAULT_FILAMENT = "QIDI PLA Rapido";
 
 PresetBundle::PresetBundle()
     : prints(Preset::TYPE_PRINT, Preset::print_options(), static_cast<const PrintRegionConfig &>(FullPrintConfig::defaults()))

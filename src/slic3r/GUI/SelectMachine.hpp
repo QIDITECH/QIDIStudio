@@ -69,6 +69,8 @@ struct Machine_info {
     std::string type;
     std::string display_name;
     std::string apikey;
+    std::string link_url = "";
+    bool        is_special = false;
 };
 
 
@@ -383,6 +385,8 @@ private:
     std::string                            machine_url;
     std::string                            machine_ip;
     std::string                            machine_apikey;
+    std::string                             machine_link_url = "";
+    bool                                    machine_is_special = false;
 
     Slic3r::DynamicPrintConfig          m_required_data_config;
     Slic3r::Model                       m_required_data_model; 
@@ -471,6 +475,7 @@ protected:
     bool                                m_isNetMode = false;
     std::string                         preset_typename_normalized;
     std::string                         preset_typename;
+    wxCheckBox* m_isSwitch{ nullptr };
 
 public:
     //y30
@@ -564,6 +569,9 @@ public:
     std::string get_project_name() { return into_u8(m_current_project_name); }
     std::string NormalizeVendor(const std::string& str);
     std::string get_machine_apikey() { return machine_apikey; }
+    std::string GetMachineLinkUrl() { return machine_link_url; }
+    bool        GetMachineNetMode() { return m_isNetMode; }
+    bool        isSpecialMachine() { return machine_is_special; }
 
 };
 

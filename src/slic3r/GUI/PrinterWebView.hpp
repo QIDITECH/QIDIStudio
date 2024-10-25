@@ -127,6 +127,9 @@ public:
     std::vector<DeviceButton *> GetNetButton() { return m_net_buttons; };
     wxString GetWeburl(){ return m_web; };
     void load_disconnect_url(wxString& url);
+    void FormatNetUrl(std::string link_url, std::string local_ip, bool isSpecialMachine);
+    void FormatUrl(std::string link_url);
+    void SetToggleBar(bool is_net_mode);
 
 private:
     wxBoxSizer *leftallsizer;

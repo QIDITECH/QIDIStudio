@@ -4602,70 +4602,19 @@ void GUI_App::check_update(bool show_tips, int by_user)
             this->no_new_version();
     }
 }
-//B
+//B y41
 void GUI_App::check_new_version(bool show_tips, int by_user)
 {
-    std::string platform = "windows";
+    QIDINetwork qidi;
+    qidi.check_new_version(show_tips, by_user);
+}
 
-#ifdef __WINDOWS__
-    platform = "windows";
-#endif
-#ifdef __APPLE__
-    platform = "macos";
-#endif
-#ifdef __LINUX__
-    platform = "linux";
-#endif
-    std::string query_params = (boost::format("?name=slicer&version=%1%&guide_version=%2%")
-        % VersionInfo::convert_full_version(SLIC3R_VERSION)
-        % VersionInfo::convert_full_version("0.0.0.1")
-        ).str();
-    //std::string url = get_http_url(app_config->get_country_code()) + query_params;
-    std::string url = "https://api.qidi3dprinter.com/code/version_info";
-    std::string regon = app_config->get_country_code();
-    Slic3r::Http http = Slic3r::Http::get(url);
-
-    http.header("accept", "application/json")
-        .timeout_connect(TIMEOUT_CONNECT)
-        .timeout_max(TIMEOUT_RESPONSE)
-        .on_complete([this, show_tips, by_user, platform,regon](std::string body, unsigned) {
-        try {
-            json j = json::parse(body);
-
-            if (j.contains("message")) {
-                if (j["message"].get<std::string>() == "success") {
-                    if (j.contains("software")) {
-                        if (j["software"].empty() && show_tips) {
-                            this->no_new_version();
-                        }
-                        else {
-                            if (j["software"].contains(platform)
-                                && j["software"][platform].contains("url")
-                                && j["software"][platform].contains("version")
-                                && j["software"][platform].contains("description")) {
-                                version_info.url = j["software"][platform]["url"].get<std::string>();
-                                version_info.version_str = j["software"][platform]["version"].get<std::string>();
-                                version_info.description = j["software"][platform]["description"][regon].get<std::string>();
-                            }
-                            if (j["software"].contains("force_update")) {
-                                version_info.force_upgrade = j["software"][platform]["force_update"].get<bool>();
-                            }
-                            CallAfter([this, show_tips, by_user](){
-                                this->check_update(show_tips, by_user);
-                            });
-                        }
-                    }
-                }
-            }
-        }
-        catch (...) {
-            ;
-        }
-            })
-        .on_error([this](std::string body, std::string error, unsigned int status) {
-            handle_http_error(status, body);
-            BOOST_LOG_TRIVIAL(error) << "check new version error" << body;
-    }).perform();
+void GUI_App::update_versioninfo(QIDIVersion version)
+{
+    version_info.url = version.url;
+    version_info.version_str = version.version_str;
+    version_info.description = version.description;
+    version_info.force_upgrade = version.force_upgrade;
 }
 
 

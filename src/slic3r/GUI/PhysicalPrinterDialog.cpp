@@ -78,9 +78,11 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_
     m_exit_host = exit_host;
 
     wxStaticText *label_top = new wxStaticText(this, wxID_ANY, _L("Machine Name") + ":");
+    label_top->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#323A3C")));
     wxBoxSizer *input_sizer_name = new wxBoxSizer(wxVERTICAL);
 
     m_input_ctrl = new wxTextCtrl(this, wxID_ANY, input_name);
+    m_input_ctrl->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#323A3C")));
     m_valid_label = new wxStaticText(this, wxID_ANY, "");
     m_valid_label->SetForegroundColour(wxColor(255, 111, 0));
 
@@ -89,6 +91,7 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_
     input_sizer_name->Add(m_valid_label, 0, wxEXPAND | wxBOTTOM, BORDER_W);
 
     wxStaticText* pret_combo_text = new wxStaticText(this, wxID_ANY, _L("Choice your physical printer preset") + ":");
+    pret_combo_text->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#323A3C")));
     pret_combobox = new wxComboBox(this, wxID_ANY, inherits, wxDefaultPosition, wxDefaultSize);
     pret_combobox->SetMinSize(wxSize(FromDIP(360), FromDIP(32)));
     PresetBundle& preset_bundle = *wxGetApp().preset_bundle;

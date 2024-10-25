@@ -385,6 +385,10 @@ void AppConfig::set_defaults()
 
     if (get("allow_ip_resolve").empty())
         set("allow_ip_resolve", "1");
+
+    if(get("switch to device tab after upload").empty())
+        set_bool("switch to device tab after upload", false);
+
     // Remove legacy window positions/sizes
     erase("app", "main_frame_maximized");
     erase("app", "main_frame_pos");

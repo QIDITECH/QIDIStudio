@@ -762,17 +762,38 @@ wxBoxSizer* SendMultiMachinePage::create_item_input(wxString str_before, wxStrin
     sizer_input->Add(0, 0, 0, wxEXPAND | wxLEFT, 3);
     sizer_input->Add(second_title, 0, wxALIGN_CENTER_VERTICAL | wxALL, 3);
 
-    input->GetTextCtrl()->Bind(wxEVT_TEXT_ENTER, [this, param, input](wxCommandEvent& e) {
-        auto value = input->GetTextCtrl()->GetValue();
-        app_config->set(param, std::string(value.mb_str()));
-        app_config->save();
-        e.Skip();
-        });
+    //input->GetTextCtrl()->Bind(wxEVT_TEXT_ENTER, [this, param, input](wxCommandEvent& e) {
+    //    auto value = input->GetTextCtrl()->GetValue();
+    //    app_config->set(param, std::string(value.mb_str()));
+    //    app_config->save();
+    //    e.Skip();
+    //    });
 
-    input->GetTextCtrl()->Bind(wxEVT_KILL_FOCUS, [this, param, input](wxFocusEvent& e) {
+    //input->GetTextCtrl()->Bind(wxEVT_KILL_FOCUS, [this, param, input](wxFocusEvent& e) {
+    //    auto value = input->GetTextCtrl()->GetValue();
+    //    app_config->set(param, std::string(value.mb_str()));
+    //    app_config->save();
+    //    e.Skip();
+    //    });
+
+    input->GetTextCtrl()->Bind(wxEVT_TEXT, [this, param, input](wxCommandEvent& e) {
         auto value = input->GetTextCtrl()->GetValue();
-        app_config->set(param, std::string(value.mb_str()));
-        app_config->save();
+        if (!value.empty()) {
+            if (std::stoi(into_u8(value)) > 6 && (param == "max_send")) {
+                MessageDialog msg_wingow(nullptr, _L("The max send number cannot exceed 6"), "", wxICON_WARNING | wxOK);
+                msg_wingow.ShowModal();
+                value = "6";
+                input->GetTextCtrl()->SetValue(value);
+            }
+            else if (std::stoi(into_u8(value)) > 240 && (param == "sending_interval")) {
+                MessageDialog msg_wingow(nullptr, _L("The sending interval cannot exceed 240"), "", wxICON_WARNING | wxOK);
+                msg_wingow.ShowModal();
+                value = "240";
+                input->GetTextCtrl()->SetValue(value);
+            }
+            wxGetApp().app_config->set(param, std::string(value.mb_str()));
+            wxGetApp().app_config->save();
+        }
         e.Skip();
         });
 
@@ -796,6 +817,7 @@ wxBoxSizer* SendMultiMachinePage::create_item_radiobox(wxString title, wxWindow*
     m_radio_group.Append(rs);
 
     wxStaticText* text = new wxStaticText(parent, wxID_ANY, title, wxDefaultPosition, wxDefaultSize);
+    text->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
     radiobox_sizer->Add(radiobox, 0, wxLEFT, FromDIP(23));
     radiobox_sizer->Add(text, 0, wxLEFT, FromDIP(10));
     radiobox->SetToolTip(tooltip);
@@ -932,6 +954,7 @@ wxPanel* SendMultiMachinePage::create_page()
     m_task_name->SetFont(::Label::Body_13);
     m_task_name->SetMinSize(wxSize(FromDIP(200), -1));
     m_task_name->SetMaxSize(wxSize(FromDIP(200), -1));
+    m_task_name->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
     m_rename_button = new ScalableButton(m_rename_normal_panel, wxID_ANY, "ams_editable");
     m_rename_button->SetBackgroundColour(*wxWHITE);
     rename_sizer_h->Add(m_task_name, 0, wxALIGN_CENTER, 0);
@@ -947,6 +970,7 @@ wxPanel* SendMultiMachinePage::create_page()
     auto rename_edit_sizer_v = new wxBoxSizer(wxVERTICAL);
 
     m_rename_input = new ::TextInput(m_rename_edit_panel, wxEmptyString, wxEmptyString, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
+    m_rename_input->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
     m_rename_input->GetTextCtrl()->SetFont(::Label::Body_13);
     m_rename_input->SetSize(wxSize(FromDIP(220), FromDIP(24)));
     m_rename_input->SetMinSize(wxSize(FromDIP(220), FromDIP(24)));
@@ -1005,6 +1029,7 @@ wxPanel* SendMultiMachinePage::create_page()
     timeimg = new wxStaticBitmap(m_title_panel, wxID_ANY, print_time->bmp(), wxDefaultPosition, wxSize(FromDIP(18), FromDIP(18)), 0);
     m_sizer_basic_time->Add(timeimg, 1, wxEXPAND | wxALL, FromDIP(5));
     m_stext_time = new wxStaticText(m_title_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT);
+    m_stext_time->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
     m_sizer_basic_time->Add(m_stext_time, 0, wxALL, FromDIP(5));
     m_sizer_basic->Add(m_sizer_basic_time, 0, wxALIGN_CENTER, 0);
     m_sizer_basic->Add(0, 0, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(30));
@@ -1013,6 +1038,7 @@ wxPanel* SendMultiMachinePage::create_page()
     weightimg = new wxStaticBitmap(m_title_panel, wxID_ANY, print_weight->bmp(), wxDefaultPosition, wxSize(FromDIP(18), FromDIP(18)), 0);
     m_sizer_basic_weight->Add(weightimg, 1, wxEXPAND | wxALL, FromDIP(5));
     m_stext_weight = new wxStaticText(m_title_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
+    m_stext_weight->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
     m_sizer_basic_weight->Add(m_stext_weight, 0, wxALL, FromDIP(5));
     m_sizer_basic->Add(m_sizer_basic_weight, 0, wxALIGN_CENTER, 0);
 

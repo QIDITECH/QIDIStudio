@@ -192,6 +192,9 @@ void PrintHostJobQueue::priv::bg_thread_main()
 
             remove_source();
             job_id++;
+            if (channel_jobs.size_hint() == 0) {
+                GUI::wxGetApp().plater()->resetUploadCount();
+            }
         }
     } catch (const std::exception &e) {
         emit_error(e.what());
@@ -324,17 +327,25 @@ void PrintHostJobQueue::priv::perform_job(PrintHostJob the_job)
         break;
     boost::this_thread::sleep(boost::posix_time::seconds(1));
     }
-    emit_progress(0);   // Indicate the upload is starting
 
-    bool success = the_job.printhost->upload(std::move(the_job.upload_data),
-        [this](Http::Progress progress, bool &cancel) { this->progress_fn(std::move(progress), cancel); },
-        [this](wxString error) {
-            emit_error(std::move(error));
+    if (this->cancel_fn())
+    {
+        emit_cancel(this->job_id);
+    }
+    else
+    {
+        emit_progress(0);   // Indicate the upload is starting
+
+        bool success = the_job.printhost->upload(std::move(the_job.upload_data),
+            [this](Http::Progress progress, bool &cancel) { this->progress_fn(std::move(progress), cancel); },
+            [this](wxString error) {
+                emit_error(std::move(error));
+            }
+        );
+
+        if (success) {
+            emit_progress(100);
         }
-    );
-
-    if (success) {
-        emit_progress(100);
     }
 }
 

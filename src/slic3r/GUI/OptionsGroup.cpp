@@ -455,6 +455,7 @@ bool OptionsGroup::activate(std::function<void()> throw_if_canceled/* = [](){}*/
 			wxStaticBox * stb = new wxStaticBox(m_parent, wxID_ANY, _(title));
 			if (!wxOSX) stb->SetBackgroundStyle(wxBG_STYLE_PAINT);
             stb->SetBackgroundColour(m_parent->GetBackgroundColour());
+            stb->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#323A3C")));
 			stb->SetFont(wxOSX ? wxGetApp().normal_font() : wxGetApp().bold_font());
 			wxGetApp().UpdateDarkUI(stb);
 			// QDS: new layout
@@ -465,7 +466,7 @@ bool OptionsGroup::activate(std::function<void()> throw_if_canceled/* = [](){}*/
 			// QDS: new layout
 			::StaticLine* stl = new ::StaticLine(m_parent, false, _(title), icon);
             stl->SetFont(Label::Head_14);
-            stl->SetForegroundColour("#262E30");
+            stl->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#262E30")));
             sizer = new wxBoxSizer(wxVERTICAL);
             if (title.IsEmpty()) {
                 stl->Hide();

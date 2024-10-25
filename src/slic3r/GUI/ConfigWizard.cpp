@@ -124,16 +124,16 @@ BundleMap BundleMap::load()
 
     //QDS: add QDT as default
     //QDS: add json logic for vendor bundle
-    auto qdt_bundle_path = (vendor_dir / PresetBundle::QDT_BUNDLE).replace_extension(".json");
+    auto qdt_bundle_path = (vendor_dir / PresetBundle::QDT_BUNDLE_X_4).replace_extension(".json");
     auto qdt_bundle_rsrc = false;
     if (!boost::filesystem::exists(qdt_bundle_path)) {
-        qdt_bundle_path = (rsrc_vendor_dir / PresetBundle::QDT_BUNDLE).replace_extension(".json");
+        qdt_bundle_path = (rsrc_vendor_dir / PresetBundle::QDT_BUNDLE_X_4).replace_extension(".json");
         qdt_bundle_rsrc = true;
     }
     {
         Bundle qdt_bundle;
         if (qdt_bundle.load(std::move(qdt_bundle_path), qdt_bundle_rsrc, true))
-            res.emplace(PresetBundle::QDT_BUNDLE, std::move(qdt_bundle));
+            res.emplace(PresetBundle::QDT_BUNDLE_X_4, std::move(qdt_bundle));
     }
 
     // Load the other bundles in the datadir/vendor directory
@@ -163,9 +163,9 @@ BundleMap BundleMap::load()
 Bundle& BundleMap::qdt_bundle()
 {
     //QDS: add QDT as default
-    auto it = find(PresetBundle::QDT_BUNDLE);
+    auto it = find(PresetBundle::QDT_BUNDLE_X_4 );
     if (it == end()) {
-        throw Slic3r::RuntimeError("ConfigWizard: Internal error in BundleMap: QDT_BUNDLE not loaded");
+        throw Slic3r::RuntimeError("ConfigWizard: Internal error in BundleMap: QDT_BUNDLE_X_4  not loaded");
     }
 
     return it->second;
@@ -628,7 +628,7 @@ void PagePrinters::set_run_reason(ConfigWizard::RunReason run_reason)
     if (is_primary_printer_page
         && (run_reason == ConfigWizard::RR_DATA_EMPTY || run_reason == ConfigWizard::RR_DATA_LEGACY)
         && printer_pickers.size() > 0 
-        && printer_pickers[0]->vendor_id == PresetBundle::QDT_BUNDLE) {
+        && printer_pickers[0]->vendor_id == PresetBundle::QDT_BUNDLE_X_4 ) {
         //QDS: select alll qds machine by default
         //printer_pickers[0]->select_one(0, true);
         printer_pickers[0]->select_all(true);
@@ -1941,7 +1941,7 @@ void ConfigWizard::priv::create_3rdparty_pages()
     for (const auto &pair : bundles) {
         const VendorProfile *vendor = pair.second.vendor_profile;
         //QDS: add QDT as default
-        if (vendor->id == PresetBundle::QDT_BUNDLE) { continue; }
+        if (vendor->id == PresetBundle::QDT_BUNDLE_X_4 ) { continue; }
 
         bool is_fff_technology = false;
         bool is_sla_technology = false;
