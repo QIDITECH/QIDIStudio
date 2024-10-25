@@ -6941,7 +6941,7 @@ msgstr ""
 "être imprimé sur le plateau froid."
 
 msgid "Engineering Plate"
-msgstr "Engineering Plate"
+msgstr "Matériaux d'ingénierie lit chaud"
 
 msgid ""
 "Bed temperature when engineering plate is installed. Value 0 means the "
@@ -6964,7 +6964,7 @@ msgstr ""
 "pas d'imprimer sur la plaque PEI lisse/la plaque Haute Température"
 
 msgid "Textured PEI Plate"
-msgstr "Textured PEI Plate"
+msgstr "Lit thermique Texturé Pei"
 
 msgid ""
 "Bed temperature when Textured PEI Plate is installed. Value 0 means the "
@@ -14318,7 +14318,7 @@ msgstr ""
 #~ msgstr "Fin d'impression"
 
 #~ msgid "Engineering plate"
-#~ msgstr "Engineering Plate"
+#~ msgstr "Matériaux d'ingénierie lit chaud"
 
 #~ msgid "Enter a search term"
 #~ msgstr "Entrer un terme de recherche"
@@ -16704,3 +16704,9 @@ msgstr "Calibration grossière"
 
 msgid "Fine Calibration"
 msgstr "Calibration fine"
+
+msgid "Flow Rate Coarse Calibration"
+msgstr "Calibration grossière du débit"
+
+msgid "Flow Rate Fine Calibration"
+msgstr "Calibration fine du débit"

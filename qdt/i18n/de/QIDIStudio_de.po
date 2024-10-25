@@ -6952,7 +6952,7 @@ msgstr ""
 "von 0 bedeutet, dass das Filament auf der Cool Plate nicht unterstützt."
 
 msgid "Engineering Plate"
-msgstr "Engineering Plate"
+msgstr "Heißbett für technische Werkstoffe"
 
 msgid ""
 "Bed temperature when engineering plate is installed. Value 0 means the "
@@ -6963,7 +6963,7 @@ msgstr ""
 "unterstützt wird."
 
 msgid "Smooth PEI Plate / High Temp Plate"
-msgstr "Smooth PEI Plate / High Temp Plate"
+msgstr "Glatte PEI-Platte/Hochtemperaturplatte"
 
 msgid ""
 "Bed temperature when Smooth PEI Plate/High temperature plate is installed. "
@@ -6975,7 +6975,7 @@ msgstr ""
 "Plate/High Temp Plate nicht unterstützt"
 
 msgid "Textured PEI Plate"
-msgstr "Textured PEI Plate"
+msgstr "Textur PEI Heißbett"
 
 msgid ""
 "Bed temperature when Textured PEI Plate is installed. Value 0 means the "
@@ -14308,7 +14308,7 @@ msgstr ""
 #~ msgstr "Ende des Drucks"
 
 #~ msgid "Engineering plate"
-#~ msgstr "Engineering plate"
+#~ msgstr "Heißbett für technische Werkstoffe"
 
 #~ msgid "Enter a search term"
 #~ msgstr "Suchbegriff eingeben"
@@ -16678,3 +16678,9 @@ msgstr "Grobkalibrierung"
 
 msgid "Fine Calibration"
 msgstr "Feinkalibrierung"
+
+msgid "Flow Rate Coarse Calibration"
+msgstr "Grobkalibrierung der Durchflussrate"
+
+msgid "Flow Rate Fine Calibration"
+msgstr "Feinkalibrierung der Durchflussrate"

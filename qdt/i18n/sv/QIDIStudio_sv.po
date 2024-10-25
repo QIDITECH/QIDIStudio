@@ -6805,7 +6805,7 @@ msgid "Nozzle temperature when printing"
 msgstr "Nozzel temperatur vid utskrift"
 
 msgid "Cool Plate / PLA Plate"
-msgstr "Cool Plate / PLA Platta"
+msgstr "Lågtemperaturutskrift varmbädd"
 
 msgid ""
 "Bed temperature when cool plate is installed. Value 0 means the filament "
@@ -6815,7 +6815,7 @@ msgstr ""
 "betyder att filamentet inte stöder utskrift på Cool Plate."
 
 msgid "Engineering Plate"
-msgstr "Engineering Plate"
+msgstr "Ingenjörsmaterial varmbädd"
 
 msgid ""
 "Bed temperature when engineering plate is installed. Value 0 means the "
@@ -6825,7 +6825,7 @@ msgstr ""
 "värde på 0 betyder att filamentet inte stöder utskrift på Engineering Plate."
 
 msgid "Smooth PEI Plate / High Temp Plate"
-msgstr "Slät PEI platta / Högtemperaturs platta"
+msgstr "Smidig PEI-bräda/högtemperaturbräda"
 
 msgid ""
 "Bed temperature when Smooth PEI Plate/High temperature plate is installed. "
@@ -6837,7 +6837,7 @@ msgstr ""
 "högtemperaturplattan"
 
 msgid "Textured PEI Plate"
-msgstr "Texturerad PEI-platta"
+msgstr "Textur PEI varmbädd"
 
 msgid ""
 "Bed temperature when Textured PEI Plate is installed. Value 0 means the "
@@ -13984,7 +13984,7 @@ msgstr ""
 #~ msgstr "Slut på utskriften"
 
 #~ msgid "Engineering plate"
-#~ msgstr "Engineering plate"
+#~ msgstr "Ingenjörsmaterial varmbädd"
 
 #~ msgid "Enter a search term"
 #~ msgstr "Ange ett sökord"
@@ -16277,3 +16277,9 @@ msgstr "Grov kalibrering"
 
 msgid "Fine Calibration"
 msgstr "Fin kalibrering"
+
+msgid "Flow Rate Coarse Calibration"
+msgstr "Grov kalibrering av flödeshastighet"
+
+msgid "Flow Rate Fine Calibration"
+msgstr "Flödeshastighet Finkalibrering"

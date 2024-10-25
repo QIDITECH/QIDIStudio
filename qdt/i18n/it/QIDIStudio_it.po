@@ -16538,3 +16538,9 @@ msgstr "Calibrazione grossolana"
 
 msgid "Fine Calibration"
 msgstr "Calibrazione fine"
+
+msgid "Flow Rate Coarse Calibration"
+msgstr "Calibrazione grossolana della portata"
+
+msgid "Flow Rate Fine Calibration"
+msgstr "Calibrazione fine della portata"

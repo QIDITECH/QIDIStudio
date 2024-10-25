@@ -6887,7 +6887,7 @@ msgstr ""
 "filament nie obsługuje druku na Cool Plate"
 
 msgid "Engineering Plate"
-msgstr "Engineering Plate"
+msgstr "Materiały techniczne gorące łóżko"
 
 msgid ""
 "Bed temperature when engineering plate is installed. Value 0 means the "
@@ -6908,7 +6908,7 @@ msgstr ""
 "0 oznacza, że filament nie obsługuje druku na Smooth PEI Plate/High Temp"
 
 msgid "Textured PEI Plate"
-msgstr "Textured PEI Plate"
+msgstr "Struktura PEI gorące łóżko"
 
 msgid ""
 "Bed temperature when Textured PEI Plate is installed. Value 0 means the "
@@ -14105,7 +14105,7 @@ msgstr ""
 #~ msgstr "Koniec druku"
 
 #~ msgid "Engineering plate"
-#~ msgstr "Engineering plate"
+#~ msgstr "Materiały techniczne gorące łóżko"
 
 #~ msgid "Enter a search term"
 #~ msgstr "Wpisz szukaną frazę"
@@ -16277,3 +16277,9 @@ msgstr ""
 
 #~ msgid "⌥+Left mouse button"
 #~ msgstr "⌥+Lewy przycisk myszy"
+
+msgid "Flow Rate Coarse Calibration"
+msgstr "Kalibracja przepływu gruba"
+
+msgid "Flow Rate Fine Calibration"
+msgstr "Drobna kalibracja natężenia przepływu"

@@ -6666,7 +6666,7 @@ msgid "Nozzle temperature when printing"
 msgstr "ノズル温度"
 
 msgid "Cool Plate / PLA Plate"
-msgstr "Cool Plate / PLA Plate"
+msgstr "低温印刷熱床"
 
 msgid ""
 "Bed temperature when cool plate is installed. Value 0 means the filament "
@@ -6676,7 +6676,7 @@ msgstr ""
 "に使用できない意味です。"
 
 msgid "Engineering Plate"
-msgstr "エンジニアリングプレート"
+msgstr "エンジニアリング材料熱床"
 
 msgid ""
 "Bed temperature when engineering plate is installed. Value 0 means the "
@@ -6686,7 +6686,7 @@ msgstr ""
 "エンジニアリングプレートに使用できない意味です。"
 
 msgid "Smooth PEI Plate / High Temp Plate"
-msgstr "Smooth PEI Plate / High Temp Plate"
+msgstr "平滑PEIプレート/高温プレート"
 
 msgid ""
 "Bed temperature when Smooth PEI Plate/High temperature plate is installed. "
@@ -6698,7 +6698,7 @@ msgstr ""
 "High Temp Plate"
 
 msgid "Textured PEI Plate"
-msgstr "PEIプレート"
+msgstr "テクスチャPEIホットベッド"
 
 msgid ""
 "Bed temperature when Textured PEI Plate is installed. Value 0 means the "
@@ -13616,7 +13616,7 @@ msgstr ""
 #~ msgstr "End of print"
 
 #~ msgid "Engineering plate"
-#~ msgstr "エンジニアリングプレート"
+#~ msgstr "エンジニアリング材料熱床"
 
 #~ msgid "Enter a search term"
 #~ msgstr "検索語を入力"
@@ -15789,3 +15789,9 @@ msgstr "粗い較正"
 
 msgid "Fine Calibration"
 msgstr "ファインアライメント"
+
+msgid "Flow Rate Coarse Calibration"
+msgstr "流速粗較正"
+
+msgid "Flow Rate Fine Calibration"
+msgstr "フローファインアライメント"

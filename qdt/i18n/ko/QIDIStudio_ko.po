@@ -6576,7 +6576,7 @@ msgid "Nozzle temperature when printing"
 msgstr "출력 시 노즐 온도"
 
 msgid "Cool Plate / PLA Plate"
-msgstr "쿨 플레이트 / PLA 플레이트"
+msgstr "저온 인쇄 열침대"
 
 msgid ""
 "Bed temperature when cool plate is installed. Value 0 means the filament does not "
@@ -6586,7 +6586,7 @@ msgstr ""
 "력을 지원하지 않음을 의미합니다."
 
 msgid "Engineering Plate"
-msgstr "엔지니어링 플레이트"
+msgstr "공사 재료 열침대"
 
 msgid ""
 "Bed temperature when engineering plate is installed. Value 0 means the filament does "
@@ -6596,7 +6596,7 @@ msgstr ""
 "레이트에서의 출력을 지원하지 않는다는 의미입니다."
 
 msgid "Smooth PEI Plate / High Temp Plate"
-msgstr "매끄러운 PEI 플레이트 / 고온 플레이트"
+msgstr "부드러운 PEI 플레이트 / 고온 플레이트"
 
 msgid ""
 "Bed temperature when Smooth PEI Plate/High temperature plate is installed. Value 0 "
@@ -6606,7 +6606,7 @@ msgstr ""
 "PEI 플레이트/고온 플레이트 인쇄를 지원하지 않음을 의미합니다."
 
 msgid "Textured PEI Plate"
-msgstr "Textured PEI 플레이트"
+msgstr "텍스쳐 PEI 핫 베드"
 
 msgid ""
 "Bed temperature when Textured PEI Plate is installed. Value 0 means the filament "
@@ -13033,3 +13033,9 @@ msgstr "대략적인 교정"
 
 msgid "Fine Calibration"
 msgstr "정밀 교정"
+
+msgid "Flow Rate Coarse Calibration"
+msgstr "유속 굵기 조정"
+
+msgid "Flow Rate Fine Calibration"
+msgstr "유량 정밀 교정"

@@ -6621,7 +6621,7 @@ msgid "Nozzle temperature when printing"
 msgstr "Teplota trysky při tisku"
 
 msgid "Cool Plate / PLA Plate"
-msgstr "Cool Podložka / PLA Podložka"
+msgstr "Nízkoteplotní tisk horké lůžko"
 
 msgid ""
 "Bed temperature when cool plate is installed. Value 0 means the filament "
@@ -6631,7 +6631,7 @@ msgstr ""
 "filament nepodporuje tisk na Cool Podložku"
 
 msgid "Engineering Plate"
-msgstr "Engineering Podložka"
+msgstr "Strojírenský materiál horké lůžko"
 
 msgid ""
 "Bed temperature when engineering plate is installed. Value 0 means the "
@@ -6641,7 +6641,7 @@ msgstr ""
 "filament nepodporuje tisk na Engineering Podložku"
 
 msgid "Smooth PEI Plate / High Temp Plate"
-msgstr ""
+msgstr "Hladká PEI deska/vysokoteplotní deska"
 
 msgid ""
 "Bed temperature when Smooth PEI Plate/High temperature plate is installed. "
@@ -6650,7 +6650,7 @@ msgid ""
 msgstr ""
 
 msgid "Textured PEI Plate"
-msgstr "Textured PEI Podložka"
+msgstr "Textura PEI horké lůžko"
 
 msgid ""
 "Bed temperature when Textured PEI Plate is installed. Value 0 means the "
@@ -14075,3 +14075,9 @@ msgstr "Hrubá kalibrace"
 
 msgid "Fine Calibration"
 msgstr "Jemná kalibrace"
+
+msgid "Flow Rate Coarse Calibration"
+msgstr "Hrubá kalibrace průtoku"
+
+msgid "Flow Rate Fine Calibration"
+msgstr "Jemná kalibrace průtoku"

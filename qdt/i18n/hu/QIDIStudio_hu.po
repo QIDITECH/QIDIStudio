@@ -6856,7 +6856,7 @@ msgstr ""
 "filament nem támogatja a Cool Plate-re történő nyomtatást"
 
 msgid "Engineering Plate"
-msgstr "Engineering Plate"
+msgstr "Mérnöki anyag forró ágy"
 
 msgid ""
 "Bed temperature when engineering plate is installed. Value 0 means the "
@@ -6878,7 +6878,7 @@ msgstr ""
 "Temperature tálcára történő nyomtatást"
 
 msgid "Textured PEI Plate"
-msgstr "Textured PEI Plate"
+msgstr "Texture PEI forró ágy"
 
 msgid ""
 "Bed temperature when Textured PEI Plate is installed. Value 0 means the "
@@ -14097,7 +14097,7 @@ msgstr ""
 #~ msgstr "Nyomtatás vége"
 
 #~ msgid "Engineering plate"
-#~ msgstr "Engineering plate"
+#~ msgstr "Mérnöki anyag forró ágy"
 
 #~ msgid "Enter a search term"
 #~ msgstr "Add meg a keresési kifejezést"
@@ -16424,3 +16424,9 @@ msgstr "Durva kalibrálás"
 
 msgid "Fine Calibration"
 msgstr "Finomkalibrálás"
+
+msgid "Flow Rate Coarse Calibration"
+msgstr "Áramlási sebesség durva kalibrálás"
+
+msgid "Flow Rate Fine Calibration"
+msgstr "Áramlási sebesség finomkalibrálás"

@@ -6983,7 +6983,7 @@ msgstr ""
 "печатной пластине."
 
 msgid "Textured PEI Plate"
-msgstr "Текстурированная PEI пластина"
+msgstr "Тепловой слой PEI"
 
 msgid ""
 "Bed temperature when Textured PEI Plate is installed. Value 0 means the "
@@ -13870,3 +13870,9 @@ msgstr "Грубая калибровка"
 
 msgid "Fine Calibration"
 msgstr "Точная калибровка"
+
+msgid "Flow Rate Coarse Calibration"
+msgstr "грубый калибровка по скорости потока"
+
+msgid "Flow Rate Fine Calibration"
+msgstr "Точная калибровка расхода"

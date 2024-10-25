@@ -16619,3 +16619,9 @@ msgstr "Calibración aproximada"
 
 msgid "Fine Calibration"
 msgstr "Calibración fina"
+
+msgid "Flow Rate Coarse Calibration"
+msgstr "Calibrazione grossolana della portata"
+
+msgid "Flow Rate Fine Calibration"
+msgstr "Calibrazione fine della portata"

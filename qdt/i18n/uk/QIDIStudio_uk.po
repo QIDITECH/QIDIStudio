@@ -6889,7 +6889,7 @@ msgstr ""
 "Temp Plate"
 
 msgid "Textured PEI Plate"
-msgstr "Textured PEI Plate"
+msgstr "Текстура PEI гаряче ліжко"
 
 msgid ""
 "Bed temperature when Textured PEI Plate is installed. Value 0 means the "
@@ -16468,3 +16468,9 @@ msgstr "Грубе калібрування"
 
 msgid "Fine Calibration"
 msgstr "Точне калібрування"
+
+msgid "Flow Rate Coarse Calibration"
+msgstr "Частота потоку велика калібрація"
+
+msgid "Flow Rate Fine Calibration"
+msgstr "Частота потоку добра калібрація"

@@ -6824,7 +6824,7 @@ msgid "Nozzle temperature when printing"
 msgstr "Yazdırma sırasında nozul sıcaklığı"
 
 msgid "Cool Plate / PLA Plate"
-msgstr "Soğuk Plaka / PLA Plaka"
+msgstr "Daha düşük sıcak yatak bastırması"
 
 msgid ""
 "Bed temperature when cool plate is installed. Value 0 means the filament does "
@@ -6834,7 +6834,7 @@ msgstr ""
 "üzerine yazdırmayı desteklemediği anlamına gelir"
 
 msgid "Engineering Plate"
-msgstr "Mühendislik Plakası"
+msgstr "Mühendislik materyali sıcak yatak"
 
 msgid ""
 "Bed temperature when engineering plate is installed. Value 0 means the "
@@ -6844,7 +6844,7 @@ msgstr ""
 "Mühendislik Plakasına yazdırmayı desteklemediği anlamına gelir"
 
 msgid "Smooth PEI Plate / High Temp Plate"
-msgstr "Düz PEI Plakası / Yüksek Sıcaklık Plakası"
+msgstr "Yüksek sıcaklık tahtası"
 
 msgid ""
 "Bed temperature when Smooth PEI Plate/High temperature plate is installed. "
@@ -6856,7 +6856,7 @@ msgstr ""
 "yapmayı desteklemediği anlamına gelir"
 
 msgid "Textured PEI Plate"
-msgstr "Dokulu PEI Plaka"
+msgstr "Texture PEI sıcak yatak"
 
 msgid ""
 "Bed temperature when Textured PEI Plate is installed. Value 0 means the "
@@ -13742,3 +13742,9 @@ msgstr "Kaba Kalibrasyon"
 
 msgid "Fine Calibration"
 msgstr "İnce Kalibrasyon"
+
+msgid "Flow Rate Coarse Calibration"
+msgstr "Akış Değeri Deniz Kalibrası"
+
+msgid "Flow Rate Fine Calibration"
+msgstr "Güzel kalibre"
