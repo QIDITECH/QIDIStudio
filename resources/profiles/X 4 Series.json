@@ -156,6 +156,10 @@
             "name": "Generic PLA@X4",
             "sub_path": "filament/Generic PLA.json"
         },
+        {
+            "name": "Generic PLA+@X4",
+            "sub_path": "filament/Generic PLA+.json"
+        },
 		{
             "name": "QIDI PLA-CF@X4",
             "sub_path": "filament/QIDI PLA-CF.json"
@@ -511,6 +515,22 @@
         {
             "name": "Generic PLA @Qidi X-Plus 4 0.8 nozzle",
             "sub_path": "filament/Generic PLA @Qidi X-Plus 4 0.8 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi X-Plus 4 0.2 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi X-Plus 4 0.2 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi X-Plus 4 0.4 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi X-Plus 4 0.4 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi X-Plus 4 0.6 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi X-Plus 4 0.6 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi X-Plus 4 0.8 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi X-Plus 4 0.8 nozzle.json"
         },
         {
             "name": "Generic PLA Silk @Qidi X-Plus 4 0.4 nozzle",

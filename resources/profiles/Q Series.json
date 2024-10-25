@@ -176,6 +176,10 @@
             "name": "Generic PLA@Q-Series",
             "sub_path": "filament/Generic PLA.json"
         },
+        {
+            "name": "Generic PLA+@Q-Series",
+            "sub_path": "filament/Generic PLA+.json"
+        },
 		{
             "name": "QIDI PLA-CF@Q-Series",
             "sub_path": "filament/QIDI PLA-CF.json"
@@ -391,6 +395,22 @@
         {
             "name": "Generic PLA @Qidi Q1 Pro 0.8 nozzle",
             "sub_path": "filament/Generic PLA @Qidi Q1 Pro 0.8 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi Q1 Pro 0.4 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi Q1 Pro 0.4 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi Q1 Pro 0.2 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi Q1 Pro 0.2 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi Q1 Pro 0.6 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi Q1 Pro 0.6 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi Q1 Pro 0.8 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi Q1 Pro 0.8 nozzle.json"
         },
         {
             "name": "Generic TPU 95A @Qidi Q1 Pro 0.4 nozzle",

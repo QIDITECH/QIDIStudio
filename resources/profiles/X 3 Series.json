@@ -396,6 +396,10 @@
             "name": "Generic PLA@X3",
             "sub_path": "filament/Generic PLA.json"
         },
+        {
+            "name": "Generic PLA+@X3",
+            "sub_path": "filament/Generic PLA+.json"
+        },
 		{
             "name": "QIDI PLA-CF@X3",
             "sub_path": "filament/QIDI PLA-CF.json"
@@ -1152,6 +1156,54 @@
         {
             "name": "Generic PLA @Qidi X-Smart 3 0.8 nozzle",
             "sub_path": "filament/Generic PLA @Qidi X-Smart 3 0.8 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi X-Max 3 0.2 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi X-Max 3 0.2 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi X-Plus 3 0.2 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi X-Plus 3 0.2 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi X-Smart 3 0.2 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi X-Smart 3 0.2 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi X-Max 3 0.4 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi X-Max 3 0.4 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi X-Plus 3 0.4 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi X-Plus 3 0.4 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi X-Smart 3 0.4 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi X-Smart 3 0.4 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi X-Max 3 0.6 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi X-Max 3 0.6 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi X-Plus 3 0.6 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi X-Plus 3 0.6 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi X-Smart 3 0.6 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi X-Smart 3 0.6 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi X-Max 3 0.8 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi X-Max 3 0.8 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi X-Plus 3 0.8 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi X-Plus 3 0.8 nozzle.json"
+        },
+        {
+            "name": "Generic PLA+ @Qidi X-Smart 3 0.8 nozzle",
+            "sub_path": "filament/Generic PLA+ @Qidi X-Smart 3 0.8 nozzle.json"
         },
         {
             "name": "Generic PLA Silk @Qidi X-Max 3 0.4 nozzle",
