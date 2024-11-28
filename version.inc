@@ -7,8 +7,6 @@ set(SLIC3R_APP_KEY "QIDIStudio")
 if(NOT DEFINED QDT_RELEASE_TO_PUBLIC)
 set(QDT_RELEASE_TO_PUBLIC "0")
 endif()
-# Note that defining QDT_INTERNAL_TESTING will create a beta version
-# not an "internal testing" version (the default)
 if(NOT DEFINED QDT_INTERNAL_TESTING)
 set(QDT_INTERNAL_TESTING "1")
 endif()

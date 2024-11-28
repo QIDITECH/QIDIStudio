@@ -13,7 +13,7 @@ Full manual for GNUgettext can be seen here: http://www.gnu.org/software/gettext
 
 ### Scenario 1. How do I add a translation or fix an existing translation
 1. Get PO-file 'QIDIStudio_xx.pot' from corresponding sub-folder here:
-https://github.com/qidilab/QIDIStudio/tree/master/qdt/i18n
+https://github.com/qiditech/QIDIStudio/tree/master/qdt/i18n
 2. Open this file in PoEdit as "Edit a translation"
 3. Apply your corrections to the translation
 4. Push changed QIDIStudio_xx.po into the original folder
@@ -21,14 +21,14 @@ https://github.com/qidilab/QIDIStudio/tree/master/qdt/i18n
 
 ### Scenario 2. How do I add a new language support
 1. Get file QIDIStudio.pot here :
-https://github.com/qidilab/QIDIStudio/tree/master/qdt/i18n
+https://github.com/qiditech/QIDIStudio/tree/master/qdt/i18n
 2. Open it in PoEdit for "Create new translation"
 3. Select Translation Language (for example French).
 4. As a result you will have fr.po - the file containing translation to French.
 Notice. When the translation is complete you need to:
     - Rename the file to QIDIStudio_fr.po
     - Click "Save file" button. QIDIStudio_fr.mo will be created immediately
-    - QIDI_Studio_fr.po needs to be copied into the sub-folder fr of https://github.com/qidilab/QIDIStudio/tree/master/qdt/i18n, and be pushed
+    - QIDI_Studio_fr.po needs to be copied into the sub-folder fr of https://github.com/qiditech/QIDIStudio/tree/master/qdt/i18n, and be pushed
 	- copy QIDIStudio_xx.mo into resources/i18n/xx and rename it to QIDIStudio.mo, then push the changed file.
 ( name of folder "fr" means "French" - the translation language). 
 
@@ -43,7 +43,7 @@ If you add new file resource, add it to the list of files containing macro `L()`
 ### Scenario 4. How do I use GNUgettext to localize my own application taking QIDI Studio as an example
 
 1.  For convenience create a list of files with this macro `L(s)`. We have 
-https://github.com/qidilab/QIDIStudio/blob/master/qdt/i18n/list.txt.
+https://github.com/qiditech/QIDIStudio/blob/master/qdt/i18n/list.txt.
 
 2.  Create template file(*.POT) with GNUgettext command:
     ```

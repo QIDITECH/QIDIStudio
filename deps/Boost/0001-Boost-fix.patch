@@ -1,5 +1,5 @@
 From 1d6cd7c2f8640db3cda194c1b9b82f1e4b321395 Mon Sep 17 00:00:00 2001
-From: "chunmao.guo" <chunmao.guo@qidilab.com>
+From: "chunmao.guo" <chunmao.guo@qiditech.com>
 Date: Thu, 5 Jan 2023 15:55:57 +0800
 Subject: [PATCH] FIX: limit_handles
 

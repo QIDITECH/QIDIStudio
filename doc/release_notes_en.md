@@ -15,4 +15,4 @@
 7. Added Magyar translations
 8. Fixed some known bugs
 
-For details, please check https://github.com/qidilab/QIDIStudio/releases
+For details, please check https://github.com/qiditech/QIDIStudio/releases

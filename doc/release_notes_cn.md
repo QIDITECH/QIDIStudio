@@ -15,4 +15,4 @@
 7. 支持匈牙利语
 8. 一些关键问题修复
 
-详细信息请查看：https://github.com/qidilab/QIDIStudio/releases
+详细信息请查看：https://github.com/qiditech/QIDIStudio/releases
