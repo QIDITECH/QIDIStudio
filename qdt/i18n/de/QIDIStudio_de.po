@@ -93,8 +93,23 @@ msgstr "Bildgrößen, die in .gcode- und .sl1 / .sl1s-Dateien gespeichert werden
 msgid "Format of G-code thumbnails"
 msgstr "Format der G-Code Miniaturansichten"
 
+msgid "QIDI Studio is based on Bambu Studio by Bambu Lab"
+msgstr "QIDI Studio basiert auf Bambu Studio von Bambu Lab"
+
+msgid "Seal"
+msgstr "Siegel"
+
+msgid "QIDI Studio is based on Bambu Studio by Bambu Lab."
+msgstr "QIDI Studio basiert auf Bambu Studio von Bambu Lab."
+
 msgid "Format of G-code thumbnails: PNG for best quality, JPG for smallest size"
 msgstr "Format der G-Code Miniaturansichten: PNG für beste Qualität, JPG für kleinste Dateigröße"
+
+msgid "Support multi bed types"
+msgstr "Unterstützung für mehrere Bettarten"
+
+msgid "Switch to Device tab"
+msgstr "Wechseln Sie zum Gerät-Tab"
 
 msgid "Supports Painting"
 msgstr "Aufmalstützen"
@@ -102,8 +117,8 @@ msgstr "Aufmalstützen"
 msgid "Please select single object."
 msgstr "Please select single object."
 
-msgid "Alt + Mouse wheel"
-msgstr "Alt + Mausrad"
+msgid "Mouse wheel"
+msgstr "Mausrad"
 
 msgid "Section view"
 msgstr "Schnittansicht"
@@ -188,6 +203,11 @@ msgstr "Keine automatischen Stützstrukturen"
 msgid "Support Generated"
 msgstr "Stützstrukturen generiert"
 
+msgid ""
+"Warning: All triangle areas are too small,The current function is not "
+"working."
+msgstr ""
+
 msgid "Lay on face"
 msgstr "Auf Fläche legen"
 
@@ -236,14 +256,23 @@ msgstr "Flächenfüllung"
 msgid "Height range"
 msgstr "Höhenreichweite"
 
-msgid "Alt + Shift + Enter"
-msgstr "Alt + Shift + Enter"
+msgid "Shift + Enter"
+msgstr ""
 
 msgid "Toggle Wireframe"
 msgstr "Gittermodell ein-/ausblenden"
 
+msgid "Shift + L"
+msgstr ""
+
+msgid "Toggle non-manifold edges"
+msgstr ""
+
 msgid "Rotate horizontally"
 msgstr "Horizontal drehen"
+
+msgid "hit face"
+msgstr ""
 
 msgid "Shortcut Key "
 msgstr "Tastenkürzel"
@@ -253,6 +282,9 @@ msgstr "Dreieck"
 
 msgid "Height Range"
 msgstr "Höhenreichweite"
+
+msgid "Place input box of bottom near mouse"
+msgstr ""
 
 msgid "Vertical"
 msgstr "Vertikal"
@@ -312,20 +344,26 @@ msgstr "in"
 msgid "mm"
 msgstr "mm"
 
+msgid "Part selection"
+msgstr ""
+
+msgid "Fixed step drag"
+msgstr ""
+
+msgid "Single sided scaling"
+msgstr ""
+
 msgid "Position"
 msgstr "Position"
 
-msgid "Rotation"
-msgstr "Drehung"
+msgid "Rotate (relative)"
+msgstr "Rotate (relative)"
 
 msgid "Scale ratios"
 msgstr "Skalierungsverhältnisse"
 
 msgid "Object Operations"
 msgstr "Objekt Operationen"
-
-msgid "Rotate (relative)"
-msgstr "Rotate (relative)"
 
 msgid "Volume Operations"
 msgstr "Volumen Operationen"
@@ -335,9 +373,6 @@ msgstr "Übersetzen"
 
 msgid "Group Operations"
 msgstr "Gruppen Operationen"
-
-msgid "Set Position"
-msgstr "Position setzen"
 
 msgid "Set Orientation"
 msgstr "Orientierung setzen"
@@ -351,17 +386,30 @@ msgstr "Position zurücksetzen"
 msgid "Reset Rotation"
 msgstr "Drehung zurücksetzen"
 
+msgid "Object coordinates"
+msgstr ""
+
 msgid "World coordinates"
 msgstr "Weltkoordinaten"
+
+msgid "Reset current rotation to real zeros."
+msgstr ""
 
 msgid "°"
 msgstr "°"
 
-msgid "Size"
-msgstr "Größe"
+msgid "Reset current rotation to the value when open the rotation tool."
+msgstr ""
+
+msgid "Part coordinates"
+msgstr ""
 
 msgid "%"
 msgstr "%"
+
+#. TRN - Input label. Be short as possible
+msgid "Size"
+msgstr "Größe"
 
 msgid "uniform scale"
 msgstr "einheitliche Skalierung"
@@ -435,6 +483,9 @@ msgstr "Modellobjekt reparieren"
 msgid "Connector"
 msgstr "Verbinder"
 
+msgid "Flip cut plane"
+msgstr ""
+
 msgid "Planar"
 msgstr "Planar"
 
@@ -449,6 +500,10 @@ msgstr "Bewegung:"
 
 msgid "Groove Angle"
 msgstr "Rillenwinkel"
+
+#. TRN - Input label. Be short as possible
+msgid "Rotation"
+msgstr "Drehung"
 
 msgid "Movement"
 msgstr "Bewegung"
@@ -465,6 +520,7 @@ msgstr "Verbinder hinzufügen"
 msgid "Groove"
 msgstr "Rille"
 
+#. TRN - Input label. Be short as possible
 msgid "Depth"
 msgstr "Tiefe"
 
@@ -876,11 +932,279 @@ msgstr ""
 "Embedded\n"
 "depth"
 
+msgid "Warning:Input cannot be empty!"
+msgstr ""
+
+msgid "Warning:create text fail."
+msgstr ""
+
+msgid "Warning:text normal is error."
+msgstr ""
+
 msgid "Surface"
 msgstr "Oberfläche"
 
 msgid "Horizontal text"
 msgstr "Horizontaler Text"
+
+msgid "Head diameter"
+msgstr ""
+
+msgid "Max angle"
+msgstr ""
+
+msgid "Detection radius"
+msgstr ""
+
+msgid "Remove selected points"
+msgstr ""
+
+msgid "Remove all"
+msgstr ""
+
+msgid "Auto-generate points"
+msgstr ""
+
+msgid "Add a brim ear"
+msgstr ""
+
+msgid "Delete a brim ear"
+msgstr ""
+
+msgid "Ctrl+Mouse wheel"
+msgstr "Strg + Mausrad"
+
+msgid "Adjust section view"
+msgstr ""
+
+msgid ""
+"Warning: The brim type is not set to \"painted\",the brim ears will not take "
+"effect !"
+msgstr ""
+
+msgid "Set the brim type to \"painted\""
+msgstr ""
+
+msgid " invalid brim ears"
+msgstr ""
+
+msgid "Brim Ears"
+msgstr ""
+
+msgid "Choose SVG file for emboss:"
+msgstr ""
+
+#, boost-format
+msgid "File does NOT exist (%1%)."
+msgstr ""
+
+#, boost-format
+msgid "Filename has to end with \".svg\" but you selected %1%"
+msgstr ""
+
+#, boost-format
+msgid "Nano SVG parser can't load from file (%1%)."
+msgstr ""
+
+#, boost-format
+msgid "SVG file does NOT contain a single path to be embossed (%1%)."
+msgstr ""
+
+#. TRN - Input label. Be short as possible
+msgid "Use surface"
+msgstr ""
+
+#. TRN - Input label. Be short as possible
+msgid "From surface"
+msgstr ""
+
+#. TRN - Input label. Be short as possible
+msgid "Mirror"
+msgstr "Spiegeln"
+
+#, boost-format
+msgid "Opacity (%1%)"
+msgstr ""
+
+#, boost-format
+msgid "Color gradient (%1%)"
+msgstr ""
+
+msgid "Undefined fill type"
+msgstr ""
+
+msgid "Linear gradient"
+msgstr ""
+
+msgid "Radial gradient"
+msgstr ""
+
+msgid "Open filled path"
+msgstr ""
+
+msgid "Undefined stroke type"
+msgstr ""
+
+msgid "Path can't be healed from selfintersection and multiple points."
+msgstr ""
+
+msgid ""
+"Final shape constains selfintersection or multiple points with same "
+"coordinate."
+msgstr ""
+
+#, boost-format
+msgid "Shape is marked as invisible (%1%)."
+msgstr ""
+
+#. TRN: The first placeholder is shape identifier, the second one is text describing the problem.
+#, boost-format
+msgid "Fill of shape (%1%) contains unsupported: %2%."
+msgstr ""
+
+#, boost-format
+msgid "Stroke of shape (%1%) is too thin (minimal width is %2% mm)."
+msgstr ""
+
+#, boost-format
+msgid "Stroke of shape (%1%) contains unsupported: %2%."
+msgstr ""
+
+msgid "Not valid state please report reproduction steps on github"
+msgstr ""
+
+msgid "No embossed file"
+msgstr ""
+
+msgid "Missing svg file in embossed shape"
+msgstr ""
+
+msgid "Missing data of svg file"
+msgstr ""
+
+msgid ""
+"Tip:If you want to place svg file on another part surface,\n"
+"you should select part first, and then drag svg file to the part surface."
+msgstr ""
+
+#. TRN - Preview of filename after clear local filepath.
+msgid "Unknown filename"
+msgstr ""
+
+#, boost-format
+msgid "SVG file path is \"%1%\""
+msgstr ""
+
+msgid "Reload SVG file from disk."
+msgstr ""
+
+msgid "Change file"
+msgstr ""
+
+msgid "Change to another .svg file"
+msgstr ""
+
+#. TRN: An menu option to convert the SVG into an unmodifiable model part.
+msgid "Bake to model"
+msgstr ""
+
+#. TRN: Tooltip for the menu item.
+msgid "Bake into model as uneditable part"
+msgstr ""
+
+msgid "Save as"
+msgstr ""
+
+msgid "Save SVG file"
+msgstr ""
+
+msgid "Save as '.svg' file"
+msgstr ""
+
+msgid "Size in emboss direction."
+msgstr ""
+
+#. TRN: The placeholder contains a number.
+#, boost-format
+msgid "Scale also changes amount of curve samples (%1%)"
+msgstr ""
+
+msgid "width:"
+msgstr ""
+
+msgid "height:"
+msgstr ""
+
+msgid "set width and height keep ratio with width"
+msgstr ""
+
+msgid "Width of SVG."
+msgstr ""
+
+msgid "Height of SVG."
+msgstr ""
+
+msgid "Lock/unlock the aspect ratio of the SVG."
+msgstr ""
+
+msgid "Reset scale"
+msgstr ""
+
+msgid "Distance of the center of the SVG to the model surface."
+msgstr ""
+
+msgid "Reset distance"
+msgstr ""
+
+msgid "Rotate text Clock-wise."
+msgstr ""
+
+msgid "Reset rotation"
+msgstr ""
+
+msgid "Lock/unlock rotation angle when dragging above the surface."
+msgstr ""
+
+msgid "Mirror vertically"
+msgstr ""
+
+msgid "Mirror horizontally"
+msgstr ""
+
+msgid "Set Mirror"
+msgstr ""
+
+msgid "Face the camera"
+msgstr ""
+
+msgid "Operation"
+msgstr ""
+
+msgid "Join"
+msgstr ""
+
+msgid "Click to change text into object part."
+msgstr ""
+
+msgid "You can't change a type of the last solid part of the object."
+msgstr ""
+
+msgctxt "EmbossOperation"
+msgid "Cut"
+msgstr ""
+
+msgid "Click to change part type into negative volume."
+msgstr ""
+
+msgid "Modifier"
+msgstr "Modifizierer"
+
+msgid "Click to change part type into modifier."
+msgstr ""
+
+#. TRN: This is the name of the action that shows in undo/redo stack (changing part type from SVG to something else).
+msgid "Change SVG Type"
+msgstr ""
 
 msgid "Ctrl+"
 msgstr "Strg +"
@@ -1048,6 +1372,15 @@ msgstr ""
 msgid "User logged out"
 msgstr "Benutzer abgemeldet"
 
+msgid "Install network plug-in"
+msgstr ""
+
+msgid "Please Install network plug-in before log in."
+msgstr ""
+
+msgid "Install Network Plug-in"
+msgstr ""
+
 msgid "new or open project file is not allowed during the slicing process!"
 msgstr ""
 "Eine neue oder offene Projektdatei ist während des Slicing-Vorgangs nicht "
@@ -1185,6 +1518,24 @@ msgstr "Supportblocker hinzufügen"
 msgid "Add support enforcer"
 msgstr "Supportverstärker hinzufügen"
 
+msgid "Add text"
+msgstr ""
+
+msgid "Add negative text"
+msgstr ""
+
+msgid "Add text modifier"
+msgstr ""
+
+msgid "Add SVG part"
+msgstr ""
+
+msgid "Add negative SVG"
+msgstr ""
+
+msgid "Add SVG modifier"
+msgstr ""
+
 msgid "Select settings"
 msgstr "Wähle Einstellungen"
 
@@ -1200,8 +1551,17 @@ msgstr "Entf"
 msgid "Delete the selected object"
 msgstr "Ausgewähltes Objekt löschen"
 
+msgid "Delete all cutter"
+msgstr ""
+
 msgid "Edit Text"
 msgstr "Text bearbeiten"
+
+msgid "Edit SVG"
+msgstr ""
+
+msgid "Change SVG source file, projection, size, ..."
+msgstr ""
 
 msgid "Load..."
 msgstr "Laden..."
@@ -1214,6 +1574,9 @@ msgstr "Zylinder"
 
 msgid "Cone"
 msgstr "Kegel"
+
+msgid "Double Tear Romboid Cylinder"
+msgstr ""
 
 msgid "Disc"
 msgstr "Scheibe"
@@ -1235,6 +1598,9 @@ msgstr "3DBenchy"
 
 msgid "ksr FDMTest"
 msgstr "ksr FDMTest"
+
+msgid "SVG"
+msgstr ""
 
 msgid "Height range Modifier"
 msgstr "Höhenbereich Modifikator"
@@ -1357,9 +1723,6 @@ msgstr "Entlang der Z-Achse"
 
 msgid "Mirror along the Z axis"
 msgstr "Entlang der Z-Achse spiegeln"
-
-msgid "Mirror"
-msgstr "Spiegeln"
 
 msgid "Mirror object"
 msgstr "Objekt spiegeln"
@@ -1653,9 +2016,6 @@ msgstr "Der Typ des letzten festen Objektteils darf nicht geändert werden."
 msgid "Negative Part"
 msgstr "Negatives Teil"
 
-msgid "Modifier"
-msgstr "Modifizierer"
-
 msgid "Support Blocker"
 msgstr "Stützblocker"
 
@@ -1812,9 +2172,6 @@ msgid "OK"
 msgstr "OK"
 
 msgid "Jump to Layer"
-msgstr "Zur Schicht springen"
-
-msgid "Jump to layer"
 msgstr "Zur Schicht springen"
 
 msgid "Please enter the layer number"
@@ -1995,6 +2352,11 @@ msgid "No arrangeable objects are selected."
 msgstr "Es sind keine anordnungsfähigen Objekte ausgewählt."
 
 msgid ""
+"The following plates are skipped due to different arranging settings from "
+"global:"
+msgstr ""
+
+msgid ""
 "This plate is locked,\n"
 "We can not do auto-arrange on this plate."
 msgstr ""
@@ -2067,6 +2429,23 @@ msgstr "Bettfüllung abgebrochen."
 
 msgid "Bed filling done."
 msgstr "Bettfüllung fertig."
+
+#. TRN: This is the title of the action appearing in undo/redo stack.
+#. It is same for Text and SVG.
+msgid "Emboss attribute change"
+msgstr ""
+
+msgid "Add Emboss text object"
+msgstr ""
+
+msgid "Add Emboss text Volume"
+msgstr ""
+
+msgid "Font doesn't have any shape for given text."
+msgstr ""
+
+msgid "There is no valid surface for text projection."
+msgstr ""
 
 msgid "Error! Unable to create thread!"
 msgstr "Fehler. Thread kann nicht erstellt werden."
@@ -2272,9 +2651,6 @@ msgstr "QIDI Studio ist lizenziert unter "
 msgid "GNU Affero General Public License, version 3"
 msgstr "GNU Affero General Public License, Version 3"
 
-msgid "QIDI Studio is based on Bambu Studio by Bambu Lab"
-msgstr "QIDI Studio basiert auf Bambu Studio von Bambu Lab"
-
 msgid ""
 "Bambu Studio is based on PrusaSlicer by Prusa Research, which is from Slic3r "
 "by Alessandro Ranellucci and the RepRap community"
@@ -2295,12 +2671,6 @@ msgstr ""
 #, c-format, boost-format
 msgid "About %s"
 msgstr "Über %s"
-
-msgid "Seal"
-msgstr "Siegel"
-
-msgid "QIDI Studio is based on Bambu Studio by Bambu Lab."
-msgstr "QIDI Studio basiert auf Bambu Studio von Bambu Lab."
 
 msgid ""
 "Bambu Studio is based on PrusaSlicer by PrusaResearch and SuperSlicer by "
@@ -2361,11 +2731,6 @@ msgstr "Der Eingabewert sollte größer als %1% und kleiner als %2% sein"
 msgid "SN"
 msgstr "SN"
 
-msgid "Setting AMS slot information while printing is not supported"
-msgstr ""
-"Das Einstellen von AMS-Slot-Informationen während des Drucks wird nicht "
-"unterstützt."
-
 msgid "Factors of Flow Dynamics Calibration"
 msgstr "Faktoren der Strömungsdynamik-Kalibrierung"
 
@@ -2377,6 +2742,11 @@ msgstr "Faktor K"
 
 msgid "Factor N"
 msgstr "Faktor N"
+
+msgid "Setting AMS slot information while printing is not supported"
+msgstr ""
+"Das Einstellen von AMS-Slot-Informationen während des Drucks wird nicht "
+"unterstützt."
 
 msgid "Setting Virtual slot information while printing is not supported"
 msgstr ""
@@ -2497,8 +2867,8 @@ msgstr "AMS deaktivieren"
 msgid "Print with the filament mounted on the back of chassis"
 msgstr "Drucken mit Filament von einer externen Spule"
 
-msgid "Current Cabin humidity"
-msgstr "Current Cabin humidity"
+msgid "Current AMS humidity"
+msgstr ""
 
 msgid ""
 "Please change the desiccant when it is too wet. The indicator may not "
@@ -2586,8 +2956,8 @@ msgid ""
 "The AMS will automatically read the filament information when inserting a "
 "new QIDI TECH filament. This takes about 20 seconds."
 msgstr ""
-"Das AMS liest automatisch die Filamentinformationen, wenn ein neues QIDI TECH "
-"Filament eingesetzt wird. Dies dauert etwa 20 Sekunden."
+"Das AMS liest automatisch die Filamentinformationen, wenn ein neues QIDI "
+"Tech Filament eingesetzt wird. Dies dauert etwa 20 Sekunden."
 
 msgid ""
 "Note: if a new filament is inserted during  printing, the AMS will not "
@@ -2903,20 +3273,6 @@ msgid ""
 msgstr ""
 "Zu große Schichthöhe.\n"
 "Auf 0,2 zurücksetzen"
-
-msgid ""
-"Too small scarf start height.\n"
-"Reset to 50%"
-msgstr ""
-"Too small scarf start height.\n"
-"Reset to 50%"
-
-msgid ""
-"Too big scarf start height.\n"
-"Reset to 50%"
-msgstr ""
-"Too big scarf start height.\n"
-"Reset to 50%"
 
 msgid ""
 "Too small ironing spacing.\n"
@@ -3632,6 +3988,9 @@ msgstr "Schnittansicht"
 msgid "Assemble Control"
 msgstr "Montagekontrolle"
 
+msgid "Selection Mode"
+msgstr ""
+
 msgid "Total Volume:"
 msgstr "Gesamtvolumen:"
 
@@ -3674,6 +4033,10 @@ msgstr ""
 "Lösen Sie das Problem, indem Sie das Objekt vollständig auf die Druckplatte "
 "oder von der Druckplatte wegbewegen und stellen Sie sicher, dass die Höhe "
 "innerhalb des Bauvolumens liegt."
+
+#, c-format, boost-format
+msgid "filaments %s cannot be printed directly on the surface of this plate."
+msgstr ""
 
 msgid "Calibration step selection"
 msgstr "Auswahl des Kalibrierungsschritts"
@@ -3789,9 +4152,6 @@ msgstr ""
 " wird vor der Erstellung eines neuen Modells geschlossen. Möchten Sie "
 "fortfahren?"
 
-msgid "Upload"
-msgstr "Hochladen"
-
 msgid "Slice plate"
 msgstr "Druckplatte slicen"
 
@@ -3842,6 +4202,9 @@ msgstr "Problem melden"
 
 msgid "Check for Update"
 msgstr "Nach Updates suchen"
+
+msgid "Check for Presets Update"
+msgstr ""
 
 msgid "Open Network Test"
 msgstr "Netzwerktest öffnen"
@@ -3975,6 +4338,9 @@ msgstr "Aktuelle Konfiguration in Dateien exportieren"
 msgid "Export"
 msgstr "Exportieren"
 
+msgid "Publish to MakerWorld"
+msgstr ""
+
 msgid "Quit"
 msgstr "Beenden"
 
@@ -4035,9 +4401,6 @@ msgstr "Perspektivische Ansicht verwenden"
 msgid "Use Orthogonal View"
 msgstr "Orthogonale Ansicht verwenden"
 
-msgid "Show &Labels"
-msgstr "Anzeigen &Etiketten"
-
 msgid "Show object labels in 3D scene"
 msgstr "Objektbeschriftungen in der 3D-Szene anzeigen"
 
@@ -4046,6 +4409,12 @@ msgstr "Zeige Überhang"
 
 msgid "Show object overhang highlight in 3D scene"
 msgstr "Hervorhebung des Objektüberhangs in einer 3D-Szene anzeigen"
+
+msgid "Set 3DConnexion"
+msgstr ""
+
+msgid "Set 3DConnexion mouse"
+msgstr ""
 
 msgid "Services"
 msgstr "Services"
@@ -4469,8 +4838,8 @@ msgid "Failed to parse model information."
 msgstr "Modellinformationen konnten nicht analysiert werden"
 
 msgid ""
-"The .gcode.3mf file contains no G-code data.Please slice it whth QIDI Studio "
-"and export a new .gcode.3mf file."
+"The .gcode.3mf file contains no G-code data.Please slice it whth QIDI "
+"Studio and export a new .gcode.3mf file."
 msgstr ""
 "Die .gcode.3mf-Datei enthält keine G-Code-Daten. Bitte slicen Sie sie mit "
 "QIDIStudio und exportieren Sie eine neue .gcode.3mf-Datei."
@@ -4554,6 +4923,14 @@ msgstr "Stop"
 msgid "Layer: N/A"
 msgstr "Schicht: N/A"
 
+msgid "Finish Time: N/A"
+msgstr ""
+
+msgid ""
+"The estimated printing time for \n"
+"multi-color models may be inaccurate."
+msgstr ""
+
 msgid "Clear"
 msgstr "Löschen"
 
@@ -4576,6 +4953,12 @@ msgstr ""
 
 msgid "Rate"
 msgstr "Bewerten"
+
+msgid "Finished"
+msgstr "Erledigt"
+
+msgid "Finish Time: "
+msgstr ""
 
 msgid "Camera"
 msgstr "Kamera"
@@ -4622,8 +5005,11 @@ msgstr "MicroSD-Karte abnormal"
 msgid "Cancel print"
 msgstr "Druck abbrechen"
 
-msgid "Are you sure you want to cancel this print?"
-msgstr "Möchten Sie diesen Druck wirklich abbrechen?"
+msgid "Are you sure to stop printing?"
+msgstr ""
+
+msgid "Unknown error."
+msgstr ""
 
 msgid "Downloading..."
 msgstr "Herunterladen..."
@@ -4643,6 +5029,15 @@ msgstr "Schicht: %s"
 #, c-format, boost-format
 msgid "Layer: %d/%d"
 msgstr "Schicht: %d/%d"
+
+msgid "Auto homing"
+msgstr ""
+
+msgid "Are you sure you want to trigger auto homing?"
+msgstr ""
+
+msgid "Homing"
+msgstr ""
 
 msgid ""
 "Please heat the nozzle to above 170 degree before loading or unloading "
@@ -4792,14 +5187,46 @@ msgstr ""
 "At least one successful print record of this print profile is required \n"
 "to give a positive rating (4 or 5 stars)."
 
+msgid "Step file import parameters"
+msgstr ""
+
+msgid ""
+"Smaller linear and angular deflections result in higher-quality "
+"transformations but increase the processing time."
+msgstr ""
+
+msgid "See QIDITech Wiki"
+msgstr ""
+
+msgid "Linear Deflection"
+msgstr ""
+
+msgid "Please input a valid value (0.001 < linear deflection < 0.1)"
+msgstr ""
+
+msgid "Angle Deflection"
+msgstr ""
+
+msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
+msgstr ""
+
+msgid "Number of triangular facets"
+msgstr ""
+
+msgid "0"
+msgstr "0"
+
+msgid "Don't show again"
+msgstr "Nicht erneut anzeigen"
+
+msgid "Calculating, please wait..."
+msgstr ""
+
 msgid "Status"
 msgstr "Status"
 
 msgid "Update"
 msgstr "Update"
-
-msgid "Don't show again"
-msgstr "Nicht erneut anzeigen"
 
 #, c-format, boost-format
 msgid "%s error"
@@ -4832,8 +5259,8 @@ msgid "Newer 3mf version"
 msgstr "Neuere 3mf-Version"
 
 msgid ""
-"The 3mf file version is in Beta and it is newer than the current QIDI Studio "
-"version."
+"The 3mf file version is in Beta and it is newer than the current QIDI "
+"Studio version."
 msgstr ""
 "Die 3mf-Dateiversion befindet sich in der Beta-Phase und ist neuer als die "
 "aktuelle QIDI Studio-Version."
@@ -4847,7 +5274,8 @@ msgstr "Betaversion herunterladen"
 msgid "The 3mf file version is newer than the current QIDI Studio version."
 msgstr "Die 3mf-Dateiversion ist neuer als die aktuelle QIDI Studio Version."
 
-msgid "Update your QIDI Studio could enable all functionality in the 3mf file."
+msgid ""
+"Update your QIDI Studio could enable all functionality in the 3mf file."
 msgstr ""
 "Wenn Sie Ihr QIDI Studio aktualisieren, könnten alle Funktionen in der 3mf-"
 "Datei aktiviert werden."
@@ -4860,6 +5288,25 @@ msgstr "Neueste Version: "
 
 msgid "Not for now"
 msgstr "Not for now"
+
+msgid "Server Exception"
+msgstr ""
+
+msgid ""
+"The server is unable to respond. Please click the link below to check the "
+"server status."
+msgstr ""
+
+msgid ""
+"If the server is in a fault state, you can temporarily use offline printing "
+"or local network printing."
+msgstr ""
+
+msgid "How to use LAN only mode"
+msgstr ""
+
+msgid "Don't show this dialog again"
+msgstr ""
 
 msgid "3D Mouse disconnected."
 msgstr "3D-Maus nicht angeschlossen."
@@ -4970,6 +5417,9 @@ msgstr ""
 msgid "Gcode path overlap"
 msgstr "G-Code Pfadüberlappung"
 
+msgid "Click Wiki for help."
+msgstr ""
+
 msgid "Support painting"
 msgstr "Stützen malen"
 
@@ -5051,14 +5501,14 @@ msgstr "Nozzle Clumping Detection"
 msgid "Check if the nozzle is clumping by filament or other foreign objects."
 msgstr "Check if the nozzle is clumping by filament or other foreign objects."
 
-msgid "Nozzle Type"
-msgstr "Nozzle Type"
+msgid "Hardened Steel"
+msgstr "Gehärteter Stahl"
 
 msgid "Stainless Steel"
 msgstr "Edelstahl"
 
-msgid "Hardened Steel"
-msgstr "Gehärteter Stahl"
+msgid "Nozzle Type"
+msgstr "Nozzle Type"
 
 #, c-format, boost-format
 msgid "%.1f"
@@ -5091,6 +5541,9 @@ msgstr " Platte %1%: "
 
 msgid "Invalid name, the following characters are not allowed:"
 msgstr "Ungültiger Name, die folgenden Zeichen sind nicht erlaubt:"
+
+msgid "(Including its escape characters)"
+msgstr ""
 
 msgid "Sliced Info"
 msgstr "Slice-Info"
@@ -5531,6 +5984,9 @@ msgstr "Als Projekt öffnen"
 msgid "Import geometry only"
 msgstr "Nur Geometrie importieren"
 
+msgid "Please import multiple files with the same suffix."
+msgstr ""
+
 msgid "Only one G-code file can be opened at the same time."
 msgstr "Es kann immer nur eine G-Code Datei gleichzeitig geöffnet werden."
 
@@ -5617,6 +6073,15 @@ msgstr ""
 "Analyse des Netzes durchführen?"
 
 msgid ""
+"Are you sure you want to store original SVGs with their local paths into the "
+"3MF file?\n"
+"If you hit 'NO', all SVGs in the project will not be editable any more."
+msgstr ""
+
+msgid "Private protection"
+msgstr ""
+
+msgid ""
 "Print By Object: \n"
 "Suggest to use auto-arrange to avoid collisions when printing."
 msgstr ""
@@ -5640,6 +6105,17 @@ msgstr "Ungültige Nummer"
 
 msgid "Plate Settings"
 msgstr "Platteneinstellungen"
+
+msgid "Prime Tower:"
+msgstr ""
+
+msgid ""
+"A cube printed during a filament change to purge old color and ensure smooth "
+"color transition."
+msgstr ""
+
+msgid "View Wiki for more information"
+msgstr ""
 
 #, boost-format
 msgid "Number of currently selected parts: %1%\n"
@@ -5728,6 +6204,21 @@ msgstr "Auswahl der Region"
 msgid "Second"
 msgstr "Sekunde"
 
+msgid ""
+"Please note that the model show will undergo certain changes at small pixels "
+"case.\n"
+"Enabled LOD requires application restart."
+msgstr ""
+
+msgid "Enable LOD"
+msgstr ""
+
+msgid "Change opengl multi instance rendering requires application restart."
+msgstr ""
+
+msgid "Enable opengl multi instance rendering"
+msgstr ""
+
 msgid "Browse"
 msgstr "Suchen"
 
@@ -5786,16 +6277,6 @@ msgstr ""
 "same QIDI Studio is already running, that instance will be reactivated "
 "instead."
 
-msgid "Zoom to mouse position"
-msgstr "Auf Mausposition zoomen"
-
-msgid ""
-"Zoom in towards the mouse pointer's position in the 3D view, rather than the "
-"2D window center."
-msgstr ""
-"Zoome auf die Position des Mauszeigers in der 3D-Ansicht und nicht auf die "
-"Mitte des 2D-Fensters."
-
 msgid "Auto plate type"
 msgstr "Auto plate type"
 
@@ -5831,20 +6312,83 @@ msgstr ""
 "With this option enabled, you can send a task to multiple devices at the "
 "same time and manage multiple devices."
 
+msgid "Show the step mesh parameter setting dialog."
+msgstr ""
+
+msgid ""
+"If enabled,a parameter settings dialog will appear during STEP file import."
+msgstr ""
+
+msgid "Support beta version update."
+msgstr ""
+
+msgid "With this option enabled, you can receive beta version updates."
+msgstr ""
+
+msgid "3D Settings"
+msgstr ""
+
+msgid "Zoom to mouse position"
+msgstr "Auf Mausposition zoomen"
+
+msgid ""
+"Zoom in towards the mouse pointer's position in the 3D view, rather than the "
+"2D window center."
+msgstr ""
+"Zoome auf die Position des Mauszeigers in der 3D-Ansicht und nicht auf die "
+"Mitte des 2D-Fensters."
+
+msgid "Always show shells in preview"
+msgstr ""
+
+msgid ""
+"Always show shells or not in preview view tab.If change value,you should "
+"reslice."
+msgstr ""
+
+msgid "Improve rendering performance by lod"
+msgstr ""
+
+msgid ""
+"Improved rendering performance under the scene of multiple plates and many "
+"models."
+msgstr ""
+
+msgid "enable multi instance rendering by opengl"
+msgstr ""
+
+msgid ""
+"If enabled, it can improve certain rendering performance. But for some "
+"graphics cards, it may not be applicable, please turn it off."
+msgstr ""
+
+msgid "Grabber scale"
+msgstr ""
+
+msgid "Set grabber size for move,rotate,scale tool."
+msgstr ""
+
+msgid "Value range"
+msgstr ""
+
 msgid "Presets"
 msgstr "Profile"
 
 msgid "Auto sync user presets(Printer/Filament/Process)"
 msgstr "Benutzerprofile automatisch synchronisieren (Drucker/Filament/Prozess)"
 
-msgid "User Sync"
-msgstr "Benutzer-Synchronisation"
+msgid ""
+"If enabled, auto sync user presets with cloud after QIDI Studio startup or "
+"presets modified."
+msgstr ""
 
-msgid "Update built-in Presets automatically."
-msgstr "Aktualisiere die integrierten Profile automatisch."
+msgid "Auto check for system presets updates"
+msgstr ""
 
-msgid "System Sync"
-msgstr "Systemsynchronisierung"
+msgid ""
+"If enabled, auto check whether there are system presets updates after QIDI "
+"Studio startup."
+msgstr ""
 
 msgid "Clear my choice on the unsaved presets."
 msgstr "Lösche meine Auswahl für die nicht gespeicherten Profile."
@@ -5856,7 +6400,8 @@ msgid "Associate .3mf files to QIDI Studio"
 msgstr "Associate .3mf files to QIDI Studio"
 
 msgid "If enabled, sets QIDI Studio as default application to open .3mf files"
-msgstr "If enabled, sets QIDI Studio as default application to open .3mf files"
+msgstr ""
+"If enabled, sets QIDI Studio as default application to open .3mf files"
 
 msgid "Associate .stl files to QIDI Studio"
 msgstr "Associate .stl files to QIDI Studio"
@@ -5867,7 +6412,8 @@ msgstr "If enabled, sets QIDI Studio as default application to open .stl files"
 msgid "Associate .step/.stp files to QIDI Studio"
 msgstr "Associate .step/.stp files to QIDI Studio"
 
-msgid "If enabled, sets QIDI Studio as default application to open .step files"
+msgid ""
+"If enabled, sets QIDI Studio as default application to open .step files"
 msgstr ""
 "If enabled, sets QIDI Studio as default application to open .step files"
 
@@ -5876,6 +6422,9 @@ msgstr "Online-Modelle"
 
 msgid "Show online staff-picked models on the home page"
 msgstr "Von Mitarbeitern ausgewählte Online-Models auf der Startseite anzeigen"
+
+msgid "Show history on the home page"
+msgstr ""
 
 msgid "Maximum recent projects"
 msgstr "Maximale Anzahl aktueller Projekte"
@@ -6274,9 +6823,6 @@ msgstr "Beschäftigt"
 msgid "QIDI Cool Plate"
 msgstr "QIDI Cool Plate"
 
-msgid "PLA Plate"
-msgstr "PLA-Platte"
-
 msgid "QIDI Engineering Plate"
 msgstr "Engineering Plate"
 
@@ -6288,6 +6834,9 @@ msgstr "High temperature Plate"
 
 msgid "QIDI Textured PEI Plate"
 msgstr "QIDI Textured PEI Plate"
+
+msgid "QIDI Cool Plate SuperTack"
+msgstr ""
 
 msgid "Send print job to"
 msgstr "Druckauftrag senden an"
@@ -6471,12 +7020,8 @@ msgstr ""
 "change settings."
 
 #, c-format, boost-format
-msgid ""
-"Printing high temperature material(%s material) with %s may cause nozzle "
-"damage"
+msgid "Printing %1s material with %2s nozzle may cause nozzle damage."
 msgstr ""
-"Printing high temperature material(%s material) with %s may cause nozzle "
-"damage"
 
 msgid "Please fix the error above, otherwise printing cannot continue."
 msgstr "Please fix the error above, otherwise printing cannot continue."
@@ -6517,6 +7062,18 @@ msgstr "Den Gerätenamen ändern"
 
 msgid "Bind with Pin Code"
 msgstr "Bind with Pin Code"
+
+msgid "Bind with Access Code"
+msgstr ""
+
+msgid ""
+"Please log in before binding your device with a PIN code.\n"
+"Alternatively, you can use LAN mode to bind your device. Learn about LAN "
+"mode."
+msgstr ""
+
+msgid "Go to Login"
+msgstr ""
 
 msgid "Send to Printer SD card"
 msgstr "An MicroSD-Karte des Druckers senden"
@@ -6621,13 +7178,13 @@ msgid ""
 "Use(collectively, the \"Terms\"). If you do not comply with or agree to the "
 "QIDI TECH Privacy Policy, please do not use QIDI TECH equipment and services."
 msgstr ""
-"Vielen Dank für den Kauf eines QIDI TECH Geräts. Bevor Sie Ihr QIDI TECH Gerät "
-"verwenden, lesen Sie bitte die Allgemeinen Geschäftsbedingungen. Indem Sie "
-"zustimmen klicken, erklären Sie sich mit der Datenschutzrichtlinie und den "
-"Nutzungsbedingungen (zusammen die „Bedingungen“) einverstanden, um so Ihr "
-"QIDI TECH Gerät verwenden zu können. Wenn Sie die Datenschutzrichtlinien von "
-"QIDI TECH nicht einhalten oder diesen zustimmen, verwenden Sie bitte keine "
-"Geräte und Dienstleistungen von QIDI TECH."
+"Vielen Dank für den Kauf eines QIDI Tech Geräts. Bevor Sie Ihr QIDI Tech "
+"Gerät verwenden, lesen Sie bitte die Allgemeinen Geschäftsbedingungen. Indem "
+"Sie zustimmen klicken, erklären Sie sich mit der Datenschutzrichtlinie und "
+"den Nutzungsbedingungen (zusammen die „Bedingungen“) einverstanden, um so "
+"Ihr QIDI Tech Gerät verwenden zu können. Wenn Sie die Datenschutzrichtlinien "
+"von QIDI Tech nicht einhalten oder diesen zustimmen, verwenden Sie bitte "
+"keine Geräte und Dienstleistungen von QIDI Tech."
 
 msgid "and"
 msgstr "und"
@@ -6728,15 +7285,15 @@ msgid "Still print by object?"
 msgstr "Immer noch nach Objekt drucken?"
 
 msgid ""
-"We have added an experimental style \"Tree Slim\" that features smaller "
-"support volume but weaker strength.\n"
-"We recommend using it with: 0 interface layers, 0 top distance, 2 walls."
+"When using support material for the support interface, We recommend the "
+"following settings:\n"
+"0 top z distance, 0 interface spacing, interlaced rectilinear pattern and "
+"disable independent support layer height"
 msgstr ""
-"Wir haben einen experimentellen Stil \"Baum schmal\" hinzugefügt, der ein "
-"geringeres Stützvolumen benötigt, aber dafür eine geringere Stärke "
-"aufweist.\n"
-"Wir empfehlen folgende Einstellungen: 0 Oberflächenschichten, 0 oberer "
-"Abstand, 2 Wände."
+"When using support material for the support interface, We recommend the "
+"following settings:\n"
+"0 top z distance, 0 interface spacing, interlaced rectilinear pattern and "
+"disable independent support layer height"
 
 msgid ""
 "Change these settings automatically? \n"
@@ -6748,25 +7305,9 @@ msgstr ""
 "Nein - Diese Einstellungen für mich nicht ändern."
 
 msgid ""
-"For \"Tree Strong\" and \"Tree Hybrid\" styles, we recommend the following "
-"settings: at least 2 interface layers, at least 0.1mm top z distance or "
-"using support materials on interface."
+"Layer height is too small.\n"
+"It will set to min_layer_height\n"
 msgstr ""
-"Für die Stile \"Baumstützen Stark\" und \"Baumstützen Hybrid\" empfehlen wir "
-"die folgenden Einstellungen: Mindestens 2 Schnittstellschichten, mindestens "
-"0,1 mm oberer Z-Abstand oder die Verwendung von Stützmaterialien bei der "
-"Schnittstelle."
-
-msgid ""
-"When using support material for the support interface, We recommend the "
-"following settings:\n"
-"0 top z distance, 0 interface spacing, interlaced rectilinear pattern and "
-"disable independent support layer height"
-msgstr ""
-"When using support material for the support interface, We recommend the "
-"following settings:\n"
-"0 top z distance, 0 interface spacing, interlaced rectilinear pattern and "
-"disable independent support layer height"
 
 msgid ""
 "Layer height exceeds the limit in Printer Settings -> Extruder -> Layer "
@@ -6817,6 +7358,11 @@ msgstr ""
 "\"Timelapse Wischturm\" hinzuzufügen, indem Sie mit der rechten Maustaste "
 "auf die leere Position der Bauplatte klicken und \"Primitiv hinzufügen\"-"
 ">\"Timelapse Wischturm\" wählen."
+
+msgid ""
+"The notes are too large, and may not be synchronized to the cloud. Please "
+"keep it within 40k."
+msgstr ""
 
 msgid "Line width"
 msgstr "Breite der Linie"
@@ -6915,6 +7461,11 @@ msgstr[1] ""
 msgid "Reserved keywords found"
 msgstr "Reservierte Schlüsselwörter gefunden"
 
+msgid ""
+"Custom G-code files are too large, and may not be synchronized to the cloud. "
+"Please keep it within 40k."
+msgstr ""
+
 msgid "Setting Overrides"
 msgstr "Überschreibungen der Einstellungen"
 
@@ -6941,8 +7492,13 @@ msgstr "Düse"
 msgid "Nozzle temperature when printing"
 msgstr "Düsentemperatur beim Drucken"
 
-msgid "Cool Plate / PLA Plate"
-msgstr "Cool Plate / PLA Plate"
+msgid ""
+"Bed temperature when cool plate is installed. Value 0 means the filament "
+"does not support to print on the QIDI Cool Plate SuperTack"
+msgstr ""
+
+msgid "Cool Plate"
+msgstr "Cool Plate/PLA Plate"
 
 msgid ""
 "Bed temperature when cool plate is installed. Value 0 means the filament "
@@ -6952,7 +7508,7 @@ msgstr ""
 "von 0 bedeutet, dass das Filament auf der Cool Plate nicht unterstützt."
 
 msgid "Engineering Plate"
-msgstr "Heißbett für technische Werkstoffe"
+msgstr "Engineering Plate"
 
 msgid ""
 "Bed temperature when engineering plate is installed. Value 0 means the "
@@ -6963,7 +7519,7 @@ msgstr ""
 "unterstützt wird."
 
 msgid "Smooth PEI Plate / High Temp Plate"
-msgstr "Glatte PEI-Platte/Hochtemperaturplatte"
+msgstr "Smooth PEI Plate / High Temp Plate"
 
 msgid ""
 "Bed temperature when Smooth PEI Plate/High temperature plate is installed. "
@@ -6975,7 +7531,7 @@ msgstr ""
 "Plate/High Temp Plate nicht unterstützt"
 
 msgid "Textured PEI Plate"
-msgstr "Textur PEI Heißbett"
+msgstr "Textured PEI Plate"
 
 msgid ""
 "Bed temperature when Textured PEI Plate is installed. Value 0 means the "
@@ -6986,6 +7542,9 @@ msgstr ""
 
 msgid "Volumetric speed limitation"
 msgstr "Volumetrische Geschwindigkeitsbegrenzung"
+
+msgid "Filament scarf seam settings"
+msgstr ""
 
 msgid "Cooling"
 msgstr "Kühlung"
@@ -7545,9 +8104,6 @@ msgstr "Drehen der Ansicht"
 msgid "Pan View"
 msgstr "Pan-Ansicht"
 
-msgid "Mouse wheel"
-msgstr "Mausrad"
-
 msgid "Zoom View"
 msgstr "Ansicht zoomen"
 
@@ -7672,26 +8228,11 @@ msgstr "FDM Naht aufmalen "
 msgid "Plater"
 msgstr "Druckplatte"
 
-msgid "Move: press to snap by 1mm"
-msgstr "Verschieben: Drücken, um in 1 mm einzurasten"
-
-msgid "⌘+Mouse wheel"
-msgstr "⌘+Mausrad"
-
 msgid "Support/Color Painting: adjust pen radius"
 msgstr "Stützen/Farbmalen: Stiftradius einstellen"
 
-msgid "⌥+Mouse wheel"
-msgstr "⌥+Mausrad"
-
 msgid "Support/Color Painting: adjust section position"
 msgstr "Stützen/Farbmalen: Position des Abschnitts anpassen"
-
-msgid "Ctrl+Mouse wheel"
-msgstr "Strg + Mausrad"
-
-msgid "Alt+Mouse wheel"
-msgstr "Alt + Mausrad"
 
 msgid "Gizmo"
 msgstr "Gizmo"
@@ -7809,38 +8350,52 @@ msgstr "View Liveview"
 msgid "Confirm and Update Nozzle"
 msgstr "Bestätigen und Düse aktualisieren"
 
-msgid "LAN Connection Failed (Sending print file)"
-msgstr "LAN-Verbindung fehlgeschlagen (Senden einer Druckdatei)"
-
-msgid ""
-"Step 1, please confirm QIDI Studio and your printer are in the same LAN."
+msgid "Connect the printer using IP and access code"
 msgstr ""
-"Schritt 1: Vergewissern Sie sich, dass QIDI Studio und Ihr Drucker sich im "
-"selben LAN befinden."
 
 msgid ""
-"Step 2, if the IP and Access Code below are different from the actual values "
+"Step 1. Please confirm QIDI Studio and your printer are in the same LAN."
+msgstr ""
+
+msgid ""
+"Step 2. If the IP and Access Code below are different from the actual values "
 "on your printer, please correct them."
 msgstr ""
-"Schritt 2: Wenn die IP und der Zugriffscode unten von den tatsächlichen "
-"Werten Ihres Druckers abweichen, korrigieren Sie diese bitte."
+
+msgid ""
+"Step 3. Please obtain the device SN from the printer side; it is usually "
+"found in the device information on the printer screen."
+msgstr ""
 
 msgid "Access Code"
 msgstr "Zugangscode"
 
+msgid "Printer model"
+msgstr ""
+
 msgid "Where to find your printer's IP and Access Code?"
 msgstr "Wo finde ich die IP und den Zugangscode meines Druckers?"
 
-msgid "Step 3: Ping the IP address to check for packet loss and latency."
+msgid "Connect"
 msgstr ""
-"Schritt 3: Pingen Sie die IP-Adresse an, um den Paketverlust und die "
-"Latenzzeit zu überprüfen."
 
-msgid "Test"
-msgstr "Testen"
+msgid "connecting..."
+msgstr ""
 
-msgid "IP and Access Code Verified! You may close the window"
-msgstr "IP und Zugangscode verifiziert! Sie können das Fenster schließen"
+msgid "Failed to connect to printer."
+msgstr ""
+
+msgid "Failed to publish login request."
+msgstr ""
+
+msgid "The printer has already been bound."
+msgstr ""
+
+msgid "The printer mode is incorrect, please switch to LAN Only."
+msgstr ""
+
+msgid "Connecting to printer... The dialog will close later"
+msgstr ""
 
 msgid "Connection failed, please double check IP and Access Code"
 msgstr ""
@@ -8022,10 +8577,19 @@ msgstr ""
 "werden.\n"
 "\n"
 
-msgid "Please check the custom G-code or use the default custom G-code."
+msgid "Please check the custom G-code or use the default custom G-code.\n"
 msgstr ""
-"Bitte überprüfen Sie den benutzerdefinierten G-Code oder verwenden Sie den "
-"standardmäßigen benutzerdefinierten G-Code."
+
+msgid ""
+"You can find them from 'Printer settings' -> 'Machine G-code' and 'Filament "
+"settings' -> 'Advanced'."
+msgstr ""
+
+msgid "You can find it from 'Printer settings' -> 'Machine G-code'."
+msgstr ""
+
+msgid "You can find it from 'Filament settings' -> 'Advanced'."
+msgstr ""
 
 #, boost-format
 msgid "Generating G-code: layer %1%"
@@ -8530,10 +9094,8 @@ msgstr "Druckbettemperatur für die erste Schicht"
 
 msgid ""
 "Bed temperature of the initial layer. Value 0 means the filament does not "
-"support to print on the Cool Plate"
+"support to print on the QIDI Cool Plate SuperTack"
 msgstr ""
-"Dies ist die Betttemperatur der ersten Schicht. Ein Wert von 0 bedeutet, "
-"dass das Filament auf der Cool Plate nicht unterstützt wird."
 
 msgid ""
 "Bed temperature of the initial layer. Value 0 means the filament does not "
@@ -8641,6 +9203,17 @@ msgstr ""
 "ausgedrückt, der angibt, wie groß die Breite der Linie ohne Unterstützung "
 "durch die untere Schicht ist. 0%% bedeutet, dass die Kühlung für die gesamte "
 "Außenwand erzwungen wird, unabhängig vom Winkel des Überhangs."
+
+msgid "Overhang threshold for participating cooling"
+msgstr ""
+
+#, c-format
+msgid ""
+"Decide which overhang part join the cooling function to slow down the speed."
+"Expressed as percentage which indicides how much width of the line without "
+"support from lower layer. 100% means forcing cooling for all outer wall no "
+"matter how much overhang degree"
+msgstr ""
 
 msgid "Bridge direction"
 msgstr "Richtung der Brücke"
@@ -8755,6 +9328,9 @@ msgstr ""
 "Dies steuert die Erzeugung der Umrandung an der Außen- und/oder Innenseite "
 "von Modellen. Auto bedeutet, dass die Randbreite automatisch analysiert und "
 "berechnet wird."
+
+msgid "Painted"
+msgstr ""
 
 msgid "Brim-object gap"
 msgstr "Lücke zwischen Rand und Objekt"
@@ -9068,12 +9644,13 @@ msgstr ""
 "Abstand von der Düsenspitze zum Deckel. Dient zur Kollisionsvermeidung beim "
 "objektweisen Drucken."
 
-msgid ""
-"Clearance radius around extruder. Used for collision avoidance in by-object "
-"printing."
+msgid "Distance to rod"
 msgstr ""
-"Sicherheitsradius um den Extruder: Dient zur Kollisionsvermeidung beim "
-"objektweisen Drucken."
+
+msgid ""
+"Horizontal distance of the nozzle tip to the rod's farther edge. Used for "
+"collision avoidance in by-object printing."
+msgstr ""
 
 msgid "Nozzle height"
 msgstr "Düsenhöhe"
@@ -9249,6 +9826,18 @@ msgstr ""
 "Der Filamentdurchmesser wird für die Berechnung der Extrusion im G-Code "
 "verwendet, er ist also wichtig und sollte genau sein"
 
+msgid "Shrinkage"
+msgstr ""
+
+#, no-c-format, no-boost-format
+msgid ""
+"Enter the shrinkage percentage that the filament will get after cooling (94% "
+"if you measure 94mm instead of 100mm). The part will be scaled in xy to "
+"compensate. Only the filament used for the perimeter is taken into account.\n"
+"Be sure to allow enough space between objects, as this compensation is done "
+"after the checks."
+msgstr ""
+
 msgid "Density"
 msgstr "Dichte"
 
@@ -9269,6 +9858,49 @@ msgid ""
 msgstr ""
 "Lösliches Material wird in der Regel für den Druck von Stützen und Stütz-"
 "Schnittstellen verwendet"
+
+msgid "Scarf seam type"
+msgstr ""
+
+msgid ""
+"Set scarf seam type for this filament. This setting could minimize seam "
+"visibiliy."
+msgstr ""
+
+msgid "Contour"
+msgstr "Kontur"
+
+msgid "Contour and hole"
+msgstr "Kontur und Bohrung"
+
+msgid "Scarf start height"
+msgstr "Scarf start height"
+
+msgid ""
+"This amount can be specified in millimeters or as a percentage of the "
+"current layer height."
+msgstr ""
+
+msgid "mm/%"
+msgstr ""
+
+msgid "Scarf slope gap"
+msgstr ""
+
+msgid ""
+"In order to reduce the visiblity of the seam in closed loop, the inner wall "
+"and outer wall are shortened by a specified amount."
+msgstr ""
+
+msgid "Scarf length"
+msgstr "Scarf length"
+
+msgid ""
+"Length of the scarf. Setting this parameter to zero effectively disables the "
+"scarf."
+msgstr ""
+"Length of the scarf. Setting this parameter to zero effectively disables the "
+"scarf."
 
 msgid "Support material"
 msgstr "Stützmaterial"
@@ -9476,12 +10108,6 @@ msgstr ""
 "Diese Einstellung bewirkt, dass der Werkzeugkopf beim Drucken von Wänden "
 "zufällig zittert, so dass die Oberfläche ein raues, strukturiertes Aussehen "
 "erhält. Diese Einstellung steuert die Fuzzy-Position."
-
-msgid "Contour"
-msgstr "Kontur"
-
-msgid "Contour and hole"
-msgstr "Kontur und Bohrung"
 
 msgid "All walls"
 msgstr "Alle Wände"
@@ -9793,6 +10419,13 @@ msgstr "Abstand der Glättlinien"
 
 msgid "The distance between the lines of ironing"
 msgstr "Der Abstand zwischen den Linien beim Glätten"
+
+msgid "Ironing inset"
+msgstr ""
+
+msgid ""
+"The distance to keep the from the edges of ironing line. 0 means not apply."
+msgstr ""
 
 msgid "Ironing speed"
 msgstr "Geschwindigkeit beim Glätten"
@@ -10115,10 +10748,8 @@ msgstr "Floßschichten"
 
 msgid ""
 "Object will be raised by this number of support layers. Use this function to "
-"avoid wrapping when print ABS"
+"avoid warping when print ABS"
 msgstr ""
-"Das Objekt wird um diese Anzahl von Stützschichten erhöht. Verwenden Sie "
-"diese Funktion, um ein verziehen bei ABS zu vermeiden."
 
 msgid ""
 "G-code path is generated after simplifying the contour of model to avoid too "
@@ -10288,15 +10919,8 @@ msgstr ""
 "Dieser Betrag wird als Prozentsatz des aktuellen Extruderdurchmessers "
 "ausgedrückt. Der Standardwert für diesen Parameter ist 15."
 
-msgid "Scarf joint seam (experimental)"
-msgstr "Scarf joint seam (experimental)"
-
-msgid "Use scarf joint to minimize seam visibility and increase seam strength."
+msgid "Smart scarf seam application"
 msgstr ""
-"Use scarf joint to minimize seam visibility and increase seam strength."
-
-msgid "Conditional scarf joint"
-msgstr "Conditional scarf joint"
 
 msgid ""
 "Apply scarf joints only to smooth perimeters where traditional seams do not "
@@ -10305,8 +10929,8 @@ msgstr ""
 "Apply scarf joints only to smooth perimeters where traditional seams do not "
 "conceal the seams at sharp corners effectively."
 
-msgid "Conditional angle threshold"
-msgstr "Conditional angle threshold"
+msgid "Scarf application angle threshold"
+msgstr ""
 
 msgid ""
 "This option sets the threshold angle for applying a conditional scarf joint "
@@ -10320,34 +10944,12 @@ msgstr ""
 "If the seam angle within the perimeter loop exceeds this value (indicating "
 "the absence of sharp corners), a scarf joint seam will be used. The default "
 "value is 155°."
-
-msgid "Scarf start height"
-msgstr "Scarf start height"
-
-msgid ""
-"Start height of the scarf.\n"
-"This amount can be specified in millimeters or as a percentage of the "
-"current layer height. The default value for this parameter is 0."
-msgstr ""
-"Start height of the scarf.\n"
-"This amount can be specified in millimeters or as a percentage of the "
-"current layer height. The default value for this parameter is 0."
 
 msgid "Scarf around entire wall"
 msgstr "Scarf around entire wall"
 
 msgid "The scarf extends to the entire length of the wall."
 msgstr "The scarf extends to the entire length of the wall."
-
-msgid "Scarf length"
-msgstr "Scarf length"
-
-msgid ""
-"Length of the scarf. Setting this parameter to zero effectively disables the "
-"scarf."
-msgstr ""
-"Length of the scarf. Setting this parameter to zero effectively disables the "
-"scarf."
 
 msgid "Scarf steps"
 msgstr "Scarf steps"
@@ -10375,6 +10977,15 @@ msgstr ""
 "ausgedrückt wird (z. B. 80 %), wird er auf Grundlage der oben angegebenen "
 "Fahrgeschwindigkeit berechnet. Der Standardwert für diesen Parameter beträgt "
 "80%."
+
+msgid "Role-based wipe speed"
+msgstr ""
+
+msgid ""
+"The wipe speed is determined by speed of current extrusion role. e.g if a "
+"wip action is executed immediately following an outer wall extrusion, the "
+"speed of the outer wall extrusion will be utilized for the wipe action."
+msgstr ""
 
 msgid "Skirt distance"
 msgstr "Abstand der Schürze"
@@ -10784,8 +11395,8 @@ msgstr ""
 "Für Überhänge, deren Neigungswinkel unter diesem Wert liegt, werden Stützen "
 "generiert."
 
-msgid "Tree support branch angle"
-msgstr "Baumstütze Astwinkel"
+msgid "Branch angle"
+msgstr ""
 
 msgid ""
 "This setting determines the maximum overhang angle that t he branches of "
@@ -10796,8 +11407,8 @@ msgstr ""
 "Baumstütze haben dürfen: Je größer der Winkel, desto horizontaler können die "
 "Äste gedruckt werden und desto weiter reichen sie."
 
-msgid "Tree support branch distance"
-msgstr "Abstand der Baumstützenäste"
+msgid "Branch distance"
+msgstr ""
 
 msgid ""
 "This setting determines the distance between neighboring tree support nodes."
@@ -10805,17 +11416,29 @@ msgstr ""
 "Mit dieser Einstellung wird der Abstand zwischen benachbarten Baum-"
 "Stützknoten festgelegt."
 
-msgid "Tree support branch diameter"
-msgstr "Durchmesser des Stützastes eines Baumes"
+msgid "Branch diameter"
+msgstr ""
 
 msgid "This setting determines the initial diameter of support nodes."
 msgstr "Diese Einstellung bestimmt den Anfangsdurchmesser der Stützknoten."
 
+msgid "Branch diameter angle"
+msgstr ""
+
+msgid ""
+"The angle of the branches' diameter as they gradually become thicker towards "
+"the bottom. An angle of 0 will cause the branches to have uniform thickness "
+"over their length. A bit of an angle can increase stability of the tree "
+"support."
+msgstr ""
+
 msgid "Support wall loops"
 msgstr "Stützwandschlaufen"
 
-msgid "This setting specifies the count of walls around support"
-msgstr "Diese Einstellung legt die Anzahl der Wände um die Stütze fest"
+msgid ""
+"This setting specifies the count of support walls in the range of [0,2]. 0 "
+"means auto."
+msgstr ""
 
 msgid "Chamber temperature"
 msgstr "Kammertemperatur"
@@ -11248,17 +11871,17 @@ msgstr ""
 "farbig bemalt ist.\n"
 "Die XY-Größenkompensation kann nicht mit der Farbmalerei kombiniert werden."
 
-msgid ""
-"Unknown file format. Input file must have .stl, .obj, .amf(.xml) extension."
-msgstr ""
-"Unbekanntes Dateiformat: Die Eingabedatei muss die Endung .stl, .obj oder ."
-"amf(.xml) haben."
-
 msgid "Loading of a model file failed."
 msgstr "Das Laden der Modelldatei ist fehlgeschlagen."
 
 msgid "The supplied file couldn't be read because it's empty"
 msgstr "Die angegebene Datei konnte nicht gelesen werden, weil sie leer ist."
+
+msgid ""
+"Unknown file format. Input file must have .stl, .obj, .amf(.xml) extension."
+msgstr ""
+"Unbekanntes Dateiformat: Die Eingabedatei muss die Endung .stl, .obj oder ."
+"amf(.xml) haben."
 
 msgid "Unknown file format. Input file must have .3mf or .zip.amf extension."
 msgstr ""
@@ -11304,8 +11927,8 @@ msgstr "Die Ergebnisse sind leicht zu erkennen und zu verstehen."
 msgid "Auto-Calibration"
 msgstr "Auto-Calibration"
 
-msgid "We would use Lidar to read the calibration result"
-msgstr "Wir würden Lidar verwenden, um das Kalibrierungsergebnis abzulesen."
+msgid "The printer will automatically read the calibration results."
+msgstr ""
 
 msgid "Prev"
 msgstr "Vorh."
@@ -11547,11 +12170,11 @@ msgid ""
 msgstr ""
 "Die Fussratenkalibrierung misst das Verhältnis zwischen erwartetem und "
 "tatsächlichem Extrusionsvolumen. Die Standardeinstellung funktioniert gut "
-"mit QIDI TECH Druckern und offiziellen Filamenten, da diese vorkalibriert und "
-"fein abgestimmt wurden. Bei regulärem Filament müssen Sie in der Regel keine "
-"Flussratenkalibrierung durchführen, es sei denn, Sie sehen die aufgeführten "
-"Mängel immer noch, nachdem Sie andere Kalibrierungen durchgeführt haben. "
-"Weitere Informationen finden Sie in unserem Wiki-Artikel."
+"mit QIDI Tech Druckern und offiziellen Filamenten, da diese vorkalibriert "
+"und fein abgestimmt wurden. Bei regulärem Filament müssen Sie in der Regel "
+"keine Flussratenkalibrierung durchführen, es sei denn, Sie sehen die "
+"aufgeführten Mängel immer noch, nachdem Sie andere Kalibrierungen "
+"durchgeführt haben. Weitere Informationen finden Sie in unserem Wiki-Artikel."
 
 msgid ""
 "Auto Flow Rate Calibration utilizes QIDI TECH's Micro-Lidar technology, "
@@ -11752,6 +12375,20 @@ msgid "Method"
 msgstr "Methode"
 
 #, c-format, boost-format
+msgid ""
+"Tip: Using a %.1fmm nozzle for auto dynamic flow calibration may have a high "
+"probability of failure.\n"
+"If it fails, it is recommended to use manual calibration."
+msgstr ""
+
+#, c-format, boost-format
+msgid ""
+"Tip: Using a %.1fmm nozzle for auto dynamic flow calibration may not get "
+"accurate calibration results.\n"
+"It is recommended to use manual calibration."
+msgstr ""
+
+#, c-format, boost-format
 msgid "%s is not compatible with %s"
 msgstr "%s ist nicht kompatibel mit %s"
 
@@ -11759,6 +12396,22 @@ msgid "TPU is not supported for Flow Dynamics Auto-Calibration."
 msgstr ""
 "TPU wird von der automatischen Kalibrierung der Flussdynamik nicht "
 "unterstützt."
+
+#, c-format, boost-format
+msgid ""
+"Tip: Calibrating foam filaments(%s) in X series printers may not get "
+"accurate results\n"
+"because their dynamic response is much different from that of ordinary "
+"filaments, and there is a high risk of oozing when printing calibration "
+"lines."
+msgstr ""
+
+#, c-format, boost-format
+msgid ""
+"Tip: When using the A1/A1 mini printer, we do not recommend calibrating foam "
+"filaments(%s),\n"
+"as the results may be unstable and affect print quality."
+msgstr ""
 
 msgid "Connecting to printer"
 msgstr "Verbindung zum Drucker herstellen"
@@ -11943,9 +12596,6 @@ msgstr "OctoPrint Version"
 msgid "Searching for devices"
 msgstr "Nach Geräten suchen"
 
-msgid "Finished"
-msgstr "Erledigt"
-
 msgid "Send to print"
 msgstr "Zum Drucken senden"
 
@@ -11960,6 +12610,9 @@ msgstr ""
 msgid "Upload filename doesn't end with \"%s\". Do you wish to continue?"
 msgstr ""
 "Der hochzuladende Dateiname endet nicht mit „%s“. Möchten Sie fortfahren?"
+
+msgid "Upload"
+msgstr "Hochladen"
 
 msgid "Simulate"
 msgstr "Simulieren"
@@ -12016,15 +12669,15 @@ msgstr ""
 msgid "Mesh Boolean"
 msgstr "Boolesches Mesh"
 
-msgid "Please right click to assembly these objects."
-msgstr "Please right click to assemble these objects."
-
 msgid ""
 "Please add at least one more object and select them together,\n"
 "then right click to assembly these objects."
 msgstr ""
 "Please add at least one more object and select them together,\n"
 "then right click to assemble these objects."
+
+msgid "Please right click to assembly these objects."
+msgstr "Please right click to assemble these objects."
 
 msgid "Union"
 msgstr "Union"
@@ -12080,11 +12733,11 @@ msgstr "System Version:"
 msgid "DNS Server:"
 msgstr "DNS Server:"
 
-msgid "Test QIDILab"
-msgstr "Test QIDILab"
+msgid "Test QIDITech"
+msgstr "Test QIDITech"
 
-msgid "Test QIDILab:"
-msgstr "Test QIDILab:"
+msgid "Test QIDITech:"
+msgstr "Test QIDITech:"
 
 msgid "Test Bing.com"
 msgstr "Test Bing.com"
@@ -12671,6 +13324,9 @@ msgstr "Physischer Drucker"
 msgid "Print Host upload"
 msgstr "Drucke Host-Upload"
 
+msgid "Test"
+msgstr "Testen"
+
 msgid "Could not get a valid Printer Host reference"
 msgstr "Es konnte keine gültige Drucker-Host-Referenz abgerufen werden"
 
@@ -13080,10 +13736,84 @@ msgid ""
 "vendor for suitable profile before printing and adjust some parameters "
 "according to its performances."
 msgstr ""
-"This is neither a commonly used filament, nor a QIDI filament, and it varies "
-"a lot from brand to brand, so it's highly recommended to ask the vendor for "
-"a suitable profile before printing and adjust some parameters according to "
-"its performance."
+"This is neither a commonly used filament, nor a QIDI filament, and it "
+"varies a lot from brand to brand, so it's highly recommended to ask the "
+"vendor for a suitable profile before printing and adjust some parameters "
+"according to its performance."
+
+msgid ""
+"When printing this filament, there's a risk of warping and low layer "
+"adhesion strength. To get better results, please refer to this wiki: "
+"Printing Tips for High Temp / Engineering materials."
+msgstr ""
+
+msgid ""
+"When printing this filament, there's a risk of nozzle clogging, oozing, "
+"warping and low layer adhesion strength. To get better results, please refer "
+"to this wiki: Printing Tips for High Temp / Engineering materials."
+msgstr ""
+
+msgid ""
+"To get better transparent or translucent results with the corresponding "
+"filament, please refer to this wiki: Printing tips for transparent PETG."
+msgstr ""
+
+msgid ""
+"To make the prints get higher gloss, please dry the filament before use, and "
+"set the outer wall speed to be 40 to 60 mm/s when slicing."
+msgstr ""
+
+msgid ""
+"This filament is only used to print models with a low density usually, and "
+"some special parameters are required. To get better printing quality, please "
+"refer to this wiki: Instructions for printing RC model with foaming PLA (PLA "
+"Aero)."
+msgstr ""
+
+msgid ""
+"This filament is only used to print models with a low density usually, and "
+"some special parameters are required. To get better printing quality, please "
+"refer to this wiki: ASA Aero Printing Guide."
+msgstr ""
+
+msgid ""
+"This filament is too soft and not compatible with the AMS. Printing it is of "
+"many requirements, and to get better printing quality, please refer to this "
+"wiki: TPU printing guide."
+msgstr ""
+
+msgid ""
+"This filament has high enough hardness (about 67D)  and is compatible with "
+"the AMS. Printing it is of many requirements, and to get better printing "
+"quality, please refer to this wiki: TPU printing guide."
+msgstr ""
+
+msgid ""
+"If you are to print a kind of soft TPU, please don't slice with this "
+"profile, and it is only for TPU that has high enough hardness (not less than "
+"55D) and is compatible with the AMS. To get better printing quality, please "
+"refer to this wiki: TPU printing guide."
+msgstr ""
+
+msgid ""
+"This is a water-soluble support filament, and usually it is only for the "
+"support structure and not for the model body. Printing this filament is of "
+"many requirements, and to get better printing quality, please refer to this "
+"wiki: PVA Printing Guide."
+msgstr ""
+
+msgid ""
+"This is a non-water-soluble support filament, and usually it is only for the "
+"support structure and not for the model body. To get better printing "
+"quality, please refer to this wiki: Printing Tips for Support Filament and "
+"Support Function."
+msgstr ""
+
+msgid ""
+"The generic presets are conservatively tuned for compatibility with a wider "
+"range of filaments. For higher printing quality and speeds, please use QIDI "
+"filaments with QIDI presets."
+msgstr ""
 
 msgid "No AMS"
 msgstr "No AMS"
@@ -13519,50 +14249,126 @@ msgstr ""
 "wie z. B. ABS, die Wahrscheinlichkeit von Verformungen durch eine "
 "entsprechende Erhöhung der Heizbetttemperatur verringert werden kann?"
 
+#~ msgid "We would use Lidar to read the calibration result"
+#~ msgstr "Wir würden Lidar verwenden, um das Kalibrierungsergebnis abzulesen."
+
+#~ msgid "Are you sure you want to cancel this print?"
+#~ msgstr "Möchten Sie diesen Druck wirklich abbrechen?"
+
+#, c-format, boost-format
 #~ msgid ""
-#~ "The current chamber temperature or the target chamber temperature exceeds "
-#~ "45\\u2103.In order to avoid extruder clogging,low temperature "
-#~ "filament(PLA/PETG/TPU) is not allowed to be loaded."
+#~ "Printing high temperature material(%s material) with %s may cause nozzle "
+#~ "damage"
 #~ msgstr ""
-#~ "The current chamber temperature or the target chamber temperature exceeds "
-#~ "45\\u2103. In order to avoid extruder clogging, low temperature filament "
-#~ "(PLA/PETG/TPU) cannot be loaded."
+#~ "Printing high temperature material(%s material) with %s may cause nozzle "
+#~ "damage"
+
+#~ msgid "Conditional scarf joint"
+#~ msgstr "Conditional scarf joint"
+
+#~ msgid "Conditional angle threshold"
+#~ msgstr "Conditional angle threshold"
+
+#~ msgid "Jump to layer"
+#~ msgstr "Zur Schicht springen"
+
+#~ msgid "PLA Plate"
+#~ msgstr "PLA-Platte"
+
+#~ msgid "Cool Plate / PLA Plate"
+#~ msgstr "Cool Plate / PLA Plate"
 
 #~ msgid ""
-#~ "Low temperature filament(PLA/PETG/TPU) is loaded in the extruder.In order "
-#~ "to avoid extruder clogging,it is not allowed to set the chamber "
-#~ "temperature above 45\\u2103."
+#~ "Step 1, please confirm QIDI Studio and your printer are in the same LAN."
 #~ msgstr ""
-#~ "Low temperature filament(PLA/PETG/TPU) is loaded in the extruder. In "
-#~ "order to avoid extruder clogging, setting the chamber temperature above "
-#~ "45\\u2103 is not allowed."
+#~ "Schritt 1: Vergewissern Sie sich, dass QIDI Studio und Ihr Drucker sich "
+#~ "im selben LAN befinden."
 
 #~ msgid ""
-#~ "When you set the chamber temperature below 40\\u2103, the chamber "
-#~ "temperature control will not be activated. And the target chamber "
-#~ "temperature will automatically be set to 0\\u2103."
+#~ "Step 2, if the IP and Access Code below are different from the actual "
+#~ "values on your printer, please correct them."
 #~ msgstr ""
-#~ "Wenn Sie die Kammertemperatur unter 40\\u2103 einstellen, wird die "
-#~ "Kammertemperaturregelung nicht aktiviert. Und die Zieltemperatur der "
-#~ "Kammer wird automatisch auf 0\\u2103 eingestellt."
+#~ "Schritt 2: Wenn die IP und der Zugriffscode unten von den tatsächlichen "
+#~ "Werten Ihres Druckers abweichen, korrigieren Sie diese bitte."
+
+#~ msgid "Step 3: Ping the IP address to check for packet loss and latency."
+#~ msgstr ""
+#~ "Schritt 3: Pingen Sie die IP-Adresse an, um den Paketverlust und die "
+#~ "Latenzzeit zu überprüfen."
+
+#~ msgid "Please check the custom G-code or use the default custom G-code."
+#~ msgstr ""
+#~ "Bitte überprüfen Sie den benutzerdefinierten G-Code oder verwenden Sie "
+#~ "den standardmäßigen benutzerdefinierten G-Code."
 
 #~ msgid ""
-#~ "Please input valid values:\n"
-#~ "start > 0 \\step >= 0\n"
-#~ "end > start + step)"
+#~ "Clearance radius around extruder. Used for collision avoidance in by-"
+#~ "object printing."
 #~ msgstr ""
-#~ "Bitte geben Sie gültige Werte ein:\n"
-#~ "Start > 0 \\Schritt >= 0\n"
-#~ "End > Start + Schritt)"
+#~ "Sicherheitsradius um den Extruder: Dient zur Kollisionsvermeidung beim "
+#~ "objektweisen Drucken."
+
+#~ msgid "Tree support branch angle"
+#~ msgstr "Baumstütze Astwinkel"
+
+#~ msgid "Tree support branch distance"
+#~ msgstr "Abstand der Baumstützenäste"
+
+#~ msgid "Tree support branch diameter"
+#~ msgstr "Durchmesser des Stützastes eines Baumes"
+
+#~ msgid "Manual"
+#~ msgstr "Manuell"
 
 #~ msgid ""
-#~ "Please input valid values:\n"
-#~ "start > 10 \\step >= 0\n"
-#~ "end > start + step)"
+#~ "Object will be raised by this number of support layers. Use this function "
+#~ "to avoid wrapping when print ABS"
 #~ msgstr ""
-#~ "Bitte geben Sie gültige Werte ein:\n"
-#~ "Start > 10 \\Schritt >= 0\n"
-#~ "End > Start + Schritt)"
+#~ "Das Objekt wird um diese Anzahl von Stützschichten erhöht. Verwenden Sie "
+#~ "diese Funktion, um ein verziehen bei ABS zu vermeiden."
+
+#~ msgid "User Sync"
+#~ msgstr "Benutzer-Synchronisation"
+
+#~ msgid "Update built-in Presets automatically."
+#~ msgstr "Aktualisiere die integrierten Profile automatisch."
+
+#~ msgid "System Sync"
+#~ msgstr "Systemsynchronisierung"
+
+#~ msgid ""
+#~ "Too small scarf start height.\n"
+#~ "Reset to 50%"
+#~ msgstr ""
+#~ "Too small scarf start height.\n"
+#~ "Reset to 50%"
+
+#~ msgid ""
+#~ "Too big scarf start height.\n"
+#~ "Reset to 50%"
+#~ msgstr ""
+#~ "Too big scarf start height.\n"
+#~ "Reset to 50%"
+
+#~ msgid "Scarf joint seam (experimental)"
+#~ msgstr "Scarf joint seam (experimental)"
+
+#~ msgid ""
+#~ "Use scarf joint to minimize seam visibility and increase seam strength."
+#~ msgstr ""
+#~ "Use scarf joint to minimize seam visibility and increase seam strength."
+
+#~ msgid ""
+#~ "Start height of the scarf.\n"
+#~ "This amount can be specified in millimeters or as a percentage of the "
+#~ "current layer height. The default value for this parameter is 0."
+#~ msgstr ""
+#~ "Start height of the scarf.\n"
+#~ "This amount can be specified in millimeters or as a percentage of the "
+#~ "current layer height. The default value for this parameter is 0."
+
+#~ msgid "Set Position"
+#~ msgstr "Position setzen"
 
 #~ msgid "Stopped."
 #~ msgstr "Gestoppt."
@@ -13578,10 +14384,42 @@ msgstr ""
 #~ msgid "Downloads"
 #~ msgstr "Downloads"
 
-#~ msgid "The 3mf is generated by old QIDI Studio, load geometry data only."
+#~ msgid ""
+#~ "We have added an experimental style \"Tree Slim\" that features smaller "
+#~ "support volume but weaker strength.\n"
+#~ "We recommend using it with: 0 interface layers, 0 top distance, 2 walls."
 #~ msgstr ""
-#~ "Die 3mf wurde mit einer alten Version von QIDI Studio erzeugt, nur "
-#~ "Geometriedaten werden geladen."
+#~ "Wir haben einen experimentellen Stil \"Baum schmal\" hinzugefügt, der ein "
+#~ "geringeres Stützvolumen benötigt, aber dafür eine geringere Stärke "
+#~ "aufweist.\n"
+#~ "Wir empfehlen folgende Einstellungen: 0 Oberflächenschichten, 0 oberer "
+#~ "Abstand, 2 Wände."
+
+#~ msgid ""
+#~ "For \"Tree Strong\" and \"Tree Hybrid\" styles, we recommend the "
+#~ "following settings: at least 2 interface layers, at least 0.1mm top z "
+#~ "distance or using support materials on interface."
+#~ msgstr ""
+#~ "Für die Stile \"Baumstützen Stark\" und \"Baumstützen Hybrid\" empfehlen "
+#~ "wir die folgenden Einstellungen: Mindestens 2 Schnittstellschichten, "
+#~ "mindestens 0,1 mm oberer Z-Abstand oder die Verwendung von "
+#~ "Stützmaterialien bei der Schnittstelle."
+
+#~ msgid "LAN Connection Failed (Sending print file)"
+#~ msgstr "LAN-Verbindung fehlgeschlagen (Senden einer Druckdatei)"
+
+#~ msgid "IP and Access Code Verified! You may close the window"
+#~ msgstr "IP und Zugangscode verifiziert! Sie können das Fenster schließen"
+
+#~ msgid ""
+#~ "Bed temperature of the initial layer. Value 0 means the filament does not "
+#~ "support to print on the Cool Plate"
+#~ msgstr ""
+#~ "Dies ist die Betttemperatur der ersten Schicht. Ein Wert von 0 bedeutet, "
+#~ "dass das Filament auf der Cool Plate nicht unterstützt wird."
+
+#~ msgid "This setting specifies the count of walls around support"
+#~ msgstr "Diese Einstellung legt die Anzahl der Wände um die Stütze fest"
 
 #~ msgid "China"
 #~ msgstr "China"
@@ -13592,12 +14430,41 @@ msgstr ""
 #~ msgid "The brim width around tree support. 0 means auto."
 #~ msgstr "Die Umrandungsbreite der Baumstütze. 0 bedeutet automatisch."
 
+#~ msgid "Show &Labels"
+#~ msgstr "Anzeigen &Etiketten"
+
+#~ msgid "The 3mf is generated by old QIDI Studio, load geometry data only."
+#~ msgstr ""
+#~ "Die 3mf wurde mit einer alten Version von QIDI Studio erzeugt, nur "
+#~ "Geometriedaten werden geladen."
+
 #~ msgid ""
 #~ "*We recommend you to add brand, materia, type, and even humidity level in "
 #~ "the Name"
 #~ msgstr ""
 #~ "*Wir empfehlen, dass Sie dem Namen, Marke, Material, Typ und sogar "
 #~ "Luftfeuchtigkeit hinzufügen"
+
+#~ msgid "Alt + Mouse wheel"
+#~ msgstr "Alt + Mausrad"
+
+#~ msgid "Alt + Shift + Enter"
+#~ msgstr "Alt + Shift + Enter"
+
+#~ msgid "Current Cabin humidity"
+#~ msgstr "Current Cabin humidity"
+
+#~ msgid "Move: press to snap by 1mm"
+#~ msgstr "Verschieben: Drücken, um in 1 mm einzurasten"
+
+#~ msgid "⌘+Mouse wheel"
+#~ msgstr "⌘+Mausrad"
+
+#~ msgid "⌥+Mouse wheel"
+#~ msgstr "⌥+Mausrad"
+
+#~ msgid "Alt+Mouse wheel"
+#~ msgstr "Alt + Mausrad"
 
 #~ msgid ""
 #~ "Please find the details of Flow Dynamics Calibration from our wiki.\n"
@@ -13646,10 +14513,55 @@ msgstr ""
 #~ msgid "Please input a valid value (K in 0~0.3, N in 0.6~2.0)"
 #~ msgstr "Bitte geben Sie einen gültigen Wert ein (K in 0~0,3, N in 0,6~2,0)"
 
+#~ msgid ""
+#~ "The current chamber temperature or the target chamber temperature exceeds "
+#~ "45\\u2103.In order to avoid extruder clogging,low temperature "
+#~ "filament(PLA/PETG/TPU) is not allowed to be loaded."
+#~ msgstr ""
+#~ "The current chamber temperature or the target chamber temperature exceeds "
+#~ "45\\u2103. In order to avoid extruder clogging, low temperature filament "
+#~ "(PLA/PETG/TPU) cannot be loaded."
+
+#~ msgid ""
+#~ "Low temperature filament(PLA/PETG/TPU) is loaded in the extruder.In order "
+#~ "to avoid extruder clogging,it is not allowed to set the chamber "
+#~ "temperature above 45\\u2103."
+#~ msgstr ""
+#~ "Low temperature filament(PLA/PETG/TPU) is loaded in the extruder. In "
+#~ "order to avoid extruder clogging, setting the chamber temperature above "
+#~ "45\\u2103 is not allowed."
+
+#~ msgid ""
+#~ "When you set the chamber temperature below 40\\u2103, the chamber "
+#~ "temperature control will not be activated. And the target chamber "
+#~ "temperature will automatically be set to 0\\u2103."
+#~ msgstr ""
+#~ "Wenn Sie die Kammertemperatur unter 40\\u2103 einstellen, wird die "
+#~ "Kammertemperaturregelung nicht aktiviert. Und die Zieltemperatur der "
+#~ "Kammer wird automatisch auf 0\\u2103 eingestellt."
+
 #~ msgid "Printer local connection failed, please try again."
 #~ msgstr ""
 #~ "Die lokale Verbindung des Druckers ist fehlgeschlagen. Bitte versuchen "
 #~ "Sie es erneut."
+
+#~ msgid ""
+#~ "Please input valid values:\n"
+#~ "start > 0 \\step >= 0\n"
+#~ "end > start + step)"
+#~ msgstr ""
+#~ "Bitte geben Sie gültige Werte ein:\n"
+#~ "Start > 0 \\Schritt >= 0\n"
+#~ "End > Start + Schritt)"
+
+#~ msgid ""
+#~ "Please input valid values:\n"
+#~ "start > 10 \\step >= 0\n"
+#~ "end > start + step)"
+#~ msgstr ""
+#~ "Bitte geben Sie gültige Werte ein:\n"
+#~ "Start > 10 \\Schritt >= 0\n"
+#~ "End > Start + Schritt)"
 
 #~ msgid ""
 #~ "\n"
@@ -13675,9 +14587,6 @@ msgstr ""
 
 #~ msgid "- \\u2103"
 #~ msgstr "- u2103"
-
-#~ msgid "0"
-#~ msgstr "0"
 
 #~ msgid "0%"
 #~ msgstr "0%"
@@ -14043,9 +14952,6 @@ msgstr ""
 #~ msgid "Convert the units of model"
 #~ msgstr "Einheiten des Modells umrechnen"
 
-#~ msgid "Cool Plate"
-#~ msgstr "Cool Plate/PLA Plate"
-
 #~ msgid "Cool plate"
 #~ msgstr "Cool plate"
 
@@ -14308,7 +15214,7 @@ msgstr ""
 #~ msgstr "Ende des Drucks"
 
 #~ msgid "Engineering plate"
-#~ msgstr "Heißbett für technische Werkstoffe"
+#~ msgstr "Engineering plate"
 
 #~ msgid "Enter a search term"
 #~ msgstr "Suchbegriff eingeben"
@@ -14686,8 +15592,8 @@ msgstr ""
 #~ msgid ""
 #~ "If enabled, sets QIDIStudio as default application to open .3mf files"
 #~ msgstr ""
-#~ "Wenn aktiviert, wird QIDIStudio als Standardanwendung zum Öffnen von .3mf-"
-#~ "Dateien festgelegt"
+#~ "Wenn aktiviert, wird QIDIStudio als Standardanwendung zum Öffnen "
+#~ "von .3mf-Dateien festgelegt"
 
 #~ msgid ""
 #~ "If enabled, sets QIDIStudio as default application to open .step files"
@@ -14698,8 +15604,8 @@ msgstr ""
 #~ msgid ""
 #~ "If enabled, sets QIDIStudio as default application to open .stl files"
 #~ msgstr ""
-#~ "Wenn aktiviert, wird QIDIStudio als Standardanwendung zum Öffnen von .stl-"
-#~ "Dateien festgelegt"
+#~ "Wenn aktiviert, wird QIDIStudio als Standardanwendung zum Öffnen von ."
+#~ "stl-Dateien festgelegt"
 
 #~ msgid "If enabled, useful hints are displayed at startup."
 #~ msgstr ""
@@ -14926,9 +15832,6 @@ msgstr ""
 #~ msgid "Management"
 #~ msgstr "Verwaltung"
 
-#~ msgid "Manual"
-#~ msgstr "Manuell"
-
 #~ msgid ""
 #~ "Material becomes soft at this temperature. Thus the heatbed cannot be "
 #~ "hotter than this tempature"
@@ -14983,14 +15886,14 @@ msgstr ""
 #~ "kann die Bildung von Tropfen an einem neuen Teil nach der Leerfahrt "
 #~ "minimieren."
 
-#~ msgid "NEW DEV host: api-dev.qidilab.net/v1"
-#~ msgstr "NEW DEV host: api-dev.qidilab.net/v1"
+#~ msgid "NEW DEV host: api-dev.qiditech.net/v1"
+#~ msgstr "NEW DEV host: api-dev.qiditech.net/v1"
 
-#~ msgid "NEW PRE host: api-pre.qidilab.net/v1"
-#~ msgstr "NEW PRE host: api-pre.qidilab.net/v1"
+#~ msgid "NEW PRE host: api-pre.qiditech.net/v1"
+#~ msgstr "NEW PRE host: api-pre.qiditech.net/v1"
 
-#~ msgid "NEW QA  host: api-qa.qidilab.net/v1"
-#~ msgstr "NEW QA  host: api-qa.qidilab.net/v1"
+#~ msgid "NEW QA  host: api-qa.qiditech.net/v1"
+#~ msgstr "NEW QA  host: api-qa.qiditech.net/v1"
 
 #~ msgid "NO AMS"
 #~ msgstr "KEIN AMS"
@@ -15201,7 +16104,8 @@ msgstr ""
 
 #~ msgid "Please give a score for your favorite QIDI Market model."
 #~ msgstr ""
-#~ "Bitte geben Sie eine Punktzahl für Ihr Lieblingsmodell von QIDI Market ab."
+#~ "Bitte geben Sie eine Punktzahl für Ihr Lieblingsmodell von QIDI Market "
+#~ "ab."
 
 #~ msgid ""
 #~ "Please go to filament setting to edit your presets if you need.\n"
@@ -15555,7 +16459,8 @@ msgstr ""
 #~ "Preferences"
 #~ msgstr ""
 #~ "Studio will re-calculate your flushing volumes every time the filament "
-#~ "color changes. You can disable auto-calculate in QIDI Studio > Preferences"
+#~ "color changes. You can disable auto-calculate in QIDI Studio > "
+#~ "Preferences"
 
 #~ msgid ""
 #~ "Style and shape of the support. For normal support, projecting the "
@@ -15693,8 +16598,8 @@ msgstr ""
 #~ "device, please read the termsand conditions.By clicking to agree to use "
 #~ "your QIDI TECH device, you agree to abide by the Privacy Policyand Terms "
 #~ "of Use(collectively, the \"Terms\"). If you do not comply with or agree "
-#~ "to the QIDI TECH Privacy Policy, please do not use QIDI TECH equipment and "
-#~ "services."
+#~ "to the QIDI Tech Privacy Policy, please do not use QIDI Tech equipment "
+#~ "and services."
 #~ msgstr ""
 #~ "Vielen Dank für den Kauf eines QIDI TECH Geräts. Bevor Sie Ihr QIDI TECH "
 #~ "Gerät verwenden, lesen Sie bitte die Allgemeinen Geschäftsbedingungen. "
@@ -15738,6 +16643,9 @@ msgstr ""
 
 #~ msgid "The 3mf is not compatible, load geometry data only!"
 #~ msgstr "Der 3mf ist nicht kompatibel, lädt nur Geometriedaten!"
+
+#~ msgid "The 3mf is not from QIDI Tech, load geometry data only."
+#~ msgstr "Die 3mf stammt nicht vom QIDITech, sondern lädt nur Geometriedaten."
 
 #~ msgid "The Config is not compatible and can not be loaded."
 #~ msgstr ""
