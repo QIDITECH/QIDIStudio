@@ -1,0 +1,11 @@
+{
+    "type": "filament",
+	"filament_id": "GFG99",
+    "setting_id": "GFSG99",
+    "name": "Bambu PETG @Qidi X-Plus 4 0.6 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "Bambu PETG@X4",
+    "pressure_advance": ["0.04"],
+	"compatible_printers": ["X-Plus 4 0.6 nozzle"]
+}

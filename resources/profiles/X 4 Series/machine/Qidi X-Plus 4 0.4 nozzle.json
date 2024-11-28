@@ -16,7 +16,7 @@
 	"extruder_clearance_height_to_lid": "135",
     "extruder_clearance_height_to_rod": "32",
     "extruder_clearance_max_radius": "72",
-	"layer_change_gcode": "{if timelapse_type == 1} ; timelapse with wipe tower\nG92 E0\nG1 E-[retraction_length] F1800\nG2 Z{layer_z + 0.4} I0.86 J0.86 P1 F20000 ; spiral lift a little\nG1 X95 Y304 F20000\nG92 E0\nM400\nTIMELAPSE_TAKE_FRAME\nG1 Y324 F200\nG1 X65 F200\nG1 Y290 F2000\n{elsif timelapse_type == 0} ; timelapse without wipe tower\nTIMELAPSE_TAKE_FRAME\n{endif}\nG92 E0\nSET_PRINT_STATS_INFO CURRENT_LAYER={layer_num + 1}",
+	"layer_change_gcode": "{if timelapse_type == 1} ; timelapse with wipe tower\nG92 E0\nG1 E-[retraction_length] F1800\nG2 Z{layer_z + 0.4} I0.86 J0.86 P1 F20000 ; spiral lift a little\nG1 Y304 F20000\nG1 X95 F20000\nG92 E0\nM400\nTIMELAPSE_TAKE_FRAME\nG1 Y324 F5000\nG1 E[retraction_length] F300\nG1 X65 F5000\nG1 Y290 F20000\n{elsif timelapse_type == 0} ; timelapse without wipe tower\nTIMELAPSE_TAKE_FRAME\n{endif}\nG92 E0\nSET_PRINT_STATS_INFO CURRENT_LAYER={layer_num + 1}",
 	"machine_pause_gcode": "M0",
 	"max_layer_height": ["0.28"],
 	"min_layer_height": ["0.08"],

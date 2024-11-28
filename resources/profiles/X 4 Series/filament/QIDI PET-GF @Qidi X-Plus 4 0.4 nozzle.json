@@ -1,0 +1,10 @@
+{
+    "type": "filament",
+    "filament_id": "GFN98",
+    "setting_id": "GFSN99",
+    "name": "QIDI PET-GF @Qidi X-Plus 4 0.4 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PET-GF@X4",
+	"compatible_printers": ["X-Plus 4 0.4 nozzle"]
+}

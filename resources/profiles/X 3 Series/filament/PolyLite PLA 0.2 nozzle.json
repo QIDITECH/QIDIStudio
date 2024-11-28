@@ -1,0 +1,14 @@
+{
+    "type": "filament",
+	"filament_id": "GFL99",
+    "setting_id": "GFSL99",
+    "name": "PolyLite PLA @X3 0.2 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "PolyLite PLA@X3",
+    "filament_max_volumetric_speed": ["2"],
+    "pressure_advance": ["0.057"],
+	"compatible_printers": ["X-Max 3 0.2 nozzle",
+                            "X-Plus 3 0.2 nozzle",
+                            "X-Smart 3 0.2 nozzle"]
+}

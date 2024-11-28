@@ -1,0 +1,12 @@
+{
+    "type": "filament",
+    "filament_id": "GFB99",
+    "setting_id": "GFSA04",
+    "name": "Bambu ABS @Qidi X-Max 3 0.6 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "Bambu ABS@X3",
+    "during_print_exhaust_fan_speed": ["40"],
+    "pressure_advance": ["0.014"],
+	"compatible_printers": ["X-Max 3 0.6 nozzle"]
+}

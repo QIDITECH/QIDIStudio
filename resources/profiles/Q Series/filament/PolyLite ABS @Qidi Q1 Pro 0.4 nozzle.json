@@ -1,0 +1,11 @@
+{
+    "type": "filament",
+    "filament_id": "GFB99",
+    "setting_id": "GFSA04",
+    "instantiation": "true",
+    "inherits": "PolyLite ABS@Q-Series",
+    "name": "PolyLite ABS @Qidi Q1 Pro 0.4 nozzle",
+    "during_print_exhaust_fan_speed": ["0"],
+    "pressure_advance": ["0.032"],
+    "compatible_printers": ["Q1 Pro 0.4 nozzle"]
+}

@@ -1,0 +1,10 @@
+{
+    "type": "filament",
+    "filament_id": "GFB99",
+    "setting_id": "GFSA04",
+    "instantiation": "true",
+    "inherits": "Bambu ABS@Q-Series",
+    "name": "Bambu ABS @Qidi Q1 Pro 0.4 nozzle",
+    "during_print_exhaust_fan_speed": ["0"],
+    "compatible_printers": ["Q1 Pro 0.4 nozzle"]
+}

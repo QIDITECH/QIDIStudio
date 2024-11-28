@@ -1,0 +1,16 @@
+{
+    "type": "filament",
+	"filament_id": "GFL99",
+    "setting_id": "GFSL99",
+    "name": "Bambu PLA@X3",
+    "from": "system",
+    "instantiation": "false",
+    "inherits": "fdm_filament_common",
+    "filament_type": ["PLA"],
+    "filament_vendor": ["Bambu Lab"],
+    "additional_cooling_fan_speed": ["100"],
+    "nozzle_temperature_range_high": ["240"],
+    "nozzle_temperature_range_low": ["190"],
+    "temperature_vitrification": ["45"],
+	"compatible_printers": []
+}

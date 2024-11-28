@@ -1,0 +1,13 @@
+{
+    "type": "filament",
+    "filament_id": "GFB99",
+    "setting_id": "GFSA04",
+    "instantiation": "true",
+    "inherits": "HATCHBOX ABS@Q-Series",
+    "name": "HATCHBOX ABS @Qidi Q1 Pro 0.2 nozzle",
+    "chamber_temperatures": ["0"],
+    "during_print_exhaust_fan_speed": ["0"],
+    "filament_max_volumetric_speed": ["2"],
+    "pressure_advance": ["0.021"],
+    "compatible_printers": ["Q1 Pro 0.2 nozzle"]
+}
