@@ -93,7 +93,7 @@ public:
         bool features_extracted = false;
     };
 
-    std::optional<SurfaceFeature> get_feature(size_t face_idx, const Vec3d& point, const Transform3d &world_tran);
+    std::optional<SurfaceFeature>      get_feature(size_t face_idx, const Vec3d &point, const Transform3d &world_tran,bool only_select_plane);
     int get_num_of_planes() const;
     const std::vector<int>& get_plane_triangle_indices(int idx) const;
     std::vector<int>* get_plane_tri_indices(int idx);
@@ -526,7 +526,7 @@ void MeasuringImpl::extract_features(int plane_idx)
     plane.features_extracted = true;
 }
 
-std::optional<SurfaceFeature> MeasuringImpl::get_feature(size_t face_idx, const Vec3d& point, const Transform3d &world_tran)
+std::optional<SurfaceFeature> MeasuringImpl::get_feature(size_t face_idx, const Vec3d &point, const Transform3d &world_tran,bool only_select_plane)
 {
     if (face_idx >= m_face_to_plane.size())
         return std::optional<SurfaceFeature>();
@@ -544,46 +544,48 @@ std::optional<SurfaceFeature> MeasuringImpl::get_feature(size_t face_idx, const 
 
     assert(plane.surface_features.empty() || plane.surface_features.back().get_type() == SurfaceFeatureType::Plane);
 
-    for (size_t i=0; i<plane.surface_features.size() - 1; ++i) {
-        // The -1 is there to prevent measuring distance to the plane itself,
-        // which is needless and relatively expensive.
-        res = get_measurement(plane.surface_features[i], point_sf);
-        if (res.distance_strict) { // TODO: this should become an assert after all combinations are implemented.
-            double dist = res.distance_strict->dist;
-            if (dist < feature_hover_limit && dist < min_dist) {
-                min_dist = std::min(dist, min_dist);
-                closest_feature_idx = i;
+    if (!only_select_plane) {
+        for (size_t i = 0; i < plane.surface_features.size() - 1; ++i) {
+            // The -1 is there to prevent measuring distance to the plane itself,
+            // which is needless and relatively expensive.
+            res = get_measurement(plane.surface_features[i], point_sf);
+            if (res.distance_strict) { // TODO: this should become an assert after all combinations are implemented.
+                double dist = res.distance_strict->dist;
+                if (dist < feature_hover_limit && dist < min_dist) {
+                    min_dist            = std::min(dist, min_dist);
+                    closest_feature_idx = i;
+                }
             }
         }
-    }
 
-    if (closest_feature_idx != size_t(-1)) {
-        const SurfaceFeature& f = plane.surface_features[closest_feature_idx];
-        if (f.get_type() == SurfaceFeatureType::Edge) {
-            // If this is an edge, check if we are not close to the endpoint. If so,
-            // we will include the endpoint as well. Close = 10% of the lenghth of
-            // the edge, clamped between 0.025 and 0.5 mm.
-            const auto& [sp, ep] = f.get_edge();
-            double len_sq = (ep-sp).squaredNorm();
-            double limit_sq = std::max(0.025*0.025, std::min(0.5*0.5, 0.1 * 0.1 * len_sq));
-            if ((point - sp).squaredNorm() < limit_sq) {
-                SurfaceFeature local_f(sp);
-                local_f.origin_surface_feature = std::make_shared<SurfaceFeature>(local_f);
-                local_f.translate(world_tran);
-                return std::make_optional(local_f);
+        if (closest_feature_idx != size_t(-1)) {
+            const SurfaceFeature &f = plane.surface_features[closest_feature_idx];
+            if (f.get_type() == SurfaceFeatureType::Edge) {
+                // If this is an edge, check if we are not close to the endpoint. If so,
+                // we will include the endpoint as well. Close = 10% of the lenghth of
+                // the edge, clamped between 0.025 and 0.5 mm.
+                const auto &[sp, ep] = f.get_edge();
+                double len_sq        = (ep - sp).squaredNorm();
+                double limit_sq      = std::max(0.025 * 0.025, std::min(0.5 * 0.5, 0.1 * 0.1 * len_sq));
+                if ((point - sp).squaredNorm() < limit_sq) {
+                    SurfaceFeature local_f(sp);
+                    local_f.origin_surface_feature = std::make_shared<SurfaceFeature>(local_f);
+                    local_f.translate(world_tran);
+                    return std::make_optional(local_f);
+                }
+
+                if ((point - ep).squaredNorm() < limit_sq) {
+                    SurfaceFeature local_f(ep);
+                    local_f.origin_surface_feature = std::make_shared<SurfaceFeature>(local_f);
+                    local_f.translate(world_tran);
+                    return std::make_optional(local_f);
+                }
             }
-               
-            if ((point - ep).squaredNorm() < limit_sq) {
-                SurfaceFeature local_f(ep);
-                local_f.origin_surface_feature = std::make_shared<SurfaceFeature>(local_f);
-                local_f.translate(world_tran);
-                return std::make_optional(local_f);
-            } 
+            SurfaceFeature f_tran(f);
+            f_tran.origin_surface_feature = std::make_shared<SurfaceFeature>(f);
+            f_tran.translate(world_tran);
+            return std::make_optional(f_tran);
         }
-        SurfaceFeature f_tran(f);
-        f_tran.origin_surface_feature = std::make_shared<SurfaceFeature>(f);
-        f_tran.translate(world_tran);
-        return std::make_optional(f_tran);
     }
 
     // Nothing detected, return the plane as a whole.
@@ -646,8 +648,12 @@ Measuring::~Measuring() {}
 
 
 
-std::optional<SurfaceFeature> Measuring::get_feature(size_t face_idx, const Vec3d &point, const Transform3d &world_tran) const {
-    return priv->get_feature(face_idx, point,world_tran);
+std::optional<SurfaceFeature> Measuring::get_feature(size_t face_idx, const Vec3d &point, const Transform3d &world_tran, bool only_select_plane) const
+{
+    if (face_idx == 7516 || face_idx == 7517) {
+        std::cout << "";
+    }
+    return priv->get_feature(face_idx, point, world_tran, only_select_plane);
 }
 
 

@@ -112,6 +112,10 @@ inline bool has_duplicate_points(Polygon &&poly)      { return has_duplicate_poi
 inline bool has_duplicate_points(const Polygon &poly) { return has_duplicate_points(poly.points); }
 bool        has_duplicate_points(const Polygons &polys);
 
+// Return True when erase some otherwise False.
+bool          remove_same_neighbor(Polygon &polygon);
+bool          remove_same_neighbor(Polygons &polygons);
+
 inline double total_length(const Polygons &polylines) {
     double total = 0;
     for (Polygons::const_iterator it = polylines.begin(); it != polylines.end(); ++it)
@@ -245,6 +249,18 @@ inline Polylines to_polylines(Polygons &&polys)
     return polylines;
 }
 
+// close polyline to polygon (connect first and last point in polyline)
+inline Polygons to_polygons(const Polylines &polylines)
+{
+    Polygons out;
+    out.reserve(polylines.size());
+    for (const Polyline &polyline : polylines) {
+        if (polyline.size()) out.emplace_back(polyline.points);
+    }
+    return out;
+}
+
+
 inline Polygons to_polygons(const std::vector<Points> &paths)
 {
     Polygons out;
@@ -269,6 +285,21 @@ bool polygons_match(const Polygon &l, const Polygon &r);
 
 Polygon make_circle(double radius, double error);
 Polygon make_circle_num_segments(double radius, size_t num_segments);
+
+/// <summary>
+/// Define point laying on polygon
+/// keep index of polygon line and point coordinate
+/// </summary>
+struct PolygonPoint
+{
+    // index of line inside of polygon
+    // 0 .. from point polygon[0] to polygon[1]
+    size_t index;
+
+    // Point, which lay on line defined by index
+    Point point;
+};
+using PolygonPoints = std::vector<PolygonPoint>;
 
 bool overlaps(const Polygons& polys1, const Polygons& polys2);
 } // Slic3r

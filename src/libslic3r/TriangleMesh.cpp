@@ -394,11 +394,37 @@ std::vector<TriangleMesh> TriangleMesh::split() const
     out.reserve(itss.size());
     for (indexed_triangle_set &m : itss) {
         // The TriangleMesh constructor shall fill in the mesh statistics including volume.
-        out.emplace_back(std::move(m));
-        if (TriangleMesh &triangle_mesh = out.back(); triangle_mesh.volume() < 0)
-            // Some source mesh parts may be incorrectly oriented. Correct them.
-            triangle_mesh.flip_triangles();
+        TriangleMesh temp_triangle_mesh(std::move(m));
+        if (abs(temp_triangle_mesh.volume()< 0.01)) {//0.01mm^3
+            continue;
+        }
+        if (temp_triangle_mesh.volume() < 0) {// Some source mesh parts may be incorrectly oriented. Correct them.
+            temp_triangle_mesh.flip_triangles();
+        }
+        out.emplace_back(temp_triangle_mesh);
+    }
+    return out;
+}
 
+std::vector<TriangleMesh> TriangleMesh::split_and_save_relationship(std::vector<std::unordered_map<int, int>> &result) const {
+    auto   itss_and_ships = its_split_and_save_relationship<>(this->its);
+    std::vector<TriangleMesh>         out;
+    out.reserve(itss_and_ships.itses.size());
+    result.reserve(itss_and_ships.itses.size());
+    unsigned int index = 0;
+    for (indexed_triangle_set &m : itss_and_ships.itses) {
+        // The TriangleMesh constructor shall fill in the mesh statistics including volume.
+        TriangleMesh temp_triangle_mesh(std::move(m));
+        if (abs(temp_triangle_mesh.volume() < 0.01)) { // 0.01mm^3
+            index++;
+            continue;
+        }
+        if (temp_triangle_mesh.volume() < 0) { // Some source mesh parts may be incorrectly oriented. Correct them.
+            temp_triangle_mesh.flip_triangles();
+        }
+        out.emplace_back(temp_triangle_mesh);
+        result.emplace_back(itss_and_ships.ships[index]);
+        index++;
     }
     return out;
 }
@@ -1694,7 +1720,7 @@ float its_volume(const indexed_triangle_set &its)
         volume += (area * height) / 3.0f;
     }
 
-    return volume;
+    return std::abs(volume);
 }
 
 float its_average_edge_length(const indexed_triangle_set &its)

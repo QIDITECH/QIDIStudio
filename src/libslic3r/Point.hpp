@@ -143,6 +143,30 @@ inline std::string to_string(const Vec3d   &pt) { return std::string("[") + floa
 std::vector<Vec3f> transform(const std::vector<Vec3f>& points, const Transform3f& t);
 Pointf3s transform(const Pointf3s& points, const Transform3d& t);
 
+/// <summary>
+/// Check whether transformation matrix contains odd number of mirroring.
+/// NOTE: In code is sometime function named is_left_handed
+/// </summary>
+/// <param name="transform">Transformation to check</param>
+/// <returns>Is positive determinant</returns>
+inline bool has_reflection(const Transform3d &transform) { return transform.matrix().determinant() < 0; }
+
+/// <summary>
+/// Getter on base of transformation matrix
+/// </summary>
+/// <param name="index">column index</param>
+/// <param name="transform">source transformation</param>
+/// <returns>Base of transformation matrix</returns>
+inline const Vec3d get_base(unsigned index, const Transform3d &transform) { return transform.linear().col(index); }
+inline const Vec3d get_x_base(const Transform3d &transform) { return get_base(0, transform); }
+inline const Vec3d get_y_base(const Transform3d &transform) { return get_base(1, transform); }
+inline const Vec3d get_z_base(const Transform3d &transform) { return get_base(2, transform); }
+inline const Vec3d get_base(unsigned index, const Transform3d::LinearPart &transform) { return transform.col(index); }
+inline const Vec3d get_x_base(const Transform3d::LinearPart &transform) { return get_base(0, transform); }
+inline const Vec3d get_y_base(const Transform3d::LinearPart &transform) { return get_base(1, transform); }
+inline const Vec3d get_z_base(const Transform3d::LinearPart &transform) { return get_base(2, transform); }
+
+
 template<int N, class T> using Vec = Eigen::Matrix<T,  N, 1, Eigen::DontAlign, N, 1>;
 
 class Point : public Vec2crd
@@ -310,6 +334,9 @@ inline bool has_duplicate_successive_points_closed(const std::vector<Point> &pts
 {
     return has_duplicate_successive_points(pts) || (pts.size() >= 2 && pts.front() == pts.back());
 }
+
+// Collect adjecent(duplicit points)
+Points      collect_duplicates(Points pts /* Copy */);
 
 inline bool shorter_then(const Point& p0, const coord_t len)
 {
@@ -559,7 +586,29 @@ inline coord_t align_to_grid(coord_t coord, coord_t spacing, coord_t base)
     { return base + align_to_grid(coord - base, spacing); }
 inline Point   align_to_grid(Point   coord, Point   spacing, Point   base)
     { return Point(align_to_grid(coord.x(), spacing.x(), base.x()), align_to_grid(coord.y(), spacing.y(), base.y())); }
-
+    // MinMaxLimits
+    template<typename T> struct MinMax
+    {
+        T min;
+        T max;
+    };
+    template<typename T> static bool apply(std::optional<T> &val, const MinMax<T> &limit)
+    {
+        if (!val.has_value()) return false;
+        return apply<T>(*val, limit);
+    }
+    template<typename T> static bool apply(T &val, const MinMax<T> &limit)
+    {
+        if (val > limit.max) {
+            val = limit.max;
+            return true;
+        }
+        if (val < limit.min) {
+            val = limit.min;
+            return true;
+        }
+        return false;
+    }
 } // namespace Slic3r
 
 // start Boost

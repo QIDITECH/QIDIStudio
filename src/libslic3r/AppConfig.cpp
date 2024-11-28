@@ -67,16 +67,16 @@ std::string AppConfig::get_hms_host()
     std::string host = "";
 #if !QDT_RELEASE_TO_PUBLIC
     if (sel == ENV_DEV_HOST)
-        host = "e-dev.qidilab.net";
+        host = "e-dev.qiditech.net";
     else if (sel == ENV_QAT_HOST)
-        host = "e-qa.qidilab.net";
+        host = "e-qa.qiditech.net";
     else if (sel == ENV_PRE_HOST)
-        host = "e-pre.qidilab.net";
+        host = "e-pre.qiditech.net";
     else if (sel == ENV_PRODUCT_HOST)
-        host = "e.qidilab.com";
+        host = "e.qiditech.com";
     return host;
 #else
-    return "e.qidilab.com";
+    return "e.qiditech.com";
 #endif
 }
 
@@ -172,8 +172,16 @@ void AppConfig::set_defaults()
 
     if (get("zoom_to_mouse").empty())
         set_bool("zoom_to_mouse", false);
-    if (get("user_bed_type").empty()) 
+    if (get("show_shells_in_preview").empty())
+        set_bool("show_shells_in_preview", true);
+    if (get("enable_lod").empty())
+        set_bool("enable_lod", true);
+    if (get("enable_opengl_multi_instance").empty())
+        set_bool("enable_opengl_multi_instance", true);
+    if (get("user_bed_type").empty())
         set_bool("user_bed_type", true);
+    if (get("grabber_size_factor").empty())
+        set("grabber_size_factor", "1.0");
 //#ifdef SUPPORT_SHOW_HINTS
     if (get("show_hints").empty())
         set_bool("show_hints", true);
@@ -265,6 +273,10 @@ void AppConfig::set_defaults()
         set_bool("show_home_page", true);
     }
 
+    if (get("show_print_history").empty()) {
+        set_bool("show_print_history", true);
+    }
+
     if (get("show_printable_box").empty()) {
         set_bool("show_printable_box", true);
     }
@@ -312,7 +324,7 @@ void AppConfig::set_defaults()
     if (get("mouse_wheel").empty()) {
         set("mouse_wheel", "0");
     }
-    
+
     if (get("max_recent_count").empty()) {
         set("max_recent_count", "18");
     }
@@ -379,6 +391,17 @@ void AppConfig::set_defaults()
     if (get("print", "timelapse").empty()) {
         set_str("print", "timelapse", "1");
     }
+
+    if (get("enable_step_mesh_setting").empty()) {
+        set_bool("enable_step_mesh_setting", true);
+    }
+    if (get("linear_defletion").empty()) {
+        set("linear_defletion", "0.003");
+    }
+    if (get("angle_defletion").empty()) {
+        set("angle_defletion", "0.5");
+    }
+
     // 10
     if (get("machine_list_net").empty())
         set("machine_list_net", "0");

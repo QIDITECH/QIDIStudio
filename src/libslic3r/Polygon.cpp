@@ -237,7 +237,7 @@ Points filter_points_by_vectors(const Points &poly, FilterFn filter)
         // p2 is next point to the currently visited point p1.
         Vec2d v2 = (p2 - p1).cast<double>();
         if (filter(v1, v2))
-            out.emplace_back(p2);
+            out.emplace_back(p1);
         v1 = v2;
         p1 = p2;
     }
@@ -249,7 +249,7 @@ template<typename ConvexConcaveFilterFn>
 Points filter_convex_concave_points_by_angle_threshold(const Points &poly, double angle_threshold, ConvexConcaveFilterFn convex_concave_filter)
 {
     assert(angle_threshold >= 0.);
-    if (angle_threshold < EPSILON) {
+    if (angle_threshold > EPSILON) {
         double cos_angle  = cos(angle_threshold);
         return filter_points_by_vectors(poly, [convex_concave_filter, cos_angle](const Vec2d &v1, const Vec2d &v2){
             return convex_concave_filter(v1, v2) && v1.normalized().dot(v2.normalized()) < cos_angle;
@@ -452,6 +452,32 @@ bool has_duplicate_points(const Polygons &polys)
             return true;
     return false;
 #endif
+}
+
+bool remove_same_neighbor(Polygon &polygon)
+{
+    Points &points = polygon.points;
+    if (points.empty()) return false;
+    auto last = std::unique(points.begin(), points.end());
+
+    // remove first and last neighbor duplication
+    if (const Point &last_point = *(last - 1); last_point == points.front()) { --last; }
+
+    // no duplicits
+    if (last == points.end()) return false;
+
+    points.erase(last, points.end());
+    return true;
+}
+
+bool remove_same_neighbor(Polygons &polygons)
+{
+    if (polygons.empty()) return false;
+    bool exist = false;
+    for (Polygon &polygon : polygons) exist |= remove_same_neighbor(polygon);
+    // remove empty polygons
+    polygons.erase(std::remove_if(polygons.begin(), polygons.end(), [](const Polygon &p) { return p.points.size() <= 2; }), polygons.end());
+    return exist;
 }
 
 static inline bool is_stick(const Point &p1, const Point &p2, const Point &p3)

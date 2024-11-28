@@ -60,9 +60,15 @@ set(lisbslic3r_sources
     EdgeGrid.hpp
     ElephantFootCompensation.cpp
     ElephantFootCompensation.hpp
+    Emboss.cpp
+    Emboss.hpp
+    EmbossShape.hpp
     enum_bitmask.hpp
     ExPolygon.cpp
     ExPolygon.hpp
+    ExPolygonSerialize.hpp
+    ExPolygonsIndex.cpp
+    ExPolygonsIndex.hpp
     Extruder.cpp
     Extruder.hpp
     ExtrusionEntity.cpp
@@ -108,6 +114,8 @@ set(lisbslic3r_sources
     Fill/FillRectilinear.hpp
     Flow.cpp
     Flow.hpp
+    Frustum.cpp
+    Frustum.hpp
     FlushVolCalc.cpp
     FlushVolCalc.hpp
     format.hpp
@@ -222,6 +230,8 @@ set(lisbslic3r_sources
     MutablePriorityQueue.hpp
     ObjectID.cpp
     ObjectID.hpp
+    NSVGUtils.cpp
+    NSVGUtils.hpp
 	ParameterUtils.cpp
     ParameterUtils.hpp
     PerimeterGenerator.cpp
@@ -279,6 +289,8 @@ set(lisbslic3r_sources
     SlicesToTriangleMesh.cpp
     SlicingAdaptive.cpp
     SlicingAdaptive.hpp
+    Support/SupportCommon.cpp
+    Support/SupportCommon.hpp
     Support/SupportMaterial.cpp
     Support/SupportMaterial.hpp
     Support/TreeSupport.hpp
@@ -288,6 +300,7 @@ set(lisbslic3r_sources
     Support/TreeModelVolumes.hpp
     Support/TreeModelVolumes.cpp
     Support/TreeSupportCommon.hpp
+    Support/SupportParameters.hpp
     MinimumSpanningTree.hpp
     MinimumSpanningTree.cpp
     Surface.cpp
@@ -311,6 +324,8 @@ set(lisbslic3r_sources
     Utils.hpp
     Time.cpp
     Time.hpp
+    Timer.cpp
+    Timer.hpp
     Thread.cpp
     Thread.hpp
     TriangleSelector.cpp
@@ -411,8 +426,10 @@ set(lisbslic3r_sources
     RegionExpansion.hpp
     RegionExpansion.cpp
     ClipperZUtils.hpp
-        GCode/Thumbnails.cpp
-        GCode/Thumbnails.hpp
+    FlushVolPredictor.hpp
+    FlushVolPredictor.cpp
+    GCode/Thumbnails.cpp
+    GCode/Thumbnails.hpp
 )
 
 if (APPLE)
@@ -439,8 +456,12 @@ find_package(CGAL REQUIRED)
 find_package(OpenCV REQUIRED core)
 cmake_policy(POP)
 
-add_library(libslic3r_cgal STATIC MeshBoolean.cpp MeshBoolean.hpp  TryCatchSignal.hpp
-    TryCatchSignal.cpp)
+add_library(libslic3r_cgal STATIC
+    CutSurface.hpp CutSurface.cpp
+    IntersectionPoints.hpp IntersectionPoints.cpp
+    MeshBoolean.hpp MeshBoolean.cpp
+    TryCatchSignal.hpp TryCatchSignal.cpp
+    Triangulation.hpp Triangulation.cpp)
 target_include_directories(libslic3r_cgal PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # Reset compile options of libslic3r_cgal. Despite it being linked privately, CGAL options

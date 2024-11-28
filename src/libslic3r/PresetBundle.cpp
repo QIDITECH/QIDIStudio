@@ -1764,6 +1764,7 @@ unsigned int PresetBundle::sync_ams_list(unsigned int &unknowns)
     std::vector<std::string> filament_presets;
     std::vector<std::string> filament_colors;
     ams_multi_color_filment.clear();
+    BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << boost::format(": filament_ams_list size: %1%") % filament_ams_list.size();
     for (auto &entry : filament_ams_list) {
         auto & ams = entry.second;
         auto filament_id = ams.opt_string("filament_id", 0u);
@@ -1880,7 +1881,7 @@ std::set<std::string> PresetBundle::get_printer_names_by_printer_type_and_nozzle
         if (printer_it->name.find(nozzle_diameter_str) != std::string::npos) printer_names.insert(printer_it->name);
     }
 
-    //assert(printer_names.size() == 1);
+    assert(printer_names.size() == 1);
 
     for (auto& printer_name : printer_names) {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " " << __LINE__ << " printer name: " << printer_name;
@@ -3371,7 +3372,8 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
         std::map<std::string, DynamicPrintConfig>& config_maps,
         std::map<std::string, std::string>& filament_id_maps,
         PresetCollection* presets_collection,
-        size_t& count) -> std::string {
+        size_t& count,
+        std::map<std::string, std::string>&description_maps) -> std::string {
 
         std::string subfile = path + "/" + vendor_name + "/" + subfile_iter.second;
         // Load the print, filament or printer preset.
@@ -3393,7 +3395,6 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
                 return reason;
             }
             preset_name = key_values[QDT_JSON_KEY_NAME];
-            description     = key_values[QDT_JSON_KEY_DESCRIPTION];
             instantiation   = key_values[QDT_JSON_KEY_INSTANTIATION];
             auto setting_it = key_values.find(QDT_JSON_KEY_SETTING_ID);
             if (setting_it != key_values.end())
@@ -3421,6 +3422,8 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
                     reason = "Can not find inherits: " + inherits;
                     return reason;
                 }
+                if (auto ds_iter = description_maps.find(inherits); ds_iter != description_maps.end())
+                    description = ds_iter->second;
             }
             else {
                 if (presets_collection->type() == Preset::TYPE_PRINTER)
@@ -3429,6 +3432,13 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
                     default_config = &presets_collection->default_preset().config;
             }
             config = *default_config;
+
+            if ( auto ds_iter=key_values.find(QDT_JSON_KEY_DESCRIPTION); ds_iter != key_values.end())
+                description = ds_iter->second;
+
+            if (!description.empty())
+                description_maps.emplace(preset_name, description);
+
             config.apply(config_src);
             if (instantiation == "false" && "Template" != vendor_name) {
                 config_maps.emplace(preset_name, std::move(config));
@@ -3553,13 +3563,14 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
 
     std::map<std::string, DynamicPrintConfig> configs;
     std::map<std::string, std::string> filament_id_maps;
+    std::map<std::string, std::string> description_maps;
     //3.1) paste the process
     presets = &this->prints;
     configs.clear();
     filament_id_maps.clear();
     for (auto& subfile : process_subfiles)
     {
-        std::string reason = parse_subfile(substitution_context, substitutions, flags, subfile, configs, filament_id_maps, presets, presets_loaded);
+        std::string reason = parse_subfile(substitution_context, substitutions, flags, subfile, configs, filament_id_maps, presets, presets_loaded, description_maps);
         if (!reason.empty()) {
             //parse error
             std::string subfile_path = path + "/" + vendor_name + "/" + subfile.second;
@@ -3574,7 +3585,7 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
     filament_id_maps.clear();
     for (auto& subfile : filament_subfiles)
     {
-        std::string reason = parse_subfile(substitution_context, substitutions, flags, subfile, configs, filament_id_maps, presets, presets_loaded);
+        std::string reason = parse_subfile(substitution_context, substitutions, flags, subfile, configs, filament_id_maps, presets, presets_loaded, description_maps);
         if (!reason.empty()) {
             //parse error
             std::string subfile_path = path + "/" + vendor_name + "/" + subfile.second;
@@ -3589,7 +3600,7 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
     filament_id_maps.clear();
     for (auto& subfile : machine_subfiles)
     {
-        std::string reason = parse_subfile(substitution_context, substitutions, flags, subfile, configs, filament_id_maps, presets, presets_loaded);
+        std::string reason = parse_subfile(substitution_context, substitutions, flags, subfile, configs, filament_id_maps, presets, presets_loaded, description_maps);
         if (!reason.empty()) {
             //parse error
             std::string subfile_path = path + "/" + vendor_name + "/" + subfile.second;

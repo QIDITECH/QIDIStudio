@@ -372,15 +372,20 @@ inline Points to_points(const ExPolygon &expoly)
     return out;
 }
 
-inline void polygons_append(Polygons &dst, const ExPolygon &src) 
-{ 
+inline void translate(ExPolygons &expolys, const Point &p)
+{
+    for (ExPolygon &expoly : expolys) expoly.translate(p);
+}
+
+inline void polygons_append(Polygons &dst, const ExPolygon &src)
+{
     dst.reserve(dst.size() + src.holes.size() + 1);
     dst.push_back(src.contour);
     dst.insert(dst.end(), src.holes.begin(), src.holes.end());
 }
 
-inline void polygons_append(Polygons &dst, const ExPolygons &src) 
-{ 
+inline void polygons_append(Polygons &dst, const ExPolygons &src)
+{
     dst.reserve(dst.size() + number_polygons(src));
     for (ExPolygons::const_iterator it = src.begin(); it != src.end(); ++ it) {
         dst.push_back(it->contour);
@@ -452,6 +457,7 @@ inline ExPolygons expolygons_simplify(const ExPolygons &expolys, double toleranc
 bool expolygons_match(const ExPolygon &l, const ExPolygon &r);
 
 bool overlaps(const ExPolygons& expolys1, const ExPolygons& expolys2);
+bool overlaps(const ExPolygons& expolys, const ExPolygon& expoly);
 
 Point projection_onto(const ExPolygons& expolys, const Point& pt);
 
@@ -464,6 +470,8 @@ std::vector<BoundingBox> get_extents_vector(const ExPolygons &polygons);
 // Test for duplicate points. The points are copied, sorted and checked for duplicates globally.
 bool has_duplicate_points(const ExPolygon &expoly);
 bool has_duplicate_points(const ExPolygons &expolys);
+// Return True when erase some otherwise False.
+bool remove_same_neighbor(ExPolygons &expolys);
 
 bool remove_sticks(ExPolygon &poly);
 void keep_largest_contour_only(ExPolygons &polygons);

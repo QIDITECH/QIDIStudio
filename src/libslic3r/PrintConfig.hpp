@@ -147,7 +147,7 @@ enum SeamPosition {
 
 // Orca
 enum class SeamScarfType {
-    None,
+    None = 0,
     External,
     All,
 };
@@ -173,6 +173,7 @@ enum SLAPillarConnectionMode {
 
 enum BrimType {
     btAutoBrim,  // QDS
+    btBrimEars,  // QDS
     btOuterOnly,
     btInnerOnly,
     btOuterAndInner,
@@ -214,6 +215,15 @@ enum OverhangFanThreshold {
     Overhang_threshold_bridge
 };
 
+enum OverhangThresholdParticipatingCooling {
+    Overhang_threshold_participating_cooling_none = 0,
+    Overhang_threshold_participating_cooling_1_4,
+    Overhang_threshold_participating_cooling_2_4,
+    Overhang_threshold_participating_cooling_3_4,
+    Overhang_threshold_participating_cooling_4_4,
+    Overhang_threshold_participating_cooling_bridge
+};
+
 // QDS
 enum BedType {
     btDefault = 0,
@@ -221,6 +231,7 @@ enum BedType {
     btEP,
     btPEI,
     btPTE,
+    btSuperTack,
     btCount
 };
 
@@ -280,6 +291,9 @@ static std::string bed_type_to_gcode_string(const BedType type)
     std::string type_str;
 
     switch (type) {
+    case btSuperTack:
+        type_str = "supertack_plate";
+        break;
     case btPC:
         type_str = "cool_plate";
         break;
@@ -302,6 +316,9 @@ static std::string bed_type_to_gcode_string(const BedType type)
 
 static std::string get_bed_temp_key(const BedType type)
 {
+    if (type == btSuperTack)
+        return "supertack_plate_temp";
+
     if (type == btPC)
         return "cool_plate_temp";
 
@@ -319,6 +336,9 @@ static std::string get_bed_temp_key(const BedType type)
 
 static std::string get_bed_temp_1st_layer_key(const BedType type)
 {
+    if (type == btSuperTack)
+        return "supertack_plate_temp_initial_layer";
+
     if (type == btPC)
         return "cool_plate_temp_initial_layer";
 
@@ -761,6 +781,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloat,              tree_support_branch_distance))
     ((ConfigOptionFloat,              tree_support_branch_diameter))
     ((ConfigOptionFloat,              tree_support_branch_angle))
+    ((ConfigOptionFloat,              tree_support_branch_diameter_angle))
     ((ConfigOptionInt,                tree_support_wall_count))
     ((ConfigOptionBool,               detect_narrow_internal_solid_infill))
     // ((ConfigOptionBool,               adaptive_layer_height))
@@ -779,6 +800,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     // OrcaSlicer
     ((ConfigOptionPercent,            seam_gap))
     ((ConfigOptionPercent,            wipe_speed))
+    ((ConfigOptionBool,               role_base_wipe_speed))
     ((ConfigOptionBool,               precise_z_height)) // QDS
 )
 
@@ -816,6 +838,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionEnum<InfillPattern>, ironing_pattern))
     ((ConfigOptionPercent, ironing_flow))
     ((ConfigOptionFloat, ironing_spacing))
+    ((ConfigOptionFloat, ironing_inset))
     ((ConfigOptionFloat, ironing_direction))
     ((ConfigOptionFloat, ironing_speed))
     // Detect bridging perimeters
@@ -854,12 +877,13 @@ PRINT_CONFIG_CLASS_DEFINE(
     //calib
     ((ConfigOptionFloat, print_flow_ratio))
     // Orca: seam slopes
-    ((ConfigOptionEnum<SeamScarfType>,  seam_slope_type))
+    // ((ConfigOptionEnum<SeamScarfType>,  seam_slope_type))
     ((ConfigOptionBool,                 seam_slope_conditional))
     ((ConfigOptionInt,                  scarf_angle_threshold))
-    ((ConfigOptionFloatOrPercent,       seam_slope_start_height))
+    // ((ConfigOptionFloatOrPercent,       seam_slope_start_height))
+    //((ConfigOptionFloatOrPercent,       seam_slope_gap))
     ((ConfigOptionBool,                 seam_slope_entire_loop))
-    ((ConfigOptionFloat,                seam_slope_min_length))
+    // ((ConfigOptionFloat,                seam_slope_min_length))
     ((ConfigOptionInt,                  seam_slope_steps))
     ((ConfigOptionBool,                 seam_slope_inner_walls))
     //w16
@@ -917,6 +941,10 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionStrings,             filament_type))
     ((ConfigOptionBools,               filament_soluble))
     ((ConfigOptionBools,               filament_is_support))
+    ((ConfigOptionEnumsGeneric,        filament_scarf_seam_type))
+    ((ConfigOptionFloatsOrPercents,    filament_scarf_height))
+    ((ConfigOptionFloatsOrPercents,    filament_scarf_gap))
+    ((ConfigOptionFloats,              filament_scarf_length))
     ((ConfigOptionFloats,              filament_cost))
     ((ConfigOptionString,              filament_notes))
     ((ConfigOptionStrings,             default_filament_colour))
@@ -1001,9 +1029,11 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
     ((ConfigOptionString,             bed_custom_model))
     ((ConfigOptionEnum<BedType>,      curr_bed_type))
     ((ConfigOptionInts,               cool_plate_temp))
+    ((ConfigOptionInts,               supertack_plate_temp))
     ((ConfigOptionInts,               eng_plate_temp))
     ((ConfigOptionInts,               hot_plate_temp)) // hot is short for high temperature
     ((ConfigOptionInts,               textured_plate_temp))
+    ((ConfigOptionInts,               supertack_plate_temp_initial_layer))
     ((ConfigOptionInts,               cool_plate_temp_initial_layer))
     ((ConfigOptionInts,               eng_plate_temp_initial_layer))
     ((ConfigOptionInts,               hot_plate_temp_initial_layer)) // hot is short for high temperature
@@ -1011,6 +1041,7 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
     ((ConfigOptionBools,              enable_overhang_bridge_fan))
     ((ConfigOptionInts,               overhang_fan_speed))
     ((ConfigOptionEnumsGeneric,       overhang_fan_threshold))
+    ((ConfigOptionEnumsGeneric,       overhang_threshold_participating_cooling))
     ((ConfigOptionEnum<PrintSequence>,print_sequence))
     ((ConfigOptionInts,               first_layer_print_sequence))
     ((ConfigOptionInts,               other_layers_print_sequence))
@@ -1026,7 +1057,7 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
     ((ConfigOptionEnum<DraftShield>,  draft_shield))
     ((ConfigOptionFloat,              extruder_clearance_height_to_rod))//QDS
     ((ConfigOptionFloat,              extruder_clearance_height_to_lid))//QDS
-    ((ConfigOptionFloat,              extruder_clearance_radius))
+    ((ConfigOptionFloat,              extruder_clearance_dist_to_rod))
     ((ConfigOptionFloat,              nozzle_height))
     ((ConfigOptionFloat,              extruder_clearance_max_radius))
     ((ConfigOptionStrings,            extruder_colour))
@@ -1110,6 +1141,7 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
     // QDS: move from PrintObjectConfig
     ((ConfigOptionBool,               independent_support_layer_height))
     ((ConfigOptionBool,               exclude_object))
+    ((ConfigOptionPercents,            filament_shrink))
     //w13
     ((ConfigOptionBool,               seal))
     //w14

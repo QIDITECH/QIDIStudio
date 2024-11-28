@@ -70,24 +70,24 @@ int Point::nearest_point_index(const PointConstPtrs &points) const
 {
     int idx = -1;
     double distance = -1;  // double because long is limited to 2147483647 on some platforms and it's not enough
-    
+
     for (PointConstPtrs::const_iterator it = points.begin(); it != points.end(); ++it) {
         /* If the X distance of the candidate is > than the total distance of the
            best previous candidate, we know we don't want it */
         double d = sqr<double>((*this)(0) - (*it)->x());
         if (distance != -1 && d > distance) continue;
-        
+
         /* If the Y distance of the candidate is > than the total distance of the
            best previous candidate, we know we don't want it */
         d += sqr<double>((*this)(1) - (*it)->y());
         if (distance != -1 && d > distance) continue;
-        
+
         idx = it - points.begin();
         distance = d;
-        
+
         if (distance < EPSILON) break;
     }
-    
+
     return idx;
 }
 
@@ -142,7 +142,7 @@ Point Point::projection_onto(const MultiPoint &poly) const
 {
     Point running_projection = poly.first_point();
     double running_min = (running_projection - *this).cast<double>().norm();
-    
+
     Lines lines = poly.lines();
     for (Lines::const_iterator line = lines.begin(); line != lines.end(); ++line) {
         Point point_temp = this->projection_onto(*line);
@@ -157,7 +157,7 @@ Point Point::projection_onto(const MultiPoint &poly) const
 Point Point::projection_onto(const Line &line) const
 {
     if (line.a == line.b) return line.a;
-    
+
     /*
         (Ported from VisiLibity by Karl J. Obermeyer)
         The projection of point_temp onto the line determined by
@@ -174,7 +174,7 @@ Point Point::projection_onto(const Line &line) const
     
     if (0.0 <= theta && theta <= 1.0)
         return (theta * line.a.cast<coordf_t>() + (1.0-theta) * line.b.cast<coordf_t>()).cast<coord_t>();
-    
+
     // Else pick closest endpoint.
     return ((line.a - *this).cast<double>().squaredNorm() < (line.b - *this).cast<double>().squaredNorm()) ? line.a : line.b;
 }
@@ -186,6 +186,23 @@ bool has_duplicate_points(std::vector<Point> &&pts)
         if (pts[i - 1] == pts[i])
             return true;
     return false;
+}
+
+Points collect_duplicates(Points pts /* Copy */)
+{
+    std::sort(pts.begin(), pts.end());
+    Points       duplicits;
+    const Point *prev = &pts.front();
+    for (size_t i = 1; i < pts.size(); ++i) {
+        const Point *act = &pts[i];
+        if (*prev == *act) {
+            // duplicit point
+            if (!duplicits.empty() && duplicits.back() == *act) continue; // only unique duplicits
+            duplicits.push_back(*act);
+        }
+        prev = act;
+    }
+    return duplicits;
 }
 
 template<bool IncludeBoundary>
