@@ -1,159 +1,159 @@
 var cData={
 	"filament": {
 		"QIDI ABS @QDT X1C": {
-			"models": "[QIDI Lab X1 Carbon++0.4][QIDI Lab X1++0.4][QIDI Lab X1 Carbon++0.6]",
+			"models": "[QIDI Tech X1 Carbon++0.4][QIDI Tech X1++0.4][QIDI Tech X1 Carbon++0.6]",
 			"name": "QIDI ABS @QDT X1C",
 			"selected": 1,
 			"sub_path": "filament/QIDI ABS @QDT X1C.json",
 			"type": "ABS",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI ABS @QDT X1C 0.2 nozzle": {
-			"models": "[QIDI Lab X1 Carbon++0.2]",
+			"models": "[QIDI Tech X1 Carbon++0.2]",
 			"name": "QIDI ABS @QDT X1C 0.2 nozzle",
 			"selected": 1,
 			"sub_path": "filament/QIDI ABS @QDT X1C 0.2 nozzle.json",
 			"type": "ABS",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI ABS @QDT X1C 0.8 nozzle": {
-			"models": "[QIDI Lab X1 Carbon++0.8]",
+			"models": "[QIDI Tech X1 Carbon++0.8]",
 			"name": "QIDI ABS @QDT X1C 0.8 nozzle",
 			"selected": 1,
 			"sub_path": "filament/QIDI ABS @QDT X1C 0.8 nozzle.json",
 			"type": "ABS",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI PA-CF @QDT X1C": {
-			"models": "[QIDI Lab X1 Carbon++0.4]",
+			"models": "[QIDI Tech X1 Carbon++0.4]",
 			"name": "QIDI PA-CF @QDT X1C",
 			"selected": 0,
 			"sub_path": "filament/QIDI PA-CF @QDT X1C.json",
 			"type": "PA-CF",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI PC @QDT X1C": {
-			"models": "[QIDI Lab X1 Carbon++0.4][QIDI Lab X1++0.4][QIDI Lab X1 Carbon++0.6]",
+			"models": "[QIDI Tech X1 Carbon++0.4][QIDI Tech X1++0.4][QIDI Tech X1 Carbon++0.6]",
 			"name": "QIDI PC @QDT X1C",
 			"selected": 1,
 			"sub_path": "filament/QIDI PC @QDT X1C.json",
 			"type": "PC",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI PC @QDT X1C 0.8 nozzle": {
-			"models": "[QIDI Lab X1 Carbon++0.8]",
+			"models": "[QIDI Tech X1 Carbon++0.8]",
 			"name": "QIDI PC @QDT X1C 0.8 nozzle",
 			"selected": 1,
 			"sub_path": "filament/QIDI PC @QDT X1C 0.8 nozzle.json",
 			"type": "PC",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI PLA Basic @QDT X1": {
-			"models": "[QIDI Lab X1++0.4]",
+			"models": "[QIDI Tech X1++0.4]",
 			"name": "QIDI PLA Basic @QDT X1",
 			"selected": 1,
 			"sub_path": "filament/QIDI PLA Basic @QDT X1.json",
 			"type": "PLA",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI PLA Basic @QDT X1C": {
-			"models": "[QIDI Lab X1 Carbon++0.4][QIDI Lab X1 Carbon++0.6]",
+			"models": "[QIDI Tech X1 Carbon++0.4][QIDI Tech X1 Carbon++0.6]",
 			"name": "QIDI PLA Basic @QDT X1C",
 			"selected": 1,
 			"sub_path": "filament/QIDI PLA Basic @QDT X1C.json",
 			"type": "PLA",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI PLA Basic @QDT X1C 0.2 nozzle": {
-			"models": "[QIDI Lab X1 Carbon++0.2]",
+			"models": "[QIDI Tech X1 Carbon++0.2]",
 			"name": "QIDI PLA Basic @QDT X1C 0.2 nozzle",
 			"selected": 1,
 			"sub_path": "filament/QIDI PLA Basic @QDT X1C 0.2 nozzle.json",
 			"type": "PLA",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI PLA Basic @QDT X1C 0.8 nozzle": {
-			"models": "[QIDI Lab X1 Carbon++0.8]",
+			"models": "[QIDI Tech X1 Carbon++0.8]",
 			"name": "QIDI PLA Basic @QDT X1C 0.8 nozzle",
 			"selected": 1,
 			"sub_path": "filament/QIDI PLA Basic @QDT X1C 0.8 nozzle.json",
 			"type": "PLA",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI PLA Matte @QDT X1": {
-			"models": "[QIDI Lab X1++0.4]",
+			"models": "[QIDI Tech X1++0.4]",
 			"name": "QIDI PLA Matte @QDT X1",
 			"selected": 1,
 			"sub_path": "filament/QIDI PLA Matte @QDT X1.json",
 			"type": "PLA",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI PLA Matte @QDT X1C": {
-			"models": "[QIDI Lab X1 Carbon++0.4][QIDI Lab X1 Carbon++0.6]",
+			"models": "[QIDI Tech X1 Carbon++0.4][QIDI Tech X1 Carbon++0.6]",
 			"name": "QIDI PLA Matte @QDT X1C",
 			"selected": 1,
 			"sub_path": "filament/QIDI PLA Matte @QDT X1C.json",
 			"type": "PLA",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI PLA Matte @QDT X1C 0.2 nozzle": {
-			"models": "[QIDI Lab X1 Carbon++0.2]",
+			"models": "[QIDI Tech X1 Carbon++0.2]",
 			"name": "QIDI PLA Matte @QDT X1C 0.2 nozzle",
 			"selected": 1,
 			"sub_path": "filament/QIDI PLA Matte @QDT X1C 0.2 nozzle.json",
 			"type": "PLA",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI PLA Matte @QDT X1C 0.8 nozzle": {
-			"models": "[QIDI Lab X1 Carbon++0.8]",
+			"models": "[QIDI Tech X1 Carbon++0.8]",
 			"name": "QIDI PLA Matte @QDT X1C 0.8 nozzle",
 			"selected": 1,
 			"sub_path": "filament/QIDI PLA Matte @QDT X1C 0.8 nozzle.json",
 			"type": "PLA",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI Support G @QDT X1C": {
-			"models": "[QIDI Lab X1 Carbon++0.4]",
+			"models": "[QIDI Tech X1 Carbon++0.4]",
 			"name": "QIDI Support G @QDT X1C",
 			"selected": 0,
 			"sub_path": "filament/QIDI Support G @QDT X1C.json",
 			"type": "PA",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI Support W @QDT X1": {
-			"models": "[QIDI Lab X1++0.4]",
+			"models": "[QIDI Tech X1++0.4]",
 			"name": "QIDI Support W @QDT X1",
 			"selected": 1,
 			"sub_path": "filament/QIDI Support W @QDT X1.json",
 			"type": "PLA",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI Support W @QDT X1C": {
-			"models": "[QIDI Lab X1 Carbon++0.4]",
+			"models": "[QIDI Tech X1 Carbon++0.4]",
 			"name": "QIDI Support W @QDT X1C",
 			"selected": 1,
 			"sub_path": "filament/QIDI Support W @QDT X1C.json",
 			"type": "PLA",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI TPU 95A @QDT X1": {
-			"models": "[QIDI Lab X1++0.4]",
+			"models": "[QIDI Tech X1++0.4]",
 			"name": "QIDI TPU 95A @QDT X1",
 			"selected": 1,
 			"sub_path": "filament/QIDI TPU 95A @QDT X1.json",
 			"type": "TPU",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"QIDI TPU 95A @QDT X1C": {
-			"models": "[QIDI Lab X1 Carbon++0.4][QIDI Lab X1 Carbon++0.6][QIDI Lab X1 Carbon++0.8]",
+			"models": "[QIDI Tech X1 Carbon++0.4][QIDI Tech X1 Carbon++0.6][QIDI Tech X1 Carbon++0.8]",
 			"name": "QIDI TPU 95A @QDT X1C",
 			"selected": 1,
 			"sub_path": "filament/QIDI TPU 95A @QDT X1C.json",
 			"type": "TPU",
-			"vendor": "QIDI Lab"
+			"vendor": "QIDI Tech"
 		},
 		"Generic ABS": {
-			"models": "[QIDI Lab X1 Carbon++0.4][QIDI Lab X1++0.4]",
+			"models": "[QIDI Tech X1 Carbon++0.4][QIDI Tech X1++0.4]",
 			"name": "Generic ABS",
 			"selected": 0,
 			"sub_path": "filament/Generic ABS.json",
@@ -161,7 +161,7 @@ var cData={
 			"vendor": "Generic"
 		},
 		"Generic ASA": {
-			"models": "[QIDI Lab X1 Carbon++0.4][QIDI Lab X1++0.4]",
+			"models": "[QIDI Tech X1 Carbon++0.4][QIDI Tech X1++0.4]",
 			"name": "Generic ASA",
 			"selected": 0,
 			"sub_path": "filament/Generic ASA.json",
@@ -169,7 +169,7 @@ var cData={
 			"vendor": "Generic"
 		},
 		"Generic PA": {
-			"models": "[QIDI Lab X1 Carbon++0.4]",
+			"models": "[QIDI Tech X1 Carbon++0.4]",
 			"name": "Generic PA",
 			"selected": 0,
 			"sub_path": "filament/Generic PA.json",
@@ -177,7 +177,7 @@ var cData={
 			"vendor": "Generic"
 		},
 		"Generic PA-CF": {
-			"models": "[QIDI Lab X1 Carbon++0.4]",
+			"models": "[QIDI Tech X1 Carbon++0.4]",
 			"name": "Generic PA-CF",
 			"selected": 0,
 			"sub_path": "filament/Generic PA-CF.json",
@@ -185,7 +185,7 @@ var cData={
 			"vendor": "Generic"
 		},
 		"Generic PC": {
-			"models": "[QIDI Lab X1 Carbon++0.4]",
+			"models": "[QIDI Tech X1 Carbon++0.4]",
 			"name": "Generic PC",
 			"selected": 0,
 			"sub_path": "filament/Generic PC.json",
@@ -193,7 +193,7 @@ var cData={
 			"vendor": "Generic"
 		},
 		"Generic PETG": {
-			"models": "[QIDI Lab X1 Carbon++0.4][QIDI Lab X1++0.4]",
+			"models": "[QIDI Tech X1 Carbon++0.4][QIDI Tech X1++0.4]",
 			"name": "Generic PETG",
 			"selected": 0,
 			"sub_path": "filament/Generic PETG.json",
@@ -201,7 +201,7 @@ var cData={
 			"vendor": "Generic"
 		},
 		"Generic PLA": {
-			"models": "[QIDI Lab X1 Carbon++0.4][QIDI Lab X1++0.4]",
+			"models": "[QIDI Tech X1 Carbon++0.4][QIDI Tech X1++0.4]",
 			"name": "Generic PLA",
 			"selected": 1,
 			"sub_path": "filament/Generic PLA.json",
@@ -209,7 +209,7 @@ var cData={
 			"vendor": "Generic"
 		},
 		"Generic PLA-CF": {
-			"models": "[QIDI Lab X1 Carbon++0.4]",
+			"models": "[QIDI Tech X1 Carbon++0.4]",
 			"name": "Generic PLA-CF",
 			"selected": 0,
 			"sub_path": "filament/Generic PLA-CF.json",
@@ -217,7 +217,7 @@ var cData={
 			"vendor": "Generic"
 		},
 		"Generic PVA": {
-			"models": "[QIDI Lab X1 Carbon++0.4][QIDI Lab X1++0.4]",
+			"models": "[QIDI Tech X1 Carbon++0.4][QIDI Tech X1++0.4]",
 			"name": "Generic PVA",
 			"selected": 0,
 			"sub_path": "filament/Generic PVA.json",
@@ -225,7 +225,7 @@ var cData={
 			"vendor": "Generic"
 		},
 		"Generic TPU": {
-			"models": "[QIDI Lab X1 Carbon++0.4][QIDI Lab X1++0.4]",
+			"models": "[QIDI Tech X1 Carbon++0.4][QIDI Tech X1++0.4]",
 			"name": "Generic TPU",
 			"selected": 0,
 			"sub_path": "filament/Generic TPU.json",
@@ -233,7 +233,7 @@ var cData={
 			"vendor": "Generic"
 		},
 		"PolyLite PLA @QDT X1": {
-			"models": "[QIDI Lab X1++0.4]",
+			"models": "[QIDI Tech X1++0.4]",
 			"name": "PolyLite PLA @QDT X1",
 			"selected": 1,
 			"sub_path": "filament/PolyLite PLA @QDT X1.json",
@@ -241,7 +241,7 @@ var cData={
 			"vendor": "Polymaker"
 		},
 		"PolyLite PLA @QDT X1C": {
-			"models": "[QIDI Lab X1 Carbon++0.4]",
+			"models": "[QIDI Tech X1 Carbon++0.4]",
 			"name": "PolyLite PLA @QDT X1C",
 			"selected": 1,
 			"sub_path": "filament/PolyLite PLA @QDT X1C.json",
@@ -249,7 +249,7 @@ var cData={
 			"vendor": "Polymaker"
 		},
 		"PolyTerra PLA @QDT X1": {
-			"models": "[QIDI Lab X1++0.4]",
+			"models": "[QIDI Tech X1++0.4]",
 			"name": "PolyTerra PLA @QDT X1",
 			"selected": 1,
 			"sub_path": "filament/PolyTerra PLA @QDT X1.json",
@@ -257,7 +257,7 @@ var cData={
 			"vendor": "Polymaker"
 		},
 		"PolyTerra PLA @QDT X1C": {
-			"models": "[QIDI Lab X1 Carbon++0.4]",
+			"models": "[QIDI Tech X1 Carbon++0.4]",
 			"name": "PolyTerra PLA @QDT X1C",
 			"selected": 1,
 			"sub_path": "filament/PolyTerra PLA @QDT X1C.json",
@@ -266,54 +266,54 @@ var cData={
 		}
 	},
 	"machine": {
-		"QIDI Lab X1 0.4 nozzle": {
-			"model": "QIDI Lab X1",
-			"name": "QIDI Lab X1 0.4 nozzle",
+		"QIDI Tech X1 0.4 nozzle": {
+			"model": "QIDI Tech X1",
+			"name": "QIDI Tech X1 0.4 nozzle",
 			"nozzle": "0.4",
-			"sub_path": "machine/QIDI Lab X1 0.4 nozzle.json"
+			"sub_path": "machine/QIDI Tech X1 0.4 nozzle.json"
 		},
-		"QIDI Lab X1 Carbon 0.2 nozzle": {
-			"model": "QIDI Lab X1 Carbon",
-			"name": "QIDI Lab X1 Carbon 0.2 nozzle",
+		"QIDI Tech X1 Carbon 0.2 nozzle": {
+			"model": "QIDI Tech X1 Carbon",
+			"name": "QIDI Tech X1 Carbon 0.2 nozzle",
 			"nozzle": "0.2",
-			"sub_path": "machine/QIDI Lab X1 Carbon 0.2 nozzle.json"
+			"sub_path": "machine/QIDI Tech X1 Carbon 0.2 nozzle.json"
 		},
-		"QIDI Lab X1 Carbon 0.4 nozzle": {
-			"model": "QIDI Lab X1 Carbon",
-			"name": "QIDI Lab X1 Carbon 0.4 nozzle",
+		"QIDI Tech X1 Carbon 0.4 nozzle": {
+			"model": "QIDI Tech X1 Carbon",
+			"name": "QIDI Tech X1 Carbon 0.4 nozzle",
 			"nozzle": "0.4",
-			"sub_path": "machine/QIDI Lab X1 Carbon 0.4 nozzle.json"
+			"sub_path": "machine/QIDI Tech X1 Carbon 0.4 nozzle.json"
 		},
-		"QIDI Lab X1 Carbon 0.6 nozzle": {
-			"model": "QIDI Lab X1 Carbon",
-			"name": "QIDI Lab X1 Carbon 0.6 nozzle",
+		"QIDI Tech X1 Carbon 0.6 nozzle": {
+			"model": "QIDI Tech X1 Carbon",
+			"name": "QIDI Tech X1 Carbon 0.6 nozzle",
 			"nozzle": "0.6",
-			"sub_path": "machine/QIDI Lab X1 Carbon 0.6 nozzle.json"
+			"sub_path": "machine/QIDI Tech X1 Carbon 0.6 nozzle.json"
 		},
-		"QIDI Lab X1 Carbon 0.8 nozzle": {
-			"model": "QIDI Lab X1 Carbon",
-			"name": "QIDI Lab X1 Carbon 0.8 nozzle",
+		"QIDI Tech X1 Carbon 0.8 nozzle": {
+			"model": "QIDI Tech X1 Carbon",
+			"name": "QIDI Tech X1 Carbon 0.8 nozzle",
 			"nozzle": "0.8",
-			"sub_path": "machine/QIDI Lab X1 Carbon 0.8 nozzle.json"
+			"sub_path": "machine/QIDI Tech X1 Carbon 0.8 nozzle.json"
 		}
 	},
 	"model": [
 		{
-			"cover": "C:\\Users\\zorro\\AppData\\Roaming\\QIDIStudio\\system\\QDT\\QIDI Lab X1 Carbon_cover.png",
+			"cover": "C:\\Users\\zorro\\AppData\\Roaming\\QIDIStudio\\system\\QDT\\QIDI Tech X1 Carbon_cover.png",
 			"materials": "Generic PLA;QIDI PLA Matte @QDT X1C;QIDI PLA Basic @QDT X1C;QIDI ABS @QDT X1C;QIDI PC @QDT X1C;QIDI Support W @QDT X1C;QIDI TPU 95A @QDT X1C;PolyTerra PLA @QDT X1C;PolyLite PLA @QDT X1C;",
-			"model": "QIDI Lab X1 Carbon",
+			"model": "QIDI Tech X1 Carbon",
 			"nozzle_diameter": "0.4;0.2;0.6;0.8",
 			"nozzle_selected": "0.2;0.6",
-			"sub_path": "machine/QIDI Lab X1 Carbon.json",
+			"sub_path": "machine/QIDI Tech X1 Carbon.json",
 			"vendor": "QDT"
 		},
 		{
-			"cover": "C:\\Users\\zorro\\AppData\\Roaming\\QIDIStudio\\system\\QDT\\QIDI Lab X1_cover.png",
+			"cover": "C:\\Users\\zorro\\AppData\\Roaming\\QIDIStudio\\system\\QDT\\QIDI Tech X1_cover.png",
 			"materials": "Generic PLA;QIDI PLA Matte @QDT X1;QIDI PLA Basic @QDT X1;QIDI ABS @QDT X1C;QIDI PC @QDT X1C;QIDI Support W @QDT X1;QIDI TPU 95A @QDT X1;PolyTerra PLA @QDT X1;PolyLite PLA @QDT X1;",
-			"model": "QIDI Lab X1",
+			"model": "QIDI Tech X1",
 			"nozzle_diameter": "0.4",
 			"nozzle_selected": "0.4",
-			"sub_path": "machine/QIDI Lab X1.json",
+			"sub_path": "machine/QIDI Tech X1.json",
 			"vendor": "QDT"
 		}
 	],

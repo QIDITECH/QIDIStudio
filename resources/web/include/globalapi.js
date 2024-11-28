@@ -62,7 +62,7 @@ function GetFullDate()
 	return tDate;
 }
 
-
+//return YYYY-MM-DD
 function Unixtimestamp2Date( nSecond )
 {
 	var d=new Date(nSecond*1000);
@@ -93,6 +93,17 @@ function Unixtimestamp2Date( nSecond )
 	return tDate.strdate;
 }
 
+function DateToUnixstamp( strDate )
+{
+	const date = new Date(strDate);
+	return Math.floor(date.getTime() / 1000);	
+}
+
+function DateToUnixstampMS( strDate )
+{
+	const date = new Date(strDate);
+	return date.getTime();
+}
 
 //------------Array Function-------------
 Array.prototype.in_array = function (e) {
@@ -468,10 +479,16 @@ function DisableHotkey( b_CtrlP )
 		if (e.shiftKey && e.metaKey)
 			OutputKey(e.keyCode, false, true, true);
 
-		if (window.event) {
-			try { e.keyCode = 0; } catch (e) { }
-			e.returnValue = false;
+		//F1--F12
+		if ( e.keyCode>=112 && e.keyCode<=123 )	
+			{
+				e.preventDefault();
 		}
+
+//		if (window.event) {
+//			try { e.keyCode = 0; } catch (e) { }
+//			e.returnValue = false;
+//		}
 	};
 
 	window.addEventListener('mousewheel', function (event) {
@@ -479,7 +496,24 @@ function DisableHotkey( b_CtrlP )
 			event.preventDefault();
 		}
 	}, { passive: false });	
+
+	DisableDropAction();
 }
 	
 DisableHotkey();
 
+/*--------Disable Drop Action---------*/
+function DisableDropAction()
+{
+	document.addEventListener("dragstart", (event) => {
+    event.preventDefault();
+	});
+
+	document.addEventListener("dragover", (event) => {
+		event.preventDefault();
+	});
+	
+	document.addEventListener("drop", (event) => {
+		event.preventDefault();
+	});
+}

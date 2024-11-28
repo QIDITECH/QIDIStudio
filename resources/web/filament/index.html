@@ -9,13 +9,14 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+            overflow: hidden;
         }
         .table-container {
             width: 100%;
             max-width: 1800px;
             min-width: 900px;
             height: auto;
-            max-height: 85vh;
+            max-height: 80vh;
             min-height: 300px;
             overflow-x: auto; 
             overflow-y: auto; 
@@ -23,7 +24,7 @@
             position: relative;
             margin: 0 auto;
             padding: 0;
-            overflow: hidden;
+            overflow: show;
         }
         table {
             width: 100%; 
@@ -89,6 +90,17 @@
             background-color: #f2f2f2;
             z-index: 3;
             border-left: none;
+        }
+        td:nth-child(2)::after,
+        th:nth-child(2)::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 0.1px;
+            background-color: #ccc; 
+            z-index: 5;
         }
         td:nth-child(2)::before {
             content: '';
@@ -238,12 +250,14 @@
                 <label><input type="checkbox" value="filament11"> ASA-Aero</label>
                 <label><input type="checkbox" value="filament12"> PA12-CF</label>
                 <label><input type="checkbox" value="filament13"> PAHT-CF</label>
-                <label><input type="checkbox" value="filament14"> PC-ABS-FR</label>
-                <label><input type="checkbox" value="filament15"> PET-CF</label>
-                <label><input type="checkbox" value="filament16"> PETG Tough</label>
-                <label><input type="checkbox" value="filament17"> PPS-CF</label>
-                <label><input type="checkbox" value="filament18"> TPU 95A-HF</label>
-                <label><input type="checkbox" value="filament19"> UltraPA</label>
+                <label><input type="checkbox" value="filament14"> PAHT-GF</label>
+                <label><input type="checkbox" value="filament15"> PC-ABS-FR</label>
+                <label><input type="checkbox" value="filament16"> PET-CF</label>
+                <label><input type="checkbox" value="filament17"> PET-GF</label>
+                <label><input type="checkbox" value="filament18"> PETG Tough</label>
+                <label><input type="checkbox" value="filament19"> PPS-CF</label>
+                <label><input type="checkbox" value="filament20"> TPU 95A-HF</label>
+                <label><input type="checkbox" value="filament21"> UltraPA</label>
             </div>
         </div>
     </div>
@@ -267,12 +281,14 @@
                 <th class="filament11">ASA-Aero</th>
                 <th class="filament12">PA12-CF</th>
                 <th class="filament13">PAHT-CF</th>
-                <th class="filament14">PC-ABS-FR</th>
-                <th class="filament15">PET-CF</th>
-                <th class="filament16">PETG Tough</th>
-                <th class="filament17">PPS-CF</th>
-                <th class="filament18">TPU 95A-HF</th>
-                <th class="filament19">UltraPA</th>
+                <th class="filament14">PAHT-GF</th>
+                <th class="filament15">PC-ABS-FR</th>
+                <th class="filament16">PET-CF</th>
+                <th class="filament17">PET-GF</th>
+                <th class="filament18">PETG Tough</th>
+                <th class="filament19">PPS-CF</th>
+                <th class="filament20">TPU 95A-HF</th>
+                <th class="filament21">UltraPA</th>
             </tr>
         </thead>
         <tbody>
@@ -765,8 +781,10 @@
                 document.write('<td>'+ createProgressBar(50,"#0784FF")+ '</td>');//asa aero
                 document.write('<td>'+ createProgressBar(25,"#0784FF")+ '</td>');//pa12 cf
                 document.write('<td>'+ createProgressBar(50,"#0784FF")+ '</td>');//paht cf
+                document.write('<td>'+ createProgressBar(50,"#0784FF")+ '</td>');//paht gf
                 document.write('<td>'+ createProgressBar(75,"#0784FF")+ '</td>');//pc abs fr
                 document.write('<td>'+ createProgressBar(75,"#0784FF")+ '</td>');//pet cf
+                document.write('<td>'+ createProgressBar(75,"#0784FF")+ '</td>');//pet gf
                 document.write('<td>'+ createProgressBar(75,"#0784FF")+ '</td>');//petg
                 document.write('<td>/</td>');//pps-cf
                 document.write('<td>/</td>');//tpu
@@ -790,8 +808,10 @@
                 document.write('<td>'+ createProgressBar(25,"#5cb85c")+ '</td>');//asa aero
                 document.write('<td>'+ createProgressBar(50,"#5cb85c")+ '</td>');//pa12 cf
                 document.write('<td>'+ createProgressBar(75,"#5cb85c")+ '</td>');//paht cf
+                document.write('<td>'+ createProgressBar(75,"#5cb85c")+ '</td>');//paht gf
                 document.write('<td>'+ createProgressBar(25,"#5cb85c")+ '</td>');//pc abs fr
                 document.write('<td>'+ createProgressBar(75,"#5cb85c")+ '</td>');//pet cf
+                document.write('<td>'+ createProgressBar(75,"#5cb85c")+ '</td>');//pet gf
                 document.write('<td>'+ createProgressBar(50,"#5cb85c")+ '</td>');//petg
                 document.write('<td>/</td>');//pps-cf
                 document.write('<td>/</td>');//tpu
@@ -815,8 +835,10 @@
                 document.write('<td>'+ createProgressBar(50,"#CC6B36")+ '</td>');//asa aero
                 document.write('<td>'+ createProgressBar(25,"#CC6B36")+ '</td>');//pa12 cf
                 document.write('<td>'+ createProgressBar(75,"#CC6B36")+ '</td>');//paht cf
+                document.write('<td>'+ createProgressBar(75,"#CC6B36")+ '</td>');//paht gf
                 document.write('<td>'+ createProgressBar(75,"#CC6B36")+ '</td>');//pc abs fr
                 document.write('<td>'+ createProgressBar(75,"#CC6B36")+ '</td>');//pet cf
+                document.write('<td>'+ createProgressBar(75,"#CC6B36")+ '</td>');//pet gf
                 document.write('<td>'+ createProgressBar(75,"#CC6B36")+ '</td>');//petg
                 document.write('<td>/</td>');//pps-cf
                 document.write('<td>/</td>');//tpu
@@ -840,8 +862,10 @@
                 document.write('<td>70℃</td>');//asa aero
                 document.write('<td>149.6℃</td>');//pa12 cf
                 document.write('<td>192.3℃</td>');//paht cf
+                document.write('<td>83.4℃</td>');//paht gf
                 document.write('<td>88℃</td>');//pc abs fr
                 document.write('<td>148.8℃</td>');//pet cf
+                document.write('<td>120.3℃</td>');//pet gf
                 document.write('<td>78℃</td>');//petg
                 document.write('<td>242.7℃</td>');//pps-cf
                 document.write('<td>/</td>');//tpu
@@ -865,8 +889,10 @@
                 document.write('<td>55℃</td>');//asa aero
                 document.write('<td>112.4℃</td>');//pa12 cf
                 document.write('<td>121.7℃</td>');//paht cf
+                document.write('<td>79.5℃</td>');//paht gf
                 document.write('<td>83℃</td>');//pc abs fr
                 document.write('<td>112.1℃</td>');//pet cf
+                document.write('<td>99.1℃</td>');//pet gf
                 document.write('<td>73℃</td>');//petg
                 document.write('<td>/</td>');//pps-cf
                 document.write('<td>/</td>');//tpu
@@ -890,8 +916,10 @@
                 document.write('<td>8.25 ± 0.15 MPa<br>'+ createProgressBar(8.25/150*100,"#CCB70B")+ '</td>');//asa aero
                 document.write('<td>87.49 ± 2.81 MPa<br>'+ createProgressBar(87.49/150*100,"#CCB70B")+ '</td>');//pa12 cf
                 document.write('<td>104.90 ± 1.99 MPa<br>'+ createProgressBar(104.9/150*100,"#CCB70B")+ '</td>');//paht cf
+                document.write('<td>86.49 ± 1.03 MPa<br>'+ createProgressBar(86.49/150*100,"#CCB70B")+ '</td>');//paht gf
                 document.write('<td>52.51 ± 0.28 MPa<br>'+ createProgressBar(52.51/150*100,"#CCB70B")+ '</td>');//pc abs fr
                 document.write('<td>87.41 ± 3.57 MPa<br>'+ createProgressBar(87.41/150*100,"#CCB70B")+ '</td>');//pet cf
+                document.write('<td>70.86 ± 2.86 MPa<br>'+ createProgressBar(70.86/150*100,"#CCB70B")+ '</td>');//pet gf
                 document.write('<td>40.3 ± 0.6 MPa<br>'+ createProgressBar(40.3/150*100,"#CCB70B")+ '</td>');//petg
                 document.write('<td>60 MPa<br>'+ createProgressBar(60/150*100,"#CCB70B")+ '</td>');//pps-cf
                 document.write('<td>31.81 MPa<br>'+ createProgressBar(31.81/150*100,"#CCB70B")+ '</td>');//tpu
@@ -915,8 +943,10 @@
                 document.write('<td>593.99 ± 24.34 MPa<br>'+ createProgressBar(593.99/10000*100,"#CC0003")+ '</td>');//asa aero
                 document.write('<td>5438.40 ± 282.82 MPa<br>'+ createProgressBar(5438.4/10000*100,"#CC0003")+ '</td>');//pa12 cf
                 document.write('<td>8383.26 ± 419.53 MPa<br>'+ createProgressBar(8383.26/10000*100,"#CC0003")+ '</td>');//paht cf
+                document.write('<td>5118.97 ± 296.57 MPa<br>'+ createProgressBar(5118.97/10000*100,"#CC0003")+ '</td>');//paht gf
                 document.write('<td>2588.73 ± 64.81 MPa<br>'+ createProgressBar(2588.73/10000*100,"#CC0003")+ '</td>');//pc abs fr
                 document.write('<td>6025.53 ± 355.46 MPa<br>'+ createProgressBar(6025.53/10000*100,"#CC0003")+ '</td>');//pet cf
+                document.write('<td>4130.13 ± 107.00 MPa<br>'+ createProgressBar(4130.13/10000*100,"#CC0003")+ '</td>');//pet gf
                 document.write('<td>1780 ± 80 MPa<br>'+ createProgressBar(1780/10000*100,"#CC0003")+ '</td>');//petg
                 document.write('<td>4800 MPa<br>'+ createProgressBar(4800/10000*100,"#CC0003")+ '</td>');//pps-cf
                 document.write('<td>/</td>');//tpu
@@ -940,9 +970,11 @@
                 document.write('<td>11.52 ± 0.58%</td>');//asa aero
                 document.write('<td>2.59 ± 0.19%</td>');//pa12 cf
                 document.write('<td>1.60 ± 0.07%</td>');//paht cf
+                document.write('<td>2.71 ± 0.28%</td>');//paht gf
                 document.write('<td>5.55 ± 0.99%</td>');//pc abs fr
                 document.write('<td>1.99 ± 0.18%</td>');//pet cf
-                document.write('<td>4.0 ± 0.2%</td>');//petg
+                document.write('<td>2.56 ± 0.30%</td>');//pet gf
+                document.write('<td>4.0 ± 0.20%</td>');//petg
                 document.write('<td>6%</td>');//pps-cf
                 document.write('<td>471%</td>');//tpu
                 document.write('<td>11.68 ± 3.36%</td>');//ultra pa
@@ -965,8 +997,10 @@
                 document.write('<td>14.31 ± 1.66 MPa<br>'+ createProgressBar(14.31/200*100,"#16417C")+ '</td>');//asa aero
                 document.write('<td>133.17 ± 4.66 MPa<br>'+ createProgressBar(133.17/200*100,"#16417C")+ '</td>');//pa12 cf
                 document.write('<td>147.70 ± 4.09 MPa<br>'+ createProgressBar(144.7/200*100,"#16417C")+ '</td>');//paht cf
+                document.write('<td>137.78 ± 2.35 MPa<br>'+ createProgressBar(137.78/200*100,"#16417C")+ '</td>');//paht gf
                 document.write('<td>85.95 ± 0.83 MPa<br>'+ createProgressBar(85.95/200*100,"#16417C")+ '</td>');//pc abs fr
                 document.write('<td>122.69 ± 5.19 MPa<br>'+ createProgressBar(122.69/200*100,"#16417C")+ '</td>');//pet cf
+                document.write('<td>114.87 ± 3.00 MPa<br>'+ createProgressBar(114.87/200*100,"#16417C")+ '</td>');//pet gf
                 document.write('<td>62.8 ± 0.4 MPa<br>'+ createProgressBar(62.8/200*100,"#16417C")+ '</td>');//petg
                 document.write('<td>105 MPa<br>'+ createProgressBar(105/200*100,"#16417C")+ '</td>');//pps-cf
                 document.write('<td>/</td>');//tpu
@@ -990,8 +1024,10 @@
                 document.write('<td>457.94 ± 20.84 MPa<br>'+ createProgressBar(457.94/8000*100,"#EA3FF7")+ '</td>');//asa aero
                 document.write('<td>4667.43 ± 339.80 MPa<br>'+ createProgressBar(4667.43/8000*100,"#EA3FF7")+ '</td>');//pa12 cf
                 document.write('<td>5969.35 ± 145.28 MPa<br>'+ createProgressBar(5969.33/8000*100,"#EA3FF7")+ '</td>');//paht cf
+                document.write('<td>4135.14 ± 64.91 MPa<br>'+ createProgressBar(4135.14/8000*100,"#EA3FF7")+ '</td>');//paht gf
                 document.write('<td>2504.55 ± 22.88 MPa<br>'+ createProgressBar(2504.55/8000*100,"#EA3FF7")+ '</td>');//pc abs fr
                 document.write('<td>5313.21 ± 197.89 MPa<br>'+ createProgressBar(5313.21/8000*100,"#EA3FF7")+ '</td>');//pet cf
+                document.write('<td>3650.32 ± 65.81 MPa<br>'+ createProgressBar(3650.32/8000*100,"#EA3FF7")+ '</td>');//pet gf
                 document.write('<td>1919 ± 54 MPa<br>'+ createProgressBar(1919/8000*100,"#EA3FF7")+ '</td>');//petg
                 document.write('<td>5500 MPa<br>'+ createProgressBar(5500/8000*100,"#EA3FF7")+ '</td>');//pps-cf
                 document.write('<td>/</td>');//tpu
@@ -1015,8 +1051,10 @@
                 document.write('<td>2.29 ± 0.13KJ/㎡<br>'+ createProgressBar(2.29/30*100,"#F77089")+ '</td>');//asa aero
                 document.write('<td>6.11 ± 1.45KJ/㎡<br>'+ createProgressBar(6.11/30*100,"#F77089")+ '</td>');//pa12 cf
                 document.write('<td>6.17 ± 0.2KJ/㎡<br>'+ createProgressBar(6.17/30*100,"#F77089")+ '</td>');//paht cf
+                document.write('<td>7.97 ± 1.75KJ/㎡<br>'+ createProgressBar(7.97/30*100,"#F77089")+ '</td>');//paht gf
                 document.write('<td>8.39 ± 0.46KJ/㎡<br>'+ createProgressBar(8.39/30*100,"#F77089")+ '</td>');//pc abs fr
                 document.write('<td>5.57 ± 0.58KJ/㎡<br>'+ createProgressBar(5.57/30*100,"#F77089")+ '</td>');//pet cf
+                document.write('<td>6.56 ± 0.68KJ/㎡<br>'+ createProgressBar(6.56/30*100,"#F77089")+ '</td>');//pet gf
                 document.write('<td>13.9 ± 2.3KJ/㎡<br>'+ createProgressBar(13.9/30*100,"#F77089")+ '</td>');//petg
                 document.write('<td>11KJ/㎡<br>'+ createProgressBar(11/30*100,"#F77089")+ '</td>');//pps-cf
                 document.write('<td>/</td>');//tpu
@@ -1040,8 +1078,10 @@
                 document.write('<td>' + getTranslation('Recommended drying', lang) + '</td>');//asa aero
                 document.write('<td>' + getTranslation('Need to dry', lang) + '</td>');//pa12 cf
                 document.write('<td>' + getTranslation('Need to dry', lang) + '</td>');//paht cf
+                document.write('<td>' + getTranslation('Need to dry', lang) + '</td>');//paht gf
                 document.write('<td>' + getTranslation('Recommended drying', lang) + '</td>');//pc abs fr
                 document.write('<td>' + getTranslation('Need to dry', lang) + '</td>');//pet cf
+                document.write('<td>' + getTranslation('Need to dry', lang) + '</td>');//pet gf
                 document.write('<td>' + getTranslation('Recommended drying', lang) + '</td>');//petg
                 document.write('<td>' + getTranslation('Need to dry', lang) + '</td>');//pps-cf
                 document.write('<td>' + getTranslation('Need to dry', lang) + '</td>');//tpu
@@ -1065,8 +1105,10 @@
                 document.write('<td>/</td>');//asa aero
                 document.write('<td>110-120℃ 4-6h</td>');//pa12 cf
                 document.write('<td>/</td>');//paht cf
+                document.write('<td>80-100℃ 4-6h</td>');//paht gf
                 document.write('<td>/</td>');//pc abs fr
                 document.write('<td>100℃ 4-6h</td>');//pet cf
+                document.write('<td>100-120℃ 4-6h</td>');//pet gf
                 document.write('<td>60-70℃ 4-6h</td>');//petg
                 document.write('<td>/</td>');//pps-cf
                 document.write('<td>70-80℃ 4-6h</td>');//tpu
@@ -1090,8 +1132,10 @@
                 document.write('<td>80-90℃</td>');//asa aero
                 document.write('<td>40-80℃</td>');//pa12 cf
                 document.write('<td>70-80℃</td>');//paht cf
+                document.write('<td>70-90℃</td>');//paht gf
                 document.write('<td>100-110℃</td>');//pc abs fr
                 document.write('<td>70-80℃</td>');//pet cf
+                document.write('<td>60-80℃</td>');//pet gf
                 document.write('<td>70-80℃</td>');//petg
                 document.write('<td>80-110℃</td>');//pps-cf
                 document.write('<td>20-60℃</td>');//tpu
@@ -1115,8 +1159,10 @@
                 document.write('<td>√</td>');//asa aero
                 document.write('<td>×</td>');//pa12 cf
                 document.write('<td>×</td>');//paht cf
+                document.write('<td>×</td>');//paht gf
                 document.write('<td>√</td>');//pc abs fr
                 document.write('<td>×</td>');//pet cf
+                document.write('<td>×</td>');//pet gf
                 document.write('<td>×</td>');//petg
                 document.write('<td>√</td>');//pps-cf
                 document.write('<td>×</td>');//tpu
@@ -1140,8 +1186,10 @@
                 document.write('<td>240-280℃</td>');//asa aero
                 document.write('<td>280-300℃</td>');//pa12 cf
                 document.write('<td>300-320℃</td>');//paht cf
+                document.write('<td>300-320℃</td>');//paht gf
                 document.write('<td>240-270℃</td>');//pc abs fr
                 document.write('<td>280-320℃</td>');//pet cf
+                document.write('<td>280-320℃</td>');//pet gf
                 document.write('<td>240-280℃</td>');//petg
                 document.write('<td>300-370℃</td>');//pps-cf
                 document.write('<td>210-230℃</td>');//tpu
@@ -1165,8 +1213,10 @@
                 document.write('<td>＜90mm/s</td>');//asa aero
                 document.write('<td>＜60mm/s</td>');//pa12 cf
                 document.write('<td>＜160mm/s</td>');//paht cf
+                document.write('<td>＜200mm/s</td>');//paht gf
                 document.write('<td>＜300mm/s</td>');//pc abs fr
                 document.write('<td>＜200mm/s</td>');//pet cf
+                document.write('<td>＜200mm/s</td>');//pet gf
                 document.write('<td>＜300mm/s</td>');//petg
                 document.write('<td>＜200mm/s</td>');//pps-cf
                 document.write('<td>＜120mm/s</td>');//tpu
@@ -1190,8 +1240,10 @@
                 document.write('<td>/</td>');//asa aero
                 document.write('<td>80-100℃</td>');//pa12 cf
                 document.write('<td>80-100℃</td>');//paht cf
+                document.write('<td>80-100℃</td>');//paht gf
                 document.write('<td>/</td>');//pc abs fr
                 document.write('<td>80-100℃</td>');//pet cf
+                document.write('<td>80-100℃</td>');//pet gf
                 document.write('<td>/</td>');//petg
                 document.write('<td>/</td>');//pps-cf
                 document.write('<td>/</td>');//tpu

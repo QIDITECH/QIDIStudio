@@ -427,13 +427,13 @@ var cData={
 	},
 	"machine": [{
 			"model": "QDT-3DP-V4NORMAL",
-			"name": "QIDIlab QDT-3DP-001-V4-normal",
-			"sub_path": "machine/QIDIlab QDT-3DP-001-V4-normal.json"
+			"name": "QIDITech QDT-3DP-001-V4-normal",
+			"sub_path": "machine/QIDITech QDT-3DP-001-V4-normal.json"
 		},
 		{
 			"model": "QDT-3DP-V5NORMAL",
-			"name": "QIDIlab QDT-3DP-001-V5-normal",
-			"sub_path": "machine/QIDIlab QDT-3DP-001-V5-normal.json"
+			"name": "QIDITech QDT-3DP-001-V5-normal",
+			"sub_path": "machine/QIDITech QDT-3DP-001-V5-normal.json"
 		}
 	],
 	"model": [{

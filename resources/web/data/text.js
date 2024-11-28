@@ -34,7 +34,7 @@ var LangText={
         "t32": "Create new project",
         "t33": "Open Project",
         "t34": "hotspot",
-        "t35": "Recently opened",
+        "t35": "Recently Opened",
         "t36": "ok",
         "t37": "At least one printer must be selected.",
         "t38": "Cancel",
@@ -107,10 +107,18 @@ var LangText={
 		"t113":"You may change your choice in preference anytime.",
 		"t114":"Home",
 		"t115":"Batch",
-		"t116":"Retry",
-		"t117":"Connect Device",
-		"t118":"Please set up your printer connection to view the device.",
-		"t119":"Please use the QIDI Link APP to connect to your printer. Once the link is completed, the online device will be synced to the \"Link\" page."
+		"t116": "Retry",
+		"t117": "Print History",
+		"t118": "Printing",
+		"t119": "Success",
+		"t120": "Canceled",
+		"t121": "Search",
+		"t122": "Search online models",
+		"t123": "Plate",
+		"t124": "",
+		"t201":"Connect Device",
+		"t202":"Please set up your printer connection to view the device.",
+		"t203":"Please use the QIDI Link APP to connect to your printer. Once the link is completed, the online device will be synced to the \"Link\" page."
     },
     "zh_CN": {
         "t1": "欢迎使用QIDI Studio",
@@ -221,9 +229,17 @@ var LangText={
 		"t114":"首页",
 		"t115":"批量处理",
 		"t116": "重试",
-		"t117": "设备连接",
-		"t118":"请设置您的打印机连接以查看设备。",
-		"t119":"请使用 QIDI Link APP 连接您的打印机。链接完成后，在线设备将同步到 “Link” 页面。",
+		"t117": "打印历史",
+		"t118": "正在打印",
+		"t119": "成功",
+		"t120": "已取消",
+		"t121": "搜索",
+		"t122": "搜索在线模型",
+		"t123": "第",
+		"t124": " 盘",
+		"t201": "设备连接",
+		"t202":"请设置您的打印机连接以查看设备。",
+		"t203":"请使用 QIDI Link APP 连接您的打印机。链接完成后，在线设备将同步到 “Link” 页面。",
         "wk1": "快速入门指南",
         "wk2": "本文介绍了QIDI Studio的最基本用法。它指导用户配置软件，创建项目，并逐步完成第一个打印任务。",
         "wk3": "基于项目的工作流",
@@ -288,7 +304,7 @@ var LangText={
         "t50": "サインアウト",
         "t52": "スキップ",
         "t53": "参加する",
-        "t54": "3Dプリンティングのコミュニティで、私たちはお互いの成功例と失敗例から色々勉強してきています。QIDI Labもそうと考えています、AIでユーザの実世界の経験から勉強し、造型の性能を向上しにいきたいと思います。あなたの経験は私たちにとって大切なので、私たちの「ユーザ体験向上プログラム」を参加してみませんか？「参加」する場合、エラーログや使用ログから情報をQIDI Labと共有します、具体的な項目は",
+        "t54": "3Dプリンティングのコミュニティで、私たちはお互いの成功例と失敗例から色々勉強してきています。QIDI Techもそうと考えています、AIでユーザの実世界の経験から勉強し、造型の性能を向上しにいきたいと思います。あなたの経験は私たちにとって大切なので、私たちの「ユーザ体験向上プログラム」を参加してみませんか？「参加」する場合、エラーログや使用ログから情報をQIDI Techと共有します、具体的な項目は",
         "t55": "プライバシーポリシー",
         "t56": "をご参照ください。個人情報は一切共有しませんのでご安心ください。",
         "t57": "",
@@ -350,9 +366,17 @@ var LangText={
 		"t114":"トップページ",
 		"t115":"バッチ",
 		"t116": "[再試行]",
-		"t117": "デバイスを接続",
-		"t118": "デバイスを表示するには、プリンター接続を設定してください。",
-		"t119": "プリンターに接続するには、QIDI Linkアプリを使用してください。リンクが完了すると、オンラインデバイスが「リンク」ページに同期されます。"
+		"t117": "印刷履歴",
+		"t118": "印刷中",
+		"t119": "成功",
+		"t120": "キャンセルされた",
+		"t121": "検索",
+		"t122": "オンラインモデルを検索する",
+		"t123": "シート材",
+		"t124": ""	,
+		"t201": "デバイスを接続",
+		"t202": "デバイスを表示するには、プリンター接続を設定してください。",
+		"t203": "プリンターに接続するには、QIDI Linkアプリを使用してください。リンクが完了すると、オンラインデバイスが「リンク」ページに同期されます。"
     },
 	"it_IT": {
 		"t1": "Benvenuti allo Studio QIDI",
@@ -462,10 +486,18 @@ var LangText={
 		"t113":"Puoi cambiare la tua scelta in qualsiasi momento.",
 		"t114":"Home",
 		"t115":"Lotto",
-		"t116":"Riprova",
-		"t117": "Collega dispositivo",
-		"t118": "Si prega di configurare la connessione della stampante per visualizzare il dispositivo.",
-		"t119": "Si prega di utilizzare l'app QIDI Link per connettersi alla stampante. Una volta completato il collegamento, il dispositivo online verrà sincronizzato nella pagina \"Link\"."
+		"t116": "Riprova",
+		"t117": "Storico di stampa",
+		"t118": "Stampa in corso",
+		"t119": "Successo",
+		"t120": "annullato",
+		"t121": "Ricerca",
+		"t122": "Cerca modelli online",
+		"t123": "piatto",
+		"t124": ""	,
+		"t201": "Collega dispositivo",
+		"t202": "Si prega di configurare la connessione della stampante per visualizzare il dispositivo.",
+		"t203": "Si prega di utilizzare l'app QIDI Link per connettersi alla stampante. Una volta completato il collegamento, il dispositivo online verrà sincronizzato nella pagina \"Link\"."
 	},
 	"fr_FR": {
 		"t1": "Bienvenue chez QIDI Studio",
@@ -575,10 +607,18 @@ var LangText={
 		"t113":"Vous pouvez modifier vos préférences à tout moment.",
 		"t114":"Accueil",
 		"t115":"Un lot de",
-		"t116":"Retenter",
-		"t117": "Connecter l'appareil",
-		"t118": "Veuillez configurer la connexion de votre imprimante pour voir l'appareil.",
-		"t119": "Veuillez utiliser l'application QIDI Link pour vous connecter à votre imprimante. Une fois le lien terminé, l'appareil en ligne sera synchronisé sur la page \"Lien\"."
+		"t116": "Retenter",
+		"t117": "Historique d'impression",
+		"t118": "Impression en cours",
+		"t119": "Succès",
+		"t120": "annulé",
+		"t121": "Recherche",
+		"t122": "Rechercher des modèles en ligne",
+		"t123": "assiette",
+		"t124": "",
+		"t201": "Connecter l'appareil",
+		"t202": "Veuillez configurer la connexion de votre imprimante pour voir l'appareil.",
+		"t203": "Veuillez utiliser l'application QIDI Link pour vous connecter à votre imprimante. Une fois le lien terminé, l'appareil en ligne sera synchronisé sur la page \"Lien\"."
 	},
 	"de_DE": {
 		"t1": "Willkommen im QIDI Studio",
@@ -688,10 +728,18 @@ var LangText={
 		"t113":"Sie können Ihre Wahl jederzeit ändern.",
 		"t114":"Startseite",
 		"t115":"Charge",
-		"t116":"Erneut versuchen",
-		"t117": "Gerät verbinden",
-		"t118": "Bitte richten Sie die Druckerverbindung ein, um das Gerät anzuzeigen.",
-		"t119": "Bitte verwenden Sie die QIDI Link App, um sich mit Ihrem Drucker zu verbinden. Sobald die Verbindung hergestellt ist, wird das Online-Gerät auf der Seite \"Link\" synchronisiert."
+		"t116": "Erneut versuchen",
+		"t117": "Druckverlauf",
+		"t118": "Wird gedruckt",
+		"t119": "Erfolg",
+		"t120": "storniert",
+		"t121": "Suche",
+		"t122": "Suche Online-Modelle",
+		"t123": "Teller",
+		"t124": "",
+		"t201": "Gerät verbinden",
+		"t202": "Bitte richten Sie die Druckerverbindung ein, um das Gerät anzuzeigen.",
+		"t203": "Bitte verwenden Sie die QIDI Link App, um sich mit Ihrem Drucker zu verbinden. Sobald die Verbindung hergestellt ist, wird das Online-Gerät auf der Seite \"Link\" synchronisiert."
 	},
 	"hu_HU": {
 		"t1": "Üdvözöljük a QIDI Stúdióban",
@@ -801,10 +849,18 @@ var LangText={
 		"t113":"Bármikor megváltoztathatja a preferenciáját.",
 		"t114":"honlap",
 		"t115":"Tétel",
-		"t116":"Újrapróbálkozás",
-		"t117": "Eszköz csatlakoztatása",
-		"t118": "Kérjük, állítsa be a nyomtató kapcsolatát az eszköz megtekintéséhez.",
-		"t119": "Kérjük, használja a QIDI Link alkalmazást a nyomtatóhoz való csatlakozáshoz. Miután a kapcsolat létrejött, az online eszköz szinkronizálódik a „Link” oldalon."
+		"t116": "Újrapróbálkozás",
+		"t117": "Nyomtatási előzmények",
+		"t118": "Nyomtatás folyamatban",
+		"t119": "Siker",
+		"t120": "törölt",
+		"t121": "Keresés",
+		"t122": "Online modellek keresése",
+		"t123": "tányér",
+		"t124": "",
+		"t201": "Eszköz csatlakoztatása",
+		"t202": "Kérjük, állítsa be a nyomtató kapcsolatát az eszköz megtekintéséhez.",
+		"t203": "Kérjük, használja a QIDI Link alkalmazást a nyomtatóhoz való csatlakozáshoz. Miután a kapcsolat létrejött, az online eszköz szinkronizálódik a „Link” oldalon."
 	},
 	"es_ES": {
 		"t1": "Bienvenido a QIDI Studio",
@@ -914,10 +970,18 @@ var LangText={
 		"t113":"Puede cambiar sus preferencias en cualquier momento.",
 		"t114":"Página de inicio",
 		"t115":"Un lote",
-		"t116":"Reintentar",
-		"t117": "Conectar dispositivo",
-		"t118": "Por favor, configure la conexión de su impresora para ver el dispositivo.",
-		"t119": "Por favor, use la aplicación QIDI Link para conectarse a su impresora. Una vez completado el enlace, el dispositivo en línea se sincronizará en la página \"Enlace\"."
+		"t116": "Reintentar",
+		"t117": "Historial de impresión",
+		"t118": "Imprimiendo",
+		"t119": "Éxito",
+		"t120": "cancelado",
+		"t121": "Búsqueda",
+		"t122": "Buscar modelos en línea",
+		"t123": "plato",
+		"t124": "",
+		"t201": "Conectar dispositivo",
+		"t202": "Por favor, configure la conexión de su impresora para ver el dispositivo.",
+		"t203": "Por favor, use la aplicación QIDI Link para conectarse a su impresora. Una vez completado el enlace, el dispositivo en línea se sincronizará en la página \"Enlace\"."
 	},
 	"sv_SE": {
 		"t1": "Välkommen till QIDI Studio",
@@ -1027,10 +1091,18 @@ var LangText={
 		"t113":"Du kan ändra ditt val när som helst.",
 		"t114":"startsida",
 		"t115":"Batch",
-		"t116":"Försök igen",
-		"t117": "Anslut enhet",
-		"t118": "Vänligen ställ in din skrivarkoppling för att se enheten.",
-		"t119": "Använd QIDI Link-appen för att ansluta till din skrivare. När länken är klar kommer den online-enheten att synkroniseras till \"Länk\"-sidan."
+		"t116": "Försök igen",
+		"t117": "Utskriftshistorik",
+		"t118": "Skrivs ut",
+		"t119": "Lyckad",
+		"t120": "avbruten",
+		"t121": "Sök",
+		"t122": "Sök online-modeller",
+		"t123": "fat",
+		"t124": "",
+		"t201": "Anslut enhet",
+		"t202": "Vänligen ställ in din skrivarkoppling för att se enheten.",
+		"t203": "Använd QIDI Link-appen för att ansluta till din skrivare. När länken är klar kommer den online-enheten att synkroniseras till \"Länk\"-sidan."
 	},
 	"cs_CZ": {
         "t1": "Vítejte v QIDI Studio",
@@ -1140,10 +1212,18 @@ var LangText={
 		"t113":"Své preference můžete kdykoliv změnit.",
 		"t114":"domovská stránka",
 		"t115":"Šarže",
-		"t116":"Zkuste to znovu",
-		"t117": "Připojit zařízení",
-		"t118": "Nastavte prosím připojení tiskárny, abyste mohli zobrazit zařízení.",
-		"t119": "Použijte prosím aplikaci QIDI Link k připojení k tiskárně. Jakmile bude spojení dokončeno, online zařízení bude synchronizováno na stránce \"Odkaz\"."
+		"t116": "Zkuste to znovu",
+		"t117": "Historie tisku",
+		"t118": "Tisk probíhá",
+		"t119": "Úspěch",
+		"t120": "zrušený",
+		"t121": "Hledat",
+		"t122": "Hledat online modely",
+		"t123": "talíř",
+		"t124": "",
+		"t201": "Připojit zařízení",
+		"t202": "Nastavte prosím připojení tiskárny, abyste mohli zobrazit zařízení.",
+		"t203": "Použijte prosím aplikaci QIDI Link k připojení k tiskárně. Jakmile bude spojení dokončeno, online zařízení bude synchronizováno na stránce \"Odkaz\"."
     },
 	"nl_NL": {
 		"t1": "Welkom bij QIDI Studio",
@@ -1253,10 +1333,18 @@ var LangText={
 		"t113":"U kunt uw keuze op elk gewenst moment wijzigen.",
 		"t114":"startpagina",
 		"t115":"Batch",
-		"t116":"Probeer het opnieuw",
-		"t117": "Apparaat verbinden",
-		"t118": "Stel de printerverbinding in om het apparaat te bekijken.",
-		"t119": "Gebruik de QIDI Link-app om verbinding te maken met uw printer. Zodra de koppeling is voltooid, wordt het online apparaat gesynchroniseerd op de pagina \"Link\"."
+		"t116": "Probeer het opnieuw",
+		"t117": "Afdrukhistoriek",
+		"t118": "Aan het printen",
+		"t119": "Succes",
+		"t120": "geannuleerd",
+		"t121": "Zoeken",
+		"t122": "Zoek online modellen",
+		"t123": "bord",
+		"t124": "",
+		"t201": "Apparaat verbinden",
+		"t202": "Stel de printerverbinding in om het apparaat te bekijken.",
+		"t203": "Gebruik de QIDI Link-app om verbinding te maken met uw printer. Zodra de koppeling is voltooid, wordt het online apparaat gesynchroniseerd op de pagina \"Link\"."
     },
 	"uk_UA": {
         "t1": "Вітаємо в QIDI Studio!",
@@ -1367,9 +1455,17 @@ var LangText={
 		"t114": "Головна сторінка",
 		"t115": "Одна партія",
 		"t116": "Спробувати знову",
-		"t117": "Підключити пристрій",
-		"t118": "Будь ласка, налаштуйте підключення принтера, щоб переглянути пристрій.",
-		"t119": "Будь ласка, використовуйте додаток QIDI Link для підключення до вашого принтера. Після завершення підключення онлайн-пристрій буде синхронізовано на сторінці \"Посилання\"."
+		"t117": "Історія друку",
+		"t118": "Друкується",
+		"t119": "Успіх",
+		"t120": "скасований",
+		"t121": "Пошук",
+		"t122": "Пошук онлайн-моделей",
+		"t123": "тарілка",
+		"t124": "",
+		"t201": "Підключити пристрій",
+		"t202": "Будь ласка, налаштуйте підключення принтера, щоб переглянути пристрій.",
+		"t203": "Будь ласка, використовуйте додаток QIDI Link для підключення до вашого принтера. Після завершення підключення онлайн-пристрій буде синхронізовано на сторінці \"Посилання\"."
 	},
     "ru_RU": {
         "t1": "Приветствуем в QIDI Studio!",
@@ -1479,10 +1575,18 @@ var LangText={
 		"t113":"Вы можете изменить свои предпочтения в любое время.",
 		"t114":"Главная страница",
 		"t115":"Одна партия",
-		"t116":"Повторить попытку",
-		"t117": "Подключить устройство",
-		"t118": "Пожалуйста, настройте подключение принтера, чтобы просмотреть устройство.",
-		"t119": "Пожалуйста, используйте приложение QIDI Link для подключения к вашему принтеру. После завершения подключения онлайн-устройство будет синхронизировано на странице \"Ссылка\"."
+		"t116": "Повторить попытку",
+		"t117": "История печати",
+		"t118": "Печатается",
+		"t119": "Успех",
+		"t120": "отмененный",
+		"t121": "Поиск",
+		"t122": "Поиск онлайн-моделей",
+		"t123": "тарелка",
+		"t124": "",
+		"t201": "Подключить устройство",
+		"t202": "Пожалуйста, настройте подключение принтера, чтобы просмотреть устройство.",
+		"t203": "Пожалуйста, используйте приложение QIDI Link для подключения к вашему принтеру. После завершения подключения онлайн-устройство будет синхронизировано на странице \"Ссылка\"."
 	},
     "tr_TR": {
         "t1": "QIDI Stüdyo'ya Hoş Geldiniz",
@@ -1592,10 +1696,18 @@ var LangText={
 		"t113":"ercihlerinizde istediğiniz zaman seçiminizi değiştirebilirsiniz.",
 		"t114":"Ana Sayfa",
 		"t115":"Toplu",
-		"t116":"Yeniden Dene",
-		"t117": "Cihazı Bağla",
-		"t118": "Cihazı görüntülemek için lütfen yazıcı bağlantınızı ayarlayın.",
-		"t119": "Yazıcınıza bağlanmak için lütfen QIDI Link uygulamasını kullanın. Bağlantı tamamlandığında, çevrimiçi cihaz \"Bağlantı\" sayfasına senkronize edilecektir."
+		"t116": "Yeniden Dene",
+		"t117": "Yazdırma geçmişi",
+		"t118": "Yazdırılıyor",
+		"t119": "Başarılı",
+		"t120": "iptal edildi",
+		"t121": "Arama",
+		"t122": "Çevrimiçi modelleri arayın",
+		"t123": "tabak",
+		"t124": "",
+		"t201": "Cihazı Bağla",
+		"t202": "Cihazı görüntülemek için lütfen yazıcı bağlantınızı ayarlayın.",
+		"t203": "Yazıcınıza bağlanmak için lütfen QIDI Link uygulamasını kullanın. Bağlantı tamamlandığında, çevrimiçi cihaz \"Bağlantı\" sayfasına senkronize edilecektir."
     },  
 	"pt_BR": {
 		"t1": "Bem-vindo ao QIDI Studio",
@@ -1705,10 +1817,18 @@ var LangText={
 		"t113":"Você pode alterar sua escolha nas Preferências a qualquer momento",
 		"t114":"Inicio",
 		"t115":"Lote",
-		"t116":"Retentar",
-		"t117": "Conectar Dispositivo",
-		"t118": "Por favor, configure a conexão da sua impressora para visualizar o dispositivo.",
-		"t119": "Por favor, use o aplicativo QIDI Link para se conectar à sua impressora. Uma vez concluída a conexão, o dispositivo online será sincronizado na página \"Link\"."
+		"t116": "Retentar",
+		"t117": "Histórico de impressão",
+		"t118": "Imprimindo",
+		"t119": "Sucesso",
+		"t120": "cancelado",
+		"t121": "Pesquisa",
+		"t122": "Procurar modelos online",
+		"t123": "prato",
+		"t124": "",
+		"t201": "Conectar Dispositivo",
+		"t202": "Por favor, configure a conexão da sua impressora para visualizar o dispositivo.",
+		"t203": "Por favor, use o aplicativo QIDI Link para se conectar à sua impressora. Uma vez concluída a conexão, o dispositivo online será sincronizado na página \"Link\"."
 	},
 	"ko_KR": {
 		"t1": "QIDI Studio에 오신 것을 환영합니다",
@@ -1819,9 +1939,17 @@ var LangText={
 		"t114": "홈",
 		"t115": "일괄 처리",
 		"t116": "재시도",
-		"t117": "장치 연결",
-		"t118": "장치를 보려면 프린터 연결을 설정하십시오.",
-		"t119": "프린터에 연결하려면 QIDI Link 앱을 사용하십시오. 연결이 완료되면 온라인 장치가 '링크' 페이지에 동기화됩니다."
+		"t117": "인쇄 기록",
+		"t118": "인쇄 중",
+		"t119": "성공",
+		"t120": "취소된",
+		"t121": "검색",
+		"t122": "온라인 모델을 검색하다",
+		"t123": "접시",
+		"t124": "",
+		"t201": "장치 연결",
+		"t202": "장치를 보려면 프린터 연결을 설정하십시오.",
+		"t203": "프린터에 연결하려면 QIDI Link 앱을 사용하십시오. 연결이 완료되면 온라인 장치가 '링크' 페이지에 동기화됩니다."
 	},
 	"pl_PL": {
 		"t1": "Witamy w QIDI Studio",
@@ -1932,9 +2060,17 @@ var LangText={
 		"t114": "Strona główna",
 		"t115": "Wartość zbiorcza",
 		"t116": "Ponów",
-		"t117": "Podłącz urządzenie",
-		"t118": "Proszę skonfigurować połączenie drukarki, aby wyświetlić urządzenie.",
-		"t119": "Proszę użyć aplikacji QIDI Link, aby połączyć się z drukarką. Po zakończeniu połączenia, urządzenie online zostanie zsynchronizowane na stronie \"Link\"."
+		"t117": "Historia druku",
+		"t118": "Drukuje się",
+		"t119": "Sukces",
+		"t120": "anulowany",
+		"t121": "Wyszukiwanie",
+		"t122": "Wyszukaj modele online",
+		"t123": "talerz",
+		"t124": "",
+		"t201": "Podłącz urządzenie",
+		"t202": "Proszę skonfigurować połączenie drukarki, aby wyświetlić urządzenie.",
+		"t203": "Proszę użyć aplikacji QIDI Link, aby połączyć się z drukarką. Po zakończeniu połączenia, urządzenie online zostanie zsynchronizowane na stronie \"Link\"."
 	}
 };
 
@@ -1977,4 +2113,36 @@ function TranslatePage()
 			$(OneNode).html(LangText['en'][tid]);
 		}		
 	}
+}
+
+function GetCurrentTextByKey( key )
+{
+	let strLang=GetQueryString("lang");
+	if(strLang!=null)
+	{
+		//setCookie(LANG_COOKIE_NAME,strLang,LANG_COOKIE_EXPIRESECOND,'/');
+		localStorage.setItem(LANG_COOKIE_NAME,strLang);
+	}
+	else
+	{
+		//strLang=getCookie(LANG_COOKIE_NAME);
+		strLang=localStorage.getItem(LANG_COOKIE_NAME);
+	}
+	
+	//alert(strLang);
+	
+	if( !LangText.hasOwnProperty(strLang) )
+		strLang="en";
+
+	let strText='';
+	if( LangText[strLang].hasOwnProperty(key) )
+	{
+		strText=LangText[strLang][key];
+	}
+	else if(strLang!='en' && LangText['en'].hasOwnProperty(key) )
+	{
+		strText=LangText['en'][key];
+	}	
+	
+	return strText;
 }

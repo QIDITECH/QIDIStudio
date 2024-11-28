@@ -74,7 +74,7 @@ function HandleModelList( pVal )
 		{
 			let sVV=strVendor;
 			if( sVV=="QDT" )
-				sVV="QIDI Lab";
+				sVV="QIDI Tech";
 			
 			let HtmlNewVendor='<div class="OneVendorBlock" Vendor="'+strVendor+'">'+
 '<div class="BlockBanner">'+
@@ -88,7 +88,7 @@ function HandleModelList( pVal )
 '</div>'+
 '</div>';
 			
-			if(sVV=='QIDI Lab')
+			if(sVV=='QIDI Tech')
 				$('#Content').html( HtmlNewVendor + $('#Content').html() );
 			else
 				$('#Content').append( HtmlNewVendor );

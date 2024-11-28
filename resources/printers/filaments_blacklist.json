@@ -9,7 +9,7 @@
       "description": "TPU: not supported"
     },
     {
-      "vendor": "QIDIlab",
+      "vendor": "QIDITech",
       "type": "TPU",
       "action": "prohibition",
       "description": "TPU: not supported"
@@ -45,13 +45,13 @@
       "description": "CF/GF: hard and brittle"
     },
     {
-      "vendor": "QIDIlab",
+      "vendor": "QIDITech",
       "type": "PET-CF",
       "action": "prohibition",
       "description": "QIDI PET-CF/PA6-CF: not supported"
     },
     {
-      "vendor": "QIDIlab",
+      "vendor": "QIDITech",
       "type": "PA6-CF",
       "action": "prohibition",
       "description": "QIDI PET-CF/PA6-CF: not supported"

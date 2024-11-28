@@ -234,7 +234,7 @@ function SortUI()
 		let fWholeName = OneFila['name'].trim();
 		let fShortName = GetFilamentShortname(OneFila['name']);
 		let fVendor = OneFila['vendor'];
-		if (fVendor != "Generic")
+		if (fVendor == "QIDI")
 			continue;
 		let fType = OneFila['type'];
 		let fSelect = OneFila['selected'];
