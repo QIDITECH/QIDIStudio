@@ -147,8 +147,6 @@ NotificationManager::PopNotification::PopNotification(const NotificationData &n,
 	, m_evt_handler         (evt_handler)
 	, m_notification_start  (GLCanvas3D::timestamp_now())
 {
-	m_is_dark = wxGetApp().plater()->get_current_canvas3D()->get_dark_mode_status();
-
 	// y96
     m_ErrorColor  = ImVec4(0.9, 0.36, 0.36, 1);
     m_WarnColor   = ImVec4(0.99, 0.69, 0.455, 1);
@@ -159,17 +157,30 @@ NotificationManager::PopNotification::PopNotification(const NotificationData &n,
 	m_WindowBkgColor = ImVec4(1, 1, 1, 1);
     m_TextColor      = ImVec4(.2f, .2f, .2f, 1.0f);
     m_HyperTextColor = ImVec4(0.3, 0.18, 0.91, 1);
+}
 
-	m_WindowRadius = 4.0f * wxGetApp().plater()->get_current_canvas3D()->get_scale();
+// We cannot call plater()->get_current_canvas3D() from constructor, so we do it here
+void NotificationManager::PopNotification::ensure_ui_inited()
+{
+    if (!m_is_dark_inited) {
+        m_is_dark        = wxGetApp().plater()->get_current_canvas3D()->get_dark_mode_status();
+        m_is_dark_inited = true;
+    }
+    if (!m_WindowRadius_inited) {
+        m_WindowRadius        = 4.0f * wxGetApp().plater()->get_current_canvas3D()->get_scale();
+        m_WindowRadius_inited = true;
+    }
 }
 
 void NotificationManager::PopNotification::on_change_color_mode(bool is_dark)
 {
+	m_is_dark_inited = true;
 	m_is_dark = is_dark;
 }
 
 void NotificationManager::PopNotification::use_qdt_theme()
 {
+	ensure_ui_inited();
     ImGuiStyle &OldStyle         = ImGui::GetStyle();
 
     m_DefaultTheme.mWindowPadding = OldStyle.WindowPadding;
@@ -862,6 +873,7 @@ void NotificationManager::PopNotification::qdt_render_block_notif_left_sign(ImGu
 
 void NotificationManager::PopNotification::qdt_render_left_sign(ImGuiWrapper &imgui, const float win_size_x, const float win_size_y, const float win_pos_x, const float win_pos_y)
 {
+    ensure_ui_inited();
     ImDrawList *draw_list = ImGui::GetWindowDrawList();
 	ImVec2 round_rect_pos = ImVec2(win_pos_x - win_size_x + ImGui::GetStyle().WindowBorderSize, win_pos_y + ImGui::GetStyle().WindowBorderSize);
     ImVec2 round_rect_size = ImVec2(m_WindowRadius * 2, win_size_y - 2 * ImGui::GetStyle().WindowBorderSize);
@@ -893,6 +905,7 @@ void NotificationManager::PopNotification::render_left_sign(ImGuiWrapper& imgui)
 }
 void NotificationManager::PopNotification::render_minimize_button(ImGuiWrapper& imgui, const float win_pos_x, const float win_pos_y)
 {
+    ensure_ui_inited();
 	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(.0f, .0f, .0f, .0f));
 	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(.0f, .0f, .0f, .0f));
 	push_style_color(ImGuiCol_ButtonActive, ImGui::GetStyleColorVec4(ImGuiCol_WindowBg), m_state == EState::FadingOut, m_current_fade_opacity);
@@ -1076,6 +1089,7 @@ void NotificationManager::ExportFinishedNotification::render_text(ImGuiWrapper& 
 
 void NotificationManager::ExportFinishedNotification::render_close_button(ImGuiWrapper& imgui, const float win_size_x, const float win_size_y, const float win_pos_x, const float win_pos_y)
 {
+    ensure_ui_inited();
 	PopNotification::render_close_button(imgui, win_size_x, win_size_y, win_pos_x, win_pos_y);
 	if (m_to_removable && !m_eject_pending)
 		render_eject_button(imgui, win_size_x, win_size_y, win_pos_x, win_pos_y);
@@ -2708,6 +2722,25 @@ void NotificationManager::qdt_close_gcode_overlap_notification()
 {
     for (std::unique_ptr<PopNotification> &notification : m_pop_notifications)
         if (notification->get_type() == NotificationType::QDTGcodeOverlap) { notification->close(); }
+}
+
+void NotificationManager::qdt_show_bed_filament_incompatible_notification(const std::string& text)
+{
+	auto callback = [](wxEvtHandler*) {
+		std::string language = wxGetApp().app_config->get("language");
+		wxString    region = L"en";
+		if (language.find("zh") == 0)
+			region = L"zh";
+		const wxString bed_filament_compatibility_wiki = wxString::Format(L"https://wiki.qiditech.com/%s/PLA/PETG-with-qidi-bool-plate-supertack", region);
+		wxGetApp().open_browser_with_warning_dialog(bed_filament_compatibility_wiki);
+		return false;
+	};
+	push_notification_data({ NotificationType::QDTBedFilamentIncompatible,NotificationLevel::ErrorNotificationLevel,0,_u8L("Error:") + "\n" + text,_u8L("Click Wiki for help."),callback }, 0);
+}
+
+void NotificationManager::qdt_close_bed_filament_incompatible_notification()
+{
+	close_notification_of_type(NotificationType::QDTBedFilamentIncompatible);
 }
 
 void NotificationManager::qdt_show_sole_text_notification(NotificationType sType, const std::string &text, bool bOverride, int level, bool autohide) {

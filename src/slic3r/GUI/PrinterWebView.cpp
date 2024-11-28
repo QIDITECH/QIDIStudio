@@ -516,7 +516,10 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
                      std::pair<wxColour, int>(wxColour(76, 76, 80), StateColor::Hovered),
                      std::pair<wxColour, int>(wxColour(67, 67, 71), StateColor::Normal));
 
-     DeviceButton *machine_button = new DeviceButton(leftScrolledWindow, fullname, Machine_Name, wxBU_LEFT, wxSize(80, 80), device_name, ip, apikey);
+     //y48
+     wxString machine_icon_path = from_u8(Slic3r::resources_dir() + "/" + "profiles" + "/" + "thumbnail" + "/") + Machine_Name;
+
+     DeviceButton *machine_button = new DeviceButton(leftScrolledWindow, fullname, machine_icon_path, wxBU_LEFT, wxSize(80, 80), device_name, ip, apikey);
      machine_button->SetBackgroundColor(mac_btn_bg);
      machine_button->SetBorderColor(wxColour(57, 51, 55));
      machine_button->SetCanFocus(false);
@@ -595,9 +598,11 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
                      std::pair<wxColour, int>(wxColour(67, 67, 71), StateColor::Normal));
      QIDINetwork m_qidinetwork;
 
+     //y48
+     wxString machine_icon_path = from_u8(Slic3r::resources_dir() + "/" + "profiles" + "/" + "thumbnail" + "/") + Machine_Name;
 
      // device_name                  = m_qidinetwork.UTF8ToGBK(device_name.c_str());
-     DeviceButton *machine_button = new DeviceButton(leftScrolledWindow, device.device_name, Machine_Name, wxBU_LEFT, wxSize(80, 80),
+     DeviceButton *machine_button = new DeviceButton(leftScrolledWindow, device.device_name, machine_icon_path, wxBU_LEFT, wxSize(80, 80),
 
                                                      device_name, device.local_ip);
      machine_button->SetBackgroundColor(mac_btn_bg);

@@ -24,7 +24,6 @@
 #include "Auxiliary.hpp"
 #include "Project.hpp"
 #include "CalibrationPanel.hpp"
-#include "Filament_web.hpp"
 #include "UnsavedChangesDialog.hpp"
 #include "Widgets/SideButton.hpp"
 #include "Widgets/SideMenuPopup.hpp"
@@ -34,6 +33,9 @@
 #include "PrinterWebView.hpp"
 #include "calib_dlg.hpp"
 #include "MultiMachinePage.hpp"
+
+//y
+#include "Filament_web.hpp"
 
 #define ENABEL_PRINT_ALL 0
 
@@ -209,6 +211,7 @@ public:
     //QDS GUI refactor
     enum TabPosition
     {
+        //y
         //tpHome          = 0,
         //tp3DEditor      = 1,
         //tpPreview       = 2,
@@ -269,7 +272,6 @@ public:
     void        update_title();
     void        set_max_recent_count(int max);
 
-    void        show_publish_button(bool show);
     void        show_calibration_button(bool show);
 
 	void        update_title_colour_after_set_title();
@@ -366,6 +368,7 @@ public:
     MaxVolumetricSpeed_Test_Dlg *m_vol_test_dlg{nullptr};
     VFA_Test_Dlg *               m_vfa_test_dlg{nullptr};
     Retraction_Test_Dlg *        m_retraction_calib_dlg{nullptr};
+    SecondaryCheckDialog*        m_confirm_download_plugin_dlg{ nullptr };
 
     // QDS. Replace title bar and menu bar with top bar.
     QDTTopbar*            m_topbar{ nullptr };
@@ -379,6 +382,7 @@ public:
     ProjectPanel*         m_project{ nullptr };
 
     CalibrationPanel*     m_calibration{ nullptr };
+    //w
     FilamentPanel*        m_filament{nullptr};
     WebViewPanel*         m_webview { nullptr };
     PrinterWebView*       m_printer_view{nullptr};
@@ -398,7 +402,6 @@ public:
     // QDS
     mutable int m_print_select{ ePrintAll };
     mutable int m_slice_select{ eSliceAll };
-    Button* m_publish_btn{ nullptr };
     SideButton* m_slice_btn{ nullptr };
     SideButton* m_slice_option_btn{ nullptr };
     SideButton* m_print_btn{ nullptr };

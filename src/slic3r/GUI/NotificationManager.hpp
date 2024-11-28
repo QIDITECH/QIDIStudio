@@ -145,6 +145,7 @@ enum class NotificationType
 	QDTPreviewOnlyMode,
     QDTPrinterConfigUpdateAvailable,
 	QDTUserPresetExceedLimit,
+	QDTBedFilamentIncompatible
 };
 
 class NotificationManager
@@ -337,6 +338,10 @@ public:
     void qdt_show_gcode_overlap_notification();
     void qdt_close_gcode_overlap_notification();
 
+	//QDS--bed filament match
+	void qdt_show_bed_filament_incompatible_notification(const std::string& text);
+	void qdt_close_bed_filament_incompatible_notification();
+
 	//QDS--sole notification
     void qdt_show_sole_text_notification(NotificationType sType,const std::string &text, bool bOverride, int level, bool autohide);
     void qdt_chose_sole_text_notification(NotificationType sType);
@@ -469,9 +474,9 @@ private:
 		virtual bool push_background_color();
 		// used this function instead of reading directly m_data.duration. Some notifications might need to return changing value.
 		virtual int  get_duration() { return m_data.duration; }
-
+        void        ensure_ui_inited();
 		bool m_is_dark = false;
-
+        bool m_is_dark_inited = false;
 		const NotificationData m_data;
 		// For reusing ImGUI windows.
 		NotificationIDProvider &m_id_provider;
@@ -500,7 +505,7 @@ private:
 		ImVec4     m_CurrentColor;
 
         float      m_WindowRadius;
-
+        bool       m_WindowRadius_inited = false;
 		void use_qdt_theme();
         void restore_default_theme();
 
@@ -903,7 +908,7 @@ private:
 			_u8L("The number of user presets cached in the cloud has exceeded the upper limit, newly created user presets can only be used locally."), 
 			_u8L("Wiki"),
                          [](wxEvtHandler* evnthndlr) {
-				wxLaunchDefaultBrowser("https://wiki.qidilab.com/en/software/qidi-studio/3rd-party-printer-profile#cloud-user-presets-limit");
+				wxLaunchDefaultBrowser("https://wiki.qiditech.com/en/software/qidi-studio/3rd-party-printer-profile#cloud-user-presets-limit");
 				return false;
              }},
 

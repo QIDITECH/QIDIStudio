@@ -1,5 +1,5 @@
 /* qidisrc for gstreamer
- * integration with proprietary QIDI Lab blob for getting raw h.264 video
+ * integration with proprietary QIDI Tech blob for getting raw h.264 video
  *
  * Copyright (C) 2023 Joshua Wise <joshua@accelerated.tech>
  *

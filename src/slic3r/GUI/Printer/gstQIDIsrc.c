@@ -1,5 +1,5 @@
 /* qidisrc for gstreamer
- * integration with proprietary QIDI Lab blob for getting raw h.264 video
+ * integration with proprietary QIDI Tech blob for getting raw h.264 video
  *
  * Copyright (C) 2023 Joshua Wise <joshua@accelerated.tech>
  *
@@ -136,14 +136,14 @@ gst_qidisrc_class_init (GstQIDISrcClass * klass)
   g_object_class_install_property (gobject_class,
       PROP_LOCATION,
       g_param_spec_string ("location", "Location",
-          "URI to pass to QIDI Lab blobs", "",
+          "URI to pass to QIDI Tech blobs", "",
           (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
 
   gst_element_class_add_static_pad_template (gstelement_class, &srctemplate);
 
-  gst_element_class_set_static_metadata (gstelement_class, "QIDI Lab source",
+  gst_element_class_set_static_metadata (gstelement_class, "QIDI Tech source",
       "Source/Network",
-      "Receive data as a client over the network using the proprietary QIDI Lab blobs",
+      "Receive data as a client over the network using the proprietary QIDI Tech blobs",
       "Joshua Wise <joshua@accelerated.tech>");
   gstelement_class->change_state =
       GST_DEBUG_FUNCPTR (gst_qidisrc_change_state);
@@ -160,7 +160,7 @@ gst_qidisrc_class_init (GstQIDISrcClass * klass)
   gstpushsrc_class->create = GST_DEBUG_FUNCPTR (gst_qidisrc_create);
 
   GST_DEBUG_CATEGORY_INIT (gst_qidisrc_debug, "qidisrc", 0,
-      "QIDI Lab src");
+      "QIDI Tech src");
 }
 
 static void
@@ -587,7 +587,7 @@ void gstqidisrc_register()
     return;
   did_register = 1;
 
-  gst_plugin_register_static(GST_VERSION_MAJOR, GST_VERSION_MINOR, "qidisrc", "QIDI Lab source", gstqidisrc_init, "0.0.1", "GPL", "QIDIStudio", "QIDIStudio", "https://github.com/qidilab/QIDIStudio");
+  gst_plugin_register_static(GST_VERSION_MAJOR, GST_VERSION_MINOR, "qidisrc", "QIDI Tech source", gstqidisrc_init, "0.0.1", "GPL", "QIDIStudio", "QIDIStudio", "https://github.com/qiditech/QIDIStudio");
 }
 
 #else
@@ -596,6 +596,6 @@ void gstqidisrc_register()
 #define PACKAGE "qidisrc"
 #endif
 
-GST_PLUGIN_DEFINE (GST_VERSION_MAJOR, GST_VERSION_MINOR, qidisrc, "QIDI Lab source", gstqidisrc_init, "0.0.1", "GPL", "QIDIStudio", "https://github.com/qidilab/QIDIStudio")
+GST_PLUGIN_DEFINE (GST_VERSION_MAJOR, GST_VERSION_MINOR, qidisrc, "QIDI Tech source", gstqidisrc_init, "0.0.1", "GPL", "QIDIStudio", "https://github.com/qiditech/QIDIStudio")
 
 #endif

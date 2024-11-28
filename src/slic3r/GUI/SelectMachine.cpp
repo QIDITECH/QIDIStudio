@@ -396,11 +396,13 @@ SelectMachinePopup::SelectMachinePopup(wxWindow *parent)
     m_sizer_other_devices = new wxBoxSizer(wxVERTICAL);
 
 
-    m_panel_ping_code = new PinCodePanel(m_scrolledWindow, wxID_ANY, wxDefaultPosition, SELECT_MACHINE_ITEM_SIZE);
+    m_panel_ping_code = new PinCodePanel(m_scrolledWindow, 0, wxID_ANY, wxDefaultPosition, SELECT_MACHINE_ITEM_SIZE);
+    m_panel_direct_connection = new PinCodePanel(m_scrolledWindow, 1, wxID_ANY, wxDefaultPosition, SELECT_MACHINE_ITEM_SIZE);
 
     m_sizxer_scrolledWindow->Add(own_title, 0, wxEXPAND | wxLEFT, FromDIP(15));
     m_sizxer_scrolledWindow->Add(m_sizer_my_devices, 0, wxEXPAND, 0);
     m_sizxer_scrolledWindow->Add(m_panel_ping_code, 0, wxEXPAND, 0);
+    m_sizxer_scrolledWindow->Add(m_panel_direct_connection, 0, wxEXPAND, 0);
     m_sizxer_scrolledWindow->Add(other_title, 0, wxEXPAND | wxLEFT, FromDIP(15));
     m_sizxer_scrolledWindow->Add(m_sizer_other_devices, 0, wxEXPAND, 0);
 
@@ -877,12 +879,14 @@ void SelectMachinePopup::OnLeftUp(wxMouseEvent &event)
         //pin code
         auto pc_rect = m_panel_ping_code->ClientToScreen(wxPoint(0, 0));
         if (mouse_pos.x > pc_rect.x && mouse_pos.y > pc_rect.y && mouse_pos.x < (pc_rect.x + m_panel_ping_code->GetSize().x) && mouse_pos.y < (pc_rect.y + m_panel_ping_code->GetSize().y)) {
-            /*wxMouseEvent event(wxEVT_LEFT_UP);
-            auto         tag_pos = m_panel_ping_code->ScreenToClient(mouse_pos);
-            event.SetPosition(tag_pos);
-            event.SetEventObject(m_panel_ping_code);
-            wxPostEvent(m_panel_ping_code, event);*/
             wxGetApp().popup_ping_bind_dialog();
+        }
+
+        //bind with access code
+        auto dc_rect = m_panel_direct_connection->ClientToScreen(wxPoint(0, 0));
+        if (mouse_pos.x > dc_rect.x && mouse_pos.y > dc_rect.y && mouse_pos.x < (dc_rect.x + m_panel_direct_connection->GetSize().x) && mouse_pos.y < (dc_rect.y + m_panel_direct_connection->GetSize().y)) {
+            InputIpAddressDialog dlgo;
+            dlgo.ShowModal();
         }
 
         //hyper link
@@ -897,10 +901,12 @@ void SelectMachinePopup::OnLeftUp(wxMouseEvent &event)
 static wxString MACHINE_BED_TYPE_STRING[BED_TYPE_COUNT] = {
     //_L("Auto"),
     // y7
-    _L("QIDI Cool Plate") + " / " + _L("PLA Plate"),
+    _L("QIDI Cool Plate"),
     _L("QIDI Engineering Plate"),
     _L("QIDI Smooth PEI Plate") + "/" + _L("High temperature Plate"),
-    _L("QIDI Textured PEI Plate")};
+    _L("Bamabu Textured PEI Plate"),
+    _L("QIDI Cool Plate SuperTack")
+};
 
 static std::string MachineBedTypeString[BED_TYPE_COUNT] = {
     //"auto",
@@ -908,6 +914,7 @@ static std::string MachineBedTypeString[BED_TYPE_COUNT] = {
     "pe",
     "pei",
     "pte",
+    "suprtack"
 };
 
 void SelectMachineDialog::stripWhiteSpace(std::string& str)
@@ -1542,30 +1549,6 @@ void SelectMachineDialog::init_bind()
                 m_comboBox_printer->SetValue(obj->dev_name + "(LAN)");
             }
         }
-        /*else if (e.GetInt() == 1 && (m_print_type == PrintFromType::FROM_SDCARD_VIEW)) {
-            on_send_print();
-        }
-        else if (e.GetInt() == -2 && (m_print_type == PrintFromType::FROM_SDCARD_VIEW)) {
-            show_status(PrintDialogStatus::PrintStatusInit);
-            prepare_mode();
-            MessageDialog msg_wingow(nullptr, _L("Printer local connection failed, please try again."), "", wxAPPLY | wxOK);
-            msg_wingow.ShowModal();
-        }
-        else if (e.GetInt() == 5 && (m_print_type == PrintFromType::FROM_SDCARD_VIEW)) {
-            show_status(PrintDialogStatus::PrintStatusInit);
-            prepare_mode();
-
-            DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
-            if (!dev) return;
-            ConnectPrinterDialog dlg(wxGetApp().mainframe, wxID_ANY, _L("Input access code"));
-            dlg.go_connect_printer(false);
-            if (dev->get_selected_machine()) {
-                dlg.set_machine_object(dev->get_selected_machine());
-                if (dlg.ShowModal() == wxID_OK) {
-                    this->connect_printer_mqtt();
-                }
-            }
-        }*/
     });
 
     m_bitmap_last_plate->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {
@@ -1994,14 +1977,7 @@ bool SelectMachineDialog::get_ams_mapping_result(std::string &mapping_array_str,
     } else {
         json          j = json::array();
         json mapping_info_json = json::array();
-        //1.9.7.52
-        BOOST_LOG_TRIVIAL(info) << "filaments size = " << m_filaments.size();
-        int mapping_size = wxGetApp().preset_bundle->filament_presets.size();
-        for (size_t i = 0; i < m_ams_mapping_result.size(); i++) {
-            mapping_size = std::max(mapping_size, m_ams_mapping_result[i].id);
-        }
-        mapping_size = std::min(mapping_size, 16);
-        for (int i = 0; i <= mapping_size; i++) {
+        for (int i = 0; i < wxGetApp().preset_bundle->filament_presets.size(); i++) {
             int tray_id = -1;
             json mapping_item;
             mapping_item["ams"] = tray_id;
@@ -2014,12 +1990,9 @@ bool SelectMachineDialog::get_ams_mapping_result(std::string &mapping_array_str,
                     tray_id = m_ams_mapping_result[k].tray_id;
                     mapping_item["ams"]             = tray_id;
                     mapping_item["filamentType"]    = m_filaments[k].type;
-                    //1.9.7.52
-                    if (i >= 0 && i < wxGetApp().preset_bundle->filament_presets.size()) {
-                        auto it = wxGetApp().preset_bundle->filaments.find_preset(wxGetApp().preset_bundle->filament_presets[i]);
-                        if (it != nullptr) {
-                            mapping_item["filamentId"] = it->filament_id;
-                        }
+                    auto it = wxGetApp().preset_bundle->filaments.find_preset(wxGetApp().preset_bundle->filament_presets[i]);
+                    if (it != nullptr) {
+                        mapping_item["filamentId"] = it->filament_id;
                     }
                     //convert #RRGGBB to RRGGBBAA
                     mapping_item["sourceColor"]     = m_filaments[k].color;
@@ -2278,7 +2251,7 @@ void SelectMachineDialog::show_status(PrintDialogStatus status, std::vector<wxSt
             MachineObject* obj_ = dev->get_selected_machine();
             if (obj_ == nullptr) return;
             auto sourcet_print_name = obj_->get_printer_type_display_str();
-            sourcet_print_name.Replace(wxT("QIDI Lab "), wxEmptyString);
+            sourcet_print_name.Replace(wxT("QIDI Tech "), wxEmptyString);
 
             //target print
             std::string target_model_id;
@@ -2293,7 +2266,7 @@ void SelectMachineDialog::show_status(PrintDialogStatus status, std::vector<wxSt
             }
 
             auto target_print_name = wxString(obj_->get_preset_printer_model_name(target_model_id));
-            target_print_name.Replace(wxT("QIDI Lab "), wxEmptyString);
+            target_print_name.Replace(wxT("QIDI Tech "), wxEmptyString);
             msg_text = wxString::Format(_L("The selected printer (%s) is incompatible with the chosen printer profile in the slicer (%s)."), sourcet_print_name, target_print_name);
             
             update_print_status_msg(msg_text, true, true);
@@ -2745,7 +2718,7 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
     //        is_printing_block = true;
     //        nozzle_diameter =  wxString::Format("%.1f", obj_->nozzle_diameter).ToStdString();
 
-    //            wxString nozzle_in_preset = wxString::Format(_L("Printing high temperature material(%s material) with %s may cause nozzle damage"), filament_type, format_steel_name(obj_->nozzle_type));
+    //        wxString nozzle_in_preset = wxString::Format(_L("Printing %1s material with %2s nozzle may cause nozzle damage."), filament_type,format_steel_name(obj_->nozzle_type));
     //        confirm_text.push_back(ConfirmBeforeSendInfo(nozzle_in_preset, ConfirmBeforeSendInfo::InfoLevel::Warning));
     //    }
     //}
@@ -4231,8 +4204,6 @@ void SelectMachineDialog::reset_and_sync_ams_list()
     m_materialList.clear();
     m_filaments.clear();
 
-    BOOST_LOG_TRIVIAL(info) << "extruders = " << extruders.size();
-
     for (auto i = 0; i < extruders.size(); i++) {
         auto          extruder = extruders[i] - 1;
         auto          colour   = wxGetApp().preset_bundle->project_config.opt_string("filament_colour", (unsigned int) extruder);
@@ -4813,16 +4784,21 @@ void SelectMachineDialog::sys_color_changed()
 
 bool SelectMachineDialog::Show(bool show)
 {
-    show_status(PrintDialogStatus::PrintStatusInit);
-
     // set default value when show this dialog
     if (show) {
+        m_refresh_timer->Start(LIST_REFRESH_INTERVAL);
+        show_status(PrintDialogStatus::PrintStatusInit);
         wxGetApp().UpdateDlgDarkUI(this);
         wxGetApp().reset_to_active();
         set_default();
         update_user_machine_list();
+
+        Layout();
+        Fit();
+        CenterOnParent();
     }
     else {
+        m_refresh_timer->Stop();
         DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
         if (dev) {
             MachineObject* obj_ = dev->get_selected_machine();
@@ -4834,15 +4810,6 @@ bool SelectMachineDialog::Show(bool show)
             }
         }
     }
-
-    if (show) {
-        m_refresh_timer->Start(LIST_REFRESH_INTERVAL);
-    } else {
-        m_refresh_timer->Stop();
-    }
-    Layout();
-    Fit();
-    if (show) { CenterOnParent(); }
     return DPIDialog::Show(show);
 }
 
@@ -5100,7 +5067,7 @@ void EditDevNameDialog::on_edit_name(wxCommandEvent &e)
 
  ThumbnailPanel::~ThumbnailPanel() {}
 
- PinCodePanel::PinCodePanel(wxWindow* parent, wxWindowID winid /*= wxID_ANY*/, const wxPoint& pos /*= wxDefaultPosition*/, const wxSize& size /*= wxDefaultSize*/)
+ PinCodePanel::PinCodePanel(wxWindow* parent, int type, wxWindowID winid /*= wxID_ANY*/, const wxPoint& pos /*= wxDefaultPosition*/, const wxSize& size /*= wxDefaultSize*/)
  {
      wxPanel::Create(parent, winid, pos, SELECT_MACHINE_ITEM_SIZE);
      Bind(wxEVT_PAINT, &PinCodePanel::OnPaint, this);
@@ -5108,8 +5075,7 @@ void EditDevNameDialog::on_edit_name(wxCommandEvent &e)
      SetMaxSize(SELECT_MACHINE_ITEM_SIZE);
      SetMinSize(SELECT_MACHINE_ITEM_SIZE);
 
-     m_bitmap = ScalableBitmap(this, "bind_device_ping_code",10);
-     
+     m_type = type;
      this->Bind(wxEVT_ENTER_WINDOW, &PinCodePanel::on_mouse_enter, this);
      this->Bind(wxEVT_LEAVE_WINDOW, &PinCodePanel::on_mouse_leave, this);
      this->Bind(wxEVT_LEFT_UP, &PinCodePanel::on_mouse_left_up, this);
@@ -5145,12 +5111,20 @@ void EditDevNameDialog::on_edit_name(wxCommandEvent &e)
  void PinCodePanel::doRender(wxDC& dc)
  {
      auto size = GetSize();
-     dc.DrawBitmap(m_bitmap.bmp(), wxPoint(FromDIP(20), (size.y - m_bitmap.GetBmpSize().y) / 2));
+
+     //m_bitmap = ScalableBitmap(this, "bind_device_ping_code",10);
+
+     m_bitmap = ScalableBitmap(this, wxGetApp().dark_mode() ? "bind_device_ping_code_dark" : "bind_device_ping_code_light", 10);
+
+     dc.DrawBitmap(m_bitmap.bmp(), wxPoint(FromDIP(12), (size.y - m_bitmap.GetBmpSize().y) / 2));
      dc.SetFont(::Label::Head_13);
-     dc.SetTextForeground(wxColour(38, 46, 48));
-     wxString txt = _L("Bind with Pin Code");
+     dc.SetTextForeground(StateColor::darkModeColorFor(SELECT_MACHINE_GREY900));
+     wxString txt;
+     if (m_type == 0) { txt = _L("Bind with Pin Code"); }
+     else if (m_type == 1) { txt = _L("Bind with Access Code"); }
+
      auto txt_size = dc.GetTextExtent(txt);
-     dc.DrawText(txt, wxPoint(FromDIP(40), (size.y - txt_size.y) / 2));
+     dc.DrawText(txt, wxPoint(FromDIP(28), (size.y - txt_size.y) / 2));
 
      if (m_hover) {
          dc.SetPen(SELECT_MACHINE_BRAND);
@@ -5173,7 +5147,27 @@ void EditDevNameDialog::on_edit_name(wxCommandEvent &e)
 
  void PinCodePanel::on_mouse_left_up(wxMouseEvent& evt)
  {
-     wxGetApp().popup_ping_bind_dialog();
+     if (m_type == 0) {
+        if (wxGetApp().getAgent() && wxGetApp().getAgent()->is_user_login()){
+             wxGetApp().popup_ping_bind_dialog();
+         }
+         else{
+             auto m_confirm_login_dlg = new SecondaryCheckDialog(nullptr, wxID_ANY, _L("Bind with Pin Code"), SecondaryCheckDialog::ButtonStyle::ONLY_CONFIRM, wxDefaultPosition);
+             m_confirm_login_dlg->SetSize(wxSize(FromDIP(270), FromDIP(158)));
+             m_confirm_login_dlg->update_text(_L("Please log in before binding your device with a PIN code.\nAlternatively, you can use LAN mode to bind your device. Learn about LAN mode."));
+             m_confirm_login_dlg->update_btn_label(_L("Go to Login"), _L(""));
+             m_confirm_login_dlg->Bind(EVT_SECONDARY_CHECK_CONFIRM, [this](wxCommandEvent& e) {
+                 //m_confirm_login_dlg->on_hide();
+                 wxGetApp().request_login();
+                 return;
+                 });
+             m_confirm_login_dlg->on_show();
+         }
+     }
+     else if (m_type == 1) {
+         InputIpAddressDialog dlgo;
+         dlgo.ShowModal();
+     }
  }
 
  }} // namespace Slic3r::GUI

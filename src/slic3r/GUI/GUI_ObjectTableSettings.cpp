@@ -298,7 +298,7 @@ bool ObjectTableSettings::update_settings_list(bool is_object, bool is_multiple_
             if (line) line->toggle_visible = toggle;
         };
         ConfigManipulation config_manipulation(nullptr, toggle_field, toggle_line, nullptr, &m_current_config);
-        // QDS: whether the preset is QIDI Lab printer
+        // QDS: whether the preset is QIDI Tech printer
         PresetBundle &preset_bundle  = *wxGetApp().preset_bundle;
         bool is_QDT_printer = preset_bundle.printers.get_edited_preset().is_qdt_vendor_preset(&preset_bundle);
         config_manipulation.set_is_QDT_Printer(is_QDT_printer);
@@ -403,7 +403,7 @@ void ObjectTableSettings::update_config_values(bool is_object, ModelObject* obje
     };
 
     ConfigManipulation config_manipulation(nullptr, toggle_field, toggle_line, nullptr, &m_current_config);
-    // QDS: whether the preset is QIDI Lab printer
+    // QDS: whether the preset is QIDI Tech printer
     PresetBundle &preset_bundle  = *wxGetApp().preset_bundle;
     bool is_QDT_printer = preset_bundle.printers.get_edited_preset().is_qdt_vendor_preset(&preset_bundle);
     config_manipulation.set_is_QDT_Printer(is_QDT_printer);

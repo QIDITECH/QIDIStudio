@@ -194,6 +194,8 @@ public:
 
 	bool				is_activated() { return sizer != nullptr; }
 
+	//y47
+	void                set_label_width(int width) { label_width = width; }
 protected:
 	std::map<t_config_option_key, Option>	m_options;
     wxWindow*				m_parent {nullptr};

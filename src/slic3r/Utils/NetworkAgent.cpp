@@ -75,9 +75,11 @@ func_build_logout_cmd               NetworkAgent::build_logout_cmd_ptr = nullptr
 func_build_login_info               NetworkAgent::build_login_info_ptr = nullptr;
 func_get_model_id_from_desgin_id    NetworkAgent::get_model_id_from_desgin_id_ptr = nullptr;
 func_ping_bind                      NetworkAgent::ping_bind_ptr = nullptr;
+func_bind_detect                    NetworkAgent::bind_detect_ptr = nullptr;
+func_set_server_callback            NetworkAgent::set_server_callback_ptr = nullptr;
 func_bind                           NetworkAgent::bind_ptr = nullptr;
 func_unbind                         NetworkAgent::unbind_ptr = nullptr;
-func_get_qidilab_host              NetworkAgent::get_qidilab_host_ptr = nullptr;
+func_get_qiditech_host              NetworkAgent::get_qiditech_host_ptr = nullptr;
 func_get_user_selected_machine      NetworkAgent::get_user_selected_machine_ptr = nullptr;
 func_set_user_selected_machine      NetworkAgent::set_user_selected_machine_ptr = nullptr;
 func_start_print                    NetworkAgent::start_print_ptr = nullptr;
@@ -145,7 +147,6 @@ NetworkAgent::~NetworkAgent()
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", this %1%, network_agent=%2%, destroy_agent_ptr=%3%, ret %4%")%this %network_agent %destroy_agent_ptr %ret;
 }
 
-//1.9.5
 std::string NetworkAgent::get_libpath_in_current_directory(std::string library_name)
 {
     std::string lib_path;
@@ -169,6 +170,7 @@ std::string NetworkAgent::get_libpath_in_current_directory(std::string library_n
 #endif
     return lib_path;
 }
+
 
 int NetworkAgent::initialize_network_module(bool using_backup)
 {
@@ -195,8 +197,7 @@ int NetworkAgent::initialize_network_module(bool using_backup)
         ::MultiByteToWideChar(CP_UTF8, NULL, library.c_str(), strlen(library.c_str()) + 1, lib_wstr, sizeof(lib_wstr) / sizeof(lib_wstr[0]));
         netwoking_module = LoadLibrary(lib_wstr);
     }*/
-   //1.9.5
-   if (!netwoking_module) {
+    if (!netwoking_module) {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", try load library directly from current directory");
 
         std::string library_path = get_libpath_in_current_directory(std::string(QIDI_NETWORK_LIBRARY));
@@ -285,10 +286,12 @@ int NetworkAgent::initialize_network_module(bool using_backup)
     build_logout_cmd_ptr              =  reinterpret_cast<func_build_logout_cmd>(get_network_function("qidi_network_build_logout_cmd"));
     build_login_info_ptr              =  reinterpret_cast<func_build_login_info>(get_network_function("qidi_network_build_login_info"));
     ping_bind_ptr                     =  reinterpret_cast<func_ping_bind>(get_network_function("qidi_network_ping_bind"));
+    bind_detect_ptr                   =  reinterpret_cast<func_bind_detect>(get_network_function("qidi_network_bind_detect"));
+    set_server_callback_ptr           =  reinterpret_cast<func_set_server_callback>(get_network_function("qidi_network_set_server_callback"));
     get_model_id_from_desgin_id_ptr   =  reinterpret_cast<func_get_model_id_from_desgin_id>(get_network_function("qidi_network_get_model_id_from_desgin_id"));
     bind_ptr                          =  reinterpret_cast<func_bind>(get_network_function("qidi_network_bind"));
     unbind_ptr                        =  reinterpret_cast<func_unbind>(get_network_function("qidi_network_unbind"));
-    get_qidilab_host_ptr             =  reinterpret_cast<func_get_qidilab_host>(get_network_function("qidi_network_get_qidilab_host"));
+    get_qiditech_host_ptr             =  reinterpret_cast<func_get_qiditech_host>(get_network_function("qidi_network_get_qiditech_host"));
     get_user_selected_machine_ptr     =  reinterpret_cast<func_get_user_selected_machine>(get_network_function("qidi_network_get_user_selected_machine"));
     set_user_selected_machine_ptr     =  reinterpret_cast<func_set_user_selected_machine>(get_network_function("qidi_network_set_user_selected_machine"));
     start_print_ptr                   =  reinterpret_cast<func_start_print>(get_network_function("qidi_network_start_print"));
@@ -410,7 +413,7 @@ int NetworkAgent::unload_network_module()
     ping_bind_ptr                     =  nullptr;
     bind_ptr                          =  nullptr;
     unbind_ptr                        =  nullptr;
-    get_qidilab_host_ptr             =  nullptr;
+    get_qiditech_host_ptr             =  nullptr;
     get_user_selected_machine_ptr     =  nullptr;
     set_user_selected_machine_ptr     =  nullptr;
     start_print_ptr                   =  nullptr;
@@ -456,7 +459,7 @@ int NetworkAgent::unload_network_module()
     put_rating_picture_oss_ptr        =  nullptr;
     put_model_mall_rating_url_ptr     =  nullptr;
     get_model_mall_rating_result_ptr  = nullptr;
-    
+
     get_mw_user_preference_ptr        = nullptr;
     get_mw_user_4ulist_ptr            = nullptr;
 
@@ -485,7 +488,6 @@ void* NetworkAgent::get_qidi_source_entry()
     memset(lib_wstr, 0, sizeof(lib_wstr));
     ::MultiByteToWideChar(CP_UTF8, NULL, library.c_str(), strlen(library.c_str())+1, lib_wstr, sizeof(lib_wstr) / sizeof(lib_wstr[0]));
     source_module = LoadLibrary(lib_wstr);
-    //1.9.5
     if (!source_module) {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", try load QIDISource directly from current directory");
         std::string library_path = get_libpath_in_current_directory(std::string(QIDI_SOURCE_LIBRARY));
@@ -927,11 +929,11 @@ bool NetworkAgent::is_user_login()
     return ret;
 }
 
-int  NetworkAgent::user_logout()
+int  NetworkAgent::user_logout(bool request)
 {
     int ret = 0;
     if (network_agent && user_logout_ptr) {
-        ret = user_logout_ptr(network_agent);
+        ret = user_logout_ptr(network_agent, request);
         if (ret)
             BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(" error: network_agent=%1%, ret=%2%")%network_agent %ret;
     }
@@ -1025,6 +1027,30 @@ int NetworkAgent::ping_bind(std::string ping_code)
     return ret;
 }
 
+int NetworkAgent::bind_detect(std::string dev_ip, std::string sec_link, detectResult& detect)
+{
+    int ret = 0;
+    if (network_agent && bind_detect_ptr) {
+        ret = bind_detect_ptr(network_agent, dev_ip, sec_link, detect);
+        if (ret)
+            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(" error: network_agent=%1%, ret=%2%, dev_ip=%3%")
+            % network_agent % ret % dev_ip;
+    }
+    return ret;
+}
+
+int NetworkAgent::set_server_callback(OnServerErrFn fn)
+{
+    int ret = 0;
+    if (network_agent && set_server_callback_ptr) {
+        ret = set_server_callback_ptr(network_agent, fn);
+        if (ret)
+            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(" error: network_agent=%1%, ret=%2%")
+            % network_agent % ret;
+    }
+    return ret;
+}
+
 int NetworkAgent::bind(std::string dev_ip, std::string dev_id, std::string sec_link, std::string timezone,  bool improved, OnUpdateStatusFn update_fn)
 {
     int ret = 0;
@@ -1048,11 +1074,11 @@ int NetworkAgent::unbind(std::string dev_id)
     return ret;
 }
 
-std::string NetworkAgent::get_qidilab_host()
+std::string NetworkAgent::get_qiditech_host()
 {
     std::string ret;
-    if (network_agent && get_qidilab_host_ptr) {
-        ret = get_qidilab_host_ptr(network_agent);
+    if (network_agent && get_qiditech_host_ptr) {
+        ret = get_qiditech_host_ptr(network_agent);
     }
     return ret;
 }

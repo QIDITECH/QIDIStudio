@@ -35,7 +35,7 @@ namespace GUI {
 
 enum TestJob {
 	TEST_BING_JOB = 0,
-	TEST_QIDILAB_JOB = 1,
+	TEST_QIDITECH_JOB = 1,
 	TEST_IOT_JOB = 2,
 	TEST_OSS_JOB = 3,
 	TEST_OSS_UPGRADE_JOB = 4,
@@ -116,7 +116,7 @@ public:
 	void start_all_job();
 	void start_all_job_sequence();
 	void start_test_bing_thread();
-	void start_test_qidilab_thread();
+	void start_test_qiditech_thread();
 	void start_test_iot_thread();
 	void start_test_oss_thread();
 	void start_test_oss_upgrade_thread();
@@ -126,7 +126,7 @@ public:
 	void start_test_plugin_download_thread();
 
 	void start_test_bing();
-	void start_test_qidilab();
+	void start_test_qiditech();
 	void start_test_iot();
 	void start_test_oss();
 	void start_test_oss_upgrade();

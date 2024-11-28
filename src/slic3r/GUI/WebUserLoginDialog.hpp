@@ -71,7 +71,6 @@ namespace Slic3r {
             wxString   TargetUrl;
             wxWebView* m_browser;
 
-            std::string m_AutotestToken;
 
 #if wxUSE_WEBVIEW_IE
             wxMenuItem* m_script_object_el;

@@ -387,7 +387,7 @@ void ObjectSettings::update_config_values(ModelConfig* config)
 
     //QDS: change local config to DynamicPrintConfig
     ConfigManipulation config_manipulation(load_config, toggle_field, nullptr, nullptr, &(config->get()));
-    // QDS: whether the preset is QIDI Lab printer
+    // QDS: whether the preset is QIDI Tech printer
     PresetBundle &preset_bundle  = *wxGetApp().preset_bundle;
     bool is_QDT_printer = preset_bundle.printers.get_edited_preset().is_qdt_vendor_preset(&preset_bundle);
     config_manipulation.set_is_QDT_Printer(is_QDT_printer);

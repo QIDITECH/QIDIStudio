@@ -107,7 +107,7 @@ PingCodeBindDialog::PingCodeBindDialog(Plater* plater /*= nullptr*/)
     m_link_show_ping_code_wiki->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_ARROW); });
 
     m_link_show_ping_code_wiki->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {
-        m_ping_code_wiki = "https://wiki.qidilab.com/en/qidi-studio/manual/pin-code";
+        m_ping_code_wiki = "https://wiki.qidi3d.com/en/qidi-studio/manual/pin-code";
         wxLaunchDefaultBrowser(m_ping_code_wiki);
     });
 
@@ -482,7 +482,7 @@ PingCodeBindDialog::~PingCodeBindDialog() {
      m_link_Terms_title->Wrap(FromDIP(450));
      m_link_Terms_title->SetForegroundColour(wxColour(0x4479FB));   // y96
      m_link_Terms_title->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {
-         wxString txt = _L("Thank you for purchasing a QIDI Lab device.Before using your QIDI Lab device, please read the termsand conditions.By clicking to agree to use your QIDI Lab device, you agree to abide by the Privacy Policy and Terms of Use(collectively, the \"Terms\"). If you do not comply with or agree to the QIDI Lab Privacy Policy, please do not use QIDI Lab equipment and services.");
+         wxString txt = _L("Thank you for purchasing a QIDI Tech device.Before using your QIDI Tech device, please read the termsand conditions.By clicking to agree to use your QIDI Tech device, you agree to abide by the Privacy Policy and Terms of Use(collectively, the \"Terms\"). If you do not comply with or agree to the QIDI Tech Privacy Policy, please do not use QIDI Tech equipment and services.");
          ConfirmBeforeSendDialog confirm_dlg(this, wxID_ANY, _L("Terms and Conditions"), ConfirmBeforeSendDialog::ButtonStyle::ONLY_CONFIRM);
          confirm_dlg.update_text(txt);
          confirm_dlg.CenterOnParent();
@@ -757,7 +757,7 @@ PingCodeBindDialog::~PingCodeBindDialog() {
          json j = json::parse(str.utf8_string());
          if (j.contains("err_code")) {
              int error_code = j["err_code"].get<int>();
-             extra = wxGetApp().get_hms_query()->query_print_error_msg(error_code);
+             wxGetApp().get_hms_query()->query_print_error_msg(error_code, extra);
          }
      }
      catch (...) {

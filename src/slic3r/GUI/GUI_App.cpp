@@ -144,6 +144,11 @@
 using namespace std::literals;
 namespace pt = boost::property_tree;
 
+struct StaticQIDILib
+{
+    static void reset();
+};
+
 namespace Slic3r {
 namespace GUI {
 
@@ -175,7 +180,7 @@ void start_ping_test()
     for (int i = 0; i < output.size(); i++) {
         output_i = output[i].To8BitData();
         output_temp = output_i.ToStdString(wxConvUTF8);
-        BOOST_LOG_TRIVIAL(info) << "ping qidilab:" << output_temp;
+        BOOST_LOG_TRIVIAL(info) << "ping qidi3d:" << output_temp;
     }
     //Get GateWay IP
     wxExecute("ping 192.168.0.1", output, wxEXEC_NODISABLE);
@@ -1288,9 +1293,9 @@ void GUI_App::post_init()
     // This is ugly but I honestly found no better way to do it.
     // Neither wxShowEvent nor wxWindowCreateEvent work reliably.
     if (this->preset_updater) { // G-Code Viewer does not initialize preset_updater.
-        BOOST_LOG_TRIVIAL(info) << "before check_updates";
-        this->check_updates(false);
-        BOOST_LOG_TRIVIAL(info) << "after check_updates";
+        //BOOST_LOG_TRIVIAL(info) << "before check_updates";
+        //this->check_updates(false);
+        //BOOST_LOG_TRIVIAL(info) << "after check_updates";
         CallAfter([this] {
             bool cw_showed = this->config_wizard_startup();
 
@@ -1353,9 +1358,11 @@ void GUI_App::post_init()
            for (auto& it : boost::filesystem::directory_iterator(log_folder)) {
                auto temp_path = it.path();
                try {
-                   std::time_t lw_t = boost::filesystem::last_write_time(temp_path) ;
-                   files_vec.push_back({ lw_t, temp_path.filename().string() });
-               } catch (const std::exception &ex) {
+                   if (it.status().type() == boost::filesystem::regular_file) {
+                       std::time_t lw_t = boost::filesystem::last_write_time(temp_path) ;
+                       files_vec.push_back({ lw_t, temp_path.filename().string() });
+                   }
+               } catch (const std::exception &) {
                }
            }
            std::sort(files_vec.begin(), files_vec.end(), [](
@@ -1436,10 +1443,10 @@ std::string GUI_App::get_http_url(std::string country_code, std::string path)
 {
     std::string url;
     if (country_code == "US") {
-        url = "https://api.qidilab.com/";
+        url = "https://api.qiditech.com/";
     }
     else if (country_code == "CN") {
-        url = "https://api.qidilab.cn/";
+        url = "https://api.qiditech.cn/";
     }
     else if (country_code == "ENV_CN_DEV") {
         url = "https://api-dev.qidi-lab.com/";
@@ -1452,18 +1459,18 @@ std::string GUI_App::get_http_url(std::string country_code, std::string path)
     }
     else if (country_code == "NEW_ENV_DEV_HOST")
     {
-        url = "https://api-dev.qidilab.net/";
+        url = "https://api-dev.qiditech.net/";
     }
     else if (country_code == "NEW_ENV_QAT_HOST")
     {
-        url = "https://api-qa.qidilab.net/";
+        url = "https://api-qa.qiditech.net/";
     }
     else if (country_code == "NEW_ENV_PRE_HOST")
     {
-        url = "https://api-pre.qidilab.net/";
+        url = "https://api-pre.qiditech.net/";
     }
     else {
-        url = "https://api.qidilab.com/";
+        url = "https://api.qiditech.com/";
     }
 
     url += path.empty() ? "v1/iot-service/api/slicer/resource" : path;
@@ -1490,15 +1497,15 @@ std::string GUI_App::get_model_http_url(std::string country_code)
     }
     else if (country_code == "NEW_ENV_DEV_HOST")
     {
-        url = "https://makerhub-dev.qidilab.net/";
+        url = "https://makerhub-dev.qiditech.net/";
     }
     else if (country_code == "NEW_ENV_QAT_HOST")
     {
-        url = "https://makerhub-qa.qidilab.net/";
+        url = "https://makerhub-qa.qiditech.net/";
     }
     else if (country_code == "NEW_ENV_PRE_HOST")
     {
-        url = "https://makerhub-pre.qidilab.net/";
+        url = "https://makerhub-pre.qiditech.net/";
     }
     else {
         url = "https://makerworld.com/";
@@ -1834,6 +1841,7 @@ void GUI_App::restart_networking()
 {
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< boost::format(" enter, mainframe %1%")%mainframe;
     on_init_network(true);
+    StaticQIDILib::reset();
     if(m_agent) {
         init_networking_callbacks();
         m_agent->set_on_ssdp_msg_fn(
@@ -1936,6 +1944,33 @@ void GUI_App::init_networking_callbacks()
         //m_agent->set_on_user_login_fn([this](int online_login, bool login) {
         //    GUI::wxGetApp().request_user_handle(online_login);
         //    });
+
+        m_agent->set_server_callback([this](std::string url, int status) {
+
+            CallAfter([this]() {
+                if (!m_server_error_dialog) {
+                    /*m_server_error_dialog->EndModal(wxCLOSE);
+                    m_server_error_dialog->Destroy();
+                    m_server_error_dialog = nullptr;*/
+                    m_server_error_dialog = new NetworkErrorDialog(mainframe);
+                }
+
+                if(plater()->get_select_machine_dialog() && plater()->get_select_machine_dialog()->IsShown()){
+                    return;
+                }
+
+                if (m_server_error_dialog->m_show_again) {
+                    return;
+                }
+
+                if (m_server_error_dialog->IsShown()) {
+                    return;
+                }
+
+                m_server_error_dialog->ShowModal();
+            });
+        });
+
 
         m_agent->set_on_server_connected_fn([this](int return_code, int reason_code) {
             if (m_is_closing) {
@@ -2283,8 +2318,12 @@ void GUI_App::init_app_config()
             if (!boost::filesystem::exists(data_dir_path))
                 boost::filesystem::create_directory(data_dir_path);
             set_data_dir(data_dir);
+#if defined(__WINDOWS__)
             // Change current dirtory of application
+            _chdir(encode_path((data_dir + "/log").c_str()).c_str());
+#else
             chdir(encode_path((data_dir + "/log").c_str()).c_str());
+#endif
     } else {
         m_datadir_redefined = true;
     }
@@ -2313,6 +2352,8 @@ void GUI_App::init_app_config()
         std::string error = app_config->load();
         if (!error.empty()) {
             // Error while parsing config file. We'll customize the error message and rethrow to be displayed.
+            BOOST_LOG_TRIVIAL(error) << __FUNCTION__
+            << "Configuration file may be corrupted and is not able to be parsed.Please delete the file and try again.";
             throw Slic3r::RuntimeError(
                 _u8L("QIDIStudio configuration file may be corrupted and is not able to be parsed."
                      "Please delete the file and try again.") +
@@ -2973,82 +3014,61 @@ void GUI_App::copy_network_if_available()
 {
     if (app_config->get("update_network_plugin") != "true")
         return;
-    std::string network_library, player_library, live555_library, network_library_dst, player_library_dst, live555_library_dst;
     std::string data_dir_str = data_dir();
-    boost::filesystem::path data_dir_path(data_dir_str);
+    fs::path data_dir_path(data_dir_str);
     auto plugin_folder = data_dir_path / "plugins";
-    auto cache_folder = data_dir_path / "ota";
-    std::string changelog_file = cache_folder.string() + "/network_plugins.json";
+    auto cache_folder = data_dir_path / "ota" / "plugins";
+    //std::string changelog_file = cache_folder.string() + "/network_plugins.json";
 #if defined(_MSC_VER) || defined(_WIN32)
-    network_library = cache_folder.string() + "/qidi_networking.dll";
-    player_library      = cache_folder.string() + "/QIDISource.dll";
-    live555_library     = cache_folder.string() + "/live555.dll";
-    network_library_dst = plugin_folder.string() + "/qidi_networking.dll";
-    player_library_dst  = plugin_folder.string() + "/QIDISource.dll";
-    live555_library_dst = plugin_folder.string() + "/live555.dll";
+    const char* library_ext = ".dll";
 #elif defined(__WXMAC__)
-    network_library = cache_folder.string() + "/libqidi_networking.dylib";
-    player_library = cache_folder.string() + "/libQIDISource.dylib";
-    live555_library = cache_folder.string() + "/liblive555.dylib";
-    network_library_dst = plugin_folder.string() + "/libqidi_networking.dylib";
-    player_library_dst = plugin_folder.string() + "/libQIDISource.dylib";
-    live555_library_dst = plugin_folder.string() + "/liblive555.dylib";
+    const char* library_ext = ".dylib";
 #else
-    network_library = cache_folder.string() + "/libqidi_networking.so";
-    player_library      = cache_folder.string() + "/libQIDISource.so";
-    live555_library     = cache_folder.string() + "/liblive555.so";
-    network_library_dst = plugin_folder.string() + "/libqidi_networking.so";
-    player_library_dst  = plugin_folder.string() + "/libQIDISource.so";
-    live555_library_dst = plugin_folder.string() + "/liblive555.so";
+    const char* library_ext = ".so";
 #endif
 
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< ": checking network_library " << network_library << ", player_library " << player_library;
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": checking network_library from ota directory";
     if (!boost::filesystem::exists(plugin_folder)) {
-        BOOST_LOG_TRIVIAL(info)<< __FUNCTION__ << ": create directory "<<plugin_folder.string();
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": create directory " << plugin_folder.string();
         boost::filesystem::create_directory(plugin_folder);
     }
-    std::string error_message;
-    if (boost::filesystem::exists(network_library)) {
-        CopyFileResult cfr = copy_file(network_library, network_library_dst, error_message, false);
-        if (cfr != CopyFileResult::SUCCESS) {
-            BOOST_LOG_TRIVIAL(error) << __FUNCTION__<< ": Copying failed(" << cfr << "): " << error_message;
-            return;
-        }
-
-        static constexpr const auto perms = fs::owner_read | fs::owner_write | fs::group_read | fs::others_read;
-        fs::permissions(network_library_dst, perms);
-        fs::remove(network_library);
-        BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< ": Copying network library from" << network_library << " to " << network_library_dst<<" successfully.";
+    if (!boost::filesystem::exists(cache_folder)) {
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": can not found ota plugins directory " << cache_folder.string();
+        app_config->set("update_network_plugin", "false");
+        return;
     }
 
-    if (boost::filesystem::exists(player_library)) {
-        CopyFileResult cfr = copy_file(player_library, player_library_dst, error_message, false);
-        if (cfr != CopyFileResult::SUCCESS) {
-            BOOST_LOG_TRIVIAL(error) << __FUNCTION__<< ": Copying failed(" << cfr << "): " << error_message;
-            return;
+    try {
+        std::string error_message;
+        for (auto& dir_entry : boost::filesystem::directory_iterator(cache_folder))
+        {
+            const auto& path = dir_entry.path();
+            std::string file_path = path.string();
+
+            if (boost::algorithm::iends_with(file_path, library_ext)) {
+                std::string file_name = path.filename().string();
+                std::string dest_path = (plugin_folder / file_name).string();
+                CopyFileResult cfr = copy_file(file_path, dest_path, error_message, false);
+                if (cfr != CopyFileResult::SUCCESS) {
+                    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": Copying failed(" << cfr << "): " << error_message;
+                    return;
+                }
+
+                static constexpr const auto perms = fs::owner_read | fs::owner_write | fs::group_read | fs::others_read;
+                fs::permissions(dest_path, perms);
+                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": Copying network library from" << file_path << " to " << dest_path << " successfully.";
+            }
         }
 
-        static constexpr const auto perms = fs::owner_read | fs::owner_write | fs::group_read | fs::others_read;
-        fs::permissions(player_library_dst, perms);
-        fs::remove(player_library);
-        BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< ": Copying player library from" << player_library << " to " << player_library_dst<<" successfully.";
+        if (boost::filesystem::exists(cache_folder))
+            fs::remove_all(cache_folder);
     }
-
-    if (boost::filesystem::exists(live555_library)) {
-        CopyFileResult cfr = copy_file(live555_library, live555_library_dst, error_message, false);
-        if (cfr != CopyFileResult::SUCCESS) {
-            BOOST_LOG_TRIVIAL(error) << __FUNCTION__<< ": Copying failed(" << cfr << "): " << error_message;
-            return;
-        }
-
-        static constexpr const auto perms = fs::owner_read | fs::owner_write | fs::group_read | fs::others_read;
-        fs::permissions(live555_library_dst, perms);
-        fs::remove(live555_library);
-        BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< ": Copying live555 library from" << live555_library << " to " << live555_library_dst<<" successfully.";
+    catch (...) {
+        BOOST_LOG_TRIVIAL(error) << "Failed  to copy plugins from ota";
     }
-    if (boost::filesystem::exists(changelog_file))
-        fs::remove(changelog_file);
     app_config->set("update_network_plugin", "false");
+
+    return;
 }
 
 bool GUI_App::on_init_network(bool try_backup)
@@ -3236,8 +3256,6 @@ void GUI_App::update_label_colours_from_appconfig()
 
 void GUI_App::update_publish_status()
 {
-    mainframe->show_publish_button(has_model_mall());
-
     mainframe->m_webview->ResetWholePage();
 }
 
@@ -3511,13 +3529,30 @@ void GUI_App::link_to_network_check()
 
 
     if (country_code == "US") {
-        url = "https://status.qidilab.com";
+        url = "https://status.qiditech.com";
     }
     else if (country_code == "CN") {
-        url = "https://status.qidilab.cn";
+        url = "https://status.qiditech.cn";
     }
     else {
-        url = "https://status.qidilab.com";
+        url = "https://status.qiditech.com";
+    }
+    wxLaunchDefaultBrowser(url);
+}
+
+void GUI_App::link_to_lan_only_wiki()
+{
+    std::string url;
+    std::string country_code = app_config->get_country_code();
+
+    if (country_code == "US") {
+        url = "https://wiki.qiditech.com/en/knowledge-sharing/enable-lan-mode";
+    }
+    else if (country_code == "CN") {
+        url = "https://wiki.qiditech.com/zh/knowledge-sharing/enable-lan-mode";
+    }
+    else {
+        url = "https://wiki.qiditech.com/en/knowledge-sharing/enable-lan-mode";
     }
     wxLaunchDefaultBrowser(url);
 }
@@ -3680,21 +3715,22 @@ void GUI_App::ShowUserGuide() {
             mainframe->refresh_plugin_tips();
             // QDS: remove SLA related message
         }
-    } catch (std::exception &e) {
+    } catch (std::exception &) {
         // wxMessageBox(e.what(), "", MB_OK);
     }
 }
 
-void GUI_App::ShowDownNetPluginDlg() {
+void GUI_App::ShowDownNetPluginDlg(bool post_login)
+{
     try {
         auto iter = std::find_if(dialogStack.begin(), dialogStack.end(), [](auto dialog) {
             return dynamic_cast<DownloadProgressDialog *>(dialog) != nullptr;
         });
         if (iter != dialogStack.end())
             return;
-        DownloadProgressDialog dlg(_L("Downloading QIDI Network Plug-in"));
+        DownloadProgressDialog dlg(_L("Downloading QIDI Network Plug-in"), post_login);
         dlg.ShowModal();
-    } catch (std::exception &e) {
+    } catch (std::exception &) {
         ;
     }
 }
@@ -3711,7 +3747,7 @@ void GUI_App::ShowUserLogin(bool show)
                 login_dlg = new ZUserLogin();
             }
             login_dlg->ShowModal();
-        } catch (std::exception &e) {
+        } catch (std::exception &) {
             ;
         }
     } else {
@@ -3744,7 +3780,7 @@ void GUI_App::ShowOnlyFilament() {
 
             // QDS: remove SLA related message
         }
-    } catch (std::exception &e) {
+    } catch (std::exception &) {
         // wxMessageBox(e.what(), "", MB_OK);
     }
 }
@@ -3933,7 +3969,7 @@ void GUI_App::get_login_info()
     //         GUI::wxGetApp().run_script_left(strJS);
     //     }
     //     else {
-    //         m_agent->user_logout();
+    //         m_agent->user_logout(true);
     //         std::string logout_cmd = m_agent->build_logout_cmd();
     //         wxString strJS = wxString::Format("window.postMessage(%s)", logout_cmd);
     //         GUI::wxGetApp().run_script_left(strJS);
@@ -4112,6 +4148,14 @@ std::string GUI_App::handle_web_request(std::string cmd)
                 CallAfter([this] {
                         get_login_info();
                     });
+                // TODO: Fix home page not emit get_recent_projects on macOS
+                #ifdef __WXOSX__
+                if (mainframe) {
+                    if (mainframe->m_webview) {
+                        mainframe->m_webview->SendRecentList(INT_MAX);
+                    }
+                }
+                #endif
             }
             else if (command_str.compare("homepage_login_or_register") == 0) {
 
@@ -4119,9 +4163,9 @@ std::string GUI_App::handle_web_request(std::string cmd)
                     boost::optional<std::string> ModelID      = root.get_optional<std::string>("makerworld_model_id");
                     if (ModelID.has_value()) {
                         if (mainframe) {
-                            if (mainframe->m_webview) 
-                            { 
-                                mainframe->m_webview->SetMakerworldModelID(ModelID.value()); 
+                            if (mainframe->m_webview)
+                            {
+                                mainframe->m_webview->SetMakerworldModelID(ModelID.value());
                             }
                         }
                     }
@@ -4158,7 +4202,7 @@ std::string GUI_App::handle_web_request(std::string cmd)
             /*else if (command_str.compare("modelmall_model_advise_get") == 0) {
                 if (mainframe && this->app_config->get("staff_pick_switch") == "true") {
                     if (mainframe->m_webview) {
-                            mainframe->m_webview->SendDesignStaffpick(has_model_mall());                                      
+                            mainframe->m_webview->SendDesignStaffpick(has_model_mall());
                     }
                 }
             }*/
@@ -4253,17 +4297,6 @@ std::string GUI_App::handle_web_request(std::string cmd)
                     }
                 }
             }
-            else if (command_str.compare("homepage_open_ccabin") == 0) {
-                if (root.get_child_optional("data") != boost::none) {
-                    pt::ptree                    data_node = root.get_child("data");
-                    boost::optional<std::string> path      = data_node.get_optional<std::string>("file");
-                    if (path.has_value()) {
-                        std::string Fullpath = resources_dir() + "/web/homepage/model/" + path.value();
-
-                        this->request_open_project(Fullpath);
-                    }
-                }
-            }
             else if (command_str.compare("common_openurl") == 0) {
                 boost::optional<std::string> path      = root.get_optional<std::string>("url");
                 if (path.has_value()) {
@@ -4300,17 +4333,68 @@ std::string GUI_App::handle_web_request(std::string cmd)
 
                     if (mainframe && mainframe->m_webview) { mainframe->m_webview->OpenOneMakerlab(strUrl); }
                 }
-            } 
-            else if (command_str.compare("makerworld_model_open") == 0) 
+            }
+            //y
+            // else if (command_str.compare("homepage_need_networkplugin") == 0) {
+            //     bool post_login = true;
+            //     if (mainframe) {
+            //         if (mainframe->m_confirm_download_plugin_dlg == nullptr) {
+            //         mainframe->m_confirm_download_plugin_dlg = new SecondaryCheckDialog(mainframe, wxID_ANY, _L("Install network plug-in"), SecondaryCheckDialog::ButtonStyle::ONLY_CONFIRM);
+            //         mainframe->m_confirm_download_plugin_dlg->SetSize(wxSize(270, 158));
+            //         mainframe->m_confirm_download_plugin_dlg->update_text(_L("Please Install network plug-in before log in."));
+            //         mainframe->m_confirm_download_plugin_dlg->update_btn_label(_L("Install Network Plug-in"), _L(""));
+
+            //         mainframe->m_confirm_download_plugin_dlg->Bind(EVT_SECONDARY_CHECK_CONFIRM, [this, post_login](wxCommandEvent& e) {
+            //             mainframe->m_confirm_download_plugin_dlg->Close();
+            //             ShowDownNetPluginDlg(post_login);
+            //             return;
+            //             });
+            //     }
+            //     auto dlg_width = mainframe->m_confirm_download_plugin_dlg->GetSize();
+            //     int xPos = mainframe->GetRect().GetX() + (mainframe->GetSize().x - dlg_width.x) / 2;
+            //     int yPos = mainframe->GetRect().GetY() + (mainframe->GetSize().y - dlg_width.y) / 2;
+            //     mainframe->m_confirm_download_plugin_dlg->SetPosition(wxPoint(xPos, yPos));
+            //     mainframe->m_confirm_download_plugin_dlg->on_show();
+            //     }
+            // }
+            else if (command_str.compare("makerworld_model_open") == 0)
             {
                 if (root.get_child_optional("model") != boost::none) {
                     pt::ptree                    data_node = root.get_child("model");
                     boost::optional<std::string> path      = data_node.get_optional<std::string>("url");
-                    if (path.has_value()) 
-                    { 
+                    if (path.has_value())
+                    {
                         wxString realurl = from_u8(url_decode(path.value()));
                         wxGetApp().request_model_download(realurl);
                     }
+                }
+            }
+            else if (command_str.compare("homepage_online_search") == 0) {
+                if (root.get_child_optional("keyword") != boost::none)
+                {
+                    std::string strKW = root.get_optional<std::string>("keyword").value();
+
+                    if (mainframe && mainframe->m_webview)
+                    {
+                        mainframe->m_webview->OpenMakerworldSearchPage(strKW);
+                    }
+                }
+            }
+            else if (command_str.compare("homepage_printhistory_click") == 0) {
+                if (root.get_child_optional("taskid") != boost::none) {
+                    int nTaskID = root.get<int>("taskid");
+
+                    if (mainframe && mainframe->m_webview)
+                    {
+                        mainframe->m_webview->SetPrintHistoryTaskID(nTaskID);
+                        mainframe->m_webview->SwitchLeftMenu("printhistory");
+                    }
+                }
+            }
+            else if (command_str.compare("homepage_printhistory_get")==0)
+            {
+                if (mainframe && mainframe->m_webview) {
+                    mainframe->m_webview->ShowUserPrintTask(true);
                 }
             }
         }
@@ -4434,7 +4518,7 @@ void GUI_App::on_http_error(wxCommandEvent &evt)
     // Version limit
     if (code == HttpErrorVersionLimited) {
         if (!m_show_http_errpr_msgdlg) {
-            MessageDialog msg_dlg(nullptr, _L("The QIDI Studio version is too old to enable cloud service. Please download the latest version from QIDI Lab website."), "", wxAPPLY | wxOK);
+            MessageDialog msg_dlg(nullptr, _L("The QIDI Studio version is too old to enable cloud service. Please download the latest version from QIDI Tech website."), "", wxAPPLY | wxOK);
             m_show_http_errpr_msgdlg = true;
             auto modal_result = msg_dlg.ShowModal();
             if (modal_result == wxOK || modal_result == wxCLOSE) {
@@ -4579,8 +4663,10 @@ void GUI_App::reset_to_active()
 
 void GUI_App::check_update(bool show_tips, int by_user)
 {
-    if (version_info.version_str.empty()) return;
-    if (version_info.url.empty()) return;
+    if (version_info.version_str.empty() || version_info.url.empty()) {
+        check_beta_version();
+        return;
+    }
 
     auto curr_version = Semver::parse(SLIC3R_VERSION);
     auto remote_version = Semver::parse(version_info.version_str);
@@ -4598,8 +4684,12 @@ void GUI_App::check_update(bool show_tips, int by_user)
         }
     } else {
         wxGetApp().app_config->set("upgrade", "force_upgrade", false);
-        if (show_tips)
+
+        if (show_tips) {
             this->no_new_version();
+        }
+
+        check_beta_version();
     }
 }
 //B y41
@@ -4750,6 +4840,90 @@ void GUI_App::check_privacy_version(int online_login)
     }).perform();
 }
 
+void GUI_App::check_beta_version()
+{
+    if (app_config->get("enable_beta_version_update") != "true") {
+        return;
+    }
+
+    std::string platform = "windows";
+
+#ifdef __WINDOWS__
+    platform = "windows";
+#endif
+#ifdef __APPLE__
+    platform = "macos";
+#endif
+#ifdef __LINUX__
+    platform = "linux";
+#endif
+
+    std::string repoOwner = "qiditech"; // The owner of repository
+    std::string repoName = "QIDIStudio";   // The name of repository
+    //"https://api.github.com/repos/bqiditech/BQIDIStudio/releases"
+    std::string url = "https://api.github.com/repos/" + repoOwner + "/" + repoName + "/releases";
+
+    Slic3r::Http http = Slic3r::Http::get(url);
+
+    http.header("accept", "application/json")
+        .timeout_connect(TIMEOUT_CONNECT)
+        .timeout_max(TIMEOUT_RESPONSE)
+        .on_complete([this, platform](std::string body, unsigned) {
+        try {
+            json versions = json::parse(body, nullptr, false);
+            for (auto version : versions){
+                if (version.contains("prerelease") && version.contains("assets") && version.contains("tag_name") && version.contains("html_url")) {
+                    bool is_beta_version = version["prerelease"];
+                    if (is_beta_version){
+                        std::regex version_regex(R"((\d+)\.(\d+)\.(\d+)\.(\d+))");
+                        std::smatch match;
+                        std::string version_str = "";
+                        std::string tag_name = version["tag_name"];
+                        if (std::regex_search(tag_name, match, version_regex)) {
+                            version_str = match[0];
+                        }
+                        version_info.version_str = version_str;
+                        auto assets = version["assets"];
+                        for (auto asset : assets){
+                            if (asset.contains("browser_download_url")){
+                                std::string url = asset["browser_download_url"];
+                                if ((platform == "windows" && url.find(".exe") != std::string::npos)
+                                    || (platform == "linux" && url.find(".AppImage") != std::string::npos)
+                                    || (platform == "macos" && url.find(".dmg") != std::string::npos))
+                                {
+                                    version_info.url = url;
+                                    version_info.description = "###" + std::string(version["html_url"]) + "###";
+                                    version_info.force_upgrade = false;
+                                    CallAfter([this]() {
+
+                                        if (version_info.version_str.empty() || version_info.url.empty()) {
+                                            return;
+                                        }
+
+                                        auto curr_version   = Semver::parse(SLIC3R_VERSION);
+                                        auto remote_version = Semver::parse(version_info.version_str);
+                                        if (curr_version && remote_version && (*remote_version > *curr_version)) {
+                                            GUI::wxGetApp().request_new_version(false);
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+                return;
+            }
+        }
+        catch (...) {
+            ;
+        }
+            })
+        .on_error([this](std::string body, std::string error, unsigned int status) {
+                handle_http_error(status, body);
+                BOOST_LOG_TRIVIAL(error) << "check new version error" << body;
+            }).perform();
+}
+
 void GUI_App::no_new_version()
 {
     wxCommandEvent* evt = new wxCommandEvent(EVT_SHOW_NO_NEW_VERSION);
@@ -4887,7 +5061,7 @@ void GUI_App::sync_preset(Preset* preset)
             }
         }
         else {
-            BOOST_LOG_TRIVIAL(trace) << "[sync_preset]init: can not generate differed key-values";
+            BOOST_LOG_TRIVIAL(info) << "[sync_preset]init: can not generate differed key-values and code: " << ret;
             result = 0;
             updated_info = "hold";
         }
@@ -4917,7 +5091,11 @@ void GUI_App::sync_preset(Preset* preset)
             }
         }
         else {
-            BOOST_LOG_TRIVIAL(trace) << "[sync_preset]create: can not generate differed preset";
+            BOOST_LOG_TRIVIAL(info) << "[sync_preset]create: can not generate differed preset and code: " << ret;
+            if (ret == -2) {
+                result       = 0;
+                updated_info = "hold";
+            }
         }
     }
     else if (preset->sync_info.compare("update") == 0) {
@@ -4944,8 +5122,9 @@ void GUI_App::sync_preset(Preset* preset)
 
             }
             else {
-                BOOST_LOG_TRIVIAL(trace) << "[sync_preset]update: can not generate differed key-values, we need to skip this preset "<< preset->name;
+                BOOST_LOG_TRIVIAL(info) << "[sync_preset]update: can not generate differed key-values, we need to skip this preset " << preset->name << " code: " << ret;
                 result = 0;
+                if (ret == -2) updated_info = "hold";
             }
         }
         else {
@@ -6735,7 +6914,8 @@ void GUI_App::check_updates(const bool verbose)
 {
 	PresetUpdater::UpdateResult updater_result;
 	try {
-		updater_result = preset_updater->config_update(app_config->orig_version(), verbose ? PresetUpdater::UpdateParams::SHOW_TEXT_BOX : PresetUpdater::UpdateParams::SHOW_NOTIFICATION);
+		//updater_result = preset_updater->config_update(app_config->orig_version(), verbose ? PresetUpdater::UpdateParams::SHOW_TEXT_BOX : PresetUpdater::UpdateParams::SHOW_NOTIFICATION);
+		updater_result = preset_updater->config_update(app_config->orig_version(), PresetUpdater::UpdateParams::SHOW_TEXT_BOX);
 		if (updater_result == PresetUpdater::R_INCOMPAT_EXIT) {
 			mainframe->Close();
 		}
@@ -6750,6 +6930,16 @@ void GUI_App::check_updates(const bool verbose)
 	catch (const std::exception & ex) {
 		show_error(nullptr, ex.what());
 	}
+}
+
+void GUI_App::check_config_updates_from_updater()
+{
+    check_updates(false);
+}
+
+void GUI_App::check_config_updates_from_menu()
+{
+    check_updates(true);
 }
 
 bool GUI_App::open_browser_with_warning_dialog(const wxString& url, int flags/* = 0*/)
@@ -6837,8 +7027,6 @@ static bool del_win_registry(HKEY hkeyHive, const wchar_t *pszVar, const wchar_t
         return false;
 
     if (!bDidntExist) {
-        DWORD dwDisposition;
-        HKEY  hkey;
         iRC      = ::RegDeleteKeyExW(hkeyHive, pszVar, KEY_ALL_ACCESS, 0);
         if (iRC == ERROR_SUCCESS) {
             return true;

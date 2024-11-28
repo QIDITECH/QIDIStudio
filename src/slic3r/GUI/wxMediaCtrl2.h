@@ -13,6 +13,8 @@
 
 wxDECLARE_EVENT(EVT_MEDIA_CTRL_STAT, wxCommandEvent);
 
+void wxMediaCtrl_OnSize(wxWindow * ctrl, wxSize const & videoSize, int width, int height);
+
 #ifdef __WXMAC__
 
 class wxMediaCtrl2 : public wxWindow

@@ -2700,7 +2700,7 @@ ConfigWizard::ConfigWizard(wxWindow *parent)
 
     //QDS: add QDT as default
     const auto qdt_it = p->bundles.find("QDT");
-    wxCHECK_RET(qdt_it != p->bundles.cend(), "Vendor QIDI Lab not found");
+    wxCHECK_RET(qdt_it != p->bundles.cend(), "Vendor QIDI Tech not found");
     const VendorProfile * vendor_qdt = qdt_it->second.vendor_profile;
     
     p->only_sla_mode = false;

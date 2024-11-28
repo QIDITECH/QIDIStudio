@@ -140,11 +140,11 @@ wxBoxSizer* NetworkTestDialog::create_content_sizer(wxWindow* parent)
 	grid_sizer->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
     StateColor btn_bg(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed),std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered), std::pair<wxColour, int>(wxColour(255,255,255), StateColor::Enabled));
-	btn_link = new Button(this, _L("Test QIDILab"));
+	btn_link = new Button(this, _L("Test QIDITech"));
     btn_link->SetBackgroundColor(btn_bg);
 	grid_sizer->Add(btn_link, 0, wxEXPAND | wxALL, 5);
 
-	text_link_title = new wxStaticText(this, wxID_ANY, _L("Test QIDILab:"), wxDefaultPosition, wxDefaultSize, 0);
+	text_link_title = new wxStaticText(this, wxID_ANY, _L("Test QIDITech:"), wxDefaultPosition, wxDefaultSize, 0);
 	text_link_title->Wrap(-1);
 	grid_sizer->Add(text_link_title, 0, wxALIGN_RIGHT | wxALL, 5);
 
@@ -245,7 +245,7 @@ wxBoxSizer* NetworkTestDialog::create_content_sizer(wxWindow* parent)
 	sizer->Add(grid_sizer, 1, wxEXPAND, 5);
 
 	btn_link->Bind(wxEVT_BUTTON, [this](wxCommandEvent& evt) {
-		start_test_qidilab_thread();
+		start_test_qiditech_thread();
 	});
 
 	btn_bing->Bind(wxEVT_BUTTON, [this](wxCommandEvent& evt) {
@@ -294,7 +294,7 @@ NetworkTestDialog::~NetworkTestDialog()
 void NetworkTestDialog::init_bind()
 {
 	Bind(EVT_UPDATE_RESULT, [this](wxCommandEvent& evt) {
-		if (evt.GetInt() == TEST_QIDILAB_JOB) {
+		if (evt.GetInt() == TEST_QIDITECH_JOB) {
 			text_link_val->SetLabelText(evt.GetString());
 		} else if (evt.GetInt() == TEST_BING_JOB) {
 			text_bing_val->SetLabelText(evt.GetString());
@@ -351,7 +351,7 @@ wxString NetworkTestDialog::get_dns_info()
 
 void NetworkTestDialog::start_all_job()
 {
-	start_test_qidilab_thread();
+	start_test_qiditech_thread();
 	start_test_bing_thread();
 	
 	start_test_iot_thread();
@@ -368,7 +368,7 @@ void NetworkTestDialog::start_all_job_sequence()
 		update_status(-1, "start_test_sequence");
 		start_test_bing();
 		if (m_closing) return;
-		start_test_qidilab();
+		start_test_qiditech();
 		if (m_closing) return;
 		start_test_oss();
 		if (m_closing) return;
@@ -417,10 +417,10 @@ void NetworkTestDialog::start_test_bing()
 	m_in_testing[TEST_BING_JOB] = false;
 }
 
-void NetworkTestDialog::start_test_qidilab()
+void NetworkTestDialog::start_test_qiditech()
 {
-	m_in_testing[TEST_QIDILAB_JOB] = true;
-	update_status(TEST_QIDILAB_JOB, "test qidilab start...");
+	m_in_testing[TEST_QIDITECH_JOB] = true;
+	update_status(TEST_QIDITECH_JOB, "test qiditech start...");
 
 	std::string platform = "windows";
 
@@ -441,7 +441,7 @@ void NetworkTestDialog::start_test_qidilab()
 	AppConfig* app_config = wxGetApp().app_config;
 	std::string url = wxGetApp().get_http_url(app_config->get_country_code()) + query_params;
 	Slic3r::Http http = Slic3r::Http::get(url);
-	update_status(-1, "[test_qidilab]: url=" + url);
+	update_status(-1, "[test_qiditech]: url=" + url);
 	int result = -1;
 	http.header("accept", "application/json")
 		.timeout_max(10)
@@ -456,18 +456,18 @@ void NetworkTestDialog::start_test_qidilab()
 			}
 		})
 		.on_ip_resolve([this](std::string ip) {
-			wxString ip_report = wxString::Format("test qidilab ip resolved = %s", ip);
-			update_status(TEST_QIDILAB_JOB, ip_report);
+			wxString ip_report = wxString::Format("test qiditech ip resolved = %s", ip);
+			update_status(TEST_QIDITECH_JOB, ip_report);
 		})
 		.on_error([this](std::string body, std::string error, unsigned int status) {
 			wxString info = wxString::Format("status=%u, body=%s, error=%s", status, body, error);
-			this->update_status(TEST_QIDILAB_JOB, "test qidilab failed");
+			this->update_status(TEST_QIDITECH_JOB, "test qiditech failed");
 			this->update_status(-1, info);
 		}).perform_sync();
 	if (result == 0) {
-		update_status(TEST_QIDILAB_JOB, "test qidilab ok");
+		update_status(TEST_QIDITECH_JOB, "test qiditech ok");
 	}
-	m_in_testing[TEST_QIDILAB_JOB] = false;
+	m_in_testing[TEST_QIDITECH_JOB] = false;
 }
 
 void NetworkTestDialog::start_test_iot()
@@ -501,12 +501,12 @@ void NetworkTestDialog::start_test_oss()
 	m_in_testing[TEST_OSS_JOB] = true;
 	update_status(TEST_OSS_JOB, "test storage start...");
 
-	std::string url = "http://upload-file.qidilab.com";
+	std::string url = "http://upload-file.qiditech.com";
 
 	AppConfig* config = wxGetApp().app_config;
 	if (config) {
 		if (config->get_country_code() == "CN")
-			url = "http://upload-file.qidilab.cn";
+			url = "http://upload-file.qiditech.cn";
 	}
 
 	Slic3r::Http http = Slic3r::Http::get(url);
@@ -548,12 +548,12 @@ void NetworkTestDialog::start_test_oss_upgrade()
 	m_in_testing[TEST_OSS_UPGRADE_JOB] = true;
 	update_status(TEST_OSS_UPGRADE_JOB, "test storage upgrade start...");
 
-	std::string url = "http://upgrade-file.qidilab.com";
+	std::string url = "http://upgrade-file.qiditech.com";
 
 	AppConfig* config = wxGetApp().app_config;
 	if (config) {
 		if (config->get_country_code() == "CN")
-			url = "http://upgrade-file.qidilab.cn";
+			url = "http://upgrade-file.qiditech.cn";
 	}
 
 	Slic3r::Http http = Slic3r::Http::get(url);
@@ -891,11 +891,11 @@ void NetworkTestDialog::start_test_bing_thread()
 	});
 }
 
-void NetworkTestDialog::start_test_qidilab_thread()
+void NetworkTestDialog::start_test_qiditech_thread()
 {
-	if (m_in_testing[TEST_QIDILAB_JOB]) return;
-	test_job[TEST_QIDILAB_JOB] = new boost::thread([this] {
-		start_test_qidilab();
+	if (m_in_testing[TEST_QIDITECH_JOB]) return;
+	test_job[TEST_QIDITECH_JOB] = new boost::thread([this] {
+		start_test_qiditech();
 	});
 }
 

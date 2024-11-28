@@ -38,6 +38,9 @@ class ArrangeJob : public PlaterJob
 
     //QDS:prepare the items from current selected partplate
     void prepare_partplate();
+
+    void prepare_outside_plate();
+
     void prepare_wipe_tower();
 
     ArrangePolygon prepare_arrange_polygon(void* instance);

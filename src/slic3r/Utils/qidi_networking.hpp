@@ -95,7 +95,7 @@ namespace QDT {
 #define QIDI_NETWORK_LIBRARY               "qidi_networking"
 #define QIDI_NETWORK_AGENT_NAME            "qidi_network_agent"
 
-#define QIDI_NETWORK_AGENT_VERSION         "01.09.02.05"
+#define QIDI_NETWORK_AGENT_VERSION         "01.10.01.01"
 
 //iot preset type strings
 #define IOT_PRINTER_TYPE_STRING     "printer"
@@ -138,6 +138,9 @@ typedef std::function<void(int result, std::string info)> ResultFn;
 typedef std::function<bool()> CancelFn;
 typedef std::function<bool(std::map<std::string, std::string> info)> CheckFn;
 
+//err callbacks
+typedef std::function<void(std::string url, int status)> OnServerErrFn;
+
 enum SendingPrintJobStage {
     PrintingStageCreate = 0,
     PrintingStageUpload = 1,
@@ -170,6 +173,17 @@ enum ConnectStatus {
     ConnectStatusOk = 0,
     ConnectStatusFailed = 1,
     ConnectStatusLost = 2,
+};
+
+struct detectResult {
+    std::string    result_msg;
+    std::string    command;
+    std::string    dev_id;
+    std::string    model_id;
+    std::string    dev_name;
+    std::string    version;
+    std::string    bind_state;
+    std::string    connect_type;
 };
 
 /* print job*/

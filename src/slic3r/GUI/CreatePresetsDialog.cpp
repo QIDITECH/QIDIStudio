@@ -42,7 +42,7 @@ static const std::vector<std::string> filament_vendors = {"Polymaker", "OVERTURE
 
 static const std::vector<std::string> filament_types = {"PLA",    "PLA+",  "PLA Tough", "PETG",  "ABS",    "ASA",    "FLEX",        "HIPS",   "PA",     "PACF",
                                                         "NYLON",  "PVA",   "PC",        "PCABS", "PCTG",   "PCCF",   "PP",          "PEI",    "PET",    "PETG",
-                                                        "PETGCF", "PTBA",  "PTBA90A",   "PEEK",  "TPU93A", "TPU75D", "TPU",         "TPU92A", "TPU98A", "Misc",
+                                                        "PETGCF", "PTBA",  "PTBA90A",   "PEEK",  "TPU93A", "TPU75D", "TPU","TPU-AMS",       "TPU92A", "TPU98A", "Misc",
                                                         "TPE",    "GLAZE", "Nylon",     "CPE",   "METAL",  "ABST",   "Carbon Fiber"};
 
 static const std::vector<std::string> printer_vendors = {"Anycubic",  "Artillery", "BIBO",           "BIQU",     "Creality ENDER", "Creality CR", "Creality SERMOON",
@@ -303,17 +303,29 @@ static wxBoxSizer *create_preset_tree(wxWindow *parent, std::pair<std::string, s
     return sizer;
 }
 
-static std::string get_vendor_name(std::string& preset_name)
+static std::string get_vendor_name(const Preset *preset)
 {
-    if (preset_name.empty()) return "";
-    std::string vendor_name = preset_name.substr(preset_name.find_first_not_of(' ')); //remove the name prefix space
-    size_t index_at = vendor_name.find(" ");
-    if (std::string::npos == index_at) {
-        return vendor_name;
-    } else {
-        vendor_name = vendor_name.substr(0, index_at);
-        return vendor_name;
+    if (!preset) return "";
+    assert(preset->type == Preset::Type::TYPE_FILAMENT || preset->type == Preset::Type::TYPE_PRINTER);
+    if (preset->type != Preset::Type::TYPE_FILAMENT && preset->type != Preset::Type::TYPE_PRINTER) return "";
+
+    if (preset->type == Preset::Type::TYPE_FILAMENT) {
+        auto vender = preset->config.option<ConfigOptionStrings>("filament_vendor");
+        if (vender && vender->values.size()) return vender->values[0];
     }
+    
+    if (preset->type == Preset::Type::TYPE_PRINTER) {
+        auto vender = preset->config.option<ConfigOptionStrings>("printer_model");
+        if (vender && vender->values.size()) return vender->values[0];
+    }
+
+    assert(false);
+    auto preset_name = preset->name;
+    int  index       = preset_name.find_first_of(' ');
+    if (std::string::npos == index)
+        return preset_name;
+    else
+        return preset_name.substr(0, index);
 }
 
 static wxBoxSizer *create_select_filament_preset_checkbox(wxWindow *                                    parent,
@@ -1497,7 +1509,7 @@ wxBoxSizer *CreatePrinterPresetDialog::create_step_switch_item()
 { 
     wxBoxSizer *step_switch_sizer = new wxBoxSizer(wxVERTICAL); 
 
-    std::string      wiki_url             = "https://wiki.qidilab.com/en/software/qidi-studio/3rd-party-printer-profile";
+    std::string      wiki_url             = "https://wiki.qidi3d.com/en/software/qidi-studio/3rd-party-printer-profile";
     wxHyperlinkCtrl *m_download_hyperlink = new wxHyperlinkCtrl(this, wxID_ANY, _L("wiki"), wiki_url, wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
     step_switch_sizer->Add(m_download_hyperlink, 0,  wxRIGHT | wxALIGN_RIGHT, FromDIP(5));
 
@@ -3433,7 +3445,7 @@ bool ExportConfigsDialog::preset_is_not_compatible_qdt_printer(Preset *preset)
     PresetBundle *      preset_bundle = wxGetApp().preset_bundle;
     vector<std::string> printers;
     get_filament_compatible_printer(preset, printers);
-    if (printers.empty()) return true;
+    if (printers.empty()) return false; // no compatable printer preset must be compatable qdt printer
     Preset *printer_preset = preset_bundle->printers.find_preset(printers[0], false);
     if (!printer_preset) return true;
     if (!printer_preset->is_qdt_vendor_preset(preset_bundle)) return true;
@@ -3617,6 +3629,17 @@ wxBoxSizer *ExportConfigsDialog::create_radio_item(wxString title, wxWindow *par
     return horizontal_sizer;
 }
 
+std::string ExportConfigsDialog::create_structure_file(json & structure)
+{
+    if (structure.is_null()) return "";
+
+    ostringstream oss;
+    oss << std::setw(4) << structure << std::endl;
+    std::string bundle_structure = oss.str();
+
+    return bundle_structure;
+}
+
 mz_bool ExportConfigsDialog::initial_zip_archive(mz_zip_archive &zip_archive, const std::string &file_path)
 {
     mz_zip_zero_struct(&zip_archive);
@@ -3719,7 +3742,8 @@ void ExportConfigsDialog::select_curr_radiobox(std::vector<std::pair<RadioBox *,
                     if (filament_name_to_preset.second.empty()) continue;
                     bool    all_preset_is_compatible_third_printer = true;
                     for (std::pair<std::string, Preset*> filament_preset : filament_name_to_preset.second) {
-                        if (!preset_is_not_compatible_qdt_printer(filament_preset.second))
+                        //w37
+                        //if (!preset_is_not_compatible_qdt_printer(filament_preset.second))
                             all_preset_is_compatible_third_printer = false;
                     }
                     if (all_preset_is_compatible_third_printer) continue;
@@ -3866,7 +3890,7 @@ ExportConfigsDialog::ExportCase ExportConfigsDialog::archive_preset_bundle_to_fi
             bundle_structure["filament_config"] = filament_configs;
             bundle_structure["process_config"]  = process_configs;
 
-            std::string bundle_structure_str = bundle_structure.dump();
+            std::string bundle_structure_str = create_structure_file(bundle_structure);
             status = mz_zip_writer_add_mem(&zip_archive, BUNDLE_STRUCTURE_JSON_NAME, bundle_structure_str.data(), bundle_structure_str.size(), MZ_DEFAULT_COMPRESSION);
             if (MZ_FALSE == status) {
                 BOOST_LOG_TRIVIAL(info) << " Failed to add file: " << BUNDLE_STRUCTURE_JSON_NAME;
@@ -3921,32 +3945,32 @@ ExportConfigsDialog::ExportCase ExportConfigsDialog::archive_filament_bundle_to_
                 continue;
             }
             std::set<std::pair<std::string, std::string>> vendor_to_filament_name;
-            for (std::pair<std::string, Preset *> printer_name_to_preset : iter->second) {
-                std::string printer_vendor = printer_name_to_preset.first;
-                if (printer_vendor.empty()) continue;
-                Preset *    filament_preset = printer_name_to_preset.second;
-                // if (preset_is_not_compatible_qdt_printer(filament_preset)) continue;
-                if (vendor_to_filament_name.find(std::make_pair(printer_vendor, filament_preset->name)) != vendor_to_filament_name.end()) continue;
-                vendor_to_filament_name.insert(std::make_pair(printer_vendor, filament_preset->name));
+            for (std::pair<std::string, Preset *> filament_vendor_to_preset : iter->second) {
+                std::string filament_vendor = filament_vendor_to_preset.first;
+                if (filament_vendor.empty()) continue;
+                Preset *filament_preset = filament_vendor_to_preset.second;
+                //if (preset_is_not_compatible_qdt_printer(filament_preset)) continue;
+                if (vendor_to_filament_name.find(std::make_pair(filament_vendor, filament_preset->name)) != vendor_to_filament_name.end()) continue;
+                vendor_to_filament_name.insert(std::make_pair(filament_vendor, filament_preset->name));
                 std::string preset_path     = boost::filesystem::path(filament_preset->file).make_preferred().string();
                 if (preset_path.empty()) {
                     BOOST_LOG_TRIVIAL(info) << "Export printer preset: " << filament_preset->name << " skip because of the preset file path is empty.";
                     continue;
                 }
                 // Add a file to the ZIP file
-                std::string file_name = printer_vendor + "/" + filament_preset->name + ".json";
-                status                = mz_zip_writer_add_file(&zip_archive, file_name.c_str(), encode_path(preset_path.c_str()).c_str(), NULL, 0, MZ_DEFAULT_COMPRESSION);
+                std::string file_name = filament_vendor + "/" + filament_preset->name + ".json";
+                status              = mz_zip_writer_add_file(&zip_archive, file_name.c_str(), encode_path(preset_path.c_str()).c_str(), NULL, 0, MZ_DEFAULT_COMPRESSION);
                 // status = mz_zip_writer_add_mem(&zip_archive, ("printer/" + printer_preset->name + ".json").c_str(), json_contents, strlen(json_contents), MZ_DEFAULT_COMPRESSION);
                 if (MZ_FALSE == status) {
                     BOOST_LOG_TRIVIAL(info) << filament_preset->name << " Failed to add file to ZIP archive";
                     mz_zip_writer_end(&zip_archive);
                     return ExportCase::ADD_FILE_FAIL;
                 }
-                std::unordered_map<std::string, json>::iterator iter = vendor_structure.find(printer_vendor);
+                std::unordered_map<std::string, json>::iterator iter = vendor_structure.find(filament_vendor);
                 if (vendor_structure.end() == iter) {
                     json j = json::array();
                     j.push_back(file_name);
-                    vendor_structure[printer_vendor] = j;
+                    vendor_structure[filament_vendor] = j;
                 } else {
                     iter->second.push_back(file_name);
                 }
@@ -3955,13 +3979,13 @@ ExportConfigsDialog::ExportCase ExportConfigsDialog::archive_filament_bundle_to_
             
             for (const std::pair<std::string, json>& vendor_name_to_json : vendor_structure) {
                 json j;
-                std::string printer_vendor = vendor_name_to_json.first;
-                j["vendor"]                = printer_vendor;
+                std::string filament_vendor = vendor_name_to_json.first;
+                j["vendor"]                 = filament_vendor;
                 j["filament_path"]         = vendor_name_to_json.second;
-                bundle_structure["printer_vendor"].push_back(j);
+                bundle_structure["filament_vendor"].push_back(j);
             }
 
-            std::string bundle_structure_str = bundle_structure.dump();
+            std::string bundle_structure_str = create_structure_file(bundle_structure);
             status = mz_zip_writer_add_mem(&zip_archive, BUNDLE_STRUCTURE_JSON_NAME, bundle_structure_str.data(), bundle_structure_str.size(), MZ_DEFAULT_COMPRESSION);
             if (MZ_FALSE == status) {
                 BOOST_LOG_TRIVIAL(info) << " Failed to add file: " << BUNDLE_STRUCTURE_JSON_NAME;
@@ -4032,7 +4056,8 @@ ExportConfigsDialog::ExportCase ExportConfigsDialog::archive_filament_preset_to_
             }
             for (std::pair<std::string, Preset*> printer_name_preset : iter->second) {
                 Preset *    filament_preset = printer_name_preset.second;
-                if (preset_is_not_compatible_qdt_printer(filament_preset)) continue;
+                //w37
+                //if (preset_is_not_compatible_qdt_printer(filament_preset)) continue;
                 if (filament_presets.find(filament_preset->name) != filament_presets.end()) continue;
                 filament_presets.insert(filament_preset->name);
                 std::string preset_path     = boost::filesystem::path(filament_preset->file).make_preferred().string();
@@ -4267,7 +4292,7 @@ void ExportConfigsDialog::data_init()
 
         std::string filament_preset_name = base_filament_preset->name;
         std::string machine_name         = get_machine_name(filament_preset_name);
-        m_filament_name_to_presets[get_filament_name(filament_preset_name)].push_back(std::make_pair(get_vendor_name(machine_name), new_filament_preset));
+        m_filament_name_to_presets[get_filament_name(filament_preset_name)].push_back(std::make_pair(get_vendor_name(new_filament_preset), new_filament_preset));
     }
 }
 
@@ -5003,7 +5028,7 @@ wxPanel *PresetTree::get_child_item(wxPanel *parent, std::shared_ptr<Preset> pre
     bool base_id_error = false;
     if (preset->inherits() == "" && preset->base_id != "") base_id_error = true;
     if (base_id_error) {
-        std::string      wiki_url             = "https://wiki.qidilab.com/en/software/qidi-studio/custom-filament-issue";
+        std::string      wiki_url             = "https://wiki.qidi3d.com/en/software/qidi-studio/custom-filament-issue";
         wxHyperlinkCtrl *m_download_hyperlink = new wxHyperlinkCtrl(panel, wxID_ANY, _L("[Delete Required]"), wiki_url, wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
         m_download_hyperlink->SetFont(Label::Body_10);
         sizer->Add(m_download_hyperlink, 0, wxEXPAND | wxALL, 5);

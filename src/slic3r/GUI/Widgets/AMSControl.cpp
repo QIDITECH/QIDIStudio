@@ -43,7 +43,7 @@ bool AMSinfo::parse_ams_info(MachineObject *obj, Ams *ams, bool remain_flag, boo
     else {
         this->ams_humidity = -1;
     }
-    
+
     cans.clear();
     for (int i = 0; i < 4; i++) {
         auto    it = ams->trayList.find(std::to_string(i));
@@ -54,6 +54,8 @@ bool AMSinfo::parse_ams_info(MachineObject *obj, Ams *ams, bool remain_flag, boo
                 info.can_id        = it->second->id;
                 info.ctype         = it->second->ctype;
                 info.material_name = it->second->get_display_filament_type();
+                info.cali_idx      = it->second->cali_idx;
+                info.filament_id   = it->second->setting_id;
                 if (!it->second->color.empty()) {
                     info.material_colour = AmsTray::decode_color(it->second->color);
                 } else {
@@ -70,18 +72,20 @@ bool AMSinfo::parse_ams_info(MachineObject *obj, Ams *ams, bool remain_flag, boo
                 } else {
                     info.material_state = AMSCanType::AMS_CAN_TYPE_THIRDBRAND;
                 }
-     
+
                 if (!MachineObject::is_qdt_filament(it->second->tag_uid) || !remain_flag) {
                     info.material_remain = 100;
                 } else {
                     info.material_remain = it->second->remain < 0 ? 0 : it->second->remain;
                     info.material_remain = it->second->remain > 100 ? 100 : info.material_remain;
                 }
-                
-                
+
+
             } else {
                 info.can_id = it->second->id;
                 info.material_name = "";
+                info.cali_idx = -1;
+                info.filament_id = "";
                 info.ctype = 0;
                 info.material_colour = AMS_TRAY_DEFAULT_COL;
                 info.material_state = AMSCanType::AMS_CAN_TYPE_THIRDBRAND;
@@ -312,16 +316,20 @@ void AMSrefresh::DoSetSize(int x, int y, int width, int height, int sizeFlags)
 /*************************************************
 Description:AMSextruder
 **************************************************/
-void AMSextruderImage::TurnOn(wxColour col) 
+void AMSextruderImage::TurnOn(wxColour col)
 {
-    m_colour  = col;
-    Refresh();
+    if (m_colour != col) {
+        m_colour = col;
+        Refresh();
+    }
 }
 
-void AMSextruderImage::TurnOff() 
+void AMSextruderImage::TurnOff()
 {
-    m_colour = AMS_EXTRUDER_DEF_COLOUR;
-    Refresh();
+    if (m_colour != AMS_EXTRUDER_DEF_COLOUR) {
+        m_colour = AMS_EXTRUDER_DEF_COLOUR;
+        Refresh();
+    }
 }
 
 void AMSextruderImage::msw_rescale() 
@@ -429,16 +437,22 @@ void AMSextruder::create(wxWindow *parent, wxWindowID id, const wxPoint &pos, co
 
 void AMSextruder::OnVamsLoading(bool load, wxColour col)
 {
-    m_vams_loading = load;
-    if (load)m_current_colur = col;
-    Refresh();
+    if (m_vams_loading != load) {
+        m_vams_loading = load;
+        if (load) m_current_colur = col;
+        //m_current_colur = col;
+        Refresh();
+    }
 }
 
 void AMSextruder::OnAmsLoading(bool load, wxColour col /*= AMS_CONTROL_GRAY500*/)
 {
-    m_ams_loading = load;
-    if (load)m_current_colur = col;
-    Refresh();
+    if (m_ams_loading != load) {
+        m_ams_loading = load;
+        //m_current_colur = col;
+        if (load) m_current_colur = col;
+        Refresh();
+    }
 }
 
 void AMSextruder::paintEvent(wxPaintEvent& evt)
@@ -542,9 +556,12 @@ AMSVirtualRoad::~AMSVirtualRoad() {}
 
 void AMSVirtualRoad::OnVamsLoading(bool load, wxColour col)
 {
-    m_vams_loading = load;
-    if (load)m_current_color = col;
-    Refresh();
+    if (m_vams_loading != load) {
+        m_vams_loading = load;
+        if (load)m_current_color = col;
+        //m_current_color = col;
+        Refresh();
+    }
 }
 
 void AMSVirtualRoad::create(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size)
@@ -840,8 +857,11 @@ void AMSLib::render_extra_text(wxDC& dc)
 void AMSLib::render_generic_text(wxDC &dc)
 {
     bool show_k_value = true;
-    if (m_obj && (m_obj->cali_version >= 0) && (abs(m_info.k - 0) < 1e-3)) {
+    if (m_info.material_name.empty()) {
         show_k_value = false;
+    }
+    else if (m_info.cali_idx == -1 || (m_obj && (CalibUtils::get_selected_calib_idx(m_obj->pa_calib_tab, m_info.cali_idx) == -1))) {
+        get_default_k_n_value(m_info.filament_id, m_info.k, m_info.n);
     }
 
     auto tmp_lib_colour = m_info.material_colour;
@@ -1324,9 +1344,14 @@ void AMSLib::Update(Caninfo info, bool refresh)
     if (info.material_colour.Alpha() != 0 && info.material_colour.Alpha() != 255 && info.material_colour.Alpha() != 254 && m_info.material_colour != info.material_colour) {
         transparent_changed = true;
     }
-    m_info = info;
-    Layout();
-    if (refresh) Refresh();
+
+    if (m_info == info) {
+        //todo
+    } else {
+        m_info = info;
+        Layout();
+        if (refresh) Refresh();
+    }
 }
 
 wxColour AMSLib::GetLibColour() { return m_info.material_colour; }
@@ -1431,6 +1456,10 @@ void AMSRoad::create(wxWindow *parent, wxWindowID id, const wxPoint &pos, const 
 
 void AMSRoad::Update(AMSinfo amsinfo, Caninfo info, int canindex, int maxcan)
 {
+    if (amsinfo == m_amsinfo && m_info == info && m_canindex == canindex) {
+        return;
+    }
+
     m_amsinfo = amsinfo;
     m_info     = info;
     m_canindex = canindex;
@@ -1449,17 +1478,22 @@ void AMSRoad::Update(AMSinfo amsinfo, Caninfo info, int canindex, int maxcan)
 
 void AMSRoad::OnVamsLoading(bool load, wxColour col /*= AMS_CONTROL_GRAY500*/)
 {
-    m_vams_loading = load;
-    if(load)m_road_color = col;
-    Refresh();
+    if (m_vams_loading != load) {
+        m_vams_loading = load;
+        if (load) m_road_color = col;
+        //m_road_color = col;
+        Refresh();
+    }
 }
 
 void AMSRoad::SetPassRoadColour(wxColour col) { m_road_color = col; }
 
 void AMSRoad::SetMode(AMSRoadMode mode)
 {
-    m_rode_mode = mode;
-    Refresh();
+    if (m_rode_mode != mode) {
+        m_rode_mode = mode;
+        Refresh();
+    }
 }
 
 void AMSRoad::paintEvent(wxPaintEvent &evt)
@@ -2005,9 +2039,10 @@ void AmsCans::Update(AMSinfo info)
         Canrefreshs *refresh = m_can_refresh_list[i];
         if (i < m_can_count) {
             refresh->canrefresh->Update(info.ams_id, info.cans[i]);
-            refresh->canrefresh->Show();
+            if (!refresh->canrefresh->IsShown()) { refresh->canrefresh->Show();}
+
         } else {
-            refresh->canrefresh->Hide();
+            if (refresh->canrefresh->IsShown()) { refresh->canrefresh->Hide();}
         }
     }
    
@@ -2015,21 +2050,20 @@ void AmsCans::Update(AMSinfo info)
         CanLibs *lib = m_can_lib_list[i];
         if (i < m_can_count) {
             lib->canLib->Update(info.cans[i]);
-            lib->canLib->Show();
+            if(!lib->canLib->IsShown()) { lib->canLib->Show();}
         } else {
-            lib->canLib->Hide();
+            if(lib->canLib->IsShown()) { lib->canLib->Hide(); }
         }
     }
 
     if (m_ams_model == AMSModel::GENERIC_AMS) {
         for (auto i = 0; i < m_can_road_list.GetCount(); i++) {
-            CanRoads* road = m_can_road_list[i];
+            CanRoads *road = m_can_road_list[i];
             if (i < m_can_count) {
                 road->canRoad->Update(m_info, info.cans[i], i, m_can_count);
-                road->canRoad->Show();
-            }
-            else {
-                road->canRoad->Hide();
+                if (!road->canRoad->IsShown()) { road->canRoad->Show(); }
+            } else {
+                if (road->canRoad->IsShown()) { road->canRoad->Hide(); }
             }
         }
     }
@@ -2051,8 +2085,8 @@ void AmsCans::SelectCan(std::string canid)
 {
     for (auto i = 0; i < m_can_lib_list.GetCount(); i++) {
         CanLibs *lib = m_can_lib_list[i];
-        if (lib->canLib->m_info.can_id == canid) { 
-            m_canlib_selection = lib->canLib->m_can_index; 
+        if (lib->canLib->m_info.can_id == canid) {
+            m_canlib_selection = lib->canLib->m_can_index;
         }
     }
 
@@ -3282,10 +3316,13 @@ void AMSControl::show_noams_mode()
 
 void AMSControl::show_auto_refill(bool show)
 {
-    m_ams_backup_tip->Show(show);
-    m_img_ams_backup->Show(show);
-    m_amswin->Layout();
-    m_amswin->Fit();
+    if (m_auto_reill_show != show) {
+        m_ams_backup_tip->Show(show);
+        m_img_ams_backup->Show(show);
+        m_amswin->Layout();
+        m_amswin->Fit();
+        m_auto_reill_show = show;
+    }
 }
 
 void AMSControl::show_vams(bool show)
@@ -3313,6 +3350,9 @@ void AMSControl::show_vams_kn_value(bool show)
 
 void AMSControl::update_vams_kn_value(AmsTray tray, MachineObject* obj)
 {
+    auto last_k_value = m_vams_info.k;
+    auto last_n_value = m_vams_info.n;
+
     m_vams_lib->m_obj = obj;
     if (obj->cali_version >= 0) {
         float k_value = 0;
@@ -3329,11 +3369,19 @@ void AMSControl::update_vams_kn_value(AmsTray tray, MachineObject* obj)
         m_vams_lib->m_info.k = tray.k;
         m_vams_lib->m_info.n = tray.n;
     }
+
     m_vams_info.material_name = tray.get_display_filament_type();
     m_vams_info.material_colour = tray.get_color();
+    m_vams_info.cali_idx               = tray.cali_idx;
+    m_vams_info.filament_id            = tray.setting_id;
     m_vams_lib->m_info.material_name = tray.get_display_filament_type();
     m_vams_lib->m_info.material_colour = tray.get_color();
-    m_vams_lib->Refresh();
+    m_vams_lib->m_info.cali_idx        = tray.cali_idx;
+    m_vams_lib->m_info.filament_id     = tray.setting_id;
+
+    if (last_k_value != m_vams_info.k || last_n_value != m_vams_info.n) {
+        m_vams_lib->Refresh();
+    }
 }
 
 void AMSControl::reset_vams()
@@ -3342,8 +3390,12 @@ void AMSControl::reset_vams()
     m_vams_lib->m_info.n = 0;
     m_vams_lib->m_info.material_name = wxEmptyString;
     m_vams_lib->m_info.material_colour = AMS_CONTROL_WHITE_COLOUR;
+    m_vams_lib->m_info.cali_idx = -1;
+    m_vams_lib->m_info.filament_id = "";
     m_vams_info.material_name = wxEmptyString;
     m_vams_info.material_colour = AMS_CONTROL_WHITE_COLOUR;
+    m_vams_info.cali_idx = -1;
+    m_vams_info.filament_id = "";
     m_vams_lib->Refresh();
 }
 
@@ -3357,7 +3409,7 @@ void AMSControl::UpdateAms(std::vector<AMSinfo> info, bool is_reset)
     m_button_area->Fit();        
 
     // update item
-    m_ams_info = info;
+
     if (m_ams_model == AMSModel::GENERIC_AMS){
         m_ams_cans_list = m_ams_generic_cans_list;
     }
@@ -3365,19 +3417,23 @@ void AMSControl::UpdateAms(std::vector<AMSinfo> info, bool is_reset)
         m_ams_cans_list = m_ams_extra_cans_list;
     }
 
-    if (info.size() > 1) {
-        m_simplebook_amsitems->Show();
-        m_amswin->Layout();
-        m_amswin->Fit();
-        SetSize(m_amswin->GetSize());
-        SetMinSize(m_amswin->GetSize());
-    } else {
-        m_simplebook_amsitems->Hide();
-        m_amswin->Layout();
-        m_amswin->Fit();
-        SetSize(m_amswin->GetSize());
-        SetMinSize(m_amswin->GetSize());
+    if (m_ams_info.size() != info.size()) {
+        if (info.size() > 1) {
+            m_simplebook_amsitems->Show();
+            m_amswin->Layout();
+            m_amswin->Fit();
+            SetSize(m_amswin->GetSize());
+            SetMinSize(m_amswin->GetSize());
+        } else {
+            m_simplebook_amsitems->Hide();
+            m_amswin->Layout();
+            m_amswin->Fit();
+            SetSize(m_amswin->GetSize());
+            SetMinSize(m_amswin->GetSize());
+        }
     }
+
+    m_ams_info = info;
 
     for (auto i = 0; i < m_ams_item_list.GetCount(); i++) {
         AmsItems *item = m_ams_item_list[i];
@@ -3751,9 +3807,7 @@ void AMSControl::SetAmsStep(std::string ams_id, std::string canid, AMSPassRoadTy
         if (step == AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP2) {
             cans->amsCans->SetAmsStep(canid, type, AMSPassRoadSTEP::AMS_ROAD_STEP_1);
             cans->amsCans->SetAmsStep(canid, type, AMSPassRoadSTEP::AMS_ROAD_STEP_2);
-            if (m_current_show_ams == ams_id) {
-                m_extruder->OnAmsLoading(true, cans->amsCans->GetTagColr(canid));
-            }
+            if (m_current_show_ams == ams_id) { m_extruder->OnAmsLoading(true, cans->amsCans->GetTagColr(canid)); }
         }
 
         if (step == AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP3) {

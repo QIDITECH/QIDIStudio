@@ -146,7 +146,7 @@ void Field::PostInitialize()
 	// For the mode, when settings are in non-modal dialog, neither dialog nor tabpanel doesn't receive wxEVT_KEY_UP event, when some field is selected.
 	// So, like a workaround check wxEVT_KEY_UP event for the Filed and switch between tabs if Ctrl+(1-4) was pressed
     if (getWindow()) {
-        if (m_opt.readonly) { 
+        if (m_opt.readonly) {
             this->disable();
         } else {
             this->enable();
@@ -357,8 +357,9 @@ void Field::get_value_by_opt_type(wxString& str, const bool check_value/* = true
         m_value = val;
 		break; }
 	case coString:
-	case coStrings:
-    case coFloatOrPercent: {
+    case coStrings:
+    case coFloatOrPercent:
+    case coFloatsOrPercents: {
         if (m_opt.type == coFloatOrPercent && !str.IsEmpty() &&  str.Last() != '%')
         {
             double val = 0.;
@@ -613,9 +614,9 @@ struct myEvtHandler : wxEvtHandler
             // In Field, All Bind has id, but for TextInput, ComboBox, SpinInput, all not
             if (entry->m_id != wxID_ANY && entry->m_lastId == wxID_ANY)
                 Unbind(entry->m_eventType,
-                    wxEventFunctorRef{entry->m_fn}, 
-                    entry->m_id, 
-                    entry->m_lastId, 
+                    wxEventFunctorRef{entry->m_fn},
+                    entry->m_id,
+                    entry->m_lastId,
                     entry->m_callbackUserData);
             //DoUnbind(entry->m_id, entry->m_lastId, entry->m_eventType, *entry->m_fn, entry->m_callbackUserData);
         }

@@ -734,8 +734,8 @@ void Preview::load_print_as_fff(bool keep_z_range, bool only_gcode)
             //QDS show sliders
             show_moves_sliders();
 
-            //QDS: turn off shells for preview
-            m_canvas->set_shells_on_previewing(false);
+            //QDS: keep shell preview on or not by app_config
+            m_canvas->set_shells_on_previewing(wxGetApp().app_config->get_bool("show_shells_in_preview"));
             Refresh();
             zs = m_canvas->get_gcode_layers_zs();
             //QDS: add m_loaded_print logic

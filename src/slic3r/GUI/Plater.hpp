@@ -16,6 +16,7 @@
 #include "libslic3r/BoundingBox.hpp"
 #include "libslic3r/GCode/GCodeProcessor.hpp"
 #include "Jobs/Job.hpp"
+#include "Jobs/Worker.hpp"
 #include "Search.hpp"
 #include "PartPlate.hpp"
 #include "GUI_App.hpp"
@@ -302,12 +303,16 @@ public:
     // To be called when providing a list of files to the GUI slic3r on command line.
     std::vector<size_t> load_files(const std::vector<std::string>& input_files, LoadStrategy strategy = LoadStrategy::LoadModel | LoadStrategy::LoadConfig,  bool ask_multi = false);
     // to be called on drag and drop
+    bool emboss_svg(const wxString &svg_file, bool from_toolbar_or_file_menu = false);
+    bool load_svg(const wxArrayString &filenames, bool from_toolbar_or_file_menu = false);
+    bool load_same_type_files(const wxArrayString &filenames);
     bool load_files(const wxArrayString& filenames);
-
     const wxString& get_last_loaded_gcode() const { return m_last_loaded_gcode; }
 
     void update(bool conside_update_flag = false, bool force_background_processing_update = false);
     //QDS
+    Worker &      get_ui_job_worker();
+    const Worker &get_ui_job_worker() const;
     void object_list_changed();
     void stop_jobs();
     bool is_any_job_running() const;
@@ -376,8 +381,10 @@ public:
     void export_gcode(bool prefer_removable);
     void export_gcode_3mf(bool export_all = false);
     void send_gcode_finish(wxString name);
+    //y
     void send_gcode_to_printer();
-    void send_gcode_to_printers();  // y11
+    void send_gcode_to_printers();
+
     void export_core_3mf();
     static TriangleMesh combine_mesh_fff(const ModelObject& mo, int instance_id, std::function<void(const std::string&)> notify_func = {});
     void export_stl(bool extended = false, bool selection_only = false, bool multi_stls = false);
@@ -404,6 +411,7 @@ public:
     void clear_before_change_mesh(int obj_idx);
     void changed_mesh(int obj_idx);
 
+    void changed_object(ModelObject &object);
     void changed_object(int obj_idx);
     void changed_objects(const std::vector<size_t>& object_idxs);
     void schedule_background_process(bool schedule = true);
@@ -535,7 +543,7 @@ public:
     bool can_simplify() const;
     bool can_split_to_objects() const;
     bool can_split_to_volumes() const;
-    bool can_arrange() const;
+    bool can_do_ui_job() const;
     //QDS
     bool can_cut_to_clipboard() const;
     bool can_layers_editing() const;
@@ -721,6 +729,8 @@ public:
     void toggle_render_statistic_dialog();
     bool is_render_statistic_dialog_visible() const;
 
+    void toggle_non_manifold_edges();
+    bool is_show_non_manifold_edges();
     void toggle_show_wireframe();
     bool is_show_wireframe() const;
     void enable_wireframe(bool status);
@@ -739,6 +749,8 @@ public:
     wxMenu* plate_menu();
     wxMenu* object_menu();
     wxMenu* part_menu();
+    wxMenu* svg_part_menu();
+    wxMenu* cut_connector_menu();
     wxMenu* sla_object_menu();
     wxMenu* default_menu();
     wxMenu* instance_menu();
@@ -759,7 +771,7 @@ public:
         return m_arrange_running.compare_exchange_strong(prevRunning, true);
     };
     std::atomic<bool> m_arrange_running{false};
-
+    //y
     void resetUploadCount();
 
 private:
@@ -796,7 +808,7 @@ private:
     void _calib_pa_select_added_objects();
 
     friend class SuppressBackgroundProcessingUpdate;
-
+    //y
     std::thread m_sendThread;
     std::chrono::system_clock::time_point m_time_p;
     //w29

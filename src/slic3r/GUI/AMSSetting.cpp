@@ -56,7 +56,7 @@ void AMSSetting::create()
 
     // tip line1
     m_tip_Insert_material_line1 = new Label(m_panel_Insert_material,
-        _L("The AMS will automatically read the filament information when inserting a new QIDI Lab filament. This takes about 20 seconds.")
+        _L("The AMS will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds.")
     );
     m_tip_Insert_material_line1->SetFont(::Label::Body_13);
     m_tip_Insert_material_line1->SetForegroundColour(AMS_SETTING_GREY700);

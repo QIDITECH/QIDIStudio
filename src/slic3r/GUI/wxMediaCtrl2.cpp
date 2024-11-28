@@ -1,6 +1,8 @@
 #include "wxMediaCtrl2.h"
 #include "I18N.hpp"
-#include "GUI_App.hpp"
+#include "libslic3r/Utils.hpp"
+#include <wx/log.h>
+#include <wx/msgdlg.h>
 #ifdef __WIN32__
 #include <versionhelpers.h>
 #include <wx/msw/registry.h>
@@ -194,8 +196,9 @@ void wxMediaCtrl2::Play() { wxMediaCtrl::Play(); }
 
 void wxMediaCtrl2::Stop()
 {
-    wxMediaCtrl::Stop();
-}
+    wxMediaCtrl::Stop(); }
+
+void wxMediaCtrl2::SetIdleImage(wxString const &image) {}
 
 #ifdef __LINUX__
 extern "C" int gst_qidi_last_error;
@@ -228,6 +231,13 @@ wxSize wxMediaCtrl2::GetVideoSize() const
 wxSize wxMediaCtrl2::DoGetBestSize() const
 {
     return {-1, -1};
+}
+
+void wxMediaCtrl2::DoSetSize(int x, int y, int width, int height, int sizeFlags)
+{
+    wxWindow::DoSetSize(x, y, width, height, sizeFlags);
+    if (sizeFlags & wxSIZE_USE_EXISTING) return;
+    wxMediaCtrl_OnSize(this, m_video_size, width, height);
 }
 
 #ifdef __WIN32__
