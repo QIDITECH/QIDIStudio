@@ -132,5 +132,10 @@
     <key>ASAN_OPTIONS</key>
     <string>detect_container_overflow=0</string>
   </dict>
+  <key>NSAppTransportSecurity</key>
+  <dict>
+      <key>NSAllowsArbitraryLoads</key>
+      <true/>
+  </dict>
 </dict>
 </plist>
