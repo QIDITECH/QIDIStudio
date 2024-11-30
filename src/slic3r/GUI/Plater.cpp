@@ -14076,6 +14076,12 @@ wxString Plater::get_project_filename(const wxString& extension) const
     return p->get_project_filename(extension);
 }
 
+//y49
+wxString Plater::get_output_filename()
+{
+    return from_u8((p->background_process.output_filename_for_project()));
+}
+
 wxString Plater::get_export_gcode_filename(const wxString & extension, bool only_filename, bool export_all) const
 {
     return p->get_export_gcode_filename(extension, only_filename, export_all);

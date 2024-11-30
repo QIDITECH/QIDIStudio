@@ -4055,7 +4055,9 @@ void SelectMachineDialog::set_default()
     //project name
     m_rename_switch_panel->SetSelection(0);
 
-    wxString filename = m_plater->get_export_gcode_filename("", true, m_print_plate_idx == PLATE_ALL_IDX ? true : false);
+    //y49
+    wxString filename = m_plater->get_output_filename();
+
     if (m_print_plate_idx == PLATE_ALL_IDX && filename.empty()) {
         filename = _L("Untitled");
     }

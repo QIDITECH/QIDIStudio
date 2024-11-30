@@ -182,6 +182,13 @@ PrinterTechnology BackgroundSlicingProcess::current_printer_technology() const
 	//return m_print->technology();
 }
 
+//y49
+std::string BackgroundSlicingProcess::output_filename_for_project()
+{
+	std::string filename = m_print->output_filename("");
+	return filename;
+}
+
 std::string BackgroundSlicingProcess::output_filepath_for_project(const boost::filesystem::path &project_path)
 {
 	assert(m_print != nullptr);

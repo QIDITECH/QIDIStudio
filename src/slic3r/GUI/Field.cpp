@@ -718,6 +718,8 @@ void TextCtrl::BUILD() {
     temp->SetLabel(_L(m_opt.sidetext));
 	auto text_ctrl = m_opt.multiline ? (wxTextCtrl *)temp : ((TextInput *) temp)->GetTextCtrl();
     text_ctrl->SetLabel(text_value);
+    //y49
+    temp->SetMinSize(size);
     temp->SetSize(size);
     m_combine_side_text = !m_opt.multiline;
     if (parent_is_custom_ctrl && m_opt.height < 0)

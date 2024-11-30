@@ -251,18 +251,18 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
 
     // Set a wider width for a better alignment
     Option option = m_optgroup->get_option("print_host");
-    // option.opt.width = Field::def_width_wider();
-    // 47
-    option.opt.width = 20;
+    //y49
+    option.opt.width = Field::def_width_wider() * 2;
     Line host_line = m_optgroup->create_single_option_line(option);
     
     host_line.append_widget(printhost_browse);
     host_line.append_widget(print_host_test);
     m_optgroup->append_line(host_line);
 
-    //y47
+    //y49
     option = m_optgroup->get_option("printhost_apikey");
-    option.opt.width = 20;
+    option.opt.width = Field::def_width_wider() * 2;
+    option.opt.full_width = 1;
     m_optgroup->append_single_option_line(option);
 
     m_optgroup->activate();

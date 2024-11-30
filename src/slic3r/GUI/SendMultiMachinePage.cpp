@@ -1470,7 +1470,8 @@ void SendMultiMachinePage::set_default_normal(const ThumbnailData& data)
 
 void SendMultiMachinePage::set_default()
 {
-    wxString filename = m_plater->get_export_gcode_filename("", true, m_print_plate_idx == PLATE_ALL_IDX ? true : false);
+    //y49
+    wxString filename = m_plater->get_output_filename();
     if (m_print_plate_idx == PLATE_ALL_IDX && filename.empty()) {
         filename = _L("Untitled");
     }

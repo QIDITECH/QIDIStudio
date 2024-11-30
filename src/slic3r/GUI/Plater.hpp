@@ -469,6 +469,9 @@ public:
     // QDS
     //void show_action_buttons(const bool is_ready_to_slice) const;
 
+    //y49
+    wxString get_output_filename();
+
     wxString get_project_filename(const wxString& extension = wxEmptyString) const;
     wxString get_export_gcode_filename(const wxString& extension = wxEmptyString, bool only_filename = false, bool export_all = false) const;
     void set_project_filename(const wxString& filename);
