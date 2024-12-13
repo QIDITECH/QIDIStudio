@@ -3017,8 +3017,10 @@ namespace Skirt {
 
 inline std::string get_instance_name(const PrintObject* object, size_t inst_id) {
     auto obj_name = object->model_object()->name;
-    // replace space in obj_name with '-'
-    std::replace(obj_name.begin(), obj_name.end(), ' ', '_');
+
+    // replace special char in obj_name with '-'
+    const std::string banned = "\b\t\n\v\f\r \"#%&\'*-./:;<>\\";
+    std::replace_if(obj_name.begin(), obj_name.end(), [&banned](char c) { return banned.find(c) != std::string::npos; }, '_');
 
     return (boost::format("%1%_id_%2%_copy_%3%") % obj_name % object->get_klipper_object_id() % inst_id).str();
 }

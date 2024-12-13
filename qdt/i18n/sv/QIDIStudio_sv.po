@@ -17172,7 +17172,7 @@ msgstr ""
 
 msgid ""
 "It can be observed that at a certain height, the model begins to show missing fibers. There are two methods to measure the maximum volumetric velocity:\n"
-"1. Observing the number of notches nums on the right side, you can use StartV + (step * 2) = Max Volumetric Speed.\n"
+"1. Observing the number of notches nums on the right side, you can use Startv + (step * 2) * nums = Max Volumetric Speed.\n"
 "2. In the \"Preview\" interface, view the Gcode of the model, find the \"Flow\" value corresponding to the missing part, and save it."
 msgstr ""
 "Det kan observeras att vid en viss höjd börjar modellen att visa saknade fibrer. Det finns två metoder för att mäta den maximala volymetriska hastigheten:\n"

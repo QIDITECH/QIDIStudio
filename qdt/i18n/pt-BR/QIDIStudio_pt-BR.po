@@ -17370,11 +17370,11 @@ msgstr ""
 
 msgid ""
 "It can be observed that at a certain height, the model begins to show missing fibers. There are two methods to measure the maximum volumetric velocity:\n"
-"1. Observing the number of notches nums on the right side, you can use StartV + (step * 2) = Max Volumetric Speed.\n"
+"1. Observing the number of notches nums on the right side, you can use Startv + (step * 2) * nums = Max Volumetric Speed.\n"
 "2. In the \"Preview\" interface, view the Gcode of the model, find the \"Flow\" value corresponding to the missing part, and save it."
 msgstr ""
 "Pode-se observar que a uma certa altura, o modelo começa a apresentar fibras faltantes. Existem dois métodos para medir a velocidade volumétrica máxima:\n"
-"1. Observando o número de entalhes nums no lado direito, você pode usar StartV + (step * 2) = Max Volumetric Speed.\n"
+"1. Observando o número de entalhes nums no lado direito, você pode usar Startv + (step * 2) * nums = Max Volumetric Speed.\n"
 "2. Na interface \"Preview\", visualize o Gcode do modelo, encontre o valor \"Flow\" correspondente à parte faltante e salve-o."
 
 msgid "Coarse Calibration"

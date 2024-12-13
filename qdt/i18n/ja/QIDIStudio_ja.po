@@ -16683,11 +16683,11 @@ msgstr ""
 
 msgid ""
 "一定の高さでは、モデルは失われた繊維を示し始めていることが観察されます。最大体積速度を測定するには、次の2つの方法があります。\n"
-"1. Observing the number of notches nums on the right side, you can use StartV + (step * 2) = Max Volumetric Speed.\n"
+"1. Observing the number of notches nums on the right side, you can use Startv + (step * 2) * nums = Max Volumetric Speed.\n"
 "2. In the \"Preview\" interface, view the Gcode of the model, find the \"Flow\" value corresponding to the missing part, and save it."
 msgstr ""
 "可以观察到，在一定高度，模型开始显示缺失的状态。有两种方法可以测量最大体积速度：\n"
-"1. 右側のノッチ数numsを見て、使用できる StartV + (step * 2) = Max Volumetric Speed\n"
+"1. 右側のノッチ数numsを見て、使用できる Startv + (step * 2) * nums = Max Volumetric Speed\n"
 "2.「プレビュー」インタフェースで、モデルのGCodeを表示し、欠落している部分に対応する「フロー」値を見つけ、保存します。"
 
 msgid "Coarse Calibration"

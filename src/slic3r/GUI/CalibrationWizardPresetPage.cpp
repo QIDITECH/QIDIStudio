@@ -632,7 +632,7 @@ void CalibrationPresetPage::create_page_max_volumetric_speed(wxWindow* parent, w
     std::string title_text_2 = "Step 2";
     Label* content_2{ nullptr };
     std::string content_text_2 = "It can be observed that at a certain height, the model begins to show missing fibers. There are two methods to measure the maximum volumetric velocity:\
-\n1. Observing the number of notches nums on the right side, you can use StartV + (step * 2) = Max Volumetric Speed.\
+\n1. Observing the number of notches nums on the right side, you can use Startv + (step * 2) * nums = Max Volumetric Speed.\
 \n2. In the \"Preview\" interface, view the Gcode of the model, find the \"Flow\" value corresponding to the missing part, and save it.";
     create_paragraph(parent, title_2, title_text_2, content_2, content_text_2);
 
