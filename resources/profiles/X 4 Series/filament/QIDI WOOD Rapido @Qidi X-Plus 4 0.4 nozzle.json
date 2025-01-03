@@ -1,0 +1,11 @@
+{
+    "type": "filament",
+	"filament_id": "GFL99",
+    "setting_id": "GFSL99",
+    "name": "QIDI WOOD Rapido @Qidi X-Plus 4 0.4 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI WOOD Rapido@X4",
+    "pressure_advance": ["0.044"],
+	"compatible_printers": ["X-Plus 4 0.4 nozzle"]
+}

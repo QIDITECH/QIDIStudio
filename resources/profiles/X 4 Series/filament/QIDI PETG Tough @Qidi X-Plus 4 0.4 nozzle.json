@@ -6,6 +6,5 @@
     "from": "system",
     "instantiation": "true",
     "inherits": "QIDI PETG Tough@X4",
-    "pressure_advance": ["0.056"],
 	"compatible_printers": ["X-Plus 4 0.4 nozzle"]
 }

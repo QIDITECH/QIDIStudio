@@ -802,6 +802,38 @@
         {
             "name": "QIDI PAHT-GF @Qidi Q1 Pro 0.8 nozzle",
             "sub_path": "filament/QIDI PAHT-GF @Qidi Q1 Pro 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI WOOD Rapido@Q-Series",
+            "sub_path": "filament/QIDI WOOD Rapido.json"
+        },
+        {
+            "name": "QIDI WOOD Rapido @Qidi Q1 Pro 0.4 nozzle",
+            "sub_path": "filament/QIDI WOOD Rapido @Qidi Q1 Pro 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI WOOD Rapido @Qidi Q1 Pro 0.6 nozzle",
+            "sub_path": "filament/QIDI WOOD Rapido @Qidi Q1 Pro 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI WOOD Rapido @Qidi Q1 Pro 0.8 nozzle",
+            "sub_path": "filament/QIDI WOOD Rapido @Qidi Q1 Pro 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI UltraPA-CF25@Q-Series",
+            "sub_path": "filament/QIDI UltraPA-CF25.json"
+        },
+        {
+            "name": "QIDI UltraPA-CF25 @Qidi Q1 Pro 0.4 nozzle",
+            "sub_path": "filament/QIDI UltraPA-CF25 @Qidi Q1 Pro 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI UltraPA-CF25 @Qidi Q1 Pro 0.6 nozzle",
+            "sub_path": "filament/QIDI UltraPA-CF25 @Qidi Q1 Pro 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI UltraPA-CF25 @Qidi Q1 Pro 0.8 nozzle",
+            "sub_path": "filament/QIDI UltraPA-CF25 @Qidi Q1 Pro 0.8 nozzle.json"
         }
     ],
     "machine_list": [

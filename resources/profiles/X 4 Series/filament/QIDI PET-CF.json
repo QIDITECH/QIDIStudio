@@ -26,5 +26,7 @@
     "temperature_vitrification": ["185"],
     "textured_plate_temp_initial_layer" : ["80"],
     "textured_plate_temp" : ["80"],
+    "supertack_plate_temp_initial_layer": ["80"],
+    "supertack_plate_temp": ["80"],
     "compatible_printers": []
 }

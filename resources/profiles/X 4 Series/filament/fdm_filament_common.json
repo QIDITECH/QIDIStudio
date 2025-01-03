@@ -54,6 +54,8 @@
     "slow_down_for_layer_cooling": ["1"],
     "slow_down_layer_time": ["8"],
     "slow_down_min_speed": ["20"],
+    "supertack_plate_temp_initial_layer": ["0"],
+    "supertack_plate_temp": ["0"],
     "temperature_vitrification": ["100"],
     "textured_plate_temp_initial_layer" : ["60"],
     "textured_plate_temp" : ["60"]

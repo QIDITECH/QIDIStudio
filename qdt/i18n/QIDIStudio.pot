@@ -8719,12 +8719,11 @@ msgstr ""
 
 msgid ""
 "Enable pressure advance, auto calibration result will be overwriten once "
-"enabled. Useless for QIDI Printer"
+"enabled."
 msgstr ""
 
 msgid ""
-"Pressure advance(Klipper) AKA Linear advance factor(Marlin). Useless for "
-"QIDI Printer"
+"Pressure advance(Klipper) AKA Linear advance factor(Marlin)."
 msgstr ""
 
 msgid "Filament notes"

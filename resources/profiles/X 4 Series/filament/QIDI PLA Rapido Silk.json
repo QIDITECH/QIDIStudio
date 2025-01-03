@@ -14,6 +14,8 @@
     "nozzle_temperature_range_low": ["190"],
     "nozzle_temperature_initial_layer": ["220"],
     "nozzle_temperature": ["220"],
+    "supertack_plate_temp_initial_layer": ["0"],
+    "supertack_plate_temp": ["0"],
     "textured_plate_temp_initial_layer" : ["55"],
     "textured_plate_temp" : ["55"],
     "temperature_vitrification": ["45"],
