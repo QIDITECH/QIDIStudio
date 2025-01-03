@@ -21,7 +21,7 @@ static std::string float_to_string_with_precision(float value, int precision = 3
 }
 
 AMSMaterialsSetting::AMSMaterialsSetting(wxWindow *parent, wxWindowID id)
-    : DPIDialog(parent, id, _L("AMS Materials Setting"), wxDefaultPosition, wxDefaultSize, wxBORDER_NONE)
+    : DPIDialog(parent, id, _L("BOX Materials Setting"), wxDefaultPosition, wxDefaultSize, wxBORDER_NONE)
     , m_color_picker_popup(ColorPickerPopup(this))
 {
     create();
@@ -429,7 +429,7 @@ void AMSMaterialsSetting::enable_confirm_button(bool en)
     else {
         if (!obj->is_support_filament_setting_inprinting) {
             if (!is_virtual_tray()) {
-                m_tip_readonly->SetLabelText(_L("Setting AMS slot information while printing is not supported"));
+                m_tip_readonly->SetLabelText(_L("Setting BOX slot information while printing is not supported"));
             } else {
                 m_tip_readonly->SetLabelText(_L("Setting Virtual slot information while printing is not supported"));
             }
@@ -1412,7 +1412,7 @@ ColorPickerPopup::ColorPickerPopup(wxWindow* parent)
 
     m_def_color_box = new StaticBox(this);
     wxBoxSizer* m_sizer_ams = new wxBoxSizer(wxHORIZONTAL);
-    auto m_title_ams = new wxStaticText(m_def_color_box, wxID_ANY, _L("AMS"), wxDefaultPosition, wxDefaultSize, 0);
+    auto m_title_ams = new wxStaticText(m_def_color_box, wxID_ANY, _L("BOX"), wxDefaultPosition, wxDefaultSize, 0);
     m_title_ams->SetFont(::Label::Body_14);
     m_title_ams->SetBackgroundColour(wxColour(238, 238, 238));
     m_sizer_ams->Add(m_title_ams, 0, wxALL, 5);

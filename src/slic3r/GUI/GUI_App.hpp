@@ -30,7 +30,10 @@
 #include <mutex>
 #include <stack>
 
+#if QDT_RELEASE_TO_PUBLIC
 #include "../QIDI/QIDINetwork.hpp"
+#endif
+
 #include "slic3r/GUI/WebUserLoginDialog.hpp"
 
 //#define QDT_HAS_FIRST_PAGE          1

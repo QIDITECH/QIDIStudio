@@ -2451,10 +2451,10 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
 
     //ams tip
     m_sizer_ams_tips = new wxBoxSizer(wxHORIZONTAL);
-    m_ams_tip = new Label(m_amswin, _L("AMS"));
+    m_ams_tip = new Label(m_amswin, _L("BOX"));
     m_ams_tip->SetFont(::Label::Body_12);
     m_ams_tip->SetBackgroundColour(*wxWHITE);
-    m_img_amsmapping_tip = new wxStaticBitmap(m_amswin, wxID_ANY, create_scaled_bitmap("enable_ams", this, 16), wxDefaultPosition, wxSize(FromDIP(16), FromDIP(16)), 0);
+    m_img_amsmapping_tip = new wxStaticBitmap(m_amswin, wxID_ANY, create_scaled_bitmap("enable_box", this, 16), wxDefaultPosition, wxSize(FromDIP(16), FromDIP(16)), 0);
     m_img_amsmapping_tip->SetBackgroundColour(*wxWHITE);
 
     m_sizer_ams_tips->Add(m_ams_tip, 0, wxTOP, FromDIP(5));
@@ -2519,7 +2519,7 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     m_none_ams_panel = new wxPanel(m_simplebook_ams, wxID_ANY, wxDefaultPosition, AMS_CANS_WINDOW_SIZE, 0);
     m_none_ams_panel->SetBackgroundColour(AMS_CONTROL_DEF_BLOCK_BK_COLOUR);
 
-    auto m_tip_none_ams = new wxStaticText(m_none_ams_panel, wxID_ANY, _L("AMS not connected"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL);
+    auto m_tip_none_ams = new wxStaticText(m_none_ams_panel, wxID_ANY, _L("BOX not connected"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL);
     m_tip_none_ams->SetMinSize(wxSize(AMS_CANS_SIZE.x - FromDIP(20), -1));
     m_tip_none_ams->SetFont(::Label::Head_16);
     m_tip_none_ams->SetForegroundColour(AMS_CONTROL_DISABLE_COLOUR);
@@ -2874,7 +2874,7 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     m_text_calibration_percent      = new wxStaticText(m_in_calibration_panel, wxID_ANY, wxT("0%"), wxDefaultPosition, wxDefaultSize, 0);
     m_text_calibration_percent->SetFont(::Label::Head_16);
     m_text_calibration_percent->SetForegroundColour(AMS_CONTROL_BRAND_COLOUR);
-    auto m_text_calibration_tip = new wxStaticText(m_in_calibration_panel, wxID_ANY, _L("Calibrating AMS..."), wxDefaultPosition, wxDefaultSize, 0);
+    auto m_text_calibration_tip = new wxStaticText(m_in_calibration_panel, wxID_ANY, _L("Calibrating BOX..."), wxDefaultPosition, wxDefaultSize, 0);
     m_text_calibration_tip->SetFont(::Label::Body_14);
     m_text_calibration_tip->SetForegroundColour(AMS_CONTROL_GRAY700);
     sizer_calibration_v->Add(thumbnail, 0, wxALIGN_CENTER, 0);
@@ -3067,7 +3067,7 @@ void AMSControl::EnterGenericAMSMode()
     m_simplebook_amsitems->SetSelection(1);
 
     m_vams_lib->m_ams_model = AMSModel::GENERIC_AMS;
-    m_ams_tip->SetLabel(_L("AMS"));
+    m_ams_tip->SetLabel(_L("BOX"));
     m_img_vams_tip->SetBitmap(create_scaled_bitmap("enable_ams", this, 16)); 
     m_img_vams_tip->Enable();
     m_img_amsmapping_tip->SetBitmap(create_scaled_bitmap("enable_ams", this, 16)); 
@@ -3676,7 +3676,7 @@ void AMSControl::ShowFilamentTip(bool hasams)
     m_simplebook_right->SetSelection(0);
     if (hasams) {
         m_tip_right_top->Show();
-        m_tip_load_info->SetLabelText(_L("Choose an AMS slot then press \"Load\" or \"Unload\" button to automatically load or unload filaments."));
+        m_tip_load_info->SetLabelText(_L("Choose an BOX slot then press \"Load\" or \"Unload\" button to automatically load or unload filaments."));
     } else {
         // m_tip_load_info->SetLabelText(_L("Before loading, please make sure the filament is pushed into toolhead."));
         m_tip_right_top->Hide();

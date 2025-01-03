@@ -18,7 +18,7 @@ void AMSSetting::create()
     m_sizer_main = new wxBoxSizer(wxVERTICAL);
     SetBackgroundColour(*wxWHITE);
 
-    auto m_static_ams_settings = new wxStaticText(this, wxID_ANY, _L("AMS Settings"), wxDefaultPosition, wxDefaultSize, 0);
+    auto m_static_ams_settings = new wxStaticText(this, wxID_ANY, _L("BOX Settings"), wxDefaultPosition, wxDefaultSize, 0);
     m_static_ams_settings->SetFont(::Label::Head_14);
     m_static_ams_settings->SetForegroundColour(AMS_SETTING_GREY800);
 
@@ -56,7 +56,7 @@ void AMSSetting::create()
 
     // tip line1
     m_tip_Insert_material_line1 = new Label(m_panel_Insert_material,
-        _L("The AMS will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds.")
+        _L("The BOX will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds.")
     );
     m_tip_Insert_material_line1->SetFont(::Label::Body_13);
     m_tip_Insert_material_line1->SetForegroundColour(AMS_SETTING_GREY700);
@@ -67,7 +67,7 @@ void AMSSetting::create()
 
     // tip line2
     m_tip_Insert_material_line2 = new Label(m_panel_Insert_material,
-        _L("Note: if a new filament is inserted during  printing, the AMS will not automatically read any information until printing is completed.")
+        _L("Note: if a new filament is inserted during  printing, the BOX will not automatically read any information until printing is completed.")
     );
     m_tip_Insert_material_line2->SetFont(::Label::Body_13);
     m_tip_Insert_material_line2->SetForegroundColour(AMS_SETTING_GREY700);
@@ -78,7 +78,7 @@ void AMSSetting::create()
 
     // tip line3
     m_tip_Insert_material_line3 = new Label(m_panel_Insert_material,
-        _L("When inserting a new filament, the AMS will not automatically read its information, leaving it blank for you to enter manually.")
+        _L("When inserting a new filament, the BOX will not automatically read its information, leaving it blank for you to enter manually.")
     );
     m_tip_Insert_material_line3->SetFont(::Label::Body_13);
     m_tip_Insert_material_line3->SetForegroundColour(AMS_SETTING_GREY700);
@@ -114,7 +114,7 @@ void AMSSetting::create()
     m_sizer_starting_tip_inline = new wxBoxSizer(wxVERTICAL);
 
     m_tip_starting_line1 = new Label(m_panel_body,
-        _L("The AMS will automatically read the information of inserted filament on start-up. It will take about 1 minute.The reading process will roll filament spools.")
+        _L("The BOX will automatically read the information of inserted filament on start-up. It will take about 1 minute.The reading process will roll filament spools.")
     );
     m_tip_starting_line1->SetFont(::Label::Body_13);
     m_tip_starting_line1->SetForegroundColour(AMS_SETTING_GREY700);
@@ -123,7 +123,7 @@ void AMSSetting::create()
     m_sizer_starting_tip_inline->Add(m_tip_starting_line1, 0, wxEXPAND, 0);
 
     m_tip_starting_line2 = new Label(m_panel_body,
-        _L("The AMS will not automatically read information from inserted filament during startup and will continue to use the information recorded before the last shutdown.")
+        _L("The BOX will not automatically read information from inserted filament during startup and will continue to use the information recorded before the last shutdown.")
     );
     m_tip_starting_line2->SetFont(::Label::Body_13);
     m_tip_starting_line2->SetForegroundColour(AMS_SETTING_GREY700);
@@ -153,7 +153,7 @@ void AMSSetting::create()
     m_sizer_remain_inline = new wxBoxSizer(wxVERTICAL);
 
     m_tip_remain_line1 = new Label(m_panel_body,
-        _L("The AMS will estimate QIDI filament's remaining capacity after the filament info is updated. During printing, remaining capacity will be updated automatically.")
+        _L("The BOX will estimate QIDI filament's remaining capacity after the filament info is updated. During printing, remaining capacity will be updated automatically.")
     );
     m_tip_remain_line1->SetFont(::Label::Body_13);
     m_tip_remain_line1->SetForegroundColour(AMS_SETTING_GREY700);
@@ -168,7 +168,7 @@ void AMSSetting::create()
     m_checkbox_switch_filament->Bind(wxEVT_TOGGLEBUTTON, &AMSSetting::on_switch_filament, this);
     m_sizer_switch_filament->Add(m_checkbox_switch_filament, 0, wxTOP, 1);
     m_sizer_switch_filament->Add(0, 0, 0, wxLEFT, 12);
-    m_title_switch_filament = new wxStaticText(m_panel_body, wxID_ANY, _L("AMS filament backup"), wxDefaultPosition, wxDefaultSize, 0);
+    m_title_switch_filament = new wxStaticText(m_panel_body, wxID_ANY, _L("BOX filament backup"), wxDefaultPosition, wxDefaultSize, 0);
     m_title_switch_filament->SetFont(::Label::Head_13);
     m_title_switch_filament->SetForegroundColour(AMS_SETTING_GREY800);
     m_title_switch_filament->Wrap(AMS_SETTING_BODY_WIDTH);
@@ -183,7 +183,7 @@ void AMSSetting::create()
     m_sizer_switch_filament_inline = new wxBoxSizer(wxVERTICAL);
 
     m_tip_switch_filament_line1 = new Label(m_panel_body,
-        _L("AMS will continue to another spool with the same properties of filament automatically when current filament runs out")
+        _L("BOX will continue to another spool with the same properties of filament automatically when current filament runs out")
     );
     m_tip_switch_filament_line1->SetFont(::Label::Body_13);
     m_tip_switch_filament_line1->SetForegroundColour(AMS_SETTING_GREY700);

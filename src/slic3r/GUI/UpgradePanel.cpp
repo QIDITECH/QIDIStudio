@@ -128,7 +128,7 @@ MachineInfoPanel::MachineInfoPanel(wxWindow* parent, wxWindowID id, const wxPoin
 
 
     m_ahb_panel = new AmsPanel(this, wxID_ANY);
-    m_ahb_panel->m_staticText_ams->SetLabel("AMS HUB");
+    m_ahb_panel->m_staticText_ams->SetLabel("BOX HUB");
     m_ams_content_sizer->Add(m_ahb_panel, 0, wxEXPAND, 0);
    
 
@@ -166,7 +166,7 @@ MachineInfoPanel::MachineInfoPanel(wxWindow* parent, wxWindowID id, const wxPoin
     wxBoxSizer* extra_ams_content_sizer = new wxBoxSizer(wxVERTICAL);
     extra_ams_content_sizer->Add(0, 40, 0, wxEXPAND, FromDIP(5));
     m_extra_ams_panel = new ExtraAmsPanel(this);
-    m_extra_ams_panel->m_staticText_ams->SetLabel("AMS Lite");
+    m_extra_ams_panel->m_staticText_ams->SetLabel("BOX Lite");
     extra_ams_content_sizer->Add(m_extra_ams_panel, 0, wxEXPAND, 0);
 
     m_extra_ams_sizer->Add(extra_ams_content_sizer, 1, wxEXPAND, 0);
@@ -690,7 +690,7 @@ void MachineInfoPanel::update_ams_ext(MachineObject *obj)
                 auto it = ver_list.find(atoi(iter->first.c_str()));
                 auto ams_id = std::stoi(iter->second->id);
 
-                wxString ams_text = wxString::Format("AMS%s", std::to_string(ams_id + 1));
+                wxString ams_text = wxString::Format("BOX%s", std::to_string(ams_id + 1));
                 ams_name = ams_text;
 
                 if (it == ver_list.end()) {

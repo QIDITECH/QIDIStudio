@@ -97,11 +97,18 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_
     PresetBundle& preset_bundle = *wxGetApp().preset_bundle;
     const std::deque<Preset>& presets = preset_bundle.printers.get_presets();
     std::string printer_model_t = "";
-    for (auto it = presets.begin(); it != presets.end(); it++)
+    //y50
+    std::set<std::string> qidi_printers;
+    const auto enabled_vendors = wxGetApp().app_config->vendors();
+    for (const auto vendor : enabled_vendors) {
+    std::map<std::string, std::set<std::string>> model_map = vendor.second;
+        for (auto model_name : model_map) {
+            qidi_printers.emplace(model_name.first);
+        }
+    }
+
+    for (auto preset_name : qidi_printers)
     {
-        if(!it->is_system)
-            continue;
-        std::string preset_name = it->config.opt_string("printer_model");
         if(printer_model_t == preset_name)
             continue;
         else

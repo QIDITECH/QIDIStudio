@@ -364,7 +364,15 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
          //ShowLocalPrinterButton();
          PresetBundle& preset_bundle = *wxGetApp().preset_bundle;
          PhysicalPrinterCollection& ph_printers = preset_bundle.physical_printers;
-         std::set<std::string> qidi_printers = preset_bundle.get_vendors();
+         //y50
+         std::set<std::string> qidi_printers;
+        const auto enabled_vendors = wxGetApp().app_config->vendors();
+        for (const auto vendor : enabled_vendors) {
+            std::map<std::string, std::set<std::string>> model_map = vendor.second;
+            for (auto model_name : model_map) {
+                qidi_printers.emplace(model_name.first);
+            }
+        }
          std::string actice_url = "";
          for (PhysicalPrinterCollection::ConstIterator it = ph_printers.begin(); it != ph_printers.end(); ++it) {
              std::string host = (it->config.opt_string("print_host"));
@@ -516,8 +524,8 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
                      std::pair<wxColour, int>(wxColour(76, 76, 80), StateColor::Hovered),
                      std::pair<wxColour, int>(wxColour(67, 67, 71), StateColor::Normal));
 
-     //y48
-     wxString machine_icon_path = from_u8(Slic3r::resources_dir() + "/" + "profiles" + "/" + "thumbnail" + "/") + Machine_Name;
+     //y50
+     wxString machine_icon_path = wxString(Slic3r::resources_dir() + "/" + "profiles" + "/" + "thumbnail" + "/" + Machine_Name + ".png");
 
      DeviceButton *machine_button = new DeviceButton(leftScrolledWindow, fullname, machine_icon_path, wxBU_LEFT, wxSize(80, 80), device_name, ip, apikey);
      machine_button->SetBackgroundColor(mac_btn_bg);
@@ -551,8 +559,15 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
  #if QDT_RELEASE_TO_PUBLIC
  void PrinterWebView::AddNetButton(const Device device)
  {
-     // y2
-     std::set<std::string> qidi_printers = wxGetApp().preset_bundle->get_vendors();
+     std::set<std::string> qidi_printers;
+     // y50
+     const auto enabled_vendors = wxGetApp().app_config->vendors();
+     for (const auto vendor : enabled_vendors) {
+         std::map<std::string, std::set<std::string>> model_map = vendor.second;
+         for (auto model_name : model_map) {
+             qidi_printers.emplace(model_name.first);
+         }
+     }
 
      wxString    Machine_Name;
      wxString    device_name;
@@ -598,8 +613,8 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
                      std::pair<wxColour, int>(wxColour(67, 67, 71), StateColor::Normal));
      QIDINetwork m_qidinetwork;
 
-     //y48
-     wxString machine_icon_path = from_u8(Slic3r::resources_dir() + "/" + "profiles" + "/" + "thumbnail" + "/") + Machine_Name;
+     //y50
+     wxString machine_icon_path = wxString(Slic3r::resources_dir() + "/" + "profiles" + "/" + "thumbnail" + "/" + Machine_Name + ".png");
 
      // device_name                  = m_qidinetwork.UTF8ToGBK(device_name.c_str());
      DeviceButton *machine_button = new DeviceButton(leftScrolledWindow, device.device_name, machine_icon_path, wxBU_LEFT, wxSize(80, 80),

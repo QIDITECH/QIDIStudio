@@ -1299,7 +1299,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     select_bed     = create_item_checkbox(_L("Bed Leveling"), this, _L("Bed Leveling"), "bed_leveling");
     select_flow    = create_item_checkbox(_L("Flow Dynamics Calibration"), this, _L("Flow Dynamics Calibration"), "flow_cali");
     select_timelapse = create_item_checkbox(_L("Timelapse"), this, _L("Timelapse"), "timelapse");
-    select_use_ams = create_ams_checkbox(_L("Enable AMS"), this, _L("Enable AMS"));
+    select_use_ams = create_ams_checkbox(_L("Enable BOX"), this, _L("Enable BOX"));
 
     m_sizer_select->Add(select_bed, 0, wxLEFT | wxRIGHT, WRAP_GAP);
     m_sizer_select->Add(select_flow, 0, wxLEFT | wxRIGHT, WRAP_GAP);
@@ -2185,33 +2185,33 @@ void SelectMachineDialog::show_status(PrintDialogStatus status, std::vector<wxSt
     } else if (status == PrintDialogStatus::PrintStatusNeedUpgradingAms) {
         wxString msg_text;
         if (params.size() > 0)
-            msg_text = wxString::Format(_L("Filament %s exceeds the number of AMS slots. Please update the printer firmware to support AMS slot assignment."), params[0]);
+            msg_text = wxString::Format(_L("Filament %s exceeds the number of BOX slots. Please update the printer firmware to support BOX slot assignment."), params[0]);
         else
-            msg_text = _L("Filament exceeds the number of AMS slots. Please update the printer firmware to support AMS slot assignment.");
+            msg_text = _L("Filament exceeds the number of BOX slots. Please update the printer firmware to support BOX slot assignment.");
         update_print_status_msg(msg_text, true, false);
         Enable_Send_Button(false);
         Enable_Refresh_Button(true);
     } else if (status == PrintDialogStatus::PrintStatusAmsMappingSuccess){
-        wxString msg_text = _L("Filaments to AMS slots mappings have been established. You can click a filament above to change its mapping AMS slot");
+        wxString msg_text = _L("Filaments to BOX slots mappings have been established. You can click a filament above to change its mapping BOX slot");
         update_print_status_msg(msg_text, false, false);
         Enable_Send_Button(true);
         Enable_Refresh_Button(true);
     } else if (status == PrintDialogStatus::PrintStatusAmsMappingInvalid) {
-        wxString msg_text = _L("Please click each filament above to specify its mapping AMS slot before sending the print job");
+        wxString msg_text = _L("Please click each filament above to specify its mapping BOX slot before sending the print job");
         update_print_status_msg(msg_text, true, false);
         Enable_Send_Button(false);
         Enable_Refresh_Button(true);
     } else if (status == PrintDialogStatus::PrintStatusAmsMappingU0Invalid) {
         wxString msg_text;
         if (params.size() > 1)
-            msg_text = wxString::Format(_L("Filament %s does not match the filament in AMS slot %s. Please update the printer firmware to support AMS slot assignment."), params[0], params[1]);
+            msg_text = wxString::Format(_L("Filament %s does not match the filament in BOX slot %s. Please update the printer firmware to support BOX slot assignment."), params[0], params[1]);
         else
-            msg_text = _L("Filament does not match the filament in AMS slot. Please update the printer firmware to support AMS slot assignment.");
+            msg_text = _L("Filament does not match the filament in BOX slot. Please update the printer firmware to support BOX slot assignment.");
         update_print_status_msg(msg_text, true, false);
         Enable_Send_Button(false);
         Enable_Refresh_Button(true);
     } else if (status == PrintDialogStatus::PrintStatusAmsMappingValid) {
-        wxString msg_text = _L("Filaments to AMS slots mappings have been established. You can click a filament above to change its mapping AMS slot");
+        wxString msg_text = _L("Filaments to BOX slots mappings have been established. You can click a filament above to change its mapping BOX slot");
         update_print_status_msg(msg_text, false, false);
         Enable_Send_Button(true);
         Enable_Refresh_Button(true);
@@ -2231,7 +2231,7 @@ void SelectMachineDialog::show_status(PrintDialogStatus status, std::vector<wxSt
         Enable_Send_Button(true);
         Enable_Refresh_Button(true);
     } else if (status == PrintDialogStatus::PrintStatusAmsMappingByOrder) {
-        wxString msg_text = _L("The printer firmware only supports sequential mapping of filament => AMS slot.");
+        wxString msg_text = _L("The printer firmware only supports sequential mapping of filament => BOX slot.");
         update_print_status_msg(msg_text, false, false);
         Enable_Send_Button(true);
         Enable_Refresh_Button(true);
@@ -3358,7 +3358,8 @@ void SelectMachineDialog::on_rename_enter()
     auto     m_valid_type = Valid;
     wxString info_line;
 
-    const char* unusable_symbols = "<>[]:/\\|?*\"";
+    //y51
+    const char* unusable_symbols = "<>[]:\\|?*\"";
 
     const std::string unusable_suffix = PresetCollection::get_suffix_modified(); //"(modified)";
     for (size_t i = 0; i < std::strlen(unusable_symbols); i++) {
@@ -4087,7 +4088,8 @@ void SelectMachineDialog::set_default()
 
 
     //unsupported character filter
-    m_current_project_name = from_u8(filter_characters(m_current_project_name.ToUTF8().data(), "<>[]:/\\|?*\""));
+    //y51
+    m_current_project_name = from_u8(filter_characters(m_current_project_name.ToUTF8().data(), "<>[]:\\|?*\""));
 
     m_rename_text->SetLabelText(m_current_project_name);
     m_rename_normal_panel->Layout();
@@ -4962,7 +4964,8 @@ void EditDevNameDialog::on_edit_name(wxCommandEvent &e)
     wxString info_line;
     auto     new_dev_name = m_textCtr->GetTextCtrl()->GetValue();
 
-    const char *      unusable_symbols = "<>[]:/\\|?*\"";
+    //y51
+    const char *      unusable_symbols = "<>[]:\\|?*\"";
     const std::string unusable_suffix  = PresetCollection::get_suffix_modified();
 
     for (size_t i = 0; i < std::strlen(unusable_symbols); i++) {

@@ -375,7 +375,7 @@ void PresetComboBox::add_ams_filaments(std::string selected, bool alias_name)
 {
     bool is_qdt_vendor_preset = m_preset_bundle->printers.get_edited_preset().is_qdt_vendor_preset(m_preset_bundle);
     if (is_qdt_vendor_preset && !m_preset_bundle->filament_ams_list.empty()) {
-        set_label_marker(Append(separator(L("AMS filaments")), wxNullBitmap));
+        set_label_marker(Append(separator(L("BOX filaments")), wxNullBitmap));
         m_first_ams_filament = GetCount();
         auto &filaments      = m_collection->get_presets();
         for (auto &entry : m_preset_bundle->filament_ams_list) {

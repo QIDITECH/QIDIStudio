@@ -132,7 +132,7 @@ wxString get_stage_string(int stage)
     case 25:
         return _L("Motor noise calibration");
     case 26:
-        return _L("Paused due to AMS lost");
+        return _L("Paused due to BOX lost");
     case 27:
         return _L("Paused due to low speed of the heat break fan");
     case 28:
@@ -345,7 +345,7 @@ wxString HMSItem::get_module_name(ModuleID module_id)
     case MODULE_MAINBOARD:
         return "MainBoard";
     case MODULE_AMS:
-        return "AMS";
+        return "BOX";
     case MODULE_TH:
         return "TH";
     case MODULE_XCAM:
@@ -907,7 +907,7 @@ int MachineObject::ams_filament_mapping(std::vector<FilamentInfo> filaments, std
     ::sprintf(buffer, "F(id)");
     std::string line = std::string(buffer);
     for (auto tray = tray_filaments.begin(); tray != tray_filaments.end(); tray++) {
-        ::sprintf(buffer, "   AMS%02d", tray->second.id+1);
+        ::sprintf(buffer, "   BOX%02d", tray->second.id+1);
         line += std::string(buffer);
     }
     BOOST_LOG_TRIVIAL(info) << "ams_mapping_distance:" << line;
@@ -998,7 +998,7 @@ int MachineObject::ams_filament_mapping(std::vector<FilamentInfo> filaments, std
                 FilamentInfo info;
                 info.tray_id = -1;
             }
-            ::sprintf(buffer, "ams_mapping, picked F(%02d) AMS(%02d), distance=%6.0f", picked_src_idx+1, picked_tar_idx+1,
+            ::sprintf(buffer, "box_mapping, picked F(%02d) BOX(%02d), distance=%6.0f", picked_src_idx+1, picked_tar_idx+1,
                 distance_map[picked_src_idx][picked_tar_idx].distance);
             BOOST_LOG_TRIVIAL(info) << std::string(buffer);
             picked_src.insert(picked_src_idx);
@@ -6153,10 +6153,10 @@ void DeviceManager::check_filaments_in_blacklist(std::string tag_vendor, std::st
 {
     std::unordered_map<std::string, wxString> blacklist_prompt =
     {
-        {"TPU: not supported", _L("TPU is not supported by AMS.")},
-        {"QIDI PET-CF/PA6-CF: not supported",  _L("QIDI PET-CF/PA6-CF is not supported by AMS.")},
-        {"PVA: flexible", _L("Damp PVA will become flexible and get stuck inside AMS,please take care to dry it before use.")}, 
-        {"CF/GF: hard and brittle", _L("CF/GF filaments are hard and brittle, It's easy to break or get stuck in AMS, please use with caution.")}
+        {"TPU: not supported", _L("TPU is not supported by BOX.")},
+        {"QIDI PET-CF/PA6-CF: not supported",  _L("QIDI PET-CF/PA6-CF is not supported by BOX.")},
+        {"PVA: flexible", _L("Damp PVA will become flexible and get stuck inside BOX,please take care to dry it before use.")}, 
+        {"CF/GF: hard and brittle", _L("CF/GF filaments are hard and brittle, It's easy to break or get stuck in BOX, please use with caution.")}
     };
 
     in_blacklist = false;

@@ -310,7 +310,7 @@ void MaterialItem::doRender(wxDC &dc)
 
      wxBoxSizer *title_sizer_v = new wxBoxSizer(wxVERTICAL);
 
-     auto title_text = new wxStaticText(title_panel, wxID_ANY, _L("AMS Slots"));
+     auto title_text = new wxStaticText(title_panel, wxID_ANY, _L("BOX Slots"));
      title_text->SetForegroundColour(wxColour(0x32, 0x3A, 0x3D));
      title_text->SetFont(::Label::Head_13);
      title_sizer_v->Add(title_text, 0, wxALIGN_CENTER, 5);
@@ -336,7 +336,7 @@ void MaterialItem::doRender(wxDC &dc)
      m_warning_text = new wxStaticText(this, wxID_ANY, wxEmptyString);
      m_warning_text->SetForegroundColour(wxColour(0xFF, 0x6F, 0x00));
      m_warning_text->SetFont(::Label::Body_12);
-     auto cant_not_match_tip = _L("Note: Only the AMS slots loaded with the same material type can be selected.");
+     auto cant_not_match_tip = _L("Note: Only the BOX slots loaded with the same material type can be selected.");
      m_warning_text->SetLabel(format_text(cant_not_match_tip));
      m_warning_text->SetMinSize(wxSize(FromDIP(248), FromDIP(-1)));
      m_warning_text->Wrap(FromDIP(248));
@@ -810,13 +810,13 @@ AmsMapingTipPopup::AmsMapingTipPopup(wxWindow *parent)
     m_panel_enable_ams->SetBackgroundColour(*wxWHITE);
     wxBoxSizer *sizer_enable_ams = new wxBoxSizer(wxVERTICAL);
 
-    m_title_enable_ams = new wxStaticText(m_panel_enable_ams, wxID_ANY, _L("Enable AMS"), wxDefaultPosition, wxDefaultSize, 0);
+    m_title_enable_ams = new wxStaticText(m_panel_enable_ams, wxID_ANY, _L("Enable BOX"), wxDefaultPosition, wxDefaultSize, 0);
     m_title_enable_ams->SetForegroundColour(*wxBLACK);
     m_title_enable_ams->SetBackgroundColour(*wxWHITE);
     m_title_enable_ams->Wrap(-1);
     sizer_enable_ams->Add(m_title_enable_ams, 0, 0, 0);
 
-    m_tip_enable_ams = new wxStaticText(m_panel_enable_ams, wxID_ANY, _L("Print with filaments in the AMS"), wxDefaultPosition, wxDefaultSize, 0);
+    m_tip_enable_ams = new wxStaticText(m_panel_enable_ams, wxID_ANY, _L("Print with filaments in the BOX"), wxDefaultPosition, wxDefaultSize, 0);
     m_tip_enable_ams->SetMinSize(wxSize(FromDIP(200), FromDIP(50)));
     m_tip_enable_ams->Wrap(FromDIP(200));
     m_tip_enable_ams->SetForegroundColour(*wxBLACK);
@@ -846,7 +846,7 @@ AmsMapingTipPopup::AmsMapingTipPopup(wxWindow *parent)
     wxBoxSizer *sizer_disable_ams;
     sizer_disable_ams = new wxBoxSizer(wxVERTICAL);
 
-    m_title_disable_ams = new wxStaticText(m_panel_disable_ams, wxID_ANY, _L("Disable AMS"), wxDefaultPosition, wxDefaultSize, 0);
+    m_title_disable_ams = new wxStaticText(m_panel_disable_ams, wxID_ANY, _L("Disable BOX"), wxDefaultPosition, wxDefaultSize, 0);
     m_title_disable_ams->SetBackgroundColour(*wxWHITE);
     m_title_disable_ams->SetForegroundColour(*wxBLACK);
     m_title_disable_ams->Wrap(-1);
@@ -907,7 +907,7 @@ AmsHumidityTipPopup::AmsHumidityTipPopup(wxWindow* parent)
 
     close_img = ScalableBitmap(this, "hum_popup_close", 24);
 
-    m_staticText = new Label(this, _L("Current AMS humidity"));
+    m_staticText = new Label(this, _L("Current BOX humidity"));
     m_staticText->SetFont(::Label::Head_24);
 
     humidity_level_list = new AmsHumidityLevelList(this);
@@ -1022,7 +1022,7 @@ AmsTutorialPopup::AmsTutorialPopup(wxWindow* parent)
     wxBoxSizer* sizer_main;
     sizer_main = new wxBoxSizer(wxVERTICAL);
 
-    text_title = new Label(this, Label::Head_14, _L("Config which AMS slot should be used for a filament used in the print job"));
+    text_title = new Label(this, Label::Head_14, _L("Config which BOX slot should be used for a filament used in the print job"));
     text_title->SetSize(wxSize(FromDIP(350), -1));
     text_title->Wrap(FromDIP(350));
     sizer_main->Add(text_title, 0, wxALIGN_CENTER | wxTOP, 18);
@@ -1059,7 +1059,7 @@ AmsTutorialPopup::AmsTutorialPopup(wxWindow* parent)
     wxBoxSizer* sizer_tip_bottom = new wxBoxSizer(wxHORIZONTAL);
 
     arrows_bottom = new wxStaticBitmap(this, wxID_ANY, create_scaled_bitmap("ams_arrow", this, 8), wxDefaultPosition, wxSize(FromDIP(24), FromDIP(8)), 0);
-    tip_bottom = new wxStaticText(this, wxID_ANY, _L("AMS slot used for this filament"), wxDefaultPosition, wxDefaultSize, 0);
+    tip_bottom = new wxStaticText(this, wxID_ANY, _L("BOX slot used for this filament"), wxDefaultPosition, wxDefaultSize, 0);
     tip_bottom->SetForegroundColour(wxColour("#686868"));
 
 
@@ -1080,7 +1080,7 @@ AmsTutorialPopup::AmsTutorialPopup(wxWindow* parent)
     img_middle= new wxStaticBitmap(this, wxID_ANY, create_scaled_bitmap("ams_item_examples", this, 30), wxDefaultPosition, wxSize(FromDIP(50), FromDIP(30)), 0);
     sizer_middle->Add(img_middle, 0, wxALIGN_CENTER, 0);
 
-    tip_middle = new wxStaticText(this, wxID_ANY, _L("Click to select AMS slot manually"), wxDefaultPosition, wxDefaultSize, 0);
+    tip_middle = new wxStaticText(this, wxID_ANY, _L("Click to select BOX slot manually"), wxDefaultPosition, wxDefaultSize, 0);
     tip_middle->SetForegroundColour(wxColour("#686868"));
     sizer_middle->Add(0, 0, 0,wxLEFT, 15);
     sizer_middle->Add(tip_middle, 0, wxALIGN_CENTER, 0);
@@ -1127,7 +1127,7 @@ AmsIntroducePopup::AmsIntroducePopup(wxWindow* parent)
 
     wxBoxSizer* bSizer4 = new wxBoxSizer(wxVERTICAL);
 
-    m_staticText_top = new Label(this, _L("Do not Enable AMS"));
+    m_staticText_top = new Label(this, _L("Do not Enable BOX"));
     m_staticText_top->SetFont(::Label::Head_13);
    // m_staticText_top->SetForegroundColour(wxColour(0x323A3D));
     m_staticText_top->Wrap(-1);
@@ -1168,13 +1168,13 @@ AmsIntroducePopup::AmsIntroducePopup(wxWindow* parent)
 void AmsIntroducePopup::set_mode(bool enable_ams) 
 {
     if (enable_ams) {
-        m_staticText_top->SetLabelText(_L("Enable AMS"));
+        m_staticText_top->SetLabelText(_L("Enable BOX"));
         m_staticText_bottom->SetLabelText(_L("Print with filaments in ams"));
         m_img_enable_ams->Show();
         m_img_disable_ams->Hide();
     }
     else {
-        m_staticText_top->SetLabelText(_L("Do not Enable AMS"));
+        m_staticText_top->SetLabelText(_L("Do not Enable BOX"));
         m_staticText_bottom->SetLabelText(_L("Print with filaments mounted on the back of the chassis"));
         m_staticText_bottom->SetMinSize(wxSize(FromDIP(180), -1));
         m_staticText_bottom->Wrap(FromDIP(180));
@@ -1429,10 +1429,10 @@ void AmsReplaceMaterialDialog::update_machine_obj(MachineObject* obj)
             label_txt->SetLabel(_L("The printer does not currently support auto refill."));
         }
         else if (!obj->ams_auto_switch_filament_flag) {
-            label_txt->SetLabelText(_L("AMS filament backup is not enabled, please enable it in the AMS settings."));
+            label_txt->SetLabelText(_L("BOX filament backup is not enabled, please enable it in the BOX settings."));
         }
         else {
-            label_txt->SetLabelText(_L("If there are two identical filaments in AMS, AMS filament backup will be enabled. \n(Currently supporting automatic supply of consumables with the same brand, material type, and color)"));
+            label_txt->SetLabelText(_L("If there are two identical filaments in BOX, BOX filament backup will be enabled. \n(Currently supporting automatic supply of consumables with the same brand, material type, and color)"));
         } 
 
         label_txt->SetMinSize(wxSize(FromDIP(380), -1));

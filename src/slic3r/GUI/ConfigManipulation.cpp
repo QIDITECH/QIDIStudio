@@ -59,8 +59,9 @@ void ConfigManipulation::check_nozzle_recommended_temperature_range(DynamicPrint
 
     wxString msg_text;
     bool     need_check = false;
-    if (temperature_range_low < 190 || temperature_range_high > 300) {
-        msg_text += _L("The recommended minimum temperature is less than 190 degree or the recommended maximum temperature is greater than 300 degree.\n");
+    //w40
+    if (temperature_range_low < 190 || temperature_range_high > 370) {
+        msg_text += _L("The recommended minimum temperature is less than 190 degree or the recommended maximum temperature is greater than 370 degree.\n");
         need_check = true;
     }
     if (temperature_range_low > temperature_range_high) {
@@ -148,7 +149,7 @@ void ConfigManipulation::check_chamber_temperature(DynamicPrintConfig* config)
         {"PLA-CF",45},
         {"PVA",45},
         {"TPU",50},
-        {"TPU-AMS",50},
+        {"TPU-BOX",50},
         {"PETG",55},
         {"PCTG",55},
         {"PETG-CF",55}

@@ -1444,12 +1444,12 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("enable_pressure_advance", coBools);
     def->label = L("Enable pressure advance");
-    def->tooltip = L("Enable pressure advance, auto calibration result will be overwriten once enabled. Useless for QIDI Printer");
+    def->tooltip = L("Enable pressure advance, auto calibration result will be overwriten once enabled.");
     def->set_default_value(new ConfigOptionBools{ false });
 
     def = this->add("pressure_advance", coFloats);
     def->label = L("Pressure advance");
-    def->tooltip = L("Pressure advance(Klipper) AKA Linear advance factor(Marlin). Useless for QIDI Printer");
+    def->tooltip = L("Pressure advance(Klipper) AKA Linear advance factor(Marlin).");
     def->max = 2;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloats{ 0.02 });
@@ -1625,7 +1625,7 @@ void PrintConfigDef::init_fff_params()
     def->enum_values.push_back("PETG");
     def->enum_values.push_back("PCTG");
     def->enum_values.push_back("TPU");
-    def->enum_values.push_back("TPU-AMS");
+    def->enum_values.push_back("TPU-BOX");
     def->enum_values.push_back("PC");
     def->enum_values.push_back("PA");
     def->enum_values.push_back("PA-CF");

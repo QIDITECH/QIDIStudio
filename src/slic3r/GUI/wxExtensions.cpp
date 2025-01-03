@@ -495,8 +495,8 @@ wxBitmap create_scaled_bitmap_of_login(const std::string& bmp_name_in,
     wxBitmap* bmp{nullptr};
     if(!bmp_name.empty())
         bmp = cache.load_login_png(bmp_name, width, height, grayscale, resize ? win->FromDIP(10) * 0.1f : 0.f);
-    else
-    {
+    //y50
+    if(bmp == nullptr){
         if (px_cnt > 50)
             bmp = cache.load_png("user_dark", width, height, grayscale, resize ? win->FromDIP(10) * 0.1f : 0.f);
         else

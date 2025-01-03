@@ -3829,7 +3829,12 @@ BoundingBoxf3 PrintInstance::get_bounding_box() {
 
 Polygon PrintInstance::get_convex_hull_2d() {
     Polygon poly = print_object->model_object()->convex_hull_2d(model_instance->get_matrix());
-    poly.douglas_peucker(0.1);
+    //y50
+    float distance_tolerance = 0.1;
+    while(poly.size() > 200){
+        poly.douglas_peucker(distance_tolerance);
+        distance_tolerance*=2;
+    }
     return poly;
 }
 

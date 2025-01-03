@@ -224,10 +224,10 @@ void SendDeviceItem::doRender(wxDC& dc)
 
     //AMS
     if (!obj_->has_ams()) {
-        DrawTextWithEllipsis(dc, _L("No AMS"), FromDIP(SEND_LEFT_DEV_NAME), left);
+        DrawTextWithEllipsis(dc, _L("No BOX"), FromDIP(SEND_LEFT_DEV_NAME), left);
     }
     else {
-        DrawTextWithEllipsis(dc, _L("AMS"), FromDIP(SEND_LEFT_DEV_NAME), left);
+        DrawTextWithEllipsis(dc, _L("BOX"), FromDIP(SEND_LEFT_DEV_NAME), left);
     }
 
     if (m_hover) {
@@ -1052,7 +1052,7 @@ wxPanel* SendMultiMachinePage::create_page()
     wxBoxSizer* title_filament = create_item_title(_L("Filament"), main_page, "");
     wxBoxSizer* radio_sizer = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer* use_external_sizer = create_item_radiobox(_L("Use External Spool"), main_page, "", 0, "use_external");
-    wxBoxSizer* use_ams_sizer = create_item_radiobox(_L("Use AMS"), main_page, "", 0, "use_ams");
+    wxBoxSizer* use_ams_sizer = create_item_radiobox(_L("Use BOX"), main_page, "", 0, "use_ams");
     radio_sizer->Add(use_external_sizer, 0, wxLeft, FromDIP(20));
     radio_sizer->Add(use_ams_sizer, 0, wxLeft, FromDIP(5));
     sizer->Add(title_filament, 0, wxEXPAND, 0);
@@ -1500,7 +1500,8 @@ void SendMultiMachinePage::set_default()
 
     m_current_project_name = wxString::FromUTF8(file_name);
     //unsupported character filter
-    m_current_project_name = from_u8(filter_characters(m_current_project_name.ToUTF8().data(), "<>[]:/\\|?*\""));
+    //y51
+    m_current_project_name = from_u8(filter_characters(m_current_project_name.ToUTF8().data(), "<>[]:\\|?*\""));
 
     m_task_name->SetLabel(m_current_project_name);
 
@@ -1536,7 +1537,8 @@ void SendMultiMachinePage::on_rename_enter()
     auto     m_valid_type = Valid;
     wxString info_line;
 
-    const char* unusable_symbols = "<>[]:/\\|?*\"";
+    //y51
+    const char* unusable_symbols = "<>[]:\\|?*\"";
 
     const std::string unusable_suffix = PresetCollection::get_suffix_modified(); //"(modified)";
     for (size_t i = 0; i < std::strlen(unusable_symbols); i++) {

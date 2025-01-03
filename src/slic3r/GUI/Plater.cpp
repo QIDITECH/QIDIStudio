@@ -956,7 +956,7 @@ Sidebar::Sidebar(Plater *parent)
 
     //ams_btn = new ScalableButton(p->m_panel_filament_title, wxID_ANY, "ams_fila_sync", wxEmptyString, wxDefaultSize, wxDefaultPosition,
     //                                             wxBU_EXACTFIT | wxNO_BORDER, false, 18);
-    //ams_btn->SetToolTip(_L("Synchronize filament list from AMS"));
+    //ams_btn->SetToolTip(_L("Synchronize filament list from BOX"));
     //ams_btn->Bind(wxEVT_BUTTON, [this, scrolled_sizer](wxCommandEvent &e) {
     //    sync_ams_list();
     //});
@@ -1824,8 +1824,8 @@ void Sidebar::sync_ams_list()
     auto & list = wxGetApp().preset_bundle->filament_ams_list;
     if (list.empty()) {
         MessageDialog dlg(this,
-            _L("No AMS filaments. Please select a printer in 'Device' page to load AMS info."),
-            _L("Sync filaments with AMS"), wxOK);
+            _L("No BOX filaments. Please select a printer in 'Device' page to load BOX info."),
+            _L("Sync filaments with BOX"), wxOK);
         dlg.ShowModal();
         return;
     }
@@ -1836,9 +1836,9 @@ void Sidebar::sync_ams_list()
     struct SyncAmsDialog : MessageDialog {
         SyncAmsDialog(wxWindow * parent, bool first): MessageDialog(parent,
             first
-                ? _L("Sync filaments with AMS will drop all current selected filament presets and colors. Do you want to continue?")
+                ? _L("Sync filaments with BOX will drop all current selected filament presets and colors. Do you want to continue?")
                 : _L("Already did a synchronization, do you want to sync only changes or resync all?"),
-            _L("Sync filaments with AMS"), 0)
+            _L("Sync filaments with BOX"), 0)
         {
             if (first) {
                 add_button(wxID_YES, true, _L("Yes"));
@@ -1875,7 +1875,7 @@ void Sidebar::sync_ams_list()
     if (n == 0) {
         MessageDialog dlg(this,
             _L("There are no compatible filaments, and sync is not performed."),
-            _L("Sync filaments with AMS"), wxOK);
+            _L("Sync filaments with BOX"), wxOK);
         dlg.ShowModal();
         return;
     }
@@ -1884,7 +1884,7 @@ void Sidebar::sync_ams_list()
     if (unknowns > 0) {
         MessageDialog dlg(this,
             _L("There are some unknown or uncompatible filaments mapped to generic preset. Please update QIDI Studio or restart QIDI Studio to check if there is an update to system presets."),
-            _L("Sync filaments with AMS"), wxOK);
+            _L("Sync filaments with BOX"), wxOK);
         dlg.ShowModal();
     }
     wxGetApp().plater()->on_filaments_change(n);
