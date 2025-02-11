@@ -7,7 +7,7 @@
     "instantiation": "false",
     "inherits": "fdm_filament_common",
     "additional_cooling_fan_speed": ["100"],
-    "filament_density": ["1.42"],
+    "filament_density": ["1.24"],
     "filament_max_volumetric_speed": ["21"],
     "filament_type": ["PLA"],
     "nozzle_temperature_range_high": ["240"],
