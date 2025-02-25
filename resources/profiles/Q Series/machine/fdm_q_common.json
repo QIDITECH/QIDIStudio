@@ -57,7 +57,6 @@
     "support_air_filtration": ["1"],
     "support_chamber_temp_control": "1",
     "thumbnail_size": ["380x380","210x210","110x110"],
-    "thumbnails_format": "QIDI",
     "wipe": ["1"],
     "z_hop_types": ["Auto Lift"],
     "z_hop": ["0.4"]

@@ -1,13 +1,13 @@
 {
-	"type": "process",
-	"setting_id": "GP004",
-	"name": "0.12mm High Quality @Q1 Pro",
-	"from": "system",
-	"instantiation": "true",
-	"inherits": "fdm_process_common",
+    "type": "process",
+    "setting_id": "GP004",
+    "name": "0.12mm High Quality @Q1 Pro",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "fdm_process_common",
     "bottom_shell_layers": "5",
     "bridge_flow": "1",
-	"default_acceleration": "4000",
+    "default_acceleration": "4000",
     "elefant_foot_compensation": "0.15",
     "gap_infill_speed": "230",
     "initial_layer_infill_speed": "105",
@@ -28,7 +28,5 @@
     "top_shell_layers": "5",
     "top_shell_thickness": "0.6",
     "top_surface_speed": "150",
-"compatible_printers": [
-	"Q1 Pro 0.4 nozzle"
-]
+    "compatible_printers": ["Q1 Pro 0.4 nozzle"]
 }

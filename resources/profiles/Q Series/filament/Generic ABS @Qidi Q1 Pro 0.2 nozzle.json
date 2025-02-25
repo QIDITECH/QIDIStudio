@@ -8,7 +8,5 @@
     "inherits": "Generic ABS@Q-Series",
     "during_print_exhaust_fan_speed": ["0"],
     "filament_max_volumetric_speed": ["2"],
-	"compatible_printers": [
-		"Q1 Pro 0.2 nozzle"
-	]
+	"compatible_printers": ["Q1 Pro 0.2 nozzle"]
 }

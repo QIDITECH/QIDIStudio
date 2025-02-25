@@ -492,7 +492,6 @@
             "name": "QIDI PETG Tough @Qidi Q1 Pro 0.2 nozzle",
             "sub_path": "filament/QIDI PETG Tough @Qidi Q1 Pro 0.2 nozzle.json"
         },
-        
         {
             "name": "QIDI PETG Tough @Qidi Q1 Pro 0.6 nozzle",
             "sub_path": "filament/QIDI PETG Tough @Qidi Q1 Pro 0.6 nozzle.json"
@@ -537,7 +536,6 @@
             "name": "QIDI PLA Rapido Metal @Qidi Q1 Pro 0.8 nozzle",
             "sub_path": "filament/QIDI PLA Rapido Metal @Qidi Q1 Pro 0.8 nozzle.json"
         },
-
         {
             "name": "QIDI PPS-CF@Q-Series",
             "sub_path": "filament/QIDI PPS-CF.json"
@@ -834,6 +832,26 @@
         {
             "name": "QIDI UltraPA-CF25 @Qidi Q1 Pro 0.8 nozzle",
             "sub_path": "filament/QIDI UltraPA-CF25 @Qidi Q1 Pro 0.8 nozzle.json"
+        },
+        {
+            "name": "Generic PC@Q-Series",
+            "sub_path": "filament/Generic PC.json"
+        },
+        {
+            "name": "Generic PC @Qidi Q1 Pro 0.4 nozzle",
+            "sub_path": "filament/Generic PC @Qidi Q1 Pro 0.4 nozzle.json"
+        },
+        {
+            "name": "Generic PC @Qidi Q1 Pro 0.2 nozzle",
+            "sub_path": "filament/Generic PC @Qidi Q1 Pro 0.2 nozzle.json"
+        },
+        {
+            "name": "Generic PC @Qidi Q1 Pro 0.6 nozzle",
+            "sub_path": "filament/Generic PC @Qidi Q1 Pro 0.6 nozzle.json"
+        },
+        {
+            "name": "Generic PC @Qidi Q1 Pro 0.8 nozzle",
+            "sub_path": "filament/Generic PC @Qidi Q1 Pro 0.8 nozzle.json"
         }
     ],
     "machine_list": [

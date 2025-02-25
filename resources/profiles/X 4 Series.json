@@ -831,6 +831,26 @@
         {
             "name": "QIDI WOOD Rapido @Qidi X-Plus 4 0.8 nozzle",
             "sub_path": "filament/QIDI WOOD Rapido @Qidi X-Plus 4 0.8 nozzle.json"
+        },
+        {
+            "name": "Generic PC@X4",
+            "sub_path": "filament/Generic PC.json"
+        },
+        {
+            "name": "Generic PC @Qidi X-Plus 4 0.2 nozzle",
+            "sub_path": "filament/Generic PC @Qidi X-Plus 4 0.2 nozzle.json"
+        },
+        {
+            "name": "Generic PC @Qidi X-Plus 4 0.4 nozzle",
+            "sub_path": "filament/Generic PC @Qidi X-Plus 4 0.4 nozzle.json"
+        },
+        {
+            "name": "Generic PC @Qidi X-Plus 4 0.6 nozzle",
+            "sub_path": "filament/Generic PC @Qidi X-Plus 4 0.6 nozzle.json"
+        },
+        {
+            "name": "Generic PC @Qidi X-Plus 4 0.8 nozzle",
+            "sub_path": "filament/Generic PC @Qidi X-Plus 4 0.8 nozzle.json"
         }
     ],
     "machine_list": [

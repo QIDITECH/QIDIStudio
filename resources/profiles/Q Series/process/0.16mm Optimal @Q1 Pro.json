@@ -24,7 +24,5 @@
     "support_top_z_distance": "0.16",
     "top_shell_layers": "6",
     "top_shell_thickness": "1.0",
-    "compatible_printers": [
-	  "Q1 Pro 0.4 nozzle"
-    ]
+    "compatible_printers": ["Q1 Pro 0.4 nozzle"]
 }

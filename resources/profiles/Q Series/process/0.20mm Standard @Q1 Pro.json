@@ -16,7 +16,5 @@
     "sparse_infill_speed": "270",
     "top_shell_layers": "5",
     "top_shell_thickness": "1.0",
-	"compatible_printers": [
-		"Q1 Pro 0.4 nozzle"
-	]
+	"compatible_printers": ["Q1 Pro 0.4 nozzle"]
 }

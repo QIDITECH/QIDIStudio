@@ -25,7 +25,5 @@
     "top_surface_line_width": "0.82",
     "top_surface_pattern": "monotonic",
     "top_surface_speed": "150",
-    "compatible_printers": [
-      "Q1 Pro 0.8 nozzle"
-    ]
+    "compatible_printers": ["Q1 Pro 0.8 nozzle"]
 }
