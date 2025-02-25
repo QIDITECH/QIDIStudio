@@ -1278,7 +1278,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
         });
 
     //w42
-    m_comboBox_printer->Bind(wxEVT_COMBOBOX, [this](wxCommandEvent& evt) {
+    /*m_comboBox_printer->Bind(wxEVT_COMBOBOX, [this](wxCommandEvent& evt) {
         wxString selected = evt.GetString();
         MachineObject* selected_machine = nullptr;
         if (!m_isNetMode) {
@@ -1301,7 +1301,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
         }
         m_sizer_main->Layout();
         evt.Skip();
-        });
+        });*/
 
     m_isSwitch = new wxCheckBox(switch_button_panel, wxID_ANY, _L("Switch to Device tab"), wxDefaultPosition);
     m_isSwitch->SetValue((wxGetApp().app_config->get("switch to device tab after upload") == "true") ? true : false);
