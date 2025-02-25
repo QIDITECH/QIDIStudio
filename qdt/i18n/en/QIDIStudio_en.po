@@ -16827,3 +16827,22 @@ msgstr ""
 
 #~ msgid "⌥+Left mouse button"
 #~ msgstr "⌥+Left mouse button"
+
+msgid "The Seal button is primarily used to control the auxiliary component cooling fan to balance the chamber temperature."
+msgstr "The Seal button is primarily used to control the auxiliary component cooling fan to balance the chamber temperature."
+
+
+
+msgid "Clean the Webview Cache"
+msgstr "Clean the Webview Cache"
+
+msgid "Click the OK button, the software will open the WebView cache folder.\n"
+"You need to manually delete the WebView folder.\n"
+msgstr "Click the OK button, the software will open the WebView cache folder.\n"
+"You need to manually delete the WebView folder.\n"
+
+msgid "Learn more"
+msgstr "Learn more"
+
+msgid "The path is not exists!"
+msgstr "The path is not exists!"

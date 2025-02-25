@@ -17590,3 +17590,20 @@ msgstr "Grobkalibrierung der Durchflussrate"
 
 msgid "Flow Rate Fine Calibration"
 msgstr "Feinkalibrierung der Durchflussrate"
+
+msgid "The Seal button is primarily used to control the auxiliary component cooling fan to balance the chamber temperature."
+msgstr "Die Seal-Taste wird hauptsächlich verwendet, um den Lüfter zur Kühlung der Hilfskomponenten zu steuern, um die Kammeremperatur auszugleichen."
+
+msgid "Clean the Webview Cache"  
+msgstr "WebView-Cache bereinigen"  
+
+msgid "Click the OK button, the software will open the WebView cache folder.\n"  
+"You need to manually delete the WebView folder.\n"  
+msgstr "Klicken Sie auf die Schaltfläche OK, um den WebView-Cache-Ordner zu öffnen.\n"  
+"Sie müssen den WebView-Ordner manuell löschen.\n"  
+
+msgid "Learn more"  
+msgstr "Mehr erfahren"  
+
+msgid "The path is not exists!"  
+msgstr "Der Pfad existiert nicht!"

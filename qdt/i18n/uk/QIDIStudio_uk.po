@@ -17567,3 +17567,20 @@ msgstr "Частота потоку велика калібрація"
 
 msgid "Flow Rate Fine Calibration"
 msgstr "Частота потоку добра калібрація"
+
+msgid "The Seal button is primarily used to control the auxiliary component cooling fan to balance the chamber temperature."
+msgstr "Кнопка Seal в основному використовується для керування вентилятором охолодження допоміжного компонента, щоб врівноважити температуру в камері."
+
+msgid "Clean the Webview Cache"  
+msgstr "Очистити кеш WebView"  
+
+msgid "Click the OK button, the software will open the WebView cache folder.\n"  
+"You need to manually delete the WebView folder.\n"  
+msgstr "Натисніть кнопку OK, програма відкриє теку кешу WebView.\n"  
+"Вам потрібно вручну видалити теку WebView.\n"  
+
+msgid "Learn more"  
+msgstr "Дізнатися більше"  
+
+msgid "The path is not exists!"  
+msgstr "Шлях не існує!"

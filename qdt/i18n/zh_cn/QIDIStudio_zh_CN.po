@@ -19777,3 +19777,20 @@ msgstr "流量粗校准"
 
 msgid "Flow Rate Fine Calibration"
 msgstr "流量细校准"
+
+msgid "The Seal button is primarily used to control the auxiliary component cooling fan to balance the chamber temperature."
+msgstr "封箱按钮主要用于控制辅助组件的冷却风扇，以平衡腔室温度。"
+
+msgid "Clean the Webview Cache"  
+msgstr "清理 WebView 缓存"  
+
+msgid "Click the OK button, the software will open the WebView cache folder.\n"  
+"You need to manually delete the WebView folder.\n"  
+msgstr "点击确定按钮，软件将打开 WebView 缓存文件夹。\n"  
+"您需要手动删除 WebView 文件夹。\n"  
+
+msgid "Learn more"  
+msgstr "了解更多"  
+
+msgid "The path is not exists!"  
+msgstr "路径不存在！"

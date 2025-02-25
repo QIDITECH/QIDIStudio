@@ -14956,3 +14956,20 @@ msgstr "грубый калибровка по скорости потока"
 
 msgid "Flow Rate Fine Calibration"
 msgstr "Точная калибровка расхода"
+
+msgid "The Seal button is primarily used to control the auxiliary component cooling fan to balance the chamber temperature."
+msgstr "Кнопка Seal используется в основном для управления вентилятором охлаждения вспомогательного компонента, чтобы уравновесить температуру в камере."
+
+msgid "Clean the Webview Cache"  
+msgstr "Очистить кэш WebView"  
+
+msgid "Click the OK button, the software will open the WebView cache folder.\n"  
+"You need to manually delete the WebView folder.\n"  
+msgstr "Нажмите кнопку ОК, программа откроет папку кэша WebView.\n"  
+"Вам нужно вручную удалить папку WebView.\n"  
+
+msgid "Learn more"  
+msgstr "Узнать больше"  
+
+msgid "The path is not exists!"  
+msgstr "Путь не существует!"

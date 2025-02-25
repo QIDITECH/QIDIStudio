@@ -17442,3 +17442,20 @@ msgstr "Calibrazione grossolana della portata"
 
 msgid "Flow Rate Fine Calibration"
 msgstr "Calibrazione fine della portata"
+
+msgid "The Seal button is primarily used to control the auxiliary component cooling fan to balance the chamber temperature."
+msgstr "Il pulsante Seal viene utilizzato principalmente per controllare la ventola di raffreddamento del componente ausiliario per bilanciare la temperatura della camera."
+
+msgid "Clean the Webview Cache"  
+msgstr "Pulisci la cache di WebView"  
+
+msgid "Click the OK button, the software will open the WebView cache folder.\n"  
+"You need to manually delete the WebView folder.\n"  
+msgstr "Fai clic sul pulsante OK, il software aprirà la cartella della cache di WebView.\n"  
+"È necessario eliminare manualmente la cartella WebView.\n"  
+
+msgid "Learn more"  
+msgstr "Scopri di più"  
+
+msgid "The path is not exists!"  
+msgstr "Il percorso non esiste!"

@@ -14145,3 +14145,20 @@ msgstr ""
 "3. 인쇄 온도를 변경한 경우;\n"
 "4. 인쇄 중 필라멘트가 부족하거나, 압출이 충분하지 않거나, 충전이 끊어진 경우;\n"
 "교정 전에 사용 중인 프린터, 교정할 소모품 및 프로세스를 선택해야 하며, 현재 페이지의 왼쪽 상단에서 이를 직접 선택할 수 있습니다."
+
+msgid "The Seal button is primarily used to control the auxiliary component cooling fan to balance the chamber temperature."
+msgstr "시일 버튼은 주로 보조 구성품 냉각 팬을 제어하여 챔버 온도를 균형 있게 유지하는 데 사용됩니다."
+
+msgid "Clean the Webview Cache"  
+msgstr "WebView 캐시 지우기"  
+
+msgid "Click the OK button, the software will open the WebView cache folder.\n"  
+"You need to manually delete the WebView folder.\n"  
+msgstr "확인 버튼을 클릭하면 소프트웨어가 WebView 캐시 폴더를 엽니다.\n"  
+"WebView 폴더를 수동으로 삭제해야 합니다.\n"  
+
+msgid "Learn more"  
+msgstr "자세히 알아보기"  
+
+msgid "The path is not exists!"  
+msgstr "경로가 존재하지 않습니다!"

@@ -16699,3 +16699,20 @@ msgstr "流速粗較正"
 
 msgid "Flow Rate Fine Calibration"
 msgstr "フローファインアライメント"
+
+msgid "The Seal button is primarily used to control the auxiliary component cooling fan to balance the chamber temperature."
+msgstr "シールボタンは主に補助部品の冷却ファンを制御してチャンバーの温度を均衡させるために使用されます。"
+
+msgid "Clean the Webview Cache"  
+msgstr "WebViewキャッシュをクリアする"  
+
+msgid "Click the OK button, the software will open the WebView cache folder.\n"  
+"You need to manually delete the WebView folder.\n"  
+msgstr "OKボタンをクリックすると、ソフトウェアがWebViewキャッシュフォルダを開きます。\n"  
+"WebViewフォルダを手動で削除する必要があります。\n"  
+
+msgid "Learn more"  
+msgstr "詳細を見る"  
+
+msgid "The path is not exists!"  
+msgstr "パスが存在しません！"

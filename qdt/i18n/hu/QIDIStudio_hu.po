@@ -17329,3 +17329,20 @@ msgstr "Áramlási sebesség durva kalibrálás"
 
 msgid "Flow Rate Fine Calibration"
 msgstr "Áramlási sebesség finomkalibrálás"
+
+msgid "The Seal button is primarily used to control the auxiliary component cooling fan to balance the chamber temperature."
+msgstr "A Seal gombot elsősorban a segédkomponens hűtőventilátorának vezérlésére használják, hogy kiegyensúlyozzák a kamra hőmérsékletét."
+
+msgid "Clean the Webview Cache"  
+msgstr "WebView gyorsítótár tisztítása"  
+
+msgid "Click the OK button, the software will open the WebView cache folder.\n"  
+"You need to manually delete the WebView folder.\n"  
+msgstr "Kattints az OK gombra, a szoftver megnyitja a WebView gyorsítótár mappát.\n"  
+"A WebView mappát manuálisan kell törölnöd.\n"  
+
+msgid "Learn more"  
+msgstr "További információk"  
+
+msgid "The path is not exists!"  
+msgstr "Az elérési út nem létezik!"

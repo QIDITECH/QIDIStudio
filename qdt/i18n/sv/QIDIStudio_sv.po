@@ -17188,3 +17188,20 @@ msgstr "Grov kalibrering av flödeshastighet"
 
 msgid "Flow Rate Fine Calibration"
 msgstr "Flödeshastighet Finkalibrering"
+
+msgid "The Seal button is primarily used to control the auxiliary component cooling fan to balance the chamber temperature."
+msgstr "Seal-knappen används främst för att kontrollera kylfläkten för hjälpkomponenten för att balansera kammartemperaturen."
+
+msgid "Clean the Webview Cache"  
+msgstr "Rensa WebView-cache"  
+
+msgid "Click the OK button, the software will open the WebView cache folder.\n"  
+"You need to manually delete the WebView folder.\n"  
+msgstr "Klicka på OK-knappen, programmet öppnar WebView-cachemappen.\n"  
+"Du måste manuellt ta bort WebView-mappen.\n"  
+
+msgid "Learn more"  
+msgstr "Läs mer"  
+
+msgid "The path is not exists!"  
+msgstr "Sökvägen finns inte!"

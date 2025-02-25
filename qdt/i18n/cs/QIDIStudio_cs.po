@@ -14938,3 +14938,20 @@ msgstr "Hrubá kalibrace průtoku"
 
 msgid "Flow Rate Fine Calibration"
 msgstr "Jemná kalibrace průtoku"
+
+msgid "The Seal button is primarily used to control the auxiliary component cooling fan to balance the chamber temperature."
+msgstr "Tlačítko Seal se primárně používá k ovládání pomocného ventilátoru chlazení komponentů pro vyvážení teploty v komoře."
+
+msgid "Clean the Webview Cache"  
+msgstr "Vyčistit mezipaměť WebView"  
+
+msgid "Click the OK button, the software will open the WebView cache folder.\n"  
+"You need to manually delete the WebView folder.\n"  
+msgstr "Kliknutím na tlačítko OK software otevře složku mezipaměti WebView.\n"  
+"Musíte složku WebView ručně smazat.\n"  
+
+msgid "Learn more"  
+msgstr "Zjistit více"  
+
+msgid "The path is not exists!"  
+msgstr "Cesta neexistuje!"

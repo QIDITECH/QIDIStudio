@@ -17451,3 +17451,20 @@ msgstr "Grove stroomkalibratie"
 
 msgid "Flow Rate Fine Calibration"
 msgstr "Fijne kalibratie van het debiet"
+
+msgid "The Seal button is primarily used to control the auxiliary component cooling fan to balance the chamber temperature."
+msgstr "De Seal-knop wordt voornamelijk gebruikt om de koelfan van de hulpcomponent te regelen om de kamertemperatuur in balans te brengen."
+
+msgid "Clean the Webview Cache"  
+msgstr "WebView-cache opschonen"  
+
+msgid "Click the OK button, the software will open the WebView cache folder.\n"  
+"You need to manually delete the WebView folder.\n"  
+msgstr "Klik op de OK-knop, de software opent de WebView-cachemap.\n"  
+"U moet de WebView-map handmatig verwijderen.\n"  
+
+msgid "Learn more"  
+msgstr "Meer informatie"  
+
+msgid "The path is not exists!"  
+msgstr "Het pad bestaat niet!"

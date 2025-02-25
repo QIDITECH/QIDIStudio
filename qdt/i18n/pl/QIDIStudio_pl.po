@@ -17344,3 +17344,20 @@ msgid ""
 "When to Calibrate Max Volumetric Speed ?"
 msgstr ""
 "Kiedy kalibrować maksymalną pręd"
+
+msgid "The Seal button is primarily used to control the auxiliary component cooling fan to balance the chamber temperature."
+msgstr "Przycisk Seal jest głównie używany do kontrolowania wentylatora chłodzącego komponentu pomocniczego w celu zrównoważenia temperatury w komorze."
+
+msgid "Clean the Webview Cache"  
+msgstr "Wyczyść pamięć podręczną WebView"  
+
+msgid "Click the OK button, the software will open the WebView cache folder.\n"  
+"You need to manually delete the WebView folder.\n"  
+msgstr "Kliknij przycisk OK, oprogramowanie otworzy folder pamięci podręcznej WebView.\n"  
+"Musisz ręcznie usunąć folder WebView.\n"  
+
+msgid "Learn more"  
+msgstr "Dowiedz się więcej"  
+
+msgid "The path is not exists!"  
+msgstr "Ścieżka nie istnieje!"

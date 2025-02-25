@@ -14714,3 +14714,20 @@ msgstr "Akış Değeri Deniz Kalibrası"
 
 msgid "Flow Rate Fine Calibration"
 msgstr "Güzel kalibre"
+
+msgid "The Seal button is primarily used to control the auxiliary component cooling fan to balance the chamber temperature."
+msgstr "Seal düğmesi, odadaki sıcaklığı dengelemek için yardımcı bileşen soğutma fanını kontrol etmek amacıyla kullanılır."
+
+msgid "Clean the Webview Cache"  
+msgstr "WebView Önbelleğini Temizle"  
+
+msgid "Click the OK button, the software will open the WebView cache folder.\n"  
+"You need to manually delete the WebView folder.\n"  
+msgstr "Tamam butonuna tıklayın, yazılım WebView önbellek klasörünü açacaktır.\n"  
+"WebView klasörünü manuel olarak silmeniz gerekiyor.\n"  
+
+msgid "Learn more"  
+msgstr "Daha fazla bilgi edin"  
+
+msgid "The path is not exists!"  
+msgstr "Yol mevcut değil!"
