@@ -1277,6 +1277,32 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
         }
         });
 
+    //w42
+    m_comboBox_printer->Bind(wxEVT_COMBOBOX, [this](wxCommandEvent& evt) {
+        wxString selected = evt.GetString();
+        MachineObject* selected_machine = nullptr;
+        if (!m_isNetMode) {
+            for (auto& machine : machine_list_local) {
+                if (from_u8(machine.display_name) == selected) {
+                    OctoPrint octo(machine.url, machine.ip);
+                    wxString    msg;
+                    if (octo.get_box_state(msg)) {
+                        machine_filament_info = octo.get_box_info(msg);
+                        octo.get_color_filament_str(msg, machine_filament_info);
+                        select_use_box->Show();
+                        get_machine_filament_info();
+                    }
+                    else {
+                        select_use_box->Hide();
+                    }
+                    break;
+                }
+            }
+        }
+        m_sizer_main->Layout();
+        evt.Skip();
+        });
+
     m_isSwitch = new wxCheckBox(switch_button_panel, wxID_ANY, _L("Switch to Device tab"), wxDefaultPosition);
     m_isSwitch->SetValue((wxGetApp().app_config->get("switch to device tab after upload") == "true") ? true : false);
     m_isSwitch->SetForegroundColour(StateColor::darkModeColorFor(wxColour(0, 0, 0)));
@@ -1301,15 +1327,24 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     select_timelapse = create_item_checkbox(_L("Timelapse"), this, _L("Timelapse"), "timelapse");
     select_use_ams = create_ams_checkbox(_L("Enable BOX"), this, _L("Enable BOX"));
 
+    //w42
+    select_use_box = create_ams_checkbox(_L("Enable BOX"), this, _L("Enable BOX"));
+
     m_sizer_select->Add(select_bed, 0, wxLEFT | wxRIGHT, WRAP_GAP);
     m_sizer_select->Add(select_flow, 0, wxLEFT | wxRIGHT, WRAP_GAP);
     m_sizer_select->Add(select_timelapse, 0, wxLEFT | wxRIGHT, WRAP_GAP);
     m_sizer_select->Add(select_use_ams, 0, wxLEFT | wxRIGHT, WRAP_GAP);
 
+    //w42
+    m_sizer_select->Add(select_use_box, 0, wxLEFT | wxRIGHT, WRAP_GAP);
+
     select_bed->Show(false);
     select_flow->Show(false);
     select_timelapse->Show(false);
     select_use_ams->Show(false);
+
+    //w42
+    select_use_box->Show(false);
 
     m_sizer_select->Layout();
 
@@ -1519,6 +1554,35 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     init_timer();
     Centre(wxBOTH);
     wxGetApp().UpdateDlgDarkUI(this);
+}
+
+//w42
+void SelectMachineDialog::remove_area()
+{
+    m_scrollable_view->Hide();
+    m_isSwitch->Hide();
+    m_simplebook->Show(false);
+    select_use_box->Hide();
+    m_line_schedule->Hide();
+    m_line_materia->Hide();
+    m_sizer_select->Show(false);
+    m_sizer_select->Layout();
+    
+    m_button_sync = new Button(this, _L("Sync"));
+    m_button_sync->SetBackgroundColor(m_btn_bg_enable);
+    m_button_sync->SetBorderColor(m_btn_bg_enable);
+    m_button_sync->SetTextColor(StateColor::darkModeColorFor("#FFFFFE"));
+    m_button_sync->SetSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
+    m_button_sync->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
+    m_button_sync->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
+    m_button_sync->SetCornerRadius(FromDIP(12));
+    m_button_sync->Bind(wxEVT_BUTTON, &SelectMachineDialog::on_sync_btn, this);
+    m_sizer_main->Add(m_button_sync, 0, wxALIGN_CENTER_HORIZONTAL, FromDIP(30));
+
+    SetSizer(m_sizer_main);
+    Layout();
+    Fit();
+    Thaw();
 }
 
 void SelectMachineDialog::init_bind()
@@ -2785,6 +2849,75 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
     //        this->on_send_print();
     //    //}
     //}
+}
+
+//w42
+void SelectMachineDialog::on_sync_btn(wxCommandEvent& event)
+{
+    bool isSwitch = m_isSwitch->GetValue();
+    if (isSwitch)
+        wxGetApp().app_config->set_bool("switch to device tab after upload", true);
+    else
+        wxGetApp().app_config->set_bool("switch to device tab after upload", false);
+
+    machine_name = into_u8(m_comboBox_printer->GetValue());
+
+    bool have_get_phy_printer = false;
+
+    if (!m_isNetMode)
+    {
+        for (auto machine : machine_list_local)
+        {
+            if (machine.display_name == machine_name)
+            {
+                machine_url = machine.url;
+                machine_ip = machine.ip;
+                machine_apikey = machine.apikey;
+                have_get_phy_printer = true;
+                break;
+            }
+        }
+    }
+    else
+    {
+#if QDT_RELEASE_TO_PUBLIC
+        for (auto machine : machine_list_link)
+        {
+            if (machine.display_name == machine_name)
+            {
+                machine_url = machine.url;
+                machine_ip = machine.ip;
+                machine_apikey = "";
+                machine_link_url = machine.link_url;
+                machine_is_special = machine.is_special;
+                have_get_phy_printer = true;
+                break;
+            }
+        }
+#endif 
+    }
+    if (have_get_phy_printer) {
+        OctoPrint octo(machine_url, machine_ip);
+        wxString    msg;
+        if (octo.get_box_state(msg)) {
+            machine_filament_info = octo.get_box_info(msg);
+        }
+        else {
+            
+        }
+    }
+    
+    wxGetApp().plater()->sidebar().load_box_list(wxGetApp().plater()->sidebar().box_filament_id, wxGetApp().plater()->sidebar().box_filment_colors);
+    wxGetApp().plater()->sidebar().updata_filament_list();
+
+    EndDialog(wxID_YES);
+
+}
+
+void SelectMachineDialog::get_machine_filament_info() {
+    wxGetApp().plater()->sidebar().box_filament_id = std::move(machine_filament_info.filament_id);
+    wxGetApp().plater()->sidebar().box_filment_colors = std::move(machine_filament_info.filment_colors);
+    //return { machine_filament_info.filament_id, machine_filament_info.filment_colors };
 }
 
 wxString SelectMachineDialog::format_steel_name(std::string name)
@@ -4056,8 +4189,9 @@ void SelectMachineDialog::set_default()
     //project name
     m_rename_switch_panel->SetSelection(0);
 
-    //y49
-    wxString filename = m_plater->get_output_filename();
+    // //y49
+    // wxString filename = m_plater->get_output_filename();
+    wxString filename = m_plater->get_export_gcode_filename("", true, m_print_plate_idx == PLATE_ALL_IDX ? true : false);
 
     if (m_print_plate_idx == PLATE_ALL_IDX && filename.empty()) {
         filename = _L("Untitled");
@@ -4069,22 +4203,23 @@ void SelectMachineDialog::set_default()
     }
 
     fs::path filename_path(filename.c_str());
-    std::string file_name  = filename_path.filename().string();
-    if (from_u8(file_name).find(_L("Untitled")) != wxString::npos) {
+    //y52
+    wxString file_name  = from_u8(filename_path.filename().string());
+    if (file_name.find(_L("Untitled")) != wxString::npos) {
         PartPlate *part_plate = m_plater->get_partplate_list().get_plate(m_print_plate_idx);
         if (part_plate) {
             if (std::vector<ModelObject *> objects = part_plate->get_objects_on_this_plate(); objects.size() > 0) {
-                file_name = objects[0]->name;
+                file_name = from_u8(objects[0]->name);
                 for (int i = 1; i < objects.size(); i++) {
-                    file_name += (" + " + objects[i]->name);
+                    file_name += " + " + from_u8(objects[i]->name);
                 }
             }
-            if (file_name.size() > 100) {
-                file_name = file_name.substr(0, 97) + "...";
+            if (file_name.size() > 50) {
+                file_name = file_name.substr(0, 50) + "...";
             }
         }
     }
-    m_current_project_name = wxString::FromUTF8(file_name);
+    m_current_project_name = file_name;
 
 
     //unsupported character filter

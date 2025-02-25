@@ -429,6 +429,22 @@ public:
     bool m_show_again{false};
 };
 
+//y54
+class CleanCacheDialog : public wxDialog
+{
+#define SELECT_MACHINE_DIALOG_BUTTON_SIZE wxSize(FromDIP(68), FromDIP(23))
+#define SELECT_MACHINE_DIALOG_SIMBOOK_SIZE wxSize(FromDIP(370), FromDIP(64))
+
+public:
+	CleanCacheDialog(wxWindow* parent);
+	~CleanCacheDialog();
+
+	void OnOK(wxCommandEvent& event);
+	void OnCancel(wxCommandEvent& event);
+
+	StateColor                          m_btn_bg_enable;
+};
+
 }
 }
 

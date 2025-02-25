@@ -525,7 +525,7 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
                      std::pair<wxColour, int>(wxColour(67, 67, 71), StateColor::Normal));
 
      //y50
-     wxString machine_icon_path = wxString(Slic3r::resources_dir() + "/" + "profiles" + "/" + "thumbnail" + "/" + Machine_Name + ".png");
+     wxString machine_icon_path = wxString(Slic3r::resources_dir() + "/" + "profiles" + "/" + "thumbnail" + "/" + Machine_Name + ".png", wxConvUTF8);
 
      DeviceButton *machine_button = new DeviceButton(leftScrolledWindow, fullname, machine_icon_path, wxBU_LEFT, wxSize(80, 80), device_name, ip, apikey);
      machine_button->SetBackgroundColor(mac_btn_bg);
@@ -614,7 +614,7 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
      QIDINetwork m_qidinetwork;
 
      //y50
-     wxString machine_icon_path = wxString(Slic3r::resources_dir() + "/" + "profiles" + "/" + "thumbnail" + "/" + Machine_Name + ".png");
+     wxString machine_icon_path = wxString(Slic3r::resources_dir() + "/" + "profiles" + "/" + "thumbnail" + "/" + Machine_Name + ".png", wxConvUTF8);
 
      // device_name                  = m_qidinetwork.UTF8ToGBK(device_name.c_str());
      DeviceButton *machine_button = new DeviceButton(leftScrolledWindow, device.device_name, machine_icon_path, wxBU_LEFT, wxSize(80, 80),
@@ -1007,6 +1007,8 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
      webisNetMode = isDisconnect;
      m_web = url;
      m_ip = "";
+     //y53
+     has_load_url = false;
      m_browser->LoadURL(url);
      UpdateState();
  }
@@ -1016,6 +1018,8 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
      if (m_browser == nullptr || m_web == url)
          return;
      m_web = url;
+     //y53
+     has_load_url = true;
      m_browser->LoadURL(url);
      //y28
      webisNetMode = isLocalWeb;
@@ -1038,14 +1042,15 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
      }
      UpdateState();
  }
- void PrinterWebView::load_net_url(std::string url, std::string ip)
+ void PrinterWebView::load_net_url(wxString& url, wxString& ip)
  {
      if (m_browser == nullptr || m_web == url)
         return;
     // y13
     m_web = url;
     m_ip = ip;
-    //y34
+    //y53
+    has_load_url = true;
     m_browser->LoadURL(m_web);
     //y28
     webisNetMode = isNetWeb;
@@ -1155,20 +1160,26 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
      {
          formattedHost = "http://" + link_url;
      }
-     load_net_url(formattedHost, local_ip);
+     wxString host = from_u8(formattedHost);
+     wxString ip = from_u8(local_ip);
+     load_net_url(host, ip);
  }
 
  void PrinterWebView::FormatUrl(std::string link_url) 
  {
-     wxString m_link_url = from_u8(link_url);
-     wxString url;
-     if (!m_link_url.Lower().starts_with("http"))
-         url = wxString::Format("http://%s", m_link_url);
+    //y52
+    wxString m_link_url = from_u8(link_url);
+    wxString url;
+    
+    if(m_link_url.find(":") == wxString::npos)
+        url = wxString::Format("%s:10088", m_link_url);
+    else
+        url = m_link_url;
 
-     if (!url.Lower().ends_with("10088"))
-         url = wxString::Format("%s:10088", url);
+    if (!url.Lower().starts_with("http"))
+        url = wxString::Format("http://%s", url);
 
-     load_url(url);
+    load_url(url);
  }
 
  void PrinterWebView::SetToggleBar(bool is_net_mode)

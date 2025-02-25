@@ -68,7 +68,7 @@ public:
     void        init_scroll_window(wxPanel *Panel);
     void        CreatThread();
     void load_url(wxString& url);
-    void        load_net_url(std::string url, std::string ip);
+    void        load_net_url(wxString& url, wxString& ip);
     void UpdateState();
     void OnClose(wxCloseEvent& evt);
 
@@ -126,6 +126,11 @@ public:
     bool                        GetNetMode() { return m_isNetMode; };
     std::vector<DeviceButton *> GetNetButton() { return m_net_buttons; };
     wxString GetWeburl(){ return m_web; };
+
+    //y53
+    wxString GetWebIp(){return m_ip;};
+    bool GetHasLoadUrl(){return has_load_url;};
+    bool IsNetUrl() {return webisNetMode == isNetWeb;};
     void load_disconnect_url(wxString& url);
     void FormatNetUrl(std::string link_url, std::string local_ip, bool isSpecialMachine);
     void FormatUrl(std::string link_url);
@@ -176,6 +181,8 @@ private:
     std::set<std::string> m_exit_host;
     std::string m_user_head_name;   //y33
     bool m_isfluidd_1;             //y35
+    //y53
+    bool has_load_url;
 };
 
 // y13

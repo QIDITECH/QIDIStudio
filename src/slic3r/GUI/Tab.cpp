@@ -2050,7 +2050,7 @@ void TabPrint::build()
 
         //w16
         optgroup = page->new_optgroup(L("Resonance avoidance"), L"param_speed", 15);
-        optgroup->append_single_option_line("resonance_avoidance");
+        optgroup->append_single_option_line("resonance_avoidance", "print-settings/resonance-avoidance");
         optgroup->append_single_option_line("min_resonance_avoidance_speed");
         optgroup->append_single_option_line("max_resonance_avoidance_speed"); 
 

@@ -45,9 +45,9 @@ void PrintBase::update_object_placeholders(DynamicConfig &config, const std::str
 				"% z:" + boost::lexical_cast<std::string>(printable->get_scaling_factor(Z) * 100) + "%");
             if (input_file.empty())
                 input_file = model_object->name.empty() ? model_object->input_file : model_object->name;
-            //y51
-            else
-                input_file += (" + " + (model_object->name.empty() ? model_object->input_file : model_object->name));
+            // //y51
+            // else
+            //     input_file += (" + " + (model_object->name.empty() ? model_object->input_file : model_object->name));
 	    }
     }
 

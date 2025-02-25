@@ -407,6 +407,44 @@ void PresetComboBox::add_ams_filaments(std::string selected, bool alias_name)
     }
 }
 
+//w42
+void PresetComboBox::add_box_filaments(std::string selected, bool alias_name)
+{
+    bool is_qdt_vendor_preset = true; //m_preset_bundle->printers.get_edited_preset().is_qdt_vendor_preset(m_preset_bundle);
+    if (is_qdt_vendor_preset && !m_preset_bundle->filament_ams_list.empty()) {
+        set_label_marker(Append(separator(L("BOX filaments")), wxNullBitmap));
+        m_first_ams_filament = GetCount();
+        auto& filaments = m_collection->get_presets();
+        for (auto& entry : m_preset_bundle->filament_ams_list) {
+            auto& tray = entry.second;
+            std::string filament_id = tray.opt_string("filament_id", 0u);
+            if (filament_id.empty()) continue;
+
+            auto iter = std::find_if(filaments.begin(), filaments.end(),
+                [&filament_id, this](auto& f) { return  f.filament_id == filament_id; });
+            if (iter == filaments.end()) {
+                auto filament_type = tray.opt_string("filament_type", 0u);
+                if (!filament_type.empty()) {
+                    filament_type = "Generic " + filament_type;
+                    iter = std::find_if(filaments.begin(), filaments.end(),
+                        [&filament_type](auto& f) { return f.is_system; });
+                }
+            }
+            if (iter == filaments.end()) {
+                BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << boost::format(": filament_id %1% not found or system or compatible") % filament_id;
+                continue;
+            }
+            const_cast<Preset&>(*iter).is_visible = true;
+            auto color = tray.opt_string("filament_colour", 0u);
+            auto name = tray.opt_string("tray_name", 0u);
+            wxBitmap bmp(*get_extruder_color_icon(color, name, 24, 16));
+            int item_id = Append(get_preset_name(*iter), bmp.ConvertToImage(), &m_first_ams_filament + entry.first);
+            //validate_selection(id->value == selected); // can not select
+        }
+        m_last_ams_filament = GetCount();
+    }
+}
+
 int PresetComboBox::selected_ams_filament() const
 {
     if (m_first_ams_filament && m_last_selected >= m_first_ams_filament && m_last_selected < m_last_ams_filament) {

@@ -1470,8 +1470,9 @@ void SendMultiMachinePage::set_default_normal(const ThumbnailData& data)
 
 void SendMultiMachinePage::set_default()
 {
-    //y49
-    wxString filename = m_plater->get_output_filename();
+    // //y49
+    // wxString filename = m_plater->get_output_filename();
+    wxString filename = m_plater->get_export_gcode_filename("", true, m_print_plate_idx == PLATE_ALL_IDX ? true : false);
     if (m_print_plate_idx == PLATE_ALL_IDX && filename.empty()) {
         filename = _L("Untitled");
     }
@@ -1482,23 +1483,24 @@ void SendMultiMachinePage::set_default()
     }
 
     fs::path filename_path(filename.c_str());
-    std::string file_name = filename_path.filename().string();
-    if (from_u8(file_name).find(_L("Untitled")) != wxString::npos) {
+    //y52
+    wxString file_name = from_u8(filename_path.filename().string());
+    if (file_name.find(_L("Untitled")) != wxString::npos) {
         PartPlate* part_plate = m_plater->get_partplate_list().get_plate(m_print_plate_idx);
         if (part_plate) {
             if (std::vector<ModelObject*> objects = part_plate->get_objects_on_this_plate(); objects.size() > 0) {
-                file_name = objects[0]->name;
+                file_name = from_u8(objects[0]->name);
                 for (int i = 1; i < objects.size(); i++) {
-                    file_name += (" + " + objects[i]->name);
+                    file_name += " + " + from_u8(objects[i]->name);
                 }
             }
-            if (file_name.size() > 100) {
-                file_name = file_name.substr(0, 97) + "...";
+            if (file_name.size() > 50) {
+                file_name = file_name.substr(0, 50) + "...";
             }
         }
     }
 
-    m_current_project_name = wxString::FromUTF8(file_name);
+    m_current_project_name = file_name;
     //unsupported character filter
     //y51
     m_current_project_name = from_u8(filter_characters(m_current_project_name.ToUTF8().data(), "<>[]:\\|?*\""));

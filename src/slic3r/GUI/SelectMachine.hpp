@@ -73,6 +73,25 @@ struct Machine_info {
     bool        is_special = false;
 };
 
+//w42
+struct Box_info {
+    std::vector<int> filament_index;
+    std::vector<int> filament_vendor;
+    std::vector<int> filament_color_index;
+    std::vector<int> slot_state;
+    std::vector<std::string> filament_id;
+    std::vector<std::string> filment_colors;
+    int box_count;
+    Box_info() : box_count(0) {
+        filament_index.resize(16, 1);
+        filament_vendor.resize(16, 1);
+        filament_color_index.resize(16, 1);
+        slot_state.resize(16, 0);
+        filament_id.resize(16, "");
+        filment_colors.resize(16, "");
+    }
+};
+
 
 static int get_brightness_value(wxImage image) {
 
@@ -397,6 +416,9 @@ private:
     std::string                         m_required_data_file_name;
     std::string                         m_required_data_file_path;
 
+    //w42
+    Box_info                  machine_filament_info;
+
 protected:
     PrintFromType                       m_print_type{FROM_NORMAL};
     AmsMapingPopup                      m_mapping_popup{ nullptr };
@@ -479,6 +501,10 @@ protected:
     std::string                         preset_typename_normalized;
     std::string                         preset_typename;
     wxCheckBox* m_isSwitch{ nullptr };
+
+    //w42
+    wxWindow* select_use_box{ nullptr };
+    Button* m_button_sync{ nullptr };
 
 public:
     //y30
@@ -576,6 +602,10 @@ public:
     bool        GetMachineNetMode() { return m_isNetMode; }
     bool        isSpecialMachine() { return machine_is_special; }
 
+    //w42
+    void remove_area();
+    void on_sync_btn(wxCommandEvent& event);
+    void get_machine_filament_info();
 };
 
 wxDECLARE_EVENT(EVT_FINISHED_UPDATE_MACHINE_LIST, wxCommandEvent);

@@ -734,7 +734,24 @@ Sidebar::Sidebar(Plater *parent)
 
         // Bed type selection
         wxBoxSizer* bed_type_sizer = new wxBoxSizer(wxHORIZONTAL);
-        wxStaticText* bed_type_title = new wxStaticText(p->m_panel_printer_content, wxID_ANY, _L("Bed type"));
+        //y52
+        wxStaticText* bed_type_title = new Label(p->m_panel_printer_content, _L("Bed type"));
+        wxFont bed_type_font = bed_type_title->GetFont();
+        bed_type_title->SetToolTip(_L("https://wiki.qidi3d.com/en/software/qidi-studio/print-settings/plate-type"));
+
+        bed_type_title->Bind(wxEVT_ENTER_WINDOW, [bed_type_title](wxMouseEvent& event) {
+            bed_type_title->SetFont(bed_type_title->GetFont().Underlined());
+        });
+    
+        bed_type_title->Bind(wxEVT_LEAVE_WINDOW, [bed_type_title, bed_type_font](wxMouseEvent& event) {
+            bed_type_title->SetFont(bed_type_font);
+        });
+    
+        bed_type_title->Bind(wxEVT_LEFT_DOWN, [](wxMouseEvent& event) {
+            wxLaunchDefaultBrowser("https://wiki.qidi3d.com/en/software/qidi-studio/print-settings/plate-type");
+            event.Skip();
+        });
+
         bed_type_title->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
         //bed_type_title->SetBackgroundColour();
         bed_type_title->Wrap(-1);
@@ -891,9 +908,24 @@ Sidebar::Sidebar(Plater *parent)
     bSizer39->Hide(p->m_flushing_volume_btn);
     bSizer39->Add(FromDIP(10), 0, 0, 0, 0 );
 
-    //w13
+    //w13 y52
     wxBoxSizer* hbox = new wxBoxSizer(wxHORIZONTAL);
-    wxStaticText* label =  new Label(p->m_panel_filament_title, _L("Seal"));
+    wxStaticText* label = new Label(p->m_panel_filament_title, _L("Seal"));
+    label->SetToolTip(_L("The Seal button is primarily used to control the auxiliary component cooling fan to balance the chamber temperature."));
+    wxFont labe_fon = label->GetFont();
+    label->Bind(wxEVT_ENTER_WINDOW, [label](wxMouseEvent& event) {
+        label->SetFont(label->GetFont().Underlined());
+    });
+
+    label->Bind(wxEVT_LEAVE_WINDOW, [label, labe_fon](wxMouseEvent& event) {
+        label->SetFont(labe_fon);
+    });
+
+    label->Bind(wxEVT_LEFT_DOWN, [](wxMouseEvent& event) {
+        wxLaunchDefaultBrowser("https://wiki.qidi3d.com/en/software/qidi-studio/print-settings/seal");
+        event.Skip();
+    });
+
     SwitchButton* checkbox = new SwitchButton(p->m_panel_filament_title, wxID_ANY);
 
     bool init_val = wxGetApp().enable_seal();
@@ -964,6 +996,19 @@ Sidebar::Sidebar(Plater *parent)
 
     //bSizer39->Add(ams_btn, 0, wxALIGN_CENTER|wxALL, FromDIP(5));
     //bSizer39->Add(FromDIP(10), 0, 0, 0, 0 );
+
+    //w42
+    /*
+    fila_sync_btn = new ScalableButton(p->m_panel_filament_title, wxID_ANY, "box_fila_sync", wxEmptyString, wxDefaultSize, wxDefaultPosition,
+        wxBU_EXACTFIT | wxNO_BORDER, false, 18);
+    fila_sync_btn->SetToolTip(_L("Synchronize filament list from BOX"));
+    fila_sync_btn->Bind(wxEVT_BUTTON, [this, scrolled_sizer](wxCommandEvent& e) {
+        sync_box_list();
+        });
+    p->m_bpButton_ams_filament = fila_sync_btn;
+
+    bSizer39->Add(fila_sync_btn, 0, wxALIGN_CENTER | wxALL, FromDIP(5));
+    bSizer39->Add(FromDIP(10), 0, 0, 0, 0);*/
 
     ScalableButton* set_btn = new ScalableButton(p->m_panel_filament_title, wxID_ANY, "settings");
     set_btn->SetToolTip(_L("Set filaments to use"));
@@ -1916,6 +1961,80 @@ void Sidebar::sync_ams_list()
     }
     Layout();
 }
+
+//w42
+//w42
+std::map<int, DynamicPrintConfig> Sidebar::build_filament_box_list(std::vector<std::string> id, std::vector<std::string> color)
+{
+    std::map<int, DynamicPrintConfig> filament_ams_list;
+
+    char n = 'A';
+    char t = 0;
+    for (int i = 0; i < 4; i++) {
+
+        DynamicPrintConfig tray_config;
+        tray_config.set_key_value("filament_id", new ConfigOptionStrings{ id[i] });
+        tray_config.set_key_value("tag_uid", new ConfigOptionStrings{ "" });  //clear
+        tray_config.set_key_value("filament_type", new ConfigOptionStrings{ "" }); //clear
+        tray_config.set_key_value("tray_name", new ConfigOptionStrings{ "1A" });  //1A 1B 1C
+        tray_config.set_key_value("filament_colour", new ConfigOptionStrings{ into_u8(wxColour(color[i]).GetAsString(wxC2S_HTML_SYNTAX)) });//filament_color
+        tray_config.set_key_value("filament_exist", new ConfigOptionBools{ true });  //default
+
+        tray_config.set_key_value("filament_multi_colors", new ConfigOptionStrings{});
+        for (int j = 0; j < 4; ++j) {
+            tray_config.opt<ConfigOptionStrings>("filament_multi_colors")->values.push_back(into_u8(wxColour(color[j]).GetAsString(wxC2S_HTML_SYNTAX)));
+        }
+        filament_ams_list.emplace('A' + i, std::move(tray_config));
+    }
+
+    return filament_ams_list;
+}
+
+void Sidebar::sync_box_list()
+{
+    SelectMachineDialog* m_select_machine_dlg = nullptr;
+    SendMultiMachinePage* m_send_multi_dlg = nullptr;
+    SendToPrinterDialog* m_send_to_sdcard_dlg = nullptr;
+
+
+    wxString title = "";
+    if (!m_select_machine_dlg) m_select_machine_dlg = new SelectMachineDialog(wxGetApp().plater(), title);
+    m_select_machine_dlg->set_print_type(PrintFromType::FROM_NORMAL);
+    m_select_machine_dlg->prepare(0);
+    m_select_machine_dlg->remove_area();
+
+
+
+    if (m_select_machine_dlg->ShowModal() == wxID_YES)
+    {
+        //
+    }
+}
+
+void Sidebar::updata_filament_list() {
+    wxGetApp().get_tab(Preset::TYPE_FILAMENT)->select_preset(wxGetApp().preset_bundle->filament_presets[0]);
+    wxGetApp().preset_bundle->export_selections(*wxGetApp().app_config);
+    dynamic_filament_list.update();
+    // Expand filament list
+    p->m_panel_filament_content->SetMaxSize({ -1, -1 });
+    Layout();
+}
+
+void Sidebar::load_box_list(std::vector<std::string> id, std::vector<std::string> color)
+{
+    std::map<int, DynamicPrintConfig> filament_ams_list = build_filament_box_list(box_filament_id, box_filment_colors);
+
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": %1% items") % filament_ams_list.size();
+    wxGetApp().preset_bundle->filament_ams_list = filament_ams_list;
+
+    unsigned int unknowns = 0;
+    auto n = wxGetApp().preset_bundle->sync_box_list(unknowns);
+
+    wxGetApp().plater()->on_filaments_change(n);
+    for (auto c : p->combos_filament)
+        c->update();
+}
+
 
 ObjectList* Sidebar::obj_list()
 {
@@ -3812,37 +3931,39 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                     ////        // Is there any modifier or advanced config data?
                     ////        for (ModelVolume *model_volume : model_object->volumes) model_volume->config.reset();
                     ////    }
-                    else if (load_config && (file_version > app_version)) {
-                        Semver cloud_ver;
-                        if (wxGetApp().app_config->has("app", "cloud_version")) {
-                            std::string cloud_version = wxGetApp().app_config->get("app", "cloud_version");
-                            cloud_ver                 = *(Semver::parse(cloud_version));
-                        } else {
-                            cloud_ver = app_version;
-                        }
-                        if (config_substitutions.unrecogized_keys.size() > 0) {
-                            // std::string context = into_u8(text);
-                            wxString context;
-                            if (wxGetApp().app_config->get("user_mode") == "develop") {
-                                context = _L("Found following keys unrecognized:\n");
-                                for (auto &key : config_substitutions.unrecogized_keys) {
-                                    context += "  -";
-                                    context += key;
-                                    context += ";\n";
-                                }
-                            }
-                            context += "\n\n";
-                            Newer3mfVersionDialog newer_dlg(q, &file_version, &cloud_ver, context);
-                            newer_dlg.ShowModal();
-                        }
-                        else {
-                            //if the minor version is not matched
-                            if (file_version.min() != app_version.min()) {
-                                Newer3mfVersionDialog newer_dlg(q, &file_version, &cloud_ver, "");
-                                auto res = newer_dlg.ShowModal();
-                            }
-                        }
-                    } else if (!load_config) {
+                    //y54
+                    // else if (load_config && (file_version > app_version)) {
+                    //     Semver cloud_ver;
+                    //     if (wxGetApp().app_config->has("app", "cloud_version")) {
+                    //         std::string cloud_version = wxGetApp().app_config->get("app", "cloud_version");
+                    //         cloud_ver                 = *(Semver::parse(cloud_version));
+                    //     } else {
+                    //         cloud_ver = app_version;
+                    //     }
+                    //     if (config_substitutions.unrecogized_keys.size() > 0) {
+                    //         // std::string context = into_u8(text);
+                    //         wxString context;
+                    //         if (wxGetApp().app_config->get("user_mode") == "develop") {
+                    //             context = _L("Found following keys unrecognized:\n");
+                    //             for (auto &key : config_substitutions.unrecogized_keys) {
+                    //                 context += "  -";
+                    //                 context += key;
+                    //                 context += ";\n";
+                    //             }
+                    //         }
+                    //         context += "\n\n";
+                    //         Newer3mfVersionDialog newer_dlg(q, &file_version, &cloud_ver, context);
+                    //         newer_dlg.ShowModal();
+                    //     }
+                    //     else {
+                    //         //if the minor version is not matched
+                    //         if (file_version.min() != app_version.min()) {
+                    //             Newer3mfVersionDialog newer_dlg(q, &file_version, &cloud_ver, "");
+                    //             auto res = newer_dlg.ShowModal();
+                    //         }
+                    //     }
+                    //}
+                    else if (!load_config) {
                         // reset config except color
                         for (ModelObject *model_object : model.objects) {
                             bool has_extruder = model_object->config.has("extruder");
@@ -7329,6 +7450,8 @@ void Plater::priv::on_action_print_plate(SimpleEvent&)
     //y40
     wxString title = "Send print job to";
     SelectMachineDialog* dlg = new SelectMachineDialog(q, title);
+    //y52
+    dlg->prepare(partplate_list.get_curr_plate_index());
     if (dlg->ShowModal() == wxID_YES)
     {
         std::string send_ip = dlg->get_machine_url();
@@ -7400,7 +7523,8 @@ void Plater::priv::on_action_send_to_multi_machine(SimpleEvent&)
     // m_send_multi_dlg->ShowModal();
     if (!m_send_multi_dlg)
         m_send_multi_dlg = new SendMultiMachinePage(q);
-
+    //y52
+    m_send_multi_dlg->prepare(partplate_list.get_curr_plate_index());
     max_send_number = std::stoi(wxGetApp().app_config->get("max_send"));
     if (m_send_multi_dlg->ShowModal() == wxID_YES) 
     {
@@ -7572,6 +7696,8 @@ void Plater::priv::on_action_export_to_sdcard(SimpleEvent&)
     //y40
     wxString title = "Send to Printer SD card";
     SelectMachineDialog* dlg = new SelectMachineDialog(q, title);
+    //y52
+    dlg->prepare(partplate_list.get_curr_plate_index());
     if (dlg->ShowModal() == wxID_YES)
     {
         std::string send_ip = dlg->get_machine_url();

@@ -3623,6 +3623,7 @@ void GUI_App::check_printer_presets()
 void switch_window_pools();
 void release_window_pools();
 
+//y54
 void GUI_App::recreate_GUI(const wxString &msg_name)
 {
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "recreate_GUI enter";
@@ -3632,6 +3633,7 @@ void GUI_App::recreate_GUI(const wxString &msg_name)
     // y19
     mainframe->m_printer_view->StopStatusThread();
     mainframe->shutdown();
+
     ProgressDialog dlg(msg_name, msg_name, 100, nullptr, wxPD_AUTO_HIDE);
     dlg.Pulse();
     dlg.Update(10, _L("Rebuild") + dots);

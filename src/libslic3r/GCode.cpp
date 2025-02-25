@@ -2412,6 +2412,16 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
         // Modifies
         print.m_print_statistics));
     file.write_format("\n;%s\n", GCodeProcessor::reserved_tag(GCodeProcessor::ETags::Estimated_Printing_Time_Placeholder).c_str());
+
+    //w41
+    auto all_extruders = tool_ordering.all_extruders();
+    file.write("; used_extruders = ");
+    for (size_t i = 0; i < all_extruders.size(); ++i) {
+        file.write_format("%u", all_extruders[i]);
+        if (i < all_extruders.size() - 1)
+            file.write(";");
+    }
+    file.write("\n");
     //w12
     {
         auto [thumbnails, errors] = GCodeThumbnails::make_and_check_thumbnail_list(print.full_print_config());

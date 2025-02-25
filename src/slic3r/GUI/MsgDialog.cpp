@@ -717,6 +717,92 @@ NetworkErrorDialog::NetworkErrorDialog(wxWindow* parent)
     Centre(wxBOTH);
 }
 
+//y54
+CleanCacheDialog::CleanCacheDialog(wxWindow* parent)
+    : wxDialog(parent, wxID_ANY, _L("Clean the Webview Cache"), wxDefaultPosition)
+{
+    std::string icon_path = (boost::format("%1%/images/QIDIStudioTitle.ico") % resources_dir()).str();
+    SetIcon(wxIcon(encode_path(icon_path.c_str()), wxBITMAP_TYPE_ICO));
+
+    wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
+
+    auto m_line_top = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(-1, 1), wxTAB_TRAVERSAL);
+    m_line_top->SetBackgroundColour(wxColour(0xA6, 0xa9, 0xAA));
+    main_sizer->Add(m_line_top, 0, wxEXPAND, 0);
+    main_sizer->Add(0, 0, 0, wxTOP, FromDIP(5));
+
+    wxBoxSizer* content_sizer = new wxBoxSizer(wxHORIZONTAL);
+    wxStaticBitmap* info_bitmap = new wxStaticBitmap(this, wxID_ANY, create_scaled_bitmap("info", nullptr, 60), wxDefaultPosition, wxSize(FromDIP(70), FromDIP(70)), 0);
+    content_sizer->Add(info_bitmap, 0, wxEXPAND | wxALL, FromDIP(5));
+
+    wxBoxSizer* vertical_sizer = new wxBoxSizer(wxVERTICAL);
+    wxStaticText* message_text = new wxStaticText(this, wxID_ANY,
+        _L("Click the OK button, the software will open the WebView cache folder.\n"
+        "You need to manually delete the WebView folder.\n"),
+        wxDefaultPosition);
+    message_text->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
+    vertical_sizer->Add(message_text, 0, wxEXPAND | wxTOP, FromDIP(5));
+
+    wxString hyperlink_text = "https://wiki.qidi3d.com/en/software/qidi-studio/troubleshooting/blank-page";
+    wxHyperlinkCtrl* hyperlink = new wxHyperlinkCtrl(this, wxID_ANY, _L("Learn more"), hyperlink_text, wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
+    vertical_sizer->Add(hyperlink, 0, wxRIGHT, FromDIP(5));
+    content_sizer->Add(vertical_sizer, 0, wxEXPAND | wxALL, FromDIP(5));
+    main_sizer->Add(content_sizer, 0, wxEXPAND | wxALL, FromDIP(10));
+
+    m_btn_bg_enable = StateColor(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+        std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
+
+    Button* ok_btn = new Button(this, _L("OK"));
+    ok_btn->SetBackgroundColor(m_btn_bg_enable);
+    ok_btn->SetBorderColor(m_btn_bg_enable);
+    ok_btn->SetTextColor(StateColor::darkModeColorFor("#FFFFFE"));
+    ok_btn->SetSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
+    ok_btn->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
+    ok_btn->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
+    ok_btn->SetCornerRadius(FromDIP(12));
+    ok_btn->Enable(true);
+
+    Button* cancel_btn = new Button(this, _L("Cancel"));
+    cancel_btn->SetBackgroundColor(m_btn_bg_enable);
+    cancel_btn->SetBorderColor(m_btn_bg_enable);
+    cancel_btn->SetTextColor(StateColor::darkModeColorFor("#FFFFFE"));
+    cancel_btn->SetSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
+    cancel_btn->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
+    cancel_btn->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
+    cancel_btn->SetCornerRadius(FromDIP(12));
+    cancel_btn->Enable(true);
+
+    ok_btn->Bind(wxEVT_BUTTON, &CleanCacheDialog::OnOK, this);
+    cancel_btn->Bind(wxEVT_BUTTON, &CleanCacheDialog::OnCancel, this);
+
+    wxBoxSizer* hsizer_button = new wxBoxSizer(wxHORIZONTAL);
+    hsizer_button->AddStretchSpacer(1);
+    hsizer_button->Add(ok_btn, 0, wxRIGHT, FromDIP(10));
+    hsizer_button->AddSpacer(5);
+    hsizer_button->Add(cancel_btn, 0, wxRIGHT, FromDIP(10));
+
+    main_sizer->Add(hsizer_button, 0, wxEXPAND | wxBOTTOM, FromDIP(10));
+
+    this->SetSizer(main_sizer);
+    Layout();
+    Fit();
+    CenterOnParent();
+
+}
+
+CleanCacheDialog::~CleanCacheDialog(){}
+
+void CleanCacheDialog::OnOK(wxCommandEvent& event)
+{
+    EndModal(wxID_OK);
+}
+
+void CleanCacheDialog::OnCancel(wxCommandEvent& event)
+{
+    EndModal(wxID_CANCEL);
+}
+
+
 } // namespace GUI
 
 } // namespace Slic3r

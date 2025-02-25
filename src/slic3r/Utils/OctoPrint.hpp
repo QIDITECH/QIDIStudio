@@ -7,6 +7,8 @@
 
 #include "PrintHost.hpp"
 #include "libslic3r/PrintConfig.hpp"
+//w42
+#include "slic3r/GUI/SelectMachine.hpp"
 
 
 namespace Slic3r {
@@ -41,6 +43,15 @@ public:
     static void                SetStop(bool isStop) { m_isStop = isStop; };
     static bool                GetStop() { return m_isStop; };
     static bool                m_isStop;
+    //y53
+    static double              progress_percentage;
+
+    //w42
+    bool       get_box_state(wxString& curl_msg);
+    bool       get_printer_state(wxString& curl_msg);
+    std::pair<std::string, float>       send_command_to_printer(wxString& curl_msg);
+    GUI::Box_info       get_box_info(wxString& msg);
+    void       get_color_filament_str(wxString& msg, GUI::Box_info& machine_filament_info);
 
 protected:
     std::string m_show_ip;

@@ -68,7 +68,9 @@
 #include <slic3r/GUI/CreatePresetsDialog.hpp>
 
 //y
+#ifdef QDT_RELEASE_TO_PUBLIC
 #include "../QIDI/QIDINetwork.hpp"
+#endif
 
 namespace Slic3r {
 namespace GUI {
@@ -687,6 +689,33 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
 
     wxGetApp().persist_window_geometry(this, true);
     wxGetApp().persist_window_geometry(&m_settings_dialog, true);
+
+    //53
+    Bind(wxEVT_ICONIZE, [this](wxIconizeEvent& event) {
+        if (event.IsIconized()) {
+            if (m_printer_view->GetHasLoadUrl()) {
+                printer_view_ip = m_printer_view->GetWebIp();
+                printer_view_url = m_printer_view->GetWeburl();
+            }
+            wxString url;
+            if (m_printer_view->GetNetMode()) {
+                url = wxString::Format("file://%s/web/qidi/link_missing_connection.html", from_u8(resources_dir()));
+            }
+            else {
+                url = wxString::Format("file://%s/web/qidi/missing_connection.html", from_u8(resources_dir()));
+            }
+            m_printer_view->load_disconnect_url(url);
+        }
+        else {
+            if (!printer_view_ip.empty() && new_sel == tpMonitor) {
+                if (is_net_url)
+                    m_printer_view->load_net_url(printer_view_url, printer_view_ip);
+                else
+                    m_printer_view->load_url(printer_view_url);
+            }
+            m_printer_view->Layout();
+        }
+        });
 }
 
 #ifdef __WIN32__
@@ -1031,7 +1060,9 @@ void MainFrame::init_tabpanel()
 
     m_tabpanel->Bind(wxEVT_NOTEBOOK_PAGE_CHANGING, [this](wxBookCtrlEvent& e) {
         int old_sel = e.GetOldSelection();
-        int new_sel = e.GetSelection();
+        //y53
+        new_sel = e.GetSelection();
+
         if (wxGetApp().preset_bundle &&
             wxGetApp().preset_bundle->printers.get_edited_preset().is_qdt_vendor_preset(wxGetApp().preset_bundle) &&
             new_sel == tpMonitor) {
@@ -1061,40 +1092,37 @@ void MainFrame::init_tabpanel()
                 m_confirm_download_plugin_dlg->on_show();
             }
         }
-        //y
         else if (new_sel == tpMonitor && wxGetApp().preset_bundle != nullptr) {
-                // auto cfg = wxGetApp().preset_bundle->printers.get_edited_preset().config;
-                //wxString url;
-                //if (cfg.has("print_host_webui") && !cfg.opt_string("print_host_webui").empty()) {
-                //    url = cfg.opt_string("print_host_webui");
-                //} else if (cfg.has("print_host") && !cfg.opt_string("print_host").empty()) {
-                //    url = cfg.opt_string("print_host");
-                //}
-                //else {
-                //    ;
-                //}
-
-                // y24
-                // wxString url = m_printer_view->GetWeburl();
-                 
-                // y3 //y13 //y23 //y24
-                // if (url.empty()) {
-                //     if (m_printer_view->GetNetMode()) {
-                //         url = wxString::Format("file://%s/web/qidi/link_missing_connection.html", from_u8(resources_dir()));
-                //     }
-                //     else {
-                //         url = wxString::Format("file://%s/web/qidi/missing_connection.html", from_u8(resources_dir()));
-                //     }
-                // }
-                // m_printer_view->load_url(url);
-                // y28
-                m_printer_view->Layout();
+            //y53
+            if(!printer_view_ip.empty()){
+                if (is_net_url)
+                    m_printer_view->load_net_url(printer_view_url, printer_view_ip);
+                else
+                    m_printer_view->load_url(printer_view_url);
+            }
+            m_printer_view->Layout();
         }
         else if(new_sel == tpCalibration && wxGetApp().preset_bundle != nullptr)
         {
             m_calibration->m_printer_choice->update();
             m_calibration->m_filament_choice->update();
             m_calibration->m_print_choice->update();
+        }
+        //y53
+        else if (new_sel != tpMonitor){
+            if(m_printer_view->GetHasLoadUrl()){
+                printer_view_ip = m_printer_view->GetWebIp();
+                printer_view_url = m_printer_view->GetWeburl();
+                is_net_url = m_printer_view->IsNetUrl();
+            }
+            wxString url;
+            if (m_printer_view->GetNetMode()) {
+                url = wxString::Format("file://%s/web/qidi/link_missing_connection.html", from_u8(resources_dir()));
+            }
+            else {
+                url = wxString::Format("file://%s/web/qidi/missing_connection.html", from_u8(resources_dir()));
+            }
+            m_printer_view->load_disconnect_url(url);
         }
     });
 
@@ -2283,6 +2311,60 @@ static wxMenu* generate_help_menu()
     //     });
 
     // About
+
+    //y54
+    append_menu_item(helpMenu, wxID_ANY, _L("Clean the Webview Cache" ), _L("Clean the Webview Cache" ), [](wxCommandEvent&) {
+        CleanCacheDialog* dlg = new CleanCacheDialog(static_cast<wxWindow*>(wxGetApp().mainframe));
+        int res = dlg->ShowModal();
+        if (res == wxID_OK) {
+#ifdef _WIN32
+            wxString local_path = wxStandardPaths::Get().GetUserLocalDataDir();
+            wxString command = wxString::Format("explorer %s", local_path);
+            if (fs::exists(into_u8(local_path))) {
+                BOOST_LOG_TRIVIAL(error) << boost::format("The path is Exitsts : %1%") % local_path;
+                wxExecute(command);
+                wxPostEvent(wxGetApp().mainframe, wxCloseEvent(wxEVT_CLOSE_WINDOW));
+            }
+            else {
+                wxMessageBox(_L("The path is not exists!"), "Error", wxICON_ERROR | wxOK);
+                BOOST_LOG_TRIVIAL(error) << boost::format("The path is not exitsts: %1%") % local_path;
+        }
+#elif defined(__APPLE__)
+            wxString local_path = wxFileName::GetHomeDir() + "/Library/Caches";
+            wxString command = wxString::Format("open \"%s\"", local_path);
+            wxString local_path_2 = wxFileName::GetHomeDir() + "/Library/WebKit";
+            wxString command_2 = wxString::Format("open \"%s\"", local_path_2);
+            if (fs::exists(into_u8(local_path)) && fs::exists(into_u8(local_path_2))) {
+                BOOST_LOG_TRIVIAL(error) << boost::format("The path is Exitsts : %1%") % local_path;
+                wxExecute(command);
+                wxExecute(command_2);
+                wxPostEvent(wxGetApp().mainframe, wxCloseEvent(wxEVT_CLOSE_WINDOW));
+            }
+            else {
+                wxMessageBox(_L("The path is not exists!"), "Error", wxICON_ERROR | wxOK);
+                BOOST_LOG_TRIVIAL(error) << boost::format("The path is not exitsts: %1%") % local_path;
+            }
+#elif defined __linux__
+            wxString local_path = wxFileName::GetHomeDir() + "/.local/share";
+            wxString command = wxString::Format("xdg-open \"%s\"", local_path);
+            wxString local_path_2 = wxFileName::GetHomeDir() + "/.cache";
+            wxString command_2 = wxString::Format("xdg-open \"%s\"", local_path_2);
+            if (fs::exists(into_u8(local_path)) && fs::exists(into_u8(local_path_2))) {
+                BOOST_LOG_TRIVIAL(error) << boost::format("The path is Exitsts : %1%") % local_path;
+                wxExecute(command);
+                wxExecute(command_2);
+                wxPostEvent(wxGetApp().mainframe, wxCloseEvent(wxEVT_CLOSE_WINDOW));
+            }
+            else {
+                wxMessageBox(_L("The path is not exists!"), "Error", wxICON_ERROR | wxOK);
+                BOOST_LOG_TRIVIAL(error) << boost::format("The path is not exitsts: %1%") % local_path;
+            }
+#endif
+        }
+        dlg->Destroy();
+    });
+
+
 #ifndef __APPLE__
     wxString about_title = wxString::Format(_L("&About %s"), SLIC3R_APP_FULL_NAME);
     append_menu_item(helpMenu, wxID_ANY, about_title, about_title,
@@ -4062,7 +4144,6 @@ void SettingsDialog::on_dpi_changed(const wxRect& suggested_rect)
     Fit();
     Refresh();
 }
-
 
 } // GUI
 } // Slic3r

@@ -96,6 +96,9 @@ public:
     // QDS
     void            set_num_filaments(unsigned int n, std::string new_col = "");
     unsigned int sync_ams_list(unsigned int & unknowns);
+
+    //w42
+    unsigned int sync_box_list(unsigned int& unknowns);
     //QDS: check whether this is the only edited filament
     bool is_the_only_edited_filament(unsigned int filament_index);
 

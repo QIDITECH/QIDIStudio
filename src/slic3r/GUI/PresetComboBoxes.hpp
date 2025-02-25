@@ -86,6 +86,9 @@ public:
     virtual void sys_color_changed();
     virtual void OnSelect(wxCommandEvent& evt);
 
+    //w42
+    void add_box_filaments(std::string selected, bool alias_name = false);
+
 protected:
     typedef std::size_t Marker;
     std::function<void(int)>    on_selection_changed { nullptr };

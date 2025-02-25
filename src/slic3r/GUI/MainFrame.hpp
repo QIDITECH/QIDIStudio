@@ -416,6 +416,12 @@ public:
 
     int select_device_page_count{ 0 };
 
+    //y53
+    wxString printer_view_url = "";
+    wxString printer_view_ip = "";
+    bool is_net_url = false;
+    int new_sel;
+
 #ifdef __APPLE__
     std::unique_ptr<wxTaskBarIcon> m_taskbar_icon;
 #endif // __APPLE__
