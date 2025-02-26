@@ -2917,6 +2917,7 @@ void SelectMachineDialog::on_sync_btn(wxCommandEvent& event)
 void SelectMachineDialog::get_machine_filament_info() {
     wxGetApp().plater()->sidebar().box_filament_id = std::move(machine_filament_info.filament_id);
     wxGetApp().plater()->sidebar().box_filment_colors = std::move(machine_filament_info.filment_colors);
+    wxGetApp().plater()->sidebar().box_slot_state = std::move(machine_filament_info.slot_state);
     //return { machine_filament_info.filament_id, machine_filament_info.filment_colors };
 }
 
@@ -3751,6 +3752,7 @@ void SelectMachineDialog::update_show_status()
     }
     if (!dev) return;
     dev->check_pushing();
+
     PartPlate* plate = m_plater->get_partplate_list().get_curr_plate();
 
     // blank plate has no valid gcode file
@@ -3773,6 +3775,7 @@ void SelectMachineDialog::update_show_status()
         }
         return;
     }
+    agent->install_device_cert(obj_->dev_id, obj_->is_lan_mode_printer());
 
     /* check cloud machine connections */
     if (!obj_->is_lan_mode_printer()) {

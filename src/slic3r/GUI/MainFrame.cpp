@@ -1720,6 +1720,8 @@ wxBoxSizer* MainFrame::create_side_tools()
                 wxPostEvent(m_plater, SimpleEvent(EVT_GLTOOLBAR_SEND_TO_PRINTER));
             else if (m_print_select == eSendToPrinterAll)
                 wxPostEvent(m_plater, SimpleEvent(EVT_GLTOOLBAR_SEND_TO_PRINTER_ALL));
+            else if (m_print_select == eSendMultiApp)
+                wxPostEvent(m_plater, SimpleEvent(EVT_GLTOOLBAR_SEND_MULTI_APP));
             // y16
             else if (m_print_select == ePrintMultiMachine)
                  wxPostEvent(m_plater, SimpleEvent(EVT_GLTOOLBAR_PRINT_MULTI_MACHINE));
@@ -1885,6 +1887,22 @@ wxBoxSizer* MainFrame::create_side_tools()
                 p->append_button(export_sliced_file_btn);
                 // p->append_button(export_all_sliced_file_btn);
 
+                //y
+                // if (check_qdt_farm_client_installed()) {
+                //     SideButton *send_to_multi_app_btn = new SideButton(p, _L("Send to Bambu Farm Manager Client"), "");
+                //     send_to_multi_app_btn->SetCornerRadius(0);
+                //     p->append_button(send_to_multi_app_btn);
+
+                //     send_to_multi_app_btn->Bind(wxEVT_BUTTON, [this, p](wxCommandEvent &) {
+                //         m_print_btn->SetLabel(_L("Send to BFMC"));
+                //         m_print_select = eSendMultiApp;
+                //         m_print_enable = get_enable_print_status();
+                //         m_print_btn->Enable(m_print_enable);
+                //         this->Layout();
+                //         p->Dismiss();
+                //     });
+                // }
+
                 if (enable_multi_machine) {
                     SideButton* print_multi_machine_btn = new SideButton(p, _L("Send to Multi-device"), "");
                     print_multi_machine_btn->SetCornerRadius(0);
@@ -1988,6 +2006,11 @@ bool MainFrame::get_enable_print_status()
        if(m_plater->only_gcode_mode())
            enable = false;
        enable = enable && !is_all_plates;
+    }else if (m_print_select == eSendMultiApp) {
+        if (!current_plate->is_slice_result_ready_for_print()) {
+            enable = false;
+        }
+        enable = enable && !is_all_plates;
     }
     else if (m_print_select == eExportGcode)
     {
@@ -2048,6 +2071,11 @@ bool MainFrame::get_enable_print_status()
     {
         if (!current_plate->is_slice_result_ready_for_print())
         {
+            enable = false;
+        }
+        enable = enable && !is_all_plates;
+    }else if (m_print_select == eSendMultiApp) {
+        if (!current_plate->is_slice_result_ready_for_print()) {
             enable = false;
         }
         enable = enable && !is_all_plates;
@@ -2518,7 +2546,10 @@ void MainFrame::init_menubar_as_editor()
             [this](){return can_add_models(); }, this);
 #else
         append_menu_item(import_menu, wxID_ANY, _L("Import 3MF/STL/STEP/SVG/OBJ/AMF") + dots + "\t" + ctrl + "I", _L("Load a model"),
-            [this](wxCommandEvent&) { if (m_plater) { m_plater->add_model(); } }, "", nullptr,
+            [this](wxCommandEvent &) {
+                if (m_plater) { m_plater->add_file(); }
+            },
+            "", nullptr,
             [this](){return can_add_models(); }, this);
 #endif
         append_menu_item(import_menu, wxID_ANY, _L("Import Configs") + dots /*+ "\tCtrl+I"*/, _L("Load configs"),
@@ -3994,6 +4025,27 @@ void MainFrame::show_sync_dialog()
 {
     SimpleEvent* evt = new SimpleEvent(EVT_SYNC_CLOUD_PRESET);
     wxQueueEvent(this, evt);
+}
+
+bool MainFrame::check_qdt_farm_client_installed()
+{
+#ifdef WIN32
+    HKEY hKey;
+    LONG result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Bambulab\\Bambu Farm Manager Client"), 0, KEY_READ, &hKey);
+    LONG result_backup = RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("HKEY_CLASSES_ROOT\\bambu-farm-client\\shell\\open\\command"), 0, KEY_READ, &hKey);
+
+    if (result == ERROR_SUCCESS || result_backup == ERROR_SUCCESS) {
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "Bambu Farm Manager Client found.";
+        RegCloseKey(hKey);
+        return true;
+    } else {
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "Bambu Farm Manager Client Not found.";
+        return false;
+    }
+
+#else
+    return false;
+#endif
 }
 
 void MainFrame::update_side_preset_ui()

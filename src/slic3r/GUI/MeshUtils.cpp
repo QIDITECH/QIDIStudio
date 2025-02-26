@@ -605,6 +605,19 @@ Vec3f MeshRaycaster::get_closest_point(const Vec3f& point, Vec3f* normal) const
     return closest_point.cast<float>();
 }
 
+bool MeshRaycaster::get_closest_point_and_normal(const Vec3f &point, const Vec3f &direction, Vec3f *closest_point, Vec3f *normal, int *face_id) const
+{
+    auto hits = m_emesh.query_ray_hits(point.cast<double>(), direction.cast<double>().normalized());
+    if (hits.empty())
+        return false; // no intersection found
+    size_t hit_id  = 0;
+    auto & hit     = hits[hit_id];
+    *closest_point = hit.position().cast<float>();
+    *normal        = hit.normal().cast<float>();
+    if (face_id) { *face_id = hit.face(); }
+    return true;
+}
+
 int MeshRaycaster::get_closest_facet(const Vec3f &point) const
 {
     int   facet_idx = 0;

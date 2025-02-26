@@ -620,31 +620,34 @@ GUI::Box_info OctoPrint::get_box_info(wxString& msg)
                             std::string vendor_key = "vendor_slot" + std::to_string(i);
                             std::string slot_key = "slot" + std::to_string(i);
 
-                            if (line.find(color_key) != std::string::npos) {
+                            // Create regex patterns for exact variable name matches
+                            std::regex color_pattern("^\\s*" + color_key + "\\s*=");
+                            std::regex filament_pattern("^\\s*" + filament_key + "\\s*=");
+                            std::regex vendor_pattern("^\\s*" + vendor_key + "\\s*=");
+                            std::regex slot_pattern("^\\s*" + slot_key + "\\s*=");
+
+                            if (std::regex_search(line, color_pattern)) {
                                 size_t value_start = line.find("=") + 1;
                                 std::string value_str = line.substr(value_start);
                                 value_str.erase(0, value_str.find_first_not_of(" "));
                                 value_str.erase(value_str.find_last_not_of(" ") + 1);
                                 filament_info.filament_color_index[i] = std::stoi(value_str);
                             }
-
-                            if (line.find(filament_key) != std::string::npos) {
+                            else if (std::regex_search(line, filament_pattern)) {
                                 size_t value_start = line.find("=") + 1;
                                 std::string value_str = line.substr(value_start);
                                 value_str.erase(0, value_str.find_first_not_of(" "));
                                 value_str.erase(value_str.find_last_not_of(" ") + 1);
                                 filament_info.filament_index[i] = std::stoi(value_str);
                             }
-
-                            if (line.find(vendor_key) != std::string::npos) {
+                            else if (std::regex_search(line, vendor_pattern)) {
                                 size_t value_start = line.find("=") + 1;
                                 std::string value_str = line.substr(value_start);
                                 value_str.erase(0, value_str.find_first_not_of(" "));
                                 value_str.erase(value_str.find_last_not_of(" ") + 1);
                                 filament_info.filament_vendor[i] = std::stoi(value_str);
                             }
-
-                            if (line.find(slot_key) != std::string::npos) {
+                            else if (std::regex_search(line, slot_pattern)) {
                                 size_t value_start = line.find("=") + 1;
                                 std::string value_str = line.substr(value_start);
                                 value_str.erase(0, value_str.find_first_not_of(" "));

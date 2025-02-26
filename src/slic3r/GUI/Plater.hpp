@@ -154,9 +154,10 @@ public:
     //w42
     std::vector<std::string> box_filament_id;
     std::vector<std::string> box_filment_colors;
+    std::vector<int> box_slot_state;
     void sync_box_list();
     void load_box_list(std::vector<std::string> id, std::vector<std::string> color);
-    std::map<int, DynamicPrintConfig> build_filament_box_list(std::vector<std::string> id, std::vector<std::string> color);
+    std::map<int, DynamicPrintConfig> build_filament_box_list(std::vector<std::string> id, std::vector<std::string> color, std::vector<int> slot_state);
     void updata_filament_list();
 
     ObjectList*             obj_list();
@@ -841,6 +842,7 @@ private:
 };
 
 std::vector<int> get_min_flush_volumes(const DynamicPrintConfig& full_config);
+std::string check_boolean_possible(const std::vector<const ModelVolume*>& volumes);
 } // namespace GUI
 } // namespace Slic3r
 

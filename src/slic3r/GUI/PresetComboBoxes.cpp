@@ -1081,7 +1081,7 @@ void PlaterPresetComboBox::update()
     }
 
     if (m_type == Preset::TYPE_FILAMENT)
-        add_ams_filaments(into_u8(selected_user_preset.empty() ? selected_system_preset : selected_user_preset), true);
+        add_box_filaments(into_u8(selected_user_preset.empty() ? selected_system_preset : selected_user_preset), true); //add_ams_filaments(into_u8(selected_user_preset.empty() ? selected_system_preset : selected_user_preset), true);
 
     //y
     //std::vector<std::string> filament_orders = {"QIDI PLA Basic", "QIDI PLA Matte", "QIDI PETG HF",    "QIDI ABS",      "QIDI PLA Silk", "QIDI PLA-CF",

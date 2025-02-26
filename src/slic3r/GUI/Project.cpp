@@ -222,11 +222,13 @@ void ProjectPanel::on_reload(wxCommandEvent& evt)
 
         wxString strJS = wxString::Format("HandleStudio(%s)", m_Res.dump(-1, ' ', false, json::error_handler_t::ignore));
 
+#ifdef __APPLE__
+        wxGetApp().CallAfter([this, strJS] { RunScript(strJS.ToStdString()); });
+#else
         if (m_web_init_completed) {
-            wxGetApp().CallAfter([this, strJS] {
-                RunScript(strJS.ToStdString());
-                });
+            wxGetApp().CallAfter([this, strJS] { RunScript(strJS.ToStdString()); });
         }
+#endif
     });
 }
 

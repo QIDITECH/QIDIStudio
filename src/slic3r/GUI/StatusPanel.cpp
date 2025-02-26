@@ -397,9 +397,8 @@ void PrintingTaskPanel::create_panel(wxWindow* parent)
     bSizer_finish_time->Add(0, 0, 0, wxLEFT, FromDIP(20));
     bSizer_finish_time->Add(m_staticText_finish_time, 0, wxALIGN_CENTER | wxALL, 0);
     bSizer_finish_time->Add(m_staticText_finish_day, 0,wxLEFT | wxRIGHT , FromDIP(10));
-    // bSizer_finish_time->Add(0, 0, 0, wxLEFT, FromDIP(20));
-    bSizer_finish_time->Add(panel_button_block, 0, wxALIGN_CENTER | wxALL, 0);
-    penel_finish_time->SetMaxSize(wxSize(FromDIP(600), -1));
+    bSizer_finish_time->Add(0, 0, 0, wxLEFT, FromDIP(116));
+    penel_finish_time->SetMaxSize(wxSize(FromDIP(720), -1));
     penel_finish_time->SetSizer(bSizer_finish_time);
     penel_finish_time->Layout();
 
@@ -2576,7 +2575,7 @@ void StatusPanel::update_ams(MachineObject *obj)
     }
     if (m_filament_setting_dlg) { m_filament_setting_dlg->obj = obj; }
 
-    if (obj && (!last_cali_version.has_value() || last_cali_version != obj->cali_version)) {
+    if (obj && (obj->last_cali_version != obj->cali_version)) {
         last_cali_version = obj->cali_version;
         CalibUtils::emit_get_PA_calib_info(obj->nozzle_diameter, "");
     }

@@ -1181,11 +1181,14 @@ wxWindow* PreferencesDialog::create_general_page()
     auto  item_show_shells_in_preview_settings = create_item_checkbox(_L("Always show shells in preview"), page,
                                                          _L("Always show shells or not in preview view tab.If change value,you should reslice."), 50,
                                                          "show_shells_in_preview");
+                                                         auto  item_import_single_svg_and_split         = create_item_checkbox(_L("Import a single SVG and split it"), page,
+                                                         _L("Import a single SVG and then split it to several parts."), 50,
+                                                         "import_single_svg_and_split");
     auto  enable_lod_settings       = create_item_checkbox(_L("Improve rendering performance by lod"), page,
                                                          _L("Improved rendering performance under the scene of multiple plates and many models."), 50,
                                                          "enable_lod");
-    auto enable_opengl_multi_instance_rendering   = create_item_checkbox(_L("enable multi instance rendering by opengl"), page,
-                                                    _L("If enabled, it can improve certain rendering performance. But for some graphics cards, it may not be applicable, please turn it off."), 50, "enable_opengl_multi_instance");
+    auto enable_opengl_multi_instance_rendering   = create_item_checkbox(_L("Enable multi instance rendering by opengl"), page,
+                                                         _L("If enabled, it can improve certain rendering performance. But for some graphics cards, it may not be applicable, please turn it off."), 50, "enable_opengl_multi_instance");
     float range_min = 1.0, range_max = 2.5;
     auto item_grabber_size_settings = create_item_range_input(_L("Grabber scale"), page,
                                                               _L("Set grabber size for move,rotate,scale tool.") + _L("Value range") + ":[" + std::to_string(range_min) + "," +
@@ -1274,6 +1277,7 @@ wxWindow* PreferencesDialog::create_general_page()
     sizer_page->Add(_3d_settings, 0, wxTOP | wxEXPAND, FromDIP(20));
     sizer_page->Add(item_mouse_zoom_settings, 0, wxTOP, FromDIP(3));
     sizer_page->Add(item_show_shells_in_preview_settings, 0, wxTOP, FromDIP(3));
+    sizer_page->Add(item_import_single_svg_and_split, 0, wxTOP, FromDIP(3));
     sizer_page->Add(enable_opengl_multi_instance_rendering, 0, wxTOP, FromDIP(3));
     sizer_page->Add(enable_lod_settings, 0, wxTOP, FromDIP(3));
     sizer_page->Add(item_grabber_size_settings, 0, wxTOP, FromDIP(3));

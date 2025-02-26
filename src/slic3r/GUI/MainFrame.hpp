@@ -253,7 +253,8 @@ public:
         eUploadGcode         = 7,
         eExportAllSlicedFile = 8,
         ePrintMultiMachine   = 9, 
-        eSendMultiGcode     = 10    // y11
+        eSendMultiGcode      = 10,    // y11
+        eSendMultiApp        = 11
     };
 
     void update_layout();
@@ -286,6 +287,7 @@ public:
     // Called from wxEVT_ACTIVATE, as wxEVT_CREATE was not reliable (bug in wxWidgets?).
     void        register_win32_callbacks();
     void        init_menubar_as_editor();
+    bool        check_qdt_farm_client_installed();
     void        init_menubar_as_gcodeviewer();
     void        update_menubar();
     // Open item in menu by menu and item name (in actual language)

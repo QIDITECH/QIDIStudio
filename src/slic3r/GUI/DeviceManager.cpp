@@ -17,6 +17,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <wx/dir.h>
 #include "fast_float/fast_float.h"
 
 #define CALI_DEBUG
@@ -173,6 +174,57 @@ std::string to_string_nozzle_diameter(float nozzle_diameter)
         return "0.8";
     }
     return "0";
+}
+
+void sanitizeToUtf8(std::string& str) {
+    std::string result;
+    size_t i = 0;
+
+    while (i < str.size()) {
+        unsigned char c = str[i];
+        size_t remainingBytes = 0;
+        bool valid = true;
+
+        if ((c & 0x80) == 0x00) { // 1-byte character (ASCII)
+            remainingBytes = 0;
+        }
+        else if ((c & 0xE0) == 0xC0) { // 2-byte character
+            remainingBytes = 1;
+        }
+        else if ((c & 0xF0) == 0xE0) { // 3-byte character
+            remainingBytes = 2;
+        }
+        else if ((c & 0xF8) == 0xF0) { // 4-byte character
+            remainingBytes = 3;
+        }
+        else {
+            valid = false; // Invalid first byte
+        }
+
+        if (valid && i + remainingBytes < str.size()) {
+            for (size_t j = 1; j <= remainingBytes; ++j) {
+                if ((str[i + j] & 0xC0) != 0x80) {
+                    valid = false; // Invalid continuation byte
+                    break;
+                }
+            }
+        }
+        else {
+            valid = false; // Truncated character
+        }
+
+        if (valid) {
+            // Append valid UTF-8 character
+            result.append(str, i, remainingBytes + 1);
+            i += remainingBytes + 1;
+        }
+        else {
+            // Replace invalid character with space
+            result += ' ';
+            ++i; // Skip the invalid byte
+        }
+    }
+    str = std::move(result);
 }
 
 namespace Slic3r {
@@ -1683,7 +1735,12 @@ int MachineObject::command_auto_leveling()
 
 int MachineObject::command_go_home()
 {
-    return this->publish_gcode("G28 \n");
+    if (this->is_in_printing()) {
+        return this->publish_gcode("G28 X\n");
+    }
+    else {
+        return this->publish_gcode("G28 \n");
+    }
 }
 
 int MachineObject::command_control_fan(FanType fan_type, bool on_off)
@@ -2555,7 +2612,7 @@ void MachineObject::reset_update_time()
 {
     BOOST_LOG_TRIVIAL(trace) << "reset reset_update_time, dev_id =" << dev_id;
     last_update_time = std::chrono::system_clock::now();
-    subscribe_counter = 3;
+    subscribe_counter = SUBSCRIBE_RETRY_COUNT;
 }
 
 void MachineObject::reset()
@@ -2579,7 +2636,7 @@ void MachineObject::reset()
     nozzle_diameter = 0.0f;
     network_wired = false;
     dev_connection_name = "";
-    subscribe_counter = 3;
+    subscribe_counter = SUBSCRIBE_RETRY_COUNT;
     job_id_ = "";
     m_plate_index = -1;
 
@@ -2685,29 +2742,29 @@ bool MachineObject::is_camera_busy_off()
     return false;
 }
 
-int MachineObject::publish_json(std::string json_str, int qos)
+int MachineObject::publish_json(std::string json_str, int qos, int flag)
 {
     if (is_lan_mode_printer()) {
-        return local_publish_json(json_str, qos);
+        return local_publish_json(json_str, qos, flag);
     } else {
-        return cloud_publish_json(json_str, qos);
+        return cloud_publish_json(json_str, qos, flag);
     }
 }
 
-int MachineObject::cloud_publish_json(std::string json_str, int qos)
+int MachineObject::cloud_publish_json(std::string json_str, int qos, int flag)
 {
     int result = -1;
     if (m_agent)
-        result = m_agent->send_message(dev_id, json_str, qos);
+        result = m_agent->send_message(dev_id, json_str, qos, flag);
 
     return result;
 }
 
-int MachineObject::local_publish_json(std::string json_str, int qos)
+int MachineObject::local_publish_json(std::string json_str, int qos, int flag)
 {
     int result = -1;
     if (m_agent) {
-        result = m_agent->send_message_to_printer(dev_id, json_str, qos);
+        result = m_agent->send_message_to_printer(dev_id, json_str, qos, flag);
     }
     return result;
 }
@@ -2755,10 +2812,24 @@ int MachineObject::parse_json(std::string payload, bool key_field_only)
     /* update last received time */
     last_update_time = std::chrono::system_clock::now();
 
+    json j_pre;
+    bool parse_ok = false;
+    try {
+        j_pre = json::parse(payload);
+        parse_ok = true;
+    }
+    catch(...) {
+        parse_ok = false;
+        /* post process payload */
+        sanitizeToUtf8(payload);
+        BOOST_LOG_TRIVIAL(info) << "parse_json: sanitize to utf8";
+    }
+
     try {
         bool restored_json = false;
         json j;
-        json j_pre = json::parse(payload);
+        if (!parse_ok)
+            j_pre = json::parse(payload);
         CNumericLocalesSetter locales_setter;
         if (j_pre.empty()) {
             return 0;
@@ -4663,15 +4734,24 @@ int MachineObject::parse_json(std::string payload, bool key_field_only)
                     }
                 }   
                 else if (jj["command"].get<std::string>() == "extrusion_cali_get") {
+                    std::string str = jj.dump();
+                    BOOST_LOG_TRIVIAL(info) << "extrusion_cali_get: " << str;
+                    reset_pa_cali_history_result();
+                    bool is_succeed = true;
                     if (jj.contains("result") && jj.contains("reason")) {
                         if (jj["result"].get<std::string>() == "fail") {
-                            auto err_code = jj["err_code"].get<int>();
-                            print_error   = err_code;
+                            if (jj.contains("err_code")) {
+                                auto err_code = jj["err_code"].get<int>();
+                                print_error   = err_code;
+                            }
+                            is_succeed = false;
                         }
                     }
 
-                    reset_pa_cali_history_result();
-                    has_get_pa_calib_tab = true;
+                    if (is_succeed) {
+                        last_cali_version = cali_version;
+                        has_get_pa_calib_tab = true;
+                    }
 
                     if (jj.contains("nozzle_diameter")) {
                         if (jj["nozzle_diameter"].is_number_float()) {
@@ -4690,11 +4770,6 @@ int MachineObject::parse_json(std::string payload, bool key_field_only)
 
                     if (jj.contains("filaments") && jj["filaments"].is_array()) {
                         try {
-#ifdef CALI_DEBUG
-                            std::string str = jj.dump();
-                            BOOST_LOG_TRIVIAL(info) << "extrusion_cali_get: " << str;
-#endif
-
                             for (auto it = jj["filaments"].begin(); it != jj["filaments"].end(); it++) {
                                 PACalibResult pa_calib_result;
                                 pa_calib_result.filament_id = (*it)["filament_id"].get<std::string>();
@@ -4733,23 +4808,25 @@ int MachineObject::parse_json(std::string payload, bool key_field_only)
                     // notify cali history to update
                 }
                 else if (jj["command"].get<std::string>() == "extrusion_cali_get_result") {
+                    std::string str = jj.dump();
+                    BOOST_LOG_TRIVIAL(info) << "extrusion_cali_get_result: " << str;
+                    reset_pa_cali_result();
+                    bool is_succeed = true;
                     if (jj.contains("result") && jj.contains("reason")) {
                         if (jj["result"].get<std::string>() == "fail") {
-                            auto err_code = jj["err_code"].get<int>();
-                            print_error   = err_code;
+                            if (jj.contains("err_code")) {
+                                auto err_code = jj["err_code"].get<int>();
+                                print_error   = err_code;
+                                is_succeed    = false;
+                            }
                         }
                     }
 
-                    reset_pa_cali_result();
-                    get_pa_calib_result = true;
+                    if (is_succeed)
+                        get_pa_calib_result = true;
 
                     if (jj.contains("filaments") && jj["filaments"].is_array()) {
                         try {
-#ifdef CALI_DEBUG
-                            std::string str = jj.dump();
-                            BOOST_LOG_TRIVIAL(info) << "extrusion_cali_get_result: " << str;
-#endif
-
                             for (auto it = jj["filaments"].begin(); it != jj["filaments"].end(); it++) {
                                 PACalibResult pa_calib_result;
                                 pa_calib_result.tray_id     = (*it)["tray_id"].get<int>();
@@ -4936,7 +5013,7 @@ int MachineObject::publish_gcode(std::string gcode_str)
         t["gcode"] = j.dump();
         m_agent->track_event("cmd_gcode_line", t.dump());
     }
-    return publish_json(j.dump());
+    return publish_json(j.dump(), 0);
 }
 
 QDTSubTask* MachineObject::get_subtask()
@@ -5334,8 +5411,9 @@ int MachineObject::get_flag_bits(int num, int start, int count)
 void MachineObject::update_printer_preset_name(const std::string &nozzle_diameter_str)
 {
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " " << __LINE__ << "start update preset_name";
-    auto preset_boundle = Slic3r::GUI::wxGetApp().preset_bundle;
-    auto printer_set = preset_boundle->get_printer_names_by_printer_type_and_nozzle(MachineObject::get_preset_printer_model_name(this->printer_type), nozzle_diameter_str);
+    auto preset_bundle = Slic3r::GUI::wxGetApp().preset_bundle;
+    if (!preset_bundle) return;
+    auto printer_set = preset_bundle->get_printer_names_by_printer_type_and_nozzle(MachineObject::get_preset_printer_model_name(this->printer_type), nozzle_diameter_str);
     if (printer_set.size() > 0)
         m_printer_preset_name = *printer_set.begin();
     else
@@ -5732,13 +5810,13 @@ bool DeviceManager::set_selected_machine(std::string dev_id, bool need_disconnec
                     }
                 } else {
                     BOOST_LOG_TRIVIAL(info) << "static: set_selected_machine: same dev_id = empty";
-                    m_agent->set_user_selected_machine("");
                     it->second->reset();
 #if !QDT_RELEASE_TO_PUBLIC
                     it->second->connect(false, Slic3r::GUI::wxGetApp().app_config->get("enable_ssl_for_mqtt") == "true" ? true : false);
 #else
                     it->second->connect(false, it->second->local_use_ssl_for_mqtt);
 #endif
+                    m_agent->set_user_selected_machine(dev_id);
                     it->second->set_lan_mode_connection_state(true);
                 }
             }

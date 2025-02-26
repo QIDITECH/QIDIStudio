@@ -1964,19 +1964,24 @@ void Sidebar::sync_ams_list()
 
 //w42
 //w42
-std::map<int, DynamicPrintConfig> Sidebar::build_filament_box_list(std::vector<std::string> id, std::vector<std::string> color)
+std::map<int, DynamicPrintConfig> Sidebar::build_filament_box_list(std::vector<std::string> id, std::vector<std::string> color, std::vector<int> slot_state)
 {
     std::map<int, DynamicPrintConfig> filament_ams_list;
 
     char n = 'A';
     char t = 0;
-    for (int i = 0; i < 4; i++) {
-
+    for (int i = 0; i < 16; i++) {
+        if (slot_state[i] == 0)
+            continue;
         DynamicPrintConfig tray_config;
         tray_config.set_key_value("filament_id", new ConfigOptionStrings{ id[i] });
         tray_config.set_key_value("tag_uid", new ConfigOptionStrings{ "" });  //clear
         tray_config.set_key_value("filament_type", new ConfigOptionStrings{ "" }); //clear
-        tray_config.set_key_value("tray_name", new ConfigOptionStrings{ "1A" });  //1A 1B 1C
+        int group = i / 4 + 1;
+        char suffix = 'A' + (i % 4); 
+        //std::string tray_name = "1" + std::string(1, 'A' + i);
+        std::string tray_name = std::to_string(group) + suffix;
+        tray_config.set_key_value("tray_name", new ConfigOptionStrings{ tray_name });  //1A 1B 1C
         tray_config.set_key_value("filament_colour", new ConfigOptionStrings{ into_u8(wxColour(color[i]).GetAsString(wxC2S_HTML_SYNTAX)) });//filament_color
         tray_config.set_key_value("filament_exist", new ConfigOptionBools{ true });  //default
 
@@ -2002,6 +2007,7 @@ void Sidebar::sync_box_list()
     m_select_machine_dlg->set_print_type(PrintFromType::FROM_NORMAL);
     m_select_machine_dlg->prepare(0);
     m_select_machine_dlg->remove_area();
+    
 
 
 
@@ -2022,7 +2028,7 @@ void Sidebar::updata_filament_list() {
 
 void Sidebar::load_box_list(std::vector<std::string> id, std::vector<std::string> color)
 {
-    std::map<int, DynamicPrintConfig> filament_ams_list = build_filament_box_list(box_filament_id, box_filment_colors);
+    std::map<int, DynamicPrintConfig> filament_ams_list = build_filament_box_list(box_filament_id, box_filment_colors, box_slot_state);
 
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": %1% items") % filament_ams_list.size();
     wxGetApp().preset_bundle->filament_ams_list = filament_ams_list;
@@ -2906,6 +2912,7 @@ struct Plater::priv
     bool PopupObjectTable(int object_id, int volume_id, const wxPoint& position);
     void on_action_send_to_printer(bool isall = false);
     void on_action_send_to_multi_machine(SimpleEvent&);
+    void on_action_send_to_multi_app(SimpleEvent&);
     int update_print_required_data(Slic3r::DynamicPrintConfig config, Slic3r::Model model, Slic3r::PlateDataPtrs plate_data_list, std::string file_name, std::string file_path);
 private:
     bool layers_height_allowed() const;
@@ -3279,6 +3286,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
         q->Bind(EVT_GLTOOLBAR_SEND_TO_PRINTER, &priv::on_action_export_to_sdcard, this);
         q->Bind(EVT_GLTOOLBAR_SEND_TO_PRINTER_ALL, &priv::on_action_export_to_sdcard_all, this);
         q->Bind(EVT_GLTOOLBAR_PRINT_MULTI_MACHINE, &priv::on_action_send_to_multi_machine, this);
+        q->Bind(EVT_GLTOOLBAR_SEND_MULTI_APP, &priv::on_action_send_to_multi_app, this);
         q->Bind(EVT_GLCANVAS_PLATE_SELECT, &priv::on_plate_selected, this);
         q->Bind(EVT_DOWNLOAD_PROJECT, &priv::on_action_download_project, this);
         q->Bind(EVT_IMPORT_MODEL_ID, &priv::on_action_request_model_id, this);
@@ -3668,8 +3676,8 @@ void read_binary_stl(const std::string& filename, std::string& model_id, std::st
 
         size_t pos = ext_content.find('&');
         if (pos != std::string::npos) {
-            ml_content = ext_content.substr(0, pos);
-            mw_content = ext_content.substr(pos + 1);
+            mw_content = ext_content.substr(0, pos);
+            ml_content = ext_content.substr(pos + 1);
         }
 
         if (ml_content.empty() && ext_content.find("ML") != std::string::npos) {
@@ -4249,6 +4257,7 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                         if (linear <= 0) linear = 0.003;
                         double angle = string_to_double_decimal_point(wxGetApp().app_config->get("angle_defletion"));
                         if (angle <= 0) angle = 0.5;
+                        bool split_compound = wxGetApp().app_config->get_bool("is_split_compound");
                         model = Slic3r::Model:: read_from_step(path.string(), strategy,
                         [this, &dlg, real_filename, &progress_percent, &file_percent, step_percent, INPUT_FILES_RATIO, total_files, i](int load_stage, int current, int total, bool &cancel)
                         {
@@ -4265,22 +4274,24 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                                 Slic3r::GUI::show_info(nullptr, _L("Name of components inside step file is not UTF8 format!") + "\n\n" + _L("The name may show garbage characters!"),
                                                     _L("Attention!"));
                         },
-                        [this, &path, &is_user_cancel, &linear, &angle](Slic3r::Step& file, double& linear_value, double& angle_value)-> int {
+                        [this, &path, &is_user_cancel, &linear, &angle, &split_compound](Slic3r::Step& file, double& linear_value, double& angle_value, bool& is_split)-> int {
                             if (wxGetApp().app_config->get_bool("enable_step_mesh_setting")) {
                                 StepMeshDialog mesh_dlg(nullptr, file, linear, angle);
                                 if (mesh_dlg.ShowModal() == wxID_OK) {
                                     linear_value = mesh_dlg.get_linear_defletion();
-                                    angle_value = mesh_dlg.get_angle_defletion();
+                                    angle_value  = mesh_dlg.get_angle_defletion();
+                                    is_split     = mesh_dlg.get_split_compound_value();
                                     return 1;
                                 }
                             }else {
                                 linear_value = linear;
                                 angle_value = angle;
+                                is_split = split_compound;
                                 return 1;
                             }
                             is_user_cancel = true;
                             return -1;
-                        }, linear, angle);
+                        }, linear, angle, split_compound);
                 }else {
                     model = Slic3r::Model:: read_from_file(
                     path.string(), nullptr, nullptr, strategy, &plate_data, &project_presets, &is_xxx, &file_version, nullptr,
@@ -6075,7 +6086,8 @@ void Plater::priv::reload_from_disk()
                 boost::iends_with(path, ".step")) {
                 double linear = string_to_double_decimal_point(wxGetApp().app_config->get("linear_defletion"));
                 double angle = string_to_double_decimal_point(wxGetApp().app_config->get("angle_defletion"));
-                new_model = Model::read_from_step(path, LoadStrategy::AddDefaultInstances | LoadStrategy::LoadModel, nullptr, nullptr, nullptr, linear, angle);
+                bool   is_split = wxGetApp().app_config->get_bool("is_split_compound");
+                new_model       = Model::read_from_step(path, LoadStrategy::AddDefaultInstances | LoadStrategy::LoadModel, nullptr, nullptr, nullptr, linear, angle, is_split);
             }else {
                 new_model = Model::read_from_file(path, nullptr, nullptr, LoadStrategy::AddDefaultInstances | LoadStrategy::LoadModel, &plate_data, &project_presets, nullptr, nullptr, nullptr, nullptr, nullptr, 0, obj_color_fun);
             }
@@ -7580,6 +7592,54 @@ void Plater::priv::on_action_send_to_multi_machine(SimpleEvent&)
             }
         }
     }
+}
+
+void Plater::priv::on_action_send_to_multi_app(SimpleEvent &)
+{
+#ifdef WIN32
+    HKEY hKey;
+
+    LONG result        = RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Bambulab\\Bambu Farm Manager Client"), 0, KEY_READ, &hKey);
+    LONG result_backup = RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("HKEY_CLASSES_ROOT\\bambu-farm-client\\shell\\open\\command"), 0, KEY_READ, &hKey);
+
+    if (result == ERROR_SUCCESS || result_backup == ERROR_SUCCESS) {
+        RegCloseKey(hKey);
+
+        auto gcodeResult = q->send_gcode(partplate_list.get_curr_plate_index(), [this](int export_stage, int current, int total, bool &cancel) {});
+
+        if (gcodeResult != 0) {
+            BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ":send_gcode failed\n";
+            return;
+        }
+
+        PrintPrepareData data;
+        q->get_print_job_data(&data);
+
+        if (data._3mf_path.empty()) {
+            BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ":3mf path is empty\n";
+            return;
+        }
+
+        wxString filename = q->get_export_gcode_filename("", true, partplate_list.get_curr_plate_index() == PLATE_ALL_IDX ? true : false);
+        wxString filepath = wxString::FromUTF8(data._3mf_path.string());
+        filepath.Replace("\\", "/");
+        std::string filePath = "?version=v1.6.0&path=" + filepath.ToStdString() + "&name=" + filename.utf8_string();
+        wxString    url      = "bambu-farm-client://upload-file" + Http::url_encode(filePath);
+        if (!wxLaunchDefaultBrowser(url)) {
+            GUI::MessageDialog msgdialog(nullptr, _L("Failed to start Bambu Farm Manager Client."), "", wxAPPLY | wxOK);
+            msgdialog.ShowModal();
+        }
+
+    } else {
+        GUI::MessageDialog msgdialog(nullptr, _L("No Bambu Farm Manager Client found."), "", wxAPPLY | wxOK);
+        msgdialog.ShowModal();
+    }
+#endif // WIN32
+
+#ifdef __APPLE__
+    // todo
+#endif //__APPLE__
+
 }
 
 void Plater::priv::on_action_print_plate_from_sdcard(SimpleEvent&)
@@ -9360,14 +9420,7 @@ int Plater::new_project(bool skip_confirm, bool silent, const wxString &project_
     m_only_gcode = false;
     m_exported_file = false;
     m_loading_project = false;
-    get_notification_manager()->qdt_close_plateinfo_notification();
-    get_notification_manager()->qdt_close_preview_only_notification();
-    get_notification_manager()->qdt_close_3mf_warn_notification();
-    get_notification_manager()->close_notification_of_type(NotificationType::PlaterError);
-    get_notification_manager()->close_notification_of_type(NotificationType::PlaterWarning);
-    get_notification_manager()->close_notification_of_type(NotificationType::SlicingError);
-    get_notification_manager()->close_notification_of_type(NotificationType::SlicingSeriousWarning);
-    get_notification_manager()->close_notification_of_type(NotificationType::SlicingWarning);
+    get_notification_manager()->clear_all();
 
     if (!silent)
         wxGetApp().mainframe->select_tab(MainFrame::tp3DEditor);
@@ -9668,7 +9721,7 @@ void Plater::import_model_id(wxString download_info)
 
 
             //check file suffix
-            if (!extension.Contains(".3mf")) {
+            if (!extension.Contains(".3mf") && !extension.Contains(".3MF")) {
                 msg = _L("Download failed, unknown file format.");
                 return;
             }
@@ -9853,6 +9906,7 @@ bool Plater::up_to_date(bool saved, bool backup)
 
 void Plater::add_model(bool imperial_units, std::string fname)
 {
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << __LINE__ << " entry";
     wxArrayString input_files;
 
     std::vector<fs::path> paths;
@@ -11484,10 +11538,12 @@ bool Plater::load_svg(const wxArrayString &filenames, bool from_toolbar_or_file_
 {
     // When only one .svg file is dropped on scene
     if (filenames.size() == 1) {
-        const wxString &filename       = filenames.Last();
-        const wxString  file_extension = filename.substr(filename.length() - 4);
-        if (file_extension.CmpNoCase(".svg") == 0) {
+        const wxString &filename = filenames[0];
+        if (boost::iends_with(filenames[0].ToStdString(), ".svg")) {
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "," << __FILE__ << filename;
             return emboss_svg(filename, from_toolbar_or_file_menu);
+        } else {
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "," << __FILE__ << ",fail:" << filename;
         }
     }
     else {
@@ -11515,15 +11571,23 @@ bool Plater::load_svg(const wxArrayString &filenames, bool from_toolbar_or_file_
 }
 
 bool Plater::load_same_type_files(const wxArrayString &filenames) {
+    auto trans_extension = [] (boost::filesystem::path ext) {
+        std::string ext_str = ext.extension().string();
+        boost::algorithm::to_lower(ext_str);
+        if (ext_str == ".stp" || ext_str == ".step") {
+            ext.replace_extension(".step");
+        }
+        return ext;
+    };
     if (filenames.size() <= 1) { return true; }
     else {
         const wxString &filename = filenames.front();
-        boost::filesystem::path path(filename.ToStdWstring());
-        auto   extension =path.extension();
+        boost::filesystem::path path(filename.utf8_string());
+        auto extension = trans_extension(path);
         for (size_t i = 1; i < filenames.size(); i++) {
-            boost::filesystem::path temp(filenames[i].ToStdWstring());
-            auto                    temp_extension = temp.extension();
-            if (extension != temp_extension) {
+            boost::filesystem::path temp(filenames[i].utf8_string());
+            auto temp_extension = trans_extension(temp);
+            if (extension.extension() != temp_extension.extension()) {
                 return false;
             }
         }
@@ -11790,6 +11854,7 @@ void Plater::add_file()
         if (load_svg(input_files,true)) {
             return;
         }
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "," << __FILE__ << ","<< "LoadFilesType::SingleOther";
         if (!load_files(paths, LoadStrategy::LoadModel, false).empty()) {
             if (get_project_name() == _L("Untitled") && paths.size() > 0) {
                 p->set_project_filename(wxString::FromUTF8(paths[0].string()));
@@ -12663,6 +12728,29 @@ void Plater::export_core_3mf()
     export_3mf(path_u8, SaveStrategy::Silence);
 }
 
+// OK if fail_msg is empty
+std::string check_boolean_possible(const std::vector<const ModelVolume*>& volumes) {
+    std::string fail_msg;
+    std::vector<csg::CSGPart> csgmesh;
+    csgmesh.reserve(2 * volumes.size());
+    bool has_splitable_volume = csg::model_to_csgmesh(volumes, Transform3d::Identity(), std::back_inserter(csgmesh),
+        csg::mpartsPositive | csg::mpartsNegative);
+
+    if (auto fail_reason_name = csg::check_csgmesh_booleans(Range{ std::begin(csgmesh), std::end(csgmesh) }); std::get<0>(fail_reason_name) != csg::BooleanFailReason::OK) {
+        fail_msg = _u8L("Unable to perform boolean operation on model meshes. "
+            "You may fix the meshes and try again.");
+        std::string name = std::get<1>(fail_reason_name);
+        std::map<csg::BooleanFailReason, std::string> fail_reasons = {
+            {csg::BooleanFailReason::OK, "OK"},
+            {csg::BooleanFailReason::MeshEmpty, Slic3r::format(_u8L("Reason: part \"%1%\" is empty."), name)},
+            {csg::BooleanFailReason::NotBoundAVolume, Slic3r::format(_u8L("Reason: part \"%1%\" does not bound a volume."), name)},
+            {csg::BooleanFailReason::SelfIntersect, Slic3r::format(_u8L("Reason: part \"%1%\" has self intersection."), name)},
+            {csg::BooleanFailReason::NoIntersection, Slic3r::format(_u8L("Reason: \"%1%\" and another part have no intersection."), name)} };
+        fail_msg += " " + fail_reasons[std::get<0>(fail_reason_name)];
+    }
+    return fail_msg;
+}
+
 // Following lambda generates a combined mesh for export with normals pointing outwards.
 TriangleMesh Plater::combine_mesh_fff(const ModelObject& mo, int instance_id, std::function<void(const std::string&)> notify_func)
 {
@@ -12670,22 +12758,11 @@ TriangleMesh Plater::combine_mesh_fff(const ModelObject& mo, int instance_id, st
 
     std::vector<csg::CSGPart> csgmesh;
     csgmesh.reserve(2 * mo.volumes.size());
-    bool has_splitable_volume = csg::model_to_csgmesh(mo, Transform3d::Identity(), std::back_inserter(csgmesh),
+    bool has_splitable_volume = csg::model_to_csgmesh(mo.const_volumes(), Transform3d::Identity(), std::back_inserter(csgmesh),
         csg::mpartsPositive | csg::mpartsNegative);
 
-    std::string fail_msg = _u8L("Unable to perform boolean operation on model meshes. "
-        "Only positive parts will be kept. You may fix the meshes and try agian.");
-    if (auto fail_reason_name = csg::check_csgmesh_booleans(Range{ std::begin(csgmesh), std::end(csgmesh) }); std::get<0>(fail_reason_name) != csg::BooleanFailReason::OK) {
-        std::string name = std::get<1>(fail_reason_name);
-        std::map<csg::BooleanFailReason, std::string> fail_reasons = {
-            {csg::BooleanFailReason::OK, "OK"},
-            {csg::BooleanFailReason::MeshEmpty, Slic3r::format( _u8L("Reason: part \"%1%\" is empty."), name)},
-            {csg::BooleanFailReason::NotBoundAVolume, Slic3r::format(_u8L("Reason: part \"%1%\" does not bound a volume."), name)},
-            {csg::BooleanFailReason::SelfIntersect, Slic3r::format(_u8L("Reason: part \"%1%\" has self intersection."), name)},
-            {csg::BooleanFailReason::NoIntersection, Slic3r::format(_u8L("Reason: \"%1%\" and another part have no intersection."), name)} };
-        fail_msg += " " + fail_reasons[std::get<0>(fail_reason_name)];
-    }
-    else {
+    std::string fail_msg = check_boolean_possible(mo.const_volumes());
+    if (fail_msg.empty()) {
         try {
             MeshBoolean::mcut::McutMeshPtr meshPtr = csg::perform_csgmesh_booleans_mcut(Range{ std::begin(csgmesh), std::end(csgmesh) });
             mesh = MeshBoolean::mcut::mcut_to_triangle_mesh(*meshPtr);
