@@ -13,104 +13,6 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n==1) ? 0 : 1;\n"
 "X-Generator: Poedit 3.4.4\n"
 
-msgid "Click here if you failed to send the print job"
-msgstr "Ось тут, якщо ви не змогли надіслати друковане завдання"
-
-msgid "Login/Register"
-msgstr "Входити/реєструвати"
-
-msgid "Local"
-msgstr "Локальний"
-
-msgid "Printer name \"%1%\" already exists."
-msgstr "Назва принтера \"%1%\" вже існує."
-
-msgid "Connection to Moonraker works correctly."
-msgstr "З’ єднання з Moonraker працює правильно."
-
-msgid "The host or IP or URL cannot be empty."
-msgstr "Вузел або IP або URL не може бути порожнім."
-
-msgid "A device with the same host (IP or URL) already exists, please re-enter."
-msgstr "Пристрій з тим самим вузлом (IP або URL) вже існує, будь ласка, введіть знову."
-
-msgid "Machine Name"
-msgstr "Назва машини"
-
-msgid "Choice your physical printer preset"
-msgstr "Виберіть попередній параметр вашого фізичного принтера"
-
-msgid "Are you sure you want to delete \"%1%\" printer?"
-msgstr "Ви впевнені, що бажаєте вилучити принтер \"%1%\"?"
-
-msgid "Are you sure you want to delete "
-msgstr "Ви впевнені, що хочете вилучити "
-
-msgid "printer?"
-msgstr "принтер?"
-
-msgid "Delete Physical Printer"
-msgstr "Вилучити фізичний принтер"
-
-msgid "Don't slow down outer walls"
-msgstr "Не уповільнюйте зовнішні стінки."
-
-msgid ""
-"If enabled, this setting will ensure external perimeters are not slowed down to meet the minimum layer time. This is particularly helpful in the below scenarios:\n"
-"\n"
-" 1. To avoid changes in shine when printing glossy filaments \n"
-"2. To avoid changes in external wall speed which may create slight wall artefacts that appear like z banding \n"
-"3. To avoid printing at speeds which cause VFAs (fine artefacts) on the external walls\n"
-"\n"
-msgstr ""
-"Якщо ввімкнено, ця настройка забезпечить, що зовнішні периметри не будуть уповільнюватися для виконання мінімального часу шарування. Це особливо корисно в таких сценаріях:\n"
-"\n"
-"1. Щоб уникнути змін блиску при друку глянцевих філаментів.\n"
-"2. Щоб уникнути змін у швидкості зовнішніх стінок, що може призвести до незначних артефактів стінки, схожих на зміщення по осі Z.\n"
-"3. Щоб уникнути друку зі швидкостями, які викликають VFAs (дрібні артефакти) на зовнішніх стінах.\n"
-"\n"
-
-msgid "Unseal Fan speed"
-msgstr "Вимкнути швидкість вентилятора"
-
-msgid "Speed of auxiliary part cooling fan under unseal. Auxiliary fan will run at this speed during printing except the first several layers which are defined by no cooling layers"
-msgstr "Швидкість вентилятора охолодження додаткової частини при розблокуванні. Додатковий вентилятор буде працювати на цій швидкості під час друку, за винятком перших кількох шарів, які визначені відсутністю охолоджуючих шарів."
-
-msgid "Resonance avoidance"
-msgstr "Уникання резонансу"
-
-msgid "By reducing the speed of the outer wall to avoid the resonance zone of the printer, ringing on the surface of the model are avoided.\n"
-"Please turn this option off when testing ringing."
-msgstr "Зменшуючи швидкість зовнішньої стіни для уникнення зони резонансу принтера, уникається поява вібрацій на поверхні моделі.\n"
-"Будь ласка, вимкніть цю опцію при тестуванні вібрацій."
-
-msgid "G-code thumbnails"
-msgstr "Знаки G-коду"
-
-msgid "Picture sizes to be stored into a .gcode and .sl1 / .sl1s files, in the following format: \"XxY, XxY, ...\""
-msgstr "Розміри зображень для збереження у файл .gcode та файлів .sl1 / .sl1s у наступному форматі:\"XxY，XxY…\""
-
-msgid "Format of G-code thumbnails"
-msgstr "Формат мініатюр G-коду"
-
-msgid "Format of G-code thumbnails: PNG for best quality, JPG for smallest size"
-msgstr "Формат мініатюр G-коду: PNG для найкращої якості, JPG для найменшого розміру"
-
-msgid "QIDI Studio is based on Bambu Studio by Bambu Lab"
-msgstr "QIDI Studio розроблено на основі Bambu Studio від Bambu Lab"
-
-msgid "Seal"
-msgstr "Запечаток"
-
-msgid "QIDI Studio is based on Bambu Studio by Bambu Lab."
-msgstr "QIDI Studio розроблено на основі Bambu Studio від Bambu Lab."
-
-msgid "Support multi bed types"
-msgstr "Підтримка кількох типів ліжок"
-
-msgid "Switch to Device tab"
-msgstr "Перейти на вкладку Пристрій"
-
 msgid "Supports Painting"
 msgstr "Малювання підтримки"
 
@@ -391,15 +293,18 @@ msgstr "Координати об’єкта"
 msgid "World coordinates"
 msgstr "Світові координати"
 
-msgid "Reset current rotation to real zeros."
-msgstr "Скинути поточне обертання до нульових значень."
-
 msgid "°"
 msgstr "°"
 
 msgid "Reset current rotation to the value when open the rotation tool."
 msgstr ""
 "Скинути поточне обертання до значення при відкритті інструмента обертання."
+
+msgid "Rotate (absolute)"
+msgstr ""
+
+msgid "Reset current rotation to real zeros."
+msgstr "Скинути поточне обертання до нульових значень."
 
 msgid "Part coordinates"
 msgstr "Координати частини"
@@ -944,6 +849,37 @@ msgstr "Попередження: не вдалося створити текс�
 msgid "Warning:text normal is error."
 msgstr ""
 
+msgid "Warning:text normal has been reset."
+msgstr ""
+
+msgid ""
+"Warning:Because current text does indeed use surround algorithm,\n"
+"if continue to edit, text has to regenerated according to new location."
+msgstr ""
+
+msgid ""
+"Warning:old matrix has at least two parameters: mirroring, scaling, and "
+"rotation. \n"
+"If you continue editing, it may not be correct. \n"
+"Please dragging text or cancel using current pose, \n"
+"save and reedit again."
+msgstr ""
+
+msgid ""
+"Error:Detecting an incorrect mesh id or an unknown error, \n"
+"regenerating text may result in incorrect outcomes.\n"
+"Please drag text,save it then reedit it again."
+msgstr ""
+
+msgid ""
+"Warning:Due to functional upgrade, rotation information \n"
+"cannot be restored. Please drag or modify text,\n"
+" save it and reedit it will ok."
+msgstr ""
+
+msgid "Use opened text pose"
+msgstr ""
+
 msgid "Surface"
 msgstr "Поверхня"
 
@@ -1393,10 +1329,42 @@ msgstr "Відкрити проект"
 
 msgid ""
 "The QIDI Studio version is too old to enable cloud service. Please download "
-"the latest version from QIDI TECH website."
+"the latest version from QIDI Tech website."
 msgstr ""
 "Версія QIDI Studio застаріла для використання хмарного сервісу. Будь ласка, "
-"завантажте останню версію з веб-сайту QIDI TECH."
+"завантажте останню версію з веб-сайту QIDI Tech."
+
+msgid ""
+"Your software certificate has been revoked, please update QIDI Studio "
+"software."
+msgstr ""
+
+msgid "Retrieving printer information, please try again later."
+msgstr ""
+
+msgid "Please try updating QIDI Studio and then try again."
+msgstr ""
+
+msgid ""
+"The certificate has expired. Please check the time settings or update QIDI "
+"Studio and try again."
+msgstr ""
+
+msgid ""
+"The certificate is no longer valid and the printing functions are "
+"unavailable. If you need printing. Please visit the official website at "
+"https://qidi3d.com/ to download and update."
+msgstr ""
+
+msgid ""
+"Internal error. Please try upgrading the firmware and Studio version. If the "
+"issue persists, contact customer support."
+msgstr ""
+
+msgid ""
+"Your software is not signed, and some printing functions have been "
+"restricted. Please use the officially signed software version."
+msgstr ""
 
 msgid "Privacy Policy Update"
 msgstr "Оновлення політики конфіденційності"
@@ -2083,6 +2051,9 @@ msgstr "Автоматична Кайма"
 msgid "Auto"
 msgstr "Авто"
 
+msgid "Painted"
+msgstr "Пофарбовано"
+
 msgid "Outer brim only"
 msgstr "Кайма зовні"
 
@@ -2481,7 +2452,7 @@ msgstr "Не вдалося завантажити файл на FTP. Спроб
 msgid ""
 "Check the current status of the qidi server by clicking on the link above."
 msgstr ""
-"Перевірте поточний стан сервера QIDI TECH, натиснувши на посилання вище."
+"Перевірте поточний стан сервера QIDI Tech, натиснувши на посилання вище."
 
 msgid ""
 "The size of the print file is too large. Please adjust the file size and try "
@@ -2674,8 +2645,8 @@ msgstr ""
 "Slic3r був створений Алессандро Ранеллуччі за допомогою багатьох інших\n"
 "учасникив."
 
-msgid "QIDI Studio also referenced some ideas from Cura by Ultimaker."
-msgstr "QIDI Studio також використовує деякі ідеї з Cura від Ultimaker."
+msgid "Bambu Studio also referenced some ideas from Cura by Ultimaker."
+msgstr "Bambu Studio також використовує деякі ідеї з Cura від Ultimaker."
 
 msgid ""
 "There many parts of the software that come from community contributions, so "
@@ -2750,8 +2721,8 @@ msgstr "Будь ласка, введіть допустиме значення 
 #, c-format, boost-format
 msgid "Please input a valid value (K in %.1f~%.1f, N in %.1f~%.1f)"
 msgstr ""
-"Будь ласка, введіть допустиме значення (K у межах %.1f~%.1f, N у межах "
-"%.1f~%.1f)"
+"Будь ласка, введіть допустиме значення (K у межах %.1f~%.1f, N у межах %.1f~"
+"%.1f)"
 
 msgid "Other Color"
 msgstr "Інший колір"
@@ -2940,10 +2911,10 @@ msgstr "Оновлення вставки"
 
 msgid ""
 "The AMS will automatically read the filament information when inserting a "
-"new QIDI TECH filament. This takes about 20 seconds."
+"new QIDI Tech filament. This takes about 20 seconds."
 msgstr ""
 "AMS автоматично зчитає інформацію про філамент при вставці нового філаменту "
-"QIDI TECH. Це займе близько 20 секунд."
+"QIDI Tech. Це займе близько 20 секунд."
 
 msgid ""
 "Note: if a new filament is inserted during  printing, the AMS will not "
@@ -4147,6 +4118,12 @@ msgstr "Роздрукувати все"
 msgid "Send all"
 msgstr "Надіслати все"
 
+msgid "Send to QIDI Farm Manager Client"
+msgstr ""
+
+msgid "Send to BFMC"
+msgstr ""
+
 msgid "Send to Multi-device"
 msgstr "Відправити на багато пристроїв"
 
@@ -5180,6 +5157,9 @@ msgstr "Відхилення кута"
 msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
 msgstr "Будь ласка, введіть допустиме значення (0.01 < відхилення кута < 1.0)"
 
+msgid "Split compound and compsolid into multiple objects"
+msgstr ""
+
 msgid "Number of triangular facets"
 msgstr "Кількість трикутних граней"
 
@@ -5659,7 +5639,7 @@ msgstr ""
 msgid "Loading file: %s"
 msgstr "Завантаження файлу: %s"
 
-msgid "The 3mf is not from QIDI TECH, load geometry data only."
+msgid "The 3mf is not from QIDI Tech, load geometry data only."
 msgstr "3mf не від QIDI Studio, завантажуйте лише дані геометрії."
 
 msgid "Load 3mf"
@@ -5870,6 +5850,12 @@ msgstr "Пластина для нарізки %d"
 msgid "Please resolve the slicing errors and publish again."
 msgstr "Виправте помилки нарізки та опублікуйте знову."
 
+msgid "Failed to start QIDI Farm Manager Client."
+msgstr ""
+
+msgid "No QIDI Farm Manager Client found."
+msgstr ""
+
 msgid ""
 "Network Plug-in is not detected. Network related features are unavailable."
 msgstr ""
@@ -6009,11 +5995,9 @@ msgstr ""
 "Файл %s надіслано до пам'яті принтера та доступний для перегляду на принтері."
 
 msgid ""
-"Unable to perform boolean operation on model meshes. Only positive parts "
-"will be kept. You may fix the meshes and try agian."
+"Unable to perform boolean operation on model meshes. You may fix the meshes "
+"and try again."
 msgstr ""
-"Неможливо виконати булеву операцію на сітках моделі. Будуть залишені лише "
-"позитивні частини. Ви можете виправити сітки і спробувати ще раз."
 
 #, boost-format
 msgid "Reason: part \"%1%\" is empty."
@@ -6325,6 +6309,12 @@ msgstr ""
 "Завжди показувати оболонки або ні у вкладці попереднього перегляду. Якщо "
 "змінити значення, потрібно повторно нарізати."
 
+msgid "Import a single SVG and split it"
+msgstr ""
+
+msgid "Import a single SVG and then split it to several parts."
+msgstr ""
+
 msgid "Improve rendering performance by lod"
 msgstr "Покращити продуктивність рендерингу за допомогою LOD"
 
@@ -6335,7 +6325,7 @@ msgstr ""
 "Покращена продуктивність рендерингу в умовах кількох пластин і багатьох "
 "моделей."
 
-msgid "enable multi instance rendering by opengl"
+msgid "Enable multi instance rendering by opengl"
 msgstr ""
 
 msgid ""
@@ -6548,14 +6538,14 @@ msgstr "слід"
 msgid "Host Setting"
 msgstr "Налаштування хоста"
 
-msgid "DEV host: api-dev.qidi-lab.com/v1"
-msgstr "Хост розробника: api-dev.qidi-lab.com/v1"
+msgid "DEV host: api-dev.qidi-tech.com/v1"
+msgstr "Хост розробника: api-dev.qidi-tech.com/v1"
 
-msgid "QA  host: api-qa.qidi-lab.com/v1"
-msgstr "Хост QA: api-qa.qidi-lab.com/v1"
+msgid "QA  host: api-qa.qidi-tech.com/v1"
+msgstr "Хост QA: api-qa.qidi-tech.com/v1"
 
-msgid "PRE host: api-pre.qidi-lab.com/v1"
-msgstr "Хост PRE: api-pre.qidi-lab.com/v1"
+msgid "PRE host: api-pre.qidi-tech.com/v1"
+msgstr "Хост PRE: api-pre.qidi-tech.com/v1"
 
 msgid "Product host"
 msgstr "Хост продукту"
@@ -7150,18 +7140,18 @@ msgid "Terms and Conditions"
 msgstr "Умови використання"
 
 msgid ""
-"Thank you for purchasing a QIDI TECH device.Before using your QIDI TECH "
+"Thank you for purchasing a QIDI Tech device.Before using your QIDI Tech "
 "device, please read the termsand conditions.By clicking to agree to use your "
-"QIDI TECH device, you agree to abide by the Privacy Policy and Terms of "
+"QIDI Tech device, you agree to abide by the Privacy Policy and Terms of "
 "Use(collectively, the \"Terms\"). If you do not comply with or agree to the "
-"QIDI TECH Privacy Policy, please do not use QIDI TECH equipment and services."
+"QIDI Tech Privacy Policy, please do not use QIDI Tech equipment and services."
 msgstr ""
-"Дякуємо за покупку пристрою QIDI TECH. Перед використанням вашого пристрою "
-"QIDI TECH, будь ласка, ознайомтесь з умовами користування. Натискаючи на "
-"кнопку погодження з використання вашого пристрою QIDI TECH, ви погоджуєтеся "
+"Дякуємо за покупку пристрою QIDI Tech. Перед використанням вашого пристрою "
+"QIDI Tech, будь ласка, ознайомтесь з умовами користування. Натискаючи на "
+"кнопку погодження з використання вашого пристрою QIDI Tech, ви погоджуєтеся "
 "дотримуватися Політики конфіденційності та Умов користування (загалом - "
 "“Умов”). Якщо ви не виконуєте або не згодні з Політикою конфіденційності "
-"QIDI TECH, будь ласка, не використовуйте обладнання та послуги QIDI TECH."
+"QIDI Tech, будь ласка, не використовуйте обладнання та послуги QIDI Tech."
 
 msgid "and"
 msgstr "і"
@@ -7326,8 +7316,8 @@ msgstr ""
 msgid ""
 "When recording timelapse without toolhead, it is recommended to add a "
 "\"Timelapse Wipe Tower\" \n"
-"by right-click the empty position of build plate and choose \"Add "
-"Primitive\"->\"Timelapse Wipe Tower\"."
+"by right-click the empty position of build plate and choose \"Add Primitive"
+"\"->\"Timelapse Wipe Tower\"."
 msgstr ""
 "При записі таймлапсу без інструментальної головки рекомендується додати "
 "“Timelapse Wipe Tower” \n"
@@ -8583,6 +8573,9 @@ msgstr "Годтримка переходу"
 msgid "Multiple"
 msgstr "Кілька"
 
+msgid "Flush"
+msgstr ""
+
 #, boost-format
 msgid "Failed to calculate line width of %1%. Can not get value of \"%2%\" "
 msgstr ""
@@ -9048,6 +9041,13 @@ msgstr ""
 
 msgid ""
 "Bed temperature of the initial layer. Value 0 means the filament does not "
+"support to print on the Cool Plate"
+msgstr ""
+"Температура першого шару. Значення 0 означає, що філамент не підтримує друк "
+"на Cool Plate"
+
+msgid ""
+"Bed temperature of the initial layer. Value 0 means the filament does not "
 "support to print on the Engineering Plate"
 msgstr ""
 "Температура першого шару. Значення 0 означає, що філамент не підтримує друк "
@@ -9278,9 +9278,6 @@ msgid ""
 msgstr ""
 "Це керує формуванням поля на зовнішній та/або внутрішній сторонімоделей. "
 "Auto означає, що ширина поля аналізується та обчислюється автоматично."
-
-msgid "Painted"
-msgstr "Пофарбовано"
 
 msgid "Brim-object gap"
 msgstr "Зазор між каймою та об'єктом"
@@ -9653,15 +9650,18 @@ msgstr "Увімкнути випередження тиску PA"
 
 msgid ""
 "Enable pressure advance, auto calibration result will be overwriten once "
-"enabled."
+"enabled. Useless for QIDI Printer"
 msgstr ""
 "Увімкнути автоматичне вдавлювання, результат автоматичної калібрування буде "
-"перезаписаний після увімкнення."
+"перезаписаний після увімкнення. Невикористовується для принтерів QIDI "
+"Printer"
 
 msgid ""
-"Pressure advance(Klipper) AKA Linear advance factor(Marlin)."
+"Pressure advance(Klipper) AKA Linear advance factor(Marlin). Useless for "
+"QIDI Printer"
 msgstr ""
 "Підвищення тиску (Klipper) AKA Коефіцієнт лінійного просування (Marlin) "
+"Невикористовується для принтерів QIDI Printer"
 
 msgid "Filament notes"
 msgstr "Примітки щодо філаменту"
@@ -10929,13 +10929,9 @@ msgstr ""
 
 msgid ""
 "The wipe speed is determined by speed of current extrusion role. e.g if a "
-"wip action is executed immediately following an outer wall extrusion, the "
+"wipe action is executed immediately following an outer wall extrusion, the "
 "speed of the outer wall extrusion will be utilized for the wipe action."
 msgstr ""
-"Швидкість затирання визначається швидкістю поточної ролі екструзії. "
-"Наприклад, якщо дія затирання виконується відразу після екструзії зовнішньої "
-"стіни, швидкість екструзії зовнішньої стіни буде використана для дії "
-"затирання."
 
 msgid "Skirt distance"
 msgstr "Відстань між спідницею/каймою"
@@ -12114,7 +12110,7 @@ msgstr ""
 
 msgid ""
 "Flow Rate Calibration measures the ratio of expected to actual extrusion "
-"volumes. The default setting works well in QIDI TECH printers and official "
+"volumes. The default setting works well in QIDI Tech printers and official "
 "filaments as they were pre-calibrated and fine-tuned. For a regular "
 "filament, you usually won't need to perform a Flow Rate Calibration unless "
 "you still see the listed defects after you have done other calibrations. For "
@@ -12129,7 +12125,7 @@ msgstr ""
 "більш докладної інформації ознайомтеся з статтею у вікі."
 
 msgid ""
-"Auto Flow Rate Calibration utilizes QIDI TECH's Micro-Lidar technology, "
+"Auto Flow Rate Calibration utilizes QIDI Tech's Micro-Lidar technology, "
 "directly measuring the calibration patterns. However, please be advised that "
 "the efficacy and accuracy of this method may be compromised with specific "
 "types of materials. Particularly, filaments that are transparent or semi-"
@@ -12837,8 +12833,8 @@ msgstr ""
 "Чи бажаєте ви їх перезаписати?"
 
 msgid ""
-"We would rename the presets as \"Vendor Type Serial @printer you "
-"selected\". \n"
+"We would rename the presets as \"Vendor Type Serial @printer you selected"
+"\". \n"
 "To add preset for more prinetrs, Please go to printer selection"
 msgstr ""
 "Ми перейменовуємо налаштування на “Виробник Тип Серійний номер @принтер, "
@@ -14253,6 +14249,23 @@ msgstr ""
 "ABS, відповідне підвищення температури гарячого ліжка може зменшити "
 "ймовірність деформації."
 
+#~ msgid ""
+#~ "Unable to perform boolean operation on model meshes. Only positive parts "
+#~ "will be kept. You may fix the meshes and try agian."
+#~ msgstr ""
+#~ "Неможливо виконати булеву операцію на сітках моделі. Будуть залишені лише "
+#~ "позитивні частини. Ви можете виправити сітки і спробувати ще раз."
+
+#~ msgid ""
+#~ "The wipe speed is determined by speed of current extrusion role. e.g if a "
+#~ "wip action is executed immediately following an outer wall extrusion, the "
+#~ "speed of the outer wall extrusion will be utilized for the wipe action."
+#~ msgstr ""
+#~ "Швидкість затирання визначається швидкістю поточної ролі екструзії. "
+#~ "Наприклад, якщо дія затирання виконується відразу після екструзії "
+#~ "зовнішньої стіни, швидкість екструзії зовнішньої стіни буде використана "
+#~ "для дії затирання."
+
 #~ msgid "Rough"
 #~ msgstr "Грубо"
 
@@ -14274,7 +14287,6 @@ msgstr ""
 #~ msgid "Are you sure you want to cancel this print?"
 #~ msgstr "Ви впевнені, що хочете скасувати цей друк?"
 
-#, c-format, boost-format
 #~ msgid ""
 #~ "Printing high temperature material(%s material) with %s may cause nozzle "
 #~ "damage"
@@ -14441,13 +14453,6 @@ msgstr ""
 
 #~ msgid "IP and Access Code Verified! You may close the window"
 #~ msgstr "IP-адреса та доступний код перевірено! Ви можете закрити вікно"
-
-#~ msgid ""
-#~ "Bed temperature of the initial layer. Value 0 means the filament does not "
-#~ "support to print on the Cool Plate"
-#~ msgstr ""
-#~ "Температура першого шару. Значення 0 означає, що філамент не підтримує "
-#~ "друк на Cool Plate"
 
 #~ msgid "This setting specifies the count of walls around support"
 #~ msgstr "Цей параметр визначає кількість стін навколо опори"
@@ -15058,12 +15063,12 @@ msgstr ""
 #~ "терплячі."
 
 #~ msgid ""
-#~ "Thank you for purchasing a QIDI TECH device.Before using your QIDI TECH "
+#~ "Thank you for purchasing a QIDI Tech device.Before using your QIDI Tech "
 #~ "device, please read the termsand conditions.By clicking to agree to use "
-#~ "your QIDI TECH device, you agree to abide by the Privacy Policyand Terms "
+#~ "your QIDI Tech device, you agree to abide by the Privacy Policyand Terms "
 #~ "of Use(collectively, the \"Terms\"). If you do not comply with or agree "
-#~ "to the QIDI TECH Privacy Policy, please do not use QIDI TECH equipment and "
-#~ "services."
+#~ "to the QIDI Tech Privacy Policy, please do not use QIDI Tech equipment "
+#~ "and services."
 #~ msgstr ""
 #~ "Дякуємо за покупку пристрою QIDI Tech. Перед використанням вашого "
 #~ "пристрою QIDI Tech, ознайомтеся з умовами та положеннями. Клацнувши, щоб "
@@ -17058,8 +17063,8 @@ msgstr ""
 #~ "The 3mf's version %s is newer than %s's version %s; it is suggested to "
 #~ "update your software.\n"
 
-# ~ msgid "The 3mf is not from QIDI TECH, load geometry data only."
-# ~ msgstr "The 3mf is not from QIDI TECH, loading geometry data only."
+#~ msgid "The 3mf is not from QIDI lab, load geometry data only."
+#~ msgstr "The 3mf is not from QIDI lab, loading geometry data only."
 
 #~ msgid "The Config is not compatible and can not be loaded."
 #~ msgstr "The configuration is not compatible and cannot be loaded!"
@@ -17318,6 +17323,7 @@ msgstr ""
 #~ msgid "tree"
 #~ msgstr "tree"
 
+#QIDIStudio
 msgid "Pressure Advance"
 msgstr "Випередження тиску"
 
@@ -17584,3 +17590,101 @@ msgstr "Дізнатися більше"
 
 msgid "The path is not exists!"  
 msgstr "Шлях не існує!"
+
+msgid "Click here if you failed to send the print job"
+msgstr "Ось тут, якщо ви не змогли надіслати друковане завдання"
+
+msgid "Login/Register"
+msgstr "Входити/реєструвати"
+
+msgid "Local"
+msgstr "Локальний"
+
+msgid "Printer name \"%1%\" already exists."
+msgstr "Назва принтера \"%1%\" вже існує."
+
+msgid "Connection to Moonraker works correctly."
+msgstr "З’ єднання з Moonraker працює правильно."
+
+msgid "The host or IP or URL cannot be empty."
+msgstr "Вузел або IP або URL не може бути порожнім."
+
+msgid "A device with the same host (IP or URL) already exists, please re-enter."
+msgstr "Пристрій з тим самим вузлом (IP або URL) вже існує, будь ласка, введіть знову."
+
+msgid "Machine Name"
+msgstr "Назва машини"
+
+msgid "Choice your physical printer preset"
+msgstr "Виберіть попередній параметр вашого фізичного принтера"
+
+msgid "Are you sure you want to delete \"%1%\" printer?"
+msgstr "Ви впевнені, що бажаєте вилучити принтер \"%1%\"?"
+
+msgid "Are you sure you want to delete "
+msgstr "Ви впевнені, що хочете вилучити "
+
+msgid "printer?"
+msgstr "принтер?"
+
+msgid "Delete Physical Printer"
+msgstr "Вилучити фізичний принтер"
+
+msgid "Don't slow down outer walls"
+msgstr "Не уповільнюйте зовнішні стінки."
+
+msgid ""
+"If enabled, this setting will ensure external perimeters are not slowed down to meet the minimum layer time. This is particularly helpful in the below scenarios:\n"
+"\n"
+" 1. To avoid changes in shine when printing glossy filaments \n"
+"2. To avoid changes in external wall speed which may create slight wall artefacts that appear like z banding \n"
+"3. To avoid printing at speeds which cause VFAs (fine artefacts) on the external walls\n"
+"\n"
+msgstr ""
+"Якщо ввімкнено, ця настройка забезпечить, що зовнішні периметри не будуть уповільнюватися для виконання мінімального часу шарування. Це особливо корисно в таких сценаріях:\n"
+"\n"
+"1. Щоб уникнути змін блиску при друку глянцевих філаментів.\n"
+"2. Щоб уникнути змін у швидкості зовнішніх стінок, що може призвести до незначних артефактів стінки, схожих на зміщення по осі Z.\n"
+"3. Щоб уникнути друку зі швидкостями, які викликають VFAs (дрібні артефакти) на зовнішніх стінах.\n"
+"\n"
+
+msgid "Unseal Fan speed"
+msgstr "Вимкнути швидкість вентилятора"
+
+msgid "Speed of auxiliary part cooling fan under unseal. Auxiliary fan will run at this speed during printing except the first several layers which are defined by no cooling layers"
+msgstr "Швидкість вентилятора охолодження додаткової частини при розблокуванні. Додатковий вентилятор буде працювати на цій швидкості під час друку, за винятком перших кількох шарів, які визначені відсутністю охолоджуючих шарів."
+
+msgid "Resonance avoidance"
+msgstr "Уникання резонансу"
+
+msgid "By reducing the speed of the outer wall to avoid the resonance zone of the printer, ringing on the surface of the model are avoided.\n"
+"Please turn this option off when testing ringing."
+msgstr "Зменшуючи швидкість зовнішньої стіни для уникнення зони резонансу принтера, уникається поява вібрацій на поверхні моделі.\n"
+"Будь ласка, вимкніть цю опцію при тестуванні вібрацій."
+
+msgid "G-code thumbnails"
+msgstr "Знаки G-коду"
+
+msgid "Picture sizes to be stored into a .gcode and .sl1 / .sl1s files, in the following format: \"XxY, XxY, ...\""
+msgstr "Розміри зображень для збереження у файл .gcode та файлів .sl1 / .sl1s у наступному форматі:\"XxY，XxY…\""
+
+msgid "Format of G-code thumbnails"
+msgstr "Формат мініатюр G-коду"
+
+msgid "Format of G-code thumbnails: PNG for best quality, JPG for smallest size"
+msgstr "Формат мініатюр G-коду: PNG для найкращої якості, JPG для найменшого розміру"
+
+msgid "QIDI Studio is based on Bambu Studio by Bambu Lab"
+msgstr "QIDI Studio розроблено на основі Bambu Studio від Bambu Lab"
+
+msgid "Seal"
+msgstr "Запечаток"
+
+msgid "QIDI Studio is based on Bambu Studio by Bambu Lab."
+msgstr "QIDI Studio розроблено на основі Bambu Studio від Bambu Lab."
+
+msgid "Support multi bed types"
+msgstr "Підтримка кількох типів ліжок"
+
+msgid "Switch to Device tab"
+msgstr "Перейти на вкладку Пристрій"

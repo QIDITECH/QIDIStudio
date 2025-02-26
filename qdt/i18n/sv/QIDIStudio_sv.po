@@ -13,104 +13,6 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n==1) ? 0 : 1;\n"
 "X-Generator: Poedit 3.4.4\n"
 
-msgid "Click here if you failed to send the print job"
-msgstr "Klicka här om du misslyckades med att skicka utskriftsjobbet"
-
-msgid "Login/Register"
-msgstr "Logga in/registrera"
-
-msgid "Local"
-msgstr "Lokal"
-
-msgid "Printer name \"%1%\" already exists."
-msgstr "Skrivarnamnet \"%1%\" finns redan."
-
-msgid "Connection to Moonraker works correctly."
-msgstr "Anslutning till Moonraker fungerar korrekt."
-
-msgid "The host or IP or URL cannot be empty."
-msgstr "Värden, IP-adressen eller webbadressen kan inte vara tom."
-
-msgid "A device with the same host (IP or URL) already exists, please re-enter."
-msgstr "En enhet med samma värd (IP eller URL) finns redan, skriv in igen."
-
-msgid "Machine Name"
-msgstr "Maskinnamn"
-
-msgid "Choice your physical printer preset"
-msgstr "Välj din fysiska skrivarförinställning"
-
-msgid "Are you sure you want to delete \"%1%\" printer?"
-msgstr "Är du säker på att du vill ta bort skrivaren \"%1%\"?"
-
-msgid "Are you sure you want to delete "
-msgstr "Är du säker på att du vill ta bort "
-
-msgid "printer?"
-msgstr "skrivare?"
-
-msgid "Delete Physical Printer"
-msgstr "Ta bort fysisk skrivare"
-
-msgid "Don't slow down outer walls"
-msgstr "Bromsa inte ytterväggarna"
-
-msgid ""
-"If enabled, this setting will ensure external perimeters are not slowed down to meet the minimum layer time. This is particularly helpful in the below scenarios:\n"
-"\n"
-"1. To avoid changes in shine when printing glossy filaments \n"
-"2. To avoid changes in external wall speed which may create slight wall artefacts that appear like z banding \n"
-"3. To avoid printing at speeds which cause VFAs (fine artefacts) on the external walls\n"
-"\n"
-msgstr ""
-"Om aktiverat, kommer denna inställning att se till att yttre perimeters inte saktas ned för att uppfylla det minsta lager-tiden.Detta är särskilt användbart i följande scenarier:\n"
-"\n"
-"1. För att undvika förändringar i glans när man skriver ut glansiga filament\n"
-"2. För att undvika förändringar i hastigheten på externa väggar som kan skapa små väggartefakter som liknar Z-bandning\n"
-"3. För att undvika utskrift vid hastigheter som orsakar VFAs (fina artefakter) på de externa väggarna\n"
-"\n"
-
-msgid "Unseal Fan speed"
-msgstr "Unseal fläkthastighet"
-
-msgid "Speed of auxiliary part cooling fan under unseal. Auxiliary fan will run at this speed during printing except the first several layers which are defined by no cooling layers"
-msgstr "Hastigheten på den hjälpande delens kylfläkt när den är i oseglad position. Fläkten kommer att köra i denna hastighet under utskrifter, förutom de första flera lagren som inte har några kylskikt."
-
-msgid "Resonance avoidance"
-msgstr "Undvikande av resonans"
-
-msgid "By reducing the speed of the outer wall to avoid the resonance zone of the printer, ringing on the surface of the model are avoided.\n"
-"Please turn this option off when testing ringing."
-msgstr "Genom att sänka hastigheten på ytterväggen för att undvika skrivarens resonansområde, undviks ringningar på modellens yta.\n"
-"Vänligen stäng av detta alternativ när du testar ringningar."
-
-msgid "G-code thumbnails"
-msgstr "G-kod miniatyrer"
-
-msgid "Picture sizes to be stored into a .gcode and .sl1 / .sl1s files, in the following format: \"XxY, XxY, ...\""
-msgstr "Bildstorlekar som ska sparas i .gcode- och .sl1 / .sl1s-filer, i följande format: \"XxY, XxY, ...\""
-
-msgid "Format of G-code thumbnails"
-msgstr "Formatet för G-kod miniatyrer"
-
-msgid "Format of G-code thumbnails: PNG for best quality, JPG for smallest size"
-msgstr "Formatet för G-kod miniatyrer: PNG för bästa kvalitet, JPG för minsta storlek"
-
-msgid "QIDI Studio is based on Bambu Studio by Bambu Lab"
-msgstr "QIDI Studio är utvecklat baserat på Bambu Studios från Bambu Lab"
-
-msgid "Seal"
-msgstr "Försegling"
-
-msgid "QIDI Studio is based on Bambu Studio by Bambu Lab."
-msgstr "QIDI Studio är utvecklat baserat på Bambu Studios från Bambu Lab."
-
-msgid "Support multi bed types"
-msgstr "Stöd för flera sängtyper"
-
-msgid "Switch to Device tab"
-msgstr "Byt till fliken Enhet"
-
 msgid "Supports Painting"
 msgstr "Färgläggning av Support"
 
@@ -391,13 +293,16 @@ msgstr ""
 msgid "World coordinates"
 msgstr "Världskoordinater"
 
-msgid "Reset current rotation to real zeros."
-msgstr ""
-
 msgid "°"
 msgstr "°"
 
 msgid "Reset current rotation to the value when open the rotation tool."
+msgstr ""
+
+msgid "Rotate (absolute)"
+msgstr ""
+
+msgid "Reset current rotation to real zeros."
 msgstr ""
 
 msgid "Part coordinates"
@@ -936,6 +841,37 @@ msgstr ""
 msgid "Warning:text normal is error."
 msgstr ""
 
+msgid "Warning:text normal has been reset."
+msgstr ""
+
+msgid ""
+"Warning:Because current text does indeed use surround algorithm,\n"
+"if continue to edit, text has to regenerated according to new location."
+msgstr ""
+
+msgid ""
+"Warning:old matrix has at least two parameters: mirroring, scaling, and "
+"rotation. \n"
+"If you continue editing, it may not be correct. \n"
+"Please dragging text or cancel using current pose, \n"
+"save and reedit again."
+msgstr ""
+
+msgid ""
+"Error:Detecting an incorrect mesh id or an unknown error, \n"
+"regenerating text may result in incorrect outcomes.\n"
+"Please drag text,save it then reedit it again."
+msgstr ""
+
+msgid ""
+"Warning:Due to functional upgrade, rotation information \n"
+"cannot be restored. Please drag or modify text,\n"
+" save it and reedit it will ok."
+msgstr ""
+
+msgid "Use opened text pose"
+msgstr ""
+
 msgid "Surface"
 msgstr "Yta"
 
@@ -1377,10 +1313,42 @@ msgstr "Öppna Projekt"
 
 msgid ""
 "The QIDI Studio version is too old to enable cloud service. Please download "
-"the latest version from QIDI TECH website."
+"the latest version from QIDI Tech website."
 msgstr ""
 "The QIDI Studio version is too old to enable cloud service. Please download "
-"the latest version from QIDI TECH's website."
+"the latest version from QIDI Tech's website."
+
+msgid ""
+"Your software certificate has been revoked, please update QIDI Studio "
+"software."
+msgstr ""
+
+msgid "Retrieving printer information, please try again later."
+msgstr ""
+
+msgid "Please try updating QIDI Studio and then try again."
+msgstr ""
+
+msgid ""
+"The certificate has expired. Please check the time settings or update QIDI "
+"Studio and try again."
+msgstr ""
+
+msgid ""
+"The certificate is no longer valid and the printing functions are "
+"unavailable. If you need printing. Please visit the official website at "
+"https://qidi3d.com/ to download and update."
+msgstr ""
+
+msgid ""
+"Internal error. Please try upgrading the firmware and Studio version. If the "
+"issue persists, contact customer support."
+msgstr ""
+
+msgid ""
+"Your software is not signed, and some printing functions have been "
+"restricted. Please use the officially signed software version."
+msgstr ""
 
 msgid "Privacy Policy Update"
 msgstr "Uppdatering av integritetspolicy"
@@ -2064,6 +2032,9 @@ msgstr "Auto Brim"
 msgid "Auto"
 msgstr "Auto"
 
+msgid "Painted"
+msgstr ""
+
 msgid "Outer brim only"
 msgstr "Endast yttre brim"
 
@@ -2457,7 +2428,7 @@ msgstr "Det gick inte att ladda upp filen till ftp. Vänligen försök igen."
 msgid ""
 "Check the current status of the qidi server by clicking on the link above."
 msgstr ""
-"Kontrollera den aktuella statusen för QIDI TECH servern genom att klicka på "
+"Kontrollera den aktuella statusen för QIDI Tech servern genom att klicka på "
 "länken ovan."
 
 msgid ""
@@ -2649,8 +2620,8 @@ msgstr ""
 "Slic3r skapades av Alessandro Ranellucci med hjälp av många andra "
 "medarbetare."
 
-msgid "QIDI Studio also referenced some ideas from Cura by Ultimaker."
-msgstr "QIDI Studio refererar även några idéer från Cura av Ultimaker."
+msgid "Bambu Studio also referenced some ideas from Cura by Ultimaker."
+msgstr "Bambu Studio refererar även några idéer från Cura av Ultimaker."
 
 msgid ""
 "There many parts of the software that come from community contributions, so "
@@ -2907,10 +2878,10 @@ msgstr "Infoga uppdatering"
 
 msgid ""
 "The AMS will automatically read the filament information when inserting a "
-"new QIDI TECH filament. This takes about 20 seconds."
+"new QIDI Tech filament. This takes about 20 seconds."
 msgstr ""
 "AMS läser automatiskt filament informationen när du sätter in ett nytt QIDI "
-"Tech-filament. Det tar ungefär 20 sekunder."
+"Lab-filament. Det tar ungefär 20 sekunder."
 
 msgid ""
 "Note: if a new filament is inserted during  printing, the AMS will not "
@@ -2934,7 +2905,7 @@ msgid ""
 "start-up. It will take about 1 minute.The reading process will roll filament "
 "spools."
 msgstr ""
-"AMS läser automatiskt informationen om insatt QIDI TECH filament vid "
+"AMS läser automatiskt informationen om insatt QIDI Tech filament vid "
 "uppstart. Det tar cirka 1 minut. Läsprocessen kommer att rulla "
 "filamentspolarna."
 
@@ -4112,6 +4083,12 @@ msgstr "Skriv ut allt"
 msgid "Send all"
 msgstr "Skicka alla"
 
+msgid "Send to QIDI Farm Manager Client"
+msgstr ""
+
+msgid "Send to BFMC"
+msgstr ""
+
 msgid "Send to Multi-device"
 msgstr "Send to Multi-device"
 
@@ -5123,6 +5100,9 @@ msgstr ""
 msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
 msgstr ""
 
+msgid "Split compound and compsolid into multiple objects"
+msgstr ""
+
 msgid "Number of triangular facets"
 msgstr ""
 
@@ -5596,8 +5576,8 @@ msgstr ""
 msgid "Loading file: %s"
 msgstr "Laddar fil: %s"
 
-msgid "The 3mf is not from QIDI TECH, load geometry data only."
-msgstr "3mf kommer inte från QIDI TECH, laddar endast geometri data."
+msgid "The 3mf is not from QIDI Tech, load geometry data only."
+msgstr "3mf kommer inte från QIDI Tech, laddar endast geometri data."
 
 msgid "Load 3mf"
 msgstr "Ladda 3mf"
@@ -5800,6 +5780,12 @@ msgstr "Bereder plattan %d"
 msgid "Please resolve the slicing errors and publish again."
 msgstr "Lös berednings felen och publicera igen."
 
+msgid "Failed to start QIDI Farm Manager Client."
+msgstr ""
+
+msgid "No QIDI Farm Manager Client found."
+msgstr ""
+
 msgid ""
 "Network Plug-in is not detected. Network related features are unavailable."
 msgstr ""
@@ -5939,11 +5925,9 @@ msgstr ""
 "skrivaren."
 
 msgid ""
-"Unable to perform boolean operation on model meshes. Only positive parts "
-"will be kept. You may fix the meshes and try agian."
+"Unable to perform boolean operation on model meshes. You may fix the meshes "
+"and try again."
 msgstr ""
-"Unable to perform boolean operation on model meshes. Only positive parts "
-"will be kept. You may fix the meshes and try agian."
 
 #, boost-format
 msgid "Reason: part \"%1%\" is empty."
@@ -6233,6 +6217,12 @@ msgid ""
 "reslice."
 msgstr ""
 
+msgid "Import a single SVG and split it"
+msgstr ""
+
+msgid "Import a single SVG and then split it to several parts."
+msgstr ""
+
 msgid "Improve rendering performance by lod"
 msgstr ""
 
@@ -6241,7 +6231,7 @@ msgid ""
 "models."
 msgstr ""
 
-msgid "enable multi instance rendering by opengl"
+msgid "Enable multi instance rendering by opengl"
 msgstr ""
 
 msgid ""
@@ -6444,14 +6434,14 @@ msgstr "spåra"
 msgid "Host Setting"
 msgstr "Värd Inställning"
 
-msgid "DEV host: api-dev.qidi-lab.com/v1"
-msgstr "DEV host: api-dev.qidi-lab.com/v1"
+msgid "DEV host: api-dev.qidi-tech.com/v1"
+msgstr "DEV host: api-dev.qidi-tech.com/v1"
 
-msgid "QA  host: api-qa.qidi-lab.com/v1"
-msgstr "QA  host: api-qa.qidi-lab.com/v1"
+msgid "QA  host: api-qa.qidi-tech.com/v1"
+msgstr "QA  host: api-qa.qidi-tech.com/v1"
 
-msgid "PRE host: api-pre.qidi-lab.com/v1"
-msgstr "PRE host: api-pre.qidi-lab.com/v1"
+msgid "PRE host: api-pre.qidi-tech.com/v1"
+msgstr "PRE host: api-pre.qidi-tech.com/v1"
 
 msgid "Product host"
 msgstr "Produktvärd"
@@ -6714,7 +6704,7 @@ msgid "QIDI Engineering Plate"
 msgstr "QIDI Engineering Plate"
 
 msgid "QIDI Smooth PEI Plate"
-msgstr "QIDI TECH Slät PEI-platta"
+msgstr "QIDI Tech Slät PEI-platta"
 
 msgid "High temperature Plate"
 msgstr "Högtemperatur platta"
@@ -6856,8 +6846,8 @@ msgstr ""
 msgid ""
 "Timelapse is not supported because Print sequence is set to \"By object\"."
 msgstr ""
-"Timelapse stöds inte eftersom utskrifts sekvensen är inställd på \"Per "
-"objekt\"."
+"Timelapse stöds inte eftersom utskrifts sekvensen är inställd på \"Per objekt"
+"\"."
 
 msgid "Errors"
 msgstr "Fel"
@@ -7045,17 +7035,17 @@ msgid "Terms and Conditions"
 msgstr "Villkor och bestämmelser"
 
 msgid ""
-"Thank you for purchasing a QIDI TECH device.Before using your QIDI TECH "
+"Thank you for purchasing a QIDI Tech device.Before using your QIDI Tech "
 "device, please read the termsand conditions.By clicking to agree to use your "
-"QIDI TECH device, you agree to abide by the Privacy Policy and Terms of "
+"QIDI Tech device, you agree to abide by the Privacy Policy and Terms of "
 "Use(collectively, the \"Terms\"). If you do not comply with or agree to the "
-"QIDI TECH Privacy Policy, please do not use QIDI TECH equipment and services."
+"QIDI Tech Privacy Policy, please do not use QIDI Tech equipment and services."
 msgstr ""
-"Tack för att du har köpt en QIDI TECH enhet. Innan du använder din QIDI TECH "
+"Tack för att du har köpt en QIDI Tech enhet. Innan du använder din QIDI Tech "
 "enhet ska du läsa villkoren. Genom att klicka för att godkänna användningen "
-"av din QIDI TECH enhet godkänner du att följa sekretesspolicyn och "
+"av din QIDI Tech enhet godkänner du att följa sekretesspolicyn och "
 "användningsvillkoren (gemensamt kallade \"villkoren\"). Om du inte följer "
-"eller samtycker till QIDI TECHs integritetspolicy ska du inte använda QIDI "
+"eller samtycker till QIDI Techs integritetspolicy ska du inte använda QIDI "
 "Labs utrustning och tjänster."
 
 msgid "and"
@@ -7218,8 +7208,8 @@ msgstr ""
 msgid ""
 "When recording timelapse without toolhead, it is recommended to add a "
 "\"Timelapse Wipe Tower\" \n"
-"by right-click the empty position of build plate and choose \"Add "
-"Primitive\"->\"Timelapse Wipe Tower\"."
+"by right-click the empty position of build plate and choose \"Add Primitive"
+"\"->\"Timelapse Wipe Tower\"."
 msgstr ""
 "När du spelar in timelapse utan verktygshuvud rekommenderas att du lägger "
 "till ett \"Timelapse Wipe Tower\".\n"
@@ -8470,6 +8460,9 @@ msgstr "Support övergång"
 msgid "Multiple"
 msgstr "Flertalet"
 
+msgid "Flush"
+msgstr ""
+
 #, boost-format
 msgid "Failed to calculate line width of %1%. Can not get value of \"%2%\" "
 msgstr ""
@@ -8918,6 +8911,13 @@ msgstr ""
 
 msgid ""
 "Bed temperature of the initial layer. Value 0 means the filament does not "
+"support to print on the Cool Plate"
+msgstr ""
+"Detta är byggplattans temperatur för första lager. Värdet 0 betyder att "
+"filamentet inte stöder utskrift på Cool Plate."
+
+msgid ""
+"Bed temperature of the initial layer. Value 0 means the filament does not "
 "support to print on the Engineering Plate"
 msgstr ""
 "Detta är byggplattans temperatur för första lager. Värdet 0 betyder att "
@@ -9142,9 +9142,6 @@ msgid ""
 msgstr ""
 "Detta styr genereringen av brim på modellens yttre och/eller inre sida. Auto "
 "innebär att brim bredd analyseras och beräknas automatiskt."
-
-msgid "Painted"
-msgstr ""
 
 msgid "Brim-object gap"
 msgstr "Avstånd mellan brim och modell"
@@ -9514,15 +9511,17 @@ msgstr "Aktivera pressure advance"
 
 msgid ""
 "Enable pressure advance, auto calibration result will be overwriten once "
-"enabled."
+"enabled. Useless for QIDI Printer"
 msgstr ""
 "Aktivera pressure advance? Auto kalibrerings resultat kommer att skrivas "
-"över när de har aktiverats."
+"över när de har aktiverats. Värdelöst för QIDI printer."
 
 msgid ""
-"Pressure advance(Klipper) AKA Linear advance factor(Marlin)."
+"Pressure advance(Klipper) AKA Linear advance factor(Marlin). Useless for "
+"QIDI Printer"
 msgstr ""
-"Pressure advance(Klipper) AKA Linear advance factor(Marlin)."
+"Pressure advance(Klipper) AKA Linear advance factor(Marlin). Oanvändbar för "
+"QIDI printer"
 
 msgid "Filament notes"
 msgstr "Filament notes"
@@ -10765,7 +10764,7 @@ msgstr ""
 
 msgid ""
 "The wipe speed is determined by speed of current extrusion role. e.g if a "
-"wip action is executed immediately following an outer wall extrusion, the "
+"wipe action is executed immediately following an outer wall extrusion, the "
 "speed of the outer wall extrusion will be utilized for the wipe action."
 msgstr ""
 
@@ -11908,14 +11907,14 @@ msgstr ""
 
 msgid ""
 "Flow Rate Calibration measures the ratio of expected to actual extrusion "
-"volumes. The default setting works well in QIDI TECH printers and official "
+"volumes. The default setting works well in QIDI Tech printers and official "
 "filaments as they were pre-calibrated and fine-tuned. For a regular "
 "filament, you usually won't need to perform a Flow Rate Calibration unless "
 "you still see the listed defects after you have done other calibrations. For "
 "more details, please check out the wiki article."
 msgstr ""
 "Flödeskalibrering mäter förhållandet mellan förväntade och faktiska "
-"extruderings volymer. Standardinställningen fungerar bra med QIDI TECH "
+"extruderings volymer. Standardinställningen fungerar bra med QIDI Tech "
 "printers och officiella filament eftersom de är förkalibrerade och "
 "finjusterade. För ett vanligt filament behöver du vanligtvis inte utföra en "
 "flödeshastighets kalibrering om du inte fortfarande ser de listade "
@@ -11923,7 +11922,7 @@ msgstr ""
 "se vår wiki-artikel."
 
 msgid ""
-"Auto Flow Rate Calibration utilizes QIDI TECH's Micro-Lidar technology, "
+"Auto Flow Rate Calibration utilizes QIDI Tech's Micro-Lidar technology, "
 "directly measuring the calibration patterns. However, please be advised that "
 "the efficacy and accuracy of this method may be compromised with specific "
 "types of materials. Particularly, filaments that are transparent or semi-"
@@ -11940,7 +11939,7 @@ msgid ""
 "can lead to sub-par prints or printer damage. Please make sure to carefully "
 "read and understand the process before doing it."
 msgstr ""
-"Auto Flow Rate Calibration utilizes QIDI TECH's Micro-Lidar technology, "
+"Auto Flow Rate Calibration utilizes QIDI Tech's Micro-Lidar technology, "
 "directly measuring the calibration patterns. However, please be advised that "
 "the efficacy and accuracy of this method may be compromised with specific "
 "types of materials. Particularly, filaments that are transparent or semi-"
@@ -12618,12 +12617,12 @@ msgstr ""
 "Vill du skriva om det?"
 
 msgid ""
-"We would rename the presets as \"Vendor Type Serial @printer you "
-"selected\". \n"
+"We would rename the presets as \"Vendor Type Serial @printer you selected"
+"\". \n"
 "To add preset for more prinetrs, Please go to printer selection"
 msgstr ""
-"We would rename the presets as \"Vendor Type Serial @printer you "
-"selected\". \n"
+"We would rename the presets as \"Vendor Type Serial @printer you selected"
+"\". \n"
 "To add preset for more printers; please go to printer selection"
 
 msgid "Create Printer/Nozzle"
@@ -13800,8 +13799,8 @@ msgstr ""
 "STEG\n"
 "Visste du att du kan förbättra utskriftskvaliteten genom att bereda en STEP-"
 "fil i stället för en STL-fil?\n"
-"QIDI Studio stöder beredningen av STEP-filer, vilket ger jämnare resultat än "
-"en STL-fil med lägre upplösning. Prova det!"
+"QIDI Studio stöder beredningen av STEP-filer, vilket ger jämnare resultat "
+"än en STL-fil med lägre upplösning. Prova det!"
 
 #: resources/data/hints.ini: [hint:Z seam location]
 msgid ""
@@ -13959,13 +13958,64 @@ msgstr ""
 "ABS, kan en lämplig ökning av värmebäddens temperatur minska sannolikheten "
 "för vridning."
 
+#~ msgid ""
+#~ "The current chamber temperature or the target chamber temperature exceeds "
+#~ "45\\u2103.In order to avoid extruder clogging,low temperature "
+#~ "filament(PLA/PETG/TPU) is not allowed to be loaded."
+#~ msgstr ""
+#~ "The current chamber temperature or the target chamber temperature exceeds "
+#~ "45\\u2103. In order to avoid extruder clogging, low temperature filament "
+#~ "(PLA/PETG/TPU) cannot be loaded."
+
+#~ msgid ""
+#~ "Low temperature filament(PLA/PETG/TPU) is loaded in the extruder.In order "
+#~ "to avoid extruder clogging,it is not allowed to set the chamber "
+#~ "temperature above 45\\u2103."
+#~ msgstr ""
+#~ "Low temperature filament(PLA/PETG/TPU) is loaded in the extruder. In "
+#~ "order to avoid extruder clogging, setting the chamber temperature above "
+#~ "45\\u2103 is not allowed."
+
+#~ msgid ""
+#~ "When you set the chamber temperature below 40\\u2103, the chamber "
+#~ "temperature control will not be activated. And the target chamber "
+#~ "temperature will automatically be set to 0\\u2103."
+#~ msgstr ""
+#~ "När du ställer in kammartemperaturen under 40\\u2103, aktiveras inte "
+#~ "temperaturkontrollen för kammaren. Den önskade kammartemperaturen ställs "
+#~ "automatiskt in på 0\\u2103."
+
+#~ msgid ""
+#~ "Please input valid values:\n"
+#~ "start > 0 \\step >= 0\n"
+#~ "end > start + step)"
+#~ msgstr ""
+#~ "Vänligen ange giltiga värden:\n"
+#~ "start > 0 \\steg >= 0\n"
+#~ "slut > start + steg)"
+
+#~ msgid ""
+#~ "Please input valid values:\n"
+#~ "start > 10 \\step >= 0\n"
+#~ "end > start + step)"
+#~ msgstr ""
+#~ "Ange giltiga värden:\n"
+#~ "start> 10 \\ steg >= 0\n"
+#~ "slut> start+steg)"
+
+#~ msgid ""
+#~ "Unable to perform boolean operation on model meshes. Only positive parts "
+#~ "will be kept. You may fix the meshes and try agian."
+#~ msgstr ""
+#~ "Unable to perform boolean operation on model meshes. Only positive parts "
+#~ "will be kept. You may fix the meshes and try agian."
+
 #~ msgid "We would use Lidar to read the calibration result"
 #~ msgstr "Vi vill använda Lidar för att läsa av kalibrerings resultatet"
 
 #~ msgid "Are you sure you want to cancel this print?"
 #~ msgstr "Är du säker på att du vill avbryta utskriften?"
 
-#, c-format, boost-format
 #~ msgid ""
 #~ "Printing high temperature material(%s material) with %s may cause nozzle "
 #~ "damage"
@@ -14114,13 +14164,6 @@ msgstr ""
 #~ msgid "IP and Access Code Verified! You may close the window"
 #~ msgstr "IP- och åtkomstkoder verifierade! Du kan stänga fönstret"
 
-#~ msgid ""
-#~ "Bed temperature of the initial layer. Value 0 means the filament does not "
-#~ "support to print on the Cool Plate"
-#~ msgstr ""
-#~ "Detta är byggplattans temperatur för första lager. Värdet 0 betyder att "
-#~ "filamentet inte stöder utskrift på Cool Plate."
-
 #~ msgid "This setting specifies the count of walls around support"
 #~ msgstr "Denna inställning anger antalet väggar runt support"
 
@@ -14215,53 +14258,8 @@ msgstr ""
 #~ msgid "Please input a valid value (K in 0~0.3, N in 0.6~2.0)"
 #~ msgstr "Ange ett giltigt värde (K i 0~0.3, N i 0.6~2.0)"
 
-#~ msgid ""
-#~ "The current chamber temperature or the target chamber temperature exceeds "
-#~ "45\\u2103.In order to avoid extruder clogging,low temperature "
-#~ "filament(PLA/PETG/TPU) is not allowed to be loaded."
-#~ msgstr ""
-#~ "The current chamber temperature or the target chamber temperature exceeds "
-#~ "45\\u2103. In order to avoid extruder clogging, low temperature filament "
-#~ "(PLA/PETG/TPU) cannot be loaded."
-
-#~ msgid ""
-#~ "Low temperature filament(PLA/PETG/TPU) is loaded in the extruder.In order "
-#~ "to avoid extruder clogging,it is not allowed to set the chamber "
-#~ "temperature above 45\\u2103."
-#~ msgstr ""
-#~ "Low temperature filament(PLA/PETG/TPU) is loaded in the extruder. In "
-#~ "order to avoid extruder clogging, setting the chamber temperature above "
-#~ "45\\u2103 is not allowed."
-
-#~ msgid ""
-#~ "When you set the chamber temperature below 40\\u2103, the chamber "
-#~ "temperature control will not be activated. And the target chamber "
-#~ "temperature will automatically be set to 0\\u2103."
-#~ msgstr ""
-#~ "När du ställer in kammartemperaturen under 40\\u2103, aktiveras inte "
-#~ "temperaturkontrollen för kammaren. Den önskade kammartemperaturen ställs "
-#~ "automatiskt in på 0\\u2103."
-
 #~ msgid "Printer local connection failed, please try again."
 #~ msgstr "Den lokala anslutningen till printern misslyckades, försök igen."
-
-#~ msgid ""
-#~ "Please input valid values:\n"
-#~ "start > 0 \\step >= 0\n"
-#~ "end > start + step)"
-#~ msgstr ""
-#~ "Vänligen ange giltiga värden:\n"
-#~ "start > 0 \\steg >= 0\n"
-#~ "slut > start + steg)"
-
-#~ msgid ""
-#~ "Please input valid values:\n"
-#~ "start > 10 \\step >= 0\n"
-#~ "end > start + step)"
-#~ msgstr ""
-#~ "Ange giltiga värden:\n"
-#~ "start> 10 \\ steg >= 0\n"
-#~ "slut> start+steg)"
 
 #~ msgid ""
 #~ "\n"
@@ -16212,19 +16210,19 @@ msgstr ""
 #~ msgstr "Kristalliserings temperatur"
 
 #~ msgid ""
-#~ "Thank you for purchasing a QIDI TECH device.Before using your QIDI TECH "
+#~ "Thank you for purchasing a QIDI Tech device.Before using your QIDI Tech "
 #~ "device, please read the termsand conditions.By clicking to agree to use "
-#~ "your QIDI TECH device, you agree to abide by the Privacy Policyand Terms "
+#~ "your QIDI Tech device, you agree to abide by the Privacy Policyand Terms "
 #~ "of Use(collectively, the \"Terms\"). If you do not comply with or agree "
-#~ "to the QIDI TECH Privacy Policy, please do not use QIDI TECH equipment and "
-#~ "services."
+#~ "to the QIDI Tech Privacy Policy, please do not use QIDI Tech equipment "
+#~ "and services."
 #~ msgstr ""
-#~ "Tack för att du har köpt en QIDI TECH enhet. Innan du använder din QIDI "
+#~ "Tack för att du har köpt en QIDI Tech enhet. Innan du använder din QIDI "
 #~ "Lab enhet ska du läsa villkoren. Genom att klicka för att godkänna "
-#~ "användningen av din QIDI TECH enhet godkänner du att följa "
-#~ "sekretesspolicyn och användningsvillkoren (gemensamt kallade "
-#~ "\"Villkor\"). Om du inte följer eller samtycker till QIDI TECHs "
-#~ "integritetspolicy ska du inte använda QIDI TECHs utrustning och tjänster."
+#~ "användningen av din QIDI Tech enhet godkänner du att följa "
+#~ "sekretesspolicyn och användningsvillkoren (gemensamt kallade \"Villkor"
+#~ "\"). Om du inte följer eller samtycker till QIDI Techs integritetspolicy "
+#~ "ska du inte använda QIDI Techs utrustning och tjänster."
 
 #~ msgid "The %s filament is too soft to be used with the AMS"
 #~ msgstr "Filament %s är för mjukt för att kunna användas med AMS"
@@ -16260,8 +16258,8 @@ msgstr ""
 #~ msgid "The 3mf is not compatible, load geometry data only!"
 #~ msgstr "3mf ej kompatibel, laddar endast geometrin !"
 
-# ~ msgid "The 3mf is not from QIDI TECH, load geometry data only."
-# ~ msgstr "3mf kommer inte från QIDI TECH, laddar endast geometri data."
+#~ msgid "The 3mf is not from QIDI lab, load geometry data only."
+#~ msgstr "3mf kommer inte från QIDI Tech, laddar endast geometri data."
 
 #~ msgid "The Config is not compatible and can not be loaded."
 #~ msgstr "Ej kompatibel konfiguration; kan inte laddas."
@@ -16939,6 +16937,7 @@ msgstr ""
 #~ msgid "⌥+Left mouse button"
 #~ msgstr "⌥+Vänster musknapp"
 
+#QIDIStudio
 msgid "Pressure Advance"
 msgstr "Pressure Advance"
 
@@ -17205,3 +17204,101 @@ msgstr "Läs mer"
 
 msgid "The path is not exists!"  
 msgstr "Sökvägen finns inte!"
+
+msgid "Click here if you failed to send the print job"
+msgstr "Klicka här om du misslyckades med att skicka utskriftsjobbet"
+
+msgid "Login/Register"
+msgstr "Logga in/registrera"
+
+msgid "Local"
+msgstr "Lokal"
+
+msgid "Printer name \"%1%\" already exists."
+msgstr "Skrivarnamnet \"%1%\" finns redan."
+
+msgid "Connection to Moonraker works correctly."
+msgstr "Anslutning till Moonraker fungerar korrekt."
+
+msgid "The host or IP or URL cannot be empty."
+msgstr "Värden, IP-adressen eller webbadressen kan inte vara tom."
+
+msgid "A device with the same host (IP or URL) already exists, please re-enter."
+msgstr "En enhet med samma värd (IP eller URL) finns redan, skriv in igen."
+
+msgid "Machine Name"
+msgstr "Maskinnamn"
+
+msgid "Choice your physical printer preset"
+msgstr "Välj din fysiska skrivarförinställning"
+
+msgid "Are you sure you want to delete \"%1%\" printer?"
+msgstr "Är du säker på att du vill ta bort skrivaren \"%1%\"?"
+
+msgid "Are you sure you want to delete "
+msgstr "Är du säker på att du vill ta bort "
+
+msgid "printer?"
+msgstr "skrivare?"
+
+msgid "Delete Physical Printer"
+msgstr "Ta bort fysisk skrivare"
+
+msgid "Don't slow down outer walls"
+msgstr "Bromsa inte ytterväggarna"
+
+msgid ""
+"If enabled, this setting will ensure external perimeters are not slowed down to meet the minimum layer time. This is particularly helpful in the below scenarios:\n"
+"\n"
+"1. To avoid changes in shine when printing glossy filaments \n"
+"2. To avoid changes in external wall speed which may create slight wall artefacts that appear like z banding \n"
+"3. To avoid printing at speeds which cause VFAs (fine artefacts) on the external walls\n"
+"\n"
+msgstr ""
+"Om aktiverat, kommer denna inställning att se till att yttre perimeters inte saktas ned för att uppfylla det minsta lager-tiden.Detta är särskilt användbart i följande scenarier:\n"
+"\n"
+"1. För att undvika förändringar i glans när man skriver ut glansiga filament\n"
+"2. För att undvika förändringar i hastigheten på externa väggar som kan skapa små väggartefakter som liknar Z-bandning\n"
+"3. För att undvika utskrift vid hastigheter som orsakar VFAs (fina artefakter) på de externa väggarna\n"
+"\n"
+
+msgid "Unseal Fan speed"
+msgstr "Unseal fläkthastighet"
+
+msgid "Speed of auxiliary part cooling fan under unseal. Auxiliary fan will run at this speed during printing except the first several layers which are defined by no cooling layers"
+msgstr "Hastigheten på den hjälpande delens kylfläkt när den är i oseglad position. Fläkten kommer att köra i denna hastighet under utskrifter, förutom de första flera lagren som inte har några kylskikt."
+
+msgid "Resonance avoidance"
+msgstr "Undvikande av resonans"
+
+msgid "By reducing the speed of the outer wall to avoid the resonance zone of the printer, ringing on the surface of the model are avoided.\n"
+"Please turn this option off when testing ringing."
+msgstr "Genom att sänka hastigheten på ytterväggen för att undvika skrivarens resonansområde, undviks ringningar på modellens yta.\n"
+"Vänligen stäng av detta alternativ när du testar ringningar."
+
+msgid "G-code thumbnails"
+msgstr "G-kod miniatyrer"
+
+msgid "Picture sizes to be stored into a .gcode and .sl1 / .sl1s files, in the following format: \"XxY, XxY, ...\""
+msgstr "Bildstorlekar som ska sparas i .gcode- och .sl1 / .sl1s-filer, i följande format: \"XxY, XxY, ...\""
+
+msgid "Format of G-code thumbnails"
+msgstr "Formatet för G-kod miniatyrer"
+
+msgid "Format of G-code thumbnails: PNG for best quality, JPG for smallest size"
+msgstr "Formatet för G-kod miniatyrer: PNG för bästa kvalitet, JPG för minsta storlek"
+
+msgid "QIDI Studio is based on Bambu Studio by Bambu Lab"
+msgstr "QIDI Studio är utvecklat baserat på Bambu Studios från Bambu Lab"
+
+msgid "Seal"
+msgstr "Försegling"
+
+msgid "QIDI Studio is based on Bambu Studio by Bambu Lab."
+msgstr "QIDI Studio är utvecklat baserat på Bambu Studios från Bambu Lab."
+
+msgid "Support multi bed types"
+msgstr "Stöd för flera sängtyper"
+
+msgid "Switch to Device tab"
+msgstr "Byt till fliken Enhet"

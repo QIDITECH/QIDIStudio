@@ -13,104 +13,6 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n>=0 && n<=1) ? 0 : 1;\n"
 "X-Generator: Poedit 3.4.4\n"
 
-msgid "Click here if you failed to send the print job"
-msgstr "Clique aqui se você não conseguiu enviar o trabalho de impressão"
-
-msgid "Login/Register"
-msgstr "Entrar/Registrar"
-
-msgid "Local"
-msgstr "Local"
-
-msgid "Printer name \"%1%\" already exists."
-msgstr "O nome da impressora \"%1%\" já existe."
-
-msgid "Connection to Moonraker works correctly."
-msgstr "A conexão com Moonraker está funcionando corretamente."
-
-msgid "The host or IP or URL cannot be empty."
-msgstr "O host, IP ou URL não pode estar vazio."
-
-msgid "A device with the same host (IP or URL) already exists, please re-enter."
-msgstr "Um dispositivo com o mesmo host (IP ou URL) já existe, por favor, insira novamente."
-
-msgid "Machine Name"
-msgstr "Nome da máquina"
-
-msgid "Choice your physical printer preset"
-msgstr "Escolha a predefinição da sua impressora física"
-
-msgid "Are you sure you want to delete \"%1%\" printer?"
-msgstr "Você tem certeza de que deseja excluir a impressora \"%1%\"?"
-
-msgid "Are you sure you want to delete "
-msgstr "Você tem certeza de que deseja excluir "
-
-msgid "printer?"
-msgstr "a impressora?"
-
-msgid "Delete Physical Printer"
-msgstr "Excluir Impressora Física"
-
-msgid "Don't slow down outer walls"
-msgstr "Não diminuir a velocidade das paredes externas."
-
-msgid ""
-"If enabled, this setting will ensure external perimeters are not slowed down to meet the minimum layer time. This is particularly helpful in the below scenarios:\n"
-"\n"
-"1. To avoid changes in shine when printing glossy filaments \n"
-"2. To avoid changes in external wall speed which may create slight wall artefacts that appear like z banding \n"
-"3. To avoid printing at speeds which cause VFAs (fine artefacts) on the external walls\n"
-"\n"
-msgstr ""
-"Se ativado, esta configuração garantirá que os perímetros externos não sejam retardados para atender ao tempo mínimo da camada. Isso é particularmente útil nos seguintes cenários:\n"
-"\n"
-"1. Para evitar alterações no brilho ao imprimir filamentos brilhantes.\n"
-"2. Para evitar alterações na velocidade das paredes externas que podem criar artefatos leves nas paredes semelhantes a bandas z.\n"
-"3. Para evitar a impressão em velocidades que causem VFAs (artefatos finos) nas paredes externas.\n"
-"\n"
-
-msgid "Unseal Fan speed"
-msgstr "Velocidade do ventilador sem selo"
-
-msgid "Speed of auxiliary part cooling fan under unseal. Auxiliary fan will run at this speed during printing except the first several layers which are defined by no cooling layers"
-msgstr "Velocidade do ventilador auxiliar de resfriamento sem selagem. O ventilador auxiliar funcionará nesta velocidade durante a impressão, exceto nos primeiros vários camadas definidas sem camadas de resfriamento."
-
-msgid "Resonance avoidance"
-msgstr "Evitar ressonância"
-
-msgid "By reducing the speed of the outer wall to avoid the resonance zone of the printer, ringing on the surface of the model are avoided.\n"
-"Please turn this option off when testing ringing."
-msgstr "Ao reduzir a velocidade da parede externa para evitar a zona de ressonância da impressora, evita-se o aparecimento de oscilações na superfície do modelo.\n"
-"Por favor, desligue esta opção ao testar as oscilações."
-
-msgid "G-code thumbnails"
-msgstr "Miniaturas de G-code"
-
-msgid "Picture sizes to be stored into a .gcode and .sl1 / .sl1s files, in the following format: \"XxY, XxY, ...\""
-msgstr "Tamanhos das imagens a serem armazenados em arquivos .gcode e .sl1 / .sl1s, no seguinte formato: \"XxY, XxY, ...\""
-
-msgid "Format of G-code thumbnails"
-msgstr "Formato das miniaturas de G-code"
-
-msgid "Format of G-code thumbnails: PNG for best quality, JPG for smallest size"
-msgstr "Formato das miniaturas de G-code: PNG para melhor qualidade, JPG para menor tamanho"
-
-msgid "QIDI Studio is based on Bambu Studio by Bambu Lab"
-msgstr "QIDI Studio foi desenvolvido com base no Bambu Studio do Bambu Lab"
-
-msgid "Seal"
-msgstr "Selo"
-
-msgid "QIDI Studio is based on Bambu Studio by Bambu Lab."
-msgstr "QIDI Studio foi desenvolvido com base no Bambu Studio do Bambu Lab."
-
-msgid "Support multi bed types"
-msgstr "Suporte para múltiplos tipos de cama"
-
-msgid "Switch to Device tab"
-msgstr "Mudar para a aba Dispositivo"
-
 msgid "Supports Painting"
 msgstr "Pintura de suporte"
 
@@ -391,13 +293,16 @@ msgstr ""
 msgid "World coordinates"
 msgstr "Coordenadas mundiais"
 
-msgid "Reset current rotation to real zeros."
-msgstr ""
-
 msgid "°"
 msgstr "°"
 
 msgid "Reset current rotation to the value when open the rotation tool."
+msgstr ""
+
+msgid "Rotate (absolute)"
+msgstr ""
+
+msgid "Reset current rotation to real zeros."
 msgstr ""
 
 msgid "Part coordinates"
@@ -939,6 +844,37 @@ msgstr ""
 msgid "Warning:text normal is error."
 msgstr ""
 
+msgid "Warning:text normal has been reset."
+msgstr ""
+
+msgid ""
+"Warning:Because current text does indeed use surround algorithm,\n"
+"if continue to edit, text has to regenerated according to new location."
+msgstr ""
+
+msgid ""
+"Warning:old matrix has at least two parameters: mirroring, scaling, and "
+"rotation. \n"
+"If you continue editing, it may not be correct. \n"
+"Please dragging text or cancel using current pose, \n"
+"save and reedit again."
+msgstr ""
+
+msgid ""
+"Error:Detecting an incorrect mesh id or an unknown error, \n"
+"regenerating text may result in incorrect outcomes.\n"
+"Please drag text,save it then reedit it again."
+msgstr ""
+
+msgid ""
+"Warning:Due to functional upgrade, rotation information \n"
+"cannot be restored. Please drag or modify text,\n"
+" save it and reedit it will ok."
+msgstr ""
+
+msgid "Use opened text pose"
+msgstr ""
+
 msgid "Surface"
 msgstr "Superfície"
 
@@ -1384,10 +1320,42 @@ msgstr "Projeto aberto"
 
 msgid ""
 "The QIDI Studio version is too old to enable cloud service. Please download "
-"the latest version from QIDI TECH website."
+"the latest version from QIDI Tech website."
 msgstr ""
 "A versão do QIDI Studio é muito antiga para habilitar o serviço em nuvem. "
-"Faça o download da versão mais recente no site do QIDI TECH."
+"Faça o download da versão mais recente no site do QIDI Tech."
+
+msgid ""
+"Your software certificate has been revoked, please update QIDI Studio "
+"software."
+msgstr ""
+
+msgid "Retrieving printer information, please try again later."
+msgstr ""
+
+msgid "Please try updating QIDI Studio and then try again."
+msgstr ""
+
+msgid ""
+"The certificate has expired. Please check the time settings or update QIDI "
+"Studio and try again."
+msgstr ""
+
+msgid ""
+"The certificate is no longer valid and the printing functions are "
+"unavailable. If you need printing. Please visit the official website at "
+"https://qidi3d.com/ to download and update."
+msgstr ""
+
+msgid ""
+"Internal error. Please try upgrading the firmware and Studio version. If the "
+"issue persists, contact customer support."
+msgstr ""
+
+msgid ""
+"Your software is not signed, and some printing functions have been "
+"restricted. Please use the officially signed software version."
+msgstr ""
 
 msgid "Privacy Policy Update"
 msgstr "Atualização da política de privacidade"
@@ -2077,6 +2045,9 @@ msgstr "Brim automático"
 msgid "Auto"
 msgstr "Automático"
 
+msgid "Painted"
+msgstr ""
+
 msgid "Outer brim only"
 msgstr "Apenas brim externo"
 
@@ -2668,9 +2639,9 @@ msgstr ""
 "O Slic3r foi criado por Alessandro Ranellucci com a ajuda de muitos outros "
 "colaboradores."
 
-msgid "QIDI Studio also referenced some ideas from Cura by Ultimaker."
+msgid "Bambu Studio also referenced some ideas from Cura by Ultimaker."
 msgstr ""
-"O QIDI Studio também fez referência a algumas ideias do Cura by Ultimaker."
+"O Bambu Studio também fez referência a algumas ideias do Cura by Ultimaker."
 
 msgid ""
 "There many parts of the software that come from community contributions, so "
@@ -2932,10 +2903,10 @@ msgstr "Atualização de inserção"
 
 msgid ""
 "The AMS will automatically read the filament information when inserting a "
-"new QIDI TECH filament. This takes about 20 seconds."
+"new QIDI Tech filament. This takes about 20 seconds."
 msgstr ""
 "O AMS lerá automaticamente as informações do filamento ao inserir um novo "
-"carretel de filamento da QIDI Tech. Isso leva cerca de 20 segundos."
+"carretel de filamento da QIDITech. Isso leva cerca de 20 segundos."
 
 msgid ""
 "Note: if a new filament is inserted during  printing, the AMS will not "
@@ -4140,6 +4111,12 @@ msgstr "Imprimir tudo"
 msgid "Send all"
 msgstr "Enviar tudo"
 
+msgid "Send to QIDI Farm Manager Client"
+msgstr ""
+
+msgid "Send to BFMC"
+msgstr ""
+
 msgid "Send to Multi-device"
 msgstr "Send to Multi-device"
 
@@ -5150,6 +5127,9 @@ msgstr ""
 msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
 msgstr ""
 
+msgid "Split compound and compsolid into multiple objects"
+msgstr ""
+
 msgid "Number of triangular facets"
 msgstr ""
 
@@ -5571,8 +5551,8 @@ msgid ""
 "update to system presets."
 msgstr ""
 "Existem alguns filamentos desconhecidos ou incompatíveis mapeados para uma "
-"predefinição genérica. Atualize o QIDI Studio ou reinicie o QIDI Studio para "
-"verificar se há uma atualização nas predefinições do sistema."
+"predefinição genérica. Atualize o QIDI Studio ou reinicie o QIDI Studio "
+"para verificar se há uma atualização nas predefinições do sistema."
 
 #, boost-format
 msgid "Do you want to save changes to \"%1%\"?"
@@ -5625,8 +5605,8 @@ msgstr ""
 msgid "Loading file: %s"
 msgstr "Carregando arquivo: %s"
 
-msgid "The 3mf is not from QIDI TECH, load geometry data only."
-msgstr "O 3mf não é do QIDI TECH, carregue apenas dados de geometria."
+msgid "The 3mf is not from QIDI Tech, load geometry data only."
+msgstr "O 3mf não é do QIDI Tech, carregue apenas dados de geometria."
 
 msgid "Load 3mf"
 msgstr "Carga: 3mf"
@@ -5834,6 +5814,12 @@ msgstr "Placa de corte %d"
 msgid "Please resolve the slicing errors and publish again."
 msgstr "Resolva os erros de fatiamento e publique novamente."
 
+msgid "Failed to start QIDI Farm Manager Client."
+msgstr ""
+
+msgid "No QIDI Farm Manager Client found."
+msgstr ""
+
 msgid ""
 "Network Plug-in is not detected. Network related features are unavailable."
 msgstr ""
@@ -5972,11 +5958,9 @@ msgstr ""
 "ser visualizado na impressora."
 
 msgid ""
-"Unable to perform boolean operation on model meshes. Only positive parts "
-"will be kept. You may fix the meshes and try agian."
+"Unable to perform boolean operation on model meshes. You may fix the meshes "
+"and try again."
 msgstr ""
-"Unable to perform boolean operation on model meshes. Only positive parts "
-"will be kept. You may fix the meshes and try agian."
 
 #, boost-format
 msgid "Reason: part \"%1%\" is empty."
@@ -6271,6 +6255,12 @@ msgid ""
 "reslice."
 msgstr ""
 
+msgid "Import a single SVG and split it"
+msgstr ""
+
+msgid "Import a single SVG and then split it to several parts."
+msgstr ""
+
 msgid "Improve rendering performance by lod"
 msgstr ""
 
@@ -6279,7 +6269,7 @@ msgid ""
 "models."
 msgstr ""
 
-msgid "enable multi instance rendering by opengl"
+msgid "Enable multi instance rendering by opengl"
 msgstr ""
 
 msgid ""
@@ -6327,13 +6317,15 @@ msgid "Associate .3mf files to QIDI Studio"
 msgstr "Associate .3mf files to QIDI Studio"
 
 msgid "If enabled, sets QIDI Studio as default application to open .3mf files"
-msgstr "If enabled, sets QIDI Studio as default application to open .3mf files"
+msgstr ""
+"If enabled, sets QIDI Studio as default application to open .3mf files"
 
 msgid "Associate .stl files to QIDI Studio"
 msgstr "Associate .stl files to QIDI Studio"
 
 msgid "If enabled, sets QIDI Studio as default application to open .stl files"
-msgstr "If enabled, sets QIDI Studio as default application to open .stl files"
+msgstr ""
+"If enabled, sets QIDI Studio as default application to open .stl files"
 
 msgid "Associate .step/.stp files to QIDI Studio"
 msgstr "Associate .step/.stp files to QIDI Studio"
@@ -6480,14 +6472,14 @@ msgstr "rastro"
 msgid "Host Setting"
 msgstr "Configuração do host"
 
-msgid "DEV host: api-dev.qidi-lab.com/v1"
-msgstr "Host de desenvolvimento: api-dev.qidi-lab.com/v1"
+msgid "DEV host: api-dev.qidi-tech.com/v1"
+msgstr "Host de desenvolvimento: api-dev.qidi-tech.com/v1"
 
-msgid "QA  host: api-qa.qidi-lab.com/v1"
-msgstr "Anfitrião de QA: api-qa.qidi-lab.com/v1"
+msgid "QA  host: api-qa.qidi-tech.com/v1"
+msgstr "Anfitrião de QA: api-qa.qidi-tech.com/v1"
 
-msgid "PRE host: api-pre.qidi-lab.com/v1"
-msgstr "Host PRÉ: api-pre.qidi-lab.com/v1"
+msgid "PRE host: api-pre.qidi-tech.com/v1"
+msgstr "Host PRÉ: api-pre.qidi-tech.com/v1"
 
 msgid "Product host"
 msgstr "Host do produto"
@@ -7086,11 +7078,11 @@ msgid "Terms and Conditions"
 msgstr "Termos e Condições"
 
 msgid ""
-"Thank you for purchasing a QIDI TECH device.Before using your QIDI TECH "
+"Thank you for purchasing a QIDI Tech device.Before using your QIDI Tech "
 "device, please read the termsand conditions.By clicking to agree to use your "
-"QIDI TECH device, you agree to abide by the Privacy Policy and Terms of "
+"QIDI Tech device, you agree to abide by the Privacy Policy and Terms of "
 "Use(collectively, the \"Terms\"). If you do not comply with or agree to the "
-"QIDI TECH Privacy Policy, please do not use QIDI TECH equipment and services."
+"QIDI Tech Privacy Policy, please do not use QIDI Tech equipment and services."
 msgstr ""
 "Obrigado por adquirir um dispositivo da QIDI Tech. Antes de usar seu "
 "dispositivo da QIDI Tech, leia os termos e condições. Ao clicar para "
@@ -7263,8 +7255,8 @@ msgstr ""
 msgid ""
 "When recording timelapse without toolhead, it is recommended to add a "
 "\"Timelapse Wipe Tower\" \n"
-"by right-click the empty position of build plate and choose \"Add "
-"Primitive\"->\"Timelapse Wipe Tower\"."
+"by right-click the empty position of build plate and choose \"Add Primitive"
+"\"->\"Timelapse Wipe Tower\"."
 msgstr ""
 "Ao gravar o timelapse sem o cabeçote de ferramenta, é recomendável adicionar "
 "uma “Timelapse Wipe Tower” \n"
@@ -8516,6 +8508,9 @@ msgstr "Transição de suporte"
 msgid "Multiple"
 msgstr "Múltiplo"
 
+msgid "Flush"
+msgstr ""
+
 #, boost-format
 msgid "Failed to calculate line width of %1%. Can not get value of \"%2%\" "
 msgstr ""
@@ -8985,6 +8980,13 @@ msgstr ""
 
 msgid ""
 "Bed temperature of the initial layer. Value 0 means the filament does not "
+"support to print on the Cool Plate"
+msgstr ""
+"Esta é a temperatura da mesa da primeira camada. Um valor de 0 significa que "
+"o filamento não suporta impressão na placa fria."
+
+msgid ""
+"Bed temperature of the initial layer. Value 0 means the filament does not "
 "support to print on the Engineering Plate"
 msgstr ""
 "Esta é a temperatura da mesa da primeira camada. Um valor de 0 significa que "
@@ -9215,9 +9217,6 @@ msgstr ""
 "Isso controla a geração da aba no lado externo e/ou interno dos modelos. "
 "Automático significa que a largura da aba é analisada e calculada "
 "automaticamente."
-
-msgid "Painted"
-msgstr ""
 
 msgid "Brim-object gap"
 msgstr "Lacuna Brim-object"
@@ -9590,16 +9589,17 @@ msgstr "Permitir avanço de pressão"
 
 msgid ""
 "Enable pressure advance, auto calibration result will be overwriten once "
-"enabled."
+"enabled. Useless for QIDI Printer"
 msgstr ""
 "Ative o avanço da pressão, o resultado da calibração automática será "
-"sobrescrito quando ativado."
+"sobrescrito quando ativado. Inútil para a impressora QIDI"
 
 msgid ""
-"Pressure advance(Klipper) AKA Linear advance factor(Marlin)."
+"Pressure advance(Klipper) AKA Linear advance factor(Marlin). Useless for "
+"QIDI Printer"
 msgstr ""
 "Avanço de pressão (Klipper), também conhecido como fator de avanço linear "
-"(Marlin)."
+"(Marlin). Inútil para a impressora QIDI"
 
 msgid "Filament notes"
 msgstr "Filament notes"
@@ -10857,7 +10857,7 @@ msgstr ""
 
 msgid ""
 "The wipe speed is determined by speed of current extrusion role. e.g if a "
-"wip action is executed immediately following an outer wall extrusion, the "
+"wipe action is executed immediately following an outer wall extrusion, the "
 "speed of the outer wall extrusion will be utilized for the wipe action."
 msgstr ""
 
@@ -12022,7 +12022,7 @@ msgstr ""
 
 msgid ""
 "Flow Rate Calibration measures the ratio of expected to actual extrusion "
-"volumes. The default setting works well in QIDI TECH printers and official "
+"volumes. The default setting works well in QIDI Tech printers and official "
 "filaments as they were pre-calibrated and fine-tuned. For a regular "
 "filament, you usually won't need to perform a Flow Rate Calibration unless "
 "you still see the listed defects after you have done other calibrations. For "
@@ -12036,7 +12036,7 @@ msgstr ""
 "outras calibrações. Para mais detalhes, confira o artigo wiki."
 
 msgid ""
-"Auto Flow Rate Calibration utilizes QIDI TECH's Micro-Lidar technology, "
+"Auto Flow Rate Calibration utilizes QIDI Tech's Micro-Lidar technology, "
 "directly measuring the calibration patterns. However, please be advised that "
 "the efficacy and accuracy of this method may be compromised with specific "
 "types of materials. Particularly, filaments that are transparent or semi-"
@@ -12053,7 +12053,7 @@ msgid ""
 "can lead to sub-par prints or printer damage. Please make sure to carefully "
 "read and understand the process before doing it."
 msgstr ""
-"Auto Flow Rate Calibration utilizes QIDI TECH's Micro-Lidar technology, "
+"Auto Flow Rate Calibration utilizes QIDI Tech's Micro-Lidar technology, "
 "directly measuring the calibration patterns. However, please be advised that "
 "the efficacy and accuracy of this method may be compromised with specific "
 "types of materials. Particularly, filaments that are transparent or semi-"
@@ -12738,8 +12738,8 @@ msgstr ""
 "Você quer reescrevê-lo?"
 
 msgid ""
-"We would rename the presets as \"Vendor Type Serial @printer you "
-"selected\". \n"
+"We would rename the presets as \"Vendor Type Serial @printer you selected"
+"\". \n"
 "To add preset for more prinetrs, Please go to printer selection"
 msgstr ""
 "Nós renomearíamos as predefinições como “Tipo de fornecedor Serial @printer "
@@ -14095,13 +14095,64 @@ msgstr ""
 "aumentar adequadamente a temperatura do leito térmico pode reduzir a "
 "probabilidade de deformação."
 
+#~ msgid ""
+#~ "The current chamber temperature or the target chamber temperature exceeds "
+#~ "45\\u2103.In order to avoid extruder clogging,low temperature "
+#~ "filament(PLA/PETG/TPU) is not allowed to be loaded."
+#~ msgstr ""
+#~ "A temperatura atual da câmara ou a temperatura alvo da câmara excede 45\\ "
+#~ "U2103. Para evitar o entupimento da extrusora, o filamento de baixa "
+#~ "temperatura (PLA/PETG/TPU) não pode ser carregado."
+
+#~ msgid ""
+#~ "Low temperature filament(PLA/PETG/TPU) is loaded in the extruder.In order "
+#~ "to avoid extruder clogging,it is not allowed to set the chamber "
+#~ "temperature above 45\\u2103."
+#~ msgstr ""
+#~ "O filamento de baixa temperatura (PLA/PETG/TPU) é carregado na extrusora. "
+#~ "Para evitar o entupimento da extrusora, não é permitido ajustar a "
+#~ "temperatura da câmara acima de 45\\ u2103."
+
+#~ msgid ""
+#~ "When you set the chamber temperature below 40\\u2103, the chamber "
+#~ "temperature control will not be activated. And the target chamber "
+#~ "temperature will automatically be set to 0\\u2103."
+#~ msgstr ""
+#~ "Quando você define a temperatura da câmara abaixo de 40\\ u2103, o "
+#~ "controle de temperatura da câmara não será ativado. E a temperatura alvo "
+#~ "da câmara será automaticamente definida para 0\\ u2103."
+
+#~ msgid ""
+#~ "Please input valid values:\n"
+#~ "start > 0 \\step >= 0\n"
+#~ "end > start + step)"
+#~ msgstr ""
+#~ "Por favor, insira valores válidos:\n"
+#~ "início > 0\\ etapa >= 0\n"
+#~ "fim > início + etapa)"
+
+#~ msgid ""
+#~ "Please input valid values:\n"
+#~ "start > 10 \\step >= 0\n"
+#~ "end > start + step)"
+#~ msgstr ""
+#~ "Por favor, insira valores válidos:\n"
+#~ "início > 10\\ etapa >= 0\n"
+#~ "fim > início + etapa)"
+
+#~ msgid ""
+#~ "Unable to perform boolean operation on model meshes. Only positive parts "
+#~ "will be kept. You may fix the meshes and try agian."
+#~ msgstr ""
+#~ "Unable to perform boolean operation on model meshes. Only positive parts "
+#~ "will be kept. You may fix the meshes and try agian."
+
 #~ msgid "We would use Lidar to read the calibration result"
 #~ msgstr "Usaríamos o Lidar para ler o resultado da calibração"
 
 #~ msgid "Are you sure you want to cancel this print?"
 #~ msgstr "Tem certeza de que deseja cancelar esta impressão?"
 
-#, c-format, boost-format
 #~ msgid ""
 #~ "Printing high temperature material(%s material) with %s may cause nozzle "
 #~ "damage"
@@ -14253,13 +14304,6 @@ msgstr ""
 #~ msgid "IP and Access Code Verified! You may close the window"
 #~ msgstr "IP e código de acesso verificados! Você pode fechar a janela"
 
-#~ msgid ""
-#~ "Bed temperature of the initial layer. Value 0 means the filament does not "
-#~ "support to print on the Cool Plate"
-#~ msgstr ""
-#~ "Esta é a temperatura da mesa da primeira camada. Um valor de 0 significa "
-#~ "que o filamento não suporta impressão na placa fria."
-
 #~ msgid "This setting specifies the count of walls around support"
 #~ msgstr ""
 #~ "Essa configuração especifica a contagem de paredes ao redor do suporte"
@@ -14353,53 +14397,8 @@ msgstr ""
 #~ msgid "Please input a valid value (K in 0~0.3, N in 0.6~2.0)"
 #~ msgstr "Insira um valor válido (K em 0~0,3, N em 0,6~2,0)"
 
-#~ msgid ""
-#~ "The current chamber temperature or the target chamber temperature exceeds "
-#~ "45\\u2103.In order to avoid extruder clogging,low temperature "
-#~ "filament(PLA/PETG/TPU) is not allowed to be loaded."
-#~ msgstr ""
-#~ "A temperatura atual da câmara ou a temperatura alvo da câmara excede 45\\ "
-#~ "U2103. Para evitar o entupimento da extrusora, o filamento de baixa "
-#~ "temperatura (PLA/PETG/TPU) não pode ser carregado."
-
-#~ msgid ""
-#~ "Low temperature filament(PLA/PETG/TPU) is loaded in the extruder.In order "
-#~ "to avoid extruder clogging,it is not allowed to set the chamber "
-#~ "temperature above 45\\u2103."
-#~ msgstr ""
-#~ "O filamento de baixa temperatura (PLA/PETG/TPU) é carregado na extrusora. "
-#~ "Para evitar o entupimento da extrusora, não é permitido ajustar a "
-#~ "temperatura da câmara acima de 45\\ u2103."
-
-#~ msgid ""
-#~ "When you set the chamber temperature below 40\\u2103, the chamber "
-#~ "temperature control will not be activated. And the target chamber "
-#~ "temperature will automatically be set to 0\\u2103."
-#~ msgstr ""
-#~ "Quando você define a temperatura da câmara abaixo de 40\\ u2103, o "
-#~ "controle de temperatura da câmara não será ativado. E a temperatura alvo "
-#~ "da câmara será automaticamente definida para 0\\ u2103."
-
 #~ msgid "Printer local connection failed, please try again."
 #~ msgstr "Falha na conexão local da impressora, tente novamente."
-
-#~ msgid ""
-#~ "Please input valid values:\n"
-#~ "start > 0 \\step >= 0\n"
-#~ "end > start + step)"
-#~ msgstr ""
-#~ "Por favor, insira valores válidos:\n"
-#~ "início > 0\\ etapa >= 0\n"
-#~ "fim > início + etapa)"
-
-#~ msgid ""
-#~ "Please input valid values:\n"
-#~ "start > 10 \\step >= 0\n"
-#~ "end > start + step)"
-#~ msgstr ""
-#~ "Por favor, insira valores válidos:\n"
-#~ "início > 10\\ etapa >= 0\n"
-#~ "fim > início + etapa)"
 
 #~ msgid ""
 #~ "\n"
@@ -16395,19 +16394,19 @@ msgstr ""
 #~ msgstr "Temperatura de vitrificação"
 
 #~ msgid ""
-#~ "Thank you for purchasing a QIDI TECH device.Before using your QIDI TECH "
+#~ "Thank you for purchasing a QIDI Tech device.Before using your QIDI Tech "
 #~ "device, please read the termsand conditions.By clicking to agree to use "
-#~ "your QIDI TECH device, you agree to abide by the Privacy Policyand Terms "
+#~ "your QIDI Tech device, you agree to abide by the Privacy Policyand Terms "
 #~ "of Use(collectively, the \"Terms\"). If you do not comply with or agree "
-#~ "to the QIDI TECH Privacy Policy, please do not use QIDI TECH equipment and "
-#~ "services."
+#~ "to the QIDI Tech Privacy Policy, please do not use QIDI Tech equipment "
+#~ "and services."
 #~ msgstr ""
-#~ "Obrigado por comprar um dispositivo QIDI TECH. Antes de usar seu "
-#~ "dispositivo QIDI TECH, leia os termos e condições. Ao clicar para "
-#~ "concordar em usar seu dispositivo QIDI TECH, você concorda em cumprir a "
+#~ "Obrigado por comprar um dispositivo QIDI Tech. Antes de usar seu "
+#~ "dispositivo QIDI Tech, leia os termos e condições. Ao clicar para "
+#~ "concordar em usar seu dispositivo QIDI Tech, você concorda em cumprir a "
 #~ "Política de Privacidade e os Termos de Uso (coletivamente, os “Termos”). "
 #~ "Se você não cumprir ou concordar com a Política de Privacidade da QIDI "
-#~ "Lab, não use equipamentos e serviços da QIDI TECH."
+#~ "Lab, não use equipamentos e serviços da QIDI Tech."
 
 #~ msgid "The %s filament is too soft to be used with the AMS"
 #~ msgstr "O %s filamento é muito macio para ser usado com o AMS"
@@ -16443,9 +16442,9 @@ msgstr ""
 #~ msgid "The 3mf is not compatible, load geometry data only!"
 #~ msgstr "O 3mf não é compatível, carregando apenas dados de geometria!"
 
-# ~ msgid "The 3mf is not from QIDI TECH, load geometry data only."
-# ~ msgstr ""
-# ~ "O 3mf não é do laboratório QIDI, carregando apenas dados de geometria."
+#~ msgid "The 3mf is not from QIDI lab, load geometry data only."
+#~ msgstr ""
+#~ "O 3mf não é do laboratório QIDI, carregando apenas dados de geometria."
 
 #~ msgid "The Config is not compatible and can not be loaded."
 #~ msgstr "A configuração não é compatível e não pode ser carregada!"
@@ -17138,6 +17137,7 @@ msgstr ""
 #~ msgid "⌥+Left mouse button"
 #~ msgstr "+Botão esquerdo do mouse"
 
+#QIDIStudio
 msgid "Pressure Advance"
 msgstr "Avanço de pressão"
 
@@ -17404,3 +17404,101 @@ msgstr "Saiba mais"
 
 msgid "The path is not exists!"  
 msgstr "O caminho não existe!"
+
+msgid "Click here if you failed to send the print job"
+msgstr "Clique aqui se você não conseguiu enviar o trabalho de impressão"
+
+msgid "Login/Register"
+msgstr "Entrar/Registrar"
+
+msgid "Local"
+msgstr "Local"
+
+msgid "Printer name \"%1%\" already exists."
+msgstr "O nome da impressora \"%1%\" já existe."
+
+msgid "Connection to Moonraker works correctly."
+msgstr "A conexão com Moonraker está funcionando corretamente."
+
+msgid "The host or IP or URL cannot be empty."
+msgstr "O host, IP ou URL não pode estar vazio."
+
+msgid "A device with the same host (IP or URL) already exists, please re-enter."
+msgstr "Um dispositivo com o mesmo host (IP ou URL) já existe, por favor, insira novamente."
+
+msgid "Machine Name"
+msgstr "Nome da máquina"
+
+msgid "Choice your physical printer preset"
+msgstr "Escolha a predefinição da sua impressora física"
+
+msgid "Are you sure you want to delete \"%1%\" printer?"
+msgstr "Você tem certeza de que deseja excluir a impressora \"%1%\"?"
+
+msgid "Are you sure you want to delete "
+msgstr "Você tem certeza de que deseja excluir "
+
+msgid "printer?"
+msgstr "a impressora?"
+
+msgid "Delete Physical Printer"
+msgstr "Excluir Impressora Física"
+
+msgid "Don't slow down outer walls"
+msgstr "Não diminuir a velocidade das paredes externas."
+
+msgid ""
+"If enabled, this setting will ensure external perimeters are not slowed down to meet the minimum layer time. This is particularly helpful in the below scenarios:\n"
+"\n"
+"1. To avoid changes in shine when printing glossy filaments \n"
+"2. To avoid changes in external wall speed which may create slight wall artefacts that appear like z banding \n"
+"3. To avoid printing at speeds which cause VFAs (fine artefacts) on the external walls\n"
+"\n"
+msgstr ""
+"Se ativado, esta configuração garantirá que os perímetros externos não sejam retardados para atender ao tempo mínimo da camada. Isso é particularmente útil nos seguintes cenários:\n"
+"\n"
+"1. Para evitar alterações no brilho ao imprimir filamentos brilhantes.\n"
+"2. Para evitar alterações na velocidade das paredes externas que podem criar artefatos leves nas paredes semelhantes a bandas z.\n"
+"3. Para evitar a impressão em velocidades que causem VFAs (artefatos finos) nas paredes externas.\n"
+"\n"
+
+msgid "Unseal Fan speed"
+msgstr "Velocidade do ventilador sem selo"
+
+msgid "Speed of auxiliary part cooling fan under unseal. Auxiliary fan will run at this speed during printing except the first several layers which are defined by no cooling layers"
+msgstr "Velocidade do ventilador auxiliar de resfriamento sem selagem. O ventilador auxiliar funcionará nesta velocidade durante a impressão, exceto nos primeiros vários camadas definidas sem camadas de resfriamento."
+
+msgid "Resonance avoidance"
+msgstr "Evitar ressonância"
+
+msgid "By reducing the speed of the outer wall to avoid the resonance zone of the printer, ringing on the surface of the model are avoided.\n"
+"Please turn this option off when testing ringing."
+msgstr "Ao reduzir a velocidade da parede externa para evitar a zona de ressonância da impressora, evita-se o aparecimento de oscilações na superfície do modelo.\n"
+"Por favor, desligue esta opção ao testar as oscilações."
+
+msgid "G-code thumbnails"
+msgstr "Miniaturas de G-code"
+
+msgid "Picture sizes to be stored into a .gcode and .sl1 / .sl1s files, in the following format: \"XxY, XxY, ...\""
+msgstr "Tamanhos das imagens a serem armazenados em arquivos .gcode e .sl1 / .sl1s, no seguinte formato: \"XxY, XxY, ...\""
+
+msgid "Format of G-code thumbnails"
+msgstr "Formato das miniaturas de G-code"
+
+msgid "Format of G-code thumbnails: PNG for best quality, JPG for smallest size"
+msgstr "Formato das miniaturas de G-code: PNG para melhor qualidade, JPG para menor tamanho"
+
+msgid "QIDI Studio is based on Bambu Studio by Bambu Lab"
+msgstr "QIDI Studio foi desenvolvido com base no Bambu Studio do Bambu Lab"
+
+msgid "Seal"
+msgstr "Selo"
+
+msgid "QIDI Studio is based on Bambu Studio by Bambu Lab."
+msgstr "QIDI Studio foi desenvolvido com base no Bambu Studio do Bambu Lab."
+
+msgid "Support multi bed types"
+msgstr "Suporte para múltiplos tipos de cama"
+
+msgid "Switch to Device tab"
+msgstr "Mudar para a aba Dispositivo"

@@ -13,110 +13,6 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: Poedit 3.4.4\n"
 
-msgid "Click here if you failed to send the print job"
-msgstr "인쇄 작업을 보내지 못한 경우 여기를 클릭하세요"
-
-msgid "Login/Register"
-msgstr "로그인/회원가입"
-
-msgid "Local"
-msgstr "로컬"
-
-msgid "Printer name \"%1%\" already exists."
-msgstr "프린터 이름 \"%1%\"이(가) 이미 존재합니다."
-
-msgid "Connection to Moonraker works correctly."
-msgstr "Moonraker와의 연결이 정상적으로 작동합니다."
-
-msgid "The host or IP or URL cannot be empty."
-msgstr "호스트, IP 또는 URL은 비워둘 수 없습니다."
-
-msgid "A device with the same host (IP or URL) already exists, please re-enter."
-msgstr "동일한 호스트(IP 또는 URL)를 사용하는 장치가 이미 존재합니다. 다시 입력해 주세요."
-
-msgid "Machine Name"
-msgstr "기계 이름"
-
-msgid "Choice your physical printer preset"
-msgstr "물리적 프린터의 프리셋을 선택하세요."
-
-msgid "Are you sure you want to delete \"%1%\" printer?"
-msgstr "\"%1%\" 프린터를 삭제하시겠습니까?"
-
-msgid "Are you sure you want to delete "
-msgstr "정말 삭제하시겠습니까 "
-
-msgid "printer?"
-msgstr "프린터를?"
-
-msgid "Delete Physical Printer"
-msgstr "물리적 프린터 삭제"
-
-msgid "Don't slow down outer walls"
-msgstr "외벽 속도를 늦추지 마세요."
-
-msgid ""
-"If enabled, this setting will ensure external perimeters are not slowed down to meet the minimum layer time. This is particularly helpful in "
-"the below scenarios:\n"
-"\n"
-" 1. To avoid changes in shine when printing glossy filaments \n"
-"2. To avoid changes in external wall speed which may create slight wall artefacts that appear like z banding \n"
-"3. To avoid printing at speeds which cause VFAs (fine artefacts) on the external walls\n"
-"\n"
-msgstr ""
-"만약 활성화되면, 이 설정은 외부 퍼리미터가 최소 레이어 시간을 충족하기 위해 속도를 늦추지 않도록 보장합니다. 특히 다음과 같은 시나리오에서 유"
-"용합니다:\n"
-"\n"
-"1. 광택 있는 필라멘트를 인쇄할 때 광택 변화를 피하기 위해\n"
-"2. 외벽 속도 변화를 피해 Z 밴딩과 비슷한 가벽 미묘한 아티팩트를 생성하는 것을 피하기 위해\n"
-"3. 외벽에 VFAs (미세 아티팩트)를 유발하는 속도로 인쇄하는 것을 피하기 위해\n"
-"\n"
-
-msgid "Unseal Fan speed"
-msgstr "미개봉 상태에서의 팬 속도"
-
-msgid ""
-"Speed of auxiliary part cooling fan under unseal. Auxiliary fan will run at this speed during printing except the first several layers which "
-"are defined by no cooling layers"
-msgstr ""
-"미개봉 상태에서의 부수적인 부분 냉각 팬 속도입니다. 처음 몇 층을 제외하고 인쇄 중에 이 속도로 부수적인 팬이 작동할 것입니다. 이 몇 층은 냉각 "
-"층이 없이 정의됩니다."
-
-msgid "Resonance avoidance"
-msgstr "공진 회피"
-
-msgid "By reducing the speed of the outer wall to avoid the resonance zone of the printer, ringing on the surface of the model are avoided.\n"
-"Please turn this option off when testing ringing."
-msgstr "프린터의 공진 영역을 피하기 위해 외벽 속도를 줄이면 모델 표면의 반향을 방지할 수 있습니다.\n"
-"반향을 테스트할 때 이 옵션을 꺼 주세요."
-
-msgid "G-code thumbnails"
-msgstr "G-code 썸네일"
-
-msgid "Picture sizes to be stored into a .gcode and .sl1 / .sl1s files, in the following format: \"XxY, XxY, ...\""
-msgstr ".gcode 및 .sl1 / .sl1s 파일에 저장될 그림 크기는 다음 형식으로 저장됩니다: \"XxY, XxY, ...\""
-
-msgid "Format of G-code thumbnails"
-msgstr "G-code 썸네일의 형식"
-
-msgid "Format of G-code thumbnails: PNG for best quality, JPG for smallest size"
-msgstr "G-code 썸네일 형식: 최상의 품질을 위한 PNG, 가장 작은 크기를 위한 JPG"
-
-msgid "QIDI Studio is based on Bambu Studio by Bambu Lab"
-msgstr "QIDI Studio는 Bambu Lab의 Bambu Studio를 기반으로 개발되었습니다"
-
-msgid "Seal"
-msgstr "도장"
-
-msgid "QIDI Studio is based on Bambu Studio by Bambu Lab."
-msgstr "QIDI Studio는 Bambu Lab의 Bambu Studio를 기반으로 개발되었습니다."
-
-msgid "Support multi bed types"
-msgstr "複数のベッドタイプをサポート"
-
-msgid "Switch to Device tab"
-msgstr "デバイスタブに切り替え"
-
 msgid "Supports Painting"
 msgstr "서포트 페인팅"
 
@@ -396,13 +292,16 @@ msgstr ""
 msgid "World coordinates"
 msgstr "월드 좌표계"
 
-msgid "Reset current rotation to real zeros."
-msgstr ""
-
 msgid "°"
 msgstr "°"
 
 msgid "Reset current rotation to the value when open the rotation tool."
+msgstr ""
+
+msgid "Rotate (absolute)"
+msgstr ""
+
+msgid "Reset current rotation to real zeros."
 msgstr ""
 
 msgid "Part coordinates"
@@ -943,6 +842,37 @@ msgstr ""
 msgid "Warning:text normal is error."
 msgstr ""
 
+msgid "Warning:text normal has been reset."
+msgstr ""
+
+msgid ""
+"Warning:Because current text does indeed use surround algorithm,\n"
+"if continue to edit, text has to regenerated according to new location."
+msgstr ""
+
+msgid ""
+"Warning:old matrix has at least two parameters: mirroring, scaling, and "
+"rotation. \n"
+"If you continue editing, it may not be correct. \n"
+"Please dragging text or cancel using current pose, \n"
+"save and reedit again."
+msgstr ""
+
+msgid ""
+"Error:Detecting an incorrect mesh id or an unknown error, \n"
+"regenerating text may result in incorrect outcomes.\n"
+"Please drag text,save it then reedit it again."
+msgstr ""
+
+msgid ""
+"Warning:Due to functional upgrade, rotation information \n"
+"cannot be restored. Please drag or modify text,\n"
+" save it and reedit it will ok."
+msgstr ""
+
+msgid "Use opened text pose"
+msgstr ""
+
 msgid "Surface"
 msgstr "표면"
 
@@ -1295,11 +1225,11 @@ msgid "Connect %s failed! [SN:%s, code=%s]"
 msgstr "%s 연결 실패! [번호:%s, 코드=%s]"
 
 msgid ""
-"QIDIStudio configuration file may be corrupted and is not able to be parsed.Please "
-"delete the file and try again."
+"QIDIStudio configuration file may be corrupted and is not able to be parsed."
+"Please delete the file and try again."
 msgstr ""
-"QIDIStudio 구성 파일을 구문 분석할 수 없으며 손상되었을 수 있습니다. 파일을 삭제하고 "
-"다시 시도해 주세요."
+"QIDIStudio 구성 파일을 구문 분석할 수 없으며 손상되었을 수 있습니다. 파일을 "
+"삭제하고 다시 시도해 주세요."
 
 #, c-format, boost-format
 msgid ""
@@ -1379,11 +1309,43 @@ msgid "Open Project"
 msgstr "프로젝트 열기"
 
 msgid ""
-"The QIDI Studio version is too old to enable cloud service. Please download the "
-"latest version from QIDI TECH website."
+"The QIDI Studio version is too old to enable cloud service. Please download "
+"the latest version from QIDI Tech website."
 msgstr ""
 "QIDI Studio 버전이 너무 오래되어 클라우드 서비스를 사용할 수 없습니다.QIDI "
-"Tech 웹사이트에서 최신 버전을 다운로드하세요."
+"Lab 웹사이트에서 최신 버전을 다운로드하세요."
+
+msgid ""
+"Your software certificate has been revoked, please update QIDI Studio "
+"software."
+msgstr ""
+
+msgid "Retrieving printer information, please try again later."
+msgstr ""
+
+msgid "Please try updating QIDI Studio and then try again."
+msgstr ""
+
+msgid ""
+"The certificate has expired. Please check the time settings or update QIDI "
+"Studio and try again."
+msgstr ""
+
+msgid ""
+"The certificate is no longer valid and the printing functions are "
+"unavailable. If you need printing. Please visit the official website at "
+"https://qidi3d.com/ to download and update."
+msgstr ""
+
+msgid ""
+"Internal error. Please try upgrading the firmware and Studio version. If the "
+"issue persists, contact customer support."
+msgstr ""
+
+msgid ""
+"Your software is not signed, and some printing functions have been "
+"restricted. Please use the officially signed software version."
+msgstr ""
 
 msgid "Privacy Policy Update"
 msgstr "개인 정보 보호 정책 업데이트"
@@ -1577,10 +1539,10 @@ msgid "Rounded Rectangle"
 msgstr "둥근 직사각형"
 
 msgid "QIDI Cube"
-msgstr "QIDI Cube"
+msgstr "QIDI 큐브"
 
 msgid "QIDI Cube V2"
-msgstr "QIDI Cube V2"
+msgstr "QIDI 큐브 V2"
 
 msgid "3DBenchy"
 msgstr "3D벤치"
@@ -2054,6 +2016,9 @@ msgstr "자동 브림"
 msgid "Auto"
 msgstr "자동"
 
+msgid "Painted"
+msgstr ""
+
 msgid "Outer brim only"
 msgstr "바깥쪽만"
 
@@ -2442,8 +2407,9 @@ msgstr "출력 작업을 전송하지 못했습니다. 다시 시도해 주세�
 msgid "Failed to upload file to ftp. Please try again."
 msgstr "ftp에 파일을 업로드하지 못했습니다.다시 시도해 주세요."
 
-msgid "Check the current status of the qidi server by clicking on the link above."
-msgstr "위의 링크를 클릭하여 QIDI TECH 서버의 현재 상태를 확인하십시오."
+msgid ""
+"Check the current status of the qidi server by clicking on the link above."
+msgstr "위의 링크를 클릭하여 QIDI Tech 서버의 현재 상태를 확인하십시오."
 
 msgid ""
 "The size of the print file is too large. Please adjust the file size and try "
@@ -2597,7 +2563,7 @@ msgid ""
 "Bambu Studio is based on PrusaSlicer by Prusa Research, which is from Slic3r "
 "by Alessandro Ranellucci and the RepRap community"
 msgstr ""
-"뱀부 스튜디오는 프루사 리서치의 PrusaSlicer를 기반으로 하며, PrusaSlicer는 "
+"Bambu 스튜디오는 프루사 리서치의 PrusaSlicer를 기반으로 하며, PrusaSlicer는 "
 "Alessandro Ranellucci와 RepRap 커뮤니티의 Slic3r을 기반으로 합니다. "
 
 msgid "Libraries"
@@ -2618,7 +2584,7 @@ msgid ""
 "Bambu Studio is based on PrusaSlicer by PrusaResearch and SuperSlicer by "
 "Merill(supermerill)."
 msgstr ""
-"뱀부 스튜디오는 프루사 리서치의 프루사 슬라이서와 메릴(슈퍼메릴)의 슈퍼슬라이"
+"Bambu 스튜디오는 프루사 리서치의 프루사 슬라이서와 메릴(슈퍼메릴)의 슈퍼슬라이"
 "서를 기반으로 합니다."
 
 msgid "PrusaSlicer is originally based on Slic3r by Alessandro Ranellucci."
@@ -2631,9 +2597,9 @@ msgstr ""
 "Slic3r은 Alessandro Ranellucci가 다른 많은 기여자들의 도움을 받아 만들었습니"
 "다."
 
-msgid "QIDI Studio also referenced some ideas from Cura by Ultimaker."
+msgid "Bambu Studio also referenced some ideas from Cura by Ultimaker."
 msgstr ""
-"QIDI Studio는 또한 Ultimaker의 Cura에서 얻은 일부 아이디어를 참조했습니다."
+"Bambu Studio는 또한 Ultimaker의 Cura에서 얻은 일부 아이디어를 참조했습니다."
 
 msgid ""
 "There many parts of the software that come from community contributions, so "
@@ -2877,11 +2843,11 @@ msgid "Insertion update"
 msgstr "필라삽입정보 업데이트"
 
 msgid ""
-"The AMS will automatically read the filament information when inserting a new QIDI "
-"Lab filament. This takes about 20 seconds."
+"The AMS will automatically read the filament information when inserting a "
+"new QIDI Tech filament. This takes about 20 seconds."
 msgstr ""
-"AMS는 새 QIDI TECH 필라멘트 스풀을 삽입할 때 필라멘트 정보를 자동으로 읽습니다. 이 과"
-"정은 약 20초 정도 소요됩니다."
+"AMS는 새 QIDI Tech 필라멘트 스풀을 삽입할 때 필라멘트 정보를 자동으로 읽습니"
+"다. 이 과정은 약 20초 정도 소요됩니다."
 
 msgid ""
 "Note: if a new filament is inserted during  printing, the AMS will not "
@@ -4054,6 +4020,12 @@ msgstr "모두 출력"
 msgid "Send all"
 msgstr "모두 보내기"
 
+msgid "Send to QIDI Farm Manager Client"
+msgstr ""
+
+msgid "Send to BFMC"
+msgstr ""
+
 msgid "Send to Multi-device"
 msgstr "다중 장치로 보내기"
 
@@ -4694,8 +4666,8 @@ msgid "Failed to parse model information."
 msgstr "모델 정보를 구문 분석하지 못했습니다."
 
 msgid ""
-"The .gcode.3mf file contains no G-code data.Please slice it whth QIDI Studio and "
-"export a new .gcode.3mf file."
+"The .gcode.3mf file contains no G-code data.Please slice it whth QIDI "
+"Studio and export a new .gcode.3mf file."
 msgstr ""
 ".gcode.3mf 파일에는 G 코드 데이터가 없습니다. QIDIStudio로 슬라이스하고 새 ."
 "gcode.3mf 파일을 내보내세요."
@@ -5057,6 +5029,9 @@ msgid "Angle Deflection"
 msgstr ""
 
 msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
+msgstr ""
+
+msgid "Split compound and compsolid into multiple objects"
 msgstr ""
 
 msgid "Number of triangular facets"
@@ -5526,8 +5501,8 @@ msgstr ""
 msgid "Loading file: %s"
 msgstr "파일 불러오기 중: %s"
 
-msgid "The 3mf is not from QIDI TECH, load geometry data only."
-msgstr "이 3mf는 QIDI TECH 에서 만들어진게 아닙니다. 형상 데이터만 불러옵니다."
+msgid "The 3mf is not from QIDI Tech, load geometry data only."
+msgstr "이 3mf는 QIDI lab 에서 만들어진게 아닙니다. 형상 데이터만 불러옵니다."
 
 msgid "Load 3mf"
 msgstr "3mf 불러오기"
@@ -5731,6 +5706,12 @@ msgstr "슬라이싱 플레이트 %d"
 msgid "Please resolve the slicing errors and publish again."
 msgstr "슬라이싱 오류를 해결하고 다시 게시하십시오."
 
+msgid "Failed to start QIDI Farm Manager Client."
+msgstr ""
+
+msgid "No QIDI Farm Manager Client found."
+msgstr ""
+
 msgid ""
 "Network Plug-in is not detected. Network related features are unavailable."
 msgstr ""
@@ -5867,11 +5848,9 @@ msgstr ""
 "파일 %s이(가) 프린터의 저장 공간으로 전송되었으며 프린터에서 볼 수 있습니다."
 
 msgid ""
-"Unable to perform boolean operation on model meshes. Only positive parts "
-"will be kept. You may fix the meshes and try agian."
+"Unable to perform boolean operation on model meshes. You may fix the meshes "
+"and try again."
 msgstr ""
-"모델 메쉬에 대해 부울 연산을 수행할 수 없습니다. 긍정적인 부분만 유지됩니다. "
-"메쉬를 수정하고 agian을 시도해 볼 수 있습니다."
 
 #, boost-format
 msgid "Reason: part \"%1%\" is empty."
@@ -6159,6 +6138,12 @@ msgid ""
 "reslice."
 msgstr ""
 
+msgid "Import a single SVG and split it"
+msgstr ""
+
+msgid "Import a single SVG and then split it to several parts."
+msgstr ""
+
 msgid "Improve rendering performance by lod"
 msgstr ""
 
@@ -6167,7 +6152,7 @@ msgid ""
 "models."
 msgstr ""
 
-msgid "enable multi instance rendering by opengl"
+msgid "Enable multi instance rendering by opengl"
 msgstr ""
 
 msgid ""
@@ -6371,14 +6356,14 @@ msgstr "추적하다"
 msgid "Host Setting"
 msgstr "호스트 설정"
 
-msgid "DEV host: api-dev.qidi-lab.com/v1"
-msgstr "개발자 호스트: api-dev.qidi-lab.com/v1"
+msgid "DEV host: api-dev.qidi-tech.com/v1"
+msgstr "개발자 호스트: api-dev.qidi-tech.com/v1"
 
-msgid "QA  host: api-qa.qidi-lab.com/v1"
-msgstr "QA 호스트: api-qa.qidi-lab.com/v1"
+msgid "QA  host: api-qa.qidi-tech.com/v1"
+msgstr "QA 호스트: api-qa.qidi-tech.com/v1"
 
-msgid "PRE host: api-pre.qidi-lab.com/v1"
-msgstr "PRE 호스트: api-pre.qidi-lab.com/v1"
+msgid "PRE host: api-pre.qidi-tech.com/v1"
+msgstr "PRE 호스트: api-pre.qidi-tech.com/v1"
 
 msgid "Product host"
 msgstr "제품 호스트"
@@ -6640,7 +6625,7 @@ msgid "QIDI Engineering Plate"
 msgstr "QIDI 엔지니어링 플레이트"
 
 msgid "QIDI Smooth PEI Plate"
-msgstr "스무스 PEI 플레이트"
+msgstr "QIDI 스무스 PEI 플레이트"
 
 msgid "High temperature Plate"
 msgstr "고온 플레이트"
@@ -7119,8 +7104,8 @@ msgstr ""
 msgid ""
 "When recording timelapse without toolhead, it is recommended to add a "
 "\"Timelapse Wipe Tower\" \n"
-"by right-click the empty position of build plate and choose \"Add "
-"Primitive\"->\"Timelapse Wipe Tower\"."
+"by right-click the empty position of build plate and choose \"Add Primitive"
+"\"->\"Timelapse Wipe Tower\"."
 msgstr ""
 "툴헤드 없이 타임랩스를 녹화할 때는 “타임랩스 와이프 타워”를 추가하는 것이 좋"
 "습니다. \n"
@@ -8350,6 +8335,9 @@ msgstr "서포트 전환"
 msgid "Multiple"
 msgstr "다중"
 
+msgid "Flush"
+msgstr ""
+
 #, boost-format
 msgid "Failed to calculate line width of %1%. Can not get value of \"%2%\" "
 msgstr "선 폭 %1%를 계산하지 못했습니다. \"%2%\" 값을 가져올 수 없습니다. "
@@ -8792,6 +8780,13 @@ msgstr ""
 
 msgid ""
 "Bed temperature of the initial layer. Value 0 means the filament does not "
+"support to print on the Cool Plate"
+msgstr ""
+"첫 레이어의 베드 온도입니다. 값이 0이면 필라멘트가 해당 Plate에서의 출력을 지"
+"원하지 않음을 의미합니다."
+
+msgid ""
+"Bed temperature of the initial layer. Value 0 means the filament does not "
 "support to print on the Engineering Plate"
 msgstr ""
 "첫 레이어의 베드 온도입니다. 값이 0이면 필라멘트가 해당 Plate에서의 출력을 지"
@@ -9014,9 +9009,6 @@ msgid ""
 msgstr ""
 "모델의 바깥쪽 또는 안쪽 브림 생성을 제어합니다. 자동은 브림 폭이 자동으로 분"
 "석 및 계산됨을 의미합니다."
-
-msgid "Painted"
-msgstr ""
 
 msgid "Brim-object gap"
 msgstr "브림-출력물 간격"
@@ -9371,14 +9363,17 @@ msgstr "압력 전진 활성화"
 
 msgid ""
 "Enable pressure advance, auto calibration result will be overwriten once "
-"enabled."
+"enabled. Useless for QIDI Printer"
 msgstr ""
-"압력 전진을 활성화하면 자동 교정 결과가 활성화되면 덮어쓰게 됩니다."
+"압력 전진을 활성화하면 자동 교정 결과가 활성화되면 덮어쓰게 됩니다. QIDI 프"
+"린터에는 쓸모가 없습니다."
 
 msgid ""
-"Pressure advance(Klipper) AKA Linear advance factor(Marlin)."
+"Pressure advance(Klipper) AKA Linear advance factor(Marlin). Useless for "
+"QIDI Printer"
 msgstr ""
-"압력 전진(Klipper) 일명 선형 전진 계수(Marlin)입니다."
+"압력 전진(Klipper) 일명 선형 전진 계수(Marlin)입니다. QIDI 프린터에는 쓸모"
+"가 없습니다."
 
 msgid "Filament notes"
 msgstr "필라멘트 노트"
@@ -10593,7 +10588,7 @@ msgstr ""
 
 msgid ""
 "The wipe speed is determined by speed of current extrusion role. e.g if a "
-"wip action is executed immediately following an outer wall extrusion, the "
+"wipe action is executed immediately following an outer wall extrusion, the "
 "speed of the outer wall extrusion will be utilized for the wipe action."
 msgstr ""
 
@@ -12395,12 +12390,12 @@ msgstr ""
 "다시 작성하시겠습니까?"
 
 msgid ""
-"We would rename the presets as \"Vendor Type Serial @printer you "
-"selected\". \n"
+"We would rename the presets as \"Vendor Type Serial @printer you selected"
+"\". \n"
 "To add preset for more prinetrs, Please go to printer selection"
 msgstr ""
-"We would rename the presets as \"Vendor Type Serial @printer you "
-"selected\". \n"
+"We would rename the presets as \"Vendor Type Serial @printer you selected"
+"\". \n"
 "To add preset for more printers; please go to printer selection"
 
 msgid "Create Printer/Nozzle"
@@ -13727,13 +13722,62 @@ msgstr ""
 "ABS 등 뒤틀림이 발생하기 쉬운 소재를 출력할 때, 히트베드 온도를 적절하게 높이"
 "면 뒤틀림 가능성을 줄일 수 있다는 사실을 알고 계셨나요?"
 
+#~ msgid ""
+#~ "The current chamber temperature or the target chamber temperature exceeds "
+#~ "45\\u2103.In order to avoid extruder clogging,low temperature "
+#~ "filament(PLA/PETG/TPU) is not allowed to be loaded."
+#~ msgstr ""
+#~ "현재 챔버 온도 또는 목표 챔버 온도가 45\\u2103을 초과합니다. Extruder 막힘"
+#~ "을 방지하기 위해 저온 필라멘트(PLA/PETG/TPU)를 장착할 수 없습니다."
+
+#~ msgid ""
+#~ "Low temperature filament(PLA/PETG/TPU) is loaded in the extruder.In order "
+#~ "to avoid extruder clogging,it is not allowed to set the chamber "
+#~ "temperature above 45\\u2103."
+#~ msgstr ""
+#~ "익스트루더에는 저온용 필라멘트(PLA/PETG/TPU)가 장착되어 있습니다. 익스트루"
+#~ "더 막힘을 방지하기 위해 챔버 온도를 45\\u2103 이상으로 설정하는 것은 허용"
+#~ "되지 않습니다."
+
+#~ msgid ""
+#~ "When you set the chamber temperature below 40\\u2103, the chamber "
+#~ "temperature control will not be activated. And the target chamber "
+#~ "temperature will automatically be set to 0\\u2103."
+#~ msgstr ""
+#~ "챔버 온도를 40\\u2103 미만으로 설정하면 챔버 온도 제어가 활성화되지 않습니"
+#~ "다. 그리고 목표 챔버 온도는 자동으로 0\\u2103으로 설정됩니다."
+
+#~ msgid ""
+#~ "Please input valid values:\n"
+#~ "start > 0 \\step >= 0\n"
+#~ "end > start + step)"
+#~ msgstr ""
+#~ "Please input valid values:\n"
+#~ "start > 0 \\step >= 0\n"
+#~ "end > start + step)"
+
+#~ msgid ""
+#~ "Please input valid values:\n"
+#~ "start > 10 \\step >= 0\n"
+#~ "end > start + step)"
+#~ msgstr ""
+#~ "Please input valid values:\n"
+#~ "start > 10 \\step >= 0\n"
+#~ "end > start + step)"
+
+#~ msgid ""
+#~ "Unable to perform boolean operation on model meshes. Only positive parts "
+#~ "will be kept. You may fix the meshes and try agian."
+#~ msgstr ""
+#~ "모델 메쉬에 대해 부울 연산을 수행할 수 없습니다. 긍정적인 부분만 유지됩니"
+#~ "다. 메쉬를 수정하고 agian을 시도해 볼 수 있습니다."
+
 #~ msgid "We would use Lidar to read the calibration result"
 #~ msgstr "We would use Lidar to read the calibration result"
 
 #~ msgid "Are you sure you want to cancel this print?"
 #~ msgstr "이 출력을 취소하시겠습니까?"
 
-#, c-format, boost-format
 #~ msgid ""
 #~ "Printing high temperature material(%s material) with %s may cause nozzle "
 #~ "damage"
@@ -13874,13 +13918,6 @@ msgstr ""
 #~ msgid "IP and Access Code Verified! You may close the window"
 #~ msgstr "IP 및 액세스 코드 확인! 창을 닫을 수 있습니다"
 
-#~ msgid ""
-#~ "Bed temperature of the initial layer. Value 0 means the filament does not "
-#~ "support to print on the Cool Plate"
-#~ msgstr ""
-#~ "첫 레이어의 베드 온도입니다. 값이 0이면 필라멘트가 해당 Plate에서의 출력"
-#~ "을 지원하지 않음을 의미합니다."
-
 #~ msgid "This setting specifies the count of walls around support"
 #~ msgstr "This setting specifies the count of walls around support"
 
@@ -13972,52 +14009,10 @@ msgstr ""
 #~ msgid "Please input a valid value (K in 0~0.3, N in 0.6~2.0)"
 #~ msgstr "유효한 값을 입력하십시오(K는 0~0.3, N은 0.6~2.0)."
 
-#~ msgid ""
-#~ "The current chamber temperature or the target chamber temperature exceeds "
-#~ "45\\u2103.In order to avoid extruder clogging,low temperature "
-#~ "filament(PLA/PETG/TPU) is not allowed to be loaded."
-#~ msgstr ""
-#~ "현재 챔버 온도 또는 목표 챔버 온도가 45\\u2103을 초과합니다. Extruder 막힘"
-#~ "을 방지하기 위해 저온 필라멘트(PLA/PETG/TPU)를 장착할 수 없습니다."
-
-#~ msgid ""
-#~ "Low temperature filament(PLA/PETG/TPU) is loaded in the extruder.In order "
-#~ "to avoid extruder clogging,it is not allowed to set the chamber "
-#~ "temperature above 45\\u2103."
-#~ msgstr ""
-#~ "익스트루더에는 저온용 필라멘트(PLA/PETG/TPU)가 장착되어 있습니다. 익스트루"
-#~ "더 막힘을 방지하기 위해 챔버 온도를 45\\u2103 이상으로 설정하는 것은 허용"
-#~ "되지 않습니다."
-
-#~ msgid ""
-#~ "When you set the chamber temperature below 40\\u2103, the chamber "
-#~ "temperature control will not be activated. And the target chamber "
-#~ "temperature will automatically be set to 0\\u2103."
-#~ msgstr ""
-#~ "챔버 온도를 40\\u2103 미만으로 설정하면 챔버 온도 제어가 활성화되지 않습니"
-#~ "다. 그리고 목표 챔버 온도는 자동으로 0\\u2103으로 설정됩니다."
-
 #~ msgid "Printer local connection failed, please try again."
 #~ msgstr "프린터 로컬 연결에 실패했습니다. 다시 시도하십시오."
 
-#~ msgid ""
-#~ "Please input valid values:\n"
-#~ "start > 0 \\step >= 0\n"
-#~ "end > start + step)"
-#~ msgstr ""
-#~ "Please input valid values:\n"
-#~ "start > 0 \\step >= 0\n"
-#~ "end > start + step)"
-
-#~ msgid ""
-#~ "Please input valid values:\n"
-#~ "start > 10 \\step >= 0\n"
-#~ "end > start + step)"
-#~ msgstr ""
-#~ "Please input valid values:\n"
-#~ "start > 10 \\step >= 0\n"
-#~ "end > start + step)"
-
+#QIDIStudio
 msgid "Pressure Advance"
 msgstr "압력 어드밴스"
 
@@ -14162,3 +14157,107 @@ msgstr "자세히 알아보기"
 
 msgid "The path is not exists!"  
 msgstr "경로가 존재하지 않습니다!"
+
+msgid "Click here if you failed to send the print job"
+msgstr "인쇄 작업을 보내지 못한 경우 여기를 클릭하세요"
+
+msgid "Login/Register"
+msgstr "로그인/회원가입"
+
+msgid "Local"
+msgstr "로컬"
+
+msgid "Printer name \"%1%\" already exists."
+msgstr "프린터 이름 \"%1%\"이(가) 이미 존재합니다."
+
+msgid "Connection to Moonraker works correctly."
+msgstr "Moonraker와의 연결이 정상적으로 작동합니다."
+
+msgid "The host or IP or URL cannot be empty."
+msgstr "호스트, IP 또는 URL은 비워둘 수 없습니다."
+
+msgid "A device with the same host (IP or URL) already exists, please re-enter."
+msgstr "동일한 호스트(IP 또는 URL)를 사용하는 장치가 이미 존재합니다. 다시 입력해 주세요."
+
+msgid "Machine Name"
+msgstr "기계 이름"
+
+msgid "Choice your physical printer preset"
+msgstr "물리적 프린터의 프리셋을 선택하세요."
+
+msgid "Are you sure you want to delete \"%1%\" printer?"
+msgstr "\"%1%\" 프린터를 삭제하시겠습니까?"
+
+msgid "Are you sure you want to delete "
+msgstr "정말 삭제하시겠습니까 "
+
+msgid "printer?"
+msgstr "프린터를?"
+
+msgid "Delete Physical Printer"
+msgstr "물리적 프린터 삭제"
+
+msgid "Don't slow down outer walls"
+msgstr "외벽 속도를 늦추지 마세요."
+
+msgid ""
+"If enabled, this setting will ensure external perimeters are not slowed down to meet the minimum layer time. This is particularly helpful in "
+"the below scenarios:\n"
+"\n"
+" 1. To avoid changes in shine when printing glossy filaments \n"
+"2. To avoid changes in external wall speed which may create slight wall artefacts that appear like z banding \n"
+"3. To avoid printing at speeds which cause VFAs (fine artefacts) on the external walls\n"
+"\n"
+msgstr ""
+"만약 활성화되면, 이 설정은 외부 퍼리미터가 최소 레이어 시간을 충족하기 위해 속도를 늦추지 않도록 보장합니다. 특히 다음과 같은 시나리오에서 유"
+"용합니다:\n"
+"\n"
+"1. 광택 있는 필라멘트를 인쇄할 때 광택 변화를 피하기 위해\n"
+"2. 외벽 속도 변화를 피해 Z 밴딩과 비슷한 가벽 미묘한 아티팩트를 생성하는 것을 피하기 위해\n"
+"3. 외벽에 VFAs (미세 아티팩트)를 유발하는 속도로 인쇄하는 것을 피하기 위해\n"
+"\n"
+
+msgid "Unseal Fan speed"
+msgstr "미개봉 상태에서의 팬 속도"
+
+msgid ""
+"Speed of auxiliary part cooling fan under unseal. Auxiliary fan will run at this speed during printing except the first several layers which "
+"are defined by no cooling layers"
+msgstr ""
+"미개봉 상태에서의 부수적인 부분 냉각 팬 속도입니다. 처음 몇 층을 제외하고 인쇄 중에 이 속도로 부수적인 팬이 작동할 것입니다. 이 몇 층은 냉각 "
+"층이 없이 정의됩니다."
+
+msgid "Resonance avoidance"
+msgstr "공진 회피"
+
+msgid "By reducing the speed of the outer wall to avoid the resonance zone of the printer, ringing on the surface of the model are avoided.\n"
+"Please turn this option off when testing ringing."
+msgstr "프린터의 공진 영역을 피하기 위해 외벽 속도를 줄이면 모델 표면의 반향을 방지할 수 있습니다.\n"
+"반향을 테스트할 때 이 옵션을 꺼 주세요."
+
+msgid "G-code thumbnails"
+msgstr "G-code 썸네일"
+
+msgid "Picture sizes to be stored into a .gcode and .sl1 / .sl1s files, in the following format: \"XxY, XxY, ...\""
+msgstr ".gcode 및 .sl1 / .sl1s 파일에 저장될 그림 크기는 다음 형식으로 저장됩니다: \"XxY, XxY, ...\""
+
+msgid "Format of G-code thumbnails"
+msgstr "G-code 썸네일의 형식"
+
+msgid "Format of G-code thumbnails: PNG for best quality, JPG for smallest size"
+msgstr "G-code 썸네일 형식: 최상의 품질을 위한 PNG, 가장 작은 크기를 위한 JPG"
+
+msgid "QIDI Studio is based on Bambu Studio by Bambu Lab"
+msgstr "QIDI Studio는 Bambu Lab의 Bambu Studio를 기반으로 개발되었습니다"
+
+msgid "Seal"
+msgstr "도장"
+
+msgid "QIDI Studio is based on Bambu Studio by Bambu Lab."
+msgstr "QIDI Studio는 Bambu Lab의 Bambu Studio를 기반으로 개발되었습니다."
+
+msgid "Support multi bed types"
+msgstr "複数のベッドタイプをサポート"
+
+msgid "Switch to Device tab"
+msgstr "デバイスタブに切り替え"

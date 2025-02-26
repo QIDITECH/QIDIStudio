@@ -18,104 +18,6 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n>=2 && n<=4 ? 1 : 2);\n"
 "X-Generator: Poedit 3.4.4\n"
 
-msgid "Click here if you failed to send the print job"
-msgstr "Klikněte zde, pokud se vám nepodařilo odeslat tiskovou úlohu"
-
-msgid "Login/Register"
-msgstr "Přihlásit se/Zaregistrovat se"
-
-msgid "Local"
-msgstr "Místní"
-
-msgid "Printer name \"%1%\" already exists."
-msgstr "Název tiskárny \"%1%\" již existuje."
-
-msgid "Connection to Moonraker works correctly."
-msgstr "Připojení k Moonrakeru funguje správně."
-
-msgid "The host or IP or URL cannot be empty."
-msgstr "Hostitel, IP nebo URL nesmí být prázdné."
-
-msgid "A device with the same host (IP or URL) already exists, please re-enter."
-msgstr "Zařízení se stejným hostitelem (IP nebo URL) již existuje, zadejte znovu."
-
-msgid "Machine Name"
-msgstr "Název zařízení"
-
-msgid "Choice your physical printer preset"
-msgstr "Vyberte předvolbu fyzické tiskárny"
-
-msgid "Are you sure you want to delete \"%1%\" printer?"
-msgstr "Opravdu chcete odstranit tiskárnu \"%1%\"?"
-
-msgid "Are you sure you want to delete "
-msgstr "Opravdu chcete odstranit "
-
-msgid "printer?"
-msgstr "tiskárnu?"
-
-msgid "Delete Physical Printer"
-msgstr "Odstranit fyzickou tiskárnu"
-
-msgid "Don't slow down outer walls"
-msgstr "Nevzpomalejte vnější stěny."
-
-msgid ""
-"If enabled, this setting will ensure external perimeters are not slowed down to meet the minimum layer time. This is particularly helpful in the below scenarios:\n"
-"\n"
-" 1. To avoid changes in shine when printing glossy filaments \n"
-"2. To avoid changes in external wall speed which may create slight wall artefacts that appear like z banding \n"
-"3. To avoid printing at speeds which cause VFAs (fine artefacts) on the external walls\n"
-"\n"
-msgstr ""
-"Pokud je povoleno, tato nastavení zajistí, že vnější obvody nebudou zpomalené kvůli dodržení minimálního času vrstvy. Toto je obzvláště užitečné v následujících scénářích:\n"
-"\n"
-"1. Aby se zabránilo změnám v lesku při tisku lesklých filamentů\n"
-"2. Aby se zabránilo změnám ve rychlosti vnějších stěn, které mohou vytvářet mírné artefakty na stěnách, které vypadají jako záhyby Z\n"
-"3. Aby se zabránilo tisku rychlostmi, které způsobují VFAs (jemné artefakty) na vnějších stěnách\n"
-"\n"
-
-msgid "Unseal Fan speed"
-msgstr "Rychlost ventilátoru v nepootevřeném stavu"
-
-msgid "Speed of auxiliary part cooling fan under unseal. Auxiliary fan will run at this speed during printing except the first several layers which are defined by no cooling layers"
-msgstr "Rychlost pomocného chladícího ventilátoru v nepootevřeném stavu. Tento ventilátor poběží při této rychlosti během tisku, s výjimkou prvních několika vrstev, které nemají definovány žádné chladící vrstvy."
-
-msgid "Resonance avoidance"
-msgstr "vyhýbání se rezonanci"
-
-msgid "By reducing the speed of the outer wall to avoid the resonance zone of the printer, ringing on the surface of the model are avoided.\n"
-"Please turn this option off when testing ringing."
-msgstr "Snížením rychlosti vnější stěny se předejde rezonanční zóně tiskárny, čímž se zabrání zvonění na povrchu modelu.\n"
-"Prosím, vypněte tuto možnost při testování zvonění."
-
-msgid "G-code thumbnails"
-msgstr "Náhledy G-kódu"
-
-msgid "Picture sizes to be stored into a .gcode and .sl1 / .sl1s files, in the following format: \"XxY, XxY, ...\""
-msgstr "Velikosti obrázků uložené do souborů .gcode a .sl1 / .sl1s budou v následujícím formátu: \"XxY, XxY, ...\""
-
-msgid "Format of G-code thumbnails"
-msgstr "Formát náhledů G-kódu"
-
-msgid "Format of G-code thumbnails: PNG for best quality, JPG for smallest size"
-msgstr "Formát náhledů G-kódu: PNG pro nejlepší kvalitu, JPG pro nejmenší velikost"
-
-msgid "QIDI Studio is based on Bambu Studio by Bambu Lab"
-msgstr "QIDI Studio je vyvinuto na základě Bambu Studio od Bambu Lab"
-
-msgid "Seal"
-msgstr "Pečeť"
-
-msgid "QIDI Studio is based on Bambu Studio by Bambu Lab."
-msgstr "QIDI Studio je vyvinuto na základě Bambu Studio od Bambu Lab."
-
-msgid "Support multi bed types"
-msgstr "Podpora více typů postelí"
-
-msgid "Switch to Device tab"
-msgstr "Přepnout na kartu Zařízení"
-
 msgid "Supports Painting"
 msgstr "Malování podpěr"
 
@@ -396,13 +298,16 @@ msgstr ""
 msgid "World coordinates"
 msgstr "Světové souřadnice"
 
-msgid "Reset current rotation to real zeros."
-msgstr ""
-
 msgid "°"
 msgstr "°"
 
 msgid "Reset current rotation to the value when open the rotation tool."
+msgstr ""
+
+msgid "Rotate (absolute)"
+msgstr ""
+
+msgid "Reset current rotation to real zeros."
 msgstr ""
 
 msgid "Part coordinates"
@@ -928,6 +833,37 @@ msgstr ""
 msgid "Warning:text normal is error."
 msgstr ""
 
+msgid "Warning:text normal has been reset."
+msgstr ""
+
+msgid ""
+"Warning:Because current text does indeed use surround algorithm,\n"
+"if continue to edit, text has to regenerated according to new location."
+msgstr ""
+
+msgid ""
+"Warning:old matrix has at least two parameters: mirroring, scaling, and "
+"rotation. \n"
+"If you continue editing, it may not be correct. \n"
+"Please dragging text or cancel using current pose, \n"
+"save and reedit again."
+msgstr ""
+
+msgid ""
+"Error:Detecting an incorrect mesh id or an unknown error, \n"
+"regenerating text may result in incorrect outcomes.\n"
+"Please drag text,save it then reedit it again."
+msgstr ""
+
+msgid ""
+"Warning:Due to functional upgrade, rotation information \n"
+"cannot be restored. Please drag or modify text,\n"
+" save it and reedit it will ok."
+msgstr ""
+
+msgid "Use opened text pose"
+msgstr ""
+
 msgid "Surface"
 msgstr "Povrch"
 
@@ -1248,8 +1184,8 @@ msgid ""
 "QIDIStudio will terminate because of running out of memory.It may be a bug. "
 "It will be appreciated if you report the issue to our team."
 msgstr ""
-"QIDIStudio se ukončí z důvodu nedostatku paměti. Může to být chyba. Uvítáme, "
-"když problém nahlásíte našemu týmu."
+"QIDIStudio se ukončí z důvodu nedostatku paměti. Může to být chyba. "
+"Uvítáme, když problém nahlásíte našemu týmu."
 
 msgid "Fatal error"
 msgstr "Fatální chyba"
@@ -1366,7 +1302,39 @@ msgstr "Otevřít projekt"
 
 msgid ""
 "The QIDI Studio version is too old to enable cloud service. Please download "
-"the latest version from QIDI TECH website."
+"the latest version from QIDI Tech website."
+msgstr ""
+
+msgid ""
+"Your software certificate has been revoked, please update QIDI Studio "
+"software."
+msgstr ""
+
+msgid "Retrieving printer information, please try again later."
+msgstr ""
+
+msgid "Please try updating QIDI Studio and then try again."
+msgstr ""
+
+msgid ""
+"The certificate has expired. Please check the time settings or update QIDI "
+"Studio and try again."
+msgstr ""
+
+msgid ""
+"The certificate is no longer valid and the printing functions are "
+"unavailable. If you need printing. Please visit the official website at "
+"https://qditech.com/ to download and update."
+msgstr ""
+
+msgid ""
+"Internal error. Please try upgrading the firmware and Studio version. If the "
+"issue persists, contact customer support."
+msgstr ""
+
+msgid ""
+"Your software is not signed, and some printing functions have been "
+"restricted. Please use the officially signed software version."
 msgstr ""
 
 msgid "Privacy Policy Update"
@@ -2045,6 +2013,9 @@ msgstr "Auto Límec"
 msgid "Auto"
 msgstr "Automaticky"
 
+msgid "Painted"
+msgstr ""
+
 msgid "Outer brim only"
 msgstr "Pouze vnější"
 
@@ -2626,9 +2597,9 @@ msgid ""
 msgstr ""
 "Slic3r vytvořil Alessandro Ranellucci s pomocí mnoha dalších přispěvatelů."
 
-msgid "QIDI Studio also referenced some ideas from Cura by Ultimaker."
+msgid "Bambu Studio also referenced some ideas from Cura by Ultimaker."
 msgstr ""
-"QIDI Studio se také inspirovalo některými nápady z programu Cura od "
+"Bambu Studio se také inspirovalo některými nápady z programu Cura od "
 "společnosti Ultimaker."
 
 msgid ""
@@ -2875,7 +2846,7 @@ msgstr "Aktualizace vložení"
 
 msgid ""
 "The AMS will automatically read the filament information when inserting a "
-"new QIDI TECH filament. This takes about 20 seconds."
+"new QIDI Tech filament. This takes about 20 seconds."
 msgstr ""
 "AMS automaticky přečte informace o filamentu při vložení Nový filament QIDI "
 "Lab. To trvá asi 20 sekund."
@@ -4035,6 +4006,12 @@ msgstr "Vytisknout vše"
 msgid "Send all"
 msgstr "Odeslat vše"
 
+msgid "Send to QIDI Farm Manager Client"
+msgstr ""
+
+msgid "Send to BFMC"
+msgstr ""
+
 msgid "Send to Multi-device"
 msgstr ""
 
@@ -4680,8 +4657,8 @@ msgid "Failed to parse model information."
 msgstr ""
 
 msgid ""
-"The .gcode.3mf file contains no G-code data.Please slice it whth QIDI Studio "
-"and export a new .gcode.3mf file."
+"The .gcode.3mf file contains no G-code data.Please slice it whth QIDI "
+"Studio and export a new .gcode.3mf file."
 msgstr ""
 
 #, c-format, boost-format
@@ -5007,7 +4984,7 @@ msgid ""
 "transformations but increase the processing time."
 msgstr ""
 
-msgid "See QIDITech Wiki"
+msgid "See QIDILab Wiki"
 msgstr ""
 
 msgid "Linear Deflection"
@@ -5020,6 +4997,9 @@ msgid "Angle Deflection"
 msgstr ""
 
 msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
+msgstr ""
+
+msgid "Split compound and compsolid into multiple objects"
 msgstr ""
 
 msgid "Number of triangular facets"
@@ -5071,8 +5051,8 @@ msgid "Newer 3mf version"
 msgstr "Novější verze 3mf"
 
 msgid ""
-"The 3mf file version is in Beta and it is newer than the current QIDI Studio "
-"version."
+"The 3mf file version is in Beta and it is newer than the current QIDI "
+"Studio version."
 msgstr ""
 
 msgid "If you would like to try QIDI Studio Beta, you may click to"
@@ -5084,7 +5064,8 @@ msgstr ""
 msgid "The 3mf file version is newer than the current QIDI Studio version."
 msgstr ""
 
-msgid "Update your QIDI Studio could enable all functionality in the 3mf file."
+msgid ""
+"Update your QIDI Studio could enable all functionality in the 3mf file."
 msgstr ""
 
 msgid "Current Version: "
@@ -5490,8 +5471,8 @@ msgstr ""
 msgid "Loading file: %s"
 msgstr "Načítání souboru: %s"
 
-msgid "The 3mf is not from QIDI TECH, load geometry data only."
-msgstr "3mf není od QIDI TECH, načtěte pouze geometrická data."
+msgid "The 3mf is not from QIDI Tech, load geometry data only."
+msgstr "3mf není od QIDI Tech, načtěte pouze geometrická data."
 
 msgid "Load 3mf"
 msgstr "Načíst 3mf"
@@ -5688,6 +5669,12 @@ msgstr "Podložka na slicování %d"
 msgid "Please resolve the slicing errors and publish again."
 msgstr "Vyřešte prosím chyby slicování a publikujte znovu."
 
+msgid "Failed to start QIDI Farm Manager Client."
+msgstr ""
+
+msgid "No QIDI Farm Manager Client found."
+msgstr ""
+
 msgid ""
 "Network Plug-in is not detected. Network related features are unavailable."
 msgstr ""
@@ -5821,8 +5808,8 @@ msgstr ""
 "tiskárně."
 
 msgid ""
-"Unable to perform boolean operation on model meshes. Only positive parts "
-"will be kept. You may fix the meshes and try agian."
+"Unable to perform boolean operation on model meshes. You may fix the meshes "
+"and try again."
 msgstr ""
 
 #, boost-format
@@ -6100,6 +6087,12 @@ msgid ""
 "reslice."
 msgstr ""
 
+msgid "Import a single SVG and split it"
+msgstr ""
+
+msgid "Import a single SVG and then split it to several parts."
+msgstr ""
+
 msgid "Improve rendering performance by lod"
 msgstr ""
 
@@ -6108,7 +6101,7 @@ msgid ""
 "models."
 msgstr ""
 
-msgid "enable multi instance rendering by opengl"
+msgid "Enable multi instance rendering by opengl"
 msgstr ""
 
 msgid ""
@@ -6166,7 +6159,8 @@ msgstr ""
 msgid "Associate .step/.stp files to QIDI Studio"
 msgstr ""
 
-msgid "If enabled, sets QIDI Studio as default application to open .step files"
+msgid ""
+"If enabled, sets QIDI Studio as default application to open .step files"
 msgstr ""
 
 msgid "Online Models"
@@ -6305,14 +6299,14 @@ msgstr "stopa"
 msgid "Host Setting"
 msgstr "Nastavení hostitele"
 
-msgid "DEV host: api-dev.qidi-lab.com/v1"
-msgstr "Hostitel DEV: api-dev.qidi-lab.com/v1"
+msgid "DEV host: api-dev.qdit-ech.com/v1"
+msgstr "Hostitel DEV: api-dev.qdit-ech.com/v1"
 
-msgid "QA  host: api-qa.qidi-lab.com/v1"
-msgstr "QA hostitel: api-qa.qidi-lab.com/v1"
+msgid "QA  host: api-qa.qdit-ech.com/v1"
+msgstr "QA hostitel: api-qa.qdit-ech.com/v1"
 
-msgid "PRE host: api-pre.qidi-lab.com/v1"
-msgstr "Hostitel PRE: api-pre.qidi-lab.com/v1"
+msgid "PRE host: api-pre.qdit-ech.com/v1"
+msgstr "Hostitel PRE: api-pre.qdit-ech.com/v1"
 
 msgid "Product host"
 msgstr "Produktový hostitel"
@@ -6571,7 +6565,7 @@ msgid "QIDI Cool Plate"
 msgstr "QIDI Cool Podložka"
 
 msgid "QIDI Engineering Plate"
-msgstr "Engineering Podložka"
+msgstr "QIDI Engineering Podložka"
 
 msgid "QIDI Smooth PEI Plate"
 msgstr ""
@@ -6887,11 +6881,11 @@ msgid "Terms and Conditions"
 msgstr "Obchodní podmínky"
 
 msgid ""
-"Thank you for purchasing a QIDI TECH device.Before using your QIDI TECH "
+"Thank you for purchasing a QIDI Tech device.Before using your QIDI Tech "
 "device, please read the termsand conditions.By clicking to agree to use your "
-"QIDI TECH device, you agree to abide by the Privacy Policy and Terms of "
+"QIDI Tech device, you agree to abide by the Privacy Policy and Terms of "
 "Use(collectively, the \"Terms\"). If you do not comply with or agree to the "
-"QIDI TECH Privacy Policy, please do not use QIDI TECH equipment and services."
+"QIDI Tech Privacy Policy, please do not use QIDI Tech equipment and services."
 msgstr ""
 
 msgid "and"
@@ -7036,8 +7030,8 @@ msgstr ""
 msgid ""
 "When recording timelapse without toolhead, it is recommended to add a "
 "\"Timelapse Wipe Tower\" \n"
-"by right-click the empty position of build plate and choose \"Add "
-"Primitive\"->\"Timelapse Wipe Tower\"."
+"by right-click the empty position of build plate and choose \"Add Primitive"
+"\"->\"Timelapse Wipe Tower\"."
 msgstr ""
 "Při nahrávání časosběru bez nástrojové hlavy se doporučuje přidat  "
 "\"Timelapse Wipe Tower\" \n"
@@ -8256,6 +8250,9 @@ msgstr "Přechod Podpěr"
 msgid "Multiple"
 msgstr "Vícenásobné"
 
+msgid "Flush"
+msgstr ""
+
 #, boost-format
 msgid "Failed to calculate line width of %1%. Can not get value of \"%2%\" "
 msgstr ""
@@ -8696,6 +8693,13 @@ msgstr ""
 
 msgid ""
 "Bed temperature of the initial layer. Value 0 means the filament does not "
+"support to print on the Cool Plate"
+msgstr ""
+"Toto je teplota podložky první vrstvy. Hodnota 0 znamená filament "
+"nepodporuje tisk na Cool Podložku"
+
+msgid ""
+"Bed temperature of the initial layer. Value 0 means the filament does not "
 "support to print on the Engineering Plate"
 msgstr ""
 "Toto je teplota podložky první vrstvy. Hodnota 0 znamená filament "
@@ -8906,9 +8910,6 @@ msgid ""
 msgstr ""
 "Toto ovládá generování límce na vnější a/nebo vnitřní straně modelů. Možnost "
 "Auto znamená, že šířka límce je automaticky analyzována a vypočítána."
-
-msgid "Painted"
-msgstr ""
 
 msgid "Brim-object gap"
 msgstr "Mezera mezi Límcem a Objektem"
@@ -9252,16 +9253,17 @@ msgstr "Povolit předstih tlaku (PA)"
 
 msgid ""
 "Enable pressure advance, auto calibration result will be overwriten once "
-"enabled."
+"enabled. Useless for QIDI Printer"
 msgstr ""
 "Povolit předstih tlaku (PA), výsledek automatické kalibrace bude přepsán po "
-"aktivaci"
+"aktivaci. Nepoužitelné pro tiskárny QIDI"
 
 msgid ""
-"Pressure advance(Klipper) AKA Linear advance factor(Marlin)."
+"Pressure advance(Klipper) AKA Linear advance factor(Marlin). Useless for "
+"QIDI Printer"
 msgstr ""
 "Předstih tlaku (PA) (Klipper) AKA také známá jako faktor Linear advance "
-"(Marlin)"
+"(Marlin). Nepoužitelné pro tiskárny QIDI"
 
 msgid "Filament notes"
 msgstr ""
@@ -10429,7 +10431,7 @@ msgstr ""
 
 msgid ""
 "The wipe speed is determined by speed of current extrusion role. e.g if a "
-"wip action is executed immediately following an outer wall extrusion, the "
+"wipe action is executed immediately following an outer wall extrusion, the "
 "speed of the outer wall extrusion will be utilized for the wipe action."
 msgstr ""
 
@@ -11520,7 +11522,7 @@ msgstr ""
 
 msgid ""
 "Flow Rate Calibration measures the ratio of expected to actual extrusion "
-"volumes. The default setting works well in QIDI TECH printers and official "
+"volumes. The default setting works well in QIDI Tech printers and official "
 "filaments as they were pre-calibrated and fine-tuned. For a regular "
 "filament, you usually won't need to perform a Flow Rate Calibration unless "
 "you still see the listed defects after you have done other calibrations. For "
@@ -11534,7 +11536,7 @@ msgstr ""
 "informací se podívejte do článku na naší wiki."
 
 msgid ""
-"Auto Flow Rate Calibration utilizes QIDI TECH's Micro-Lidar technology, "
+"Auto Flow Rate Calibration utilizes QIDI Tech's Micro-Lidar technology, "
 "directly measuring the calibration patterns. However, please be advised that "
 "the efficacy and accuracy of this method may be compromised with specific "
 "types of materials. Particularly, filaments that are transparent or semi-"
@@ -11551,7 +11553,7 @@ msgid ""
 "can lead to sub-par prints or printer damage. Please make sure to carefully "
 "read and understand the process before doing it."
 msgstr ""
-"Automatizovaná kalibrace průtoku využívá Mikro-Lidar technologii QIDI TECH, "
+"Automatizovaná kalibrace průtoku využívá Mikro-Lidar technologii QIDI Tech, "
 "která přímo měří kalibrační vzory. Nicméně, mějte na paměti, že účinnost a "
 "přesnost této metody mohou být ovlivněny určitými typy materiálů. Zejména "
 "filamenty, které jsou průhledné nebo poloprůhledné, s jiskřícími částicemi "
@@ -12067,10 +12069,10 @@ msgstr ""
 msgid "DNS Server:"
 msgstr ""
 
-msgid "Test QIDITech"
+msgid "Test QIDILab"
 msgstr ""
 
-msgid "Test QIDITech:"
+msgid "Test QIDILab:"
 msgstr ""
 
 msgid "Test Bing.com"
@@ -12210,8 +12212,8 @@ msgid ""
 msgstr ""
 
 msgid ""
-"We would rename the presets as \"Vendor Type Serial @printer you "
-"selected\". \n"
+"We would rename the presets as \"Vendor Type Serial @printer you selected"
+"\". \n"
 "To add preset for more prinetrs, Please go to printer selection"
 msgstr ""
 
@@ -13155,8 +13157,8 @@ msgid ""
 msgstr ""
 "Plochou na podložku\n"
 "Věděli jste, že můžete rychle nastavit orientaci modelu tak, aby jedna z "
-"jeho stěn spočívala na tiskovém podloží? Vyberte funkci \"Plochou na "
-"podložku\" nebo stiskněte klávesu <b>F</b>."
+"jeho stěn spočívala na tiskovém podloží? Vyberte funkci \"Plochou na podložku"
+"\" nebo stiskněte klávesu <b>F</b>."
 
 #: resources/data/hints.ini: [hint:Object List]
 msgid ""
@@ -13476,13 +13478,6 @@ msgstr ""
 #~ msgid "LAN Connection Failed (Sending print file)"
 #~ msgstr "Připojení k síti LAN se nezdařilo (odesílání tiskového souboru)"
 
-#~ msgid ""
-#~ "Bed temperature of the initial layer. Value 0 means the filament does not "
-#~ "support to print on the Cool Plate"
-#~ msgstr ""
-#~ "Toto je teplota podložky první vrstvy. Hodnota 0 znamená filament "
-#~ "nepodporuje tisk na Cool Podložku"
-
 #~ msgid "China"
 #~ msgstr "Čína"
 
@@ -13545,12 +13540,12 @@ msgstr ""
 #~ "Najdete podrobnosti o kalibraci průtoku dynamiky v naší wiki.\n"
 #~ "\n"
 #~ "Obvykle kalibrace není potřebná. Při spuštění tisku s jednobarevným/"
-#~ "materiálovým filamentem a zaškrtnutou volbou \"kalibrace průtoku "
-#~ "dynamiky\" v menu spuštění tisku, tiskárna bude postupovat podle staré "
-#~ "metody a zkalibruje filament před tiskem. Při spuštění tisku s "
-#~ "vícebarevným/materiálovým filamentem bude tiskárna při každé změně "
-#~ "filamentu používat výchozí kompenzační parametr pro filament, což má "
-#~ "většinou dobrý výsledek.\n"
+#~ "materiálovým filamentem a zaškrtnutou volbou \"kalibrace průtoku dynamiky"
+#~ "\" v menu spuštění tisku, tiskárna bude postupovat podle staré metody a "
+#~ "zkalibruje filament před tiskem. Při spuštění tisku s vícebarevným/"
+#~ "materiálovým filamentem bude tiskárna při každé změně filamentu používat "
+#~ "výchozí kompenzační parametr pro filament, což má většinou dobrý "
+#~ "výsledek.\n"
 #~ "\n"
 #~ "Všimněte si, že existují některé případy, které mohou způsobit, že "
 #~ "výsledek kalibrace nebude spolehlivý: použití texturované podložky pro "
@@ -13957,19 +13952,19 @@ msgstr ""
 #~ msgstr "Poznámka: Příprava může trvat několik minut. Buďte prosím trpěliví."
 
 #~ msgid ""
-#~ "Thank you for purchasing a QIDI TECH device.Before using your QIDI TECH "
+#~ "Thank you for purchasing a QIDI Tech device.Before using your QIDI Tech "
 #~ "device, please read the termsand conditions.By clicking to agree to use "
-#~ "your QIDI TECH device, you agree to abide by the Privacy Policyand Terms "
+#~ "your QIDI Tech device, you agree to abide by the Privacy Policyand Terms "
 #~ "of Use(collectively, the \"Terms\"). If you do not comply with or agree "
 #~ "to the QIDI Tech Privacy Policy, please do not use QIDI Tech equipment "
 #~ "and services."
 #~ msgstr ""
-#~ "Děkujeme za zakoupení zařízení QIDI TECH. Před použitím svého zařízení "
-#~ "QIDI TECH si prosím přečtěte všeobecné obchodní podmínky. Kliknutím na "
-#~ "souhlas s používáním zařízení QIDI TECH souhlasíte s dodržováním zásad "
+#~ "Děkujeme za zakoupení zařízení QIDI Tech. Před použitím svého zařízení "
+#~ "QIDI Tech si prosím přečtěte všeobecné obchodní podmínky. Kliknutím na "
+#~ "souhlas s používáním zařízení QIDI Tech souhlasíte s dodržováním zásad "
 #~ "ochrany osobních údajů a podmínek používání (celkem \"Podmínky\"). Pokud "
-#~ "nesouhlasíte nebo nepřijímáte zásady ochrany osobních údajů QIDI TECH, "
-#~ "prosím nevyužívejte zařízení a služby QIDI TECH."
+#~ "nesouhlasíte nebo nepřijímáte zásady ochrany osobních údajů QIDI Tech, "
+#~ "prosím nevyužívejte zařízení a služby QIDI Tech."
 
 #~ msgid "The configuration package is changed in previous Config Guide"
 #~ msgstr "Konfigurační balíček byl změněn v předchozím Config Guide"
@@ -14689,6 +14684,7 @@ msgstr ""
 #~ msgid "The selected preset: %1% is not found."
 #~ msgstr "Vybraná předvolba: %1% nebyla nalezena."
 
+#QIDIStudio
 msgid "Pressure Advance"
 msgstr "Zvýšení tlaku"
 
@@ -14955,3 +14951,101 @@ msgstr "Zjistit více"
 
 msgid "The path is not exists!"  
 msgstr "Cesta neexistuje!"
+
+msgid "Click here if you failed to send the print job"
+msgstr "Klikněte zde, pokud se vám nepodařilo odeslat tiskovou úlohu"
+
+msgid "Login/Register"
+msgstr "Přihlásit se/Zaregistrovat se"
+
+msgid "Local"
+msgstr "Místní"
+
+msgid "Printer name \"%1%\" already exists."
+msgstr "Název tiskárny \"%1%\" již existuje."
+
+msgid "Connection to Moonraker works correctly."
+msgstr "Připojení k Moonrakeru funguje správně."
+
+msgid "The host or IP or URL cannot be empty."
+msgstr "Hostitel, IP nebo URL nesmí být prázdné."
+
+msgid "A device with the same host (IP or URL) already exists, please re-enter."
+msgstr "Zařízení se stejným hostitelem (IP nebo URL) již existuje, zadejte znovu."
+
+msgid "Machine Name"
+msgstr "Název zařízení"
+
+msgid "Choice your physical printer preset"
+msgstr "Vyberte předvolbu fyzické tiskárny"
+
+msgid "Are you sure you want to delete \"%1%\" printer?"
+msgstr "Opravdu chcete odstranit tiskárnu \"%1%\"?"
+
+msgid "Are you sure you want to delete "
+msgstr "Opravdu chcete odstranit "
+
+msgid "printer?"
+msgstr "tiskárnu?"
+
+msgid "Delete Physical Printer"
+msgstr "Odstranit fyzickou tiskárnu"
+
+msgid "Don't slow down outer walls"
+msgstr "Nevzpomalejte vnější stěny."
+
+msgid ""
+"If enabled, this setting will ensure external perimeters are not slowed down to meet the minimum layer time. This is particularly helpful in the below scenarios:\n"
+"\n"
+" 1. To avoid changes in shine when printing glossy filaments \n"
+"2. To avoid changes in external wall speed which may create slight wall artefacts that appear like z banding \n"
+"3. To avoid printing at speeds which cause VFAs (fine artefacts) on the external walls\n"
+"\n"
+msgstr ""
+"Pokud je povoleno, tato nastavení zajistí, že vnější obvody nebudou zpomalené kvůli dodržení minimálního času vrstvy. Toto je obzvláště užitečné v následujících scénářích:\n"
+"\n"
+"1. Aby se zabránilo změnám v lesku při tisku lesklých filamentů\n"
+"2. Aby se zabránilo změnám ve rychlosti vnějších stěn, které mohou vytvářet mírné artefakty na stěnách, které vypadají jako záhyby Z\n"
+"3. Aby se zabránilo tisku rychlostmi, které způsobují VFAs (jemné artefakty) na vnějších stěnách\n"
+"\n"
+
+msgid "Unseal Fan speed"
+msgstr "Rychlost ventilátoru v nepootevřeném stavu"
+
+msgid "Speed of auxiliary part cooling fan under unseal. Auxiliary fan will run at this speed during printing except the first several layers which are defined by no cooling layers"
+msgstr "Rychlost pomocného chladícího ventilátoru v nepootevřeném stavu. Tento ventilátor poběží při této rychlosti během tisku, s výjimkou prvních několika vrstev, které nemají definovány žádné chladící vrstvy."
+
+msgid "Resonance avoidance"
+msgstr "vyhýbání se rezonanci"
+
+msgid "By reducing the speed of the outer wall to avoid the resonance zone of the printer, ringing on the surface of the model are avoided.\n"
+"Please turn this option off when testing ringing."
+msgstr "Snížením rychlosti vnější stěny se předejde rezonanční zóně tiskárny, čímž se zabrání zvonění na povrchu modelu.\n"
+"Prosím, vypněte tuto možnost při testování zvonění."
+
+msgid "G-code thumbnails"
+msgstr "Náhledy G-kódu"
+
+msgid "Picture sizes to be stored into a .gcode and .sl1 / .sl1s files, in the following format: \"XxY, XxY, ...\""
+msgstr "Velikosti obrázků uložené do souborů .gcode a .sl1 / .sl1s budou v následujícím formátu: \"XxY, XxY, ...\""
+
+msgid "Format of G-code thumbnails"
+msgstr "Formát náhledů G-kódu"
+
+msgid "Format of G-code thumbnails: PNG for best quality, JPG for smallest size"
+msgstr "Formát náhledů G-kódu: PNG pro nejlepší kvalitu, JPG pro nejmenší velikost"
+
+msgid "QIDI Studio is based on Bambu Studio by Bambu Lab"
+msgstr "QIDI Studio je vyvinuto na základě Bambu Studio od Bambu Lab"
+
+msgid "Seal"
+msgstr "Pečeť"
+
+msgid "QIDI Studio is based on Bambu Studio by Bambu Lab."
+msgstr "QIDI Studio je vyvinuto na základě Bambu Studio od Bambu Lab."
+
+msgid "Support multi bed types"
+msgstr "Podpora více typů postelí"
+
+msgid "Switch to Device tab"
+msgstr "Přepnout na kartu Zařízení"

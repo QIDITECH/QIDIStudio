@@ -17,98 +17,6 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: Poedit 3.4.4\n"
 
-msgid "Click here if you failed to send the print job"
-msgstr "如果您发送打印任务失败，请点击这儿"
-
-msgid "Login/Register"
-msgstr "登录/注册"
-
-msgid "Local"
-msgstr "本地"
-
-msgid "Printer name \"%1%\" already exists."
-msgstr "\"%1%\"设备名已存在。"
-
-msgid "Connection to Moonraker works correctly."
-msgstr "与Moonraker的连接正常。"
-
-msgid "The host or IP or URL cannot be empty."
-msgstr "主机、IP或URL不能为空。"
-
-msgid "A device with the same host (IP or URL) already exists, please re-enter."
-msgstr "已存在具有相同主机(IP或URL)的设备，请重新输入。"
-
-msgid "Machine Name"
-msgstr "设备名称"
-
-msgid "Choice your physical printer preset"
-msgstr "选择您的物理打印机预设"
-
-msgid "Are you sure you want to delete \"%1%\" printer?"
-msgstr "您确定要删除\"%1%\"打印机吗?"
-
-msgid "Are you sure you want to delete "
-msgstr "您确定要删除 "
-
-msgid "printer?"
-msgstr "打印机?"
-
-msgid "Don't slow down outer walls"
-msgstr "外墙不减速"
-
-msgid "If enabled, this setting will ensure external perimeters are not slowed down to meet the minimum layer time. "
-"This is particularly helpful in the below scenarios:\n\n "
-"1. To avoid changes in shine when printing glossy filaments \n"
-"2. To avoid changes in external wall speed which may create slight wall artefacts that appear like z banding \n"
-"3. To avoid printing at speeds which cause VFAs (fine artefacts) on the external walls\n\n"
-msgstr "如果启用此设置，将确保外围轮廓不会因为要达到最低层时间而被放慢。"
-"这在以下情况下尤为有用：\n\n"
-"1. 避免在打印光滑丝材料时改变光泽度\n"
-"2. 避免外墙速度的变化，这可能会产生类似Z条纹的轻微墙面瑕疵\n"
-"3. 避免以导致外部墙面出现VFAs（细小瑕疵）的速度进行打印\n\n"
-
-msgid "Unseal Fan speed"
-msgstr "未密封风扇速度"
-
-msgid "Speed of auxiliary part cooling fan under unseal. Auxiliary fan will run at this speed during printing except the first several layers "
-"which are defined by no cooling layers"
-msgstr "未密封状态下辅助零件冷却风扇的速度。在打印过程中，除了由无冷却层定义的前几层外，辅助风扇将以此速度运行。"
-
-msgid "Resonance avoidance"
-msgstr "避免共振"
-
-msgid "By reducing the speed of the outer wall to avoid the resonance zone of the printer, ringing on the surface of the model are avoided.\n"
-"Please turn this option off when testing ringing."
-msgstr "通过降低外墙的速度以避开打印机的共振区域，可以避免模型表面的振铃。\n"
-"请在测试振铃时关闭此选项。"
-
-msgid "G-code thumbnails"
-msgstr "G代码缩略图"
-
-msgid "Picture sizes to be stored into a .gcode and .sl1 / .sl1s files, in the following format: \"XxY, XxY, ...\""
-msgstr "图片大小存储到.gcode和.sl1/.sl1s文件中，格式如下：“XxY，XxY…”"
-
-msgid "Format of G-code thumbnails"
-msgstr "G代码缩略图格式"
-
-msgid "Format of G-code thumbnails: PNG for best quality, JPG for smallest size"
-msgstr "G代码缩略图的格式：PNG表示最佳质量，JPG表示最小尺寸"
-
-msgid "QIDI Studio is based on Bambu Studio by Bambu Lab."
-msgstr "QIDI Studio是基于Bambu Lab的Bambu Studio开发的。"
-
-msgid "Seal"
-msgstr "封箱"
-
-msgid "QIDI Studio is based on Bambu Studio by Bambu Lab"
-msgstr "QIDI Studio是基于Bambu Lab的Bambu Studio开发的"
-
-msgid "Support multi bed types"
-msgstr "支持多种床型"
-
-msgid "Switch to Device tab"
-msgstr "切换到设备标签"
-
 msgid "Supports Painting"
 msgstr "支撑绘制"
 
@@ -387,14 +295,17 @@ msgstr "物体坐标"
 msgid "World coordinates"
 msgstr "世界坐标"
 
-msgid "Reset current rotation to real zeros."
-msgstr "将当前旋转重置为实数零。"
-
 msgid "°"
 msgstr "°"
 
 msgid "Reset current rotation to the value when open the rotation tool."
 msgstr "将当前旋转重置为打开旋转工具时的值。"
+
+msgid "Rotate (absolute)"
+msgstr "旋转(绝对)"
+
+msgid "Reset current rotation to real zeros."
+msgstr "将当前旋转重置为实数零。"
 
 msgid "Part coordinates"
 msgstr "零件坐标"
@@ -922,6 +833,49 @@ msgstr "警告：创建文字失败。"
 msgid "Warning:text normal is error."
 msgstr "警告：文字法向量错误"
 
+msgid "Warning:text normal has been reset."
+msgstr "警告:文字法向量已经被重置。"
+
+msgid ""
+"Warning:Because current text does indeed use surround algorithm,\n"
+"if continue to edit, text has to regenerated according to new location."
+msgstr ""
+"警告：因为当前文本确实使用了环绕算法，\n"
+"如果继续编辑，文本必须根据新位置重新生成。"
+
+msgid ""
+"Warning:old matrix has at least two parameters: mirroring, scaling, and "
+"rotation. \n"
+"If you continue editing, it may not be correct. \n"
+"Please dragging text or cancel using current pose, \n"
+"save and reedit again."
+msgstr ""
+"警告：旧矩阵至少有两个参数：镜像、缩放和旋转。\n"
+"如果继续编辑，则可能不正确。 \n"
+"请拖动文本或取消使用当前位姿，\n"
+"保存并重新编辑。"
+
+msgid ""
+"Error:Detecting an incorrect mesh id or an unknown error, \n"
+"regenerating text may result in incorrect outcomes.\n"
+"Please drag text,save it then reedit it again."
+msgstr ""
+"错误：检测到不正确的网格id或未知错误，\n"
+"重新生成文本可能会导致不正确的结果。\n"
+"请拖动文本，保存，然后重新编辑。"
+
+msgid ""
+"Warning:Due to functional upgrade, rotation information \n"
+"cannot be restored. Please drag or modify text,\n"
+" save it and reedit it will ok."
+msgstr ""
+"警告：由于功能升级，无法恢复旋转信息。\n"
+"请拖动或修改文本，\n"
+"保存并重新编辑即可。"
+
+msgid "Use opened text pose"
+msgstr "使用打开时的文本位姿"
+
 msgid "Surface"
 msgstr "附着曲面"
 
@@ -1357,10 +1311,45 @@ msgstr "打开项目"
 
 msgid ""
 "The QIDI Studio version is too old to enable cloud service. Please download "
-"the latest version from QIDI TECH website."
+"the latest version from QIDI Tech website."
 msgstr ""
 "当前QIDIStudio的版本过低导致云端服务不可用,请从官网更新QIDIStudio到最新版"
 "本。"
+
+msgid ""
+"Your software certificate has been revoked, please update QIDI Studio "
+"software."
+msgstr "您的软件证书已被吊销。请升级QIDI Studio软件"
+
+msgid "Retrieving printer information, please try again later."
+msgstr "正在获取打印机信息，请稍后重试"
+
+msgid "Please try updating QIDI Studio and then try again."
+msgstr "请尝试升级QIDI Studio后重试"
+
+msgid ""
+"The certificate has expired. Please check the time settings or update QIDI "
+"Studio and try again."
+msgstr "您的软件证书已过期，请检查系统时间设置或者更新QIDI Studio后重试"
+
+msgid ""
+"The certificate is no longer valid and the printing functions are "
+"unavailable. If you need printing. Please visit the official website at "
+"https://qidi3d.com/ to download and update."
+msgstr ""
+"该证书已失效，打印功能无法使用。如果您需要打印，请访问官方网站https://"
+"qidi3d.com/进行下载和更新"
+
+msgid ""
+"Internal error. Please try upgrading the firmware and Studio version. If the "
+"issue persists, contact customer support."
+msgstr ""
+"内部错误，请尝试升级固件和QIDI Studio版本。如果问题仍然存在，请联系售后"
+
+msgid ""
+"Your software is not signed, and some printing functions have been "
+"restricted. Please use the officially signed software version."
+msgstr "您的软件未签名，部分打印功能受限使用。请使用官方签名的软件版本。"
 
 msgid "Privacy Policy Update"
 msgstr "隐私协议更新"
@@ -2023,6 +2012,9 @@ msgstr "自动Brim"
 msgid "Auto"
 msgstr "自动"
 
+msgid "Painted"
+msgstr "绘制"
+
 msgid "Outer brim only"
 msgstr "仅外侧"
 
@@ -2581,8 +2573,8 @@ msgid ""
 "contributors."
 msgstr "Slic3r由Alessandro Ranellucci在其他众多贡献者的帮助下创建。"
 
-msgid "QIDI Studio also referenced some ideas from Cura by Ultimaker."
-msgstr "QIDI Studio还参考了Ultimaker的Cura中的一些想法。"
+msgid "Bambu Studio also referenced some ideas from Cura by Ultimaker."
+msgstr "Bambu Studio还参考了Ultimaker的Cura中的一些想法。"
 
 msgid ""
 "There many parts of the software that come from community contributions, so "
@@ -2823,9 +2815,9 @@ msgstr "插入料时更新"
 
 msgid ""
 "The AMS will automatically read the filament information when inserting a "
-"new QIDI TECH filament. This takes about 20 seconds."
+"new QIDI Tech filament. This takes about 20 seconds."
 msgstr ""
-"当插入新的QIDI TECH耗材丝的时候，AMS会自动读取耗材丝信息。这个过程大约需要20"
+"当插入新的QIDI Tech耗材丝的时候，AMS会自动读取耗材丝信息。这个过程大约需要20"
 "秒。"
 
 msgid ""
@@ -2867,8 +2859,8 @@ msgid ""
 "info is updated. During printing, remaining capacity will be updated "
 "automatically."
 msgstr ""
-"AMS读取QIDI TECH耗材丝信息同时推算料卷的剩余容量。在打印过程中，剩余容量会自动"
-"更新。"
+"AMS读取QIDI Tech耗材丝信息同时推算料卷的剩余容量。在打印过程中，剩余容量会自"
+"动更新。"
 
 msgid "AMS filament backup"
 msgstr "AMS自动续料"
@@ -3972,6 +3964,12 @@ msgstr "打印所有盘"
 msgid "Send all"
 msgstr "发送所有盘"
 
+msgid "Send to QIDI Farm Manager Client"
+msgstr "发送到起迪农场客户端"
+
+msgid "Send to BFMC"
+msgstr "发送到起迪农场"
+
 msgid "Send to Multi-device"
 msgstr "发送到多设备"
 
@@ -4601,8 +4599,8 @@ msgid "Failed to parse model information."
 msgstr "解析模型信息失败。"
 
 msgid ""
-"The .gcode.3mf file contains no G-code data.Please slice it whth QIDI Studio "
-"and export a new .gcode.3mf file."
+"The .gcode.3mf file contains no G-code data.Please slice it whth QIDI "
+"Studio and export a new .gcode.3mf file."
 msgstr ""
 ".gcode.3mf文件中不包含G-code数据。请使用QIDI Studio进行切片并导出新的."
 "gcode.3mf文件。"
@@ -4950,6 +4948,9 @@ msgstr "角偏转值"
 
 msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
 msgstr "请输入有效值（0.01<角偏转值<0.1）"
+
+msgid "Split compound and compsolid into multiple objects"
+msgstr "将复合体和复合实体拆分为多个对象"
 
 msgid "Number of triangular facets"
 msgstr "三角面数量"
@@ -5399,8 +5400,8 @@ msgstr "开启传统模式延时摄影可能导致表面瑕疵，建议修改为
 msgid "Loading file: %s"
 msgstr "加载文件：%s"
 
-msgid "The 3mf is not from QIDI TECH, load geometry data only."
-msgstr "该3mf文件不是来自QIDI TECH，将只加载几何数据。"
+msgid "The 3mf is not from QIDI Tech, load geometry data only."
+msgstr "该3mf文件不是来自QIDI Tech，将只加载几何数据。"
 
 msgid "Load 3mf"
 msgstr "加载3mf"
@@ -5596,6 +5597,12 @@ msgstr "正在切片盘%d"
 msgid "Please resolve the slicing errors and publish again."
 msgstr "请解决切片错误后再重新发布。"
 
+msgid "Failed to start QIDI Farm Manager Client."
+msgstr "启动起迪农场客户端失败"
+
+msgid "No QIDI Farm Manager Client found."
+msgstr "未发现起迪农场客户端"
+
 msgid ""
 "Network Plug-in is not detected. Network related features are unavailable."
 msgstr "未检测到网络插件。网络相关功能不可用。"
@@ -5727,10 +5734,9 @@ msgid ""
 msgstr "文件%s已经发送到打印机的存储空间，可以在打印机上浏览。"
 
 msgid ""
-"Unable to perform boolean operation on model meshes. Only positive parts "
-"will be kept. You may fix the meshes and try agian."
-msgstr ""
-"无法对模型网格执行布尔运算。只保留正体积部分。您可以修复网格后再试一次。"
+"Unable to perform boolean operation on model meshes. You may fix the meshes "
+"and try again."
+msgstr "无法对模型网格执行布尔运算。您可以修复网格，然后重试。"
 
 #, boost-format
 msgid "Reason: part \"%1%\" is empty."
@@ -6015,6 +6021,12 @@ msgid ""
 "reslice."
 msgstr "始终在预览视图选项卡中显示或不显示壳。如果更改值，您应该重新切片。"
 
+msgid "Import a single SVG and split it"
+msgstr "导入一个SVG并拆分它"
+
+msgid "Import a single SVG and then split it to several parts."
+msgstr "导入一个SVG并将它拆分成多个零件"
+
 msgid "Improve rendering performance by lod"
 msgstr "通过lod提高渲染性能"
 
@@ -6023,7 +6035,7 @@ msgid ""
 "models."
 msgstr "在多盘和多模型的场景下提高了渲染性能"
 
-msgid "enable multi instance rendering by opengl"
+msgid "Enable multi instance rendering by opengl"
 msgstr "开启opengl多实例渲染"
 
 msgid ""
@@ -6083,7 +6095,8 @@ msgstr "开启后，将缺省使用QIDI Studio打开.stl文件"
 msgid "Associate .step/.stp files to QIDI Studio"
 msgstr "使用QIDI Studio打开.step/.stp文件"
 
-msgid "If enabled, sets QIDI Studio as default application to open .step files"
+msgid ""
+"If enabled, sets QIDI Studio as default application to open .step files"
 msgstr "开启后，将缺省使用QIDI Studio打开.step文件"
 
 msgid "Online Models"
@@ -6223,13 +6236,13 @@ msgstr "跟踪"
 msgid "Host Setting"
 msgstr ""
 
-msgid "DEV host: api-dev.qidi-lab.com/v1"
+msgid "DEV host: api-dev.qidi-tech.com/v1"
 msgstr ""
 
-msgid "QA  host: api-qa.qidi-lab.com/v1"
+msgid "QA  host: api-qa.qidi-tech.com/v1"
 msgstr ""
 
-msgid "PRE host: api-pre.qidi-lab.com/v1"
+msgid "PRE host: api-pre.qidi-tech.com/v1"
 msgstr ""
 
 msgid "Product host"
@@ -6795,15 +6808,15 @@ msgid "Terms and Conditions"
 msgstr "用户使用协议"
 
 msgid ""
-"Thank you for purchasing a QIDI TECH device.Before using your QIDI TECH "
+"Thank you for purchasing a QIDI Tech device.Before using your QIDI Tech "
 "device, please read the termsand conditions.By clicking to agree to use your "
-"QIDI TECH device, you agree to abide by the Privacy Policy and Terms of "
+"QIDI Tech device, you agree to abide by the Privacy Policy and Terms of "
 "Use(collectively, the \"Terms\"). If you do not comply with or agree to the "
-"QIDI TECH Privacy Policy, please do not use QIDI TECH equipment and services."
+"QIDI Tech Privacy Policy, please do not use QIDI Tech equipment and services."
 msgstr ""
-"感谢您购买QIDI TECH设备，使用QIDI TECH设备前，请阅读一下条款，单击同意使用您的"
-"QIDI TECH设备即表示您同意遵守隐私政策以及使用条款（统称为“条款”）。如果您不符"
-"合或不同意QIDI TECH隐私政策，请不要使用QIDI TECH设备和服务。"
+"感谢您购买QIDI Tech设备，使用QIDI Tech设备前，请阅读一下条款，单击同意使用您"
+"的QIDI Tech设备即表示您同意遵守隐私政策以及使用条款（统称为“条款”）。如果您不"
+"符合或不同意QIDI Tech隐私政策，请不要使用QIDI Tech设备和服务。"
 
 msgid "and"
 msgstr "和"
@@ -6951,8 +6964,8 @@ msgstr ""
 msgid ""
 "When recording timelapse without toolhead, it is recommended to add a "
 "\"Timelapse Wipe Tower\" \n"
-"by right-click the empty position of build plate and choose \"Add "
-"Primitive\"->\"Timelapse Wipe Tower\"."
+"by right-click the empty position of build plate and choose \"Add Primitive"
+"\"->\"Timelapse Wipe Tower\"."
 msgstr ""
 "在录制无工具头延时摄影视频时，建议添加“延时摄影擦料塔”\n"
 "右键单击打印板的空白位置，选择“添加标准模型”->“延时摄影擦料塔”。"
@@ -7579,8 +7592,8 @@ msgid ""
 "color changed or filaments changed. You could disable the auto-calculate in "
 "QIDI Studio > Preferences"
 msgstr ""
-"Studio 将会在每一次更换耗材或颜色时重新计算你的冲刷体积，你可以在QIDI Studio "
-"> 偏好设置 中关闭自动计算"
+"Studio 将会在每一次更换耗材或颜色时重新计算你的冲刷体积，你可以在QIDI "
+"Studio > 偏好设置 中关闭自动计算"
 
 msgid "Flushing volume (mm³) for each filament pair."
 msgstr "在两个耗材丝间切换所需的冲刷量（mm³）"
@@ -8154,6 +8167,9 @@ msgstr "支撑转换层"
 msgid "Multiple"
 msgstr "多个"
 
+msgid "Flush"
+msgstr "冲刷"
+
 #, boost-format
 msgid "Failed to calculate line width of %1%. Can not get value of \"%2%\" "
 msgstr "计算 %1%的线宽失败。无法获得 \"%2%\" 的值"
@@ -8562,6 +8578,11 @@ msgstr "初始层的床温。值0表示耗材丝不支持在低温增稳打印�
 
 msgid ""
 "Bed temperature of the initial layer. Value 0 means the filament does not "
+"support to print on the Cool Plate"
+msgstr "首层热床温度。0值表示这个耗材丝不支持低温打印热床"
+
+msgid ""
+"Bed temperature of the initial layer. Value 0 means the filament does not "
 "support to print on the Engineering Plate"
 msgstr "首层热床温度。0值表示这个耗材丝不支持工程材料热床"
 
@@ -8764,9 +8785,6 @@ msgid ""
 "models. Auto means the brim width is analysed and calculated automatically."
 msgstr ""
 "该参数控制在模型的外侧和/或内侧生成brim。自动是指自动分析和计算边框的宽度。"
-
-msgid "Painted"
-msgstr "绘制"
 
 msgid "Brim-object gap"
 msgstr "Brim与模型的间隙"
@@ -9103,13 +9121,15 @@ msgstr "启用压力提前补偿"
 
 msgid ""
 "Enable pressure advance, auto calibration result will be overwriten once "
-"enabled."
-msgstr "启用压力提前补偿，启用后自动校准结果将被覆盖。"
+"enabled. Useless for QIDI Printer"
+msgstr "启用压力提前补偿，启用后自动校准结果将被覆盖。对于QIDI打印机无效。"
 
 msgid ""
-"Pressure advance(Klipper) AKA Linear advance factor(Marlin)."
+"Pressure advance(Klipper) AKA Linear advance factor(Marlin). Useless for "
+"QIDI Printer"
 msgstr ""
-"压力提前补偿（Klipper）也称为线性提前补偿因子（Marlin）。"
+"压力提前补偿（Klipper）也称为线性提前补偿因子（Marlin）。对于QIDI打印机无"
+"效。"
 
 msgid "Filament notes"
 msgstr ""
@@ -10240,7 +10260,7 @@ msgstr "自动擦拭速度"
 
 msgid ""
 "The wipe speed is determined by speed of current extrusion role. e.g if a "
-"wip action is executed immediately following an outer wall extrusion, the "
+"wipe action is executed immediately following an outer wall extrusion, the "
 "speed of the outer wall extrusion will be utilized for the wipe action."
 msgstr ""
 "擦拭速度由当前挤出类型的速度决定。例如，如果擦拭动作紧随外墙，擦拭速度将使用"
@@ -11297,19 +11317,19 @@ msgstr ""
 
 msgid ""
 "Flow Rate Calibration measures the ratio of expected to actual extrusion "
-"volumes. The default setting works well in QIDI TECH printers and official "
+"volumes. The default setting works well in QIDI Tech printers and official "
 "filaments as they were pre-calibrated and fine-tuned. For a regular "
 "filament, you usually won't need to perform a Flow Rate Calibration unless "
 "you still see the listed defects after you have done other calibrations. For "
 "more details, please check out the wiki article."
 msgstr ""
-"流量比例校准测量预期挤出体积与实际挤出体积之间的比率。默认设置在QIDI TECH打印"
+"流量比例校准测量预期挤出体积与实际挤出体积之间的比率。默认设置在QIDI Tech打印"
 "机和官方材料上表现良好，因为它们已经进行了预先校准和微调。对于普通的材料，通"
 "常情况下，您不需要执行流量比例校准，除非在完成其他校准后仍然看到上述列出的缺"
 "陷。如需更多详细信息，请查阅wiki文章。"
 
 msgid ""
-"Auto Flow Rate Calibration utilizes QIDI TECH's Micro-Lidar technology, "
+"Auto Flow Rate Calibration utilizes QIDI Tech's Micro-Lidar technology, "
 "directly measuring the calibration patterns. However, please be advised that "
 "the efficacy and accuracy of this method may be compromised with specific "
 "types of materials. Particularly, filaments that are transparent or semi-"
@@ -11326,7 +11346,7 @@ msgid ""
 "can lead to sub-par prints or printer damage. Please make sure to carefully "
 "read and understand the process before doing it."
 msgstr ""
-"自动流量比例校准采用QIDI TECH的微型激光雷达技术，直接测量校准图案。然而，请注"
+"自动流量比例校准采用QIDI Tech的微型激光雷达技术，直接测量校准图案。然而，请注"
 "意，这种方法的功效和准确性可能会因特定类型的材料而受影响。特别是透明或半透"
 "明、带有闪光颗粒或具有高反射表面的材料可能不适合这种校准，并可能产生不理想的"
 "结果。\n"
@@ -11990,8 +12010,8 @@ msgstr ""
 "你想重写预设吗"
 
 msgid ""
-"We would rename the presets as \"Vendor Type Serial @printer you "
-"selected\". \n"
+"We would rename the presets as \"Vendor Type Serial @printer you selected"
+"\". \n"
 "To add preset for more prinetrs, Please go to printer selection"
 msgstr ""
 "我们会将预设重命名为“供应商 类型 系列 @您选择的打印机”。\n"
@@ -12749,7 +12769,7 @@ msgid ""
 "vendor for suitable profile before printing and adjust some parameters "
 "according to its performances."
 msgstr ""
-"此耗材较为小众，QIDI并未出售，且不同品牌的差异很大，故强烈建议打印前向厂家咨"
+"此耗材较为小众，起迪并未出售，且不同品牌的差异很大，故强烈建议打印前向厂家咨"
 "询预设参数，并根据打印表现来调整打印参数。"
 
 msgid ""
@@ -12848,7 +12868,7 @@ msgid ""
 "range of filaments. For higher printing quality and speeds, please use QIDI "
 "filaments with QIDI presets."
 msgstr ""
-"Generic 参数为了兼容更多种耗材而进行了较为保守的调校，使用拓竹原装耗材配合拓"
+"Generic 参数为了兼容更多种耗材而进行了较为保守的调校，使用起迪原装耗材配合拓"
 "竹专用参数可获得更高的打印质量与更高的打印速度。"
 
 msgid "No AMS"
@@ -13250,6 +13270,74 @@ msgstr ""
 "避免翘曲\n"
 "您知道吗？打印ABS这类易翘曲材料时，适当提高热床温度可以降低翘曲的概率。"
 
+#~ msgid ""
+#~ "The current chamber temperature or the target chamber temperature exceeds "
+#~ "45\\u2103.In order to avoid extruder clogging,low temperature "
+#~ "filament(PLA/PETG/TPU) is not allowed to be loaded."
+#~ msgstr ""
+#~ "当前腔温或目标腔温超过了45度。为了避免挤出机堵塞，不允许加载低温度的打印材"
+#~ "料（如PLA/PETG/TPU）"
+
+#~ msgid ""
+#~ "Low temperature filament(PLA/PETG/TPU) is loaded in the extruder.In order "
+#~ "to avoid extruder clogging,it is not allowed to set the chamber "
+#~ "temperature above 45\\u2103."
+#~ msgstr ""
+#~ "挤出机中加载了低温度的打印材料（如PLA/PETG/TPU）。为了避免挤出机堵塞，不允"
+#~ "许将腔温设置高于45度。"
+
+#~ msgid ""
+#~ "When you set the chamber temperature below 40\\u2103, the chamber "
+#~ "temperature control will not be activated. And the target chamber "
+#~ "temperature will automatically be set to 0\\u2103."
+#~ msgstr ""
+#~ "当您设置的腔温低于40度时，腔温控制将不会启动。并且目标腔温将自动设置为0度"
+
+#~ msgid ""
+#~ "The certificate has been revoked. Please check the time settings or "
+#~ "update QIDI Studio and try again."
+#~ msgstr "您的软件证书已过期，请检查系统时间设置或者更新QIDI Studio后重试"
+
+#~ msgid ""
+#~ "Please input valid values:\n"
+#~ "start > 0 \\step >= 0\n"
+#~ "end > start + step)"
+#~ msgstr ""
+#~ "请输入有效值:\n"
+#~ "起始值 > 0 \\值步长 >= 0\n"
+#~ "结束值 > 起始值 + 值步长)"
+
+#~ msgid ""
+#~ "Please input valid values:\n"
+#~ "start > 10 \\step >= 0\n"
+#~ "end > start + step)"
+#~ msgstr ""
+#~ "请输入有效值:\n"
+#~ "起始值 > 10 \\值步长 >= 0\n"
+#~ "结束值 > 起始值 + 值步长)"
+
+#~ msgid "enable multi instance rendering by opengl"
+#~ msgstr "开启opengl多实例渲染"
+
+#~ msgid ""
+#~ "Unable to perform boolean operation on model meshes. You may fix the "
+#~ "meshes and try agian."
+#~ msgstr "无法对模型网格执行布尔运算。您可以修复网格，然后重试。"
+
+#~ msgid ""
+#~ "Unable to perform boolean operation on model meshes. Only positive parts "
+#~ "will be kept. You may fix the meshes and try agian."
+#~ msgstr ""
+#~ "无法对模型网格执行布尔运算。只保留正体积部分。您可以修复网格后再试一次。"
+
+#~ msgid ""
+#~ "The wipe speed is determined by speed of current extrusion role. e.g if a "
+#~ "wip action is executed immediately following an outer wall extrusion, the "
+#~ "speed of the outer wall extrusion will be utilized for the wipe action."
+#~ msgstr ""
+#~ "擦拭速度由当前挤出类型的速度决定。例如，如果擦拭动作紧随外墙，擦拭速度将使"
+#~ "用外墙速度。"
+
 #~ msgid "Rough"
 #~ msgstr "粗糙"
 
@@ -13265,7 +13353,6 @@ msgstr ""
 #~ msgid "Fewer faces"
 #~ msgstr "更少三角面"
 
-#, c-format, boost-format
 #~ msgid ""
 #~ "Printing high temperature material(%1s material) with %2s may cause "
 #~ "nozzle damage"
@@ -13285,13 +13372,11 @@ msgstr ""
 #~ msgid "Are you sure you want to cancel this print?"
 #~ msgstr "你确定要取消这次打印吗？"
 
-#, c-format, boost-format
 #~ msgid ""
 #~ "Printing high temperature material(%s material) with %s may cause nozzle "
 #~ "damage"
 #~ msgstr "用%s打印高温材料（%s材料）可能会导致喷嘴损坏"
 
-#, c-format, boost-format
 #~ msgid ""
 #~ "Tip: When using the A1/A1 mini machine, we do not recommend calibrating "
 #~ "foam filaments(%s),\n"
@@ -13300,7 +13385,6 @@ msgstr ""
 #~ "提示：在使用A1/A1 mini机器时，不建议对发泡类材料（%s）进行校准，\n"
 #~ "以免因效果不佳（校准结果不稳定）而影响打印质量。"
 
-#, c-format, boost-format
 #~ msgid "filaments %s cannot be printed directly on the surface of this plate"
 #~ msgstr "材料 %s 不能在直接在当前打印板上打印"
 
@@ -13475,11 +13559,6 @@ msgstr ""
 #~ msgid "IP and Access Code Verified! You may close the window"
 #~ msgstr "IP地址和访问码验证成功！您可以关闭此窗口。"
 
-#~ msgid ""
-#~ "Bed temperature of the initial layer. Value 0 means the filament does not "
-#~ "support to print on the Cool Plate"
-#~ msgstr "首层热床温度。0值表示这个耗材丝不支持低温打印热床"
-
 #~ msgid "This setting specifies the count of walls around support"
 #~ msgstr "此设置指定了支撑的外墙层数"
 
@@ -13551,7 +13630,6 @@ msgstr ""
 #~ "在我们的测试中，校准结果有约10%的波动，这可能导致每次校准的结果略有不同。"
 #~ "我们仍在调查根本原因，并通过新的更新进行改进。"
 
-#, c-format, boost-format
 #~ msgid "Select Connected Printetrs (%d/6)"
 #~ msgstr "选择已连接的打印机 (%d/6)"
 
@@ -13564,49 +13642,8 @@ msgstr ""
 #~ msgid "Please input a valid value (K in 0~0.3, N in 0.6~2.0)"
 #~ msgstr "请输入有效的数值 (K的范围为0~0.3，N的范围为0.6~2.0)"
 
-#~ msgid ""
-#~ "The current chamber temperature or the target chamber temperature exceeds "
-#~ "45\\u2103.In order to avoid extruder clogging,low temperature "
-#~ "filament(PLA/PETG/TPU) is not allowed to be loaded."
-#~ msgstr ""
-#~ "当前腔温或目标腔温超过了45度。为了避免挤出机堵塞，不允许加载低温度的打印材"
-#~ "料（如PLA/PETG/TPU）"
-
-#~ msgid ""
-#~ "Low temperature filament(PLA/PETG/TPU) is loaded in the extruder.In order "
-#~ "to avoid extruder clogging,it is not allowed to set the chamber "
-#~ "temperature above 45\\u2103."
-#~ msgstr ""
-#~ "挤出机中加载了低温度的打印材料（如PLA/PETG/TPU）。为了避免挤出机堵塞，不允"
-#~ "许将腔温设置高于45度。"
-
-#~ msgid ""
-#~ "When you set the chamber temperature below 40\\u2103, the chamber "
-#~ "temperature control will not be activated. And the target chamber "
-#~ "temperature will automatically be set to 0\\u2103."
-#~ msgstr ""
-#~ "当您设置的腔温低于40度时，腔温控制将不会启动。并且目标腔温将自动设置为0度"
-
 #~ msgid "Printer local connection failed, please try again."
 #~ msgstr "打印机局域网连接失败，请重试。"
-
-#~ msgid ""
-#~ "Please input valid values:\n"
-#~ "start > 0 \\step >= 0\n"
-#~ "end > start + step)"
-#~ msgstr ""
-#~ "请输入有效值:\n"
-#~ "起始值 > 0 \\值步长 >= 0\n"
-#~ "结束值 > 起始值 + 值步长)"
-
-#~ msgid ""
-#~ "Please input valid values:\n"
-#~ "start > 10 \\step >= 0\n"
-#~ "end > start + step)"
-#~ msgstr ""
-#~ "请输入有效值:\n"
-#~ "起始值 > 0 \\值步长 >= 0\n"
-#~ "结束值 > 起始值 + 值步长)"
 
 #~ msgid ""
 #~ "Over 4 studio/handy are using remote access, you can close some and try "
@@ -14120,16 +14157,16 @@ msgstr ""
 #~ msgstr "提示：发布前需要一些准备时间，请耐心等待。"
 
 #~ msgid ""
-#~ "Thank you for purchasing a QIDI TECH device.Before using your QIDI TECH "
+#~ "Thank you for purchasing a QIDI Tech device.Before using your QIDI Tech "
 #~ "device, please read the termsand conditions.By clicking to agree to use "
-#~ "your QIDI TECH device, you agree to abide by the Privacy Policyand Terms "
+#~ "your QIDI Tech device, you agree to abide by the Privacy Policyand Terms "
 #~ "of Use(collectively, the \"Terms\"). If you do not comply with or agree "
-#~ "to the QIDI TECH Privacy Policy, please do not use QIDI TECH equipment and "
-#~ "services."
+#~ "to the QIDI Tech Privacy Policy, please do not use QIDI Tech equipment "
+#~ "and services."
 #~ msgstr ""
-#~ "感谢您购买QIDI TECH设备，使用QIDI TECH设备前，请阅读一下条款，单击同意使用您"
-#~ "的QIDI TECH设备即表示您同意遵守隐私政策以及使用条款（统称为“条款”）。如果您"
-#~ "不符合或不同意QIDI TECH隐私政策，请不要使用QIDI TECH设备和服务。"
+#~ "感谢您购买QIDI Tech设备，使用QIDI Tech设备前，请阅读一下条款，单击同意使用"
+#~ "您的QIDI Tech设备即表示您同意遵守隐私政策以及使用条款（统称为“条款”）。如"
+#~ "果您不符合或不同意QIDI Tech隐私政策，请不要使用QIDI Tech设备和服务。"
 
 #~ msgid "The configuration package is changed in previous Config Guide"
 #~ msgstr "参数配置包在之前的配置向导中发生了变更"
@@ -14588,15 +14625,6 @@ msgstr ""
 #~ "什么时候需要打开机箱门打印\n"
 #~ "在较高腔温下打印低温耗材，打开机箱门可以减少挤出机/热端堵塞的概率。有关此"
 #~ "的更多信息，请参阅Wiki。"
-
-#~ msgid ""
-#~ "Avoid warping\n"
-#~ "When printing materials that are prone to warping such as ABS, "
-#~ "appropriately increasing the heatbed temperature can reduce the "
-#~ "probability of warping."
-#~ msgstr ""
-#~ "避免翘曲\n"
-#~ "打印ABS这类易翘曲材料时，适当提高热床温度可以降低翘曲的概率"
 
 #~ msgid ""
 #~ "When print by object, machines with I3 structure will not generate "
@@ -19010,14 +19038,14 @@ msgstr ""
 #~ "manually delete the file to recover from the error. Your user profiles "
 #~ "will not be affected."
 #~ msgstr ""
-#~ "解析QIDIStudio配置文件时遇到错误，它可能已损坏。请尝试手动删除此文件以便从"
+#~ "解析BambStudio配置文件时遇到错误，它可能已损坏。请尝试手动删除此文件以便从"
 #~ "错误中恢复。你的用户配置不会收到影响。"
 
 #~ msgid ""
 #~ "Error parsing QIDIGCodeViewer config file, it is probably corrupted. Try "
 #~ "to manually delete the file to recover from the error."
 #~ msgstr ""
-#~ "解析QIDIStudio配置文件时遇到错误，它可能已损坏。请尝试手动删除此文件以便从"
+#~ "解析BambStudio配置文件时遇到错误，它可能已损坏。请尝试手动删除此文件以便从"
 #~ "错误中恢复。"
 
 #~ msgid "You are opening %1% version %2%."
@@ -19055,10 +19083,10 @@ msgstr ""
 
 #~ msgid ""
 #~ "You are running a 32 bit build of QIDIStudio on 64-bit Windows.\n"
-#~ "32 bit build of QIDIStudio will likely not be able to utilize all the RAM "
-#~ "available in the system.\n"
-#~ "Please download and install a 64 bit build of QIDIStudio from https://www."
-#~ "QIDI3d.cz/QIDIslicer/.\n"
+#~ "32 bit build of QIDIStudio will likely not be able to utilize all the "
+#~ "RAM available in the system.\n"
+#~ "Please download and install a 64 bit build of QIDIStudio from https://"
+#~ "www.QIDI3d.cz/QIDIslicer/.\n"
 #~ "Do you wish to continue?"
 #~ msgstr ""
 #~ "您正在64位Windows上运行32位版本的QIDIStudio。\n"
@@ -19070,8 +19098,8 @@ msgstr ""
 #~ msgstr "正在准备设置页"
 
 #~ msgid ""
-#~ "You have the following presets with saved options for \"Print Host "
-#~ "upload\""
+#~ "You have the following presets with saved options for \"Print Host upload"
+#~ "\""
 #~ msgstr "您的以下预设中包含未保存的选项“打印主机上传”"
 
 #~ msgid ""
@@ -19526,6 +19554,7 @@ msgstr ""
 #~ msgid "Start the application"
 #~ msgstr "启动应用程序"
 
+#QIDIStudio
 msgid "Pressure Advance"
 msgstr "压力提前"
 
@@ -19794,3 +19823,95 @@ msgstr "了解更多"
 
 msgid "The path is not exists!"  
 msgstr "路径不存在！"
+
+msgid "Click here if you failed to send the print job"
+msgstr "如果您发送打印任务失败，请点击这儿"
+
+msgid "Login/Register"
+msgstr "登录/注册"
+
+msgid "Local"
+msgstr "本地"
+
+msgid "Printer name \"%1%\" already exists."
+msgstr "\"%1%\"设备名已存在。"
+
+msgid "Connection to Moonraker works correctly."
+msgstr "与Moonraker的连接正常。"
+
+msgid "The host or IP or URL cannot be empty."
+msgstr "主机、IP或URL不能为空。"
+
+msgid "A device with the same host (IP or URL) already exists, please re-enter."
+msgstr "已存在具有相同主机(IP或URL)的设备，请重新输入。"
+
+msgid "Machine Name"
+msgstr "设备名称"
+
+msgid "Choice your physical printer preset"
+msgstr "选择您的物理打印机预设"
+
+msgid "Are you sure you want to delete \"%1%\" printer?"
+msgstr "您确定要删除\"%1%\"打印机吗?"
+
+msgid "Are you sure you want to delete "
+msgstr "您确定要删除 "
+
+msgid "printer?"
+msgstr "打印机?"
+
+msgid "Don't slow down outer walls"
+msgstr "外墙不减速"
+
+msgid "If enabled, this setting will ensure external perimeters are not slowed down to meet the minimum layer time. "
+"This is particularly helpful in the below scenarios:\n\n "
+"1. To avoid changes in shine when printing glossy filaments \n"
+"2. To avoid changes in external wall speed which may create slight wall artefacts that appear like z banding \n"
+"3. To avoid printing at speeds which cause VFAs (fine artefacts) on the external walls\n\n"
+msgstr "如果启用此设置，将确保外围轮廓不会因为要达到最低层时间而被放慢。"
+"这在以下情况下尤为有用：\n\n"
+"1. 避免在打印光滑丝材料时改变光泽度\n"
+"2. 避免外墙速度的变化，这可能会产生类似Z条纹的轻微墙面瑕疵\n"
+"3. 避免以导致外部墙面出现VFAs（细小瑕疵）的速度进行打印\n\n"
+
+msgid "Unseal Fan speed"
+msgstr "未密封风扇速度"
+
+msgid "Speed of auxiliary part cooling fan under unseal. Auxiliary fan will run at this speed during printing except the first several layers "
+"which are defined by no cooling layers"
+msgstr "未密封状态下辅助零件冷却风扇的速度。在打印过程中，除了由无冷却层定义的前几层外，辅助风扇将以此速度运行。"
+
+msgid "Resonance avoidance"
+msgstr "避免共振"
+
+msgid "By reducing the speed of the outer wall to avoid the resonance zone of the printer, ringing on the surface of the model are avoided.\n"
+"Please turn this option off when testing ringing."
+msgstr "通过降低外墙的速度以避开打印机的共振区域，可以避免模型表面的振铃。\n"
+"请在测试振铃时关闭此选项。"
+
+msgid "G-code thumbnails"
+msgstr "G代码缩略图"
+
+msgid "Picture sizes to be stored into a .gcode and .sl1 / .sl1s files, in the following format: \"XxY, XxY, ...\""
+msgstr "图片大小存储到.gcode和.sl1/.sl1s文件中，格式如下：“XxY，XxY…”"
+
+msgid "Format of G-code thumbnails"
+msgstr "G代码缩略图格式"
+
+msgid "Format of G-code thumbnails: PNG for best quality, JPG for smallest size"
+msgstr "G代码缩略图的格式：PNG表示最佳质量，JPG表示最小尺寸"
+
+msgid "QIDI Studio is based on Bambu Studio by Bambu Lab."
+msgstr "QIDI Studio是基于Bambu Lab的Bambu Studio开发的。"
+
+msgid "Seal"
+msgstr "封箱"
+
+msgid "QIDI Studio is based on Bambu Studio by Bambu Lab"
+msgstr "QIDI Studio是基于Bambu Lab的Bambu Studio开发的"
+
+msgid "Support multi bed types"
+msgstr "支持多种床型"
+
+msgid "Switch to Device tab"
+msgstr "切换到设备标签"
