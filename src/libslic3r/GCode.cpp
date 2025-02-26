@@ -2389,6 +2389,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
         m_writer.extruders(),
         // Modifies
         print.m_print_statistics));*/
+    print.m_print_statistics.initial_tool = initial_extruder_id;
 
     bool activate_air_filtration = false;
     for (const auto& extruder : m_writer.extruders())
@@ -4765,7 +4766,7 @@ ExtrusionPaths GCode::set_speed_transition(ExtrusionPaths &paths)
 
 void GCode::smooth_speed_discontinuity_area(ExtrusionPaths &paths) {
 
-    if (paths.size() <= 1)
+    if (paths.size() <= 1 || this->config().smooth_coefficient == 0)
         return;
 
     //step 1 merge same speed path

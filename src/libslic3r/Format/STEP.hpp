@@ -42,6 +42,7 @@ extern bool load_step(const char *path, Model *model,
                       bool& is_cancel,
                       double linear_defletion = 0.003,
                       double angle_defletion = 0.5,
+                      bool isSplitCompound = false,
                       ImportStepProgressFn proFn = nullptr,
                       StepIsUtf8Fn isUtf8Fn = nullptr,
                       long& mesh_face_num = *(new long(-1)));

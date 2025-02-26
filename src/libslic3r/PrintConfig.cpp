@@ -663,7 +663,7 @@ void PrintConfigDef::init_fff_params()
     def->label = L("Initial layer");
     def->full_label = L("Initial layer bed temperature");
     def->tooltip = L("Bed temperature of the initial layer. "
-        "Value 0 means the filament does not support to print on the QIDI Cool Plate SuperTack");
+        "Value 0 means the filament does not support to print on the Cool Plate");
     def->sidetext = "°C";
     def->min = 0;
     def->max = 120;
@@ -1226,8 +1226,9 @@ void PrintConfigDef::init_fff_params()
     def           = this->add("smooth_coefficient", coFloat);
     def->label    = L("Smooth coefficient");
     def->category = L("Quality");
-    def->tooltip  = L("The smaller the number, the longer the speed transition path.");
+    def->tooltip  = L("The smaller the number, the longer the speed transition path. 0 means not apply.");
     def->mode     = comAdvanced;
+    def->min      = 0;
     def->set_default_value(new ConfigOptionFloat(80));
 
     def = this->add("internal_bridge_support_thickness", coFloat);
@@ -3122,7 +3123,7 @@ void PrintConfigDef::init_fff_params()
 
     def          = this->add("role_base_wipe_speed", coBool);
     def->label   = L("Role-based wipe speed");
-    def->tooltip = L("The wipe speed is determined by speed of current extrusion role. " "e.g if a wip action is executed immediately following an outer wall extrusion, the speed of the outer wall extrusion will be utilized for the wipe action.");
+    def->tooltip = L("The wipe speed is determined by speed of current extrusion role. " "e.g if a wipe action is executed immediately following an outer wall extrusion, the speed of the outer wall extrusion will be utilized for the wipe action.");
     def->mode    = comAdvanced;
     def->set_default_value(new ConfigOptionBool(true));
 
@@ -4942,7 +4943,7 @@ void PrintConfigDef::handle_legacy(t_config_option_key &opt_key, std::string &va
 #endif /* HAS_PRESSURE_EQUALIZER */
         // QDS
         , "support_sharp_tails","support_remove_small_overhangs", "support_with_sheath",
-        "tree_support_branch_diameter_angle", "tree_support_collision_resolution", "tree_support_with_infill",
+        "tree_support_collision_resolution", "tree_support_with_infill",
         "tree_support_brim_width",  //1.9.5
         "max_volumetric_speed", "max_print_speed",
         "support_closing_radius",

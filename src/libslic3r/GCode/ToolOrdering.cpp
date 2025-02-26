@@ -986,7 +986,7 @@ void ToolOrdering::assign_custom_gcodes(const Print& print)
             bool pause_or_custom_gcode = !color_change && !tool_change;
             bool apply_color_change = !ignore_tool_and_color_changes &&
                 // If it is color change, it will actually be useful as the exturder above will print.
-                // BBS
+                // QDS
                 (color_change ?
                     mode == CustomGCode::SingleExtruder ||
                     (item.extruder <= int(num_filaments) && extruder_printing_above[unsigned(item.extruder - 1)]) :
