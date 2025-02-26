@@ -1889,7 +1889,7 @@ wxBoxSizer* MainFrame::create_side_tools()
 
                 //y
                 // if (check_qdt_farm_client_installed()) {
-                //     SideButton *send_to_multi_app_btn = new SideButton(p, _L("Send to Bambu Farm Manager Client"), "");
+                //     SideButton *send_to_multi_app_btn = new SideButton(p, _L("Send to QIDI Farm Manager Client"), "");
                 //     send_to_multi_app_btn->SetCornerRadius(0);
                 //     p->append_button(send_to_multi_app_btn);
 
@@ -4031,15 +4031,15 @@ bool MainFrame::check_qdt_farm_client_installed()
 {
 #ifdef WIN32
     HKEY hKey;
-    LONG result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Bambulab\\Bambu Farm Manager Client"), 0, KEY_READ, &hKey);
-    LONG result_backup = RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("HKEY_CLASSES_ROOT\\bambu-farm-client\\shell\\open\\command"), 0, KEY_READ, &hKey);
+    LONG result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\QIDITech\\QIDI Farm Manager Client"), 0, KEY_READ, &hKey);
+    LONG result_backup = RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("HKEY_CLASSES_ROOT\\qidi-farm-client\\shell\\open\\command"), 0, KEY_READ, &hKey);
 
     if (result == ERROR_SUCCESS || result_backup == ERROR_SUCCESS) {
-        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "Bambu Farm Manager Client found.";
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "QIDI Farm Manager Client found.";
         RegCloseKey(hKey);
         return true;
     } else {
-        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "Bambu Farm Manager Client Not found.";
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "QIDI Farm Manager Client Not found.";
         return false;
     }
 

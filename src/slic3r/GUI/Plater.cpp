@@ -7599,8 +7599,8 @@ void Plater::priv::on_action_send_to_multi_app(SimpleEvent &)
 #ifdef WIN32
     HKEY hKey;
 
-    LONG result        = RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Bambulab\\Bambu Farm Manager Client"), 0, KEY_READ, &hKey);
-    LONG result_backup = RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("HKEY_CLASSES_ROOT\\bambu-farm-client\\shell\\open\\command"), 0, KEY_READ, &hKey);
+    LONG result        = RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\QIDITech\\QIDI Farm Manager Client"), 0, KEY_READ, &hKey);
+    LONG result_backup = RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("HKEY_CLASSES_ROOT\\bqidi-farm-client\\shell\\open\\command"), 0, KEY_READ, &hKey);
 
     if (result == ERROR_SUCCESS || result_backup == ERROR_SUCCESS) {
         RegCloseKey(hKey);
@@ -7624,14 +7624,14 @@ void Plater::priv::on_action_send_to_multi_app(SimpleEvent &)
         wxString filepath = wxString::FromUTF8(data._3mf_path.string());
         filepath.Replace("\\", "/");
         std::string filePath = "?version=v1.6.0&path=" + filepath.ToStdString() + "&name=" + filename.utf8_string();
-        wxString    url      = "bambu-farm-client://upload-file" + Http::url_encode(filePath);
+        wxString    url      = "qidi-farm-client://upload-file" + Http::url_encode(filePath);
         if (!wxLaunchDefaultBrowser(url)) {
-            GUI::MessageDialog msgdialog(nullptr, _L("Failed to start Bambu Farm Manager Client."), "", wxAPPLY | wxOK);
+            GUI::MessageDialog msgdialog(nullptr, _L("Failed to start QIDI Farm Manager Client."), "", wxAPPLY | wxOK);
             msgdialog.ShowModal();
         }
 
     } else {
-        GUI::MessageDialog msgdialog(nullptr, _L("No Bambu Farm Manager Client found."), "", wxAPPLY | wxOK);
+        GUI::MessageDialog msgdialog(nullptr, _L("No QIDI Farm Manager Client found."), "", wxAPPLY | wxOK);
         msgdialog.ShowModal();
     }
 #endif // WIN32

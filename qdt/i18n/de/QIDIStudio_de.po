@@ -6814,16 +6814,16 @@ msgstr "Beschäftigt"
 msgid "QIDI Cool Plate"
 msgstr "QIDI Cool Plate"
 
-msgid "Bamabu Engineering Plate"
+msgid "QIDI Engineering Plate"
 msgstr "QIDI Engineering Plate"
 
-msgid "Bamabu Smooth PEI Plate"
+msgid "QIDI Smooth PEI Plate"
 msgstr "QIDI Smooth PEI Plate"
 
 msgid "High temperature Plate"
 msgstr "High temperature Plate"
 
-msgid "Bamabu Textured PEI Plate"
+msgid "QIDI Textured PEI Plate"
 msgstr "QIDI Textured PEI Plate"
 
 msgid "QIDI Cool Plate SuperTack"
@@ -14784,7 +14784,7 @@ msgstr ""
 #~ msgid "Backup interval"
 #~ msgstr "Sicherungsintervall"
 
-#~ msgid "Bamabu High Temperature Plate"
+#~ msgid "QIDI High Temperature Plate"
 #~ msgstr "QIDI High Temperature Plate"
 
 #~ msgid ""

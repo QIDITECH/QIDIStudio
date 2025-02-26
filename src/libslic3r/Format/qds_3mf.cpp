@@ -370,7 +370,7 @@ static constexpr const char *FONT_WEIGHT_ATTR    = "weight";
 
 // Store / load of EmbossShape
 static constexpr const char *OLD_SHAPE_TAG             = "slic3rpe:shape";
-static constexpr const char *SHAPE_TAG                 = "BambuStudioShape";
+static constexpr const char *SHAPE_TAG                 = "QIDIStudioShape";
 static constexpr const char *SHAPE_SCALE_ATTR          = "scale";
 static constexpr const char *UNHEALED_ATTR             = "unhealed";
 static constexpr const char *SVG_FILE_PATH_ATTR        = "filepath";

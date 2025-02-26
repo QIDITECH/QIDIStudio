@@ -904,7 +904,7 @@ static wxString MACHINE_BED_TYPE_STRING[BED_TYPE_COUNT] = {
     _L("QIDI Cool Plate"),
     _L("QIDI Engineering Plate"),
     _L("QIDI Smooth PEI Plate") + "/" + _L("High temperature Plate"),
-    _L("Bamabu Textured PEI Plate"),
+    _L("QIDI Textured PEI Plate"),
     _L("QIDI Cool Plate SuperTack")
 };
 

@@ -812,9 +812,9 @@ void WebViewPanel::SetMakerlabUrl(std::string url) {
     auto        host   = wxGetApp().get_model_http_url(wxGetApp().app_config->get_country_code());
     std::string LabUrl;
     if (url == "")
-        LabUrl = (boost::format("%1%makerlab?from=bambustudio") % host).str();
+        LabUrl = (boost::format("%1%makerlab?from=qidistudio") % host).str();
     else
-        LabUrl = (boost::format("%1%%2%?from=bambustudio") % host % url).str();
+        LabUrl = (boost::format("%1%%2%?from=qidistudio") % host % url).str();
 
     m_MakerLab_LastUrl  = LabUrl;
 }
@@ -1740,9 +1740,9 @@ void WebViewPanel::SwitchWebContent(std::string modelname, int refresh)
         std::string strRegion = wxGetApp().app_config->get_country_code();
         wxString    MakerSupplyUrl;
         if (strRegion == "CN")
-            MakerSupplyUrl = "https://bambulab.tmall.com/category-1761686934.htm?from=bambustudio";
+            MakerSupplyUrl = "https://qiditech.tmall.com/category-1761686934.htm?from=qidistudio";
         else
-            MakerSupplyUrl = "https://store.bambulab.com/collections/makers-supply?from=bambustudio";
+            MakerSupplyUrl = "https://store.qiditech.com/collections/makers-supply?from=qidistudio";
 
             wxLaunchDefaultBrowser(MakerSupplyUrl);
         }

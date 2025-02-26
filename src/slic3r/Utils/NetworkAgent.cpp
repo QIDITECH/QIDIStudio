@@ -276,8 +276,8 @@ int NetworkAgent::initialize_network_module(bool using_backup)
     connect_printer_ptr               =  reinterpret_cast<func_connect_printer>(get_network_function("qidi_network_connect_printer"));
     disconnect_printer_ptr            =  reinterpret_cast<func_disconnect_printer>(get_network_function("qidi_network_disconnect_printer"));
     send_message_to_printer_ptr       =  reinterpret_cast<func_send_message_to_printer>(get_network_function("qidi_network_send_message_to_printer"));
-    check_cert_ptr                    =  reinterpret_cast<func_check_cert>(get_network_function("bambu_network_update_cert"));
-    install_device_cert_ptr           =  reinterpret_cast<func_install_device_cert>(get_network_function("bambu_network_install_device_cert"));
+    check_cert_ptr                    =  reinterpret_cast<func_check_cert>(get_network_function("qidi_network_update_cert"));
+    install_device_cert_ptr           =  reinterpret_cast<func_install_device_cert>(get_network_function("qidi_network_install_device_cert"));
     start_discovery_ptr               =  reinterpret_cast<func_start_discovery>(get_network_function("qidi_network_start_discovery"));
     change_user_ptr                   =  reinterpret_cast<func_change_user>(get_network_function("qidi_network_change_user"));
     is_user_login_ptr                 =  reinterpret_cast<func_is_user_login>(get_network_function("qidi_network_is_user_login"));

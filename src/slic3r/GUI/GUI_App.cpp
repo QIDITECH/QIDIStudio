@@ -4590,7 +4590,7 @@ void GUI_App::on_http_error(wxCommandEvent &evt)
     }
     else if (status == 400 && code == HttpErrorCertRevoked) {
         if (!m_show_error_msgdlg) {
-            MessageDialog msg_dlg(nullptr, _L("Your software certificate has been revoked, please update Bambu Studio software."), "", wxAPPLY | wxOK);
+            MessageDialog msg_dlg(nullptr, _L("Your software certificate has been revoked, please update QIDI Studio software."), "", wxAPPLY | wxOK);
             m_show_error_msgdlg = true;
             auto modal_result = msg_dlg.ShowModal();
             m_show_error_msgdlg = false;
@@ -5025,7 +5025,7 @@ void GUI_App::process_network_msg(std::string dev_id, std::string msg)
         else if (msg == "update_studio") {
             BOOST_LOG_TRIVIAL(info) << "process_network_msg, update_studio";
             if (!m_show_error_msgdlg) {
-                MessageDialog msg_dlg(nullptr, _L("Please try updating Bambu Studio and then try again."), "", wxAPPLY | wxOK);
+                MessageDialog msg_dlg(nullptr, _L("Please try updating QIDI Studio and then try again."), "", wxAPPLY | wxOK);
                 m_show_error_msgdlg = true;
                 auto modal_result = msg_dlg.ShowModal();
                 m_show_error_msgdlg = false;
@@ -5034,7 +5034,7 @@ void GUI_App::process_network_msg(std::string dev_id, std::string msg)
         else if (msg == "update_fixed_studio") {
             BOOST_LOG_TRIVIAL(info) << "process_network_msg, update_fixed_studio";
             if (!m_show_error_msgdlg) {
-                MessageDialog msg_dlg(nullptr, _L("Please try updating Bambu Studio and then try again."), "", wxAPPLY | wxOK);
+                MessageDialog msg_dlg(nullptr, _L("Please try updating QIDI Studio and then try again."), "", wxAPPLY | wxOK);
                 m_show_error_msgdlg = true;
                 auto modal_result = msg_dlg.ShowModal();
                 m_show_error_msgdlg = false;
@@ -5043,7 +5043,7 @@ void GUI_App::process_network_msg(std::string dev_id, std::string msg)
         else if (msg == "cert_expired") {
             BOOST_LOG_TRIVIAL(info) << "process_network_msg, cert_expired";
             if (!m_show_error_msgdlg) {
-                MessageDialog msg_dlg(nullptr, _L("The certificate has expired. Please check the time settings or update Bambu Studio and try again."), "", wxAPPLY | wxOK);
+                MessageDialog msg_dlg(nullptr, _L("The certificate has expired. Please check the time settings or update QIDI Studio and try again."), "", wxAPPLY | wxOK);
                 m_show_error_msgdlg = true;
                 auto modal_result = msg_dlg.ShowModal();
                 m_show_error_msgdlg = false;
@@ -5052,7 +5052,7 @@ void GUI_App::process_network_msg(std::string dev_id, std::string msg)
         else if (msg == "cert_revoked") {
             BOOST_LOG_TRIVIAL(info) << "process_network_msg, cert_revoked";
             if (!m_show_error_msgdlg) {
-                MessageDialog msg_dlg(nullptr, _L("The certificate is no longer valid and the printing functions are unavailable. If you need printing. Please visit the official website at https://bambulab.com/ to download and update."), "", wxAPPLY | wxOK);
+                MessageDialog msg_dlg(nullptr, _L("The certificate is no longer valid and the printing functions are unavailable. If you need printing. Please visit the official website at https://qidi3d.com/ to download and update."), "", wxAPPLY | wxOK);
                 m_show_error_msgdlg = true;
                 auto modal_result = msg_dlg.ShowModal();
                 m_show_error_msgdlg = false;
