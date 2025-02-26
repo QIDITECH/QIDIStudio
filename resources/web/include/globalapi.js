@@ -351,7 +351,7 @@ function SendWXMessage( strMsg )
 	
 	if(bCheck!=null)
 	{
-		window.wx.postMessage(strMsg);
+		setTimeout("window.wx.postMessage("+strMsg+")",1);
 	}
 }
 

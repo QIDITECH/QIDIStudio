@@ -116,6 +116,8 @@ var LangText={
 		"t122": "Search online models",
 		"t123": "Plate",
 		"t124": "",
+		"t125": "Maker’s Supply",
+		"t126": "Loading……",
 		"t201":"Connect Device",
 		"t202":"Please set up your printer connection to view the device.",
 		"t203":"Please use the QIDI Link APP to connect to your printer. Once the link is completed, the online device will be synced to the \"Link\" page."
@@ -237,6 +239,8 @@ var LangText={
 		"t122": "搜索在线模型",
 		"t123": "第",
 		"t124": " 盘",
+		"t125": "创客宝库",
+		"t126": "正在加载……",
 		"t201": "设备连接",
 		"t202":"请设置您的打印机连接以查看设备。",
 		"t203":"请使用 QIDI Link APP 连接您的打印机。链接完成后，在线设备将同步到 “Link” 页面。",
@@ -373,7 +377,8 @@ var LangText={
 		"t121": "検索",
 		"t122": "オンラインモデルを検索する",
 		"t123": "シート材",
-		"t124": ""	,
+		"t124": "",
+		"t126": "読み込み中……",
 		"t201": "デバイスを接続",
 		"t202": "デバイスを表示するには、プリンター接続を設定してください。",
 		"t203": "プリンターに接続するには、QIDI Linkアプリを使用してください。リンクが完了すると、オンラインデバイスが「リンク」ページに同期されます。"
@@ -494,7 +499,8 @@ var LangText={
 		"t121": "Ricerca",
 		"t122": "Cerca modelli online",
 		"t123": "piatto",
-		"t124": ""	,
+		"t124": "",
+		"t126": "Caricamento in corso……",
 		"t201": "Collega dispositivo",
 		"t202": "Si prega di configurare la connessione della stampante per visualizzare il dispositivo.",
 		"t203": "Si prega di utilizzare l'app QIDI Link per connettersi alla stampante. Una volta completato il collegamento, il dispositivo online verrà sincronizzato nella pagina \"Link\"."
@@ -616,6 +622,7 @@ var LangText={
 		"t122": "Rechercher des modèles en ligne",
 		"t123": "assiette",
 		"t124": "",
+		"t126": "Chargement en cours……",
 		"t201": "Connecter l'appareil",
 		"t202": "Veuillez configurer la connexion de votre imprimante pour voir l'appareil.",
 		"t203": "Veuillez utiliser l'application QIDI Link pour vous connecter à votre imprimante. Une fois le lien terminé, l'appareil en ligne sera synchronisé sur la page \"Lien\"."
@@ -737,6 +744,7 @@ var LangText={
 		"t122": "Suche Online-Modelle",
 		"t123": "Teller",
 		"t124": "",
+		"t126": "Laden……",
 		"t201": "Gerät verbinden",
 		"t202": "Bitte richten Sie die Druckerverbindung ein, um das Gerät anzuzeigen.",
 		"t203": "Bitte verwenden Sie die QIDI Link App, um sich mit Ihrem Drucker zu verbinden. Sobald die Verbindung hergestellt ist, wird das Online-Gerät auf der Seite \"Link\" synchronisiert."
@@ -858,6 +866,7 @@ var LangText={
 		"t122": "Online modellek keresése",
 		"t123": "tányér",
 		"t124": "",
+		"t126": "Betöltés folyamatban……",
 		"t201": "Eszköz csatlakoztatása",
 		"t202": "Kérjük, állítsa be a nyomtató kapcsolatát az eszköz megtekintéséhez.",
 		"t203": "Kérjük, használja a QIDI Link alkalmazást a nyomtatóhoz való csatlakozáshoz. Miután a kapcsolat létrejött, az online eszköz szinkronizálódik a „Link” oldalon."
@@ -979,6 +988,7 @@ var LangText={
 		"t122": "Buscar modelos en línea",
 		"t123": "plato",
 		"t124": "",
+		"t126": "Carga en progreso……",
 		"t201": "Conectar dispositivo",
 		"t202": "Por favor, configure la conexión de su impresora para ver el dispositivo.",
 		"t203": "Por favor, use la aplicación QIDI Link para conectarse a su impresora. Una vez completado el enlace, el dispositivo en línea se sincronizará en la página \"Enlace\"."
@@ -1100,6 +1110,7 @@ var LangText={
 		"t122": "Sök online-modeller",
 		"t123": "fat",
 		"t124": "",
+		"t126": "Laddning pågår……",
 		"t201": "Anslut enhet",
 		"t202": "Vänligen ställ in din skrivarkoppling för att se enheten.",
 		"t203": "Använd QIDI Link-appen för att ansluta till din skrivare. När länken är klar kommer den online-enheten att synkroniseras till \"Länk\"-sidan."
@@ -1221,6 +1232,7 @@ var LangText={
 		"t122": "Hledat online modely",
 		"t123": "talíř",
 		"t124": "",
+		"t126": "Načtení probíhá……",
 		"t201": "Připojit zařízení",
 		"t202": "Nastavte prosím připojení tiskárny, abyste mohli zobrazit zařízení.",
 		"t203": "Použijte prosím aplikaci QIDI Link k připojení k tiskárně. Jakmile bude spojení dokončeno, online zařízení bude synchronizováno na stránce \"Odkaz\"."
@@ -1342,6 +1354,7 @@ var LangText={
 		"t122": "Zoek online modellen",
 		"t123": "bord",
 		"t124": "",
+		"t126": "Laden in uitvoering……",
 		"t201": "Apparaat verbinden",
 		"t202": "Stel de printerverbinding in om het apparaat te bekijken.",
 		"t203": "Gebruik de QIDI Link-app om verbinding te maken met uw printer. Zodra de koppeling is voltooid, wordt het online apparaat gesynchroniseerd op de pagina \"Link\"."
@@ -1463,6 +1476,7 @@ var LangText={
 		"t122": "Пошук онлайн-моделей",
 		"t123": "тарілка",
 		"t124": "",
+		"t126": "Завантаження триває……",
 		"t201": "Підключити пристрій",
 		"t202": "Будь ласка, налаштуйте підключення принтера, щоб переглянути пристрій.",
 		"t203": "Будь ласка, використовуйте додаток QIDI Link для підключення до вашого принтера. Після завершення підключення онлайн-пристрій буде синхронізовано на сторінці \"Посилання\"."
@@ -1584,6 +1598,7 @@ var LangText={
 		"t122": "Поиск онлайн-моделей",
 		"t123": "тарелка",
 		"t124": "",
+		"t126": "Загрузка идёт……",
 		"t201": "Подключить устройство",
 		"t202": "Пожалуйста, настройте подключение принтера, чтобы просмотреть устройство.",
 		"t203": "Пожалуйста, используйте приложение QIDI Link для подключения к вашему принтеру. После завершения подключения онлайн-устройство будет синхронизировано на странице \"Ссылка\"."
@@ -1705,6 +1720,7 @@ var LangText={
 		"t122": "Çevrimiçi modelleri arayın",
 		"t123": "tabak",
 		"t124": "",
+		"t126": "Yükleme devam ediyor……",
 		"t201": "Cihazı Bağla",
 		"t202": "Cihazı görüntülemek için lütfen yazıcı bağlantınızı ayarlayın.",
 		"t203": "Yazıcınıza bağlanmak için lütfen QIDI Link uygulamasını kullanın. Bağlantı tamamlandığında, çevrimiçi cihaz \"Bağlantı\" sayfasına senkronize edilecektir."
@@ -1826,6 +1842,7 @@ var LangText={
 		"t122": "Procurar modelos online",
 		"t123": "prato",
 		"t124": "",
+		"t126": "Carregamento em andamento……",
 		"t201": "Conectar Dispositivo",
 		"t202": "Por favor, configure a conexão da sua impressora para visualizar o dispositivo.",
 		"t203": "Por favor, use o aplicativo QIDI Link para se conectar à sua impressora. Uma vez concluída a conexão, o dispositivo online será sincronizado na página \"Link\"."
@@ -1947,6 +1964,7 @@ var LangText={
 		"t122": "온라인 모델을 검색하다",
 		"t123": "접시",
 		"t124": "",
+		"t126": "로딩 중……",
 		"t201": "장치 연결",
 		"t202": "장치를 보려면 프린터 연결을 설정하십시오.",
 		"t203": "프린터에 연결하려면 QIDI Link 앱을 사용하십시오. 연결이 완료되면 온라인 장치가 '링크' 페이지에 동기화됩니다."
@@ -2068,6 +2086,7 @@ var LangText={
 		"t122": "Wyszukaj modele online",
 		"t123": "talerz",
 		"t124": "",
+		"t126": "Ładowanie trwa……",
 		"t201": "Podłącz urządzenie",
 		"t202": "Proszę skonfigurować połączenie drukarki, aby wyświetlić urządzenie.",
 		"t203": "Proszę użyć aplikacji QIDI Link, aby połączyć się z drukarką. Po zakończeniu połączenia, urządzenie online zostanie zsynchronizowane na stronie \"Link\"."
