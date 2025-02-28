@@ -565,14 +565,14 @@ wxBoxSizer *Newer3mfVersionDialog::get_btn_sizer()
     horizontal_sizer->Add(0, 0, 1, wxEXPAND, 0);
 
     // y96
-    StateColor btn_bg_green(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
                             std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     StateColor btn_bg_white(std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Pressed), std::pair<wxColour, int>(wxColour(238, 238, 238), StateColor::Hovered),
                             std::pair<wxColour, int>(*wxWHITE, StateColor::Normal));
     bool       file_version_newer = (*m_file_version) > (*m_cloud_version);
     if (!file_version_newer) {
         m_update_btn = new Button(this, _L("Update"));
-        m_update_btn->SetBackgroundColor(btn_bg_green);
+        m_update_btn->SetBackgroundColor(btn_bg_blue);
         m_update_btn->SetBorderColor(*wxWHITE);
         m_update_btn->SetTextColor(wxColour(0xFFFFFE));
         m_update_btn->SetFont(Label::Body_12);
@@ -599,7 +599,7 @@ wxBoxSizer *Newer3mfVersionDialog::get_btn_sizer()
         m_later_btn->SetBorderColor(wxColour(38, 46, 48));
     } else {
         m_later_btn = new Button(this, _L("OK"));
-        m_later_btn->SetBackgroundColor(btn_bg_green);
+        m_later_btn->SetBackgroundColor(btn_bg_blue);
         m_later_btn->SetBorderColor(*wxWHITE);
         m_later_btn->SetTextColor(wxColour(0xFFFFFE));
     }
@@ -683,8 +683,8 @@ NetworkErrorDialog::NetworkErrorDialog(wxWindow* parent)
         e.Skip();
     });
 
-    auto bt_enable = StateColor(std::pair<wxColour, int>(wxColour(27, 136, 68), StateColor::Pressed), std::pair<wxColour, int>(wxColour(61, 203, 115), StateColor::Hovered),
-        std::pair<wxColour, int>(wxColour(0, 174, 66), StateColor::Normal));
+    auto bt_enable = (std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+                        std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
 
     m_button_confirm = new Button(this, _L("Confirm"));
     m_button_confirm->SetBackgroundColor(bt_enable);

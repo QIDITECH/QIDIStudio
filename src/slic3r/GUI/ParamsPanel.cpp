@@ -62,10 +62,10 @@ TipsDialog::TipsDialog(wxWindow *parent, const wxString &title, const wxString &
 
     m_confirm = new Button(this, _L("OK"));
     // y96
-    StateColor btn_bg_green(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
                             std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
 
-    m_confirm->SetBackgroundColor(btn_bg_green);
+    m_confirm->SetBackgroundColor(btn_bg_blue);
     m_confirm->SetBorderColor(wxColour(68, 121, 251));
     m_confirm->SetTextColor(wxColour(255, 255, 255));
     m_confirm->SetSize(TIPS_DIALOG_BUTTON_SIZE);

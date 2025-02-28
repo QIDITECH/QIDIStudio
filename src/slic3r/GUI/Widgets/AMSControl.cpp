@@ -2563,7 +2563,7 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
 
     //m_sizer_left_bottom->Add(0, 0, 0, wxEXPAND, 0);
 
-    StateColor btn_bg_green(std::pair<wxColour, int>(AMS_CONTROL_DISABLE_COLOUR, StateColor::Disabled),
+    StateColor btn_bg_blue(std::pair<wxColour, int>(AMS_CONTROL_DISABLE_COLOUR, StateColor::Disabled),
                             std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed),   // y96
                             std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
                             std::pair<wxColour, int>(AMS_CONTROL_BRAND_COLOUR, StateColor::Normal));
@@ -2595,7 +2595,7 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     m_button_extruder_feed = new Button(m_button_area, _L("Load"));
     m_button_extruder_feed->SetFont(Label::Body_13);
 
-    m_button_extruder_feed->SetBackgroundColor(btn_bg_green);
+    m_button_extruder_feed->SetBackgroundColor(btn_bg_blue);
     m_button_extruder_feed->SetBorderColor(btn_bd_green);
     m_button_extruder_feed->SetTextColor(btn_text_green);
     
@@ -2900,7 +2900,7 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     wxBoxSizer *sizer_button = new wxBoxSizer(wxHORIZONTAL);
 
     auto m_button_calibration_again = new Button(m_calibration_err_panel, _L("Calibrate again"));
-    m_button_calibration_again->SetBackgroundColor(btn_bg_green);
+    m_button_calibration_again->SetBackgroundColor(btn_bg_blue);
     m_button_calibration_again->SetBorderColor(AMS_CONTROL_BRAND_COLOUR);
     m_button_calibration_again->SetTextColor(AMS_CONTROL_WHITE_COLOUR);
     m_button_calibration_again->SetMinSize(AMS_CONTRO_CALIBRATION_BUTTON_SIZE);

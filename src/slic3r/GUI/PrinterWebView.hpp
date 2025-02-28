@@ -129,7 +129,6 @@ public:
 
     //y53
     wxString GetWebIp(){return m_ip;};
-    bool GetHasLoadUrl(){return has_load_url;};
     bool IsNetUrl() {return webisNetMode == isNetWeb;};
     void load_disconnect_url(wxString& url);
     void FormatNetUrl(std::string link_url, std::string local_ip, bool isSpecialMachine);
@@ -181,8 +180,6 @@ private:
     std::set<std::string> m_exit_host;
     std::string m_user_head_name;   //y33
     bool m_isfluidd_1;             //y35
-    //y53
-    bool has_load_url;
 };
 
 // y13

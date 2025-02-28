@@ -976,15 +976,15 @@ void UnsavedChangesDialog::build(Preset::Type type, PresetCollection *dependent_
      // Add Buttons
     wxFont      btn_font = this->GetFont().Scaled(1.4f);
     // y96
-    StateColor btn_bg_green(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
                             std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
 
-    auto add_btn = [this, m_sizer_button, btn_font, dependent_presets, btn_bg_green](Button **btn, int &btn_id, const std::string &icon_name, Action close_act, const wxString &label,
+    auto add_btn = [this, m_sizer_button, btn_font, dependent_presets, btn_bg_blue](Button **btn, int &btn_id, const std::string &icon_name, Action close_act, const wxString &label,
                                                                               bool focus, bool process_enable = true) {
         *btn = new Button(this, _L(label));
 
         if (focus) {
-            (*btn)->SetBackgroundColor(btn_bg_green);
+            (*btn)->SetBackgroundColor(btn_bg_blue);
             (*btn)->SetBorderColor(wxColour(68, 121, 251)); // y96
             (*btn)->SetTextColor(wxColour("#FFFFFE"));
         } else {

@@ -92,8 +92,8 @@ body
 
 #Login1
 {
-	height:36px;
-	line-height: 36px;
+	height:48px;
+	line-height: 48px;
 	display: flex;
 	justify-content: center;
 	user-select: none;
@@ -132,7 +132,7 @@ body
 
 #QDTIcon
 {
-	height:36px;
+	height:48px;
 }
 
 #Login2
@@ -147,6 +147,8 @@ body
 #UserAvatarIcon
 {
 	height: 85px;
+	border-radius: 50%;
+	overflow: hidden;
 }
 
 #UserName

@@ -136,11 +136,11 @@ PingCodeBindDialog::PingCodeBindDialog(Plater* plater /*= nullptr*/)
     m_sizer_button->Add(0, 0, 1, wxEXPAND, 5);
     m_button_bind = new Button(request_bind_panel, _L("Confirm"));
 
-    StateColor btn_bg_green(std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Disabled),
+    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Disabled),
         std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed),
         std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
         std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
-    m_button_bind->SetBackgroundColor(btn_bg_green);
+    m_button_bind->SetBackgroundColor(btn_bg_blue);
     m_button_bind->SetBorderColor(*wxWHITE);
     m_button_bind->SetTextColor(wxColour("#FFFFFE"));
     m_button_bind->SetSize(BIND_DIALOG_BUTTON_SIZE);
@@ -676,11 +676,11 @@ PingCodeBindDialog::~PingCodeBindDialog() {
      m_sizer_button->Add(0, 0, 1, wxEXPAND, 5);
      m_button_bind = new Button(button_panel, _L("Confirm"));
 
-     StateColor btn_bg_green(std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Disabled),
+     StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Disabled),
          std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed),
          std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
          std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
-     m_button_bind->SetBackgroundColor(btn_bg_green);
+     m_button_bind->SetBackgroundColor(btn_bg_blue);
      m_button_bind->SetBorderColor(*wxWHITE);
      m_button_bind->SetTextColor(wxColour("#FFFFFE"));
      m_button_bind->SetSize(BIND_DIALOG_BUTTON_SIZE);
@@ -1032,9 +1032,9 @@ UnBindMachineDialog::UnBindMachineDialog(Plater *plater /*= nullptr*/)
 
      m_sizer_button->Add(0, 0, 1, wxEXPAND, 5);
      m_button_unbind = new Button(this, _L("Confirm"));
-     StateColor btn_bg_green(std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+     StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
                              std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
-     m_button_unbind->SetBackgroundColor(btn_bg_green);
+     m_button_unbind->SetBackgroundColor(btn_bg_blue);
      m_button_unbind->SetBorderColor(wxColour(68, 121, 251));
      m_button_unbind->SetTextColor(wxColour("#FFFFFE"));
      m_button_unbind->SetSize(BIND_DIALOG_BUTTON_SIZE);

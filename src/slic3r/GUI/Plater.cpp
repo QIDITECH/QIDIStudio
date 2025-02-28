@@ -7471,6 +7471,8 @@ void Plater::priv::on_action_print_plate(SimpleEvent&)
         std::string send_apikey = dlg->get_machine_apikey();
         std::string project_name = dlg->get_project_name();
         bool is_net_machine = dlg->GetMachineNetMode();
+        std::string link_url = "";
+        bool is_special_machine = false;
 
         if (project_name.find(".gcode") == std::string::npos)
         {
@@ -7484,12 +7486,8 @@ void Plater::priv::on_action_print_plate(SimpleEvent&)
             upload_job.create_time = std::chrono::system_clock::now();
             upload_job.sendinginterval = m_sending_interval;
             export_gcode(fs::path(), false, std::move(upload_job));
-            std::string link_url = dlg->GetMachineLinkUrl();
-            bool is_special_machine = dlg->isSpecialMachine();
-            wxGetApp().mainframe->m_printer_view->FormatNetUrl(link_url, show_ip, is_special_machine);
-            wxGetApp().mainframe->m_printer_view->SetToggleBar(is_net_machine);
-            wxGetApp().app_config->set("machine_list_net", "1");
-            wxGetApp().mainframe->m_printer_view->ShowNetPrinterButton();
+            link_url = dlg->GetMachineLinkUrl();
+            is_special_machine = dlg->isSpecialMachine();
         }
         else
         {
@@ -7503,14 +7501,23 @@ void Plater::priv::on_action_print_plate(SimpleEvent&)
             upload_job.create_time = std::chrono::system_clock::now();
             upload_job.sendinginterval = m_sending_interval;
             export_gcode(fs::path(), false, std::move(upload_job));
-            wxGetApp().mainframe->m_printer_view->FormatUrl(send_ip);
-            wxGetApp().mainframe->m_printer_view->SetToggleBar(is_net_machine);
-            wxGetApp().app_config->set("machine_list_net", "0");
-            wxGetApp().mainframe->m_printer_view->ShowLocalPrinterButton();
         }
         bool is_switch_to_device = wxGetApp().app_config->get("switch to device tab after upload") == "true" ? true : false;
-        if (is_switch_to_device)
+        if (is_switch_to_device) {
+            if (is_net_machine) {
+                wxGetApp().mainframe->m_printer_view->FormatNetUrl(link_url, show_ip, is_special_machine);
+                wxGetApp().mainframe->m_printer_view->SetToggleBar(is_net_machine);
+                wxGetApp().app_config->set("machine_list_net", "1");
+                wxGetApp().mainframe->m_printer_view->ShowNetPrinterButton();
+            }
+            else {
+                wxGetApp().mainframe->m_printer_view->FormatUrl(send_ip);
+                wxGetApp().mainframe->m_printer_view->SetToggleBar(is_net_machine);
+                wxGetApp().app_config->set("machine_list_net", "0");
+                wxGetApp().mainframe->m_printer_view->ShowLocalPrinterButton();
+            }
             wxGetApp().mainframe->select_tab(size_t(3));
+        }
     }
     //if (!m_select_machine_dlg) m_select_machine_dlg = new SelectMachineDialog(q);
     //m_select_machine_dlg->set_print_type(PrintFromType::FROM_NORMAL);
@@ -7765,6 +7772,8 @@ void Plater::priv::on_action_export_to_sdcard(SimpleEvent&)
         std::string send_apikey = dlg->get_machine_apikey();
         std::string project_name = dlg->get_project_name();
         bool is_net_machine = dlg->GetMachineNetMode();
+        std::string link_url = "";
+        bool is_special_machine = false;
 
         if (project_name.find(".gcode") == std::string::npos)
         {
@@ -7778,12 +7787,8 @@ void Plater::priv::on_action_export_to_sdcard(SimpleEvent&)
             upload_job.create_time = std::chrono::system_clock::now();
             upload_job.sendinginterval = m_sending_interval;
             export_gcode(fs::path(), false, std::move(upload_job));
-            std::string link_url = dlg->GetMachineLinkUrl();
-            bool is_special_machine = dlg->isSpecialMachine();
-            wxGetApp().mainframe->m_printer_view->FormatNetUrl(link_url, show_ip, is_special_machine);
-            wxGetApp().mainframe->m_printer_view->SetToggleBar(is_net_machine);
-            wxGetApp().app_config->set("machine_list_net", "1");
-            wxGetApp().mainframe->m_printer_view->ShowNetPrinterButton();
+            link_url = dlg->GetMachineLinkUrl();
+            is_special_machine = dlg->isSpecialMachine();
         }
         else
         {
@@ -7797,15 +7802,23 @@ void Plater::priv::on_action_export_to_sdcard(SimpleEvent&)
             upload_job.create_time = std::chrono::system_clock::now();
             upload_job.sendinginterval = m_sending_interval;
             export_gcode(fs::path(), false, std::move(upload_job));
-            wxGetApp().mainframe->m_printer_view->FormatUrl(send_ip);
-            wxGetApp().mainframe->m_printer_view->SetToggleBar(is_net_machine);
-            wxGetApp().app_config->set("machine_list_net", "0");
-            wxGetApp().mainframe->m_printer_view->ShowLocalPrinterButton();
         }
         bool is_switch_to_device = wxGetApp().app_config->get("switch to device tab after upload") == "true" ? true : false;
-        if (is_switch_to_device)
+        if (is_switch_to_device) {
+            if (is_net_machine) {
+                wxGetApp().mainframe->m_printer_view->FormatNetUrl(link_url, show_ip, is_special_machine);
+                wxGetApp().mainframe->m_printer_view->SetToggleBar(is_net_machine);
+                wxGetApp().app_config->set("machine_list_net", "1");
+                wxGetApp().mainframe->m_printer_view->ShowNetPrinterButton();
+            }
+            else {
+                wxGetApp().mainframe->m_printer_view->FormatUrl(send_ip);
+                wxGetApp().mainframe->m_printer_view->SetToggleBar(is_net_machine);
+                wxGetApp().app_config->set("machine_list_net", "0");
+                wxGetApp().mainframe->m_printer_view->ShowLocalPrinterButton();
+            }
             wxGetApp().mainframe->select_tab(size_t(3));
-            
+        }
     }
 }
 
@@ -11324,10 +11337,10 @@ ProjectDropDialog::ProjectDropDialog(const std::string &filename)
 
     m_confirm = new Button(this, _L("OK"));
     // y96
-    StateColor btn_bg_green(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
                             std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
 
-    m_confirm->SetBackgroundColor(btn_bg_green);
+    m_confirm->SetBackgroundColor(btn_bg_blue);
     m_confirm->SetBorderColor(wxColour(68, 121, 251));
     m_confirm->SetTextColor(wxColour("#FFFFFE"));
     m_confirm->SetSize(PROJECT_DROP_DIALOG_BUTTON_SIZE);

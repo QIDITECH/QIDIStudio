@@ -4170,13 +4170,13 @@ std::string GUI_App::handle_web_request(std::string cmd)
                 #endif
             }
             else if (command_str.compare("homepage_login_or_register") == 0) {
-                //Check Plugin
-                bool bValid = is_compatibility_version();
-                if (!bValid) {
-                    CallAfter([this] { handle_web_request("{\"sequence_id\":1,\"command\":\"homepage_need_networkplugin\"}");
-                        });
-                    return "";
-                }
+                ////Check Plugin
+                //bool bValid = is_compatibility_version();
+                //if (!bValid) {
+                //    CallAfter([this] { handle_web_request("{\"sequence_id\":1,\"command\":\"homepage_need_networkplugin\"}");
+                //        });
+                //    return "";
+                //}
 
                 if (root.get_child_optional("makerworld_model_id") != boost::none) {
                     boost::optional<std::string> ModelID      = root.get_optional<std::string>("makerworld_model_id");

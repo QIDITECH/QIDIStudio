@@ -146,7 +146,7 @@ public:
     void msw_rescale();
 
 
-    StateColor btn_bg_green;
+    StateColor btn_bg_blue;
     StateColor btn_bg_white;
     Label* m_staticText_release_note {nullptr};
     wxBoxSizer* m_sizer_main;

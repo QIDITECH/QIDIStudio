@@ -147,7 +147,7 @@ protected:
     void update_widgets();
 
 protected:
-    StateColor          m_btn_bg_green;
+    StateColor          m_btn_bg_blue;
     StateColor          m_btn_bg_gray;
     wxPanel *           m_panel_normal;
     wxPanel *           m_panel_SN;

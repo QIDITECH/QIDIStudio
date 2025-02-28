@@ -350,13 +350,13 @@ void SavePresetDialog::build(std::vector<Preset::Type> types, std::string suffix
 
     m_confirm = new Button(this, _L("OK"));
     // y96
-    StateColor btn_bg_green(std::pair<wxColour, int>(wxColour(144, 144, 144), StateColor::Disabled),
+    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(144, 144, 144), StateColor::Disabled),
                             std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed),
                             std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
                             std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     StateColor btn_br_green(std::pair<wxColour, int>(wxColour(144, 144, 144), StateColor::Disabled),
                             std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
-    m_confirm->SetBackgroundColor(btn_bg_green);
+    m_confirm->SetBackgroundColor(btn_bg_blue);
     m_confirm->SetBorderColor(btn_br_green);
     m_confirm->SetTextColor(wxColour("#FFFFFE"));
     m_confirm->SetMinSize(SAVE_PRESET_DIALOG_BUTTON_SIZE);

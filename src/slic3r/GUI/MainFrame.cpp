@@ -693,10 +693,6 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
     //53
     Bind(wxEVT_ICONIZE, [this](wxIconizeEvent& event) {
         if (event.IsIconized()) {
-            if (m_printer_view->GetHasLoadUrl()) {
-                printer_view_ip = m_printer_view->GetWebIp();
-                printer_view_url = m_printer_view->GetWeburl();
-            }
             wxString url;
             if (m_printer_view->GetNetMode()) {
                 url = wxString::Format("file://%s/web/qidi/link_missing_connection.html", from_u8(resources_dir()));
@@ -1110,11 +1106,6 @@ void MainFrame::init_tabpanel()
         }
         //y53
         else if (new_sel != tpMonitor){
-            if(m_printer_view->GetHasLoadUrl()){
-                printer_view_ip = m_printer_view->GetWebIp();
-                printer_view_url = m_printer_view->GetWeburl();
-                is_net_url = m_printer_view->IsNetUrl();
-            }
             wxString url;
             if (m_printer_view->GetNetMode()) {
                 url = wxString::Format("file://%s/web/qidi/link_missing_connection.html", from_u8(resources_dir()));
