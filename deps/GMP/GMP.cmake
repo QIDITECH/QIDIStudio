@@ -43,7 +43,7 @@ else ()
     endif ()
 
     ExternalProject_Add(dep_GMP
-        URL https://github.com/qiditech/gmp/archive/refs/tags/6.2.1.tar.gz
+        URL https://github.com/bambulab/gmp/archive/refs/tags/6.2.1.tar.gz
         URL_HASH SHA256=705ae57ee2014b2c6fc0f572c85ee43276b99b6b256ee16c1a9d3a8c4e3609d5
         DOWNLOAD_DIR ${DEP_DOWNLOAD_DIR}/GMP
         BUILD_IN_SOURCE ON 
