@@ -24,6 +24,7 @@
 // QDS: new infill pattern header
 #include "FillConcentricInternal.hpp"
 #include "FillCrossHatch.hpp"
+#include "FillFloatingConcentric.hpp"
 
 // #define INFILL_DEBUG_OUTPUT
 
@@ -56,6 +57,9 @@ Fill* Fill::new_from_type(const InfillPattern type)
     case ipConcentricInternal:  return new FillConcentricInternal();
     // QDS: for bottom and top surface only
     case ipMonotonicLine:       return new FillMonotonicLineWGapFill();
+    case ipZigZag:              return new FillZigZag();
+    case ipCrossZag:            return new FillCrossZag();
+    case ipFloatingConcentric:  return new FillFloatingConcentric();
     default: throw Slic3r::InvalidArgument("unknown type");
     }
 }
@@ -176,8 +180,8 @@ coord_t Fill::_adjust_solid_spacing(const coord_t width, const coord_t distance)
     assert(distance > 0);
     // floor(width / distance)
     const auto  number_of_intervals = coord_t((width - EPSILON) / distance);
-    coord_t     distance_new        = (number_of_intervals == 0) ? 
-        distance : 
+    coord_t     distance_new        = (number_of_intervals == 0) ?
+        distance :
         coord_t((width - EPSILON) / number_of_intervals);
     const coordf_t factor = coordf_t(distance_new) / coordf_t(distance);
     assert(factor > 1. - 1e-5);
@@ -203,8 +207,8 @@ std::pair<float, Point> Fill::_infill_direction(const Surface *surface) const
 
     // Bounding box is the bounding box of a perl object Slic3r::Print::Object (c++ object Slic3r::PrintObject)
     // The bounding box is only undefined in unit tests.
-    Point out_shift = empty(this->bounding_box) ? 
-    	surface->expolygon.contour.bounding_box().center() : 
+    Point out_shift = empty(this->bounding_box) ?
+    	surface->expolygon.contour.bounding_box().center() :
         this->bounding_box.center();
 
 #if 0
@@ -1478,6 +1482,18 @@ BoundaryInfillGraph create_boundary_infill_graph(const Polylines &infill_ordered
     }
 
     return out;
+}
+
+// The extended bounding box of the whole object that covers any rotation of every layer.
+BoundingBox Fill::extended_object_bounding_box() const
+{
+    BoundingBox out = bounding_box;
+    out.merge(Point(out.min.y(), out.min.x()));
+    out.merge(Point(out.max.y(), out.max.x()));
+
+    // The bounding box is scaled by sqrt(2.) to ensure that the bounding box
+    // covers any possible rotations.
+    return out.scaled(sqrt(2.));
 }
 
 void Fill::connect_infill(Polylines &&infill_ordered, const std::vector<const Polygon*> &boundary_src, const BoundingBox &bbox, Polylines &polylines_out, const double spacing, const FillParams &params)

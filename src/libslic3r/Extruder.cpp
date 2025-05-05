@@ -3,8 +3,8 @@
 
 namespace Slic3r {
 
-double Extruder::m_share_E = 0.;
-double Extruder::m_share_retracted = 0.;
+std::vector<double> Extruder::m_share_E = {0.,0.};
+std::vector<double> Extruder::m_share_retracted = {0.,0.};
 
 Extruder::Extruder(unsigned int id, GCodeConfig *config, bool share_extruder) :
     m_id(id),
@@ -18,16 +18,25 @@ Extruder::Extruder(unsigned int id, GCodeConfig *config, bool share_extruder) :
     m_e_per_mm3 /= this->filament_crossection();
 }
 
+unsigned int Extruder::extruder_id() const
+{
+    assert(m_config);
+    if (m_id < m_config->filament_map.size()) {
+        return m_config->filament_map.get_at(m_id) - 1;
+    }
+    return 0;
+}
+
 double Extruder::extrude(double dE)
 {
     // QDS
     if (m_share_extruder) {
         if (m_config->use_relative_e_distances)
-            m_share_E = 0.;
-        m_share_E += dE;
+            m_share_E[extruder_id()] = 0.;
+        m_share_E[extruder_id()] += dE;
         m_absolute_E += dE;
         if (dE < 0.)
-            m_share_retracted -= dE;
+            m_share_retracted[extruder_id()] -= dE;
     } else {
         // in case of relative E distances we always reset to 0 before any output
         if (m_config->use_relative_e_distances)
@@ -52,12 +61,12 @@ double Extruder::retract(double length, double restart_extra)
     // QDS
     if (m_share_extruder) {
         if (m_config->use_relative_e_distances)
-            m_share_E = 0.;
-        double to_retract = std::max(0., length - m_share_retracted);
+            m_share_E[extruder_id()] = 0.;
+        double to_retract = std::max(0., length - m_share_retracted[extruder_id()]);
         if (to_retract > 0.) {
-            m_share_E             -= to_retract;
+            m_share_E[extruder_id()]             -= to_retract;
             m_absolute_E          -= to_retract;
-            m_share_retracted     += to_retract;
+            m_share_retracted[extruder_id()]     += to_retract;
         }
         return to_retract;
     } else {
@@ -79,9 +88,9 @@ double Extruder::unretract()
 {
     // QDS
     if (m_share_extruder) {
-        double dE = m_share_retracted;
+        double dE = m_share_retracted[extruder_id()];
         this->extrude(dE);
-        m_share_retracted     = 0.;
+        m_share_retracted[extruder_id()]     = 0.;
         return dE;
     } else {
         double dE = m_retracted + m_restart_extra;

@@ -50,12 +50,12 @@ using coordf_t = double;
 // for a trheshold in a difference of radians,
 // for a threshold of a cross product of two non-normalized vectors etc.
 static constexpr double EPSILON = 1e-4;
-// Scaling factor for a conversion from coord_t to coordf_t: 10e-6
+// Scaling factor for a conversion from coord_t to coordf_t: 1e-5
 // This scaling generates a following fixed point representation with for a 32bit integer:
 // 0..4294mm with 1nm resolution
 // int32_t fits an interval of (-2147.48mm, +2147.48mm)
 // with int64_t we don't have to worry anymore about the size of the int.
-static constexpr double SCALING_FACTOR = 0.000001;
+static constexpr double SCALING_FACTOR = 0.00001;
 static constexpr double PI = 3.141592653589793238;
 #define POLY_SIDE_COUNT 24 // for brim ear circle
 // When extruding a closed loop, the loop is interrupted and shortened a bit to reduce the seam.
