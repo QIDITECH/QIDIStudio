@@ -1,16 +1,18 @@
 {
     "type": "filament",
-	"filament_id": "GFL99",
+    "filament_id": "GFL99",
     "setting_id": "GFSL99",
     "name": "Bambu PLA@Q-Series",
     "from": "system",
     "instantiation": "false",
     "inherits": "fdm_filament_common",
+    "filament_adhesiveness_category": ["100"],
     "filament_type": ["PLA"],
     "filament_vendor": ["Bambu Lab"],
     "additional_cooling_fan_speed": ["100"],
     "nozzle_temperature_range_high": ["240"],
     "nozzle_temperature_range_low": ["190"],
+    "overhang_fan_threshold": ["50%"],
     "temperature_vitrification": ["45"],
-	"compatible_printers": []
+    "compatible_printers": []
 }

@@ -1,11 +1,12 @@
 {
     "type": "filament",
-    "filament_id": "GFU99",
+    "filament_id": "QD_0_0_50",
     "setting_id": "GFSR99",
     "name": "Generic TPU 95A@X4",
     "from": "system",
     "instantiation": "false",
     "inherits": "fdm_filament_common",
+    "filament_adhesiveness_category": ["600"],
     "filament_density": ["1.21"],
     "filament_flow_ratio": ["1"],
     "filament_max_volumetric_speed": ["4"],
@@ -17,5 +18,5 @@
     "nozzle_temperature": ["230"],
     "pressure_advance": ["0.1"],
     "temperature_vitrification": ["30"],
-	"compatible_printers": []
+    "compatible_printers": []
 }

@@ -6,12 +6,15 @@
     "from": "system",
     "instantiation": "false",
     "inherits": "fdm_filament_common",
+    "box_temperature_range_high": ["65"],
     "fan_max_speed": ["40"],
     "fan_min_speed": ["20"],
+    "filament_adhesiveness_category": ["400"],
     "filament_density": ["1.21"],
     "filament_flow_ratio": ["0.96"],
     "filament_max_volumetric_speed": ["4"],
     "filament_type": ["UltraPA"],
+    "impact_strength_z":["5.7"],
     "nozzle_temperature_initial_layer": ["280"],
     "nozzle_temperature_range_high": ["290"],
     "nozzle_temperature_range_low": ["250"],
@@ -21,5 +24,5 @@
     "temperature_vitrification": ["170"],
     "textured_plate_temp_initial_layer" : ["80"],
     "textured_plate_temp" : ["80"],
-	"compatible_printers": []
+    "compatible_printers": []
 }

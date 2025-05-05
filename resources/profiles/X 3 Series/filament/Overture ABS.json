@@ -6,12 +6,12 @@
     "from": "system",
     "instantiation": "false",
     "inherits": "fdm_filament_common",
+    "filament_adhesiveness_category": ["200"],
     "filament_vendor": ["Overture"],
     "additional_cooling_fan_speed_unseal": ["0"],
     "additional_cooling_fan_speed": ["0"],
     "chamber_temperatures": ["55"],
     "close_fan_the_first_x_layers": ["3"],
-    "enable_overhang_bridge_fan": ["1"],
     "fan_max_speed": ["80"],
     "fan_min_speed": ["20"],
     "filament_density": ["1.12"],
@@ -29,5 +29,5 @@
     "temperature_vitrification": ["100"],
     "textured_plate_temp_initial_layer" : ["90"],
     "textured_plate_temp" : ["90"],
-	"compatible_printers": []
+    "compatible_printers": []
 }

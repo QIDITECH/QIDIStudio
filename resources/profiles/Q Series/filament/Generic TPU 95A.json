@@ -8,6 +8,7 @@
     "inherits": "fdm_filament_common",
     "additional_cooling_fan_speed_unseal": ["0"],
     "additional_cooling_fan_speed": ["0"],
+    "filament_adhesiveness_category": ["600"],
     "filament_density": ["1.21"],
     "filament_flow_ratio": ["1"],
     "filament_max_volumetric_speed": ["4"],
@@ -20,5 +21,5 @@
     "pressure_advance": ["0.1"],
     "slow_down_layer_time": ["8"],
     "temperature_vitrification": ["30"],
-	"compatible_printers": []
+    "compatible_printers": []
 }

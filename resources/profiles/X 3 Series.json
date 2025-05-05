@@ -1,6 +1,6 @@
 {
     "name": "X-3-Series",
-    "version": "01.10.02.76",
+    "version": "02.00.03.54",
     "force_update": "0",
     "description": "X-3-Series configurations",
     "machine_model_list": [
@@ -400,7 +400,7 @@
             "name": "Generic PLA+@X3",
             "sub_path": "filament/Generic PLA+.json"
         },
-		{
+        {
             "name": "QIDI PLA-CF@X3",
             "sub_path": "filament/QIDI PLA-CF.json"
         },
