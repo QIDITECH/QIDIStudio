@@ -2134,7 +2134,7 @@ bool ImGui::QDTBeginCombo(const char *label, const char *preview_value, ImGuiCom
     bool hovered, held;
     bool pressed = ButtonBehavior(frame_bb, id, &hovered, &held);
 
-    bool push_color_count = 0;
+    unsigned int push_color_count = 0;
     if (hovered || g.ActiveId == id) {
         ImGui::PushStyleColor(ImGuiCol_Border, GetColorU32(ImGuiCol_BorderActive));
         push_color_count = 1;
@@ -4170,7 +4170,7 @@ bool ImGui::QDTInputScalar(const char *label, ImGuiDataType data_type, void *p_d
     // We are only allowed to access the state if we are already the active widget.
     ImGuiInputTextState *state = GetInputTextState(id);
 
-    bool push_color_count = 0;
+    unsigned int push_color_count = 0;
     if (hovered || g.ActiveId == id) {
         ImGui::PushStyleColor(ImGuiCol_Border, GetColorU32(ImGuiCol_BorderActive));
         push_color_count = 1;
