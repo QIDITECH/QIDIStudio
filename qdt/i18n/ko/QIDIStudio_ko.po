@@ -14093,3 +14093,21 @@ msgstr "BOX 인쇄 슬롯 설정에 실패했습니다..."
 
 msgid "This Printer has not connect the box, please check."
 msgstr "이 프린터는 BOX에 연결되지 않았습니다. 확인해 주세요."
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you can click it to modify"  
+msgstr "상단 영역: 원본\n하단 영역: 박스 내 필라멘트\n클릭하여 수정 가능"  
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you cannot click it to modify"  
+msgstr "상단 영역: 원본\n하단 영역: 박스 내 필라멘트\n클릭하여 수정 불가"
+
+msgid "BOX Slots"
+msgstr "BOX 슬롯"
+
+msgid "Use BOX"
+msgstr "BOX 사용"
+
+msgid "The filament information in the BOX has changed. Please resynchronize it."
+msgstr "BOX 내 필라멘트 정보가 변경되었습니다. 다시 동기화해 주세요."
+
+msgid "BOX message has change"
+msgstr "BOX 메시지가 변경되었습니다"

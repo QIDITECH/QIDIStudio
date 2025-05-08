@@ -16232,3 +16232,21 @@ msgstr "Misslyckades att ställa in BOX:s utskriftsfack..."
 
 msgid "This Printer has not connect the box, please check."
 msgstr "Denna skrivare är inte ansluten till BOX, kontrollera."
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you can click it to modify"  
+msgstr "Övre delen: Original\nUndre delen: Filament i lådan\nOch du kan klicka för att ändra"  
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you cannot click it to modify"  
+msgstr "Övre delen: Original\nUndre delen: Filament i lådan\nOch du kan inte klicka för att ändra"
+
+msgid "BOX Slots"
+msgstr "BOX-platser"
+
+msgid "Use BOX"
+msgstr "Använd BOX"
+
+msgid "The filament information in the BOX has changed. Please resynchronize it."
+msgstr "Filamentinformationen i BOX har ändrats. Vänligen synkronisera om den."
+
+msgid "BOX message has change"
+msgstr "BOX-meddelandet har ändrats"

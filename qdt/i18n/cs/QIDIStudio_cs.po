@@ -14627,3 +14627,21 @@ msgstr "Nastavení tiskového slotu BOXu selhalo..."
 
 msgid "This Printer has not connect the box, please check."
 msgstr "Tato tiskárna není připojena k BOXu, prosím zkontrolujte."
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you can click it to modify"
+msgstr "Horní polovina:  Originál\nDolní polovina:  Vlákno v boxu\nA můžete na to kliknout pro úpravu"
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you cannot click it to modify"
+msgstr "Horní polovina:  Originál\nDolní polovina:  Vlákno v boxu\nA nelze na to kliknout pro úpravu"
+
+msgid "BOX Slots"
+msgstr "BOX Sloty"
+
+msgid "Use BOX"
+msgstr "Použít BOX"
+
+msgid "The filament information in the BOX has changed. Please resynchronize it."
+msgstr "Informace o filamentu v BOXu se změnily. Prosím, proveďte jejich resynchronizaci."
+
+msgid "BOX message has change"
+msgstr "Zpráva v BOXu byla změněna."

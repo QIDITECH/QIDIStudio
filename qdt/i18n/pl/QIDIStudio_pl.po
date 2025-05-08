@@ -16117,3 +16117,21 @@ msgstr "Nie udało się ustawić gniazda drukującego BOX-a..."
 
 msgid "This Printer has not connect the box, please check."
 msgstr "Ta drukarka nie jest podłączona do BOX-a, proszę sprawdzić."
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you can click it to modify"  
+msgstr "Górna część: Oryginał\nDolna część: Filament w pudełku\nMożesz kliknąć, aby zmodyfikować"  
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you cannot click it to modify"  
+msgstr "Górna część: Oryginał\nDolna część: Filament w pudełku\nNie możesz kliknąć, aby zmodyfikować"
+
+msgid "BOX Slots"
+msgstr "Gniazda BOX"
+
+msgid "Use BOX"
+msgstr "Użyj BOX"
+
+msgid "The filament information in the BOX has changed. Please resynchronize it."
+msgstr "Informacje o filamentach w BOX-ie uległy zmianie. Proszę je zsynchronizować ponownie."
+
+msgid "BOX message has change"
+msgstr "Komunikat BOX-a został zmieniony"

@@ -16149,3 +16149,21 @@ msgstr "BOX印刷スロットの設定に失敗しました..."
 
 msgid "This Printer has not connect the box, please check."
 msgstr "このプリンターはBOXに接続されていません。確認してください。"
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you can click it to modify"  
+msgstr "上半分：オリジナル\n下半分：ボックス内フィラメント\nクリックして編集可能"  
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you cannot click it to modify"  
+msgstr "上半分：オリジナル\n下半分：ボックス内フィラメント\nクリックして編集不可"
+
+msgid "BOX Slots"
+msgstr "BOXスロット"
+
+msgid "Use BOX"
+msgstr "BOXを使用"
+
+msgid "The filament information in the BOX has changed. Please resynchronize it."
+msgstr "BOX内のフィラメント情報が変更されました。再同期してください。"
+
+msgid "BOX message has change"
+msgstr "BOXメッセージが変更されました"

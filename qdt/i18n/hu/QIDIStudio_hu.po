@@ -16212,3 +16212,21 @@ msgstr "A BOX nyomtatási rekeszének beállítása sikertelen..."
 
 msgid "This Printer has not connect the box, please check."
 msgstr "Ez a nyomtató nincs csatlakoztatva a BOX-hoz, kérjük ellenőrizze."
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you can click it to modify"  
+msgstr "Felső rész: Eredeti\nAlsó rész: Filament a dobozban\nÉs rákattinthat a módosításhoz"  
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you cannot click it to modify"  
+msgstr "Felső rész: Eredeti\nAlsó rész: Filament a dobozban\nÉs nem kattinthat rá a módosításhoz"
+
+msgid "BOX Slots"
+msgstr "BOX helyek"
+
+msgid "Use BOX"
+msgstr "BOX használata"
+
+msgid "The filament information in the BOX has changed. Please resynchronize it."
+msgstr "A BOX-ban lévő filament információ megváltozott. Kérjük, szinkronizálja újra."
+
+msgid "BOX message has change"
+msgstr "A BOX üzenet megváltozott"

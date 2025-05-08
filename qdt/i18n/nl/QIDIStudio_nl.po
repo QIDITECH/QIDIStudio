@@ -16212,3 +16212,21 @@ msgstr "Instellen BOX-printvak mislukt..."
 
 msgid "This Printer has not connect the box, please check."
 msgstr "Deze printer is niet verbonden met de BOX, controleer dit."
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you can click it to modify"  
+msgstr "Bovenste helft: Origineel\nOnderste helft: Filament in Doos\nEn u kunt erop klikken om aan te passen"  
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you cannot click it to modify"  
+msgstr "Bovenste helft: Origineel\nOnderste helft: Filament in Doos\nEn u kunt er niet op klikken om aan te passen"
+
+msgid "BOX Slots"
+msgstr "BOX-vakken"
+
+msgid "Use BOX"
+msgstr "BOX gebruiken"
+
+msgid "The filament information in the BOX has changed. Please resynchronize it."
+msgstr "De filamentinformatie in de BOX is gewijzigd. Synchroniseer deze opnieuw."
+
+msgid "BOX message has change"
+msgstr "BOX-bericht is gewijzigd"

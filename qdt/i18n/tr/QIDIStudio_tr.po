@@ -14395,3 +14395,21 @@ msgstr "BOX yazdırma yuvası ayarlanamadı..."
 
 msgid "This Printer has not connect the box, please check."
 msgstr "Bu yazıcı BOX'a bağlı değil, lütfen kontrol edin."
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you can click it to modify"  
+msgstr "Üst kısım: Orijinal\nAlt kısım: Kutudaki Filament\nVe değiştirmek için tıklayabilirsiniz"  
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you cannot click it to modify"  
+msgstr "Üst kısım: Orijinal\nAlt kısım: Kutudaki Filament\nVe değiştirmek için tıklayamazsınız"
+
+msgid "BOX Slots"
+msgstr "BOX Yuvaları"
+
+msgid "Use BOX"
+msgstr "BOX Kullan"
+
+msgid "The filament information in the BOX has changed. Please resynchronize it."
+msgstr "BOX içindeki filament bilgisi değişti. Lütfen yeniden senkronize edin."
+
+msgid "BOX message has change"
+msgstr "BOX mesajı değişti"

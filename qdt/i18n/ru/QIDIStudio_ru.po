@@ -14178,3 +14178,21 @@ msgstr "Не удалось настроить слот для печати BOX.
 
 msgid "This Printer has not connect the box, please check."
 msgstr "Этот принтер не подключен к BOX, проверьте соединение."
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you can click it to modify"  
+msgstr "Верхняя часть: Оригинал\nНижняя часть: Филамент в коробке\nМожно нажать для изменения"  
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you cannot click it to modify"  
+msgstr "Верхняя часть: Оригинал\nНижняя часть: Филамент в коробке\nНельзя нажать для изменения"
+
+msgid "BOX Slots"
+msgstr "Слоты BOX"
+
+msgid "Use BOX"
+msgstr "Использовать BOX"
+
+msgid "The filament information in the BOX has changed. Please resynchronize it."
+msgstr "Информация о филаменте в BOX была изменена. Пожалуйста, выполните повторную синхронизацию."
+
+msgid "BOX message has change"
+msgstr "Сообщение BOX изменено"

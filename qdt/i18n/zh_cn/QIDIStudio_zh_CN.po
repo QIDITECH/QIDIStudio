@@ -20011,3 +20011,21 @@ msgstr "设置BOX打印槽位失败..."
 
 msgid "This Printer has not connect the box, please check."
 msgstr "该打印机未连接BOX，请检查。"
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you can click it to modify"  
+msgstr "上半部分：原始图像\n下半部分：盒中耗材\n可点击进行修改"  
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you cannot click it to modify"  
+msgstr "上半部分：原始图像\n下半部分：盒中耗材\n不可点击修改"
+
+msgid "BOX Slots"
+msgstr "BOX插槽"
+
+msgid "Use BOX"
+msgstr "使用BOX"
+
+msgid "The filament information in the BOX has changed. Please resynchronize it."
+msgstr "BOX中的耗材信息已变更，请重新同步"
+
+msgid "BOX message has change"
+msgstr "BOX消息已更新"

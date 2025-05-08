@@ -16218,3 +16218,21 @@ msgstr "Error al configurar el compartimento de impresión de la BOX..."
 
 msgid "This Printer has not connect the box, please check."
 msgstr "Esta impresora no está conectada a la BOX, por favor verifique."
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you can click it to modify"  
+msgstr "Mitad superior: Original\nMitad inferior: Filamento en Caja\nY puedes hacer clic para modificarlo"  
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you cannot click it to modify"  
+msgstr "Mitad superior: Original\nMitad inferior: Filamento en Caja\nY no puedes hacer clic para modificarlo"
+
+msgid "BOX Slots"
+msgstr "Ranuras BOX"
+
+msgid "Use BOX"
+msgstr "Usar BOX"
+
+msgid "The filament information in the BOX has changed. Please resynchronize it."
+msgstr "La información del filamento en la BOX ha cambiado. Por favor, resincronícela."
+
+msgid "BOX message has change"
+msgstr "El mensaje de la BOX ha cambiado"

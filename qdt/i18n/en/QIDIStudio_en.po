@@ -16035,3 +16035,21 @@ msgstr ""
 
 msgid "This Printer has not connect the box, please check."
 msgstr ""
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you can click it to modify"
+msgstr ""
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you cannot click it to modify"
+msgstr ""
+
+msgid "BOX Slots"
+msgstr ""
+
+msgid "Use BOX"
+msgstr ""
+
+msgid "The filament information in the BOX has changed. Please resynchronize it."
+msgstr ""
+
+msgid "BOX message has change"
+msgstr ""

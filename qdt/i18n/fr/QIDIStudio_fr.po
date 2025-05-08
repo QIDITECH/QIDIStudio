@@ -16170,3 +16170,21 @@ msgstr "Échec de la configuration du compartiment d'impression de la BOÎTE..."
 
 msgid "This Printer has not connect the box, please check."
 msgstr "Cette imprimante n'est pas connectée à la BOÎTE, veuillez vérifier."
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you can click it to modify"  
+msgstr "Partie supérieure : Original\nPartie inférieure : Filament en Boîte\nEt vous pouvez cliquer pour modifier"  
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you cannot click it to modify"  
+msgstr "Partie supérieure : Original\nPartie inférieure : Filament en Boîte\nEt vous ne pouvez pas cliquer pour modifier"
+
+msgid "BOX Slots"
+msgstr "Emplacements BOX"
+
+msgid "Use BOX"
+msgstr "Utiliser BOX"
+
+msgid "The filament information in the BOX has changed. Please resynchronize it."
+msgstr "Les informations du filament dans la BOX ont été modifiées. Veuillez les resynchroniser."
+
+msgid "BOX message has change"
+msgstr "Le message de la BOX a été modifié"
