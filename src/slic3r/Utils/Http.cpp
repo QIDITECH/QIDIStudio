@@ -751,6 +751,12 @@ void Http::set_extra_headers(std::map<std::string, std::string> headers)
 	extra_headers.swap(headers);
 }
 
+std::map<std::string, std::string> Http::get_extra_headers()
+{
+    std::lock_guard<std::mutex> l(g_mutex);
+    return extra_headers;
+}
+
 bool Http::ca_file_supported()
 {
 	::CURL *curl = ::curl_easy_init();

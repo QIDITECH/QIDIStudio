@@ -280,7 +280,9 @@ void SideButton::dorender(wxDC& dc, wxDC& text_dc)
     auto text = GetLabel();
     if (!text.IsEmpty()) {
         pt.y += (rcContent.height - textSize.y) / 2;
-
+#ifdef __APPLE__
+        pt.y -= FromDIP(2);
+#endif
         text_dc.SetFont(GetFont());
         text_dc.SetTextForeground(text_color.colorForStates(states));
         text_dc.DrawText(text, pt);

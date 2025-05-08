@@ -233,7 +233,7 @@ wxString Field::get_tooltip_text(const wxString &default_string)
     }
 
 	if (tooltip.length() > 0)
-        tooltip_text = tooltip + "\n" + 
+        tooltip_text = tooltip + "\n" +
         _(L("parameter name")) + "\t: " + opt_id;
  #endif
 	return tooltip_text;
@@ -288,7 +288,7 @@ void Field::get_value_by_opt_type(wxString& str, const bool check_value/* = true
 
         const char dec_sep = is_decimal_separator_point() ? '.' : ',';
         const char dec_sep_alt = dec_sep == '.' ? ',' : '.';
-        // Replace the first incorrect separator in decimal number, 
+        // Replace the first incorrect separator in decimal number,
         // if this value doesn't "N/A" value in some language
         if (!is_na_value && str.Replace(dec_sep_alt, dec_sep, false) != 0)
             set_value(str, false);
@@ -360,7 +360,7 @@ void Field::get_value_by_opt_type(wxString& str, const bool check_value/* = true
     case coStrings:
     case coFloatOrPercent:
     case coFloatsOrPercents: {
-        if (m_opt.type == coFloatOrPercent && !str.IsEmpty() &&  str.Last() != '%')
+        if ((m_opt.type == coFloatOrPercent || m_opt.type == coFloatsOrPercents) && !str.IsEmpty() &&  str.Last() != '%')
         {
             double val = 0.;
             const char dec_sep = is_decimal_separator_point() ? '.' : ',';
@@ -835,7 +835,7 @@ void TextCtrl::propagate_value()
 void TextCtrl::set_value(const boost::any& value, bool change_event/* = false*/) {
     m_disable_change_event = !change_event;
     if (m_opt.nullable) {
-        const bool m_is_na_val = boost::any_cast<wxString>(value) == na_value();
+        const bool m_is_na_val = value.empty() || (boost::any_cast<wxString>(value) == na_value());
         if (!m_is_na_val)
             m_last_meaningful_value = value;
         text_ctrl()->SetValue(m_is_na_val ? na_value() :
@@ -945,7 +945,7 @@ void CheckBox::BUILD() {
 
 	// QDS: use ::CheckBox
     static Builder<::CheckBox> builder;
-	auto temp = builder.build(m_parent); 
+	auto temp = builder.build(m_parent);
 	if (!wxOSX) temp->SetBackgroundStyle(wxBG_STYLE_PAINT);
 	//temp->SetBackgroundColour(*wxWHITE);
 	temp->SetValue(check_value);
@@ -973,7 +973,7 @@ void CheckBox::set_value(const boost::any& value, bool change_event)
 {
     m_disable_change_event = !change_event;
     if (m_opt.nullable) {
-        m_is_na_val = boost::any_cast<unsigned char>(value) == ConfigOptionBoolsNullable::nil_value();
+        m_is_na_val = value.empty() || boost::any_cast<unsigned char>(value) == ConfigOptionBoolsNullable::nil_value();
         if (!m_is_na_val)
             m_last_meaningful_value = value;
         dynamic_cast<::CheckBox*>(window)->SetValue(m_is_na_val ? false : boost::any_cast<unsigned char>(value) != 0); // QDS
@@ -1096,8 +1096,8 @@ void SpinCtrl::BUILD() {
         propagate_value();
 	}), temp->GetId());
 
-    temp->Bind(wxEVT_SPINCTRL, ([this](wxCommandEvent e) {  propagate_value();  }), temp->GetId()); 
-    
+    temp->Bind(wxEVT_SPINCTRL, ([this](wxCommandEvent e) {  propagate_value();  }), temp->GetId());
+
     temp->Bind(wxEVT_TEXT_ENTER, ([this](wxCommandEvent & e)
     {
         e.Skip();
@@ -1167,7 +1167,7 @@ void SpinCtrl::propagate_value()
         }
 #endif
         auto ctrl = dynamic_cast<SpinInput *>(window);
-        if (m_value.empty() 
+        if (m_value.empty()
             ? !ctrl->GetTextCtrl()->GetLabel().IsEmpty()
             : ctrl->GetValue() != boost::any_cast<int>(m_value))
             on_change_field();
@@ -1250,7 +1250,7 @@ void Choice::BUILD()
     auto         dynamic_list = dynamic_lists.find(m_opt.opt_key);
     if (dynamic_list != dynamic_lists.end())
         m_list = dynamic_list->second;
-    if (m_opt.gui_type != ConfigOptionDef::GUIType::undefined && m_opt.gui_type != ConfigOptionDef::GUIType::select_open 
+    if (m_opt.gui_type != ConfigOptionDef::GUIType::undefined && m_opt.gui_type != ConfigOptionDef::GUIType::select_open
             && m_list == nullptr) {
         m_is_editable = true;
         static Builder<choice_ctrl> builder1;
@@ -1277,7 +1277,7 @@ void Choice::BUILD()
         opt_height = (double) temp->GetTextCtrl()->GetSize().GetHeight() / m_em_unit;
 
     // QDS
-    temp->SetTextLabel(m_opt.sidetext);
+    temp->SetTextLabel(_L(m_opt.sidetext));
     m_combine_side_text = true;
 
 #ifdef __WXGTK3__

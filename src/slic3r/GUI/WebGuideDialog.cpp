@@ -44,7 +44,7 @@ static wxString update_custom_filaments()
     json                                               m_CustomFilaments           = json::array();
     PresetBundle *                                     preset_bundle               = wxGetApp().preset_bundle;
     std::map<std::string, std::vector<Preset const *>> temp_filament_id_to_presets = preset_bundle->filaments.get_filament_presets();
-    
+
     std::vector<std::pair<std::string, std::string>>   need_sort;
     bool                                             need_delete_some_filament = false;
     for (std::pair<std::string, std::vector<Preset const *>> filament_id_to_presets : temp_filament_id_to_presets) {
@@ -68,7 +68,7 @@ static wxString update_custom_filaments()
                 auto filament_vendor = dynamic_cast<ConfigOptionStrings *>(const_cast<Preset *>(preset)->config.option("filament_vendor", false));
                 if (filament_vendor && filament_vendor->values.size() && filament_vendor->values[0] == "Generic") not_need_show = true;
             }
-            
+
             if (filament_name.empty()) {
                 std::string preset_name = preset->name;
                 size_t      index_at    = preset_name.find(" @");
@@ -109,7 +109,9 @@ GuideFrame::GuideFrame(GUI_App *pGUI, long style)
     // INI
     m_SectionName = "firstguide";
 //ZY2
-    //PrivacyUse    = true;
+    // m_PrivacyUse    = "";
+    // m_PrivacyUse  = wxGetApp().app_config->get(std::string(m_SectionName.mb_str()), "privacyuse");
+    // m_GuideFinish   = false;
     InstallNetplugin = false;
 
     m_MainPtr = pGUI;
@@ -128,7 +130,7 @@ GuideFrame::GuideFrame(GUI_App *pGUI, long style)
     }
     m_browser->Hide();
     m_browser->SetSize(0, 0);
-    
+
     SetSizer(topsizer);
 
     topsizer->Add(m_browser, wxSizerFlags().Expand().Proportion(1));
@@ -307,7 +309,7 @@ void GuideFrame::OnNavigationComplete(wxWebViewEvent &evt)
 
     m_browser->Show();
     Layout();
-    
+
     wxString NewUrl = evt.GetURL();
 
     UpdateState();
@@ -392,10 +394,14 @@ void GuideFrame::OnScriptMessage(wxWebViewEvent &evt)
             wxString strAction = j["data"]["action"];
 
             if (strAction == "agree") {
-                PrivacyUse = true;
+                m_PrivacyUse = "true";
+                wxGetApp().save_privacy_policy_history(true, "user_privacy_choice");
             } else {
-                PrivacyUse = false;
+                m_PrivacyUse = "false";
+                wxGetApp().save_privacy_policy_history(false, "user_privacy_choice");
             }
+
+            m_GuideFinish = true;
         }*/
         else if (strCmd == "request_userguide_profile") {
             json m_Res = json::object();
@@ -435,7 +441,7 @@ void GuideFrame::OnScriptMessage(wxWebViewEvent &evt)
                     wxString s1 = TmpModel["model"];
                     wxString s2 = OneSelect["model"];
                     if (s1.compare(s2) == 0) {
-                        m_ProfileJson["model"][m]["nozzle_selected"] = OneSelect["nozzle_diameter"];
+                        m_ProfileJson["model"][m]["nozzle_selected"] = m_ProfileJson["model"][m]["nozzle_diameter"];
                         break;
                     }
                 }
@@ -458,6 +464,11 @@ void GuideFrame::OnScriptMessage(wxWebViewEvent &evt)
             }
         }
         else if (strCmd == "user_guide_finish") {
+            if (wxGetApp().app_config) {
+                std::string last = wxGetApp().app_config->get(std::string(m_SectionName.mb_str()), "privacyuse");
+                //if (m_PrivacyUse != last)
+                //    wxGetApp().save_privacy_policy_history(m_PrivacyUse == "true", "user_guide");
+            }
             SaveProfile();
 
             std::string oldregion = m_ProfileJson["region"];
@@ -500,7 +511,7 @@ void GuideFrame::OnScriptMessage(wxWebViewEvent &evt)
             }
             else
                 InstallNetplugin = false;
-        } 
+        }
         else if (strCmd == "common_openurl")
         {
             std::string strUrl = j["url"];
@@ -512,7 +523,7 @@ void GuideFrame::OnScriptMessage(wxWebViewEvent &evt)
         BOOST_LOG_TRIVIAL(trace) << "GuideFrame::OnScriptMessage;Error:" << e.what();
     }
 
-    //wxString strAll = m_ProfileJson.dump(-1,' ',false, json::error_handler_t::ignore);
+    wxString strAll = m_ProfileJson.dump(-1,' ',false, json::error_handler_t::ignore);
 }
 
 void GuideFrame::RunScript(const wxString &javascript)
@@ -631,14 +642,16 @@ int GuideFrame::SaveProfile()
 {
     //privacy
 //ZY2
-    /*if (PrivacyUse == true) {
+    /*if (m_PrivacyUse == "true") {
         m_MainPtr->app_config->set(std::string(m_SectionName.mb_str()), "privacyuse", true);
-    } else
+    } 
+    else if (m_PrivacyUse == "false")
         m_MainPtr->app_config->set(std::string(m_SectionName.mb_str()), "privacyuse", false);*/
 
     m_MainPtr->app_config->set("region", m_Region);
 
     //finish
+    //if (m_GuideFinish)
     m_MainPtr->app_config->set(std::string(m_SectionName.mb_str()), "finish", "1");
 
     m_MainPtr->app_config->save();
@@ -866,11 +879,26 @@ bool GuideFrame::apply_config(AppConfig *app_config, PresetBundle *preset_bundle
         if (config == enabled_vendors.end())
             return std::string();
 
+        const VendorProfile & printer_profile = preset_bundle->vendors[bundle_name];
         const std::map<std::string, std::set<std::string>>& model_maps = config->second;
         //for (const auto& vendor_profile : preset_bundle->vendors) {
         for (const auto model_it: model_maps) {
             if (model_it.second.size() > 0) {
                 variant = *model_it.second.begin();
+                if (model_it.second.size() > 1) {
+                    if (printer_profile.models.size() > 0) {
+                        const VendorProfile::PrinterModel& printer_model = *std::find_if(printer_profile.models.begin(), printer_profile.models.end(),
+                            [id = model_it.first](auto& m) { return m.id == id; });
+                        for (auto& vt : printer_model.variants) {
+                            if (std::find(model_it.second.begin(), model_it.second.end(), vt.name) != model_it.second.end()) { variant = vt.name; break; }
+                        }
+                    }
+                    else if (variant != PresetBundle::QDT_DEFAULT_PRINTER_VARIANT){
+                        if (std::find(model_it.second.begin(), model_it.second.end(), PresetBundle::QDT_DEFAULT_PRINTER_VARIANT) != model_it.second.end())
+                            variant = PresetBundle::QDT_DEFAULT_PRINTER_VARIANT;
+                    }
+                }
+
                 const auto config_old = old_enabled_vendors.find(bundle_name);
                 if (config_old == old_enabled_vendors.end())
                     return model_it.first;
@@ -917,9 +945,14 @@ bool GuideFrame::apply_config(AppConfig *app_config, PresetBundle *preset_bundle
     app_config->set_section(AppConfig::SECTION_FILAMENTS, enabled_filaments);
     app_config->set_vendors(m_appconfig_new);
 
-    if (check_unsaved_preset_changes)
-        preset_bundle->load_presets(*app_config, ForwardCompatibilitySubstitutionRule::EnableSilentDisableSystem,
-                                    {preferred_model, preferred_variant, first_added_filament, std::string()});
+    if (check_unsaved_preset_changes) {
+        std::string errors_cummulative;
+        PresetsConfigSubstitutions preset_substitutions;
+        std::tie(preset_substitutions, errors_cummulative) = preset_bundle->load_presets(*app_config, ForwardCompatibilitySubstitutionRule::EnableSilentDisableSystem,
+            { preferred_model, preferred_variant, first_added_filament, std::string() });
+        if (!errors_cummulative.empty())
+            show_error(nullptr, errors_cummulative);
+    }
 
     // Update the selections from the compatibilty.
     preset_bundle->export_selections(*app_config);
@@ -927,7 +960,7 @@ bool GuideFrame::apply_config(AppConfig *app_config, PresetBundle *preset_bundle
     return true;
 }
 
-bool GuideFrame::run()
+bool GuideFrame::run(bool& config_applied)
 {
     //BOOST_LOG_TRIVIAL(info) << boost::format("Running ConfigWizard, reason: %1%, start_page: %2%") % reason % start_page;
 
@@ -953,8 +986,10 @@ bool GuideFrame::run()
     if (result == wxID_OK) {
         bool apply_keeped_changes = false;
         BOOST_LOG_TRIVIAL(info) << "GuideFrame returned ok";
-        if (! this->apply_config(app.app_config, app.preset_bundle, app.preset_updater, apply_keeped_changes))
+        if (! this->apply_config(app.app_config, app.preset_bundle, app.preset_updater, apply_keeped_changes)) {
+            config_applied = true;
             return false;
+        }
 
         if (apply_keeped_changes)
             app.apply_keeped_preset_modifications();
@@ -1000,7 +1035,6 @@ int GuideFrame::GetFilamentInfo( std::string VendorDirectory, json & pFilaList, 
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " GetFilamentInfo:VendorDirectory - " << VendorDirectory << ", Filepath - "<<filepath;
 
     try {
-        //1.9.7.52
         boost::nowide::ifstream ifs(filepath);
         json                    jLocal;
         ifs >> jLocal;
@@ -1033,7 +1067,6 @@ int GuideFrame::GetFilamentInfo( std::string VendorDirectory, json & pFilaList, 
 
                 std::string FPath = pFilaList[FName]["sub_path"];
                 BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " Before Format Inherits Path: VendorDirectory - " << VendorDirectory << ", sub_path - " << FPath;
-                //1.9.5
                 std::string strNewFile = VendorDirectory + "/" + FPath;
                 boost::filesystem::path inherits_path(strNewFile);
 
@@ -1092,10 +1125,40 @@ int GuideFrame::LoadProfileData()
         // QDS: add json logic for vendor bundle
         auto qdt_bundle_path = vendor_dir;
         qdt_bundle_rsrc = false;
-        if (!boost::filesystem::exists((vendor_dir / PresetBundle::QDT_BUNDLE_X_4).replace_extension(".json"))) {
-            qdt_bundle_path = rsrc_vendor_dir;
+        boost::filesystem::path vendor_qdt_dir = (vendor_dir / PresetBundle::QDT_BUNDLE);
+        if (!boost::filesystem::exists(vendor_qdt_dir)) {
             qdt_bundle_rsrc = true;
         }
+        else {
+            boost::filesystem::path vendor_qdt_printer_dir = (vendor_qdt_dir / PRESET_PRINTER_NAME);
+            boost::filesystem::path vendor_qdt_filament_dir = (vendor_qdt_dir / PRESET_FILAMENT_NAME);
+            boost::filesystem::path vendor_qdt_print_dir = (vendor_qdt_dir / PRESET_PRINT_NAME);
+            boost::filesystem::path vendor_qdt_json = vendor_qdt_dir.replace_extension(".json");
+            if (!boost::filesystem::exists(vendor_qdt_printer_dir) || !boost::filesystem::is_directory(vendor_qdt_printer_dir)
+                || !boost::filesystem::exists(vendor_qdt_filament_dir) || !boost::filesystem::is_directory(vendor_qdt_filament_dir)
+                || !boost::filesystem::exists(vendor_qdt_print_dir) || !boost::filesystem::is_directory(vendor_qdt_print_dir)
+                || !boost::filesystem::exists(vendor_qdt_json))
+            {
+                qdt_bundle_rsrc = true;
+                BOOST_LOG_TRIVIAL(warning) << __FUNCTION__<< boost::format(", can not find subdirectory in data qdt, will use resource dir");
+            }
+            else {
+                auto is_file = [](const boost::filesystem::directory_entry& entry) {
+                    return boost::filesystem::is_regular_file(entry.path());
+                };
+
+                auto begin = boost::filesystem::directory_iterator(vendor_qdt_printer_dir);
+                auto end = boost::filesystem::directory_iterator();
+
+                int file_count = std::count_if(begin, end, is_file);
+                if (file_count < 10) {
+                    qdt_bundle_rsrc = true;
+                    BOOST_LOG_TRIVIAL(warning) << __FUNCTION__<< boost::format(", can not find enough files under printer directory of data, will use resource dir");
+                }
+            }
+        }
+        if (qdt_bundle_rsrc)
+            qdt_bundle_path = rsrc_vendor_dir;
 
         // load QDT bundle from user data path
         string                                targetPath = qdt_bundle_path.make_preferred().string();
@@ -1103,11 +1166,11 @@ int GuideFrame::LoadProfileData()
         boost::filesystem::directory_iterator endIter;
         for (boost::filesystem::directory_iterator iter(myPath); iter != endIter; iter++) {
             if (boost::filesystem::is_directory(*iter)) {
-                //cout << "is dir" << endl;
-                //cout << iter->path().string() << endl;
+                // cout << "is dir" << endl;
+                // cout << iter->path().string() << endl;
             } else {
-                //cout << "is a file" << endl;
-                //cout << iter->path().string() << endl;
+                // cout << "is a file" << endl;
+                // cout << iter->path().string() << endl;
 
                 wxString strVendor    = from_u8(iter->path().string()).BeforeLast('.');
                 strVendor             = strVendor.AfterLast('\\');
@@ -1120,12 +1183,12 @@ int GuideFrame::LoadProfileData()
                 return 0;
         }
 
-        //string                                others_targetPath = rsrc_vendor_dir.string();
+        // string                                others_targetPath = rsrc_vendor_dir.string();
         boost::filesystem::directory_iterator others_endIter;
         for (boost::filesystem::directory_iterator iter(rsrc_vendor_dir); iter != others_endIter; iter++) {
             if (boost::filesystem::is_directory(*iter)) {
-                //cout << "is dir" << endl;
-                //cout << iter->path().string() << endl;
+                // cout << "is dir" << endl;
+                // cout << iter->path().string() << endl;
             } else {
                 // cout << "is a file" << endl;
                 // cout << iter->path().string() << endl;
@@ -1261,7 +1324,7 @@ int GuideFrame::LoadProfileFamily(std::string strVendor, std::string strFilePath
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(",  vendor path %1%.") % vendor_dir.string();
     try {
         // wxLogMessage("GUIDE: json_path1  %s", w2s(strFilePath));
-        //1.9.7.52
+
         boost::nowide::ifstream ifs(strFilePath);
         json                    jLocal;
         ifs >> jLocal;
@@ -1285,7 +1348,7 @@ int GuideFrame::LoadProfileFamily(std::string strVendor, std::string strFilePath
             if (!boost::filesystem::exists(sub_path)) continue;
 
             std::string             sub_file = sub_path.string();
-            //1.9.7.52
+
             boost::nowide::ifstream ifs(sub_file);
             json                    pm;
             ifs >> pm;
@@ -1321,7 +1384,6 @@ int GuideFrame::LoadProfileFamily(std::string strVendor, std::string strFilePath
             if (!boost::filesystem::exists(sub_path)) continue;
 
             std::string             sub_file = sub_path.string();
-            //1.9.7.52
             boost::nowide::ifstream ifs(sub_file);
             json                    pm;
             ifs >> pm;
@@ -1366,11 +1428,10 @@ int GuideFrame::LoadProfileFamily(std::string strVendor, std::string strFilePath
                 if (!boost::filesystem::exists(sub_path)) continue;
 
                 std::string             sub_file = sub_path.string();
-                //1.9.7.52
                 boost::nowide::ifstream ifs(sub_file);
                 json                    pm;
                 ifs >> pm;
-                
+
                 std::string strInstant = pm["instantiation"];
                 BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "Load Filament:" << s1 << ",Path:" << sub_file << ",instantiation：" << strInstant;
 
@@ -1379,9 +1440,9 @@ int GuideFrame::LoadProfileFamily(std::string strVendor, std::string strFilePath
                     std::string sT;
 
                     int nRet = GetFilamentInfo(vendor_dir.string(),tFilaList, sub_file, sV, sT);
-                    if (nRet != 0) { 
+                    if (nRet != 0) {
                         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "Load Filament:" << s1 << ",GetFilamentInfo Failed, Vendor:" << sV << ",Type:"<< sT;
-                        continue; 
+                        continue;
                     }
 
                     OneFF["vendor"] = sV;
@@ -1426,7 +1487,7 @@ int GuideFrame::LoadProfileFamily(std::string strVendor, std::string strFilePath
             // wxString ModelFilePath = wxString::Format("%s\\%s\\%s", strFolder, strVendor, s2);
             boost::filesystem::path sub_path = boost::filesystem::absolute(vendor_dir / s2).make_preferred();
             if (!boost::filesystem::exists(sub_path)) continue;
-            
+
             std::string             sub_file = sub_path.string();
             boost::nowide::ifstream ifs(sub_file);
             json                    pm;
@@ -1472,23 +1533,23 @@ void GuideFrame::GetStardardFilePath(std::string &FilePath) {
     StrReplace(FilePath, "/", w2s(wxString::Format("%c", boost::filesystem::path::preferred_separator)));
 }
 
-// bool GuideFrame::LoadFile(std::string jPath, std::string &sContent)
-// {
-//     try {
-//         boost::nowide::ifstream t(jPath);
-//         std::stringstream buffer;
-//         buffer << t.rdbuf();
-//         sContent=buffer.str();
-//         BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << boost::format(", load %1% into buffer")% jPath;
-//     }
-//     catch (std::exception &e)
-//     {
-//         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ",  got exception: "<<e.what();
-//         return false;
-//     }
-
-//     return true;
-// }
+//bool GuideFrame::LoadFile(std::string jPath, std::string &sContent)
+//{
+//    try {
+//        boost::nowide::ifstream t(jPath);
+//        std::stringstream buffer;
+//        buffer << t.rdbuf();
+//        sContent=buffer.str();
+//        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << boost::format(", load %1% into buffer")% jPath;
+//    }
+//    catch (std::exception &e)
+//    {
+//        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ",  got exception: "<<e.what();
+//        return false;
+//    }
+//
+//    return true;
+//}
 
 int GuideFrame::DownloadPlugin()
 {

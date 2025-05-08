@@ -143,7 +143,6 @@ private:
     bool        m_isSimpleMode = false;
     bool                                  m_isNetMode    = false;
     wxButton *arrow_button;
-    wxStaticText *    text_static;
 
     int height = 0; 
     wxString  m_web;

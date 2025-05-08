@@ -29,7 +29,7 @@ DeviceButton::DeviceButton(wxString name_text, wxString ip_text, wxString apikey
     background_color = StateColor(
         std::make_pair(0x262629, (int) StateColor::Disabled),
         std::make_pair(0x37EE7C, (int) StateColor::Hovered | StateColor::Checked),
-        std::make_pair(0x00AE42, (int) StateColor::Checked),
+        std::make_pair(0x4479fb, (int) StateColor::Checked),
         std::make_pair(*wxLIGHT_GREY, (int) StateColor::Hovered), 
         std::make_pair(0x262629, (int) StateColor::Normal));
     text_color       = StateColor(
@@ -68,9 +68,8 @@ bool DeviceButton::Create(wxWindow *parent, wxString text, wxString icon, long s
     state_handler.attach({&text_color});
     state_handler.update_binds();
     wxWindow::SetFont(wxFont(15, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-    // y1
-    std::string test_string     = text.ToStdString();
-    wxString    device_nameText = wxString::FromUTF8(test_string);
+
+    wxString    device_nameText = text;
     wxWindow::SetLabel(device_nameText);
 
     if (!icon.IsEmpty()) {
@@ -258,9 +257,6 @@ void DeviceButton::render(wxDC &dc)
     if (offset.x < 0)
         offset.x = 0;
     rcContent.Deflate(offset.x, offset.y);
-    // y1
-    std::string tempName_string = m_name_text.ToStdString();
-    wxString    m_name_text     = wxString::FromUTF8(tempName_string);
 
     if (GetLabel() == "") {
         // y20

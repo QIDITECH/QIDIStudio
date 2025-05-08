@@ -7,9 +7,6 @@
 
 #include "PrintHost.hpp"
 #include "libslic3r/PrintConfig.hpp"
-//w42
-#include "slic3r/GUI/SelectMachine.hpp"
-
 
 namespace Slic3r {
 
@@ -47,11 +44,8 @@ public:
     static double              progress_percentage;
 
     //w42
-    bool       get_box_state(wxString& curl_msg);
-    bool       get_printer_state(wxString& curl_msg);
-    std::pair<std::string, float>       send_command_to_printer(wxString& curl_msg);
-    GUI::Box_info       get_box_info(wxString& msg);
-    void       get_color_filament_str(wxString& msg, GUI::Box_info& machine_filament_info);
+    bool send_command_to_printer(wxString& curl_msg, wxString commond) const;
+    bool send_timelapse_status(wxString& msg, std::string ip, bool status) const;
 
 protected:
     std::string m_show_ip;

@@ -300,8 +300,8 @@ void OtherLayersSeqPanel::append_layer(const LayerSeqInfo* layer_info)
     auto drag_canvas = new DragCanvas(m_layer_input_panel, extruder_colours, order);
 
     if (layer_info) {
-        begin_layer_input->set_layer_number(layer_info->begin_layer_number);
-        end_layer_input->set_layer_number(layer_info->end_layer_number);
+        begin_layer_input->set_layer_number(std::max(MIN_LAYER_VALUE, layer_info->begin_layer_number));
+        end_layer_input->set_layer_number(std::min(MAX_LAYER_VALUE, layer_info->end_layer_number));
         drag_canvas->set_shape_list(extruder_colours, layer_info->print_sequence);
     }
 

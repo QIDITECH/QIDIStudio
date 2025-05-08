@@ -40,8 +40,8 @@ void MultiMachineItem::OnLeaveWindow(wxMouseEvent& evt)
 
 void MultiMachineItem::OnLeftDown(wxMouseEvent& evt)
 {
-    int left = FromDIP(DEVICE_LEFT_PADDING_LEFT + 
-        DEVICE_LEFT_DEV_NAME + 
+    int left = FromDIP(DEVICE_LEFT_PADDING_LEFT +
+        DEVICE_LEFT_DEV_NAME +
         DEVICE_LEFT_PRO_NAME +
         DEVICE_LEFT_PRO_INFO);
     auto mouse_pos = ClientToScreen(evt.GetPosition());
@@ -320,7 +320,7 @@ MultiMachineManagerPage::MultiMachineManagerPage(wxWindow* parent)
     m_table_head_panel->SetBackgroundColour(TABLE_HEAR_NORMAL_COLOUR);
     m_table_head_sizer = new wxBoxSizer(wxHORIZONTAL);
 
-    m_printer_name = new Button(m_table_head_panel, _L("Device Name"), "toolbar_double_directional_arrow", wxNO_BORDER, ICON_SIZE);
+    m_printer_name = new Button(m_table_head_panel, _L("Device Name"), "toolbar_double_directional_arrow", wxNO_BORDER, ICON_SINGLE_SIZE);
     m_printer_name->SetBackgroundColor(head_bg);
     m_printer_name->SetFont(TABLE_HEAD_FONT);
     m_printer_name->SetCornerRadius(0);
@@ -343,7 +343,7 @@ MultiMachineManagerPage::MultiMachineManagerPage(wxWindow* parent)
     });
     
 
-    m_task_name = new Button(m_table_head_panel, _L("Task Name"), "", wxNO_BORDER, ICON_SIZE);
+    m_task_name = new Button(m_table_head_panel, _L("Task Name"), "", wxNO_BORDER, ICON_SINGLE_SIZE);
     m_task_name->SetBackgroundColor(TABLE_HEAR_NORMAL_COLOUR);
     m_task_name->SetFont(TABLE_HEAD_FONT);
     m_task_name->SetCornerRadius(0);
@@ -353,7 +353,7 @@ MultiMachineManagerPage::MultiMachineManagerPage(wxWindow* parent)
 
     
 
-    m_status = new Button(m_table_head_panel, _L("Device Status"), "toolbar_double_directional_arrow", wxNO_BORDER, ICON_SIZE);
+    m_status = new Button(m_table_head_panel, _L("Device Status"), "toolbar_double_directional_arrow", wxNO_BORDER, ICON_SINGLE_SIZE);
     m_status->SetBackgroundColor(head_bg);
     m_status->SetFont(TABLE_HEAD_FONT);
     m_status->SetCornerRadius(0);
@@ -376,7 +376,7 @@ MultiMachineManagerPage::MultiMachineManagerPage(wxWindow* parent)
     });
     
 
-    m_action = new Button(m_table_head_panel, _L("Actions"), "", wxNO_BORDER, ICON_SIZE, false);
+    m_action = new Button(m_table_head_panel, _L("Actions"), "", wxNO_BORDER, ICON_SINGLE_SIZE, false);
     m_action->SetBackgroundColor(TABLE_HEAR_NORMAL_COLOUR);
     m_action->SetFont(TABLE_HEAD_FONT);
     m_action->SetCornerRadius(0);

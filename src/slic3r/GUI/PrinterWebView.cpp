@@ -57,7 +57,7 @@ PrinterWebView::PrinterWebView(wxWindow *parent) : wxPanel(parent, wxID_ANY, wxD
     // y13
     wxPanel *menuPanel = new wxPanel(titlePanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBU_LEFT | wxTAB_TRAVERSAL | wxBU_RIGHT);
     menuPanel->SetSizer(menuPanelSizer);
-    menuPanel->SetBackgroundColour(wxColour(51, 51, 55));
+    menuPanel->SetBackgroundColour(wxColour(51, 51, 56));
 
     wxBoxSizer *loginsizer = init_login_bar(titlePanel);
 
@@ -239,15 +239,6 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
     buttonsizer->Add(refresh_button, wxSizerFlags().Align(wxALIGN_LEFT).CenterVertical().Border(wxALL, 1));
     refresh_button->Bind(wxEVT_BUTTON, &PrinterWebView::OnRefreshButtonClick, this);
 
-    text_static = new wxStaticText(Panel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize);
-    text_static->SetForegroundColour(wxColour(255, 255, 255));
-    text_static->SetFont(wxFont(wxFontInfo(18).Bold()));
-    text_static->SetMinSize(wxSize(300 - 11 * add_button->GetSize().GetWidth(), -1));
-    buttonsizer->Add(text_static, wxSizerFlags().Align(wxALIGN_LEFT).Border(wxALL, 5));
-
-    if (m_isSimpleMode)
-        text_static->Hide();
-
     arrow_button = new RoundButton(Panel, wxID_ANY, "", wxDefaultPosition, wxSize(35, 35));
     arrow_button->SetBackgroundColour(Panel->GetBackgroundColour());
     arrow_button->SetForegroundColour(Panel->GetBackgroundColour());
@@ -333,7 +324,6 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
                      float       progress = 0;
                      std::pair<std::string, float> state_progress = printhost->get_status_progress(msg);
                      state                = state_progress.first;
-                     BOOST_LOG_TRIVIAL(error) << ("State:", state);
                      if ((m_net_buttons[count]->GetStateText()).ToStdString() != state)
                          m_net_buttons[count]->SetStateText(state);
 
@@ -408,7 +398,7 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
              //BOOST_LOG_TRIVIAL(error) << (it->get_short_name(full_name));
              //BOOST_LOG_TRIVIAL(error) << (it->get_preset_name(full_name));
              //BOOST_LOG_TRIVIAL(error) << model_id;
-             AddButton((it->get_short_name(full_name)), host, model_id, full_name, is_selected,
+             AddButton(from_u8(it->get_short_name(full_name)), host, model_id, from_u8(full_name), is_selected,
                  (host_type == htOctoPrint), apikey);
              m_machine.insert(std::make_pair((it->get_short_name(full_name)), *cfg_t));
              //y25
@@ -731,7 +721,6 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
  {
      m_isSimpleMode = !m_isSimpleMode;
      if (!m_isSimpleMode) {
-         text_static->Show();
          //y33
          staticBitmap->SetBitmap(create_scaled_bitmap_of_login(m_user_head_name, this, 60));
          login_button->SetIsSimpleMode(m_isSimpleMode);
@@ -747,7 +736,6 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
              button->SetIsSimpleMode(m_isSimpleMode);
          }
      } else {
-         text_static->Hide();
          //y33
         staticBitmap->SetBitmap(create_scaled_bitmap_of_login(m_user_head_name, this, 40));
          login_button->SetIsSimpleMode(m_isSimpleMode);

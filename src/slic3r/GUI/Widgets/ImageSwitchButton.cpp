@@ -3,6 +3,7 @@
 #include "StaticBox.hpp"
 #include "../wxExtensions.hpp"
 
+#include "slic3r/GUI/I18N.hpp"
 #include <wx/dcclient.h>
 #include <wx/dcgraph.h>
 
@@ -279,7 +280,31 @@ void FanSwitchButton::render(wxDC& dc)
     ScalableBitmap& icon = GetValue() ? m_on : m_off;
 
     //int content_height = icon.GetBmpHeight() + textSize.y + m_padding;
-    int content_height = m_padding;
+
+    wxPoint pt = wxPoint(FromDIP(10), (size.y - icon.GetBmpHeight()) / 2);
+
+    if (icon.bmp().IsOk()) {
+        dc.DrawBitmap(icon.bmp(), pt);
+    }
+
+    if (!m_text.empty())
+    {
+        if (m_text == _L("Fan")) {
+            dc.SetFont(::Label::Head_15);
+            pt.x += icon.GetBmpWidth() + FromDIP(9);
+        } else if (m_text == _L("Air Condition")) {
+            dc.SetFont(::Label::Head_14);
+            pt.x += icon.GetBmpWidth() + FromDIP(6);
+        }
+
+        auto text_size = dc.GetMultiLineTextExtent(m_text);
+        pt.y           = (size.y - text_size.GetHeight()) / 2;
+        //dc.SetTextForeground(0x6b6b6b);
+        dc.DrawText(m_text, pt);
+    }
+
+    //int content_height = icon.GetBmpHeight() + textSize.y + m_padding;
+    /*int content_height = m_padding;
 
     wxPoint pt = wxPoint((size.x - icon.GetBmpWidth()) / 2, (size.y - content_height) / 2);
 
@@ -322,7 +347,7 @@ void FanSwitchButton::render(wxDC& dc)
 
     pt.x = (size.x - dc.GetTextExtent(speed).x) / 2;
     pt.y += FromDIP(1);
-    dc.DrawText(speed, pt);
+    dc.DrawText(speed, pt);*/
 }
 
 void FanSwitchButton::Rescale()
@@ -334,6 +359,18 @@ void FanSwitchButton::setFanValue(int val)
 {
     if (m_speed != val) {
         m_speed = val;
+        Refresh();
+    }
+}
+
+void FanSwitchButton::UseTextFan() { SetText(_L("Fan")); }
+void FanSwitchButton::UseTextAirCondition() { SetText(_L("Air Condition")); }
+
+void FanSwitchButton::SetText(const wxString &text)
+{
+    if (m_text != text)
+    {
+        m_text = text;
         Refresh();
     }
 }

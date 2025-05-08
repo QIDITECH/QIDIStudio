@@ -55,8 +55,10 @@ void SideToolsPanel::on_timer(wxTimerEvent &event)
 {
 }
 
-void SideToolsPanel::set_current_printer_name(std::string dev_name) 
+void SideToolsPanel::set_current_printer_name(std::string dev_name)
 {
+    if (m_dev_name == from_u8(dev_name)) return;
+
      m_none_printer = false;
      m_dev_name     = from_u8(dev_name);
      Refresh();
@@ -464,6 +466,9 @@ void SideTools::update_status(MachineObject* obj)
     int wifi_signal_val = 0;
     if (!obj->is_connected() || obj->is_connecting()) {
         m_side_tools->set_current_printer_signal(WifiSignal::NONE);
+    }
+    else if (!obj->is_lan_mode_printer() && !obj->is_online()) {
+        m_side_tools->set_current_printer_signal(WifiSignal::NONE);/*STUDIO-10185*/
     }
     else {
         if (obj->network_wired) {

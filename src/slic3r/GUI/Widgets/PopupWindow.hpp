@@ -16,6 +16,11 @@ public:
     bool Create(wxWindow *parent, int flags = wxBORDER_NONE);
 
 private:
+#ifdef __WXOSX__
+    void OnMouseEvent2(wxMouseEvent &evt);
+    wxEvtHandler * hovered { this };
+#endif
+
 #ifdef __WXGTK__
     void topWindowActivate(wxActivateEvent &event);
 #endif

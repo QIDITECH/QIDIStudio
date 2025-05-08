@@ -115,6 +115,11 @@ void TabButtonsListCtrl::SetSelection(int sel)
 
 void TabButtonsListCtrl::showNewTag(int sel, bool tag)
 {
+    if (m_pageButtons[sel]->GetShowNewTag() == tag)
+    {
+        return;
+    }
+
     m_pageButtons[sel]->ShowNewTag(tag);
     Refresh();
 }
@@ -125,6 +130,7 @@ bool TabButtonsListCtrl::InsertPage(size_t n, const wxString &text, bool bSelect
     btn->SetCornerRadius(0);
 
     int em = em_unit(this);
+    //y
     //btn->SetMinSize({BUTTON_DEF_WIDTH * em / 10, BUTTON_DEF_HEIGHT * em / 10});
     btn->SetMinSize(wxSize(250, 50));
     btn->SetBackgroundColor(TAB_BUTTON_BG);

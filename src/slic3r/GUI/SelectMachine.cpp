@@ -27,895 +27,33 @@
 
 namespace Slic3r { namespace GUI {
 
-wxDEFINE_EVENT(EVT_UPDATE_WINDOWS_POSITION, wxCommandEvent);
-wxDEFINE_EVENT(EVT_FINISHED_UPDATE_MACHINE_LIST, wxCommandEvent);
+wxDEFINE_EVENT(EVT_SWITCH_PRINT_OPTION, wxCommandEvent);
 wxDEFINE_EVENT(EVT_UPDATE_USER_MACHINE_LIST, wxCommandEvent);
 wxDEFINE_EVENT(EVT_PRINT_JOB_CANCEL, wxCommandEvent);
-wxDEFINE_EVENT(EVT_BIND_MACHINE, wxCommandEvent);
-wxDEFINE_EVENT(EVT_UNBIND_MACHINE, wxCommandEvent);
-wxDEFINE_EVENT(EVT_DISSMISS_MACHINE_LIST, wxCommandEvent);
-wxDEFINE_EVENT(EVT_CONNECT_LAN_PRINT, wxCommandEvent);
-wxDEFINE_EVENT(EVT_EDIT_PRINT_NAME, wxCommandEvent);
 wxDEFINE_EVENT(EVT_CLEAR_IPADDRESS, wxCommandEvent);
 
 #define INITIAL_NUMBER_OF_MACHINES 0
-#define LIST_REFRESH_INTERVAL 200
+
 #define MACHINE_LIST_REFRESH_INTERVAL 2000
 
 #define WRAP_GAP FromDIP(2)
 
 static wxString task_canceled_text = _L("Task canceled");
 
-std::string get_print_status_info(PrintDialogStatus status)
+std::string get_nozzle_volume_type_cloud_string(NozzleVolumeType nozzle_volume_type)
 {
-    switch(status) {
-    case PrintStatusInit:
-        return "PrintStatusInit";
-    case PrintStatusNoUserLogin:
-        return "PrintStatusNoUserLogin";
-    case PrintStatusInvalidPrinter:
-        return "PrintStatusInvalidPrinter";
-    case PrintStatusConnectingServer:
-        return "PrintStatusConnectingServer";
-    case PrintStatusReading:
-        return "PrintStatusReading";
-    case PrintStatusReadingFinished:
-        return "PrintStatusReadingFinished";
-    case PrintStatusReadingTimeout:
-        return "PrintStatusReadingTimeout";
-    case PrintStatusInUpgrading:
-        return "PrintStatusInUpgrading";
-    case PrintStatusNeedUpgradingAms:
-        return "PrintStatusNeedUpgradingAms";
-    case PrintStatusInSystemPrinting:
-        return "PrintStatusInSystemPrinting";
-    case PrintStatusInPrinting:
-        return "PrintStatusInPrinting";
-    case PrintStatusDisableAms:
-        return "PrintStatusDisableAms";
-    case PrintStatusAmsMappingSuccess:
-        return "PrintStatusAmsMappingSuccess";
-    case PrintStatusAmsMappingInvalid:
-        return "PrintStatusAmsMappingInvalid";
-    case PrintStatusAmsMappingU0Invalid:
-        return "PrintStatusAmsMappingU0Invalid";
-    case PrintStatusAmsMappingValid:
-        return "PrintStatusAmsMappingValid";
-    case PrintStatusAmsMappingByOrder:
-        return "PrintStatusAmsMappingByOrder";
-    case PrintStatusRefreshingMachineList:
-        return "PrintStatusRefreshingMachineList";
-    case PrintStatusSending:
-        return "PrintStatusSending";
-    case PrintStatusSendingCanceled:
-        return "PrintStatusSendingCanceled";
-    case PrintStatusLanModeNoSdcard:
-        return "PrintStatusLanModeNoSdcard";
-    case PrintStatusNoSdcard:
-        return "PrintStatusNoSdcard";
-    case PrintStatusUnsupportedPrinter:
-        return "PrintStatusUnsupportedPrinter";
-    case PrintStatusTimelapseNoSdcard:
-        return "PrintStatusTimelapseNoSdcard";
-    case PrintStatusNotSupportedPrintAll:
-        return "PrintStatusNotSupportedPrintAll";
+    if (nozzle_volume_type == NozzleVolumeType::nvtStandard) {
+        return "standard_flow";
     }
-    return "unknown";
-}
-
-MachineObjectPanel::MachineObjectPanel(wxWindow *parent, wxWindowID id, const wxPoint &pos, const wxSize &size, long style, const wxString &name)
-{
-    wxPanel::Create(parent, id, pos, SELECT_MACHINE_ITEM_SIZE, style, name);
-    Bind(wxEVT_PAINT, &MachineObjectPanel::OnPaint, this);
-
-    SetBackgroundColour(StateColor::darkModeColorFor(*wxWHITE));
-
-    m_unbind_img        = ScalableBitmap(this, "unbind", 18);
-    m_edit_name_img     = ScalableBitmap(this, "edit_button", 18);
-    m_select_unbind_img = ScalableBitmap(this, "unbind_selected", 18);
-
-    m_printer_status_offline = ScalableBitmap(this, "printer_status_offline", 12);
-    m_printer_status_busy    = ScalableBitmap(this, "printer_status_busy", 12);
-    m_printer_status_idle    = ScalableBitmap(this, "printer_status_idle", 12);
-    m_printer_status_lock    = ScalableBitmap(this, "printer_status_lock", 16);
-    m_printer_in_lan         = ScalableBitmap(this, "printer_in_lan", 16);
-
-    this->Bind(wxEVT_ENTER_WINDOW, &MachineObjectPanel::on_mouse_enter, this);
-    this->Bind(wxEVT_LEAVE_WINDOW, &MachineObjectPanel::on_mouse_leave, this);
-    this->Bind(wxEVT_LEFT_UP, &MachineObjectPanel::on_mouse_left_up, this);
-
-#ifdef __APPLE__
-    wxPlatformInfo platformInfo;
-    auto major = platformInfo.GetOSMajorVersion();
-    auto minor = platformInfo.GetOSMinorVersion();
-    auto micro = platformInfo.GetOSMicroVersion();
-
-    //macos 13.1.0
-    if (major >= 13 && minor >= 1 && micro >= 0) {
-        m_is_macos_special_version = true;
-    }
-#endif
-
-}
-
-
-MachineObjectPanel::~MachineObjectPanel() {}
-
-void MachineObjectPanel::show_bind_dialog()
-{
-    if (wxGetApp().is_user_login()) {
-        BindMachineDialog dlg;
-        dlg.update_machine_info(m_info);
-        dlg.ShowModal();
-    }
-}
-
-void MachineObjectPanel::set_printer_state(PrinterState state)
-{
-    m_state = state;
-    Refresh();
-}
-
-void MachineObjectPanel::show_edit_printer_name(bool show)
-{
-    m_show_edit = show;
-    Refresh();
-}
-
-void MachineObjectPanel::show_printer_bind(bool show, PrinterBindState state)
-{
-    m_show_bind   = show;
-    m_bind_state  = state;
-    Refresh();
-}
-
-void MachineObjectPanel::OnPaint(wxPaintEvent &event)
-{
-    wxPaintDC dc(this);
-    doRender(dc);
-}
-
-void MachineObjectPanel::render(wxDC &dc)
-{
-#ifdef __WXMSW__
-    wxSize     size = GetSize();
-    wxMemoryDC memdc;
-    wxBitmap   bmp(size.x, size.y);
-    memdc.SelectObject(bmp);
-    memdc.Blit({0, 0}, size, &dc, {0, 0});
-
-    {
-        wxGCDC dc2(memdc);
-        doRender(dc2);
-    }
-
-    memdc.SelectObject(wxNullBitmap);
-    dc.DrawBitmap(bmp, 0, 0);
-#else
-    doRender(dc);
-#endif
-}
-
-void MachineObjectPanel::doRender(wxDC &dc)
-{
-    auto   left = 10;
-    wxSize size = GetSize();
-    dc.SetPen(*wxTRANSPARENT_PEN);
-
-    auto dwbitmap = m_printer_status_offline;
-    if (m_state == PrinterState::IDLE) { dwbitmap = m_printer_status_idle; }
-    if (m_state == PrinterState::BUSY) { dwbitmap = m_printer_status_busy; }
-    if (m_state == PrinterState::OFFLINE) { dwbitmap = m_printer_status_offline; }
-    if (m_state == PrinterState::LOCK) { dwbitmap = m_printer_status_lock; }
-    if (m_state == PrinterState::IN_LAN) { dwbitmap = m_printer_in_lan; }
-
-    // dc.DrawCircle(left, size.y / 2, 3);
-    dc.DrawBitmap(dwbitmap.bmp(), wxPoint(left, (size.y - dwbitmap.GetBmpSize().y) / 2));
-
-    left += dwbitmap.GetBmpSize().x + 8;
-    dc.SetFont(Label::Body_13);
-    dc.SetBackgroundMode(wxTRANSPARENT);
-    dc.SetTextForeground(StateColor::darkModeColorFor(SELECT_MACHINE_GREY900));
-    wxString dev_name = "";
-    if (m_info) {
-        dev_name = from_u8(m_info->dev_name);
-
-         if (m_state == PrinterState::IN_LAN) {
-             dev_name += _L("(LAN)");
-         }
-    }
-    auto        sizet        = dc.GetTextExtent(dev_name);
-    auto        text_end     = 0;
-
-    if (m_show_edit) {
-        text_end = size.x - m_unbind_img.GetBmpSize().x - 30;
+    else if (nozzle_volume_type == NozzleVolumeType::nvtHighFlow) {
+        return "high_flow";
     }
     else {
-        text_end = size.x - m_unbind_img.GetBmpSize().x;
-    }
-
-    wxString finally_name =  dev_name;
-    if (sizet.x > (text_end - left)) {
-        auto limit_width = text_end - left - dc.GetTextExtent("...").x - 15;
-        for (auto i = 0; i < dev_name.length(); i++) {
-            auto curr_width = dc.GetTextExtent(dev_name.substr(0, i));
-            if (curr_width.x >= limit_width) {
-                finally_name = dev_name.substr(0, i) + "...";
-                break;
-            }
-        }
-    }
-
-    dc.DrawText(finally_name, wxPoint(left, (size.y - sizet.y) / 2));
-
-
-    if (m_hover || m_is_macos_special_version) {
-
-        if (m_hover && !m_is_macos_special_version) {
-            dc.SetPen(SELECT_MACHINE_BRAND);
-            dc.SetBrush(*wxTRANSPARENT_BRUSH);
-            dc.DrawRectangle(0, 0, size.x, size.y);
-        }
-
-        if (m_show_bind) {
-            if (m_bind_state == ALLOW_UNBIND) {
-                left = size.x - m_unbind_img.GetBmpSize().x - 6;
-                dc.DrawBitmap(m_unbind_img.bmp(), left, (size.y - m_unbind_img.GetBmpSize().y) / 2);
-            }
-        }
-
-        if (m_show_edit) {
-            left = size.x - m_unbind_img.GetBmpSize().x - 6 - m_edit_name_img.GetBmpSize().x - 6;
-            dc.DrawBitmap(m_edit_name_img.bmp(), left, (size.y - m_edit_name_img.GetBmpSize().y) / 2);
-        }
-    }
-
-}
-
-void MachineObjectPanel::update_machine_info(MachineObject *info, bool is_my_devices)
-{
-    m_info = info;
-    m_is_my_devices = is_my_devices;
-    Refresh();
-}
-
-void MachineObjectPanel::on_mouse_enter(wxMouseEvent &evt)
-{
-    m_hover = true;
-    Refresh();
-}
-
-void MachineObjectPanel::on_mouse_leave(wxMouseEvent &evt)
-{
-    m_hover = false;
-    Refresh();
-}
-
-void MachineObjectPanel::on_mouse_left_up(wxMouseEvent &evt)
-{
-    if (m_is_my_devices) {
-        // show edit
-        if (m_show_edit) {
-            auto edit_left   = GetSize().x - m_unbind_img.GetBmpSize().x - 6 - m_edit_name_img.GetBmpSize().x - 6;
-            auto edit_right  = edit_left + m_edit_name_img.GetBmpSize().x;
-            auto edit_top    = (GetSize().y - m_edit_name_img.GetBmpSize().y) / 2;
-            auto edit_bottom = (GetSize().y - m_edit_name_img.GetBmpSize().y) / 2 + m_edit_name_img.GetBmpSize().y;
-            if ((evt.GetPosition().x >= edit_left && evt.GetPosition().x <= edit_right) && evt.GetPosition().y >= edit_top && evt.GetPosition().y <= edit_bottom) {
-                wxCommandEvent event(EVT_EDIT_PRINT_NAME);
-                event.SetEventObject(this);
-                wxPostEvent(this, event);
-                return;
-            }
-        }
-        if (m_show_bind) {
-            auto left   = GetSize().x - m_unbind_img.GetBmpSize().x - 6;
-            auto right  = left + m_unbind_img.GetBmpSize().x;
-            auto top    = (GetSize().y - m_unbind_img.GetBmpSize().y) / 2;
-            auto bottom = (GetSize().y - m_unbind_img.GetBmpSize().y) / 2 + m_unbind_img.GetBmpSize().y;
-
-            if ((evt.GetPosition().x >= left && evt.GetPosition().x <= right) && evt.GetPosition().y >= top && evt.GetPosition().y <= bottom) {
-                wxCommandEvent event(EVT_UNBIND_MACHINE, GetId());
-                event.SetEventObject(this);
-                GetEventHandler()->ProcessEvent(event);
-            } else {
-                if (m_info) {
-                    wxGetApp().mainframe->jump_to_monitor(m_info->dev_id);
-                }
-                //wxGetApp().mainframe->SetFocus();
-                wxCommandEvent event(EVT_DISSMISS_MACHINE_LIST);
-                event.SetEventObject(this->GetParent());
-                wxPostEvent(this->GetParent(), event);
-            }
-            return;
-        }
-        if (m_info && m_info->is_lan_mode_printer()) {
-            if (m_info->has_access_right() && m_info->is_avaliable()) {
-                wxGetApp().mainframe->jump_to_monitor(m_info->dev_id);
-            } else {
-                wxCommandEvent event(EVT_CONNECT_LAN_PRINT);
-                event.SetEventObject(this);
-                wxPostEvent(this, event);
-            }
-        } else {
-            wxGetApp().mainframe->jump_to_monitor(m_info->dev_id);
-        }
-    } else {
-        if (m_info && m_info->is_lan_mode_printer()) {
-            wxCommandEvent event(EVT_CONNECT_LAN_PRINT);
-            event.SetEventObject(this);
-            wxPostEvent(this, event);
-        } else {
-            wxCommandEvent event(EVT_BIND_MACHINE);
-            event.SetEventObject(this);
-            wxPostEvent(this, event);
-        }
-    }
-
-}
-
-SelectMachinePopup::SelectMachinePopup(wxWindow *parent)
-    : PopupWindow(parent, wxBORDER_NONE | wxPU_CONTAINS_CONTROLS), m_dismiss(false)
-{
-#ifdef __WINDOWS__
-    SetDoubleBuffered(true);
-#endif //__WINDOWS__
-
-
-    SetSize(SELECT_MACHINE_POPUP_SIZE);
-    SetMinSize(SELECT_MACHINE_POPUP_SIZE);
-    SetMaxSize(SELECT_MACHINE_POPUP_SIZE);
-
-    Freeze();
-    wxBoxSizer *m_sizer_main = new wxBoxSizer(wxVERTICAL);
-    SetBackgroundColour(SELECT_MACHINE_GREY400);
-
-
-
-    m_scrolledWindow = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, SELECT_MACHINE_LIST_SIZE, wxHSCROLL | wxVSCROLL);
-    m_scrolledWindow->SetBackgroundColour(*wxWHITE);
-    m_scrolledWindow->SetMinSize(SELECT_MACHINE_LIST_SIZE);
-    m_scrolledWindow->SetScrollRate(0, 5);
-    auto m_sizxer_scrolledWindow = new wxBoxSizer(wxVERTICAL);
-    m_scrolledWindow->SetSizer(m_sizxer_scrolledWindow);
-    m_scrolledWindow->Layout();
-    m_sizxer_scrolledWindow->Fit(m_scrolledWindow);
-
-#if !QDT_RELEASE_TO_PUBLIC && defined(__WINDOWS__)
-	m_sizer_search_bar = new wxBoxSizer(wxVERTICAL);
-	m_search_bar = new wxSearchCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
-	m_search_bar->SetDescriptiveText(_L("Search"));
-	m_search_bar->ShowSearchButton( true );
-	m_search_bar->ShowCancelButton( false );
-	m_sizer_search_bar->Add( m_search_bar, 1, wxALL| wxEXPAND, 1 );
-	m_sizer_main->Add(m_sizer_search_bar, 0, wxALL | wxEXPAND, FromDIP(2));
-	m_search_bar->Bind( wxEVT_COMMAND_TEXT_UPDATED, &SelectMachinePopup::update_machine_list, this );
-#endif
-    auto own_title        = create_title_panel(_L("My Device"));
-    m_sizer_my_devices    = new wxBoxSizer(wxVERTICAL);
-    auto other_title      = create_title_panel(_L("Other Device"));
-    m_sizer_other_devices = new wxBoxSizer(wxVERTICAL);
-
-
-    m_panel_ping_code = new PinCodePanel(m_scrolledWindow, 0, wxID_ANY, wxDefaultPosition, SELECT_MACHINE_ITEM_SIZE);
-    m_panel_direct_connection = new PinCodePanel(m_scrolledWindow, 1, wxID_ANY, wxDefaultPosition, SELECT_MACHINE_ITEM_SIZE);
-
-    m_sizxer_scrolledWindow->Add(own_title, 0, wxEXPAND | wxLEFT, FromDIP(15));
-    m_sizxer_scrolledWindow->Add(m_sizer_my_devices, 0, wxEXPAND, 0);
-    m_sizxer_scrolledWindow->Add(m_panel_ping_code, 0, wxEXPAND, 0);
-    m_sizxer_scrolledWindow->Add(m_panel_direct_connection, 0, wxEXPAND, 0);
-    m_sizxer_scrolledWindow->Add(other_title, 0, wxEXPAND | wxLEFT, FromDIP(15));
-    m_sizxer_scrolledWindow->Add(m_sizer_other_devices, 0, wxEXPAND, 0);
-
-    m_sizer_main->Add(m_scrolledWindow, 0, wxALL | wxEXPAND, FromDIP(2));
-
-    SetSizer(m_sizer_main);
-    Layout();
-    Thaw();
-
-    #ifdef __APPLE__
-    m_scrolledWindow->Bind(wxEVT_LEFT_UP, &SelectMachinePopup::OnLeftUp, this);
-    #endif // __APPLE__
-
-    m_refresh_timer = new wxTimer();
-    m_refresh_timer->SetOwner(this);
-    Bind(EVT_UPDATE_USER_MACHINE_LIST, &SelectMachinePopup::update_machine_list, this);
-    Bind(wxEVT_TIMER, &SelectMachinePopup::on_timer, this);
-    Bind(EVT_DISSMISS_MACHINE_LIST, &SelectMachinePopup::on_dissmiss_win, this);
-}
-
-SelectMachinePopup::~SelectMachinePopup() { delete m_refresh_timer;}
-
-void SelectMachinePopup::Popup(wxWindow *WXUNUSED(focus))
-{
-    BOOST_LOG_TRIVIAL(trace) << "get_print_info: start";
-    start_ssdp(true);
-    if (m_refresh_timer) {
-        m_refresh_timer->Stop();
-        m_refresh_timer->Start(MACHINE_LIST_REFRESH_INTERVAL);
-    }
-
-    //B
-
-    // if (wxGetApp().is_user_login()) {
-    //     if (!get_print_info_thread) {
-    //         get_print_info_thread = new boost::thread(Slic3r::create_thread([this, token = std::weak_ptr(m_token)] {
-    //             NetworkAgent* agent = wxGetApp().getAgent();
-    //             unsigned int http_code;
-    //             std::string body;
-    //             int result = agent->get_user_print_info(&http_code, &body);
-    //             CallAfter([token, this, result, body]() {
-    //                 if (token.expired()) {return;}
-    //                 if (result == 0) {
-    //                     m_print_info = body;
-    //                 }
-    //                 else {
-    //                     m_print_info = "";
-    //                 }
-    //                 wxCommandEvent event(EVT_UPDATE_USER_MACHINE_LIST);
-    //                 event.SetEventObject(this);
-    //                 wxPostEvent(this, event);
-    //             });
-    //         }));
-    //     }
-    // }
-
-    wxPostEvent(this, wxTimerEvent());
-    PopupWindow::Popup();
-}
-
-void SelectMachinePopup::OnDismiss()
-{
-    BOOST_LOG_TRIVIAL(trace) << "get_print_info: dismiss";
-    start_ssdp(false);
-    m_dismiss = true;
-
-    if (m_refresh_timer) {
-        m_refresh_timer->Stop();
-    }
-    if (get_print_info_thread) {
-        if (get_print_info_thread->joinable()) {
-            get_print_info_thread->join();
-            delete get_print_info_thread;
-            get_print_info_thread = nullptr;
-        }
-    }
-
-    wxCommandEvent event(EVT_FINISHED_UPDATE_MACHINE_LIST);
-    event.SetEventObject(this);
-    wxPostEvent(this, event);
-}
-
-bool SelectMachinePopup::ProcessLeftDown(wxMouseEvent &event) {
-    return PopupWindow::ProcessLeftDown(event);
-}
-
-bool SelectMachinePopup::Show(bool show) {
-    if (show) {
-        for (int i = 0; i < m_user_list_machine_panel.size(); i++) {
-            m_user_list_machine_panel[i]->mPanel->update_machine_info(nullptr);
-            m_user_list_machine_panel[i]->mPanel->Hide();
-        }
-
-         for (int j = 0; j < m_other_list_machine_panel.size(); j++) {
-            m_other_list_machine_panel[j]->mPanel->update_machine_info(nullptr);
-            m_other_list_machine_panel[j]->mPanel->Hide();
-        }
-    }
-    return PopupWindow::Show(show);
-}
-
-wxWindow *SelectMachinePopup::create_title_panel(wxString text)
-{
-    auto m_panel_title_own = new wxWindow(m_scrolledWindow, wxID_ANY, wxDefaultPosition, SELECT_MACHINE_ITEM_SIZE, wxTAB_TRAVERSAL);
-    m_panel_title_own->SetBackgroundColour(*wxWHITE);
-
-    wxBoxSizer *m_sizer_title_own = new wxBoxSizer(wxHORIZONTAL);
-
-    auto m_title_own = new wxStaticText(m_panel_title_own, wxID_ANY, text, wxDefaultPosition, wxDefaultSize, 0);
-    m_title_own->Wrap(-1);
-    m_sizer_title_own->Add(m_title_own, 0, wxALIGN_CENTER, 0);
-
-    wxBoxSizer *m_sizer_line_own = new wxBoxSizer(wxHORIZONTAL);
-
-    auto m_panel_line_own = new wxPanel(m_panel_title_own, wxID_ANY, wxDefaultPosition, wxSize(SELECT_MACHINE_ITEM_SIZE.x, FromDIP(1)), wxTAB_TRAVERSAL);
-    m_panel_line_own->SetBackgroundColour(SELECT_MACHINE_GREY400);
-
-    m_sizer_line_own->Add(m_panel_line_own, 0, wxALIGN_CENTER, 0);
-    m_sizer_title_own->Add(0, 0, 0, wxLEFT, FromDIP(10));
-    m_sizer_title_own->Add(m_sizer_line_own, 1, wxEXPAND | wxRIGHT, FromDIP(10));
-
-    m_panel_title_own->SetSizer(m_sizer_title_own);
-    m_panel_title_own->Layout();
-    return m_panel_title_own;
-}
-
-void SelectMachinePopup::on_timer(wxTimerEvent &event)
-{
-    BOOST_LOG_TRIVIAL(trace) << "SelectMachinePopup on_timer";
-    wxGetApp().reset_to_active();
-    wxCommandEvent user_event(EVT_UPDATE_USER_MACHINE_LIST);
-    user_event.SetEventObject(this);
-    wxPostEvent(this, user_event);
-}
-
-void SelectMachinePopup::update_other_devices()
-{
-    DeviceManager* dev = wxGetApp().getDeviceManager();
-    if (!dev) return;
-    m_free_machine_list = dev->get_local_machine_list();
-
-    BOOST_LOG_TRIVIAL(trace) << "SelectMachinePopup update_other_devices start";
-    this->Freeze();
-    m_scrolledWindow->Freeze();
-    int i = 0;
-
-    for (auto &elem : m_free_machine_list) {
-        MachineObject *     mobj = elem.second;
-        /* do not show printer bind state is empty */
-        if (!mobj->is_avaliable()) continue;
-
-        if (!wxGetApp().is_user_login() && !mobj->is_lan_mode_printer())
-            continue;
-
-        /* do not show printer in my list */
-        auto it = m_bind_machine_list.find(mobj->dev_id);
-        if (it != m_bind_machine_list.end())
-            continue;
-
-        MachineObjectPanel* op = nullptr;
-        if (i < m_other_list_machine_panel.size()) {
-            op = m_other_list_machine_panel[i]->mPanel;
-        } else {
-            op = new MachineObjectPanel(m_scrolledWindow, wxID_ANY);
-            MachinePanel* mpanel = new MachinePanel();
-            mpanel->mIndex = wxString::Format("%d", i);
-            mpanel->mPanel = op;
-            m_other_list_machine_panel.push_back(mpanel);
-            m_sizer_other_devices->Add(op, 0, wxEXPAND, 0);
-        }
-#if !QDT_RELEASE_TO_PUBLIC && defined(__WINDOWS__)
-        if (!search_for_printer(mobj)) {
-            op->Hide();
-        }
-        else {
-            op->Show();
-        }
-#else
-        op->Show();
-#endif
-        i++;
-
-        op->update_machine_info(mobj);
-
-        if (mobj->is_lan_mode_printer()) {
-            if (mobj->has_access_right()) {
-                op->set_printer_state(PrinterState::IN_LAN);
-            } else {
-                op->set_printer_state(PrinterState::LOCK);
-            }
-        } else {
-            op->show_edit_printer_name(false);
-            op->show_printer_bind(true, PrinterBindState::ALLOW_BIND);
-            if (mobj->is_in_printing()) {
-                op->set_printer_state(PrinterState::BUSY);
-            } else {
-                op->SetToolTip(_L("Online"));
-                op->set_printer_state(IDLE);
-            }
-        }
-
-        op->Bind(EVT_CONNECT_LAN_PRINT, [this, mobj](wxCommandEvent &e) {
-            if (mobj) {
-                if (mobj->is_lan_mode_printer()) {
-                    ConnectPrinterDialog dlg(wxGetApp().mainframe, wxID_ANY, _L("Input access code"));
-                    dlg.set_machine_object(mobj);
-                    if (dlg.ShowModal() == wxID_OK) {
-                        wxGetApp().mainframe->jump_to_monitor(mobj->dev_id);
-                    }
-                }
-            }
-        });
-
-        op->Bind(EVT_BIND_MACHINE, [this, mobj](wxCommandEvent &e) {
-            BindMachineDialog dlg;
-            dlg.update_machine_info(mobj);
-            int dlg_result = wxID_CANCEL;
-            dlg_result     = dlg.ShowModal();
-            if (dlg_result == wxID_OK) { wxGetApp().mainframe->jump_to_monitor(mobj->dev_id); }
-        });
-    }
-
-    for (int j = i; j < m_other_list_machine_panel.size(); j++) {
-        m_other_list_machine_panel[j]->mPanel->update_machine_info(nullptr);
-        m_other_list_machine_panel[j]->mPanel->Hide();
-    }
-
-    if (m_placeholder_panel != nullptr) {
-        m_scrolledWindow->RemoveChild(m_placeholder_panel);
-        m_placeholder_panel->Destroy();
-        m_placeholder_panel = nullptr;
-    }
-
-    m_placeholder_panel = new wxWindow(m_scrolledWindow, wxID_ANY, wxDefaultPosition, wxSize(-1,FromDIP(26)));
-    wxBoxSizer* placeholder_sizer = new wxBoxSizer(wxVERTICAL);
-    //y36
-    m_hyperlink = new wxHyperlinkCtrl(m_placeholder_panel, wxID_ANY, _L("Can't find my devices?"), wxT("https://wiki.qidi3d.com/en/software/qidi-studio/fluidd"), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
-    placeholder_sizer->Add(m_hyperlink, 0, wxALIGN_CENTER | wxALL, 5);
-
-
-    m_placeholder_panel->SetSizer(placeholder_sizer);
-    m_placeholder_panel->Layout();
-    placeholder_sizer->Fit(m_placeholder_panel);
-
-    m_placeholder_panel->SetBackgroundColour(StateColor::darkModeColorFor(*wxWHITE));
-    m_sizer_other_devices->Add(m_placeholder_panel, 0, wxEXPAND, 0);
-
-    //m_sizer_other_devices->Layout();
-    if(m_other_devices_count != i) {
-		m_scrolledWindow->Fit();
-    }
-    m_scrolledWindow->Layout();
-	m_scrolledWindow->Thaw();
-	Layout();
-	Fit();
-	this->Thaw();
-    m_other_devices_count = i;
-    BOOST_LOG_TRIVIAL(trace) << "SelectMachinePopup update_other_devices end";
-}
-
-void SelectMachinePopup::update_user_devices()
-{
-    Slic3r::DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
-    if (!dev) return;
-
-    if (!m_print_info.empty()) {
-        dev->parse_user_print_info(m_print_info);
-        m_print_info = "";
-    }
-
-    m_bind_machine_list.clear();
-    m_bind_machine_list = dev->get_my_machine_list();
-
-    //sort list
-    std::vector<std::pair<std::string, MachineObject*>> user_machine_list;
-    for (auto& it: m_bind_machine_list) {
-        user_machine_list.push_back(it);
-    }
-
-    std::sort(user_machine_list.begin(), user_machine_list.end(), [&](auto& a, auto&b) {
-            if (a.second && b.second) {
-                return a.second->dev_name.compare(b.second->dev_name) < 0;
-            }
-            return false;
-        });
-
-    BOOST_LOG_TRIVIAL(trace) << "SelectMachinePopup update_machine_list start";
-    this->Freeze();
-    m_scrolledWindow->Freeze();
-    int i = 0;
-
-    for (auto& elem : user_machine_list) {
-        MachineObject* mobj = elem.second;
-        MachineObjectPanel* op = nullptr;
-        if (i < m_user_list_machine_panel.size()) {
-            op = m_user_list_machine_panel[i]->mPanel;
-#if !QDT_RELEASE_TO_PUBLIC && defined(__WINDOWS__)
-			if (!search_for_printer(mobj)) {
-				op->Hide();
-			} else {
-                op->Show();
-            }
-#else
-            op->Show();
-#endif
-        } else {
-            op = new MachineObjectPanel(m_scrolledWindow, wxID_ANY);
-            MachinePanel* mpanel = new MachinePanel();
-            mpanel->mIndex = wxString::Format("%d", i);
-            mpanel->mPanel = op;
-            m_user_list_machine_panel.push_back(mpanel);
-            m_sizer_my_devices->Add(op, 0, wxEXPAND, 0);
-        }
-        i++;
-        op->update_machine_info(mobj, true);
-        //set in lan
-        if (mobj->is_lan_mode_printer()) {
-            if (!mobj->is_online()) {
-                continue;
-            }
-            else {
-                op->show_printer_bind(false, PrinterBindState::NONE);
-                op->show_edit_printer_name(false);
-                if (mobj->has_access_right() && mobj->is_avaliable()) {
-                    op->set_printer_state(PrinterState::IN_LAN);
-                    op->show_printer_bind(true, PrinterBindState::ALLOW_UNBIND);
-                    op->SetToolTip(_L("Online"));
-                }
-                else {
-                    op->set_printer_state(PrinterState::LOCK);
-                }
-            }
-            op->Bind(EVT_UNBIND_MACHINE, [this, dev, mobj](wxCommandEvent& e) {
-                dev->set_selected_machine("");
-                if (mobj) {
-                    mobj->set_access_code("");
-                    mobj->erase_user_access_code();
-                }
-
-                MessageDialog msg_wingow(nullptr, _L("Log out successful."), "", wxAPPLY | wxOK);
-                if (msg_wingow.ShowModal() == wxOK) { return; }
-                });
-        }
-        else {
-            op->show_printer_bind(true, PrinterBindState::ALLOW_UNBIND);
-            op->Bind(EVT_UNBIND_MACHINE, [this, mobj, dev](wxCommandEvent& e) {
-                // show_unbind_dialog
-                UnBindMachineDialog dlg;
-                dlg.update_machine_info(mobj);
-                if (dlg.ShowModal() == wxID_OK) {
-                    dev->set_selected_machine("");
-                }
-                });
-
-            if (!mobj->is_online()) {
-                op->SetToolTip(_L("Offline"));
-                op->set_printer_state(PrinterState::OFFLINE);
-            }
-            else {
-                op->show_edit_printer_name(true);
-                op->show_printer_bind(true, PrinterBindState::ALLOW_UNBIND);
-                if (mobj->is_in_printing()) {
-                    op->SetToolTip(_L("Busy"));
-                    op->set_printer_state(PrinterState::BUSY);
-                }
-                else {
-                    op->SetToolTip(_L("Online"));
-                    op->set_printer_state(PrinterState::IDLE);
-                }
-            }
-        }
-
-        op->Bind(EVT_CONNECT_LAN_PRINT, [this, mobj](wxCommandEvent &e) {
-            if (mobj) {
-                if (mobj->is_lan_mode_printer()) {
-                    ConnectPrinterDialog dlg(wxGetApp().mainframe, wxID_ANY, _L("Input access code"));
-                    dlg.set_machine_object(mobj);
-                    if (dlg.ShowModal() == wxID_OK) {
-                        wxGetApp().mainframe->jump_to_monitor(mobj->dev_id);
-                    }
-                }
-            }
-        });
-
-         op->Bind(EVT_EDIT_PRINT_NAME, [this, mobj](wxCommandEvent &e) {
-            EditDevNameDialog dlg;
-            dlg.set_machine_obj(mobj);
-            dlg.ShowModal();
-         });
-    }
-
-    for (int j = i; j < m_user_list_machine_panel.size(); j++) {
-        m_user_list_machine_panel[j]->mPanel->update_machine_info(nullptr);
-        m_user_list_machine_panel[j]->mPanel->Hide();
-    }
-    //m_sizer_my_devices->Layout();
-
-    if (m_my_devices_count != i) {
-		m_scrolledWindow->Fit();
-    }
-    m_scrolledWindow->Layout();
-    m_scrolledWindow->Thaw();
-	Layout();
-	Fit();
-	this->Thaw();
-    m_my_devices_count = i;
-}
-
-bool SelectMachinePopup::search_for_printer(MachineObject* obj)
-{
-	std::string search_text = std::string((m_search_bar->GetValue()).mb_str());
-	if (search_text.empty()) {
-		return true;
-	}
-	auto name = obj->dev_name;
-	auto ip = obj->dev_ip;
-	auto name_it = name.find(search_text);
-	auto ip_it = ip.find(search_text);
-	if ((name_it != std::string::npos)||(ip_it != std::string::npos)) {
-		return true;
-    }
-
-    return false;
-}
-
-void SelectMachinePopup::on_dissmiss_win(wxCommandEvent &event)
-{
-    Dismiss();
-}
-
-void SelectMachinePopup::update_machine_list(wxCommandEvent &event)
-{
-    update_user_devices();
-    update_other_devices();
-    BOOST_LOG_TRIVIAL(trace) << "SelectMachinePopup update_machine_list end";
-}
-
-void SelectMachinePopup::start_ssdp(bool start)
-{
-    return;
-    //if (wxGetApp().getAgent()) { wxGetApp().getAgent()->start_discovery(true, start); }
-}
-
-void SelectMachinePopup::OnLeftUp(wxMouseEvent &event)
-{
-    auto mouse_pos = ClientToScreen(event.GetPosition());
-    auto wxscroll_win_pos = m_scrolledWindow->ClientToScreen(wxPoint(0, 0));
-
-    if (mouse_pos.x > wxscroll_win_pos.x && mouse_pos.y > wxscroll_win_pos.y && mouse_pos.x < (wxscroll_win_pos.x + m_scrolledWindow->GetSize().x) &&
-        mouse_pos.y < (wxscroll_win_pos.y + m_scrolledWindow->GetSize().y)) {
-
-        for (MachinePanel* p : m_user_list_machine_panel) {
-            auto p_rect = p->mPanel->ClientToScreen(wxPoint(0, 0));
-            if (mouse_pos.x > p_rect.x && mouse_pos.y > p_rect.y && mouse_pos.x < (p_rect.x + p->mPanel->GetSize().x) && mouse_pos.y < (p_rect.y + p->mPanel->GetSize().y)) {
-                wxMouseEvent event(wxEVT_LEFT_UP);
-                auto         tag_pos = p->mPanel->ScreenToClient(mouse_pos);
-                event.SetPosition(tag_pos);
-                event.SetEventObject(p->mPanel);
-                wxPostEvent(p->mPanel, event);
-            }
-        }
-
-        for (MachinePanel* p : m_other_list_machine_panel) {
-            auto p_rect = p->mPanel->ClientToScreen(wxPoint(0, 0));
-            if (mouse_pos.x > p_rect.x && mouse_pos.y > p_rect.y && mouse_pos.x < (p_rect.x + p->mPanel->GetSize().x) && mouse_pos.y < (p_rect.y + p->mPanel->GetSize().y)) {
-                wxMouseEvent event(wxEVT_LEFT_UP);
-                auto         tag_pos = p->mPanel->ScreenToClient(mouse_pos);
-                event.SetPosition(tag_pos);
-                event.SetEventObject(p->mPanel);
-                wxPostEvent(p->mPanel, event);
-            }
-        }
-
-        //pin code
-        auto pc_rect = m_panel_ping_code->ClientToScreen(wxPoint(0, 0));
-        if (mouse_pos.x > pc_rect.x && mouse_pos.y > pc_rect.y && mouse_pos.x < (pc_rect.x + m_panel_ping_code->GetSize().x) && mouse_pos.y < (pc_rect.y + m_panel_ping_code->GetSize().y)) {
-            wxGetApp().popup_ping_bind_dialog();
-        }
-
-        //bind with access code
-        auto dc_rect = m_panel_direct_connection->ClientToScreen(wxPoint(0, 0));
-        if (mouse_pos.x > dc_rect.x && mouse_pos.y > dc_rect.y && mouse_pos.x < (dc_rect.x + m_panel_direct_connection->GetSize().x) && mouse_pos.y < (dc_rect.y + m_panel_direct_connection->GetSize().y)) {
-            InputIpAddressDialog dlgo;
-            dlgo.ShowModal();
-        }
-
-        //hyper link
-        auto h_rect = m_hyperlink->ClientToScreen(wxPoint(0, 0));
-        if (mouse_pos.x > h_rect.x && mouse_pos.y > h_rect.y && mouse_pos.x < (h_rect.x + m_hyperlink->GetSize().x) && mouse_pos.y < (h_rect.y + m_hyperlink->GetSize().y)) {
-          //y36
-          wxLaunchDefaultBrowser(wxT("https://wiki.qidi3d.com/en/software/qidi-studio/fluidd"));
-        }
+        assert(false);
+        return "";
     }
 }
 
-static wxString MACHINE_BED_TYPE_STRING[BED_TYPE_COUNT] = {
-    //_L("Auto"),
-    // y7
-    _L("QIDI Cool Plate"),
-    _L("QIDI Engineering Plate"),
-    _L("QIDI Smooth PEI Plate") + "/" + _L("High temperature Plate"),
-    _L("QIDI Textured PEI Plate"),
-    _L("QIDI Cool Plate SuperTack")
-};
-
-static std::string MachineBedTypeString[BED_TYPE_COUNT] = {
-    //"auto",
-    "pc",
-    "pe",
-    "pei",
-    "pte",
-    "suprtack"
-};
 
 void SelectMachineDialog::stripWhiteSpace(std::string& str)
 {
@@ -934,45 +72,49 @@ void SelectMachineDialog::stripWhiteSpace(std::string& str)
     }
 }
 
-wxString SelectMachineDialog::format_text(wxString &m_msg)
+
+std::vector<wxString> SelectMachineDialog::MACHINE_BED_TYPE_STRING;
+std::vector<string> SelectMachineDialog::MachineBedTypeString;
+void                SelectMachineDialog::init_machine_bed_types()
 {
-    if (wxGetApp().app_config->get("language") != "zh_CN") {return m_msg; }
-
-    wxString out_txt      = m_msg;
-    wxString count_txt    = "";
-    int      new_line_pos = 0;
-
-    for (int i = 0; i < m_msg.length(); i++) {
-        auto text_size = m_statictext_ams_msg->GetTextExtent(count_txt);
-        if (text_size.x < (FromDIP(400))) {
-            count_txt += m_msg[i];
-        } else {
-            out_txt.insert(i - 1, '\n');
-            count_txt = "";
-        }
+    if (MACHINE_BED_TYPE_STRING.size() == 0) {
+        MACHINE_BED_TYPE_STRING = {//_L("Auto"),
+                                   _L("QIDI Cool Plate"),
+                                   _L("QIDI Engineering Plate"),
+                                   _L("QIDI Smooth PEI Plate") + "/" + _L("High temperature Plate"),
+                                   _L("QIDI Textured PEI Plate"),
+                                   _L("QIDI Cool Plate SuperTack")
+        };
+        MachineBedTypeString    = {//"auto",
+                                   "pc", "pe", "pei", "pte", "suprtack"};
     }
-    return out_txt;
 }
-
-//y30
-SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
-    : DPIDialog(static_cast<wxWindow *>(wxGetApp().mainframe), wxID_ANY, _L(title), wxDefaultPosition, wxDefaultSize, wxCAPTION | wxCLOSE_BOX)
+SelectMachineDialog::SelectMachineDialog(Plater *plater)
+    : DPIDialog(static_cast<wxWindow *>(wxGetApp().mainframe), wxID_ANY, _L("Send print job"), wxDefaultPosition, wxDefaultSize, wxCAPTION | wxCLOSE_BOX)
     , m_plater(plater), m_export_3mf_cancel(false)
     , m_mapping_popup(AmsMapingPopup(this))
     , m_mapping_tip_popup(AmsMapingTipPopup(this))
     , m_mapping_tutorial_popup(AmsTutorialPopup(this))
 {
+    init_machine_bed_types();
+#ifdef __WINDOWS__
+    SetDoubleBuffered(true);
+#endif //__WINDOWS__
 
-    //y24
+
+    //y24 y58
     m_isNetMode = wxGetApp().app_config->get("machine_list_net") == "1";
     PresetBundle& preset_bundle = *wxGetApp().preset_bundle;
     preset_typename = preset_bundle.printers.get_edited_preset().get_printer_type(&preset_bundle);
     preset_typename_normalized = NormalizeVendor(preset_typename);
+    init_vendors();
 
+    ops_auto.push_back(POItem{"auto", _L("Auto")});
+    ops_auto.push_back(POItem{"on", _L("On")});
+    ops_auto.push_back(POItem{"off", _L("Off")});
 
-#ifdef __WINDOWS__
-    SetDoubleBuffered(true);
-#endif //__WINDOWS__
+    ops_no_auto.push_back(POItem{"on", _L("On")});
+    ops_no_auto.push_back(POItem{"off", _L("Off")});
 
     // bind
     Bind(wxEVT_CLOSE_WINDOW, &SelectMachineDialog::on_cancel, this);
@@ -989,57 +131,105 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     Freeze();
     SetBackgroundColour(m_colour_def_color);
 
-    m_sizer_main = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* m_scroll_sizer = new wxBoxSizer(wxVERTICAL);
+    m_scroll_area              = new wxScrolledWindow(this);
+    m_scroll_area->SetScrollRate(20, 20);
+    m_scroll_area->SetBackgroundColour(m_colour_def_color);
+    m_scroll_area->SetMinSize(wxSize(FromDIP(700), FromDIP(600)));
+    m_scroll_area->SetMaxSize(wxSize(FromDIP(700), FromDIP(600)));
 
-    m_sizer_main->SetMinSize(wxSize(0, -1));
-    m_line_top = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(-1, 1), wxTAB_TRAVERSAL);
+
+    m_line_top = new wxPanel(m_scroll_area, wxID_ANY, wxDefaultPosition, wxSize(-1, 1), wxTAB_TRAVERSAL);
     m_line_top->SetBackgroundColour(wxColour(166, 169, 170));
 
-    m_scrollable_view   = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-    m_sizer_scrollable_view = new wxBoxSizer(wxVERTICAL);
+    /*mode switch*/
+     /*auto m_sizer_mode_switch = new wxBoxSizer(wxHORIZONTAL);
+     m_mode_print = new SendModeSwitchButton(scroll_area, _L("Print"), true);
+     m_mode_send = new SendModeSwitchButton(scroll_area,_L("Save to printer"), false);
+     m_sizer_mode_switch->Add(m_mode_print, 0, wxALIGN_CENTER, 0);
+     m_sizer_mode_switch->Add(0, 0, 0, wxLEFT, FromDIP(8));
+     m_sizer_mode_switch->Add(m_mode_send,0, wxALIGN_CENTER, 0);
 
-    m_scrollable_region       = new wxPanel(m_scrollable_view, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-    m_sizer_scrollable_region = new wxBoxSizer(wxVERTICAL);
+    m_mode_print->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {
+        m_mode_print->setSelected(true);
+        m_mode_send->setSelected(false);
+        e.Skip();
+    });
 
+    m_mode_send->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {
+        m_mode_print->setSelected(false);
+        m_mode_send->setSelected(true);
+        e.Skip();
+    });*/
 
-    //rename normal
-    m_rename_switch_panel = new wxSimplebook(m_scrollable_region);
-    m_rename_switch_panel->SetSize(wxSize(FromDIP(420), FromDIP(25)));
-    m_rename_switch_panel->SetMinSize(wxSize(FromDIP(420), FromDIP(25)));
-    m_rename_switch_panel->SetMaxSize(wxSize(FromDIP(420), FromDIP(25)));
+    m_basic_panel = new wxPanel(m_scroll_area, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+    m_basic_panel->SetBackgroundColour(*wxWHITE);
+    m_basicl_sizer = new wxBoxSizer(wxHORIZONTAL);
+
+    /*basic info*/
+    /*thumbnail*/
+    auto m_sizer_thumbnail_area = new wxBoxSizer(wxHORIZONTAL);
+
+    auto m_panel_image = new wxPanel(m_basic_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+    m_panel_image->SetBackgroundColour(m_colour_def_color);
+    m_sizer_thumbnail = new wxBoxSizer(wxHORIZONTAL);
+    m_thumbnailPanel = new ThumbnailPanel(m_panel_image);
+    m_thumbnailPanel->SetSize(wxSize(FromDIP(198), FromDIP(198)));
+    m_thumbnailPanel->SetMinSize(wxSize(FromDIP(198), FromDIP(198)));
+    m_thumbnailPanel->SetMaxSize(wxSize(FromDIP(198), FromDIP(198)));
+    m_thumbnailPanel->SetBackgroundColour(*wxWHITE);
+    m_thumbnailPanel->SetToolTip(_L("If the transparency of the mapping changes, this thumbnail is for reference only."));
+    m_sizer_thumbnail->Add(m_thumbnailPanel, 0, wxALIGN_CENTER, 0);
+    m_panel_image->SetSizer(m_sizer_thumbnail);
+    m_panel_image->Layout();
+
+    m_sizer_thumbnail_area->Add(m_panel_image, 0, wxALIGN_CENTER, 0);
+    m_sizer_thumbnail_area->Layout();
+
+    /*basic info right*/
+    auto  sizer_basic_right_info = new wxBoxSizer(wxVERTICAL);
+
+    /*rename*/
+    auto sizer_rename = new wxBoxSizer(wxHORIZONTAL);
+
+    m_rename_switch_panel = new wxSimplebook(m_basic_panel);
+    m_rename_switch_panel->SetBackgroundColour(*wxWHITE);
+    m_rename_switch_panel->SetSize(wxSize(FromDIP(360), FromDIP(25)));
+    m_rename_switch_panel->SetMinSize(wxSize(FromDIP(360), FromDIP(25)));
+    m_rename_switch_panel->SetMaxSize(wxSize(FromDIP(360), FromDIP(25)));
 
     m_rename_normal_panel = new wxPanel(m_rename_switch_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
     m_rename_normal_panel->SetBackgroundColour(*wxWHITE);
     rename_sizer_v = new wxBoxSizer(wxVERTICAL);
     rename_sizer_h = new wxBoxSizer(wxHORIZONTAL);
 
-    m_rename_text = new wxStaticText(m_rename_normal_panel, wxID_ANY, wxT("MyLabel"), wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_END);
-    m_rename_text->SetFont(::Label::Body_13);
-    m_rename_text->SetMaxSize(wxSize(FromDIP(390), -1));
-    m_rename_text->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
-    m_rename_button = new ScalableButton(m_rename_normal_panel, wxID_ANY, "ams_editable");
-    ams_editable    = new ScalableBitmap(this, "ams_editable", 13);
-    ams_editable_light    = new ScalableBitmap(this, "ams_editable_light", 13);
-    m_rename_button->SetBackgroundColour(*wxWHITE);
+    m_rename_text = new wxStaticText(m_rename_normal_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_END);
+    m_rename_text->SetFont(::Label::Head_13);
+    m_rename_text->SetBackgroundColour(*wxWHITE);
+    m_rename_text->SetMaxSize(wxSize(FromDIP(340), -1));
+    rename_editable = new ScalableBitmap(m_scroll_area, "rename_edit", 20);
+    rename_editable_light = new ScalableBitmap(m_scroll_area, "rename_edit", 20);
+    m_rename_button = new wxStaticBitmap(m_rename_normal_panel, wxID_ANY, rename_editable->bmp(), wxDefaultPosition, wxSize(FromDIP(20), FromDIP(20)), 0);
+    m_rename_button->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_HAND); });
+    m_rename_button->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_ARROW); });
 
-    rename_sizer_h->Add(m_rename_text, 0, wxALIGN_CENTER, 0);
+    rename_sizer_h->Add(m_rename_text, 0, wxALIGN_CENTER|wxTOP, FromDIP(2));
+    rename_sizer_h->Add(0,0,0,wxLEFT,FromDIP(3));
     rename_sizer_h->Add(m_rename_button, 0, wxALIGN_CENTER, 0);
-    rename_sizer_v->Add(rename_sizer_h, 1, wxALIGN_CENTER, 0);
+    rename_sizer_v->Add(rename_sizer_h, 1, wxTOP, 0);
     m_rename_normal_panel->SetSizer(rename_sizer_v);
     m_rename_normal_panel->Layout();
     rename_sizer_v->Fit(m_rename_normal_panel);
 
-    //rename edit
     auto m_rename_edit_panel = new wxPanel(m_rename_switch_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
     m_rename_edit_panel->SetBackgroundColour(*wxWHITE);
     auto rename_edit_sizer_v = new wxBoxSizer(wxVERTICAL);
 
     m_rename_input = new ::TextInput(m_rename_edit_panel, wxEmptyString, wxEmptyString, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
-    m_rename_input->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
     m_rename_input->GetTextCtrl()->SetFont(::Label::Body_13);
-    m_rename_input->SetSize(wxSize(FromDIP(380), FromDIP(24)));
-    m_rename_input->SetMinSize(wxSize(FromDIP(380), FromDIP(24)));
-    m_rename_input->SetMaxSize(wxSize(FromDIP(380), FromDIP(24)));
+    m_rename_input->SetSize(wxSize(FromDIP(360), FromDIP(24)));
+    m_rename_input->SetMinSize(wxSize(FromDIP(360), FromDIP(24)));
+    m_rename_input->SetMaxSize(wxSize(FromDIP(360), FromDIP(24)));
     m_rename_input->Bind(wxEVT_TEXT_ENTER, [this](auto& e) {on_rename_enter();});
     m_rename_input->Bind(wxEVT_KILL_FOCUS, [this](auto& e) {
         if (!m_rename_input->HasFocus() && !m_rename_text->HasFocus())
@@ -1053,7 +243,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     m_rename_edit_panel->Layout();
     rename_edit_sizer_v->Fit(m_rename_edit_panel);
 
-    m_rename_button->Bind(wxEVT_BUTTON, &SelectMachineDialog::on_rename_click, this);
+    m_rename_button->Bind(wxEVT_LEFT_DOWN, &SelectMachineDialog::on_rename_click, this);
     m_rename_switch_panel->AddPage(m_rename_normal_panel, wxEmptyString, true);
     m_rename_switch_panel->AddPage(m_rename_edit_panel, wxEmptyString, false);
 
@@ -1073,156 +263,129 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
         }
     });
 
-    auto m_sizer_thumbnail_area = new wxBoxSizer(wxHORIZONTAL);
 
-    auto last_plate_panel = new wxWindow(m_scrollable_region, wxID_ANY);
-    last_plate_panel->SetBackgroundColour(*wxWHITE);
+    /*weight & time*/
+    wxBoxSizer *m_sizer_basic_weight_time = new wxBoxSizer(wxHORIZONTAL);
+
+    print_time   = new ScalableBitmap(m_scroll_area, "print-time", 18);
+    timeimg = new wxStaticBitmap(m_basic_panel, wxID_ANY, print_time->bmp(), wxDefaultPosition, wxSize(FromDIP(18), FromDIP(18)), 0);
+    m_stext_time = new Label(m_basic_panel, wxEmptyString);
+    m_stext_time->SetFont(Label::Body_13);
+
+    print_weight   = new ScalableBitmap(m_scroll_area, "print-weight", 18);
+    weightimg = new wxStaticBitmap(m_basic_panel, wxID_ANY, print_weight->bmp(), wxDefaultPosition, wxSize(FromDIP(18), FromDIP(18)), 0);
+    m_stext_weight = new Label(m_basic_panel, wxEmptyString);
+    m_stext_weight->SetFont(Label::Body_13);
+
+    m_sizer_basic_weight_time->Add(timeimg, 0, wxALIGN_CENTER, 0);
+    m_sizer_basic_weight_time->Add(m_stext_time, 0, wxALIGN_CENTER|wxLEFT, FromDIP(6));
+    m_sizer_basic_weight_time->Add(weightimg, 0, wxALIGN_CENTER|wxLEFT, FromDIP(30));
+    m_sizer_basic_weight_time->Add(m_stext_weight, 0, wxALIGN_CENTER|wxLEFT, FromDIP(6));
+
+    /*last & next page*/
     auto last_plate_sizer = new wxBoxSizer(wxVERTICAL);
-    last_plate_panel->SetMinSize(wxSize(FromDIP(32), FromDIP(32)));
-    m_bitmap_last_plate = new wxStaticBitmap(last_plate_panel, wxID_ANY, create_scaled_bitmap("go_last_plate", this, 32), wxDefaultPosition, wxSize(FromDIP(32), FromDIP(32)), 0);
+    m_bitmap_last_plate = new wxStaticBitmap(m_basic_panel, wxID_ANY, create_scaled_bitmap("go_last_plate", m_scroll_area, 25), wxDefaultPosition, wxSize(FromDIP(25), FromDIP(25)), 0);
+    m_bitmap_last_plate->Hide();
     last_plate_sizer->Add(m_bitmap_last_plate, 0, wxALIGN_CENTER, 0);
-    last_plate_panel->SetSizer(last_plate_sizer);
 
-    m_panel_image = new wxPanel(m_scrollable_region, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-    m_panel_image->SetBackgroundColour(m_colour_def_color);
-    m_sizer_thumbnail = new wxBoxSizer(wxHORIZONTAL);
-    m_thumbnailPanel = new ThumbnailPanel(m_panel_image);
-    m_thumbnailPanel->SetSize(wxSize(FromDIP(256), FromDIP(256)));
-    m_thumbnailPanel->SetMinSize(wxSize(FromDIP(256), FromDIP(256)));
-    m_thumbnailPanel->SetMaxSize(wxSize(FromDIP(256), FromDIP(256)));
-    m_thumbnailPanel->SetBackgroundColour(*wxRED);
-    m_sizer_thumbnail->Add(m_thumbnailPanel, 0, wxALIGN_CENTER, 0);
-    m_panel_image->SetSizer(m_sizer_thumbnail);
-    m_panel_image->Layout();
-
-    auto next_plate_panel = new wxWindow(m_scrollable_region, wxID_ANY);
-    next_plate_panel->SetBackgroundColour(*wxWHITE);
     auto next_plate_sizer = new wxBoxSizer(wxVERTICAL);
-    next_plate_panel->SetMinSize(wxSize(FromDIP(32), FromDIP(32)));
-    m_bitmap_next_plate = new wxStaticBitmap(next_plate_panel, wxID_ANY, create_scaled_bitmap("go_next_plate", this, 32), wxDefaultPosition, wxSize(FromDIP(32), FromDIP(32)), 0);
+    m_bitmap_next_plate = new wxStaticBitmap(m_basic_panel, wxID_ANY, create_scaled_bitmap("go_next_plate", m_scroll_area, 25), wxDefaultPosition, wxSize(FromDIP(25), FromDIP(25)), 0);
+    m_bitmap_next_plate->Hide();
     next_plate_sizer->Add(m_bitmap_next_plate, 0, wxALIGN_CENTER, 0);
-    next_plate_panel->SetSizer(next_plate_sizer);
 
-    m_sizer_thumbnail_area->Add(last_plate_panel, 0, wxALIGN_CENTER, 0);
-    m_sizer_thumbnail_area->Add(m_panel_image, 0, wxALIGN_CENTER|wxLEFT|wxRIGHT, FromDIP(24));
-    m_sizer_thumbnail_area->Add(next_plate_panel, 0, wxALIGN_CENTER, 0);
+    sizer_rename->Add(m_rename_switch_panel, 0,  wxALIGN_CENTER, 0);
+    sizer_rename->Add(0, 0, 0, wxEXPAND, 0);
+    sizer_rename->Add(m_bitmap_last_plate, 0,  wxALIGN_CENTER, 0);
+    sizer_rename->Add(m_bitmap_next_plate, 0,  wxALIGN_CENTER, 0);
 
-    wxBoxSizer *m_sizer_basic        = new wxBoxSizer(wxHORIZONTAL);
-    wxBoxSizer *m_sizer_basic_weight = new wxBoxSizer(wxHORIZONTAL);
-    wxBoxSizer *m_sizer_basic_time   = new wxBoxSizer(wxHORIZONTAL);
+    /*printer combobox*/
+    wxBoxSizer* sizer_split_printer = new wxBoxSizer(wxHORIZONTAL);
+    m_stext_printer_title = new Label(m_basic_panel, _L("Printer"));
+    m_stext_printer_title->SetFont(::Label::Body_14);
+    m_stext_printer_title->SetForegroundColour(0x909090);
+    auto m_split_line = new wxPanel(m_basic_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+    m_split_line->SetBackgroundColour(0xeeeeee);
+    m_split_line->SetMinSize(wxSize(-1, 1));
+    m_split_line->SetMaxSize(wxSize(-1, 1));
+    sizer_split_printer->Add(0, 0, 0, wxEXPAND, 0);
+    sizer_split_printer->Add(m_stext_printer_title, 0, wxALIGN_CENTER, 0);
+    sizer_split_printer->Add(m_split_line, 1, wxALIGN_CENTER_VERTICAL, 0);
 
-    print_time   = new ScalableBitmap(this, "print-time", 18);
-    timeimg = new wxStaticBitmap(m_scrollable_region, wxID_ANY, print_time->bmp(), wxDefaultPosition, wxSize(FromDIP(18), FromDIP(18)), 0);
-    m_sizer_basic_weight->Add(timeimg, 1, wxEXPAND | wxALL, FromDIP(5));
-    m_stext_time = new wxStaticText(m_scrollable_region, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT);
-    m_stext_time->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
-    m_sizer_basic_weight->Add(m_stext_time, 0, wxALL, FromDIP(5));
-    m_sizer_basic->Add(m_sizer_basic_weight, 0, wxALIGN_CENTER, 0);
-    m_sizer_basic->Add(0, 0, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(30));
+    wxBoxSizer* sizer_printer_area = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer* sizer_bed_staticbox = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* sizer_printer_staticbox = new wxBoxSizer(wxHORIZONTAL);
 
-    print_weight   = new ScalableBitmap(this, "print-weight", 18);
-    weightimg = new wxStaticBitmap(m_scrollable_region, wxID_ANY, print_weight->bmp(), wxDefaultPosition, wxSize(FromDIP(18), FromDIP(18)), 0);
-    m_sizer_basic_time->Add(weightimg, 1, wxEXPAND | wxALL, FromDIP(5));
-    m_stext_weight = new wxStaticText(m_scrollable_region, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
-    m_stext_weight->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
-    m_sizer_basic_time->Add(m_stext_weight, 0, wxALL, FromDIP(5));
-    m_sizer_basic->Add(m_sizer_basic_time, 0, wxALIGN_CENTER, 0);
+    /*printer area*/
+    auto printer_staticbox = new StaticBox(m_basic_panel);
+    printer_staticbox->SetMinSize(wxSize(FromDIP(338), FromDIP(68)));
+    printer_staticbox->SetMaxSize(wxSize(FromDIP(338), FromDIP(68)));
+    printer_staticbox->SetBorderColor(wxColour(0xCECECE));
 
-    wxBoxSizer* m_sizer_material_area = new wxBoxSizer(wxHORIZONTAL);
-    wxBoxSizer* m_sizer_material_tips = new wxBoxSizer(wxHORIZONTAL);
+    //y58
+    m_printer_image = new wxStaticBitmap(printer_staticbox, wxID_ANY, create_scaled_bitmap("printer_placeholder", m_scroll_area, 52));
+    m_printer_image->SetMinSize(wxSize(FromDIP(52), FromDIP(52)));
+    m_printer_image->SetMaxSize(wxSize(FromDIP(52), FromDIP(52)));
 
-    enable_ams_mapping      = new ScalableBitmap(this, "enable_ams", 16);
-    img_amsmapping_tip = new wxStaticBitmap(m_scrollable_region, wxID_ANY, enable_ams_mapping->bmp(), wxDefaultPosition, wxSize(FromDIP(16), FromDIP(16)), 0);
-    m_sizer_material_tips->Add(img_amsmapping_tip, 0, wxALIGN_CENTER | wxLEFT, FromDIP(5));
-
-    img_amsmapping_tip->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) {
-        wxPoint img_pos = img_amsmapping_tip->ClientToScreen(wxPoint(0, 0));
-        wxPoint popup_pos(img_pos.x, img_pos.y + img_amsmapping_tip->GetRect().height);
-        m_mapping_tutorial_popup.Position(popup_pos, wxSize(0, 0));
-        m_mapping_tutorial_popup.Popup();
-
-        if (m_mapping_tutorial_popup.ClientToScreen(wxPoint(0, 0)).y < img_pos.y) {
-            m_mapping_tutorial_popup.Dismiss();
-            popup_pos = wxPoint(img_pos.x, img_pos.y - m_mapping_tutorial_popup.GetRect().height);
-            m_mapping_tutorial_popup.Position(popup_pos, wxSize(0, 0));
-            m_mapping_tutorial_popup.Popup();
-        }
-        });
-
-    img_amsmapping_tip->Bind(wxEVT_LEAVE_WINDOW, [this](wxMouseEvent& e) {
-        m_mapping_tutorial_popup.Dismiss();
-        });
-
-    m_sizer_material = new wxGridSizer(0, 4, 0, FromDIP(5));
-
-
-    m_sizer_material_area->Add(m_sizer_material_tips, 0, wxALIGN_CENTER|wxLEFT, FromDIP(8));
-    m_sizer_material_area->Add(m_sizer_material, 0, wxLEFT, FromDIP(15));
-
-    m_sizer_backup = new wxBoxSizer(wxHORIZONTAL);
-    m_ams_backup_tip = new Label(this, _L("Auto Refill"));
-    m_ams_backup_tip->SetFont(::Label::Head_12);
-    m_ams_backup_tip->SetForegroundColour(wxColour(0x4479FB));  // y96
-    m_ams_backup_tip->SetBackgroundColour(*wxWHITE);
-    img_ams_backup = new wxStaticBitmap(this, wxID_ANY, create_scaled_bitmap("automatic_material_renewal", this, 16), wxDefaultPosition, wxSize(FromDIP(16), FromDIP(16)), 0);
-    img_ams_backup->SetBackgroundColour(*wxWHITE);
-
-    m_sizer_backup->Add(0, 0, 1, wxEXPAND, 0);
-    m_sizer_backup->Add(img_ams_backup, 0, wxALL, FromDIP(3));
-    m_sizer_backup->Add(m_ams_backup_tip, 0, wxTOP, FromDIP(5));
-
-    m_ams_backup_tip->Hide();
-    img_ams_backup->Hide();
-
-    m_ams_backup_tip->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_HAND); });
-    img_ams_backup->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_HAND); });
-
-    m_ams_backup_tip->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_ARROW); });
-    img_ams_backup->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_ARROW); });
-
-    m_ams_backup_tip->Bind(wxEVT_LEFT_DOWN, [this](auto& e) { if (!m_is_in_sending_mode) {popup_filament_backup(); on_rename_enter();}  });
-    img_ams_backup->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {if (!m_is_in_sending_mode) popup_filament_backup();on_rename_enter(); });
-
-    m_statictext_ams_msg = new wxStaticText(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL);
-    m_statictext_ams_msg->SetFont(::Label::Body_13);
-    m_statictext_ams_msg->Hide();
-
-    m_line_materia = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(-1, 1), wxTAB_TRAVERSAL);
-    m_line_materia->SetForegroundColour(wxColour(238, 238, 238));
-    m_line_materia->SetBackgroundColour(wxColour(238, 238, 238));
-
-    wxBoxSizer *m_sizer_printer = new wxBoxSizer(wxHORIZONTAL);
-
-    m_stext_printer_title = new wxStaticText(this, wxID_ANY, _L("Printer"), wxDefaultPosition, wxSize(-1, -1), 0);
-    m_stext_printer_title->SetFont(::Label::Head_14);
-    m_stext_printer_title->Wrap(-1);
-    m_stext_printer_title->SetForegroundColour(m_colour_bold_color);
-    m_stext_printer_title->SetBackgroundColour(m_colour_def_color);
-
-    m_sizer_printer->Add(m_stext_printer_title, 0, wxALL | wxLEFT, FromDIP(5));
-    m_sizer_printer->Add(0, 0, 0, wxEXPAND | wxLEFT, FromDIP(12));
-
-    m_comboBox_printer = new ::ComboBox(this, wxID_ANY, "", wxDefaultPosition, wxSize(FromDIP(250), -1), 0, nullptr, wxCB_READONLY);
+    m_comboBox_printer = new ComboBox(printer_staticbox, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_READONLY);
+    m_comboBox_printer->SetBorderWidth(0);
+    m_comboBox_printer->SetMinSize(wxSize(FromDIP(250), FromDIP(60)));
+    m_comboBox_printer->SetMaxSize(wxSize(FromDIP(250), FromDIP(60)));
+    m_comboBox_printer->SetBackgroundColor(*wxWHITE);
     m_comboBox_printer->Bind(wxEVT_COMBOBOX, &SelectMachineDialog::on_selection_changed, this);
+    //m_comboBox_printer->Bind(wxEVT_LEFT_DOWN, [=](auto& e) {
+    //    if (m_print_type != PrintFromType::FROM_SDCARD_VIEW) {e.Skip();}
+    //});
+    //m_comboBox_printer->Bind(wxEVT_LEFT_UP, [=](auto &e) {
+    //    if (m_print_type != PrintFromType::FROM_SDCARD_VIEW) {e.Skip();}
+    //});
+    m_btn_bg_enable = StateColor(
+        std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed),
+        std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+        std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal)
+    );
 
-    m_sizer_printer->Add(m_comboBox_printer, 1, wxEXPAND | wxRIGHT, FromDIP(5));
-    // y96
-    m_btn_bg_enable = StateColor(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
-                               std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
-
-    m_button_refresh = new Button(this, _L("Refresh"));
-    m_button_refresh->SetBackgroundColor(m_btn_bg_enable);
-    m_button_refresh->SetBorderColor(m_btn_bg_enable);
-    m_button_refresh->SetTextColor(StateColor::darkModeColorFor("#FFFFFE"));
-    m_button_refresh->SetSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
-    m_button_refresh->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
-    m_button_refresh->SetCornerRadius(FromDIP(10));
+    m_button_refresh = new ScalableButton(printer_staticbox, wxID_ANY, "refresh_printer", wxEmptyString, wxDefaultSize, wxDefaultPosition, wxBU_EXACTFIT | wxNO_BORDER,true);
     m_button_refresh->Bind(wxEVT_BUTTON, &SelectMachineDialog::on_refresh, this);
-    m_sizer_printer->Add(m_button_refresh, 0, wxALL | wxLEFT, FromDIP(5));
 
-    // y21
-    wxPanel* switch_button_panel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBU_LEFT | wxTAB_TRAVERSAL | wxBU_RIGHT);
-    wxBoxSizer* printer_sizer = new wxBoxSizer(wxHORIZONTAL);
+    sizer_printer_staticbox->Add(0, 0, 0, wxLEFT, FromDIP(7));
+    sizer_printer_staticbox->Add(m_printer_image, 0, wxALIGN_CENTER, 0);
+    sizer_printer_staticbox->Add(m_comboBox_printer, 0, wxALIGN_CENTER, 0);
+    sizer_printer_staticbox->Add(m_button_refresh, 0, wxALIGN_CENTER, 0);
+
+    printer_staticbox->SetSizer(sizer_printer_staticbox);
+    printer_staticbox->Layout();
+    printer_staticbox->Fit();
+
+    /*bed area*/
+    auto bed_staticbox = new StaticBox(m_basic_panel);
+    bed_staticbox->SetMinSize(wxSize(FromDIP(98), FromDIP(68)));
+    bed_staticbox->SetMaxSize(wxSize(FromDIP(98), FromDIP(68)));
+    bed_staticbox->SetBorderColor(wxColour(0xCECECE));
+
+    m_bed_image = new wxStaticBitmap(bed_staticbox, wxID_ANY, create_scaled_bitmap("bed_pei", m_scroll_area, 32));
+    m_bed_image->SetBackgroundColour(*wxWHITE);
+    m_bed_image->SetMinSize(wxSize(FromDIP(32), FromDIP(32)));
+    m_bed_image->SetMaxSize(wxSize(FromDIP(32), FromDIP(32)));
+
+    m_text_bed_type = new Label(bed_staticbox);
+    m_text_bed_type->SetForegroundColour(0xCECECE);
+    m_text_bed_type->SetMaxSize(wxSize(FromDIP(80), FromDIP(24)));
+
+    sizer_bed_staticbox->Add(0, 0, 0, wxTOP, FromDIP(16));
+    sizer_bed_staticbox->Add(m_bed_image, 0, wxALIGN_CENTER, 0);
+    sizer_bed_staticbox->Add(m_text_bed_type, 0, wxALIGN_CENTER, 0);
+
+    bed_staticbox->SetSizer(sizer_bed_staticbox);
+    bed_staticbox->Layout();
+    bed_staticbox->Fit();
+
+    sizer_printer_area->Add(printer_staticbox, 0, wxALIGN_CENTER, 0);
+    sizer_printer_area->Add(0, 0, 0, wxLEFT, FromDIP(4));
+    sizer_printer_area->Add(bed_staticbox, 0, wxALIGN_CENTER, 0);
+
+    //y58
+    wxPanel* switch_button_panel = new wxPanel(m_basic_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBU_LEFT | wxTAB_TRAVERSAL | wxBU_RIGHT);
+    wxBoxSizer* sizer_switch_area = new wxBoxSizer(wxHORIZONTAL);
     switch_button_panel->SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#FFFFFF")));
     m_switch_button = new SwitchButton(switch_button_panel);
     m_switch_button->SetMaxSize(wxSize(100, 100));
@@ -1242,12 +405,18 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
                 m_comboBox_printer->Append(from_u8(machine.display_name));
                 if (m_comboBox_printer->GetValue().empty() && preset_typename_normalized.find(NormalizeVendor(machine.type)) != std::string::npos)
                 {
-                    m_comboBox_printer->SetStringSelection(from_u8(machine.display_name));
+                    if(!wxGetApp().plater()->sidebar().box_list_printer_ip.empty()){
+                        if(machine.url == wxGetApp().plater()->sidebar().box_list_printer_ip)
+                            m_comboBox_printer->SetStringSelection(from_u8(machine.display_name));
+                    }
+                    else{
+                        m_comboBox_printer->SetStringSelection(from_u8(machine.display_name));
+                    }
                     wxCommandEvent event(wxEVT_COMBOBOX, m_comboBox_printer->GetId());
                     event.SetEventObject(m_comboBox_printer);
                     event.SetString(m_comboBox_printer->GetValue());
                     m_comboBox_printer->GetEventHandler()->ProcessEvent(event);
-                }   
+                }
             }
         }
         else
@@ -1259,7 +428,13 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
                 m_comboBox_printer->Append(from_u8(machine.display_name));
                 if (m_comboBox_printer->GetValue().empty() && preset_typename_normalized.find(NormalizeVendor(machine.type)) != std::string::npos)
                 {
-                    m_comboBox_printer->SetStringSelection(from_u8(machine.display_name));
+                    if(!wxGetApp().plater()->sidebar().box_list_printer_ip.empty()){
+                        if(machine.url == wxGetApp().plater()->sidebar().box_list_printer_ip)
+                            m_comboBox_printer->SetStringSelection(from_u8(machine.display_name));
+                    }
+                    else{
+                        m_comboBox_printer->SetStringSelection(from_u8(machine.display_name));
+                    }
                     wxCommandEvent event(wxEVT_COMBOBOX, m_comboBox_printer->GetId());
                     event.SetEventObject(m_comboBox_printer);
                     event.SetString(m_comboBox_printer->GetValue());
@@ -1274,34 +449,9 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
             m_button_ensure->Disable();
             m_button_ensure->SetBackgroundColor(wxColour(0x90, 0x90, 0x90));
             m_button_ensure->SetBorderColor(wxColour(0x90, 0x90, 0x90));
+            update_image();
         }
         });
-
-    //w42
-    /*m_comboBox_printer->Bind(wxEVT_COMBOBOX, [this](wxCommandEvent& evt) {
-        wxString selected = evt.GetString();
-        MachineObject* selected_machine = nullptr;
-        if (!m_isNetMode) {
-            for (auto& machine : machine_list_local) {
-                if (from_u8(machine.display_name) == selected) {
-                    OctoPrint octo(machine.url, machine.ip);
-                    wxString    msg;
-                    if (octo.get_box_state(msg)) {
-                        machine_filament_info = octo.get_box_info(msg);
-                        octo.get_color_filament_str(msg, machine_filament_info);
-                        select_use_box->Show();
-                        get_machine_filament_info();
-                    }
-                    else {
-                        select_use_box->Hide();
-                    }
-                    break;
-                }
-            }
-        }
-        m_sizer_main->Layout();
-        evt.Skip();
-        });*/
 
     m_isSwitch = new wxCheckBox(switch_button_panel, wxID_ANY, _L("Switch to Device tab"), wxDefaultPosition);
     m_isSwitch->SetValue((wxGetApp().app_config->get("switch to device tab after upload") == "true") ? true : false);
@@ -1309,94 +459,335 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     wxToolTip* switch_tips = new wxToolTip(_L("Switch to Device tab after upload."));
     m_isSwitch->SetToolTip(switch_tips);
 
-    printer_sizer->Add(m_switch_button, 0, wxALIGN_CENTER);
-    printer_sizer->AddSpacer(20);
-    printer_sizer->Add(m_isSwitch, 1, wxALIGN_CENTER);
-    switch_button_panel->SetSizer(printer_sizer);
+    sizer_switch_area->Add(m_switch_button, 0, wxALIGN_CENTER);
+    sizer_switch_area->AddSpacer(20);
+    sizer_switch_area->Add(m_isSwitch, 1, wxALIGN_CENTER);
+    switch_button_panel->SetSizer(sizer_switch_area);
     switch_button_panel->Layout();
 
+    wxBoxSizer* sizer_of_printer_switch = new wxBoxSizer(wxVERTICAL);
+    sizer_of_printer_switch->Add(sizer_printer_area, 0, wxTOP, 0);
+    sizer_of_printer_switch->Add(switch_button_panel, 0, wxTOP, 10);
 
-    m_statictext_printer_msg = new wxStaticText(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL);
-    m_statictext_printer_msg->SetFont(::Label::Body_13);
-    m_statictext_printer_msg->Hide();
+    m_text_printer_msg = new Label(m_basic_panel);
+    m_text_printer_msg->SetMinSize(wxSize(FromDIP(420), FromDIP(24)));
+    m_text_printer_msg->SetMaxSize(wxSize(FromDIP(420), FromDIP(24)));
+    m_text_printer_msg->SetFont(::Label::Body_13);
+    m_text_printer_msg->Hide();
 
-    //m_sizer_select = new wxGridSizer(0, 2, 0, 0);
-    m_sizer_select = new wxWrapSizer();
-    select_bed     = create_item_checkbox(_L("Bed Leveling"), this, _L("Bed Leveling"), "bed_leveling");
-    select_flow    = create_item_checkbox(_L("Flow Dynamics Calibration"), this, _L("Flow Dynamics Calibration"), "flow_cali");
-    select_timelapse = create_item_checkbox(_L("Timelapse"), this, _L("Timelapse"), "timelapse");
-    select_use_ams = create_ams_checkbox(_L("Enable BOX"), this, _L("Enable BOX"));
+    m_text_printer_msg_tips = new Label(m_basic_panel);
+    m_text_printer_msg_tips->SetMinSize(wxSize(FromDIP(420), FromDIP(24)));
+    m_text_printer_msg_tips->SetMaxSize(wxSize(FromDIP(420), FromDIP(24)));
+    m_text_printer_msg_tips->SetFont(::Label::Body_13);
+    m_text_printer_msg_tips->SetForegroundColour(wxColour(0x6B, 0x6B, 0x6B));
+    m_text_printer_msg_tips->Hide();
+    m_text_printer_msg_tips->GetAlignment();
 
-    //w42
-    select_use_box = create_ams_checkbox(_L("Enable BOX"), this, _L("Enable BOX"));
+    sizer_basic_right_info->Add(sizer_rename, 0, wxTOP, 0);
+    sizer_basic_right_info->Add(0, 0, 0, wxTOP, FromDIP(5));
+    sizer_basic_right_info->Add(m_sizer_basic_weight_time, 0, wxTOP, 0);
+    sizer_basic_right_info->Add(0, 0, 0, wxTOP, FromDIP(10));
+    sizer_basic_right_info->Add(m_text_bed_type, 0, wxTOP, 0);
+    sizer_basic_right_info->Add(0, 0, 0, wxTOP, FromDIP(15));
+    sizer_basic_right_info->Add(sizer_split_printer, 1, wxEXPAND, 0);
+    sizer_basic_right_info->Add(0, 0, 0, wxTOP, FromDIP(8));
+    sizer_basic_right_info->Add(sizer_of_printer_switch, 0, wxTOP, 0);
+    sizer_basic_right_info->Add(0, 0, 0, wxTOP, FromDIP(10));
+    sizer_basic_right_info->Add(m_text_printer_msg, 0, wxLEFT, 0);
+    sizer_basic_right_info->AddSpacer(FromDIP(4));
+    sizer_basic_right_info->Add(m_text_printer_msg_tips, 0, wxLEFT, 0);
 
-    m_sizer_select->Add(select_bed, 0, wxLEFT | wxRIGHT, WRAP_GAP);
-    m_sizer_select->Add(select_flow, 0, wxLEFT | wxRIGHT, WRAP_GAP);
-    m_sizer_select->Add(select_timelapse, 0, wxLEFT | wxRIGHT, WRAP_GAP);
-    m_sizer_select->Add(select_use_ams, 0, wxLEFT | wxRIGHT, WRAP_GAP);
 
-    //w42
-    m_sizer_select->Add(select_use_box, 0, wxLEFT | wxRIGHT, WRAP_GAP);
+    m_basicl_sizer->Add(m_sizer_thumbnail_area, 0, wxLEFT, 0);
+    m_basicl_sizer->Add(0, 0, 0, wxLEFT, FromDIP(8));
+    m_basicl_sizer->Add(sizer_basic_right_info, 0, wxLEFT, 0);
 
-    select_bed->Show(false);
-    select_flow->Show(false);
-    select_timelapse->Show(false);
-    select_use_ams->Show(false);
 
-    //w42
-    select_use_box->Show(false);
 
-    m_sizer_select->Layout();
+    m_basic_panel->SetSizer(m_basicl_sizer);
+    m_basic_panel->Layout();
 
-    // line schedule
-    m_line_schedule = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(-1, 1));
-    m_line_schedule->SetBackgroundColour(wxColour(238, 238, 238));
 
-    m_simplebook   = new wxSimplebook(this, wxID_ANY, wxDefaultPosition, SELECT_MACHINE_DIALOG_SIMBOOK_SIZE, 0);
+    /*filaments info*/
+    wxBoxSizer* sizer_split_filament = new wxBoxSizer(wxHORIZONTAL);
 
-    // perpare mode
-    m_panel_prepare = new wxPanel(m_simplebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-    m_panel_prepare->SetBackgroundColour(m_colour_def_color);
-    wxBoxSizer *m_sizer_prepare = new wxBoxSizer(wxVERTICAL);
-    wxBoxSizer *m_sizer_pcont   = new wxBoxSizer(wxHORIZONTAL);
+    auto m_stext_filament_title = new Label(m_scroll_area, _L("Filament"));
+    m_stext_filament_title->SetFont(::Label::Body_14);
+    m_stext_filament_title->SetForegroundColour(0x909090);
 
-    m_sizer_prepare->Add(0, 0, 1, wxTOP, FromDIP(12));
+    auto m_split_line_filament = new wxPanel(m_scroll_area, wxID_ANY, wxDefaultPosition, wxSize(-1, 1), wxTAB_TRAVERSAL);
+    m_split_line_filament->SetBackgroundColour(0xeeeeee);
+    m_split_line_filament->SetMinSize(wxSize(-1, 1));
+    m_split_line_filament->SetMaxSize(wxSize(-1, 1));
 
-    auto hyperlink_sizer = new wxBoxSizer(wxHORIZONTAL);
-    //y36
+    m_sizer_autorefill = new wxBoxSizer(wxHORIZONTAL);
+    m_ams_backup_tip = new Label(m_scroll_area, _L("Auto Refill"));
+    m_ams_backup_tip->SetFont(::Label::Head_12);
+    m_ams_backup_tip->SetForegroundColour(wxColour(0x4479fb));
+    m_ams_backup_tip->SetBackgroundColour(*wxWHITE);
+    img_ams_backup = new wxStaticBitmap(m_scroll_area, wxID_ANY, create_scaled_bitmap("automatic_material_renewal", this, 16), wxDefaultPosition, wxSize(FromDIP(16), FromDIP(16)), 0);
+    img_ams_backup->SetBackgroundColour(*wxWHITE);
+
+    m_sizer_autorefill->Add(0, 0, 1, wxEXPAND, 0);
+    m_sizer_autorefill->Add(img_ams_backup, 0, wxALL, FromDIP(3));
+    m_sizer_autorefill->Add(m_ams_backup_tip, 0, wxTOP, FromDIP(5));
+
+    m_ams_backup_tip->Hide();
+    img_ams_backup->Hide();
+
+    m_ams_backup_tip->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_HAND); });
+    img_ams_backup->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_HAND); });
+
+    m_ams_backup_tip->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_ARROW); });
+    img_ams_backup->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_ARROW); });
+
+    m_ams_backup_tip->Bind(wxEVT_LEFT_DOWN, [this](auto& e) { if (!m_is_in_sending_mode) { popup_filament_backup(); on_rename_enter(); }  });
+    img_ams_backup->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {if (!m_is_in_sending_mode) popup_filament_backup(); on_rename_enter(); });
+
+    sizer_split_filament->Add(0, 0, 0, wxEXPAND, 0);
+    sizer_split_filament->Add(m_stext_filament_title, 0, wxALIGN_CENTER, 0);
+    sizer_split_filament->Add(m_split_line_filament, 1, wxALIGN_CENTER_VERTICAL, 0);
+    sizer_split_filament->Add(m_sizer_autorefill, 0, wxALIGN_CENTER, 0);
+
+    /*filament area*/
+    /*1 extruder*/
+    m_filament_panel = new StaticBox(m_scroll_area);
+    m_filament_panel->SetBackgroundColour(wxColour(0xF8F8F8));
+    m_filament_panel->SetBorderWidth(0);
+    m_filament_panel->SetMinSize(wxSize(FromDIP(637), -1));
+    m_filament_panel->SetMaxSize(wxSize(FromDIP(637), -1));
+    m_filament_panel_sizer = new wxBoxSizer(wxVERTICAL);
+
+    m_sizer_ams_mapping = new wxGridSizer(0, 10, FromDIP(7), FromDIP(7));
+    m_filament_panel_sizer->Add(m_sizer_ams_mapping, 0, wxEXPAND|wxALL, FromDIP(10));
+    m_filament_panel->SetSizer(m_filament_panel_sizer);
+    m_filament_panel->Layout();
+    m_filament_panel->Fit();
+
+    /*left & right extruder*/
+    m_sizer_filament_2extruder = new wxBoxSizer(wxHORIZONTAL);
+
+    m_filament_left_panel = new StaticBox(m_scroll_area);
+    m_filament_left_panel->SetBackgroundColour(wxColour(0xF8F8F8));
+    m_filament_left_panel->SetBorderWidth(0);
+    m_filament_left_panel->SetMinSize(wxSize(FromDIP(315), -1));
+    m_filament_left_panel->SetMaxSize(wxSize(FromDIP(315), -1));
+
+    m_filament_panel_left_sizer = new wxBoxSizer(wxVERTICAL);
+    auto left_recommend_title_sizer = new wxBoxSizer(wxHORIZONTAL);
+    auto left_recommend_title1 = new Label(m_filament_left_panel, _L("Left Nozzle"));
+    left_recommend_title1->SetFont(::Label::Head_13);
+    left_recommend_title1->SetBackgroundColour(wxColour(0xF8F8F8));
+    left_recommend_title_sizer->Add(left_recommend_title1, 0, wxALIGN_CENTER, 0);
+
+    m_sizer_ams_mapping_left = new wxGridSizer(0, 5, FromDIP(7), FromDIP(7));
+    m_filament_panel_left_sizer->Add(left_recommend_title_sizer, 0, wxLEFT|wxRIGHT|wxTOP, FromDIP(10));
+    m_filament_panel_left_sizer->Add(m_sizer_ams_mapping_left, 0, wxEXPAND|wxALL, FromDIP(10));
+    m_filament_left_panel->SetSizer(m_filament_panel_left_sizer);
+    m_filament_left_panel->Layout();
+
+    m_filament_right_panel = new StaticBox(m_scroll_area);
+    m_filament_right_panel->SetBorderWidth(0);
+    m_filament_right_panel->SetBackgroundColour(wxColour(0xf8f8f8));
+    m_filament_right_panel->SetMinSize(wxSize(FromDIP(315), -1));
+    m_filament_right_panel->SetMaxSize(wxSize(FromDIP(315), -1));
+
+    m_filament_panel_right_sizer = new wxBoxSizer(wxVERTICAL);
+    auto right_recommend_title_sizer = new wxBoxSizer(wxHORIZONTAL);
+    auto right_recommend_title1 = new Label(m_filament_right_panel, _L("Right Nozzle"));
+    right_recommend_title1->SetFont(::Label::Head_13);
+    right_recommend_title1->SetBackgroundColour(wxColour(0xF8F8F8));
+    right_recommend_title_sizer->Add(right_recommend_title1, 0, wxALIGN_CENTER, 0);
+
+    m_sizer_ams_mapping_right = new wxGridSizer(0, 5, FromDIP(7), FromDIP(7));
+    m_filament_panel_right_sizer->Add(right_recommend_title_sizer, 0, wxLEFT|wxRIGHT|wxTOP, FromDIP(10));
+    m_filament_panel_right_sizer->Add(m_sizer_ams_mapping_right, 0, wxEXPAND|wxALL, FromDIP(10));
+    m_filament_right_panel->SetSizer(m_filament_panel_right_sizer);
+    m_filament_right_panel->Layout();
+
+    m_sizer_filament_2extruder->Add(m_filament_left_panel, 0, wxEXPAND, 0);
+    m_sizer_filament_2extruder->Add( 0, 0, 1, wxEXPAND, 0);
+    m_sizer_filament_2extruder->Add(m_filament_right_panel, 0, wxEXPAND, 0);
+    m_sizer_filament_2extruder->Layout();
+
+    m_filament_panel->Hide();
+
+    m_statictext_ams_msg = new Label(m_scroll_area, wxEmptyString);
+    m_statictext_ams_msg->SetMinSize(wxSize(FromDIP(645), -1));
+    m_statictext_ams_msg->SetMaxSize(wxSize(FromDIP(645), -1));
+    m_statictext_ams_msg->SetFont(::Label::Body_13);
+    m_statictext_ams_msg->Hide();
+
+    /*ams mapping suggestions*/
+    m_link_edit_nozzle = new Label(m_scroll_area, wxEmptyString);
+    m_link_edit_nozzle->SetFont(::Label::Body_13);
+    m_link_edit_nozzle->SetForegroundColour(0x4479fb);
+    m_link_edit_nozzle->SetBackgroundColour(*wxWHITE);
+    m_link_edit_nozzle->Bind(wxEVT_ENTER_WINDOW, [this](auto &e) { SetCursor(wxCURSOR_HAND); });
+    m_link_edit_nozzle->Bind(wxEVT_LEAVE_WINDOW, [this](auto &e) { SetCursor(wxCURSOR_ARROW); });
+    m_link_edit_nozzle->SetLabel(_L("Not satisfied with the grouping of filaments? Regroup and slice ->"));
+
+    m_link_edit_nozzle->Bind(wxEVT_LEFT_DOWN, [this](auto &e) {
+
+        if (this && this->m_is_in_sending_mode) {
+            return;
+        }
+
+        EndModal(wxID_CLOSE);
+        Plater *       plater = wxGetApp().plater();
+        wxCommandEvent evt(EVT_OPEN_FILAMENT_MAP_SETTINGS_DIALOG);
+        evt.SetEventObject(plater);
+        evt.SetInt(1); // 1 means from gcode viewer
+        wxPostEvent(plater, evt);
+    });
+
+    m_mapping_sugs_sizer = new wxBoxSizer(wxHORIZONTAL);
+    //auto m_img_mapping_sugs = new wxStaticBitmap(this, wxID_ANY, create_scaled_bitmap("warning", this, 16), wxDefaultPosition, wxSize(FromDIP(16), FromDIP(16)));
+    auto m_txt_mapping_sugs = new Label(m_scroll_area, wxEmptyString);
+    m_txt_mapping_sugs->SetFont(::Label::Body_13);
+    m_txt_mapping_sugs->SetForegroundColour(wxColour(0xFF, 0x6F, 0x00));
+    m_txt_mapping_sugs->SetMinSize(wxSize(FromDIP(580), -1));
+    m_txt_mapping_sugs->SetMaxSize(wxSize(FromDIP(580), -1));
+    m_txt_mapping_sugs->SetBackgroundColour(*wxWHITE);
+    m_txt_mapping_sugs->SetLabel(_L("Your filament grouping method in the sliced file is not optimal."));
+    //m_mapping_sugs_sizer->Add(m_img_mapping_sugs, 0, wxALIGN_CENTER, 0);
+    m_mapping_sugs_sizer->Add(m_txt_mapping_sugs, 0, wxALIGN_CENTER, 0);
+
+    m_change_filament_times_sizer = new wxBoxSizer(wxHORIZONTAL);
+    //auto m_img_change_filament_times = new wxStaticBitmap(this, wxID_ANY, create_scaled_bitmap("warning", this, 16), wxDefaultPosition, wxSize(FromDIP(16), FromDIP(16)));
+    m_txt_change_filament_times = new Label(m_scroll_area, wxEmptyString);
+    m_txt_change_filament_times->SetFont(::Label::Body_13);
+    m_txt_change_filament_times->SetMinSize(wxSize(FromDIP(580), -1));
+    m_txt_change_filament_times->SetMaxSize(wxSize(FromDIP(580), -1));
+    m_txt_change_filament_times->SetForegroundColour(wxColour(0xFF, 0x6F, 0x00));
+    m_txt_change_filament_times->SetBackgroundColour(*wxWHITE);
+    m_txt_change_filament_times->SetLabel(wxEmptyString);
+    //m_change_filament_times_sizer->Add(m_img_change_filament_times, 0, wxTOP, FromDIP(2));
+    m_change_filament_times_sizer->Add(m_txt_change_filament_times, 0, wxTOP, 0);
+
+    /*Advanced Options*/
+    wxBoxSizer* sizer_split_options = new wxBoxSizer(wxHORIZONTAL);
+    auto m_split_options_line = new wxPanel(m_scroll_area, wxID_ANY);
+    m_split_options_line->SetBackgroundColour(0xEEEEEE);
+    m_split_options_line->SetSize(wxSize(-1, FromDIP(1)));
+    m_split_options_line->SetMinSize(wxSize(-1, FromDIP(1)));
+    m_split_options_line->SetMaxSize(wxSize(-1, FromDIP(1)));
+    sizer_split_options->Add(0, 0, 0, wxEXPAND, 0);
+    sizer_split_options->Add(m_split_options_line, 1, wxALIGN_CENTER, 0);
+
+    wxBoxSizer *sizer_advanced_options_title  = new wxBoxSizer(wxHORIZONTAL);
+
+    //y58
     std::string language = wxGetApp().app_config->get("language");
     wxString    region    = L"en";
     if (language.find("zh") == 0)
         region = L"zh";
-    // wxString hyperlink_1 = wxString::Format(L"https://wiki.qidi3d.com/%s/software/qidi-studio/fluidd", region);
-    // m_hyperlink = new wxHyperlinkCtrl(m_panel_prepare, wxID_ANY, _L("Click here if you can't connect to the printer"), hyperlink_1, wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
     wxString hyperlink_2 = wxString::Format(L"https://wiki.qidi3d.com/%s/software/qidi-studio/troubleshooting/connect-send-problem", region);
-    m_hyperlink = new wxHyperlinkCtrl(m_panel_prepare, wxID_ANY, _L("Click here if you failed to send the print job"), hyperlink_2, wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
+    m_hyperlink = new wxHyperlinkCtrl(m_scroll_area, wxID_ANY, _L("Click here if you failed to send the print job"), hyperlink_2, wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
+    m_hyperlink->SetFont(::Label::Body_12);
 
-    hyperlink_sizer->Add(m_hyperlink, 0, wxALIGN_CENTER | wxALL, 5);
-    m_sizer_prepare->Add(hyperlink_sizer, 0, wxALIGN_CENTER | wxALL, 5);
+    sizer_advanced_options_title->Add(m_hyperlink, 0, wxALIGN_CENTER, 0);
+    sizer_advanced_options_title->Add(0, 0, 1, wxEXPAND, 0);
+
+    m_options_other = new wxPanel(m_scroll_area);
+
+    auto option_timelapse = new PrintOption(m_options_other, _L("Timelapse"), wxEmptyString, ops_no_auto, "timelapse");
+
+        //y60
+        auto option_auto_bed_level = new PrintOption(
+        m_options_other, _L("Auto Bed Leveling"),
+        _L("This checks the flatness of heatbed. Leveling makes extruded height uniform.\n*Automatic mode: Run a leveling check(about 10 seconds). Skip if surface is fine."),
+        ops_no_auto, "bed_leveling");
+
+    auto option_flow_dynamics_cali =
+        new PrintOption(m_options_other, _L("Flow Dynamics Calibration"),
+                        _L("This process determines the dynamic flow values to improve overall print quality.\n*Automatic mode: Skip if the filament was calibrated recently."),
+                        ops_auto, "flow_cali");
+
+    auto option_nozzle_offset_cali_cali  = new PrintOption(
+        m_options_other,
+        _L("Nozzle Offset Calibration"),
+        _L("Calibrate nozzle offsets to enhance print quality.\n*Automatic mode: Check for calibration before printing. Skip if unnecessary."),
+        ops_auto, "nozzle_offset_cali"
+    );
+
+    auto option_use_ams             = new PrintOption(
+        m_options_other,
+        _L("Use BOX"),
+        wxEmptyString,
+        ops_no_auto,
+        "use_ams"
+    );
+
+    option_use_ams->setValue("on");
+
+    m_sizer_options = new wxGridSizer(0, 2, FromDIP(5), FromDIP(28));
+    m_sizer_options->Add(option_timelapse, 0, wxEXPAND);
+    m_sizer_options->Add(option_use_ams, 0, wxEXPAND);
+    m_sizer_options->Add(option_auto_bed_level, 0, wxEXPAND);
+    m_sizer_options->Add(option_flow_dynamics_cali, 0, wxEXPAND);
+    m_sizer_options->Add(option_nozzle_offset_cali_cali, 0, wxEXPAND);
+
+    m_checkbox_list_order.push_back(option_timelapse);
+    m_checkbox_list_order.push_back(option_use_ams);
+    m_checkbox_list_order.push_back(option_auto_bed_level);
+    m_checkbox_list_order.push_back(option_flow_dynamics_cali);
+    m_checkbox_list_order.push_back(option_nozzle_offset_cali_cali);
+
+    m_options_other->SetSizer(m_sizer_options);
+    m_options_other->Layout();
+    m_options_other->Fit();
+
+    m_checkbox_list["timelapse"]     = option_timelapse;
+    m_checkbox_list["bed_leveling"]  = option_auto_bed_level;
+    m_checkbox_list["use_ams"]       = option_use_ams;
+    m_checkbox_list["flow_cali"]     = option_flow_dynamics_cali;
+    m_checkbox_list["nozzle_offset_cali"] = option_nozzle_offset_cali_cali;
+
+    for (auto print_opt : m_checkbox_list_order) {
+        print_opt->Bind(EVT_SWITCH_PRINT_OPTION, [this](auto &e) { save_option_vals(); });
+    }
+
+    option_auto_bed_level->Hide();
+    option_flow_dynamics_cali->Hide();
+    option_nozzle_offset_cali_cali->Hide();
+    option_use_ams->Hide();
+    //y59
+    option_timelapse->Hide();
+
+    m_simplebook   = new wxSimplebook(this, wxID_ANY, wxDefaultPosition, SELECT_MACHINE_DIALOG_SIMBOOK_SIZE2, 0);
+    m_simplebook->SetMinSize(SELECT_MACHINE_DIALOG_SIMBOOK_SIZE2);
+    m_simplebook->SetMaxSize(SELECT_MACHINE_DIALOG_SIMBOOK_SIZE2);
+
+    // perpare mode
+    m_panel_prepare = new wxPanel(m_simplebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+    m_panel_prepare->SetBackgroundColour(m_colour_def_color);
+    wxBoxSizer *m_sizer_prepare = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer *m_sizer_pcont   = new wxBoxSizer(wxVERTICAL);
+
+
 
     m_button_ensure = new Button(m_panel_prepare, _L("Send"));
     m_button_ensure->SetBackgroundColor(m_btn_bg_enable);
     m_button_ensure->SetBorderColor(m_btn_bg_enable);
     m_button_ensure->SetTextColor(StateColor::darkModeColorFor("#FFFFFE"));
-    m_button_ensure->SetSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
-    m_button_ensure->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
-    m_button_ensure->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
-    m_button_ensure->SetCornerRadius(FromDIP(12));
+    m_button_ensure->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE2);
+    m_button_ensure->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE2);
+    m_button_ensure->SetCornerRadius(FromDIP(4));
     m_button_ensure->Bind(wxEVT_BUTTON, &SelectMachineDialog::on_ok_btn, this);
 
     m_sizer_pcont->Add(0, 0, 1, wxEXPAND, 0);
-    m_sizer_pcont->Add(m_button_ensure, 0,wxRIGHT, 0);
+    m_sizer_pcont->Add(m_button_ensure, 0,wxALIGN_CENTER, 0);
 
+    m_sizer_prepare->Add(0, 0, 1, wxTOP, FromDIP(12));
+    m_sizer_prepare->Add(m_sizer_pcont, 0, wxALIGN_CENTER, 0);
 
-    m_sizer_prepare->Add(m_sizer_pcont, 0, wxEXPAND, 0);
     m_panel_prepare->SetSizer(m_sizer_prepare);
     m_panel_prepare->Layout();
     m_simplebook->AddPage(m_panel_prepare, wxEmptyString, true);
 
     // sending mode
-    m_status_bar    = std::make_shared<QDTStatusBarSend>(m_simplebook);
+    m_status_bar    = std::make_shared<QDTStatusBarPrint>(m_simplebook);
     m_panel_sending = m_status_bar->get_panel();
     m_simplebook->AddPage(m_panel_sending, wxEmptyString, false);
 
@@ -1426,11 +817,11 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     m_simplebook->AddPage(m_panel_finish, wxEmptyString, false);
 
     //show bind failed info
-    m_sw_print_failed_info = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxSize(FromDIP(380), FromDIP(125)), wxVSCROLL);
+    m_sw_print_failed_info = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxSize(SELECT_MACHINE_DIALOG_SIMBOOK_SIZE2.x, FromDIP(125)), wxVSCROLL);
     m_sw_print_failed_info->SetBackgroundColour(*wxWHITE);
     m_sw_print_failed_info->SetScrollRate(0, 5);
-    m_sw_print_failed_info->SetMinSize(wxSize(FromDIP(380), FromDIP(125)));
-    m_sw_print_failed_info->SetMaxSize(wxSize(FromDIP(380), FromDIP(125)));
+    m_sw_print_failed_info->SetMinSize(wxSize(SELECT_MACHINE_DIALOG_SIMBOOK_SIZE2.x, FromDIP(125)));
+    m_sw_print_failed_info->SetMaxSize(wxSize(SELECT_MACHINE_DIALOG_SIMBOOK_SIZE2.x, FromDIP(125)));
 
     wxBoxSizer* sizer_print_failed_info = new wxBoxSizer(wxVERTICAL);
     m_sw_print_failed_info->SetSizer(sizer_print_failed_info);
@@ -1451,8 +842,8 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     m_st_txt_error_code->SetFont(::Label::Body_13);
     st_title_error_code->SetMinSize(wxSize(FromDIP(74), -1));
     st_title_error_code->SetMaxSize(wxSize(FromDIP(74), -1));
-    m_st_txt_error_code->SetMinSize(wxSize(FromDIP(260), -1));
-    m_st_txt_error_code->SetMaxSize(wxSize(FromDIP(260), -1));
+    m_st_txt_error_code->SetMinSize(wxSize(FromDIP(500), -1));
+    m_st_txt_error_code->SetMaxSize(wxSize(FromDIP(500), -1));
     sizer_error_code->Add(st_title_error_code, 0, wxALL, 0);
     sizer_error_code->Add(st_title_error_code_doc, 0, wxALL, 0);
     sizer_error_code->Add(m_st_txt_error_code, 0, wxALL, 0);
@@ -1469,8 +860,8 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     m_st_txt_error_desc->SetFont(::Label::Body_13);
     st_title_error_desc->SetMinSize(wxSize(FromDIP(74), -1));
     st_title_error_desc->SetMaxSize(wxSize(FromDIP(74), -1));
-    m_st_txt_error_desc->SetMinSize(wxSize(FromDIP(260), -1));
-    m_st_txt_error_desc->SetMaxSize(wxSize(FromDIP(260), -1));
+    m_st_txt_error_desc->SetMinSize(wxSize(FromDIP(500), -1));
+    m_st_txt_error_desc->SetMaxSize(wxSize(FromDIP(500), -1));
     sizer_error_desc->Add(st_title_error_desc, 0, wxALL, 0);
     sizer_error_desc->Add(st_title_error_desc_doc, 0, wxALL, 0);
     sizer_error_desc->Add(m_st_txt_error_desc, 0, wxALL, 0);
@@ -1486,8 +877,8 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     m_st_txt_extra_info->SetFont(::Label::Body_13);
     st_title_extra_info->SetMinSize(wxSize(FromDIP(74), -1));
     st_title_extra_info->SetMaxSize(wxSize(FromDIP(74), -1));
-    m_st_txt_extra_info->SetMinSize(wxSize(FromDIP(260), -1));
-    m_st_txt_extra_info->SetMaxSize(wxSize(FromDIP(260), -1));
+    m_st_txt_extra_info->SetMinSize(wxSize(FromDIP(500), -1));
+    m_st_txt_extra_info->SetMaxSize(wxSize(FromDIP(500), -1));
     sizer_extra_info->Add(st_title_extra_info, 0, wxALL, 0);
     sizer_extra_info->Add(st_title_extra_info_doc, 0, wxALL, 0);
     sizer_extra_info->Add(m_st_txt_extra_info, 0, wxALL, 0);
@@ -1506,46 +897,44 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     sizer_print_failed_info->Add(0, 0, 0, wxTOP, FromDIP(3));
     sizer_print_failed_info->Add(sizer_extra_info, 0, wxLEFT, 5);
 
-    m_sizer_scrollable_region->Add(m_rename_switch_panel, 0, wxALIGN_CENTER_HORIZONTAL, 0);
-    m_sizer_scrollable_region->Add(0, 0, 0, wxTOP, FromDIP(8));
-    m_sizer_scrollable_region->Add(m_sizer_thumbnail_area, 0, wxALIGN_CENTER_HORIZONTAL, 0);
-    m_sizer_scrollable_region->Add(0, 0, 0, wxTOP, FromDIP(10));
-    m_sizer_scrollable_region->Add(m_sizer_basic, 0, wxALIGN_CENTER_HORIZONTAL, 0);
-    //m_sizer_scrollable_region->Add(m_sizer_material, 0, wxALIGN_CENTER_HORIZONTAL, 0);
-    m_sizer_scrollable_region->Add(m_sizer_material_area, 0, wxLEFT, FromDIP(10));
 
-    m_scrollable_region->SetSizer(m_sizer_scrollable_region);
-    m_scrollable_region->Layout();
-
-    m_scrollable_view->SetSizer(m_sizer_scrollable_view);
-    m_scrollable_view->Layout();
-    m_sizer_scrollable_view->Add(m_scrollable_region, 0, wxEXPAND, 0);
-
-    m_sizer_main->Add(m_line_top, 0, wxEXPAND, 0);
-    m_sizer_main->Add(0, 0, 0, wxTOP, FromDIP(13));
-    m_sizer_main->Add(m_scrollable_view, 0, wxALIGN_CENTER_HORIZONTAL|wxLEFT|wxRIGHT, FromDIP(25));
-    m_sizer_main->Add(m_sizer_backup, 0, wxALIGN_CENTER_HORIZONTAL, 0);
-    m_sizer_main->Add(0, 0, 0, wxEXPAND | wxTOP, FromDIP(6));
-    m_sizer_main->Add(m_statictext_ams_msg, 0, wxALIGN_CENTER_HORIZONTAL, 0);
-    m_sizer_main->Add(0, 0, 0, wxEXPAND | wxTOP, FromDIP(6));
-    m_sizer_main->Add(m_line_materia, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(30));
-    m_sizer_main->Add(0, 0, 0, wxEXPAND | wxTOP, FromDIP(12));
-    m_sizer_main->Add(switch_button_panel, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(30));
-    m_sizer_main->Add(0, 0, 0, wxEXPAND | wxTOP, FromDIP(12));
-    m_sizer_main->Add(m_sizer_printer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(30));
-    m_sizer_main->Add(0, 0, 0, wxEXPAND | wxTOP, FromDIP(11));
-    m_sizer_main->Add(m_statictext_printer_msg, 0, wxALIGN_CENTER_HORIZONTAL, 0);
-    m_sizer_main->Add(0, 1, 0, wxTOP, FromDIP(16));
-    m_sizer_main->Add(m_sizer_select, 0, wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT, FromDIP(30));
-    m_sizer_main->Add(0, 1, 0, wxTOP, FromDIP(10));
-    m_sizer_main->Add(m_line_schedule, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(30));
-    m_sizer_main->Add(m_simplebook, 0, wxALIGN_CENTER_HORIZONTAL, 0);
-    m_sizer_main->Add(m_sw_print_failed_info, 0, wxALIGN_CENTER, 0);
-    m_sizer_main->Add(0, 0, 0, wxEXPAND | wxTOP, FromDIP(18));
+    m_scroll_sizer->Add(m_line_top, 0, wxEXPAND, 0);
+    m_scroll_sizer->Add(0, 0, 0, wxTOP, FromDIP(11));
+    //m_sizer_main->Add(m_sizer_mode_switch, 0, wxALIGN_CENTER, 0);
+    m_scroll_sizer->Add(0, 0, 0, wxTOP, FromDIP(15));
+    m_scroll_sizer->Add(m_basic_panel, 0, wxEXPAND|wxLEFT|wxRIGHT, FromDIP(15));
+    m_scroll_sizer->Add(0, 0, 0, wxTOP, FromDIP(14));
+    m_scroll_sizer->Add(sizer_split_filament, 1, wxEXPAND|wxLEFT|wxRIGHT, FromDIP(15));
+    m_scroll_sizer->Add(m_filament_panel, 0, wxALIGN_CENTER|wxLEFT|wxRIGHT, FromDIP(15));
+    m_scroll_sizer->Add(m_sizer_filament_2extruder, 0, wxEXPAND|wxLEFT|wxRIGHT, FromDIP(15));
+    m_scroll_sizer->Add(0, 0, 0, wxTOP, FromDIP(6));
+    m_scroll_sizer->Add(m_statictext_ams_msg, 0, wxLEFT|wxRIGHT, FromDIP(18));
+    m_scroll_sizer->Add(0, 0, 0, wxTOP, FromDIP(10));
+    m_scroll_sizer->Add(m_mapping_sugs_sizer, 0, wxLEFT|wxRIGHT, FromDIP(18));
+    m_scroll_sizer->Add(m_change_filament_times_sizer, 0,wxLEFT|wxRIGHT, FromDIP(18));
+    m_scroll_sizer->Add(m_link_edit_nozzle, 0, wxLEFT|wxRIGHT, FromDIP(18));
+    m_scroll_sizer->Add(sizer_split_options, 1, wxEXPAND|wxLEFT|wxRIGHT, FromDIP(15));
+    m_scroll_sizer->Add(sizer_advanced_options_title, 1, wxEXPAND|wxLEFT|wxRIGHT, FromDIP(15));
+    m_scroll_sizer->Add(0, 0, 0, wxTOP, FromDIP(10));
+    m_scroll_sizer->Add(m_options_other, 0, wxEXPAND|wxLEFT|wxRIGHT, FromDIP(15));
+    m_scroll_sizer->Add(0, 0, 0, wxTOP, FromDIP(30));
 
     show_print_failed_info(false);
+
+    m_scroll_area->SetSizer(m_scroll_sizer);
+
+    wxBoxSizer *sizer_main = new wxBoxSizer(wxVERTICAL);
+    sizer_main->Add(m_scroll_area, 1, wxEXPAND, 0);
+    sizer_main->Add(m_simplebook, 0, wxALIGN_CENTER, 0);
+    sizer_main->Add(0, 0, 0, wxTOP, FromDIP(10));
+    sizer_main->Add(m_sw_print_failed_info, 0, wxALIGN_CENTER, 0);
+    sizer_main->Add(0, 0, 0, wxTOP, FromDIP(18));
+
+    //y58
     update_user_printer();
-    SetSizer(m_sizer_main);
+    m_link_edit_nozzle->Hide();
+
+    SetSizer(sizer_main);
     Layout();
     Fit();
     Thaw();
@@ -1554,35 +943,6 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater, wxString title)
     init_timer();
     Centre(wxBOTH);
     wxGetApp().UpdateDlgDarkUI(this);
-}
-
-//w42
-void SelectMachineDialog::remove_area()
-{
-    m_scrollable_view->Hide();
-    m_isSwitch->Hide();
-    m_simplebook->Show(false);
-    select_use_box->Hide();
-    m_line_schedule->Hide();
-    m_line_materia->Hide();
-    m_sizer_select->Show(false);
-    m_sizer_select->Layout();
-    
-    m_button_sync = new Button(this, _L("Sync"));
-    m_button_sync->SetBackgroundColor(m_btn_bg_enable);
-    m_button_sync->SetBorderColor(m_btn_bg_enable);
-    m_button_sync->SetTextColor(StateColor::darkModeColorFor("#FFFFFE"));
-    m_button_sync->SetSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
-    m_button_sync->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
-    m_button_sync->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
-    m_button_sync->SetCornerRadius(FromDIP(12));
-    m_button_sync->Bind(wxEVT_BUTTON, &SelectMachineDialog::on_sync_btn, this);
-    m_sizer_main->Add(m_button_sync, 0, wxALIGN_CENTER_HORIZONTAL, FromDIP(30));
-
-    SetSizer(m_sizer_main);
-    Layout();
-    Fit();
-    Thaw();
 }
 
 void SelectMachineDialog::init_bind()
@@ -1595,31 +955,32 @@ void SelectMachineDialog::init_bind()
     Bind(EVT_SET_FINISH_MAPPING, &SelectMachineDialog::on_set_finish_mapping, this);
     Bind(wxEVT_LEFT_DOWN, [this](auto& e) {check_fcous_state(this);e.Skip();});
     m_panel_prepare->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {check_fcous_state(this);e.Skip();});
-    m_scrollable_region->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {check_fcous_state(this);e.Skip();});
+    m_basic_panel->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {check_fcous_state(this);e.Skip();});
     m_bitmap_last_plate->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_HAND); });
     m_bitmap_last_plate->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_ARROW); });
     m_bitmap_next_plate->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_HAND); });
     m_bitmap_next_plate->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_ARROW); });
 
 
-    Bind(EVT_CONNECT_LAN_MODE_PRINT, [this](wxCommandEvent& e) {
-        if (e.GetInt() == 0) {
-            DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
-            if (!dev) return;
-            MachineObject* obj = dev->get_selected_machine();
-            if (!obj) return;
+    // Bind(EVT_CONNECT_LAN_MODE_PRINT, [this](wxCommandEvent& e) {
+    //     if (e.GetInt() == 0) {
+    //         DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+    //         if (!dev) return;
+    //         MachineObject* obj = dev->get_selected_machine();
+    //         if (!obj) return;
 
-            if (obj->dev_id == e.GetString()) {
-                m_comboBox_printer->SetValue(obj->dev_name + "(LAN)");
-            }
-        }
-    });
+    //         if (obj->dev_id == e.GetString()) {
+    //             m_comboBox_printer->SetValue(wxString::FromUTF8(obj->dev_name) + "(LAN)");
+    //         }
+    //     }
+    // });
 
     m_bitmap_last_plate->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {
         if (m_print_plate_idx > 0) {
             m_print_plate_idx--;
             update_page_turn_state(true);
             set_default_from_sdcard();
+            Layout();
         }
     });
 
@@ -1628,6 +989,7 @@ void SelectMachineDialog::init_bind()
             m_print_plate_idx++;
             update_page_turn_state(true);
             set_default_from_sdcard();
+            Layout();
         }
     });
 }
@@ -1650,9 +1012,9 @@ void SelectMachineDialog::show_print_failed_info(bool show, int code, wxString d
             m_st_txt_error_desc->SetLabelText( wxGetApp().filter_string(m_print_error_msg));
             m_st_txt_extra_info->SetLabelText( wxGetApp().filter_string(m_print_error_extra));
 
-            m_st_txt_error_code->Wrap(FromDIP(260));
-            m_st_txt_error_desc->Wrap(FromDIP(260));
-            m_st_txt_extra_info->Wrap(FromDIP(260));
+            m_st_txt_error_code->Wrap(FromDIP(500));
+            m_st_txt_error_desc->Wrap(FromDIP(500));
+            m_st_txt_extra_info->Wrap(FromDIP(500));
         }
         else {
             m_sw_print_failed_info->Show(false);
@@ -1682,182 +1044,40 @@ void SelectMachineDialog::check_fcous_state(wxWindow* window)
 
 void SelectMachineDialog::popup_filament_backup()
 {
-    DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
-    if (!dev) return;
-    if (dev->get_selected_machine()/* && dev->get_selected_machine()->filam_bak.size() > 0*/) {
-        AmsReplaceMaterialDialog* m_replace_material_popup = new AmsReplaceMaterialDialog(this);
-        m_replace_material_popup->update_mapping_result(m_ams_mapping_result);
-        m_replace_material_popup->update_machine_obj(dev->get_selected_machine());
-        m_replace_material_popup->ShowModal();
+    if (m_print_status == PrintStatusUnsupportedPrinter) {
+        return;
     }
-}
 
-wxWindow *SelectMachineDialog::create_ams_checkbox(wxString title, wxWindow *parent, wxString tooltip)
-{
-    auto checkbox = new wxWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-    checkbox->SetBackgroundColour(m_colour_def_color);
+    //y61
+    AmsReplaceMaterialDialog* m_replace_material_popup = new AmsReplaceMaterialDialog(this);
+    m_replace_material_popup->update_to_nozzle(MAIN_NOZZLE_ID);
+    m_replace_material_popup->ShowModal();
 
-    wxBoxSizer *sizer_checkbox = new wxBoxSizer(wxHORIZONTAL);
-    wxBoxSizer *sizer_check    = new wxBoxSizer(wxVERTICAL);
-
-    auto check = new ::CheckBox(checkbox);
-
-    sizer_check->Add(check, 0, wxBOTTOM | wxEXPAND | wxTOP, FromDIP(5));
-
-    sizer_checkbox->Add(sizer_check, 0, wxEXPAND, FromDIP(5));
-    sizer_checkbox->Add(0, 0, 0, wxEXPAND | wxLEFT, FromDIP(11));
-
-    auto text = new wxStaticText(checkbox, wxID_ANY, title, wxDefaultPosition, wxDefaultSize, 0);
-    text->SetFont(::Label::Body_13);
-    text->Wrap(-1);
-    text->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#323A3C")));
-    sizer_checkbox->Add(text, 0, wxALIGN_CENTER, 0);
-
-    enable_ams       = new ScalableBitmap(this, "enable_ams", 16);
-    img_use_ams_tip = new wxStaticBitmap(checkbox, wxID_ANY, enable_ams->bmp(), wxDefaultPosition, wxSize(FromDIP(16), FromDIP(16)), 0);
-    sizer_checkbox->Add(img_use_ams_tip, 0, wxALIGN_CENTER | wxLEFT, FromDIP(5));
-
-    img_use_ams_tip->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) {
-        wxPoint img_pos = img_use_ams_tip->ClientToScreen(wxPoint(0, 0));
-        wxPoint popup_pos(img_pos.x, img_pos.y + img_use_ams_tip->GetRect().height);
-        m_mapping_tip_popup.Position(popup_pos, wxSize(0, 0));
-        m_mapping_tip_popup.Popup();
-
-        if (m_mapping_tip_popup.ClientToScreen(wxPoint(0, 0)).y < img_pos.y) {
-            m_mapping_tip_popup.Dismiss();
-            popup_pos = wxPoint(img_pos.x, img_pos.y - m_mapping_tip_popup.GetRect().height);
-            m_mapping_tip_popup.Position(popup_pos, wxSize(0, 0));
-            m_mapping_tip_popup.Popup();
-        }
-    });
-
-    img_use_ams_tip->Bind(wxEVT_LEAVE_WINDOW, [this](wxMouseEvent& e) {
-        m_mapping_tip_popup.Dismiss();
-        });
-
-    checkbox->SetSizer(sizer_checkbox);
-    checkbox->Layout();
-    sizer_checkbox->Fit(checkbox);
-
-    checkbox->SetToolTip(tooltip);
-    text->SetToolTip(tooltip);
-
-    text->Bind(wxEVT_LEFT_DOWN, [this, check](wxMouseEvent& event) {
-        check->SetValue(check->GetValue() ? false : true);
-        });
-
-    checkbox->Bind(wxEVT_LEFT_DOWN, [this, check](wxMouseEvent& event) {
-        check->SetValue(check->GetValue() ? false : true);
-        });
-
-    m_checkbox_list["use_ams"] = check;
-    return checkbox;
-}
-
-wxWindow *SelectMachineDialog::create_item_checkbox(wxString title, wxWindow *parent, wxString tooltip, std::string param)
-{
-    auto checkbox = new wxWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-    checkbox->SetBackgroundColour(m_colour_def_color);
-
-    wxBoxSizer *sizer_checkbox = new wxBoxSizer(wxHORIZONTAL);
-    wxBoxSizer *sizer_check    = new wxBoxSizer(wxVERTICAL);
-
-    auto check = new ::CheckBox(checkbox);
-
-    sizer_check->Add(check, 0, wxBOTTOM | wxEXPAND | wxTOP, FromDIP(5));
-
-    auto text = new wxStaticText(checkbox, wxID_ANY, title, wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_END);
-    text->SetFont(::Label::Body_12);
-    text->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#323A3C")));
-    text->Wrap(-1);
-    text->SetMinSize(wxSize(FromDIP(140), -1));
-    text->SetMaxSize(wxSize(FromDIP(140), -1));
-
-    sizer_checkbox->Add(sizer_check, 0, wxEXPAND, FromDIP(5));
-    sizer_checkbox->Add(0, 0, 0, wxEXPAND | wxLEFT, FromDIP(7));
-    sizer_checkbox->Add(text, 0, wxALIGN_CENTER, 0);
-
-    checkbox->SetSizer(sizer_checkbox);
-    checkbox->Layout();
-    sizer_checkbox->Fit(checkbox);
-
-    check->SetToolTip(tooltip);
-    text->SetToolTip(tooltip);
-
-
-
-    check->Bind(wxEVT_LEFT_DOWN, [this, check, param](wxMouseEvent &e) {
-        //if (!m_checkbox_state_list[param]) {return;}
-        AppConfig* config = wxGetApp().app_config;
-        if (config) {
-            if (check->GetValue())
-                config->set_str("print", param, "0");
-            else
-                config->set_str("print", param, "1");
-        }
-        e.Skip();
-    });
-
-    checkbox->Bind(wxEVT_LEFT_DOWN, [this, check, param](wxMouseEvent&) {
-        //if (!m_checkbox_state_list[param]) {return;}
-        check->SetValue(check->GetValue() ? false : true);
-        AppConfig* config = wxGetApp().app_config;
-        if (config) {
-            if (check->GetValue())
-                config->set_str("print", param, "1");
-            else
-                config->set_str("print", param, "0");
-        }
-        });
-
-    text->Bind(wxEVT_LEFT_DOWN, [this, check, param](wxMouseEvent &) {
-        //if (!m_checkbox_state_list[param]) {return;}
-        check->SetValue(check->GetValue() ? false : true);
-        AppConfig* config = wxGetApp().app_config;
-        if (config) {
-            if (check->GetValue())
-                config->set_str("print", param, "1");
-            else
-                config->set_str("print", param, "0");
-        }
-    });
-
-    //m_checkbox_state_list[param] = true;
-    m_checkbox_list[param] = check;
-    return checkbox;
+    // DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+    // if (!dev) return;
+    // if (dev->get_selected_machine()/* && dev->get_selected_machine()->filam_bak.size() > 0*/) {
+    //     AmsReplaceMaterialDialog* m_replace_material_popup = new AmsReplaceMaterialDialog(this);
+    //     m_replace_material_popup->update_machine_obj(dev->get_selected_machine());
+    //     m_replace_material_popup->ShowModal();
+    // }
 }
 
 void SelectMachineDialog::update_select_layout(MachineObject *obj)
 {
-    if (obj && obj->is_support_flow_calibration) {
-        select_flow->Show();
-    } else {
-        select_flow->Hide();
-    }
+    update_option_opts(obj);
 
-    if (obj && obj->is_support_auto_leveling) {
-        select_bed->Show();
-    } else {
-        select_bed->Hide();
-    }
+    load_option_vals(obj);
+    if (obj && obj->get_printer_arch() == PrinterArch::ARCH_I3) { m_checkbox_list["timelapse"]->setValue("off"); } /*off timelapse on selected for n series by zhimin.zeng*/
+    save_option_vals(obj);
 
-    if (obj && obj->is_support_timelapse && is_show_timelapse()) {
-        select_timelapse->Show();
-        update_timelapse_enable_status();
-    } else {
-        select_timelapse->Hide();
-    }
-
-    m_sizer_select->Layout();
     Layout();
     Fit();
 }
 
 void SelectMachineDialog::prepare_mode(bool refresh_button)
 {
-    // disable combobox
-    m_comboBox_printer->Enable();
     Enable_Auto_Refill(true);
+    EnableEditing(true);
     show_print_failed_info(false);
 
     m_is_in_sending_mode = false;
@@ -1892,6 +1112,7 @@ void SelectMachineDialog::sending_mode()
     // disable combobox
     m_comboBox_printer->Disable();
     Enable_Auto_Refill(false);
+    EnableEditing(false);
 
     m_is_in_sending_mode = true;
     if (m_simplebook->GetSelection() != 1){
@@ -1911,6 +1132,8 @@ void SelectMachineDialog::sending_mode()
 
 void SelectMachineDialog::finish_mode()
 {
+    EnableEditing(true);
+
     m_print_page_mode = PrintPageModeFinish;
     m_is_in_sending_mode = false;
     m_simplebook->SetSelection(2);
@@ -1922,15 +1145,17 @@ void SelectMachineDialog::finish_mode()
 void SelectMachineDialog::sync_ams_mapping_result(std::vector<FilamentInfo> &result)
 {
     if (result.empty()) {
-        BOOST_LOG_TRIVIAL(trace) << "ams_mapping result is empty";
+        BOOST_LOG_TRIVIAL(info) << "ams_mapping result is empty";
         for (auto it = m_materialList.begin(); it != m_materialList.end(); it++) {
-            wxString ams_id = "-";
+            wxString ams_id = "Ext";//
             wxColour ams_col = wxColour(0xCE, 0xCE, 0xCE);
             it->second->item->set_ams_info(ams_col, ams_id);
         }
         return;
     }
 
+    //y59
+    bool exceed_slot_num = result.size() > (wxGetApp().preset_bundle->filament_ams_list).size() ? true : false;
     for (auto f = result.begin(); f != result.end(); f++) {
         BOOST_LOG_TRIVIAL(trace) << "ams_mapping f id = " << f->id << ", tray_id = " << f->tray_id << ", color = " << f->color << ", type = " << f->type;
 
@@ -1944,9 +1169,11 @@ void SelectMachineDialog::sync_ams_mapping_result(std::vector<FilamentInfo> &res
                 wxString ams_id;
                 wxColour ams_col;
 
-                if (f->tray_id >= 0) {
-                    ams_id = wxGetApp().transition_tridid(f->tray_id);
-                    //ams_id = wxString::Format("%02d", f->tray_id + 1);
+                if (f->tray_id == VIRTUAL_TRAY_MAIN_ID || f->tray_id == VIRTUAL_TRAY_DEPUTY_ID)
+                {
+                    ams_id = "Ext";
+                }else if (f->tray_id >= 0) {
+                    ams_id = wxGetApp().transition_tridid(std::stoi(f->slot_id));   //y59
                 } else {
                     ams_id = "-";
                 }
@@ -1962,6 +1189,9 @@ void SelectMachineDialog::sync_ams_mapping_result(std::vector<FilamentInfo> &res
                     cols.push_back(AmsTray::decode_color(col));
                 }
                 m->set_ams_info(ams_col, ams_id,f->ctype, cols);
+                //y59
+                if (exceed_slot_num)
+                    m->disable();
                 break;
             }
             iter++;
@@ -1986,29 +1216,148 @@ void print_ams_mapping_result(std::vector<FilamentInfo>& result)
     }
 }
 
-bool SelectMachineDialog::do_ams_mapping(MachineObject *obj_)
+bool SelectMachineDialog::do_ams_mapping(MachineObject *obj_,bool use_ams)
 {
-    if (!obj_) return false;
-    obj_->get_ams_colors(m_cur_colors_in_thumbnail);
+    //y59
+    std::vector<std::string> box_colors = m_plater->box_msg.filament_colors;
+    for (std::string color : box_colors) {
+        if (!color.empty()) {
+            color.erase(0, 1);
+            color += "FF";
+            auto box_color = AmsTray::decode_color(color);
+            m_cur_colors_in_thumbnail.emplace_back(box_color);
+        }
+    }
     // try color and type mapping
-    int result = obj_->ams_filament_mapping(m_filaments, m_ams_mapping_result);
-    if (result == 0) {
+
+    const auto& full_config = wxGetApp().preset_bundle->full_config();
+    const auto& project_config = wxGetApp().preset_bundle->project_config;
+    size_t nozzle_nums = full_config.option<ConfigOptionFloatsNullable>("nozzle_diameter")->values.size();
+
+    if (m_print_type == FROM_NORMAL) {
+        m_filaments_map = wxGetApp().plater()->get_partplate_list().get_curr_plate()->get_real_filament_maps(project_config);
+    }
+
+    int filament_result = 0;
+    std::vector<bool> map_opt;  //four values: use_left_ams, use_right_ams, use_left_ext, use_right_ext
+    if (nozzle_nums > 1){
+        //get nozzle property, the extders are same?
+        if (true/*!can_hybrid_mapping(obj_->m_extder_data)*/){
+            std::vector<FilamentInfo>           m_ams_mapping_result_left, m_ams_mapping_result_right;
+            std::vector<FilamentInfo>           m_filament_left, m_filament_right;
+            for (auto it = m_filaments.begin(); it != m_filaments.end(); it++){
+                if (it->id < 0 || it->id > m_filaments_map.size()){
+                    BOOST_LOG_TRIVIAL(info) << "error: do_ams_mapping: m_filaments[].it" << it->id;
+                    BOOST_LOG_TRIVIAL(info) << "m_filaments_map.size()" << m_filaments_map.size();
+                    return false;
+                }
+
+                if (it->id < m_filaments_map.size()) {
+                    if (m_filaments_map[it->id] == 1)
+                        m_filament_left.push_back(*it);
+                    else if (m_filaments_map[it->id] == 2)
+                        m_filament_right.push_back(*it);
+                }
+            }
+
+            bool has_left_ams = false, has_right_ams = false;
+            for (auto ams_item : obj_->amsList) {
+                if (ams_item.second->nozzle == 0) {
+                    if (obj_->is_main_extruder_on_left())
+                        has_left_ams = true;
+                    else
+                        has_right_ams = true;
+                }
+                else if (ams_item.second->nozzle == 1) {
+                    if (obj_->is_main_extruder_on_left())
+                        has_right_ams = true;
+                    else
+                        has_left_ams = true;
+                }
+
+                if (has_left_ams && has_right_ams)
+                    break;
+            }
+
+            map_opt = {true, false, !has_left_ams, false};   //four values: use_left_ams, use_right_ams, use_left_ext, use_right_ext
+            if (!use_ams) {
+                map_opt[0] = false;
+                map_opt[2] = true;
+            }
+            int result_first = obj_->ams_filament_mapping(m_filament_left, m_ams_mapping_result_left, map_opt);
+            map_opt = { false, true, false, !has_right_ams };
+            if (!use_ams) {
+                map_opt[1] = false;
+                map_opt[3] = true;
+            }
+            int result_second = obj_->ams_filament_mapping(m_filament_right, m_ams_mapping_result_right, map_opt);
+
+            //m_ams_mapping_result.clear();
+            m_ams_mapping_result.resize(m_ams_mapping_result_left.size() + m_ams_mapping_result_right.size());
+            std::merge(m_ams_mapping_result_left.begin(), m_ams_mapping_result_left.end(), m_ams_mapping_result_right.begin(),
+                m_ams_mapping_result_right.end(), m_ams_mapping_result.begin(),
+                [](const FilamentInfo& f1, const FilamentInfo& f2) {
+                    return f1.id < f2.id; // Merge based on age
+                });
+            filament_result = (result_first && result_second);
+        }
+        //can hybrid mapping
+        else {
+            map_opt = { true, true, true, true };   //four values: use_left_ams, use_right_ams, use_left_ext, use_right_ext
+            if (!use_ams) {
+                map_opt[0] = false;
+                map_opt[1] = false;
+            }
+            filament_result = obj_->ams_filament_mapping(m_filaments, m_ams_mapping_result, map_opt);
+        }
+        //When filaments cannot be matched automatically, whether to use ext for automatic supply
+        //auto_supply_with_ext(obj_->vt_slot);
+    }
+
+    //single nozzle
+    else {
+        if (obj_->is_support_amx_ext_mix_mapping()){
+            map_opt = { false, true, false, false }; //four values: use_left_ams, use_right_ams, use_left_ext, use_right_ext
+            if (!use_ams) {
+                map_opt[1] = false;
+                map_opt[3] = true;
+            }
+            filament_result = obj_->ams_filament_mapping(m_filaments, m_ams_mapping_result, map_opt);
+            //auto_supply_with_ext(obj_->vt_slot);
+        }
+        else {
+            map_opt = { false, true, false, false };
+            if (!use_ams) {
+                map_opt[1] = false;
+                map_opt[3] = true;
+            }
+            filament_result = obj_->ams_filament_mapping(m_filaments, m_ams_mapping_result, map_opt);
+        }
+    }
+
+    if (filament_result == 0) {
         print_ams_mapping_result(m_ams_mapping_result);
         std::string ams_array;
+        std::string ams_array2;
         std::string mapping_info;
-        get_ams_mapping_result(ams_array, mapping_info);
+        get_ams_mapping_result(ams_array, ams_array2, mapping_info);
         if (ams_array.empty()) {
             reset_ams_material();
+            if (m_print_type == FROM_NORMAL) {
+                updata_thumbnail_data_after_connected_printer(); // FIX:update cur plate thumbnail
+            }
             BOOST_LOG_TRIVIAL(info) << "ams_mapping_array=[]";
         } else {
             sync_ams_mapping_result(m_ams_mapping_result);
             BOOST_LOG_TRIVIAL(info) << "ams_mapping_array=" << ams_array;
+            BOOST_LOG_TRIVIAL(info) << "ams_mapping_array2=" << ams_array2;
+            BOOST_LOG_TRIVIAL(info) << "ams_mapping_info=" << mapping_info;
         }
         return obj_->is_valid_mapping_result(m_ams_mapping_result);
     } else {
         // do not support ams mapping try to use order mapping
         bool is_valid = obj_->is_valid_mapping_result(m_ams_mapping_result);
-        if (result != 1 && !is_valid) {
+        if (filament_result != 1 && !is_valid) {
             //reset invalid result
             for (int i = 0; i < m_ams_mapping_result.size(); i++) {
                 m_ams_mapping_result[i].tray_id = -1;
@@ -2016,13 +1365,13 @@ bool SelectMachineDialog::do_ams_mapping(MachineObject *obj_)
             }
         }
         sync_ams_mapping_result(m_ams_mapping_result);
-           return is_valid;
+        return is_valid;
     }
 
     return true;
 }
 
-bool SelectMachineDialog::get_ams_mapping_result(std::string &mapping_array_str, std::string &ams_mapping_info)
+bool SelectMachineDialog::get_ams_mapping_result(std::string &mapping_array_str, std::string& mapping_array_str2, std::string &ams_mapping_info)
 {
     if (m_ams_mapping_result.empty())
         return false;
@@ -2039,38 +1388,289 @@ bool SelectMachineDialog::get_ams_mapping_result(std::string &mapping_array_str,
     if (invalid_count == m_ams_mapping_result.size()) {
         return false;
     } else {
-        json          j = json::array();
-        json mapping_info_json = json::array();
-        for (int i = 0; i < wxGetApp().preset_bundle->filament_presets.size(); i++) {
-            int tray_id = -1;
-            json mapping_item;
-            mapping_item["ams"] = tray_id;
-            mapping_item["targetColor"] = "";
-            mapping_item["filamentId"] = "";
-            mapping_item["filamentType"] = "";
+        if (m_print_type == FROM_NORMAL) {
+            json mapping_v0_json   = json::array();
+            json mapping_v1_json   = json::array();
+            json mapping_info_json = json::array();
 
-            for (int k = 0; k < m_ams_mapping_result.size(); k++) {
-                if (m_ams_mapping_result[k].id == i) {
-                    tray_id = m_ams_mapping_result[k].tray_id;
-                    mapping_item["ams"]             = tray_id;
-                    mapping_item["filamentType"]    = m_filaments[k].type;
-                    auto it = wxGetApp().preset_bundle->filaments.find_preset(wxGetApp().preset_bundle->filament_presets[i]);
-                    if (it != nullptr) {
-                        mapping_item["filamentId"] = it->filament_id;
-                    }
-                    //convert #RRGGBB to RRGGBBAA
-                    mapping_item["sourceColor"]     = m_filaments[k].color;
-                    mapping_item["targetColor"]     = m_ams_mapping_result[k].color;
+            /* get filament maps */
+            std::vector<int> filament_maps;
+            Plater *         plater = wxGetApp().plater();
+            if (plater) {
+                PartPlate *curr_plate = plater->get_partplate_list().get_curr_plate();
+                if (curr_plate) {
+                    filament_maps = curr_plate->get_filament_maps();
+                } else {
+                    BOOST_LOG_TRIVIAL(error) << "get_ams_mapping_result, curr_plate is nullptr";
                 }
+            } else {
+                BOOST_LOG_TRIVIAL(error) << "get_ams_mapping_result, plater is nullptr";
             }
-            j.push_back(tray_id);
-            mapping_info_json.push_back(mapping_item);
+
+            for (int i = 0; i < wxGetApp().preset_bundle->filament_presets.size(); i++) {
+                int  tray_id = -1;
+                json mapping_item_v1;
+                mapping_item_v1["ams_id"]  = 0xff;
+                mapping_item_v1["slot_id"] = 0xff;
+                json mapping_item;
+                mapping_item["ams"]          = tray_id;
+                mapping_item["targetColor"]  = "";
+                mapping_item["filamentId"]   = "";
+                mapping_item["filamentType"] = "";
+                for (int k = 0; k < m_ams_mapping_result.size(); k++) {
+                    if (m_ams_mapping_result[k].id == i) {
+                        tray_id                      = m_ams_mapping_result[k].tray_id;
+                        mapping_item["ams"]          = tray_id;
+                        mapping_item["filamentType"] = m_filaments[k].type;
+                        if (i >= 0 && i < wxGetApp().preset_bundle->filament_presets.size()) {
+                            auto it = wxGetApp().preset_bundle->filaments.find_preset(wxGetApp().preset_bundle->filament_presets[i]);
+                            if (it != nullptr) { mapping_item["filamentId"] = it->filament_id; }
+                        }
+                        /* nozzle id */
+                        if (i >= 0 && i < filament_maps.size()) { mapping_item["nozzleId"] = convert_filament_map_nozzle_id_to_task_nozzle_id(filament_maps[i]); }
+                        // convert #RRGGBB to RRGGBBAA
+                        mapping_item["sourceColor"] = m_filaments[k].color;
+                        mapping_item["targetColor"] = m_ams_mapping_result[k].color;
+                        if (tray_id == VIRTUAL_TRAY_MAIN_ID || tray_id == VIRTUAL_TRAY_DEPUTY_ID) { tray_id = -1; }
+
+                        /*new ams mapping data*/
+                        try {
+                            if (m_ams_mapping_result[k].ams_id.empty() || m_ams_mapping_result[k].slot_id.empty()) { // invalid case
+                                mapping_item_v1["ams_id"]  = VIRTUAL_TRAY_MAIN_ID;
+                                mapping_item_v1["slot_id"] = VIRTUAL_TRAY_MAIN_ID;
+                            } else {
+                                mapping_item_v1["ams_id"]  = std::stoi(m_ams_mapping_result[k].ams_id);
+                                mapping_item_v1["slot_id"] = std::stoi(m_ams_mapping_result[k].slot_id);
+                            }
+                        } catch (...) {}
+                    }
+                }
+                mapping_v0_json.push_back(tray_id);
+                mapping_v1_json.push_back(mapping_item_v1);
+                mapping_info_json.push_back(mapping_item);
+            }
+
+            mapping_array_str  = mapping_v0_json.dump();
+            mapping_array_str2 = mapping_v1_json.dump();
+            ams_mapping_info   = mapping_info_json.dump();
+            return valid_mapping_result;
+        } else if(m_print_type == FROM_SDCARD_VIEW){
+            json mapping_v0_json   = json::array();
+            json mapping_v1_json   = json::array();
+
+            for (int  i = 0; i < m_filaments_map.size(); i++) {
+                int mapping_result = -1;
+                json mapping_item_v1;
+                mapping_item_v1["ams_id"]  = 0xff;
+                mapping_item_v1["slot_id"] = 0xff;
+
+                try {
+                    for (int k = 0; k < m_ams_mapping_result.size(); k++) {
+                        if (m_ams_mapping_result[k].id == i) {
+                            mapping_result = m_ams_mapping_result[k].tray_id;
+                            mapping_item_v1["ams_id"]  = std::stoi(m_ams_mapping_result[k].ams_id);
+                            mapping_item_v1["slot_id"] = std::stoi(m_ams_mapping_result[k].slot_id);
+                        }
+                    }
+                } catch (...) {}
+
+                mapping_v0_json.push_back(mapping_result);
+                mapping_v1_json.push_back(mapping_item_v1);
+                mapping_array_str  = mapping_v0_json.dump();
+                mapping_array_str2 = mapping_v1_json.dump();
+            }
+            return true;
         }
-        mapping_array_str = j.dump();
-        ams_mapping_info = mapping_info_json.dump();
-        return valid_mapping_result;
     }
     return true;
+}
+
+bool SelectMachineDialog::build_nozzles_info(std::string& nozzles_info)
+{
+    /* init nozzles info */
+    json nozzle_info_json = json::array();
+    nozzles_info = nozzle_info_json.dump();
+
+    PresetBundle* preset_bundle = wxGetApp().preset_bundle;
+    if (!preset_bundle)
+        return false;
+    auto opt_nozzle_diameters = preset_bundle->printers.get_edited_preset().config.option<ConfigOptionFloatsNullable>("nozzle_diameter");
+    if (opt_nozzle_diameters == nullptr) {
+        BOOST_LOG_TRIVIAL(error) << "build_nozzles_info, opt_nozzle_diameters is nullptr";
+        return false;
+    }
+    auto opt_nozzle_volume_type = preset_bundle->project_config.option<ConfigOptionEnumsGeneric>("nozzle_volume_type");
+    if (opt_nozzle_volume_type == nullptr) {
+        BOOST_LOG_TRIVIAL(error) << "build_nozzles_info, opt_nozzle_volume_type is nullptr";
+        return false;
+    }
+    json nozzle_item;
+    /* only o1d two nozzles has build_nozzles info now */
+    if (opt_nozzle_diameters->size() != 2) {
+        return false;
+    }
+    for (size_t i = 0; i < opt_nozzle_diameters->size(); i++) {
+        if (i == (size_t)ConfigNozzleIdx::NOZZLE_LEFT) {
+            nozzle_item["id"] = CloudTaskNozzleId::NOZZLE_LEFT;
+        }
+        else if (i == (size_t)ConfigNozzleIdx::NOZZLE_RIGHT) {
+            nozzle_item["id"] = CloudTaskNozzleId::NOZZLE_RIGHT;
+        }
+        else {
+            /* unknown ConfigNozzleIdx */
+            BOOST_LOG_TRIVIAL(error) << "build_nozzles_info, unknown ConfigNozzleIdx = " << i;
+            assert(false);
+            continue;
+        }
+        nozzle_item["type"] = nullptr;
+        if (i >= 0 && i < opt_nozzle_volume_type->size()) {
+            nozzle_item["flowSize"] = get_nozzle_volume_type_cloud_string((NozzleVolumeType)opt_nozzle_volume_type->get_at(i));
+        }
+        if (i >= 0 && i < opt_nozzle_diameters->size()) {
+            nozzle_item["diameter"] = opt_nozzle_diameters->get_at(i);
+        }
+        nozzle_info_json.push_back(nozzle_item);
+    }
+    nozzles_info = nozzle_info_json.dump();
+    return true;
+}
+
+bool SelectMachineDialog::can_hybrid_mapping(ExtderData data) {
+    // Mixed mappings are not allowed
+    return false;
+
+    if (data.total_extder_count <= 1 || data.extders.size() <= 1 || !wxGetApp().preset_bundle)
+        return false;
+
+    //The default two extruders are left, right, but the order of the extruders on the machine is right, left.
+    //Therefore, some adjustments need to be made.
+    std::vector<std::string>flow_type_of_machine;
+    for (auto it = data.extders.rbegin(); it != data.extders.rend(); it++){
+        //exist field is not updated, wait add
+        //if (it->exist < 3) return false;
+        std::string type_str = it->current_nozzle_flow_type ? "High Flow" : "Standard";
+        flow_type_of_machine.push_back(type_str);
+    }
+    //get the nozzle type of preset --> flow_types
+    const Preset& current_printer = wxGetApp().preset_bundle->printers.get_selected_preset();
+    const Preset* base_printer = wxGetApp().preset_bundle->printers.get_preset_base(current_printer);
+    std::string base_name = base_printer->name;
+    auto flow_data = wxGetApp().app_config->get_nozzle_volume_types_from_config(base_name);
+    std::vector<string> flow_types;
+    boost::split(flow_types, flow_data, boost::is_any_of(","));
+    if (flow_types.size() <= 1 || flow_types.size() != flow_type_of_machine.size()) return false;
+
+    //Only when all preset nozzle types and machine nozzle types are exactly the same, return true.
+    auto type = flow_types[0];
+    for (int i = 0; i < flow_types.size(); i++){
+        if (flow_types[i] != type || flow_type_of_machine[i] != type)
+            return false;
+    }
+    return true;
+}
+
+//When filaments cannot be matched automatically, whether to use ext for automatic supply
+void SelectMachineDialog::auto_supply_with_ext(std::vector<AmsTray> slots) {
+    if (slots.size() <= 0) return;
+
+    for (int i = 0; i < m_ams_mapping_result.size(); i++) {
+        auto it = m_ams_mapping_result[i];
+        if (it.ams_id == "") {
+            AmsTray slot("");
+            if (m_filaments_map[it.id] == 1 && slots.size() > 1) slot = slots[1];
+            else if (m_filaments_map[it.id] == 2) slot = slots[0];
+            if (slot.id.empty()) continue;
+            m_ams_mapping_result[i].ams_id = slot.id;
+            m_ams_mapping_result[i].color = slot.color;
+            m_ams_mapping_result[i].type = slot.type;
+            m_ams_mapping_result[i].colors = slot.cols;
+            m_ams_mapping_result[i].tray_id = atoi(slot.id.c_str());
+            m_ams_mapping_result[i].slot_id = "0";
+        }
+    }
+}
+
+bool SelectMachineDialog::is_nozzle_type_match(ExtderData data, wxString& error_message) const {
+    if (data.total_extder_count <= 1 || data.extders.size() <= 1 || !wxGetApp().preset_bundle)
+        return false;
+
+    const auto& project_config = wxGetApp().preset_bundle->project_config;
+    //check nozzle used
+    auto used_filaments = wxGetApp().plater()->get_partplate_list().get_curr_plate()->get_used_filaments(); // 1 based
+    auto filament_maps  = wxGetApp().plater()->get_partplate_list().get_curr_plate()->get_real_filament_maps(project_config);  // 1 based
+    std::map<int, std::string> used_extruders_flow;
+    std::vector<int> used_extruders; // 0 based
+    for (auto f : used_filaments) {
+        int filament_extruder = filament_maps[f - 1] - 1;
+        if (std::find(used_extruders.begin(), used_extruders.end(), filament_extruder) == used_extruders.end()) used_extruders.emplace_back(filament_extruder);
+    }
+
+    std::sort(used_extruders.begin(), used_extruders.end());
+
+    auto nozzle_volume_type_opt = dynamic_cast<const ConfigOptionEnumsGeneric *>(wxGetApp().preset_bundle->project_config.option("nozzle_volume_type"));
+    for (auto i = 0; i < used_extruders.size(); i++) {
+        if (nozzle_volume_type_opt) {
+            NozzleVolumeType nozzle_volume_type = (NozzleVolumeType) (nozzle_volume_type_opt->get_at(used_extruders[i]));
+            if (nozzle_volume_type == NozzleVolumeType::nvtStandard) { used_extruders_flow[used_extruders[i]] = "Standard";}
+            else {used_extruders_flow[used_extruders[i]] = "High Flow";}
+        }
+    }
+
+    vector<int> map_extruders = {1, 0};
+
+
+    // The default two extruders are left, right, but the order of the extruders on the machine is right, left.
+    std::vector<std::string> flow_type_of_machine;
+    for (auto it = data.extders.begin(); it != data.extders.end(); it++) {
+        if (it->current_nozzle_flow_type == NozzleFlowType::H_FLOW) {
+            flow_type_of_machine.push_back(L("High Flow"));
+        } else if (it->current_nozzle_flow_type == NozzleFlowType::S_FLOW){
+            flow_type_of_machine.push_back(L("Standard"));
+        }
+    }
+
+    //Only when all preset nozzle types and machine nozzle types are exactly the same, return true.
+    for (std::map<int, std::string>::iterator it = used_extruders_flow.begin(); it!= used_extruders_flow.end(); it++) {
+        int target_machine_nozzle_id = map_extruders[it->first];
+
+        if (target_machine_nozzle_id < flow_type_of_machine.size()) {
+            if (flow_type_of_machine[target_machine_nozzle_id] != used_extruders_flow[it->first]) {
+
+                wxString pos;
+                if (target_machine_nozzle_id == DEPUTY_NOZZLE_ID)
+                {
+                    pos = _L("left nozzle");
+                }
+                else if ((target_machine_nozzle_id == MAIN_NOZZLE_ID))
+                {
+                    pos = _L("right nozzle");
+                }
+
+                error_message = wxString::Format(_L("The nozzle flow setting of %s(%s) doesn't match with the slicing file(%s). "
+                                                    "Please make sure the nozzle installed matches with settings in printer, "
+                                                    "then set the corresponding printer preset while slicing."), pos,
+                                                    _L(flow_type_of_machine[target_machine_nozzle_id]),
+                                                    _L(used_extruders_flow[it->first]));
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+int SelectMachineDialog::convert_filament_map_nozzle_id_to_task_nozzle_id(int nozzle_id)
+{
+    if (nozzle_id == (int)FilamentMapNozzleId::NOZZLE_LEFT) {
+        return (int)CloudTaskNozzleId::NOZZLE_LEFT;
+    }
+    else if (nozzle_id == (int)FilamentMapNozzleId::NOZZLE_RIGHT) {
+        return (int)CloudTaskNozzleId::NOZZLE_RIGHT;
+    }
+    else {
+        /* unsupported nozzle id */
+        assert(false);
+        return nozzle_id;
+    }
 }
 
 void SelectMachineDialog::prepare(int print_plate_idx)
@@ -2078,9 +1678,9 @@ void SelectMachineDialog::prepare(int print_plate_idx)
     m_print_plate_idx = print_plate_idx;
 }
 
-void SelectMachineDialog::update_ams_status_msg(wxString msg, bool is_warning)
+void SelectMachineDialog::update_ams_status_msg(wxString msg, bool can_send_print)
 {
-    auto colour = is_warning ? wxColour(0xFF, 0x6F, 0x00):wxColour(0x6B, 0x6B, 0x6B);
+    auto colour = can_send_print ? wxColour(0xFF, 0x6F, 0x00) : wxColour("#D01B1B");
     m_statictext_ams_msg->SetForegroundColour(colour);
 
     if (msg.empty()) {
@@ -2091,8 +1691,6 @@ void SelectMachineDialog::update_ams_status_msg(wxString msg, bool is_warning)
             Fit();
         }
     } else {
-        msg = format_text(msg);
-
         auto str_new = msg.utf8_string();
         stripWhiteSpace(str_new);
 
@@ -2102,9 +1700,7 @@ void SelectMachineDialog::update_ams_status_msg(wxString msg, bool is_warning)
         if (str_new != str_old) {
             if (m_statictext_ams_msg->GetLabel() != msg) {
                 m_statictext_ams_msg->SetLabel(msg);
-                m_statictext_ams_msg->SetMinSize(wxSize(FromDIP(400), -1));
-                m_statictext_ams_msg->SetMaxSize(wxSize(FromDIP(400), -1));
-                m_statictext_ams_msg->Wrap(FromDIP(400));
+                m_statictext_ams_msg->Wrap(FromDIP(645));
                 m_statictext_ams_msg->Show();
                 Layout();
                 Fit();
@@ -2113,34 +1709,32 @@ void SelectMachineDialog::update_ams_status_msg(wxString msg, bool is_warning)
     }
 }
 
-void SelectMachineDialog::update_priner_status_msg(wxString msg, bool is_warning)
+void SelectMachineDialog::update_priner_status_msg(wxString msg, bool can_send_print)
 {
-    auto colour = is_warning ? wxColour(0xFF, 0x6F, 0x00) : wxColour(0x6B, 0x6B, 0x6B);
-    m_statictext_printer_msg->SetForegroundColour(colour);
+    auto colour = can_send_print ? wxColour(0xFF, 0x6F, 0x00) : wxColour("#D01B1B");
+    m_text_printer_msg->SetForegroundColour(colour);
 
     if (msg.empty()) {
-        if (!m_statictext_printer_msg->GetLabel().empty()) {
-            m_statictext_printer_msg->SetLabel(wxEmptyString);
-            m_statictext_printer_msg->Hide();
+        if (!m_text_printer_msg->GetLabel().empty()) {
+            m_text_printer_msg->SetLabel(wxEmptyString);
+            m_text_printer_msg->Hide();
             Layout();
             Fit();
         }
     } else {
-        msg          = format_text(msg);
-
         auto str_new = msg.utf8_string();
         stripWhiteSpace(str_new);
 
-        auto str_old = m_statictext_printer_msg->GetLabel().utf8_string();
+        auto str_old = m_text_printer_msg->GetLabel().utf8_string();
         stripWhiteSpace(str_old);
 
         if (str_new != str_old) {
-            if (m_statictext_printer_msg->GetLabel() != msg) {
-                m_statictext_printer_msg->SetLabel(msg);
-                m_statictext_printer_msg->SetMinSize(wxSize(FromDIP(400), -1));
-                m_statictext_printer_msg->SetMaxSize(wxSize(FromDIP(400), -1));
-                m_statictext_printer_msg->Wrap(FromDIP(400));
-                m_statictext_printer_msg->Show();
+            if (m_text_printer_msg->GetLabel() != msg) {
+                m_text_printer_msg->SetLabel(msg);
+                m_text_printer_msg->SetMinSize(wxSize(FromDIP(420), -1));
+                m_text_printer_msg->SetMaxSize(wxSize(FromDIP(420), -1));
+                m_text_printer_msg->Wrap(FromDIP(420));
+                m_text_printer_msg->Show();
                 Layout();
                 Fit();
             }
@@ -2148,15 +1742,55 @@ void SelectMachineDialog::update_priner_status_msg(wxString msg, bool is_warning
     }
 }
 
-void SelectMachineDialog::update_print_status_msg(wxString msg, bool is_warning, bool is_printer_msg)
+void SelectMachineDialog::update_printer_status_msg_tips(const wxString& msg_tips)
+{
+    if (msg_tips.empty())
+    {
+        if (!m_text_printer_msg_tips->GetLabel().empty())
+        {
+            m_text_printer_msg_tips->SetLabel(wxEmptyString);
+            m_text_printer_msg_tips->Hide();
+            Layout();
+            Fit();
+        }
+    }
+    else
+    {
+        auto str_new = msg_tips.utf8_string();
+        stripWhiteSpace(str_new);
+
+        auto str_old = m_text_printer_msg_tips->GetLabel().utf8_string();
+        stripWhiteSpace(str_old);
+
+        if (str_new != str_old)
+        {
+            if (m_text_printer_msg_tips->GetLabel() != msg_tips) {
+                m_text_printer_msg_tips->SetLabel(msg_tips);
+                m_text_printer_msg_tips->SetMinSize(wxSize(FromDIP(420), -1));
+                m_text_printer_msg_tips->SetMaxSize(wxSize(FromDIP(420), -1));
+                m_text_printer_msg_tips->Wrap(FromDIP(420));
+                m_text_printer_msg_tips->Show();
+                Layout();
+                Fit();
+            }
+        }
+    }
+}
+
+void SelectMachineDialog::update_print_status_msg(wxString msg, bool is_printer_msg, bool can_send_print, bool can_refresh, const wxString& printer_msg_tips /*=wxEmptyString*/)
 {
     if (is_printer_msg) {
-        update_ams_status_msg(wxEmptyString, false);
-        update_priner_status_msg(msg, is_warning);
+        update_ams_status_msg(wxEmptyString, can_send_print);
+        update_priner_status_msg(msg, can_send_print);
     } else {
-        update_ams_status_msg(msg, is_warning);
-        update_priner_status_msg(wxEmptyString, false);
+        update_ams_status_msg(msg, can_send_print);
+        update_priner_status_msg(wxEmptyString, can_send_print);
     }
+
+    update_printer_status_msg_tips(printer_msg_tips);
+
+    Enable_Send_Button(can_send_print);
+    Enable_Refresh_Button(can_refresh);
 }
 
 void SelectMachineDialog::update_print_error_info(int code, std::string msg, std::string extra)
@@ -2171,8 +1805,9 @@ bool SelectMachineDialog::has_tips(MachineObject* obj)
     if (!obj) return false;
 
     // must set to a status if return true
-    if (select_timelapse->IsShown() &&
-        m_checkbox_list["timelapse"]->GetValue()) {
+    if (m_checkbox_list["timelapse"]->IsShown() &&
+        (m_checkbox_list["timelapse"]->getValue() == "on"))
+    {
         if (obj->get_sdcard_state() == MachineObject::SdcardState::NO_SDCARD) {
             show_status(PrintDialogStatus::PrintStatusTimelapseNoSdcard);
             return true;
@@ -2189,121 +1824,93 @@ void SelectMachineDialog::show_status(PrintDialogStatus status, std::vector<wxSt
     m_print_status = status;
 
     // m_comboBox_printer
-    if (status == PrintDialogStatus::PrintStatusRefreshingMachineList)
+    if (m_print_type == PrintFromType::FROM_SDCARD_VIEW) {
         m_comboBox_printer->Disable();
-    else
-        m_comboBox_printer->Enable();
+    }
+    else {
+        if (status == PrintDialogStatus::PrintStatusRefreshingMachineList)
+            m_comboBox_printer->Disable();
+        else
+            m_comboBox_printer->Enable();
+    }
 
     // other
     if (status == PrintDialogStatus::PrintStatusInit) {
-        update_print_status_msg(wxEmptyString, false, false);
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(true);
+        update_print_status_msg(wxEmptyString, false, false, true);
     } else if (status == PrintDialogStatus::PrintStatusNoUserLogin) {
         wxString msg_text = _L("No login account, only printers in LAN mode are displayed");
-        update_print_status_msg(msg_text, false, true);
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(true);
+        update_print_status_msg(msg_text, true, false, true);
     }else if (status == PrintDialogStatus::PrintStatusInvalidPrinter) {
-        update_print_status_msg(wxEmptyString, true, true);
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(true);
+        update_print_status_msg(wxEmptyString, true, false, true);
     } else if (status == PrintDialogStatus::PrintStatusConnectingServer) {
         wxString msg_text = _L("Connecting to server");
-        update_print_status_msg(msg_text, true, true);
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(true);
+        update_print_status_msg(msg_text, true, false, true);
     } else if (status == PrintDialogStatus::PrintStatusReading) {
         wxString msg_text = _L("Synchronizing device information");
-        update_print_status_msg(msg_text, false, true);
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(true);
-    } else if (status == PrintDialogStatus::PrintStatusReadingFinished) {
-        update_print_status_msg(wxEmptyString, false, true);
-        Enable_Send_Button(true);
-        Enable_Refresh_Button(true);
+        update_print_status_msg(msg_text, true, false, true);
     } else if (status == PrintDialogStatus::PrintStatusReadingTimeout) {
         wxString msg_text = _L("Synchronizing device information time out");
-        update_print_status_msg(msg_text, true, true);
-        Enable_Send_Button(true);
-        Enable_Refresh_Button(true);
+        update_print_status_msg(msg_text, true, false, true);
+    } else if (status == PrintDialogStatus::PrintStatusModeNotFDM) {
+        update_print_status_msg(_L("Cannot send the print job when the printer is not at FDM mode"), true, false, true);
     } else if (status == PrintDialogStatus::PrintStatusInUpgrading) {
         wxString msg_text = _L("Cannot send the print job when the printer is updating firmware");
-        update_print_status_msg(msg_text, true, true);
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(true);
+        update_print_status_msg(msg_text, true, false, true);
     } else if (status == PrintDialogStatus::PrintStatusInSystemPrinting) {
         wxString msg_text = _L("The printer is executing instructions. Please restart printing after it ends");
-        update_print_status_msg(msg_text, true, true);
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(true);
+        update_print_status_msg(msg_text, true, false, true);
     } else if (status == PrintDialogStatus::PrintStatusInPrinting) {
         wxString msg_text = _L("The printer is busy on other print job");
-        update_print_status_msg(msg_text, true, true);
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(true);
-    } else if (status == PrintDialogStatus::PrintStatusDisableAms) {
-        update_print_status_msg(wxEmptyString, false, false);
-        Enable_Send_Button(true);
-        Enable_Refresh_Button(true);
+        update_print_status_msg(msg_text, true, false, true);
+    } else if (status == PrintDialogStatus::PrintStatusAmsOnSettingup) {
+        update_print_status_msg(_L("BOX is setting up. Please try again later."), false, false, true);
+    } else if (status == PrintDialogStatus::PrintStatusInvalidMapping) {
+        update_print_status_msg(wxEmptyString, false, false, true);
     } else if (status == PrintDialogStatus::PrintStatusNeedUpgradingAms) {
         wxString msg_text;
         if (params.size() > 0)
             msg_text = wxString::Format(_L("Filament %s exceeds the number of BOX slots. Please update the printer firmware to support BOX slot assignment."), params[0]);
         else
             msg_text = _L("Filament exceeds the number of BOX slots. Please update the printer firmware to support BOX slot assignment.");
-        update_print_status_msg(msg_text, true, false);
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(true);
-    } else if (status == PrintDialogStatus::PrintStatusAmsMappingSuccess){
-        wxString msg_text = _L("Filaments to BOX slots mappings have been established. You can click a filament above to change its mapping BOX slot");
-        update_print_status_msg(msg_text, false, false);
-        Enable_Send_Button(true);
-        Enable_Refresh_Button(true);
-    } else if (status == PrintDialogStatus::PrintStatusAmsMappingInvalid) {
-        wxString msg_text = _L("Please click each filament above to specify its mapping BOX slot before sending the print job");
-        update_print_status_msg(msg_text, true, false);
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(true);
-    } else if (status == PrintDialogStatus::PrintStatusAmsMappingU0Invalid) {
+        update_print_status_msg(msg_text, false, false, true);
+    }  else if (status == PrintDialogStatus::PrintStatusAmsMappingInvalid) {
+        update_print_status_msg(wxEmptyString, false, false, true);
+    } else if (status == PrintDialogStatus::PrintStatusAmsMappingMixInvalid) {
+        wxString msg_text = _L("Please do not mix-use the Ext with BOX");
+        update_print_status_msg(msg_text, true, false, true);
+    } else if (status == PrintDialogStatus::PrintStatusNozzleDataInvalid) {
+        wxString msg_text = _L("Invalid nozzle information, please refresh or manually set nozzle information.");
+        update_print_status_msg(msg_text, true, false, true);
+    } else if (status == PrintDialogStatus::PrintStatusNozzleMatchInvalid && (params.size() > 1)) {
+        update_print_status_msg(params[0], true, false, true, params[1]);
+    } else if (status == PrintStatusNozzleDiameterMismatch && (params.size() > 1)) {
+        update_print_status_msg(params[0], true, false, true, params[1]);
+    } else if (status == PrintStatusNozzleTypeMismatch && !params.empty()) {
+        update_print_status_msg(params[0], true, false, true);
+    }
+    else if (status == PrintDialogStatus::PrintStatusAmsMappingU0Invalid) {
         wxString msg_text;
         if (params.size() > 1)
             msg_text = wxString::Format(_L("Filament %s does not match the filament in BOX slot %s. Please update the printer firmware to support BOX slot assignment."), params[0], params[1]);
         else
             msg_text = _L("Filament does not match the filament in BOX slot. Please update the printer firmware to support BOX slot assignment.");
-        update_print_status_msg(msg_text, true, false);
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(true);
-    } else if (status == PrintDialogStatus::PrintStatusAmsMappingValid) {
-        wxString msg_text = _L("Filaments to BOX slots mappings have been established. You can click a filament above to change its mapping BOX slot");
-        update_print_status_msg(msg_text, false, false);
-        Enable_Send_Button(true);
-        Enable_Refresh_Button(true);
+        update_print_status_msg(msg_text, false, false, true);
     } else if (status == PrintDialogStatus::PrintStatusRefreshingMachineList) {
-        update_print_status_msg(wxEmptyString, false, true);
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(false);
+        update_print_status_msg(wxEmptyString, true, false, false);
     } else if (status == PrintDialogStatus::PrintStatusSending) {
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(false);
-    } else if (status == PrintDialogStatus::PrintStatusSendingCanceled) {
-        Enable_Send_Button(true);
-        Enable_Refresh_Button(true);
+        update_print_status_msg(wxEmptyString, true, false, false);
     } else if (status == PrintDialogStatus::PrintStatusLanModeNoSdcard) {
-        wxString msg_text = _L("An SD card needs to be inserted before printing via LAN.");
-        update_print_status_msg(msg_text, true, true);
-        Enable_Send_Button(true);
-        Enable_Refresh_Button(true);
+        wxString msg_text = _L("Storage needs to be inserted before printing via LAN.");
+        update_print_status_msg(msg_text, true, false, true);
+    } else if (status == PrintDialogStatus::PrintStatusLanModeSDcardNotAvailable) {
+        wxString msg_text = _L("Storage is not available or is in read-only mode.");
+        update_print_status_msg(msg_text, true, false, true);
     } else if (status == PrintDialogStatus::PrintStatusAmsMappingByOrder) {
         wxString msg_text = _L("The printer firmware only supports sequential mapping of filament => BOX slot.");
-        update_print_status_msg(msg_text, false, false);
-        Enable_Send_Button(true);
-        Enable_Refresh_Button(true);
+        update_print_status_msg(msg_text, false, true, true);
     } else if (status == PrintDialogStatus::PrintStatusNoSdcard) {
-        wxString msg_text = _L("An SD card needs to be inserted before printing.");
-        update_print_status_msg(msg_text, true, true);
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(true);
+        wxString msg_text = _L("Storage needs to be inserted before printing.");
+        update_print_status_msg(msg_text, true, false, true);
     }else if (status == PrintDialogStatus::PrintStatusUnsupportedPrinter) {
         wxString msg_text;
         try
@@ -2331,55 +1938,60 @@ void SelectMachineDialog::show_status(PrintDialogStatus status, std::vector<wxSt
 
             auto target_print_name = wxString(obj_->get_preset_printer_model_name(target_model_id));
             target_print_name.Replace(wxT("QIDI Tech "), wxEmptyString);
-            msg_text = wxString::Format(_L("The selected printer (%s) is incompatible with the chosen printer profile in the slicer (%s)."), sourcet_print_name, target_print_name);
-            
-            update_print_status_msg(msg_text, true, true);
+            msg_text = wxString::Format(_L("The selected printer (%s) is incompatible with the print file configuration (%s). Please adjust the printer preset in the prepare page or choose a compatible printer on this page."), sourcet_print_name, target_print_name);
+
+            update_print_status_msg(msg_text, true, false, true);
         }
-        catch (...){}
-        
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(true);
-    }else if (status == PrintDialogStatus::PrintStatusTimelapseNoSdcard) {
-        wxString msg_text = _L("An SD card needs to be inserted to record timelapse.");
-        update_print_status_msg(msg_text, true, true);
-        Enable_Send_Button(true);
-        Enable_Refresh_Button(true);
+        catch (...)
+        {
+            update_print_status_msg(wxEmptyString, true, false, true);
+        }
+    } else if (status == PrintDialogStatus::PrintStatusTimelapseNoSdcard) {
+        wxString msg_text = _L("Storage needs to be inserted to record timelapse.");
+        update_print_status_msg(msg_text, true, true, true);
     } else if (status == PrintDialogStatus::PrintStatusNeedForceUpgrading) {
         wxString msg_text = _L("Cannot send the print job to a printer whose firmware is required to get updated.");
-        update_print_status_msg(msg_text, true, true);
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(true);
+        update_print_status_msg(msg_text, true, false, true);
     } else if (status == PrintDialogStatus::PrintStatusNeedConsistencyUpgrading) {
         wxString msg_text = _L("Cannot send the print job to a printer whose firmware is required to get updated.");
-        update_print_status_msg(msg_text, true, true);
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(true);
+        update_print_status_msg(msg_text, true, false, true);
     } else if (status == PrintDialogStatus::PrintStatusBlankPlate) {
         wxString msg_text = _L("Cannot send the print job for empty plate");
-        update_print_status_msg(msg_text, true, true);
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(true);
+        update_print_status_msg(msg_text, true, false, true);
     } else if (status == PrintDialogStatus::PrintStatusNotSupportedPrintAll) {
         wxString msg_text = _L("This printer does not support printing all plates");
-        update_print_status_msg(msg_text, true, true);
-        Enable_Send_Button(false);
-        Enable_Refresh_Button(true);
+        update_print_status_msg(msg_text, true, false, true);
     } else if (status == PrintDialogStatus::PrintStatusTimelapseWarning) {
         wxString   msg_text;
         PartPlate *plate = m_plater->get_partplate_list().get_curr_plate();
         for (auto warning : plate->get_slice_result()->warnings) {
             if (warning.msg == NOT_GENERATE_TIMELAPSE) {
-                if (warning.error_code == "1001C001") {
+                if (warning.error_code == "10014001") {
                     msg_text = _L("When enable spiral vase mode, machines with I3 structure will not generate timelapse videos.");
                 }
-                else if (warning.error_code == "1001C002") {
-                    msg_text = _L("Timelapse is not supported because Print sequence is set to \"By object\".");
+                else if (warning.error_code == "10014002") {
+                    msg_text = _L("The current printer does not support timelapse in Traditional Mode when printing By-Object.");
                 }
             }
         }
-        update_print_status_msg(msg_text, true, true);
-        Enable_Send_Button(true);
-        Enable_Refresh_Button(true);
+        update_print_status_msg(msg_text, true, true, true);
+    }
+    else if (status == PrintStatusMixAmsAndVtSlotWarning) {
+        wxString msg_text = _L("You have selected both external and BOX filaments for an extruder. You will need to manually switch the external filament during printing.");
+        update_print_status_msg(msg_text, false, true, true);
+    } else if (status == PrintStatusTPUUnsupportAutoCali) {
+        wxString msg_text = _L("TPU 90A/TPU 85A is too soft and does not support automatic Flow Dynamics calibration.");
+        update_print_status_msg(msg_text, false, false, true);
+    } else if (status == PrintStatusWarningKvalueNotUsed && !params.empty()) {
+        wxString msg_text = _L("Set dynamic flow calibration to 'OFF' to enable custom dynamic flow value.");
+        update_print_status_msg(msg_text, false, true, true);
+    //y59
+    } else if(status == PrinterNotConnectBox){
+        wxString msg_text = _L("The selected printer is not connect box, please check.");
+        update_print_status_msg(msg_text, false, false, true);
+    } else if(status == BoxhasSomeProblem){
+        wxString msg_text = _L("Failed to set the box printing slot...");
+        update_print_status_msg(msg_text, false, false, true);
     }
 
     // m_panel_warn m_simplebook
@@ -2387,7 +1999,7 @@ void SelectMachineDialog::show_status(PrintDialogStatus status, std::vector<wxSt
         sending_mode();
     }
     else {
-        // prepare_mode(false);
+        prepare_mode(false);
     }
 }
 
@@ -2421,8 +2033,8 @@ bool SelectMachineDialog::is_blocking_printing(MachineObject* obj_)
     if (m_print_type == PrintFromType::FROM_NORMAL) {
         PresetBundle* preset_bundle = wxGetApp().preset_bundle;
         source_model = preset_bundle->printers.get_edited_preset().get_printer_type(preset_bundle);
-        
-       
+
+
     }else if (m_print_type == PrintFromType::FROM_SDCARD_VIEW) {
         if (m_required_data_plate_data_list.size() > 0) {
             source_model = m_required_data_plate_data_list[m_print_plate_idx]->printer_model_id;
@@ -2440,81 +2052,115 @@ bool SelectMachineDialog::is_blocking_printing(MachineObject* obj_)
     return false;
 }
 
-bool SelectMachineDialog::is_same_nozzle_diameters(std::string& tag_nozzle_type, std::string& nozzle_diameter)
+static std::unordered_set<int> _get_used_nozzle_idxes()
 {
-    bool  is_same_nozzle_diameters = true;
+    std::unordered_set<int> used_nozzle_idxes;
 
-    float       preset_nozzle_diameters;
-    std::string preset_nozzle_type;
+    DeviceManager *dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+    if (dev) {
+        MachineObject *obj_ = dev->get_selected_machine();
+        if (obj_) {
+            try {
+                PresetBundle *preset_bundle   = wxGetApp().preset_bundle;
+                PartPlate *cur_plate          = wxGetApp().plater()->get_partplate_list().get_curr_plate();
+                auto       used_filament_idxs = cur_plate->get_used_filaments(); /*the index is started from 1*/
+                for (int used_filament_idx : used_filament_idxs) {
+                    int used_nozzle_idx = cur_plate->get_physical_extruder_by_filament_id(preset_bundle->full_config(), used_filament_idx);
+                    used_nozzle_idxes.insert(used_nozzle_idx);
+                }
+            } catch (const std::exception &) {}
+        }
+    }
 
+    return used_nozzle_idxes;
+}
+
+
+bool SelectMachineDialog::is_nozzle_data_valid(const ExtderData &ext_data) const
+{
+    DeviceManager *dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+    if (!dev) return false;
+
+    MachineObject *obj_ = dev->get_selected_machine();
+    if (obj_ == nullptr) return false;
+
+    PresetBundle *preset_bundle        = wxGetApp().preset_bundle;
+
+    try {
+        PartPlate *cur_plate          = wxGetApp().plater()->get_partplate_list().get_curr_plate();
+        auto       used_filament_idxs = cur_plate->get_used_filaments(); /*the index is started from 1*/
+        for (int used_filament_idx : used_filament_idxs)
+        {
+            int used_nozzle_idx = cur_plate->get_physical_extruder_by_filament_id(preset_bundle->full_config(), used_filament_idx);
+            if (ext_data.extders[used_nozzle_idx].current_nozzle_type == NozzleType::ntUndefine ||
+                ext_data.extders[used_nozzle_idx].current_nozzle_diameter <= 0.0f ||
+                ext_data.extders[used_nozzle_idx].current_nozzle_flow_type == NozzleFlowType::NONE_FLOWTYPE) {
+                return false;
+            }
+        }
+    } catch (const std::exception &) {
+        return false;
+    }
+
+    return true;
+}
+
+
+/**************************************************************//*
+ * @param tag_nozzle_type -- return the mismatch nozzle type
+ * @param tag_nozzle_diameter -- return the target nozzle_diameter but mismatch
+ * @return is same or not
+/*************************************************************/
+bool SelectMachineDialog::is_same_nozzle_diameters(float &tag_nozzle_diameter, int& mismatch_nozzle_id) const
+{
     DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
-    if (!dev) return true;
+    if (!dev) return false;
 
     MachineObject* obj_ = dev->get_selected_machine();
-    if (obj_ == nullptr) return true;
+    if (obj_ == nullptr) return false;
+
+    PresetBundle* preset_bundle = wxGetApp().preset_bundle;
+    auto opt_nozzle_diameters = preset_bundle->printers.get_edited_preset().config.option<ConfigOptionFloatsNullable>("nozzle_diameter");
+    if (!opt_nozzle_diameters)
+    {
+        return false;
+    }
 
     try
     {
-        PresetBundle* preset_bundle = wxGetApp().preset_bundle;
-        auto opt_nozzle_diameters = preset_bundle->printers.get_edited_preset().config.option<ConfigOptionFloats>("nozzle_diameter");
+        PartPlate* cur_plate = wxGetApp().plater()->get_partplate_list().get_curr_plate();
+        auto used_filament_idxs = cur_plate->get_used_filaments();/*the index is started from 1*/
+        for (int used_filament_idx : used_filament_idxs)
+        {
+            int used_nozzle_idx = cur_plate->get_physical_extruder_by_filament_id(preset_bundle->full_config(), used_filament_idx);
+            if (used_nozzle_idx == -1)
+            {
+                assert(0);
+                return false;
+            }
 
-        const ConfigOptionEnum<NozzleType>* nozzle_type = preset_bundle->printers.get_edited_preset().config.option<ConfigOptionEnum<NozzleType>>("nozzle_type");
-
-        if (nozzle_type->value == NozzleType::ntHardenedSteel) {
-            preset_nozzle_type = "hardened_steel";
-        }
-        else if (nozzle_type->value == NozzleType::ntStainlessSteel) {
-            preset_nozzle_type = "stainless_steel";
-        }
-
-        tag_nozzle_type = obj_->nozzle_type;
-
-        auto        extruders = wxGetApp().plater()->get_partplate_list().get_curr_plate()->get_used_extruders();
-        if (opt_nozzle_diameters != nullptr) {
-            for (auto i = 0; i < extruders.size(); i++) {
-                auto extruder = extruders[i] - 1;
-                preset_nozzle_diameters = float(opt_nozzle_diameters->get_at(extruder));
-                if (preset_nozzle_diameters != obj_->nozzle_diameter) {
-                    is_same_nozzle_diameters = false;
-                }
+            tag_nozzle_diameter = float(opt_nozzle_diameters->get_at(used_nozzle_idx));
+            if (tag_nozzle_diameter != obj_->m_extder_data.extders[used_nozzle_idx].current_nozzle_diameter)
+            {
+                mismatch_nozzle_id = used_nozzle_idx;
+                return false;
             }
         }
-
     }
-    catch (...)
+    catch (const std::exception&)
     {
+        return false;
     }
 
-    //nozzle_type = preset_nozzle_type;
-    nozzle_diameter = wxString::Format("%.1f", preset_nozzle_diameters).ToStdString();
-
-    return is_same_nozzle_diameters;
+    return true;
 }
 
-bool SelectMachineDialog::is_same_nozzle_type(std::string& filament_type, std::string& tag_nozzle_type)
+bool SelectMachineDialog::is_same_nozzle_type(const Extder& extruder, std::string& filament_type) const
 {
-    bool  is_same_nozzle_type = true;
-
-    DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
-    if (!dev) return true;
-
-    MachineObject* obj_ = dev->get_selected_machine();
-    if (obj_ == nullptr) return true;
-
-
-    NozzleType nozzle_type = NozzleType::ntUndefine;
-
-    if (obj_->nozzle_type == "stainless_steel") {
-        nozzle_type = NozzleType::ntStainlessSteel;
-    }
-    else if (obj_->nozzle_type == "hardened_steel") {
-        nozzle_type = NozzleType::ntHardenedSteel;
-    }
-
-    auto printer_nozzle_hrc = Print::get_hrc_by_nozzle_type(nozzle_type);
+    auto printer_nozzle_hrc = Print::get_hrc_by_nozzle_type(extruder.current_nozzle_type);
 
     auto preset_bundle = wxGetApp().preset_bundle;
-    MaterialHash::iterator iter = m_materialList.begin();
+    MaterialHash::const_iterator iter = m_materialList.begin();
     while (iter != m_materialList.end()) {
         Material* item = iter->second;
         MaterialItem* m = item->item;
@@ -2523,18 +2169,13 @@ bool SelectMachineDialog::is_same_nozzle_type(std::string& filament_type, std::s
         if (abs(filament_nozzle_hrc) > abs(printer_nozzle_hrc)) {
             filament_type = m->m_material_name.ToStdString();
             BOOST_LOG_TRIVIAL(info) << "filaments hardness mismatch: filament = " << filament_type << " printer_nozzle_hrc = " << printer_nozzle_hrc;
-            is_same_nozzle_type = false;
-            tag_nozzle_type = "hardened_steel";
-            return is_same_nozzle_type;
-        }
-        else {
-            tag_nozzle_type = obj_->nozzle_type;
+            return false;
         }
 
         iter++;
     }
 
-    return is_same_nozzle_type;
+    return true;
 }
 
 bool SelectMachineDialog::is_same_printer_model()
@@ -2553,7 +2194,8 @@ bool SelectMachineDialog::is_same_printer_model()
     PresetBundle* preset_bundle = wxGetApp().preset_bundle;
     if (preset_bundle && preset_bundle->printers.get_edited_preset().get_printer_type(preset_bundle) != obj_->printer_type) {
 
-        if (obj_->is_support_p1s_plus && (preset_bundle->printers.get_edited_preset().get_printer_type(preset_bundle) == "C12")) {
+        if ((obj_->is_support_upgrade_kit && obj_->installed_upgrade_kit)
+            && (preset_bundle->printers.get_edited_preset().get_printer_type(preset_bundle) == "C12")) {
             return true;
         }
 
@@ -2562,7 +2204,7 @@ bool SelectMachineDialog::is_same_printer_model()
         return false;
     }
 
-    if (obj_->is_support_p1s_plus) {
+    if (obj_->is_support_upgrade_kit && obj_->installed_upgrade_kit) {
         BOOST_LOG_TRIVIAL(info) << "printer_model: source = " << preset_bundle->printers.get_edited_preset().get_printer_type(preset_bundle);
         BOOST_LOG_TRIVIAL(info) << "printer_model: target = " << obj_->printer_type << " (plus)";
         return false;
@@ -2580,6 +2222,7 @@ void SelectMachineDialog::show_errors(wxString &info)
 
 void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
 {
+    //y58
     bool isSwitch = m_isSwitch->GetValue();
     if (isSwitch)
         wxGetApp().app_config->set_bool("switch to device tab after upload", true);
@@ -2621,10 +2264,88 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
 #endif 
     }
 
+    //y58
+    bool qidi_3mf = wxGetApp().preset_bundle->printers.get_edited_preset().config.opt_bool("is_support_3mf");
 
-    EndDialog(wxID_YES);
+    Enable_Send_Button(false);
+    m_is_canceled = false;
+    fs::path output_path(m_plater->model().get_backup_path());
+    show_status(PrintDialogStatus::PrintStatusSending);
+    output_path += "/temp_file";
+    std::string upload_file_name = into_u8(m_current_project_name);
+
+    m_status_bar->reset();
+    m_status_bar->set_prog_block();
+    m_status_bar->set_cancel_callback_fina([this]() {
+        m_is_canceled = true;
+        wxCommandEvent* event = new wxCommandEvent(EVT_PRINT_JOB_CANCEL);
+        wxQueueEvent(this, event);
+        });
     
-    
+    if (m_is_canceled) {
+        BOOST_LOG_TRIVIAL(info) << "send_job: m_is_canceled";
+        //m_status_bar->set_status_text(task_canceled_text);
+        return;
+    }
+    sending_mode();
+
+    wxString msg = _L("Preparing print job");
+    m_status_bar->update_status(msg, m_is_canceled, 0, true);
+
+    if (qidi_3mf) {
+        if (boost::iends_with(output_path.string(), ".gcode")) {
+            std::wstring temp_path = output_path.wstring();
+            temp_path = temp_path.substr(0, temp_path.size() - 6);
+            output_path = temp_path + L".gcode.3mf";
+        }
+        else if (boost::iends_with(output_path.string(), ".gcode.gcode.3mf")) {//for mac
+            std::wstring temp_path = output_path.wstring();
+            temp_path = temp_path.substr(0, temp_path.size() - 16);
+            output_path = temp_path + L".gcode.3mf";
+        }
+        else if (!boost::iends_with(output_path.string(), ".gcode.3mf")) {
+            output_path = output_path.replace_extension(".gcode.3mf");
+        }
+        upload_file_name += ".gcode.3mf";
+        int result = m_plater->export_3mf(output_path, SaveStrategy::Silence | SaveStrategy::SplitModel | SaveStrategy::WithGcode | SaveStrategy::SkipModel, m_print_plate_idx);
+    }
+    else {
+        if (!boost::iends_with(output_path.string(), ".gcode"))
+        {
+            output_path += ".gcode";
+        }
+        upload_file_name += ".gcode";
+        m_plater->export_gcode(output_path);
+    }
+
+    msg = _L("Test the network");
+    m_status_bar->update_status(msg, m_is_canceled, 10, true);
+
+    if (m_isNetMode)
+    {
+        PrintHostJob upload_job(machine_url, machine_ip);
+        upload_job.upload_data.upload_path = upload_file_name;
+        upload_job.upload_data.post_action = PrintHostPostUploadAction::StartPrint;
+        upload_job.upload_data.source_path = output_path.string();
+        upload_job.is_3mf = qidi_3mf;
+        start_to_send(std::move(upload_job));
+    }
+    else
+    {
+        DynamicPrintConfig cfg_t;
+        cfg_t.set_key_value("print_host", new ConfigOptionString(machine_url));
+        cfg_t.set_key_value("host_type", new ConfigOptionString("ptfff"));
+        cfg_t.set_key_value("printhost_apikey", new ConfigOptionString(machine_apikey));
+        PrintHostJob upload_job(&cfg_t);
+        upload_job.upload_data.upload_path = upload_file_name;
+        upload_job.upload_data.post_action = PrintHostPostUploadAction::StartPrint;
+        upload_job.upload_data.source_path = output_path.string();
+        upload_job.is_3mf = qidi_3mf;
+        start_to_send(std::move(upload_job));
+    }
+
+    //y60
+    save_option_vals(nullptr);
 
     //bool has_slice_warnings = false;
     //bool is_printing_block  = false;
@@ -2636,7 +2357,6 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
 
 
     //std::vector<ConfirmBeforeSendInfo> confirm_text;
-    //confirm_text.push_back(ConfirmBeforeSendInfo(_L("Please check the following:")));
 
     ////Check Printer Model Id
     //bool is_same_printer_type = is_same_printer_model();
@@ -2648,6 +2368,9 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
 
     ////check blacklist
     //for (auto i = 0; i < m_ams_mapping_result.size(); i++) {
+
+    //    const auto& ams_id = m_ams_mapping_result[i].get_ams_id();
+    //    const auto& slot_id = m_ams_mapping_result[i].get_slot_id();
 
     //    auto tid = m_ams_mapping_result[i].tray_id;
 
@@ -2664,7 +2387,7 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
     //    std::string action;
     //    std::string info;
 
-    //    DeviceManager::check_filaments_in_blacklist(filament_brand, filament_type, in_blacklist, action, info);
+    //    DeviceManager::check_filaments_in_blacklist(obj_->printer_type, filament_brand, filament_type, ams_id, slot_id, "", in_blacklist, action, info);
 
     //    if (in_blacklist && action == "warning") {
     //        wxString prohibited_error = wxString::FromUTF8(info);
@@ -2676,6 +2399,7 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
 
     //PartPlate* plate = m_plater->get_partplate_list().get_curr_plate();
 
+    //bool has_show_traditional_timelapse_waring = false;
     //for (auto warning : plate->get_slice_result()->warnings) {
     //    if (warning.msg == BED_TEMP_TOO_HIGH_THAN_FILAMENT) {
     //        if ((obj_->get_printer_is_enclosed())){
@@ -2684,7 +2408,14 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
     //        }
     //    }
     //    else if (warning.msg == NOT_SUPPORT_TRADITIONAL_TIMELAPSE) {
-    //        if (obj_->get_printer_arch() == PrinterArch::ARCH_I3 && m_checkbox_list["timelapse"]->GetValue()) {
+    //        if (!has_show_traditional_timelapse_waring && (m_checkbox_list["timelapse"]->getValue() == "on")) {
+    //            confirm_text.push_back(ConfirmBeforeSendInfo(Plater::get_slice_warning_string(warning)));
+    //            has_show_traditional_timelapse_waring = true;
+    //            has_slice_warnings = true;
+    //        }
+    //    }
+    //    else if (warning.msg == SMOOTH_TIMELAPSE_WITHOUT_PRIME_TOWER) {
+    //        if (m_checkbox_list["timelapse"]->getValue() == "on") {
     //            confirm_text.push_back(ConfirmBeforeSendInfo(Plater::get_slice_warning_string(warning)));
     //            has_slice_warnings = true;
     //        }
@@ -2696,7 +2427,7 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
     //        wxString error_info = Plater::get_slice_warning_string(warning);
     //        if (error_info.IsEmpty()) {
     //            error_info = wxString::Format("%s\n", warning.msg);
-    //        } 
+    //        }
 
     //        confirm_text.push_back(ConfirmBeforeSendInfo(error_info));
     //        has_slice_warnings = true;
@@ -2715,23 +2446,27 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
 
     //for (auto i = 0; i < m_ams_mapping_result.size(); i++) {
 
+    //    const auto& ams_id = m_ams_mapping_result[i].get_ams_id();
+    //    const auto& slot_id = m_ams_mapping_result[i].get_slot_id();
+
     //    auto tid = m_ams_mapping_result[i].tray_id;
 
     //    std::string filament_type = boost::to_upper_copy(m_ams_mapping_result[i].type);
     //    std::string filament_brand;
+    //    std::string filament_id;
 
     //    for (auto fs : m_filaments) {
     //        if (fs.id == m_ams_mapping_result[i].id) {
     //            filament_brand = m_filaments[i].brand;
+    //            filament_id = m_filaments[i].filament_id;
     //        }
     //    }
 
     //    bool in_blacklist = false;
     //    std::string action;
     //    std::string info;
+    //    DeviceManager::check_filaments_in_blacklist(obj_->printer_type, filament_brand, filament_type, ams_id, slot_id, "", in_blacklist, action, info);
 
-    //    DeviceManager::check_filaments_in_blacklist(filament_brand, filament_type, in_blacklist, action, info);
-    //    
     //    if (in_blacklist && action == "prohibition") {
     //        has_prohibited_filament = true;
     //        prohibited_error = wxString::FromUTF8(info);
@@ -2748,7 +2483,7 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
     //    }
     //}
 
-    //if (has_prohibited_filament && obj_->has_ams() && m_checkbox_list["use_ams"]->GetValue()) {
+    //if (has_prohibited_filament && obj_->has_ams() && (m_checkbox_list["use_ams"]->getValue() == "on")) {
     //    wxString tpu_tips = prohibited_error;
     //    show_errors(tpu_tips);
     //    return;
@@ -2759,184 +2494,406 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
     //    confirm_text.push_back(ConfirmBeforeSendInfo(_L("There are some unknown filaments in the AMS mappings. Please check whether they are the required filaments. If they are okay, press \"Confirm\" to start printing.")));
     //}
 
-    //std::string nozzle_diameter;
-    //std::string filament_type;
-    //std::string tag_nozzle_type;
-
-    //if (!obj_->nozzle_type.empty() && (m_print_type == PrintFromType::FROM_NORMAL)) {
-    //    if (!is_same_nozzle_diameters(tag_nozzle_type, nozzle_diameter)) {
-    //        has_slice_warnings = true;
-    //        is_printing_block  = true;
-    //        
-    //        wxString nozzle_in_preset = wxString::Format(_L("nozzle in preset: %s %s"),nozzle_diameter, "");
-    //        wxString nozzle_in_printer = wxString::Format(_L("nozzle memorized: %.1f %s"), obj_->nozzle_diameter, "");
-
-    //        confirm_text.push_back(ConfirmBeforeSendInfo(_L("Your nozzle diameter in sliced file is not consistent with memorized nozzle. If you changed your nozzle lately, please go to Device > Printer Parts to change settings.") 
-    //            + "\n    " + nozzle_in_preset 
-    //            + "\n    " + nozzle_in_printer
-    //            + "\n",  ConfirmBeforeSendInfo::InfoLevel::Warning));
-    //    }
-    //    
-    //    if (!is_same_nozzle_type(filament_type, tag_nozzle_type)){
-    //        has_slice_warnings = true;
-    //        is_printing_block = true;
-    //        nozzle_diameter =  wxString::Format("%.1f", obj_->nozzle_diameter).ToStdString();
-
-    //        wxString nozzle_in_preset = wxString::Format(_L("Printing %1s material with %2s nozzle may cause nozzle damage."), filament_type,format_steel_name(obj_->nozzle_type));
-    //        confirm_text.push_back(ConfirmBeforeSendInfo(nozzle_in_preset, ConfirmBeforeSendInfo::InfoLevel::Warning));
-    //    }
-    //}
-    //
-
-    //if (has_slice_warnings) {
-    //    wxString confirm_title = _L("Warning");
-    //    ConfirmBeforeSendDialog confirm_dlg(this, wxID_ANY, confirm_title);
-
-    //    if(is_printing_block){
+    //if (has_slice_warnings)
+    //{
+    //    ConfirmBeforeSendDialog confirm_dlg(this, wxID_ANY, _L("Warning"));
+    //    if (is_printing_block)
+    //    {
     //        confirm_dlg.hide_button_ok();
-    //        confirm_dlg.edit_cancel_button_txt(_L("Close"));
-    //        confirm_text.push_back(ConfirmBeforeSendInfo(_L("Please fix the error above, otherwise printing cannot continue."), ConfirmBeforeSendInfo::InfoLevel::Warning));
+    //        confirm_dlg.edit_cancel_button_txt(_L("Close"), true);
     //    }
-    //    else {
-    //        confirm_text.push_back(ConfirmBeforeSendInfo(_L("Please click the confirm button if you still want to proceed with printing.")));
-    //    }
-
-    //    confirm_dlg.Bind(EVT_SECONDARY_CHECK_CONFIRM, [this, &confirm_dlg](wxCommandEvent& e) {
-    //        confirm_dlg.on_hide();
-    //       /* if (m_print_type == PrintFromType::FROM_SDCARD_VIEW) {
-    //            this->connect_printer_mqtt();
-    //        }
-    //        else {*/
+    //    confirm_dlg.Bind(EVT_SECONDARY_CHECK_CONFIRM, [this, &confirm_dlg](wxCommandEvent& e)
+    //        {
+    //            confirm_dlg.on_hide();
     //            this->on_send_print();
-    //        //}
-    //    });
+    //        });
 
-    //    //confirm_dlg.Bind(EVT_UPDATE_NOZZLE, [this, obj_, tag_nozzle_type, nozzle_diameter, &confirm_dlg](wxCommandEvent& e) {
-    //    //    if (obj_ && !tag_nozzle_type.empty() && !nozzle_diameter.empty()) {
-    //    //        try
-    //    //        {
-    //    //            float diameter = std::stof(nozzle_diameter);
-    //    //            diameter = round(diameter * 10) / 10;
-    //    //            obj_->command_set_printer_nozzle(tag_nozzle_type, diameter);
-    //    //        }
-    //    //        catch (...) {}
-    //    //    }
-    //    //    });
-
-    //   
-    //    wxString info_msg = wxEmptyString;
-
-    //    for (auto i = 0; i < confirm_text.size(); i++) {
-    //        if (i == 0) {
-    //            //info_msg += confirm_text[i];
-    //        }
-    //        else if (i == confirm_text.size() - 1) {
-    //            //info_msg += confirm_text[i];
-    //        }
-    //        else {
-    //            confirm_text[i].text = wxString::Format("%d. %s",i, confirm_text[i].text);
+    //    // STUDIO-9580
+    //    /* use warning color if there are warning and normal messages* /
+    //    /* use indexes if there are several messages*/
+    //    /* add header and ending if there are several messages or has none block warnings*/
+    //    if (confirm_text.size() > 1 || !is_printing_block)
+    //    {
+    //        bool has_warning_msg = false;
+    //        bool has_normal_msg = false;
+    //        if (confirm_text.size() > 1)
+    //        {
+    //            for (auto i = 0; i < confirm_text.size(); i++)
+    //            {
+    //                confirm_text[i].text = wxString::Format("%d. %s", i + 1, confirm_text[i].text);
+    //                if (confirm_text[i].level == ConfirmBeforeSendInfo::InfoLevel::Warning)
+    //                {
+    //                    has_warning_msg = true;
+    //                }
+    //                else
+    //                {
+    //                    has_normal_msg = true;
+    //                }
+    //            }
     //        }
 
+    //        std::vector<ConfirmBeforeSendInfo> shown_infos;
+    //        shown_infos.emplace_back(ConfirmBeforeSendInfo(_L("Please check the following:")));
+    //        for (const auto& item : confirm_text)
+    //        {
+    //            shown_infos.emplace_back(item);
+    //        }
+
+    //        if (is_printing_block)
+    //        {
+    //            shown_infos.emplace_back(ConfirmBeforeSendInfo(_L("Please fix the error above, otherwise printing cannot continue."), ConfirmBeforeSendInfo::InfoLevel::Warning));
+    //        }
+    //        else
+    //        {
+    //            shown_infos.emplace_back(ConfirmBeforeSendInfo(_L("Please click the confirm button if you still want to proceed with printing.")));
+    //        }
+
+    //        confirm_dlg.update_text(shown_infos, has_warning_msg&& has_normal_msg);
     //    }
-    //    confirm_dlg.update_text(confirm_text);
-    //    confirm_dlg.on_show();
+    //    else
+    //    {
+    //        confirm_dlg.update_text(confirm_text, false);
+    //    }
 
-    //} else {
-    //    /* if (m_print_type == PrintFromType::FROM_SDCARD_VIEW) {
-    //         this->connect_printer_mqtt();
-    //     }
-    //     else {*/
-    //        this->on_send_print();
-    //    //}
+    //    confirm_dlg.on_show();
+    //}
+    //else
+    //{
+    //    this->on_send_print();
     //}
 }
 
-//w42
-void SelectMachineDialog::on_sync_btn(wxCommandEvent& event)
-{
-    bool isSwitch = m_isSwitch->GetValue();
-    if (isSwitch)
-        wxGetApp().app_config->set_bool("switch to device tab after upload", true);
-    else
-        wxGetApp().app_config->set_bool("switch to device tab after upload", false);
-
-    machine_name = into_u8(m_comboBox_printer->GetValue());
-
-    bool have_get_phy_printer = false;
-
-    if (!m_isNetMode)
+//y58
+void SelectMachineDialog::start_to_send(PrintHostJob upload_job) {
+    wxString check_status_msg = "";
+    std::pair<std::string, float> state_progress = upload_job.printhost->get_status_progress(check_status_msg);
+    std::string printer_status = state_progress.first;
+    //y60
+    if (printer_status == "printing")
     {
-        for (auto machine : machine_list_local)
-        {
-            if (machine.display_name == machine_name)
-            {
-                machine_url = machine.url;
-                machine_ip = machine.ip;
-                machine_apikey = machine.apikey;
-                have_get_phy_printer = true;
-                break;
+        show_status(PrintDialogStatus::PrintStatusInSystemPrinting);
+        return;
+    }
+    else if (printer_status == "offline") {
+        show_status(PrintDialogStatus::PrintStatusPrinterOffline);
+        return;
+    }
+
+    if(!m_ams_mapping_result.empty()){
+        bool success = false;
+        wxString msg = _L("Box Setting..");
+        m_status_bar->update_status(msg, m_is_canceled, 10, true);
+        for(auto result : m_ams_mapping_result){
+            wxString command = wxString::Format(
+                "SAVE_VARIABLE VARIABLE=value_t%d VALUE=\\\"'slot%s'\\\"",
+                result.id,
+                result.slot_id
+            );
+            success = upload_job.printhost->send_command_to_printer(check_status_msg, command);
+            if (!success) {
+                show_status(PrintDialogStatus::BoxhasSomeProblem);
+                return;
             }
         }
     }
-    else
+
+    //y60
+    for (auto item : m_checkbox_list) {
+        wxString command = "";
+        if (item.second->getParam() == "use_ams") { continue; }
+        if (item.second->getParam() == "bed_leveling") {
+            if (item.second->getValue() == "on") {
+                command = "G31";
+            }
+            else {
+                command = "G32";
+            }
+            bool success = upload_job.printhost->send_command_to_printer(check_status_msg, command);
+        }
+        //y61
+        if(item.second->getParam() == "timelapse" && select_machine.timelapse){
+            bool open_timelapse;
+            if (item.second->getValue() == "on") {
+                open_timelapse = true;
+            }
+            else {
+                open_timelapse = false;
+            }
+            bool success = upload_job.printhost->send_timelapse_status(check_status_msg, select_machine.ip, open_timelapse);
+        }
+    }
+
+    bool success = upload_job.printhost->upload(std::move(upload_job.upload_data),
+    [this](Http::Progress progress, bool& cancel) {
+        cancel = this->m_is_canceled;
+        int gui_progress = progress.ultotal > 0 ? 100 * progress.ulnow / progress.ultotal : 0;
+        OctoPrint::progress_percentage = gui_progress / 100.f;
+        wxString msg = _L("Sending...");
+        bool is_undisplay = false;
+        m_status_bar->update_status(msg, is_undisplay, std::floor(10 + gui_progress * 0.9), true);
+    },
+    [this](wxString error) {
+        show_status(PrintDialogStatus::PrintStatusPublicUploadFiled);
+        update_print_status_msg(error, false, false, true);
+    }
+    );
+
+    if (success)
     {
-#if QDT_RELEASE_TO_PUBLIC
-        for (auto machine : machine_list_link)
-        {
-            if (machine.display_name == machine_name)
-            {
-                machine_url = machine.url;
-                machine_ip = machine.ip;
-                machine_apikey = "";
-                machine_link_url = machine.link_url;
-                machine_is_special = machine.is_special;
-                have_get_phy_printer = true;
-                break;
+        bool is_switch_to_device = wxGetApp().app_config->get("switch to device tab after upload") == "true" ? true : false;
+        if (is_switch_to_device) {
+            for(int i = 3; i > 0; i--){
+                if(m_is_canceled)
+                    return;
+                wxString msg = wxString::Format(_L("Successfully sent. Will automatically jump to the device page in %s s."), std::to_string(i));
+                m_status_bar->update_status(msg, m_is_canceled, 100, true);
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+            if (m_isNetMode) {
+                wxGetApp().mainframe->m_printer_view->FormatNetUrl(machine_link_url, machine_ip, machine_is_special);
+                wxGetApp().mainframe->m_printer_view->SetToggleBar(m_isNetMode);
+                wxGetApp().app_config->set("machine_list_net", "1");
+                wxGetApp().mainframe->m_printer_view->ShowNetPrinterButton();
+            }
+            else {
+                wxGetApp().mainframe->m_printer_view->FormatUrl(machine_url);
+                wxGetApp().mainframe->m_printer_view->SetToggleBar(m_isNetMode);
+                wxGetApp().app_config->set("machine_list_net", "0");
+                wxGetApp().mainframe->m_printer_view->ShowLocalPrinterButton();
+            }
+            wxGetApp().mainframe->select_tab(size_t(3));
+        }
+        else{
+            for(int i = 3; i > 0; i--){
+                if(m_is_canceled)
+                    return;
+                wxString msg = wxString::Format(_L("Successfully sent. Close current page in %s s."), std::to_string(i));
+                m_status_bar->update_status(msg, m_is_canceled, 100, true);
+                std::this_thread::sleep_for(std::chrono::seconds(1));
             }
         }
-#endif 
+        EndDialog(wxID_CLOSE);
     }
-    if (have_get_phy_printer) {
-        OctoPrint octo(machine_url, machine_ip);
-        wxString    msg;
-        if (octo.get_box_state(msg)) {
-            machine_filament_info = octo.get_box_info(msg);
-        }
-        else {
-            
-        }
-    }
-    
-    wxGetApp().plater()->sidebar().load_box_list(wxGetApp().plater()->sidebar().box_filament_id, wxGetApp().plater()->sidebar().box_filment_colors);
-    wxGetApp().plater()->sidebar().updata_filament_list();
-
-    EndDialog(wxID_YES);
-
 }
 
-void SelectMachineDialog::get_machine_filament_info() {
-    wxGetApp().plater()->sidebar().box_filament_id = std::move(machine_filament_info.filament_id);
-    wxGetApp().plater()->sidebar().box_filment_colors = std::move(machine_filament_info.filment_colors);
-    wxGetApp().plater()->sidebar().box_slot_state = std::move(machine_filament_info.slot_state);
-    //return { machine_filament_info.filament_id, machine_filament_info.filment_colors };
-}
-
-wxString SelectMachineDialog::format_steel_name(std::string name)
+wxString SelectMachineDialog::format_steel_name(NozzleType type)
 {
-    if (name == "hardened_steel") {
+    if (type == NozzleType::ntHardenedSteel) {
         return _L("Hardened Steel");
     }
-    else if (name == "stainless_steel") {
+    else if (type == NozzleType::ntStainlessSteel) {
         return _L("Stainless Steel");
     }
 
-    return wxEmptyString;
+    return _L("Unknown");
+}
+
+void SelectMachineDialog::EnableEditing(bool enable)
+{
+    /*project*/
+    m_rename_button->Enable(enable);
+
+    /*printer*/
+    m_comboBox_printer->Enable(enable);
+    m_button_refresh->Enable(enable);
+
+    /*mapping*/
+    for (size_t i = 0; i < m_sizer_ams_mapping_left->GetItemCount(); ++i) {
+        wxSizerItem *item = m_sizer_ams_mapping_left->GetItem(i);
+        if (item) {item->GetWindow()->Enable(enable);}
+    }
+
+    for (size_t i = 0; i < m_sizer_ams_mapping_right->GetItemCount(); ++i) {
+        wxSizerItem *item = m_sizer_ams_mapping_right->GetItem(i);
+        if (item) {item->GetWindow()->Enable(enable);}
+    }
+
+    for (size_t i = 0; i < m_sizer_ams_mapping->GetItemCount(); ++i) {
+        wxSizerItem *item = m_sizer_ams_mapping->GetItem(i);
+        if (item) { item->GetWindow()->Enable(enable); }
+    }
+
+    /*mapping link*/
+    //m_link_edit_nozzle->Enable(enable);
+
+    /*options*/
+    for (auto iter : m_checkbox_list)
+    {
+        iter.second->enable(enable);
+    }
+}
+
+/*content height > FromDIP(650), make the area scrollable*/
+/*content height < FromDIP(650), make the area size as the content*/
+void SelectMachineDialog::update_scroll_area_size() {
+
+    wxSize new_size(FromDIP(700), -1);
+
+    int height = m_scroll_area->GetSizer()->CalcMin().GetHeight();
+    if (height < FromDIP(650)) {
+        new_size.SetHeight(height);
+    } else {
+        new_size.SetHeight(FromDIP(650));
+    }
+
+    if (m_scroll_area->GetSize() != new_size) {
+        m_scroll_area->SetMaxSize(new_size);
+        m_scroll_area->SetMinSize(new_size);
+        Layout();
+        Fit();
+    }
+}
+
+void SelectMachineDialog::update_options_layout()
+{
+    std::unordered_set<wxWindow*> shown_options;
+    const wxSizerItemList& children = m_sizer_options->GetChildren();
+    for (auto item : children) {
+        if (item && item->IsWindow()) { shown_options.insert(item->GetWindow()); }
+    }
+
+    std::unordered_set<wxWindow *> toshow_options;
+    for (auto option : m_checkbox_list_order) {
+        if (option->IsShown()) { toshow_options.insert(option); }
+    }
+
+    /*To show changed, update layout*/
+    if (shown_options != toshow_options) {
+        m_sizer_options->Clear();
+        for (auto option : m_checkbox_list_order) {
+            if (option->IsShown()) { m_sizer_options->Add(option, 0, wxEXPAND); }
+        }
+    }
+}
+
+void SelectMachineDialog::update_option_opts(MachineObject *obj)
+{
+    //y60
+    if (select_machine.name.empty())
+        return;
+
+    //y61
+    auto presets = wxGetApp().preset_bundle->printers.get_presets();
+    for (auto preset : presets) {
+        auto preset_config = preset.config;
+        std::string type = preset_config.opt_string("printer_model");
+        if (NormalizeVendor(type).find(NormalizeVendor(select_machine.type)) != std::string::npos) {
+            select_machine.timelapse = preset_config.opt_bool("is_support_timelapse");
+            break;
+        }
+    }
+
+    if(select_machine.bed_leveling){
+        m_checkbox_list["bed_leveling"]->Show();
+        m_checkbox_list["bed_leveling"]->update_options(ops_no_auto, _L("This checks the flatness of heatbed. Leveling makes extruded height uniform.\n*Automatic mode: Run a "
+                                                                        "leveling check(about 10 seconds). Skip if surface is fine."));
+    }
+
+    if(select_machine.timelapse){
+        m_checkbox_list["timelapse"]->Show();
+        m_checkbox_list["timelapse"]->update_options(ops_no_auto, _L("This enables timelapse mode. It will take a picture every 5 seconds during printing.\n*Automatic mode: Skip if timelapse is not supported."));
+    }
+    
+    // if (!obj)
+    // {
+    //     for (auto opt : m_checkbox_list) { opt.second->Hide(); }
+    //     update_options_layout();
+    //     return;
+    // }
+
+    /*timelapse*/
+    // m_checkbox_list["timelapse"]->Show();
+
+    /*bed_leveling*/
+    //if (obj->is_support_bed_leveling == 2) {
+    //    m_checkbox_list["bed_leveling"]->Show();
+    //    m_checkbox_list["bed_leveling"]->update_options(ops_auto, _L("This checks the flatness of heatbed. Leveling makes extruded height uniform.\n*Automatic mode: Run a "
+    //                                                                 "leveling check(about 10 seconds). Skip if surface is fine."));
+    //} else if (obj->is_support_bed_leveling == 1) {
+    //    m_checkbox_list["bed_leveling"]->Show();
+    //    m_checkbox_list["bed_leveling"]->update_options(ops_no_auto, _L("This checks the flatness of heatbed. Leveling makes extruded height uniform."));
+    //} else {
+    //    m_checkbox_list["bed_leveling"]->Hide();
+    //}
+
+    ///*nozzle_offset_cali*/
+    //if (obj->is_support_nozzle_offset_cali) {
+    //    m_checkbox_list["nozzle_offset_cali"]->update_options(ops_auto, _L("Calibrate nozzle offsets to enhance print quality.\n*Automatic mode: Check for calibration before printing. Skip if unnecessary."));
+    //}
+    //m_checkbox_list["nozzle_offset_cali"]->Show(obj->is_support_nozzle_offset_cali);
+
+    ///*flow_cali*/
+    //if (obj->is_support_flow_calibration) {
+    //    if (obj->is_support_auto_flow_calibration && can_support_auto_cali()) {
+    //        m_checkbox_list["flow_cali"]->update_options(ops_auto, _L("This process determines the dynamic flow values to improve overall print quality.\n*Automatic mode: Skip if the filament was calibrated recently."));
+    //    } else {
+    //        m_checkbox_list["flow_cali"]->update_options(ops_no_auto, _L("This process determines the dynamic flow values to improve overall print quality."));
+    //    }
+    //}
+    //m_checkbox_list["flow_cali"]->Show(obj->is_support_flow_calibration);
+
+    update_options_layout();
+}
+
+void SelectMachineDialog::load_option_vals(MachineObject *obj)
+{   
+    //y60
+    // if (m_is_in_sending_mode) { return;}
+
+     AppConfig* config = wxGetApp().app_config;
+     if (!config) return;
+     //if (!obj) return;
+
+    for (auto item : m_checkbox_list) {
+        PrintOption       *opt = item.second;
+        if (item.second->getParam() == "use_ams") { continue; }
+
+        const std::string &val = config->get("print", item.first);
+        if (opt->contain_opt(val)) {
+            opt->setValue(val);
+        } else if (opt->contain_opt("auto")) {
+            opt->setValue("auto");
+        } else if (opt->contain_opt("on")) {
+            opt->setValue("on");
+        }
+    }
+
+    ///*STUDIO-9197*/
+    //wxString error_messgae;
+    //if (obj->canEnableTimelapse(error_messgae) && !has_timelapse_warning(error_messgae)) {
+    //    m_checkbox_list["timelapse"]->enable(true);
+    //    m_checkbox_list["timelapse"]->update_tooltip(wxEmptyString);
+    //} else {
+    //    m_checkbox_list["timelapse"]->enable(false);
+    //    m_checkbox_list["timelapse"]->setValue("off");
+    //    m_checkbox_list["timelapse"]->update_tooltip(error_messgae);
+    //}
+}
+
+void SelectMachineDialog::save_option_vals()
+{
+    // DeviceManager* dev_manager = wxGetApp().getDeviceManager();
+    // if (!dev_manager) { return; }
+
+    // MachineObject* obj = dev_manager->get_my_machine(m_printer_last_select);
+    // if (obj) save_option_vals(obj);
+    save_option_vals(nullptr);
+}
+
+void SelectMachineDialog::save_option_vals(MachineObject *obj) {
+    AppConfig *config = wxGetApp().app_config;
+    // if (!config) return;
+    // if (!obj) return;
+    for (auto item : m_checkbox_list) {
+        if (item.second->getParam() == "use_ams") { continue;}
+        config->set("print", item.first, item.second->getValue());
+    }
 }
 
 void SelectMachineDialog::Enable_Auto_Refill(bool enable)
 {
     if (enable) {
-        m_ams_backup_tip->SetForegroundColour(wxColour(0x4479FB));  // y96
+        m_ams_backup_tip->SetForegroundColour(wxColour(68,121,251));
     }
     else {
         m_ams_backup_tip->SetForegroundColour(wxColour(0x90, 0x90, 0x90));
@@ -2965,6 +2922,28 @@ void SelectMachineDialog::connect_printer_mqtt()
     }
 }
 
+static bool _HasExt(const std::vector<FilamentInfo> &ams_mapping_result) {
+    if (ams_mapping_result.empty()) {
+        return true;
+    };
+
+    for (const auto &info : ams_mapping_result) {
+        if (info.ams_id == VIRTUAL_AMS_MAIN_ID_STR || info.ams_id == VIRTUAL_AMS_DEPUTY_ID_STR) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool _HasAms(const std::vector<FilamentInfo> &ams_mapping_result) {
+    for (const auto &info : ams_mapping_result) {
+        if (info.ams_id != VIRTUAL_AMS_MAIN_ID_STR && info.ams_id != VIRTUAL_AMS_DEPUTY_ID_STR) { return true; }
+    }
+
+    return false;
+}
+
 void SelectMachineDialog::on_send_print()
 {
     BOOST_LOG_TRIVIAL(info) << "print_job: on_ok to send";
@@ -2980,6 +2959,18 @@ void SelectMachineDialog::on_send_print()
     int result = 0;
     if (m_printer_last_select.empty()) {
         return;
+    }
+
+    DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+    if (!dev) return;
+
+    MachineObject* obj_ = dev->get_selected_machine();
+    assert(obj_->dev_id == m_printer_last_select);
+    if (obj_ == nullptr) { return; }
+
+    /*github-6179*/
+    if (obj_->m_extder_data.total_extder_count < 2 && _HasExt(m_ams_mapping_result)) {
+        m_checkbox_list["use_ams"]->setValue("off");
     }
 
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ", print_job: for send task, current printer id =  " << m_printer_last_select << std::endl;
@@ -3009,23 +3000,25 @@ void SelectMachineDialog::on_send_print()
 
     // enter sending mode
     sending_mode();
+    if (m_print_job) { m_print_job->reset_print_stage(); }
     m_status_bar->enable_cancel_button();
 
     // get ams_mapping_result
     std::string ams_mapping_array;
+    std::string ams_mapping_array2;
     std::string ams_mapping_info;
-    if (m_checkbox_list["use_ams"]->GetValue())
-        get_ams_mapping_result(ams_mapping_array, ams_mapping_info);
-    else {
-        json mapping_info_json = json::array();
-        json item;
-        if (m_filaments.size() > 0) {
-            item["sourceColor"] = m_filaments[0].color.substr(1, 8);
-            item["filamentType"] = m_filaments[0].type;
-            mapping_info_json.push_back(item);
-            ams_mapping_info = mapping_info_json.dump();
-        }
-    }
+    //if (m_checkbox_list["use_ams"]->getValue() == "on")
+    get_ams_mapping_result(ams_mapping_array,ams_mapping_array2, ams_mapping_info);
+    //else {
+    //    json mapping_info_json = json::array();
+    //    json item;
+    //    if (m_filaments.size() > 0) {
+    //        item["sourceColor"] = m_filaments[0].color.substr(1, 8);
+    //        item["filamentType"] = m_filaments[0].type;
+    //        mapping_info_json.push_back(item);
+    //        ams_mapping_info = mapping_info_json.dump();
+    //    }
+    //}
 
     if (m_print_type == PrintFromType::FROM_NORMAL) {
         result = m_plater->send_gcode(m_print_plate_idx, [this](int export_stage, int current, int total, bool& cancel) {
@@ -3048,6 +3041,14 @@ void SelectMachineDialog::on_send_print()
             return;
         }
 
+        // export config 3mf if needed
+        if (!obj_->is_lan_mode_printer()) {
+            result = m_plater->export_config_3mf(m_print_plate_idx);
+            if (result < 0) {
+                BOOST_LOG_TRIVIAL(info) << "export_config_3mf failed, result = " << result;
+                return;
+            }
+        }
         if (m_is_canceled || m_export_3mf_cancel) {
             BOOST_LOG_TRIVIAL(info) << "print_job: m_export_3mf_cancel or m_is_canceled";
             m_status_bar->set_status_text(task_canceled_text);
@@ -3056,6 +3057,18 @@ void SelectMachineDialog::on_send_print()
     }
 
     m_print_job = std::make_shared<PrintJob>(m_status_bar, m_plater, m_printer_last_select);
+    m_print_job->m_dev_ip = obj_->dev_ip;
+    m_print_job->m_ftp_folder = obj_->get_ftp_folder();
+    m_print_job->m_access_code = obj_->get_access_code();
+#if !QDT_RELEASE_TO_PUBLIC
+    m_print_job->m_local_use_ssl_for_ftp = wxGetApp().app_config->get("enable_ssl_for_ftp") == "true" ? true : false;
+    m_print_job->m_local_use_ssl_for_mqtt = wxGetApp().app_config->get("enable_ssl_for_mqtt") == "true" ? true : false;
+#else
+    m_print_job->m_local_use_ssl_for_ftp = obj_->local_use_ssl_for_ftp;
+    m_print_job->m_local_use_ssl_for_mqtt = obj_->local_use_ssl_for_mqtt;
+#endif
+    m_print_job->connection_type = obj_->connection_type();
+    m_print_job->cloud_print_only = obj_->is_support_cloud_print_only;
 
     if (m_print_type == PrintFromType::FROM_NORMAL) {
         BOOST_LOG_TRIVIAL(info) << "print_job: m_print_type = from_normal";
@@ -3065,6 +3078,7 @@ void SelectMachineDialog::on_send_print()
     else if(m_print_type == PrintFromType::FROM_SDCARD_VIEW){
         BOOST_LOG_TRIVIAL(info) << "print_job: m_print_type = from_sdcard_view";
         m_print_job->m_print_type = "from_sdcard_view";
+        //m_print_job->connection_type = "lan";
 
         try {
             m_print_job->m_print_from_sdc_plate_idx = m_required_data_plate_data_list[m_print_plate_idx]->plate_index + 1;
@@ -3085,6 +3099,43 @@ void SelectMachineDialog::on_send_print()
         }
     }
 
+    m_print_job->task_ams_mapping      = ams_mapping_array;
+    m_print_job->task_ams_mapping2     = ams_mapping_array2;
+    m_print_job->task_ams_mapping_info = ams_mapping_info;
+
+    /* build nozzles info for multi extruders printers */
+    if (build_nozzles_info(m_print_job->task_nozzles_info)) {
+        BOOST_LOG_TRIVIAL(error) << "build_nozzle_info errors";
+    }
+
+    m_print_job->has_sdcard = obj_->get_sdcard_state() == MachineObject::SdcardState::HAS_SDCARD_NORMAL;
+
+
+    bool timelapse_option = m_checkbox_list["timelapse"]->IsShown()?true:false;
+    if (timelapse_option) {
+        timelapse_option = m_checkbox_list["timelapse"]->getValue() == "on";
+    }
+
+    m_print_job->set_print_config(
+        MachineBedTypeString[0],
+        (m_checkbox_list["bed_leveling"]->getValue() == "on"),
+        (m_checkbox_list["flow_cali"]->getValue() == "on"),
+        false,
+        timelapse_option,
+        true,
+        m_checkbox_list["bed_leveling"]->getValueInt(),
+        m_checkbox_list["flow_cali"]->getValueInt(),
+        m_checkbox_list["nozzle_offset_cali"]->getValueInt());
+
+    if (obj_->has_ams()) {
+        m_print_job->task_use_ams = (m_checkbox_list["use_ams"]->getValue() == "on");
+    } else {
+        m_print_job->task_use_ams = false;
+    }
+
+    BOOST_LOG_TRIVIAL(info) << "print_job: timelapse_option = " << timelapse_option;
+    BOOST_LOG_TRIVIAL(info) << "print_job: use_ams = " << m_print_job->task_use_ams;
+
     m_print_job->on_success([this]() { finish_mode(); });
 
     m_print_job->on_check_ip_address_fail([this]() {
@@ -3092,6 +3143,13 @@ void SelectMachineDialog::on_send_print()
         wxQueueEvent(this, evt);
         wxGetApp().show_ip_address_enter_dialog();
      });
+
+    // update ota version
+    NetworkAgent* agent = wxGetApp().getAgent();
+    if (agent) {
+        std::string dev_ota_str = "dev_ota_ver:" + obj_->dev_id;
+        agent->track_update_property(dev_ota_str, obj_->get_ota_version());
+    }
 
     m_print_job->start();
     BOOST_LOG_TRIVIAL(info) << "print_job: start print job";
@@ -3104,80 +3162,39 @@ void SelectMachineDialog::clear_ip_address_config(wxCommandEvent& e)
 
 void SelectMachineDialog::update_user_machine_list()
 {
-    // y16
-    m_comboBox_printer->SetValue("");
-    Enable_Send_Button(false);
-    m_comboBox_printer->Clear();
-    machine_list_link.clear();
-
-#if QDT_RELEASE_TO_PUBLIC
-    if (wxGetApp().app_config->get("user_token") != "")
-    {
-        auto m_devices = wxGetApp().get_devices();
-        for (const auto& device : m_devices) {
-            // y24
-            Machine_info machine;
-            machine.name = device.device_name;
-            machine.url = device.url;
-            machine.ip = device.local_ip;
-            machine.type = device.machine_type;
-            if (machine.type.empty())
-            {
-                std::size_t found = device.device_name.find('@');
-                if (found != std::string::npos)
-                {
-                    machine.type = device.device_name.substr(found + 1);
+    NetworkAgent* m_agent = wxGetApp().getAgent();
+    if (m_agent && m_agent->is_user_login()) {
+        boost::thread get_print_info_thread = Slic3r::create_thread([this, token = std::weak_ptr<int>(m_token)] {
+            NetworkAgent* agent = wxGetApp().getAgent();
+            unsigned int http_code;
+            std::string body;
+            int result = agent->get_user_print_info(&http_code, &body);
+            CallAfter([token, this, result, body] {
+                if (token.expired()) {return;}
+                if (result == 0) {
+                    m_print_info = body;
                 }
-            }
-            machine.display_name = machine.name + " (" + machine.ip + ")";
-            machine.link_url = device.link_url;
-            machine.is_special = device.isSpecialMachine;
-            machine_list_link.push_back(machine);
-        }
+                else {
+                    m_print_info = "";
+                }
+                wxCommandEvent event(EVT_UPDATE_USER_MACHINE_LIST);
+                event.SetEventObject(this);
+                wxPostEvent(this, event);
+            });
+        });
+    } else {
+        wxCommandEvent event(EVT_UPDATE_USER_MACHINE_LIST);
+        event.SetEventObject(this);
+        wxPostEvent(this, event);
     }
-#endif  
-    //y21 //y24
-    m_switch_button->SetValue(m_isNetMode);
-    wxCommandEvent event(wxEVT_TOGGLEBUTTON, m_switch_button->GetId());
-    event.SetEventObject(m_switch_button);
-    event.SetInt(m_switch_button->GetValue());
-    m_switch_button->GetEventHandler()->ProcessEvent(event);
-
-
-
-    //NetworkAgent* m_agent = wxGetApp().getAgent();
-    //if (m_agent && m_agent->is_user_login()) {
-    //    boost::thread get_print_info_thread = Slic3r::create_thread([this, token = std::weak_ptr(m_token)] {
-    //        NetworkAgent* agent = wxGetApp().getAgent();
-    //        unsigned int http_code;
-    //        std::string body;
-    //        int result = agent->get_user_print_info(&http_code, &body);
-    //        CallAfter([token, this, result, body] {
-    //            if (token.expired()) {return;}
-    //            if (result == 0) {
-    //                m_print_info = body;
-    //            }
-    //            else {
-    //                m_print_info = "";
-    //            }
-    //            wxCommandEvent event(EVT_UPDATE_USER_MACHINE_LIST);
-    //            event.SetEventObject(this);
-    //            wxPostEvent(this, event);
-    //        });
-    //    });
-    //} else {
-    //    wxCommandEvent event(EVT_UPDATE_USER_MACHINE_LIST);
-    //    event.SetEventObject(this);
-    //    wxPostEvent(this, event);
-    //}
 }
 
 void SelectMachineDialog::on_refresh(wxCommandEvent &event)
 {
     BOOST_LOG_TRIVIAL(info) << "m_printer_last_select: on_refresh";
-    // show_status(PrintDialogStatus::PrintStatusRefreshingMachineList);
-    update_user_printer();
-    // update_user_machine_list();
+    show_status(PrintDialogStatus::PrintStatusRefreshingMachineList);
+
+    update_user_machine_list();
 }
 
 void SelectMachineDialog::on_set_finish_mapping(wxCommandEvent &evt)
@@ -3185,9 +3202,9 @@ void SelectMachineDialog::on_set_finish_mapping(wxCommandEvent &evt)
     auto selection_data = evt.GetString();
     auto selection_data_arr = wxSplit(selection_data.ToStdString(), '|');
 
-    BOOST_LOG_TRIVIAL(info) << "The ams mapping selection result: data is " << selection_data;
+    BOOST_LOG_TRIVIAL(info) << "The box mapping selection result: data is " << selection_data;
 
-    if (selection_data_arr.size() == 6) {
+    if (selection_data_arr.size() == 8) {
         auto ams_colour      = wxColour(wxAtoi(selection_data_arr[0]), wxAtoi(selection_data_arr[1]), wxAtoi(selection_data_arr[2]), wxAtoi(selection_data_arr[3]));
         int  old_filament_id = (int) wxAtoi(selection_data_arr[5]);
         if (m_print_type == PrintFromType::FROM_NORMAL) {//todo:support sd card
@@ -3211,47 +3228,106 @@ void SelectMachineDialog::on_set_finish_mapping(wxCommandEvent &evt)
             }
         }
 
+
+        int use_ext_count = 0;
+        int use_ams_count = 0;
+
+        FilamentInfo old_info;
+        FilamentInfo new_info;
         for (auto i = 0; i < m_ams_mapping_result.size(); i++) {
             if (m_ams_mapping_result[i].id == wxAtoi(selection_data_arr[5])) {
+
+                old_info = m_ams_mapping_result[i];
+
                 m_ams_mapping_result[i].tray_id = evt.GetInt();
                 auto ams_colour = wxColour(wxAtoi(selection_data_arr[0]), wxAtoi(selection_data_arr[1]), wxAtoi(selection_data_arr[2]), wxAtoi(selection_data_arr[3]));
                 wxString color = wxString::Format("#%02X%02X%02X%02X", ams_colour.Red(), ams_colour.Green(), ams_colour.Blue(), ams_colour.Alpha());
-                m_ams_mapping_result[i].color = color.ToStdString();
+                m_ams_mapping_result[i].color = color.ToStdString().erase(0, 1);
                 m_ams_mapping_result[i].ctype = ctype;
                 m_ams_mapping_result[i].colors = tray_cols;
+
+                m_ams_mapping_result[i].ams_id = selection_data_arr[6].ToStdString();
+                m_ams_mapping_result[i].slot_id = selection_data_arr[7].ToStdString();
+
+                if (m_ams_mapping_result[i].ams_id == std::to_string(VIRTUAL_TRAY_MAIN_ID) || m_ams_mapping_result[i].ams_id == std::to_string(VIRTUAL_TRAY_DEPUTY_ID)) {
+                    use_ext_count++;
+                }else if (m_ams_mapping_result[i].ams_id >= std::to_string(0)) {
+                    use_ams_count++;
+                }
+
+                new_info = m_ams_mapping_result[i];
             }
-            BOOST_LOG_TRIVIAL(trace) << "The ams mapping result: id is " << m_ams_mapping_result[i].id << "tray_id is " << m_ams_mapping_result[i].tray_id;
+            BOOST_LOG_TRIVIAL(trace) << "The box mapping result: id is " << m_ams_mapping_result[i].id << "tray_id is " << m_ams_mapping_result[i].tray_id;
         }
 
-        MaterialHash::iterator iter = m_materialList.begin();
-        while (iter != m_materialList.end()) {
-            Material*        item = iter->second;
-            MaterialItem *m  = item->item;
-            if (item->id == m_current_filament_id) {
-                auto ams_colour = wxColour(wxAtoi(selection_data_arr[0]), wxAtoi(selection_data_arr[1]), wxAtoi(selection_data_arr[2]), wxAtoi(selection_data_arr[3]));
-                m->set_ams_info(ams_colour, selection_data_arr[4], ctype, material_cols);
+        for (auto i = 0; i < m_ams_mapping_result.size(); i++) {
+            if (m_ams_mapping_result[i].slot_id == new_info.slot_id && new_info.id != m_ams_mapping_result[i].id) {
+                int id = m_ams_mapping_result[i].id;
+                m_ams_mapping_result[i] = old_info;
+                m_ams_mapping_result[i].id = id;
+                auto color_change = AmsTray::decode_color(m_ams_mapping_result[i].color);
+                if (m_print_type == PrintFromType::FROM_NORMAL) {//todo:support sd card
+                    change_default_normal(id, color_change);
+                    final_deal_edge_pixels_data(m_preview_thumbnail_data);
+                    set_default_normal(m_preview_thumbnail_data); // do't reset ams
+                }
+
             }
-            iter++;
+
+        }
+
+        /*check use ams options*/
+        if (use_ext_count == m_ams_mapping_result.size()) {
+            m_checkbox_list["use_ams"]->setValue("off");
+        }
+        else if (use_ams_count > 0) {
+            m_checkbox_list["use_ams"]->setValue("on");
+        }
+
+        for (auto f = m_ams_mapping_result.begin(); f != m_ams_mapping_result.end(); f++) {
+            MaterialHash::iterator iter = m_materialList.begin();
+            while (iter != m_materialList.end()) {
+                int id = iter->second->id;
+                Material* item = iter->second;
+                MaterialItem* m = item->item;
+                //if (item->id == m_current_filament_id) {
+                //    auto ams_colour = wxColour(wxAtoi(selection_data_arr[0]), wxAtoi(selection_data_arr[1]), wxAtoi(selection_data_arr[2]), wxAtoi(selection_data_arr[3]));
+                //    m->set_ams_info(ams_colour, selection_data_arr[4], ctype, material_cols);
+                //}
+                if (f->id == id) {
+                    wxString ams_id;
+                    wxColour ams_col;
+                    ams_id = wxGetApp().transition_tridid(std::stoi(f->slot_id));
+                    ams_col = AmsTray::decode_color(f->color);
+                    std::vector<wxColour> cols;
+                    for (auto col : f->colors) {
+                        cols.push_back(AmsTray::decode_color(col));
+                    }
+                    m->set_ams_info(ams_col, ams_id, f->ctype, cols);
+                    break;
+                }
+                iter++;
+            }
         }
     }
+
+    update_filament_change_count();
 }
 
 void SelectMachineDialog::on_print_job_cancel(wxCommandEvent &evt)
 {
     BOOST_LOG_TRIVIAL(info) << "print_job: canceled";
+    //if (m_print_job && m_print_job->get_print_stage() == PrintingStageFinished)
+    //{
+    //    MessageDialog dlg(this, _L("As the print job has been successfully sent, the cancellation will not bring the print job to a halt. If you need to terminate this job, please stop it in 'Device' page."), _L("Info"), wxYES);
+    //    dlg.ShowModal();
+    //}
+
+    EnableEditing(true);
     show_status(PrintDialogStatus::PrintStatusInit);
     // enter prepare mode
     prepare_mode();
-}
-
-std::vector<std::string> SelectMachineDialog::sort_string(std::vector<std::string> strArray)
-{
-    std::vector<std::string> outputArray;
-    std::sort(strArray.begin(), strArray.end());
-    std::vector<std::string>::iterator st;
-    for (st = strArray.begin(); st != strArray.end(); st++) { outputArray.push_back(*st); }
-
-    return outputArray;
+    m_is_canceled = true;
 }
 
 bool  SelectMachineDialog::is_timeout()
@@ -3282,6 +3358,102 @@ int SelectMachineDialog::update_print_required_data(Slic3r::DynamicPrintConfig c
 void  SelectMachineDialog::reset_timeout()
 {
     m_timeout_count = 0;
+}
+
+
+static bool
+_compare_obj_names(MachineObject* obj1, MachineObject* obj2)
+{
+    return obj1->dev_name < obj2->dev_name;
+}
+
+/*******************************************************************
+*@note   _collect_machine_list
+*@param  dev_manager -- the device manager
+*@param  sorted_machine_objs -- return the sorted machine objects
+*@param  sorted_machine_names -- return the sorted machine shown names
+*@param  best_one -- return the best one
+*/
+/*******************************************************************/
+static void
+_collect_sorted_machines(Slic3r::DeviceManager* dev_manager,
+                         std::vector<MachineObject*>& sorted_machine_objs,
+                         wxArrayString& sorted_machine_names)
+{
+    sorted_machine_objs.clear();
+    sorted_machine_names.clear();
+    if (!dev_manager)
+    {
+        return;
+    }
+
+    /* Step 1 :Collect the target and compatible types*/
+    PresetBundle* preset_bundle = wxGetApp().preset_bundle;
+    const std::string& printer_type = preset_bundle->printers.get_edited_preset().get_printer_type(preset_bundle);
+    const auto& compatible_types_list = dev_manager->get_compatible_machine(printer_type);
+    std::set<std::string> compatible_types_set(compatible_types_list.begin(), compatible_types_list.end());
+
+    /* Step 2: collect different machine list*/
+    MachineObject* cur_selected_obj = dev_manager->get_selected_machine();
+    std::vector<MachineObject*> match_avaliable_list;  // match and availiable machines
+    std::vector<MachineObject*> match_inavaliable_list;// match but inavaliable machines
+    std::vector<MachineObject*> other_list;// other bound machines
+    auto _collect_machine = [&](MachineObject* obj)
+    {
+         if (obj == cur_selected_obj)
+         {
+             return;
+         }
+
+        if (obj->printer_type == printer_type)
+        {
+            obj->is_avaliable() ? match_avaliable_list.push_back(obj) : match_inavaliable_list.push_back(obj);
+        }
+        else
+        {
+            other_list.push_back(obj);
+        }
+    };
+
+    // collect from user machine list
+    const auto& user_machine_list = dev_manager->get_my_machine_list();// user machine list
+    for (const auto& elem : user_machine_list)
+    {
+        MachineObject* mobj = elem.second;
+        if (mobj && (mobj->is_online() || mobj->is_connected()))
+        {
+            _collect_machine(mobj);
+        }
+    }
+
+    /* Step 2: Sort the lists*/
+    std::sort(match_avaliable_list.begin(), match_avaliable_list.end(), _compare_obj_names);
+    std::sort(match_inavaliable_list.begin(), match_inavaliable_list.end(), _compare_obj_names);
+    std::sort(other_list.begin(), other_list.end(), _compare_obj_names);
+
+    /* Step 3: Get the sorted objects*/
+    auto _collect_sorted_objs = [](const std::vector<MachineObject*>& obj_list,
+                                   std::vector<MachineObject*>& sorted_machine_objs,
+                                   wxArrayString& sorted_machine_names)
+    {
+        for (auto obj : obj_list)
+        {
+            sorted_machine_objs.push_back(obj);
+            const wxString& dev_name = wxString::FromUTF8(obj->dev_name);
+            obj->is_lan_mode_printer() ? sorted_machine_names.push_back(dev_name + "(LAN)"):
+                                         sorted_machine_names.push_back(dev_name);
+        }
+    };
+
+    // the shown list, STUDIO-8235
+    if (cur_selected_obj)
+    {
+        std::vector<MachineObject*> cur_selected_obj_list{ cur_selected_obj };
+        _collect_sorted_objs(cur_selected_obj_list, sorted_machine_objs, sorted_machine_names);
+    }
+    _collect_sorted_objs(match_avaliable_list, sorted_machine_objs, sorted_machine_names);
+    _collect_sorted_objs(match_inavaliable_list, sorted_machine_objs, sorted_machine_names);
+    _collect_sorted_objs(other_list, sorted_machine_objs, sorted_machine_names);
 }
 
 void SelectMachineDialog::update_user_printer()
@@ -3333,132 +3505,49 @@ void SelectMachineDialog::update_user_printer()
         }
     }
 #endif 
+
+    show_status(PrintDialogStatus::PrintStatusInit);
+
     m_switch_button->SetValue(m_isNetMode);
     wxCommandEvent event(wxEVT_TOGGLEBUTTON, m_switch_button->GetId());
     event.SetEventObject(m_switch_button);
     event.SetInt(m_switch_button->GetValue());
     m_switch_button->GetEventHandler()->ProcessEvent(event);
-    //Slic3r::DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
-    //if (!dev) return;
 
-    //// update user print info
-    //if (!m_print_info.empty()) {
-    //    dev->parse_user_print_info(m_print_info);
-    //    m_print_info = "";
-    //}
+    load_option_vals(nullptr);
+    // Slic3r::DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+    // if (!dev) return;
 
-    //// clear machine list
-    //m_list.clear();
-    //m_comboBox_printer->Clear();
-    //std::vector<std::string>              machine_list;
-    //wxArrayString                         machine_list_name;
-    //std::map<std::string, MachineObject*> option_list;
+    // // update user print info
+    // if (!m_print_info.empty()) {
+    //     dev->parse_user_print_info(m_print_info);
+    //     m_print_info = "";
+    // }
 
-    ////user machine list
-    //option_list = dev->get_my_machine_list();
+    // wxArrayString  sorted_machine_names;
+    // _collect_sorted_machines(dev, m_list, sorted_machine_names);
 
-    //// same machine only appear once
-    //for (auto it = option_list.begin(); it != option_list.end(); it++) {
-    //    if (it->second && (it->second->is_online() || it->second->is_connected())) {
-    //        machine_list.push_back(it->second->dev_name);
-    //    }
-    //}
+    // // update the machine list, and select a default machine
+    // m_comboBox_printer->Set(sorted_machine_names);
+    // if (!m_list.empty())
+    // {
+    //     m_printer_last_select = m_list.front()->dev_id;
+    //     m_comboBox_printer->SetSelection(0);
+    //     wxCommandEvent event(wxEVT_COMBOBOX);
+    //     event.SetEventObject(m_comboBox_printer);
+    //     wxPostEvent(m_comboBox_printer, event);
+    // }
+    // else
+    // {
+    //     m_printer_last_select = "";
+    //     update_select_layout(nullptr);
+    //     m_comboBox_printer->SetTextLabel("");
+    // }
 
-
-
-    ////lan machine list
-    //auto lan_option_list = dev->get_local_machine_list();
-
-    //for (auto elem : lan_option_list) {
-    //    MachineObject* mobj = elem.second;
-
-    //    /* do not show printer bind state is empty */
-    //    if (!mobj->is_avaliable()) continue;
-    //    if (!mobj->is_online()) continue;
-    //    if (!mobj->is_lan_mode_printer()) continue;
-    //    /*if (mobj->is_in_printing()) {op->set_printer_state(PrinterState::BUSY);}*/
-
-    //    if (!mobj->has_access_right()) {
-    //        option_list[mobj->dev_name] = mobj;
-    //        machine_list.push_back(mobj->dev_name);
-    //    }
-    //}
-
-    //machine_list = sort_string(machine_list);
-    //for (auto tt = machine_list.begin(); tt != machine_list.end(); tt++) {
-    //    for (auto it = option_list.begin(); it != option_list.end(); it++) {
-    //        if (it->second->dev_name == *tt) {
-    //            m_list.push_back(it->second);
-    //            wxString dev_name_text = from_u8(it->second->dev_name);
-    //            if (it->second->is_lan_mode_printer()) {
-    //                dev_name_text += "(LAN)";
-    //            }
-    //            machine_list_name.Add(dev_name_text);
-    //            break;
-    //        }
-    //    }
-    //}
-
-    //m_comboBox_printer->Set(machine_list_name);
-
-    //MachineObject* obj = dev->get_selected_machine();
-
-    //if (obj) {
-    //    if (obj->is_lan_mode_printer() && !obj->has_access_right()) {
-    //        m_printer_last_select = "";
-    //    }
-    //    else {
-    //       m_printer_last_select = obj->dev_id;
-    //    }
-
-    //} else {
-    //    m_printer_last_select = "";
-    //}
-
-    //if (m_list.size() > 0) {
-    //    // select a default machine
-    //    if (m_printer_last_select.empty()) {
-    //        int def_selection = -1;
-    //        for (int i = 0; i < m_list.size(); i++) {
-    //            if (m_list[i]->is_lan_mode_printer() && !m_list[i]->has_access_right()) {
-    //                continue;
-    //            }
-    //            else {
-    //                def_selection = i;
-    //            }
-    //        }
-
-    //        if (def_selection >= 0) {
-    //            m_printer_last_select = m_list[def_selection]->dev_id;
-    //            m_comboBox_printer->SetSelection(def_selection);
-    //            wxCommandEvent event(wxEVT_COMBOBOX);
-    //            event.SetEventObject(m_comboBox_printer);
-    //            wxPostEvent(m_comboBox_printer, event);
-    //        }
-    //    }
-
-    //    for (auto i = 0; i < m_list.size(); i++) {
-    //        if (m_list[i]->dev_id == m_printer_last_select) {
-
-    //            if (obj && !obj->get_lan_mode_connection_state()) {
-    //                m_comboBox_printer->SetSelection(i);
-    //                wxCommandEvent event(wxEVT_COMBOBOX);
-    //                event.SetEventObject(m_comboBox_printer);
-    //                wxPostEvent(m_comboBox_printer, event);
-    //            }
-    //        }
-    //    }
-    //}
-    //else {
-    //    m_printer_last_select = "";
-    //    update_select_layout(nullptr);
-    //    m_comboBox_printer->SetTextLabel("");
-    //}
-
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "for send task, current printer id =  " << m_printer_last_select << std::endl;
+    // BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "for send task, current printer id =  " << m_printer_last_select << std::endl;
 }
 
-void SelectMachineDialog::on_rename_click(wxCommandEvent& event)
+void SelectMachineDialog::on_rename_click(wxMouseEvent& event)
 {
     m_is_rename_mode = true;
     m_rename_input->GetTextCtrl()->SetValue(m_current_project_name);
@@ -3492,8 +3581,7 @@ void SelectMachineDialog::on_rename_enter()
     auto     m_valid_type = Valid;
     wxString info_line;
 
-    //y51
-    const char* unusable_symbols = "<>[]:\\|?*\"";
+    const char* unusable_symbols = "<>[]:/\\|?*\"";
 
     const std::string unusable_suffix = PresetCollection::get_suffix_modified(); //"(modified)";
     for (size_t i = 0; i < std::strlen(unusable_symbols); i++) {
@@ -3553,8 +3641,23 @@ void SelectMachineDialog::update_printer_combobox(wxCommandEvent &event)
 
 void SelectMachineDialog::on_timer(wxTimerEvent &event)
 {
-    wxGetApp().reset_to_active();
     update_show_status();
+
+    //y61
+    if (_HasAms(m_ams_mapping_result) && wxGetApp().plater()->box_msg.auto_reload_detect) {
+        if (!m_ams_backup_tip->IsShown()) {
+            m_ams_backup_tip->Show();
+            img_ams_backup->Show();
+        }
+    }
+    else {
+        if (m_ams_backup_tip->IsShown()) {
+            m_ams_backup_tip->Hide();
+            img_ams_backup->Hide();
+        }
+    }
+    Layout();
+    Fit();
 
     ///show auto refill
     DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
@@ -3562,36 +3665,47 @@ void SelectMachineDialog::on_timer(wxTimerEvent &event)
     MachineObject* obj_ = dev->get_selected_machine();
     if(!obj_) return;
 
-    update_ams_check(obj_);
-    update_select_layout(obj_);
+
+
+
+    if (obj_->m_extder_data.total_extder_count > 1) {
+        change_materialitem_tip(false); /*mapping to both ams and ext, is supported while total_extder_count is 2*/
+    } else {
+        change_materialitem_tip(true);
+    }
+
     if (!obj_
         || obj_->amsList.empty()
         || obj_->ams_exist_bits == 0
         || !obj_->is_support_filament_backup
         || !obj_->is_support_show_filament_backup
         || !obj_->ams_auto_switch_filament_flag
-        || !m_checkbox_list["use_ams"]->GetValue() ) {
+        || m_checkbox_list["use_ams"]->getValue() != "on"
+        || !_HasAms(m_ams_mapping_result)) {
         if (m_ams_backup_tip->IsShown()) {
             m_ams_backup_tip->Hide();
             img_ams_backup->Hide();
-            Layout();
-            Fit();
         }
     }
     else {
         if (!m_ams_backup_tip->IsShown()) {
             m_ams_backup_tip->Show();
             img_ams_backup->Show();
-            Layout();
-            Fit();
         }
     }
+
+    update_option_opts(obj_);
+    load_option_vals(obj_);
+
+    update_scroll_area_size();
 }
 
 void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
 {
     //y24
     std::string selection_name = into_u8(m_comboBox_printer->GetValue());
+    std::string select_printer_ip;
+    std::string select_machine_type = "";
     if (!selection_name.empty())
     {
         if (!m_isNetMode)
@@ -3600,18 +3714,21 @@ void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
             {
                 if (machine.display_name != selection_name)
                     continue;
-                else if (preset_typename_normalized.find(NormalizeVendor(machine.type)) != std::string::npos)
-                {
-                    Enable_Send_Button(true);
-                    update_print_status_msg(wxEmptyString, false, false);
-                    break;
-                }
-                else
-                {
-                    Enable_Send_Button(false);
-                    wxString msg_text = wxString::Format(_L("The selected printer (%s) is incompatible with the chosen printer profile in the slicer (%s)."), machine.type, preset_typename);
-                    update_print_status_msg(msg_text, true, true);
-                    break;
+                else {
+                    select_machine = machine;
+                    select_machine_type = machine.type;
+                    select_printer_ip = machine.url;
+                    if (preset_typename_normalized.find(NormalizeVendor(machine.type)) != std::string::npos)
+                    {
+                        update_print_status_msg(wxEmptyString, true, true, true);
+                        break;
+                    }
+                    else
+                    {
+                        wxString msg_text = wxString::Format(_L("The selected printer (%s) is incompatible with the chosen printer profile in the slicer (%s)."), machine.type, preset_typename);
+                        update_print_status_msg(msg_text, false, false, true);
+                        break;
+                    }
                 }
             }
         }
@@ -3621,137 +3738,243 @@ void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
             {
                 if (machine.display_name != selection_name)
                     continue;
-                else if (preset_typename_normalized.find(NormalizeVendor(machine.type)) != std::string::npos)
-                {
-                    Enable_Send_Button(true);
-                    update_print_status_msg(wxEmptyString, false, false);
-                    break;
-                }
-                else
-                {
-                    Enable_Send_Button(false);
-                    wxString msg_text = wxString::Format(_L("The selected printer (%s) is incompatible with the chosen printer profile in the slicer (%s)."), machine.type, preset_typename);
-                    update_print_status_msg(msg_text, true, true);
-                    break;
+                else {
+                    select_machine = machine;
+                    select_machine_type = machine.type;
+                    select_printer_ip = machine.url;
+                    if (preset_typename_normalized.find(NormalizeVendor(machine.type)) != std::string::npos)
+                    {
+                        update_print_status_msg(wxEmptyString, true, true, true);
+                        break;
+                    }
+                    else
+                    {
+                        wxString msg_text = wxString::Format(_L("The selected printer (%s) is incompatible with the chosen printer profile in the slicer (%s)."), machine.type, preset_typename);
+                        update_print_status_msg(msg_text, false, false, true);
+                        break;
+                    }
                 }
             }
         }
     }
     else
-        Enable_Send_Button(false);
+        update_print_status_msg(wxEmptyString, false, false, true);
 
-    ///* reset timeout and reading printer info */
-    //m_status_bar->reset();
-    //m_timeout_count      = 0;
-    //m_ams_mapping_res  = false;
-    //m_ams_mapping_valid  = false;
-    //m_ams_mapping_result.clear();
+    std::string box_ip = wxGetApp().plater()->sidebar().box_list_printer_ip;
+    
+    int extruders_size = wxGetApp().plater()->get_partplate_list().get_curr_plate()->get_used_filaments().size();
+    
 
-    //auto selection = m_comboBox_printer->GetSelection();
-    //DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
-    //if (!dev) return;
+    if (extruders_size > 1) {
+        if (box_ip != select_printer_ip) {
+            show_status(PrintDialogStatus::PrinterNotConnectBox);
+            has_box_machine = false;
+        }
+        else 
+            has_box_machine = true;
 
-    //MachineObject* obj = nullptr;
-    //for (int i = 0; i < m_list.size(); i++) {
-    //    if (i == selection) {
+        if (extruders_size > wxGetApp().preset_bundle->filament_ams_list.size()){
+            show_status(PrintDialogStatus::PrintStatusNeedUpgradingAms);
+        }
+    }
+    else {
+        if (box_ip != select_printer_ip)
+            has_box_machine = false;
+        else
+            has_box_machine = true;
+    }
 
-    //        //check lan mode machine
-    //        if (m_list[i]->is_lan_mode_printer() && !m_list[i]->has_access_right()) {
-    //            ConnectPrinterDialog dlg(wxGetApp().mainframe, wxID_ANY, _L("Input access code"));
-    //            dlg.set_machine_object(m_list[i]);
-    //            auto res = dlg.ShowModal();
-    //            m_printer_last_select = "";
-    //            m_comboBox_printer->SetSelection(-1);
-    //            m_comboBox_printer->Refresh();
-    //            m_comboBox_printer->Update();
-    //        }
+    update_image(select_machine_type);
+    
+    update_option_opts(nullptr);
+    update_show_status();
+    // /* reset timeout and reading printer info */
+    // m_status_bar->reset();
+    // m_timeout_count      = 0;
+    // m_ams_mapping_res  = false;
+    // m_ams_mapping_valid  = false;
+    // m_ams_mapping_result.clear();
 
-    //        m_printer_last_select = m_list[i]->dev_id;
-    //        obj = m_list[i];
+    // m_link_edit_nozzle->Show(false);
+    // m_mapping_sugs_sizer->Show(false);
+    // m_change_filament_times_sizer->Show(false);
+    // m_txt_change_filament_times->Show(false);
 
-    //        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "for send task, current printer id =  " << m_printer_last_select << std::endl;
-    //        break;
-    //    }
-    //}
+    // auto selection = m_comboBox_printer->GetSelection();
+    // DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+    // if (!dev) return;
 
-    //if (obj) {
-    //    obj->command_get_version();
-    //    obj->command_request_push_all();
-    //    if (!dev->get_selected_machine()) {
-    //        dev->set_selected_machine(m_printer_last_select, true);
-    //    }else if (dev->get_selected_machine()->dev_id != m_printer_last_select) {
-    //        dev->set_selected_machine(m_printer_last_select, true);
-    //    }
+    // MachineObject* obj = nullptr;
+    // for (int i = 0; i < m_list.size(); i++) {
+    //     if (i == selection) {
 
-    //    // reset the timelapse check status for I3 structure
-    //    if (obj->get_printer_arch() == PrinterArch::ARCH_I3) {
-    //        m_checkbox_list["timelapse"]->SetValue(false);
-    //        AppConfig *config = wxGetApp().app_config;
-    //        if (config) config->set_str("print", "timelapse", "0");
-    //    }
+    //         //check lan mode machine
+    //         if (m_list[i]->is_lan_mode_printer() && !m_list[i]->has_access_right()) {
+    //             ConnectPrinterDialog dlg(wxGetApp().mainframe, wxID_ANY, _L("Input access code"));
+    //             dlg.set_machine_object(m_list[i]);
+    //             auto res = dlg.ShowModal();
+    //             m_printer_last_select = "";
+    //             m_comboBox_printer->SetSelection(-1);
+    //             m_comboBox_printer->Refresh();
+    //             m_comboBox_printer->Update();
+    //         }
 
-    //    // Has changed machine unrecoverably
-    //    GUI::wxGetApp().sidebar().load_ams_list(obj->dev_id, obj);
-    //    update_select_layout(obj);
-    //} else {
-    //    BOOST_LOG_TRIVIAL(error) << "on_selection_changed dev_id not found";
-    //    return;
-    //}
+    //         m_printer_last_select = m_list[i]->dev_id;
+    //         obj = m_list[i];
+
+    //         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "for send task, current printer id =  " << m_printer_last_select << std::endl;
+    //         break;
+    //     }
+    // }
+
+    // if (obj) {
+
+    //     // update image
+    //     auto printer_img_name = "printer_preview_" + obj->printer_type;
+    //     try {
+    //         m_printer_image->SetBitmap(create_scaled_bitmap(printer_img_name, this, 52));
+    //     } catch (const std::exception &) {
+    //         m_printer_image->SetBitmap(create_scaled_bitmap("printer_preview_BL-P001", this, 52));
+    //     }
 
 
-    ////reset print status
-    //update_flow_cali_check(obj);
+    //     obj->command_get_version();
+    //     obj->command_request_push_all();
+    //     if (!dev->get_selected_machine()) {
+    //         dev->set_selected_machine(m_printer_last_select, true);
+    //     }else if (dev->get_selected_machine()->dev_id != m_printer_last_select) {
+    //         dev->set_selected_machine(m_printer_last_select, true);
+    //     }
 
-    //show_status(PrintDialogStatus::PrintStatusInit);
+    //     // Has changed machine unrecoverably
+    //     GUI::wxGetApp().sidebar().load_ams_list(obj->dev_id, obj);
+    //     m_check_flag = false;
+    // } else {
+    //     BOOST_LOG_TRIVIAL(error) << "on_selection_changed dev_id not found";
+    //     return;
+    // }
 
-    //update_show_status();
+
+    // //reset print status
+    // show_status(PrintDialogStatus::PrintStatusInit);
+
+    // update_show_status();
 }
 
-void SelectMachineDialog::update_flow_cali_check(MachineObject* obj)
+void SelectMachineDialog::update_ams_check(MachineObject *obj)
 {
-    auto bed_type = m_plater->get_partplate_list().get_curr_plate()->get_bed_type(true);
-    auto show_cali_tips = true;
+    if (!obj) {return;}
 
-    if (obj && obj->get_printer_arch() == PrinterArch::ARCH_I3) { show_cali_tips = false; }
-
-    set_flow_calibration_state(true, show_cali_tips);
-}
-
-void SelectMachineDialog::update_ams_check(MachineObject* obj)
-{
-    if (obj && obj->ams_support_use_ams && obj->has_ams()) {
-        select_use_ams->Show();
-        if (obj->get_printer_ams_type() == "generic") {
-            img_use_ams_tip->Show();
+    if (!obj->is_enable_np) {
+        if (obj->has_ams()) {
+            m_checkbox_list["use_ams"]->setValue("on");
+            change_materialitem_tip(false);
         }
         else {
-            img_use_ams_tip->Hide();
+            m_checkbox_list["use_ams"]->setValue("off");
+            change_materialitem_tip(true);
         }
-    } else {
-        select_use_ams->Hide();
+    }else{
+        m_checkbox_list["use_ams"]->setValue("on");
+        change_materialitem_tip(false);
     }
+}
+
+
+void SelectMachineDialog::update_filament_change_count()
+{
+    /*check filament change times*/
+    PartPlate *  part_plate   = m_plater->get_partplate_list().get_curr_plate();
+    PrintBase *  print        = nullptr;
+    GCodeResult *gcode_result = nullptr;
+
+    m_change_filament_times_sizer->Show(false);
+    m_txt_change_filament_times->Show(false);
+    m_mapping_sugs_sizer->Show(false);
+    m_link_edit_nozzle->Show(false);
+
+    MachineObject* obj = new MachineObject("temp_device");
+
+    //DeviceManager *dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+    //if (!dev) return;
+    //MachineObject *obj = dev->get_selected_machine();
+    //if (!obj) return;
+    if (m_print_type == FROM_SDCARD_VIEW) return;
+
+    std::vector<int> filament_ids;
+    for (auto mr : m_ams_mapping_result) {
+        if (mr.ams_id == std::to_string(VIRTUAL_TRAY_MAIN_ID) || mr.ams_id == std::to_string(VIRTUAL_TRAY_DEPUTY_ID)) {
+            filament_ids.push_back(mr.id);
+        }
+    }
+
+    /*check nozzle & filament is it the best*/
+    auto stats = m_plater->get_partplate_list().get_current_fff_print().statistics_by_extruder();
+    auto best  = stats.stats_by_multi_extruder_best;
+    auto curr  = stats.stats_by_multi_extruder_curr;
+
+    int hand_changes_count = curr.filament_change_count - best.filament_change_count;
+    int saving_weight      = curr.filament_flush_weight - best.filament_flush_weight;
+
+    if (obj->m_extder_data.total_extder_count > 1) { m_link_edit_nozzle->Show(true); }
+
+    if (hand_changes_count > 0 || saving_weight > 0) {
+        m_mapping_sugs_sizer->Show(true);
+        m_change_filament_times_sizer->Show(true);
+        m_txt_change_filament_times->Show(true);
+        m_txt_change_filament_times->SetLabel(wxString::Format(_L("Cost %dg filament and %d changes more than optimal grouping."), saving_weight, hand_changes_count));
+        m_txt_change_filament_times->Wrap(FromDIP(580));
+        m_txt_change_filament_times->Layout();
+    }
+
+    Layout();
+    Fit();
+}
+
+static wxString _check_kval_not_default(const MachineObject* obj, const std::vector<FilamentInfo> &mapping_result)
+{
+    if (!obj) { return wxEmptyString;}
+
+    wxString ams_names;
+    for (const auto& info : mapping_result) {
+        if (!obj->contains_tray(info.ams_id, std::to_string(info.tray_id))) { continue; }
+        if (obj->get_tray(info.ams_id, std::to_string(info.tray_id)).cali_idx == -1) { continue; } /*-1 means default*/
+
+        wxString ams_name;
+        if (info.tray_id == VIRTUAL_TRAY_MAIN_ID) {
+            ams_name = "Right-Ext";
+        } else if (info.tray_id == VIRTUAL_TRAY_DEPUTY_ID) {
+            ams_name = "Left-Ext";
+        } else {
+            ams_name = wxGetApp().transition_tridid(info.tray_id);
+        }
+
+        if (!ams_names.empty()) { ams_names += ", ";}
+        ams_names += ams_name;
+    }
+
+    return ams_names;
 }
 
 void SelectMachineDialog::update_show_status()
 {
+
+    MachineObject* obj_ = new MachineObject("machine_name");
+
     // refreshing return
-    if (get_status() == PrintDialogStatus::PrintStatusRefreshingMachineList)
-        return;
+    //if (get_status() == PrintDialogStatus::PrintStatusRefreshingMachineList)
+    //    return;
 
-    if (get_status() == PrintDialogStatus::PrintStatusSending)
-        return;
+    //if (get_status() == PrintDialogStatus::PrintStatusSending)
+    //    return;
 
-    if (get_status() == PrintDialogStatus::PrintStatusSendingCanceled)
-        return;
-
-    NetworkAgent* agent = Slic3r::GUI::wxGetApp().getAgent();
-    DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
-    if (!agent) {
-        update_ams_check(nullptr);
-        return;
-    }
-    if (!dev) return;
-    dev->check_pushing();
+    //NetworkAgent* agent = Slic3r::GUI::wxGetApp().getAgent();
+    //DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+    //if (!agent) {
+    //    update_ams_check(nullptr);
+    //    return;
+    //}
+    //if (!dev) return;
 
     PartPlate* plate = m_plater->get_partplate_list().get_curr_plate();
 
@@ -3762,75 +3985,78 @@ void SelectMachineDialog::update_show_status()
             return;
         }
     }
-    MachineObject* obj_ = dev->get_my_machine(m_printer_last_select);
-    if (!obj_) {
-        update_ams_check(nullptr);
-        if (agent) {
-            if (agent->is_user_login()) {
-                show_status(PrintDialogStatus::PrintStatusInvalidPrinter);
-            }
-            else {
-                show_status(PrintDialogStatus::PrintStatusNoUserLogin);
-            }
-        }
-        return;
-    }
-    agent->install_device_cert(obj_->dev_id, obj_->is_lan_mode_printer());
+    //MachineObject* obj_ = dev->get_my_machine(m_printer_last_select);
+    //if (!obj_) {
+    //    update_ams_check(nullptr);
+    //    if (agent) {
+    //        if (agent->is_user_login()) {
+    //            show_status(PrintDialogStatus::PrintStatusInvalidPrinter);
+    //        }
+    //        else {
+    //            show_status(PrintDialogStatus::PrintStatusNoUserLogin);
+    //        }
+    //    }
+    //    return;
+    //}
 
-    /* check cloud machine connections */
-    if (!obj_->is_lan_mode_printer()) {
-        if (!agent->is_server_connected()) {
-            agent->refresh_connection();
-            show_status(PrintDialogStatus::PrintStatusConnectingServer);
-            reset_timeout();
-            return;
-        }
-    }
+    ///* check cloud machine connections */
+    //if (!obj_->is_lan_mode_printer()) {
+    //    if (!agent->is_server_connected()) {
+    //        show_status(PrintDialogStatus::PrintStatusConnectingServer);
+    //        reset_timeout();
+    //        return;
+    //    }
+    //}
 
-    if (!obj_->is_info_ready()) {
-        if (is_timeout()) {
-            m_ams_mapping_result.clear();
-            sync_ams_mapping_result(m_ams_mapping_result);
-            show_status(PrintDialogStatus::PrintStatusReadingTimeout);
-            return;
-        }
-        else {
-            m_timeout_count++;
-            show_status(PrintDialogStatus::PrintStatusReading);
-            return;
-        }
-        return;
-    }
+    //if (!obj_->is_info_ready()) {
+    //    if (is_timeout()) {
+    //        m_ams_mapping_result.clear();
+    //        sync_ams_mapping_result(m_ams_mapping_result);
+    //        show_status(PrintDialogStatus::PrintStatusReadingTimeout);
+    //        return;
+    //    }
+    //    else {
+    //        m_timeout_count++;
+    //        show_status(PrintDialogStatus::PrintStatusReading);
+    //        return;
+    //    }
+    //    return;
+    //}
 
     reset_timeout();
-    //update_ams_check(obj_);
-
-    if (!obj_->is_support_print_all && m_print_plate_idx == PLATE_ALL_IDX) {
-        show_status(PrintDialogStatus::PrintStatusNotSupportedPrintAll);
+    if(!has_box_machine){
+        m_ams_mapping_result.clear();
+        sync_ams_mapping_result(m_ams_mapping_result);
         return;
+    }
+    //if (!obj_->is_support_print_all && m_print_plate_idx == PLATE_ALL_IDX) {
+    //    show_status(PrintDialogStatus::PrintStatusNotSupportedPrintAll);
+    //    return;
+    //}
+
+    if (!m_check_flag) {
+        //update_select_layout(obj_);
+        //update_ams_check(obj_);
+        m_check_flag = true;
+    }
+
+    // do ams mapping if no ams result
+    if (m_ams_mapping_result.empty()) {
+        do_ams_mapping(obj_, m_checkbox_list["use_ams"]->getValue() == "on");
+        update_filament_change_count();
     }
 
 
-    // do ams mapping if no ams result
-    bool clean_ams_mapping = false;
-    if (obj_->has_ams() && m_ams_mapping_result.empty()) {
-        if (obj_->ams_support_use_ams) {
-            if (m_checkbox_list["use_ams"]->GetValue()) {
-                do_ams_mapping(obj_);
-            } else {
-                clean_ams_mapping = true;
+    if (!m_ams_mapping_res) {
+        for(auto mres : m_ams_mapping_result){
+            if (mres.ams_id.empty() && mres.slot_id.empty()) {
+                show_status(PrintDialogStatus::PrintStatusAmsMappingInvalid);
+                return;
             }
         }
     }
 
-    if (!obj_->has_ams() || !m_checkbox_list["use_ams"]->GetValue()) {
-        clean_ams_mapping = true;
-    }
-
-    if (clean_ams_mapping) {
-        m_ams_mapping_result.clear();
-        sync_ams_mapping_result(m_ams_mapping_result);
-    }
+    return;
 
     // reading done
     if (wxGetApp().app_config && wxGetApp().app_config->get("internal_debug").empty()) {
@@ -3843,6 +4069,12 @@ void SelectMachineDialog::update_show_status()
             show_status(PrintStatusNeedConsistencyUpgrading);
             return;
         }
+    }
+
+    if (!obj_->is_fdm_type())
+    {
+        show_status(PrintDialogStatus::PrintStatusModeNotFDM);
+        return;
     }
 
     if (is_blocking_printing(obj_)) {
@@ -3871,176 +4103,232 @@ void SelectMachineDialog::update_show_status()
         if (obj_->get_sdcard_state() == MachineObject::SdcardState::NO_SDCARD) {
             show_status(PrintDialogStatus::PrintStatusLanModeNoSdcard);
             return;
-        }
-    }
-
-    // no ams
-    if (!obj_->has_ams() || !m_checkbox_list["use_ams"]->GetValue()) {
-        if (!has_tips(obj_)) {
-            if (has_timelapse_warning()) {
-                show_status(PrintDialogStatus::PrintStatusTimelapseWarning);
-            }
-            else {
-                show_status(PrintDialogStatus::PrintStatusReadingFinished);
-            }
-        }
-        return;
-    }
-
-    if (obj_->ams_support_use_ams) {
-        if (!m_checkbox_list["use_ams"]->GetValue()) {
-            m_ams_mapping_result.clear();
-            sync_ams_mapping_result(m_ams_mapping_result);
-
-            if (has_timelapse_warning()) {
-                show_status(PrintDialogStatus::PrintStatusTimelapseWarning);
-            }
-            else {
-                show_status(PrintDialogStatus::PrintStatusDisableAms);
-            }
-
+        } else if (obj_->get_sdcard_state() == MachineObject::SdcardState::HAS_SDCARD_ABNORMAL
+            || obj_->get_sdcard_state() ==  MachineObject::SdcardState::HAS_SDCARD_READONLY) {
+            show_status(PrintDialogStatus::PrintStatusLanModeSDcardNotAvailable);
             return;
         }
     }
 
-
-    // do ams mapping if no ams result
-    if (m_ams_mapping_result.empty()) {
-        do_ams_mapping(obj_);
+    if (!can_support_auto_cali() && m_checkbox_list["flow_cali"]->getValue() == "on") {
+        show_status(PrintDialogStatus::PrintStatusTPUUnsupportAutoCali);
+        return;
     }
 
-    if (!obj_->is_support_ams_mapping()) {
-        int exceed_index = -1;
-        if (obj_->is_mapping_exceed_filament(m_ams_mapping_result, exceed_index)) {
-            std::vector<wxString> params;
-            params.push_back(wxString::Format("%02d", exceed_index+1));
-            show_status(PrintDialogStatus::PrintStatusNeedUpgradingAms, params);
-        } else {
-            if (obj_->is_valid_mapping_result(m_ams_mapping_result)) {
-
-                if (has_timelapse_warning()) {
-                    show_status(PrintDialogStatus::PrintStatusTimelapseWarning);
-                }
-                else {
-                    show_status(PrintDialogStatus::PrintStatusAmsMappingByOrder);
-                }
-                
-            } else {
-                int mismatch_index = -1;
-                for (int i = 0; i < m_ams_mapping_result.size(); i++) {
-                    if (m_ams_mapping_result[i].mapping_result == MappingResult::MAPPING_RESULT_TYPE_MISMATCH) {
-                        mismatch_index = m_ams_mapping_result[i].id;
-                        break;
-                    }
-                }
-                std::vector<wxString> params;
-                if (mismatch_index >= 0) {
-                    params.push_back(wxString::Format("%02d", mismatch_index+1));
-                    params.push_back(wxString::Format("%02d", mismatch_index+1));
-                }
-                show_status(PrintDialogStatus::PrintStatusAmsMappingU0Invalid, params);
+    // disable print when there is no mapping
+    if (obj_->m_extder_data.total_extder_count > 1) {
+        for (auto mres : m_ams_mapping_result) {
+            if (mres.ams_id.empty() && mres.slot_id.empty()) {
+                show_status(PrintDialogStatus::PrintStatusInvalidMapping);
+                return;
             }
         }
+    }
+
+    const auto& full_config = wxGetApp().preset_bundle->full_config();
+    size_t nozzle_nums = full_config.option<ConfigOptionFloatsNullable>("nozzle_diameter")->values.size();
+
+    //the nozzle type of preset and machine are different
+    if (nozzle_nums > 1 && m_print_type == FROM_NORMAL) {
+        if (!is_nozzle_data_valid(obj_->m_extder_data)) {
+            show_status(PrintDialogStatus::PrintStatusNozzleDataInvalid);
+            return;
+        }
+
+        wxString error_message;
+        if (!is_nozzle_type_match(obj_->m_extder_data, error_message))
+        {
+            std::vector<wxString> params { error_message };
+            params.emplace_back(_L("Tips: If you changed your nozzle of your printer lately, Please go to 'Device -> Printer parts' to change your nozzle setting."));
+            show_status(PrintDialogStatus::PrintStatusNozzleMatchInvalid, params);
+            return;
+        }
+    }
+
+    // check nozzle type and diameter
+    if (m_print_type == PrintFromType::FROM_NORMAL)
+    {
+        int mismatch_nozzle_id = 0;
+        float nozzle_diameter = 0;
+        if (!is_same_nozzle_diameters(nozzle_diameter, mismatch_nozzle_id))
+        {
+            std::vector<wxString> msg_params;
+            if (obj_->m_extder_data.total_extder_count == 2)
+            {
+                wxString mismatch_nozzle_str;
+                if (mismatch_nozzle_id == MAIN_NOZZLE_ID)
+                {
+                    mismatch_nozzle_str = _L("right nozzle");
+                }
+                else
+                {
+                    mismatch_nozzle_str = _L("left nozzle");
+                }
+
+                const wxString& nozzle_config = wxString::Format(_L("The %s diameter(%.1fmm) of current printer doesn't match with the slicing file (%.1fmm). "
+                                                                    "Please make sure the nozzle installed matches with settings in printer, then set the "
+                                                                    "corresponding printer preset when slicing."), mismatch_nozzle_str,
+                                                                     obj_->m_extder_data.extders[mismatch_nozzle_id].current_nozzle_diameter, nozzle_diameter);
+                msg_params.emplace_back(nozzle_config);
+            }
+            else
+            {
+                const wxString& nozzle_config = wxString::Format(_L("The current nozzle diameter (%.1fmm) doesn't match with the slicing file (%.1fmm). "
+                                                                     "Please make sure the nozzle installed matches with settings in printer, then set the "
+                                                                     "corresponding printer preset when slicing."), obj_->m_extder_data.extders[0].current_nozzle_diameter,
+                                                                      nozzle_diameter);
+                msg_params.emplace_back(nozzle_config);
+            }
+
+            msg_params.emplace_back(_L("Tips: If you changed your nozzle of your printer lately, Please go to 'Device -> Printer parts' to change your nozzle setting."));
+            return show_status(PrintDialogStatus::PrintStatusNozzleDiameterMismatch, msg_params);
+        }
+
+        const auto &used_nozzle_idxes = _get_used_nozzle_idxes();
+        for (const auto& extder : obj_->m_extder_data.extders)
+        {
+            if (used_nozzle_idxes.count(extder.nozzle_id) == 0) { continue; }
+
+            std::string filament_type;
+            if (!is_same_nozzle_type(extder, filament_type))
+            {
+                std::vector<wxString> error_msg;
+                error_msg.emplace_back(wxString::Format(_L("Printing high temperature material(%s) with %s nozzle may cause nozzle damage, please check the type of nozzle"),
+                                                            filament_type, format_steel_name(extder.current_nozzle_type)));
+                return show_status(PrintDialogStatus::PrintStatusNozzleTypeMismatch, error_msg);
+            }
+        }
+    }
+
+    if (!m_mapping_popup.m_supporting_mix_print && nozzle_nums == 1)
+    {
+        bool useAms = false;
+        bool useExt = false;
+        for (auto iter = m_ams_mapping_result.begin(); iter != m_ams_mapping_result.end(); iter++)
+        {
+            if (iter->tray_id != VIRTUAL_TRAY_MAIN_ID)
+            {
+                useAms = true;
+            }
+            if (iter->tray_id == VIRTUAL_TRAY_MAIN_ID)
+            {
+                useExt = true;
+            }
+            if (useAms && useExt)
+            {
+                show_status(PrintDialogStatus::PrintStatusAmsMappingMixInvalid);
+                return;
+            }
+        }
+    }
+
+    if (obj_->is_ams_on_settingup()) {
+        show_status(PrintDialogStatus::PrintStatusAmsOnSettingup);
         return;
+    }
+
+    if (!m_ams_mapping_res && !obj_->is_valid_mapping_result(m_ams_mapping_result)) {
+        show_status(PrintDialogStatus::PrintStatusAmsMappingInvalid);
+        return;
+    }
+    /*Warnings*/
+        // no ams
+    if (!obj_->has_ams() || m_checkbox_list["use_ams"]->getValue() != "on") {
+        if (has_timelapse_warning()) {
+            show_status(PrintDialogStatus::PrintStatusTimelapseWarning);
+            return;
+        }
+    }
+
+    struct ExtruderStatus
+    {
+        bool has_ams{false};
+        bool has_vt_slot{false};
+    };
+    std::vector<ExtruderStatus> extruder_status(nozzle_nums);
+    for (const FilamentInfo &item : m_ams_mapping_result) {
+        if (item.ams_id.empty()) continue;
+
+        int extruder_id = obj_->get_extruder_id_by_ams_id(item.ams_id);
+        if (DeviceManager::is_virtual_slot(stoi(item.ams_id)))
+            extruder_status[extruder_id].has_vt_slot = true;
+        else
+            extruder_status[extruder_id].has_ams = true;
+    }
+    for (auto extruder : extruder_status) {
+        if (extruder.has_ams && extruder.has_vt_slot) {
+            show_status(PrintDialogStatus::PrintStatusMixAmsAndVtSlotWarning);
+            return;
+        }
     }
 
     if (m_ams_mapping_res) {
         if (has_timelapse_warning()) {
             show_status(PrintDialogStatus::PrintStatusTimelapseWarning);
+            return;
         }
-        else {
-            show_status(PrintDialogStatus::PrintStatusAmsMappingSuccess);
-        }
-        return;
     }
     else {
         if (obj_->is_valid_mapping_result(m_ams_mapping_result)) {
             if (!has_tips(obj_)){
                 if (has_timelapse_warning()) {
                     show_status(PrintDialogStatus::PrintStatusTimelapseWarning);
+                    return;
                 }
-                else {
-                    show_status(PrintDialogStatus::PrintStatusAmsMappingValid);
-                }
-                return;
-            }       
+            }
         }
-        else {
-            show_status(PrintDialogStatus::PrintStatusAmsMappingInvalid);
+    }
+
+    /*STUDIO-10970 check the k value and flow cali option*/
+    if (m_checkbox_list["flow_cali"]->IsShown() && m_checkbox_list["flow_cali"]->getValue() == "auto") {
+        const auto &not_default_ams_names = _check_kval_not_default(obj_, m_ams_mapping_result);
+        if (!not_default_ams_names.empty()) {
+            std::vector<wxString> params{not_default_ams_names};
+            show_status(PrintDialogStatus::PrintStatusWarningKvalueNotUsed, params);
             return;
         }
-    } 
+    }
+
+    update_print_status_msg(wxEmptyString, false, true, true);
 }
 
-bool SelectMachineDialog::has_timelapse_warning()
+bool SelectMachineDialog::has_timelapse_warning(wxString &msg_text)
 {
     PartPlate *plate = m_plater->get_partplate_list().get_curr_plate();
     for (auto warning : plate->get_slice_result()->warnings) {
         if (warning.msg == NOT_GENERATE_TIMELAPSE) {
+            if (warning.error_code == "10014001") {
+                msg_text = _L("When enable spiral vase mode, machines with I3 structure will not generate timelapse videos.");
+            } else if (warning.error_code == "10014002") {
+                msg_text = _L("The current printer does not support timelapse in Traditional Mode when printing By-Object.");
+            }
+
             return true;
         }
     }
-    
+
     return false;
 }
 
-void SelectMachineDialog::update_timelapse_enable_status()
+bool SelectMachineDialog::can_support_auto_cali()
 {
-    AppConfig *config = wxGetApp().app_config;
-    if (!has_timelapse_warning()) {
-        if (!config || config->get("print", "timelapse") == "0")
-            m_checkbox_list["timelapse"]->SetValue(false);
-        else
-            m_checkbox_list["timelapse"]->SetValue(true);
-        select_timelapse->Enable(true);
-    } else {
-        m_checkbox_list["timelapse"]->SetValue(false);
-        select_timelapse->Enable(false);
-        if (config) { config->set_str("print", "timelapse", "0"); }
+    DeviceManager *dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+    if (!dev)
+        return true;
+    MachineObject *obj = dev->get_selected_machine();
+    if (!obj)
+        return true;
+
+    std::vector<std::string> unsupport_auto_cali_filaments = DeviceManager::get_unsupport_auto_cali_filaments(obj->printer_type);
+    if (!unsupport_auto_cali_filaments.empty()) {
+        auto iter = std::find_if(m_filaments.begin(), m_filaments.end(),
+            [&unsupport_auto_cali_filaments](const FilamentInfo &item) {
+            auto iter = std::find(unsupport_auto_cali_filaments.begin(), unsupport_auto_cali_filaments.end(), item.filament_id);
+            return iter != unsupport_auto_cali_filaments.end();
+        });
+
+        return iter == m_filaments.end();
     }
-}
-
-
-bool SelectMachineDialog::is_show_timelapse()
-{
-    auto compare_version = [](const std::string &version1, const std::string &version2) -> bool {
-        int i = 0, j = 0;
-        int max_size = std::max(version1.size(), version2.size());
-        while (i < max_size || j < max_size) {
-            int v1 = 0, v2 = 0;
-            while (i < version1.size() && version1[i] != '.') v1 = 10 * v1 + (version1[i++] - '0');
-            while (j < version2.size() && version2[j] != '.') v2 = 10 * v2 + (version2[j++] - '0');
-            if (v1 > v2) return true;
-            if (v1 < v2) return false;
-            ++i;
-            ++j;
-        }
-        return false;
-    };
-
-    std::string standard_version = "01.04.00.00";
-    PartPlate *plate      = m_plater->get_partplate_list().get_curr_plate();
-    fs::path   gcode_path = plate->get_tmp_gcode_path();
-
-    std::string   line;
-    std::ifstream gcode_file;
-    gcode_file.open(gcode_path.string());
-    if (gcode_file.fail()) {
-    } else {
-        bool is_version = false;
-        while (gcode_file >> line) {
-            if (is_version) {
-                if (compare_version(standard_version, line)) {
-                    gcode_file.close();
-                    return false;
-                }
-                break;
-            }
-            if (line == "QIDIStudio")
-                is_version = true;
-        }
-    }
-    gcode_file.close();
     return true;
 }
 
@@ -4063,14 +4351,10 @@ void SelectMachineDialog::Enable_Refresh_Button(bool en)
     if (!en) {
         if (m_button_refresh->IsEnabled()) {
             m_button_refresh->Disable();
-            m_button_refresh->SetBackgroundColor(wxColour(0x90, 0x90, 0x90));
-            m_button_refresh->SetBorderColor(wxColour(0x90, 0x90, 0x90));
         }
     } else {
         if (!m_button_refresh->IsEnabled()) {
             m_button_refresh->Enable();
-            m_button_refresh->SetBackgroundColor(m_btn_bg_enable);
-            m_button_refresh->SetBorderColor(m_btn_bg_enable);
         }
     }
 }
@@ -4098,78 +4382,29 @@ void SelectMachineDialog::on_dpi_changed(const wxRect &suggested_rect)
     timeimg->SetBitmap(print_time->bmp());
     print_weight->msw_rescale();
     weightimg->SetBitmap(print_weight->bmp());
-    m_rename_button->msw_rescale();
-    ams_editable->msw_rescale();
-    ams_editable_light->msw_rescale();
-    enable_ams_mapping->msw_rescale();
-    img_amsmapping_tip->SetBitmap(enable_ams_mapping->bmp());
-    enable_ams->msw_rescale();
-    img_use_ams_tip->SetBitmap(enable_ams->bmp());
-
-    m_button_refresh->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
-    m_button_refresh->SetCornerRadius(FromDIP(12));
-    m_button_ensure->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
-    m_button_ensure->SetCornerRadius(FromDIP(12));
-    m_status_bar->msw_rescale();
-
-    for (auto checkpire : m_checkbox_list) {
-        checkpire.second->Rescale();
+    rename_editable->msw_rescale();
+    rename_editable_light->msw_rescale();
+    if (ams_mapping_help_icon != nullptr) {
+        ams_mapping_help_icon->msw_rescale();
+        if (img_amsmapping_tip)img_amsmapping_tip->SetBitmap(ams_mapping_help_icon->bmp());
     }
+    m_button_ensure->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE2);
+    m_button_ensure->SetCornerRadius(FromDIP(4));
+    m_status_bar->msw_rescale();
 
     for (auto material1 : m_materialList) {
         material1.second->item->msw_rescale();
     }
 
+    for(auto opt : m_checkbox_list)
+    {
+        opt.second->msw_rescale();
+    }
+
+    m_mapping_popup.msw_rescale();
+
     Fit();
     Refresh();
-}
-
-wxImage *SelectMachineDialog::LoadImageFromBlob(const unsigned char *data, int size)
-{
-    if (data != NULL) {
-        wxMemoryInputStream mi(data, size);
-        wxImage *           img = new wxImage(mi, wxBITMAP_TYPE_ANY);
-        if (img != NULL && img->IsOk()) return img;
-        // wxLogDebug( wxT("DB::LoadImageFromBlob error: data=%p size=%d"), data, size);
-        // caller is responsible for deleting the pointer
-        delete img;
-    }
-    return NULL;
-}
-
-void SelectMachineDialog::set_flow_calibration_state(bool state, bool show_tips)
-{
-    if (!state) {
-        m_checkbox_list["flow_cali"]->SetValue(state);
-        auto tool_tip = _L("Caution to use! Flow calibration on Textured PEI Plate may fail due to the scattered surface.");
-        m_checkbox_list["flow_cali"]->SetToolTip(tool_tip);
-        m_checkbox_list["flow_cali"]->Enable();
-        for (auto win : select_flow->GetWindowChildren()) {
-            win->SetToolTip(tool_tip);
-        }
-        //select_flow->SetToolTip(tool_tip);
-    }
-    else {
-
-        AppConfig* config = wxGetApp().app_config;
-        if (config && config->get("print", "flow_cali") == "0") {
-            m_checkbox_list["flow_cali"]->SetValue(false);
-        }
-        else {
-            m_checkbox_list["flow_cali"]->SetValue(true);
-        }
-
-        m_checkbox_list["flow_cali"]->Enable();
-        for (auto win : select_flow->GetWindowChildren()) {
-            win->SetToolTip( _L("Automatic flow calibration using Micro Lidar"));
-        }
-    }
-
-    if (!show_tips) {
-        for (auto win : select_flow->GetWindowChildren()) {
-            win->SetToolTip(wxEmptyString);
-        }
-    }
 }
 
 void SelectMachineDialog::set_default()
@@ -4183,7 +4418,7 @@ void SelectMachineDialog::set_default()
     }
     else if (m_print_type == PrintFromType::FROM_SDCARD_VIEW) {
         m_stext_printer_title->Show(false);
-        m_comboBox_printer->Show(false);
+        m_comboBox_printer->Show(true);
         m_button_refresh->Show(false);
         m_rename_normal_panel->Show(false);
         m_hyperlink->Show(false);
@@ -4192,9 +4427,22 @@ void SelectMachineDialog::set_default()
     //project name
     m_rename_switch_panel->SetSelection(0);
 
-    // //y49
-    // wxString filename = m_plater->get_output_filename();
-    wxString filename = m_plater->get_export_gcode_filename("", true, m_print_plate_idx == PLATE_ALL_IDX ? true : false);
+    //y61
+    wxString filename = "";
+    if (wxGetApp().preset_bundle->prints.get_edited_preset().config.opt_string("filename_format") == "{input_filename_base}.gcode"){
+        try{
+            filename = m_plater->get_export_gcode_filename("", true, m_print_plate_idx == PLATE_ALL_IDX ? true : false);
+        }
+        catch (const Slic3r::PlaceholderParserError& ex) {
+            // Show the error with monospaced font.
+            show_error(this, ex.what(), true);
+        }
+        catch (const std::exception& ex) {
+            show_error(this, ex.what(), false);
+        }
+    }
+    else
+        filename = m_plater->get_output_filename();
 
     if (m_print_plate_idx == PLATE_ALL_IDX && filename.empty()) {
         filename = _L("Untitled");
@@ -4207,27 +4455,29 @@ void SelectMachineDialog::set_default()
 
     fs::path filename_path(filename.c_str());
     //y52
-    wxString file_name  = from_u8(filename_path.filename().string());
+    wxString file_name = from_u8(filename_path.filename().string());
     if (file_name.find(_L("Untitled")) != wxString::npos) {
-        PartPlate *part_plate = m_plater->get_partplate_list().get_plate(m_print_plate_idx);
+        PartPlate* part_plate = m_plater->get_partplate_list().get_plate(m_print_plate_idx);
         if (part_plate) {
-            if (std::vector<ModelObject *> objects = part_plate->get_objects_on_this_plate(); objects.size() > 0) {
+            if (std::vector<ModelObject*> objects = part_plate->get_objects_on_this_plate(); objects.size() > 0) {
                 file_name = from_u8(objects[0]->name);
                 for (int i = 1; i < objects.size(); i++) {
                     file_name += " + " + from_u8(objects[i]->name);
                 }
             }
-            if (file_name.size() > 50) {
-                file_name = file_name.substr(0, 50) + "...";
-            }
         }
     }
+    if (file_name.size() > 80) {
+        file_name = file_name.substr(0, 80) + "...";
+    }
+
     m_current_project_name = file_name;
 
+    if(m_current_project_name.find(".gcode") != wxString::npos)
+        m_current_project_name = m_current_project_name.substr(0, m_current_project_name.size() - 6);
 
     //unsupported character filter
-    //y51
-    m_current_project_name = from_u8(filter_characters(m_current_project_name.ToUTF8().data(), "<>[]:\\|?*\""));
+    m_current_project_name = from_u8(filter_characters(m_current_project_name.ToUTF8().data(), "<>[]:/\\|?*\""));
 
     m_rename_text->SetLabelText(m_current_project_name);
     m_rename_normal_panel->Layout();
@@ -4239,6 +4489,9 @@ void SelectMachineDialog::set_default()
     m_print_info = "";
     m_comboBox_printer->SetValue(wxEmptyString);
     m_comboBox_printer->Enable();
+    m_mapping_sugs_sizer->Show(false);
+    m_change_filament_times_sizer->Show(false);
+    m_txt_change_filament_times->Show(false);
 
     // rset status bar
     m_status_bar->reset();
@@ -4252,45 +4505,13 @@ void SelectMachineDialog::set_default()
             show_status(PrintDialogStatus::PrintStatusNoUserLogin);
         }
     }
-    select_bed->Show();
-    select_flow->Show();
-
-    //reset checkbox
-    select_bed->Show(false);
-    select_flow->Show(false);
-    select_timelapse->Show(false);
-    select_use_ams->Show(false);
-
-    // load checkbox values from app config
-    AppConfig* config = wxGetApp().app_config;
-    if (config && config->get("print", "bed_leveling") == "0") {
-        m_checkbox_list["bed_leveling"]->SetValue(false);
-    }
-    else {
-        m_checkbox_list["bed_leveling"]->SetValue(true);
-    }
-    if (config && config->get("print", "flow_cali") == "0") {
-        m_checkbox_list["flow_cali"]->SetValue(false);
-    }
-    else {
-        m_checkbox_list["flow_cali"]->SetValue(true);
-    }
-    if (config && config->get("print", "timelapse") == "0") {
-        m_checkbox_list["timelapse"]->SetValue(false);
-    }
-    else {
-        m_checkbox_list["timelapse"]->SetValue(true);
-    }
-
-    m_checkbox_list["use_ams"]->SetValue(true);
 
     if (m_print_type == PrintFromType::FROM_NORMAL) {
         reset_and_sync_ams_list();
         set_default_normal(m_plater->get_partplate_list().get_curr_plate()->thumbnail_data);
     }
     else if (m_print_type == PrintFromType::FROM_SDCARD_VIEW) {
-        //todo:unify_deal_thumbnail_data(input_data, no_light_data);this include m_print_type = PrintFromType::FROM_SDCARD_VIEW
-        //and notice update_page_turn_state(true)
+        update_page_turn_state(true);
         set_default_from_sdcard();
     }
 
@@ -4298,6 +4519,32 @@ void SelectMachineDialog::set_default()
     Fit();
 }
 
+void SelectMachineDialog::change_materialitem_tip(bool no_ams_only_ext)
+{
+    MaterialHash::iterator iter = m_materialList.begin();
+    while (iter != m_materialList.end()) {
+        int       id   = iter->first;
+        Material *item = iter->second;
+        if (item) {
+            if (no_ams_only_ext && (item->item->m_ams_name == "Ext") && (m_checkbox_list["use_ams"]->getValue() != "on")) {
+                item->item->SetToolTip(wxEmptyString);
+            }
+            else {
+                wxString tip_text;
+                if (item->item->m_match) {
+                    tip_text = _L("Upper half area:  Original\nLower half area:  Filament in Box\nAnd you can click it to modify");
+                } else {
+                    tip_text = _L("Unable to automatically match to suitable filament. Please click to manually match.");
+                }
+
+                if (item->item->GetToolTipText() != tip_text) {
+                    item->item->SetToolTip(tip_text);
+                }
+            }
+        }
+        iter++;
+    }
+}
 void SelectMachineDialog::reset_and_sync_ams_list()
 {
     // for black list
@@ -4311,7 +4558,7 @@ void SelectMachineDialog::reset_and_sync_ams_list()
         for (int f_index = 0; f_index < preset_bundle->filaments.size(); f_index++) {
             PresetCollection *filament_presets = &wxGetApp().preset_bundle->filaments;
             Preset *          preset           = &filament_presets->preset(f_index);
-
+            int size = preset_bundle->filaments.size();
             if (preset && filament_name.compare(preset->name) == 0) {
                 std::string display_filament_type;
                 std::string filament_type = preset->config.get_filament_type(display_filament_type);
@@ -4331,7 +4578,7 @@ void SelectMachineDialog::reset_and_sync_ams_list()
         }
     }
 
-    auto           extruders = wxGetApp().plater()->get_partplate_list().get_curr_plate()->get_used_extruders();
+    auto           extruders = wxGetApp().plater()->get_partplate_list().get_curr_plate()->get_used_filaments();
     BitmapCache    bmcache;
     MaterialHash::iterator iter = m_materialList.begin();
     while (iter != m_materialList.end()) {
@@ -4341,10 +4588,21 @@ void SelectMachineDialog::reset_and_sync_ams_list()
         delete item;
         iter++;
     }
-    
-    m_sizer_material->Clear();
+
+    m_sizer_ams_mapping->Clear();
     m_materialList.clear();
     m_filaments.clear();
+    m_ams_tooltip =_L("Upper half area:  Original\nLower half area:  Filament in Box\nAnd you can click it to modify");
+
+    const auto& full_config = wxGetApp().preset_bundle->full_config();
+    size_t nozzle_nums = full_config.option<ConfigOptionFloatsNullable>("nozzle_diameter")->values.size();
+
+    bool use_double_extruder = nozzle_nums > 1 ? true : false;
+    if (use_double_extruder)
+    {
+        const auto& project_config = preset_bundle->project_config;
+        m_filaments_map = wxGetApp().plater()->get_partplate_list().get_curr_plate()->get_real_filament_maps(project_config);
+    }
 
     for (auto i = 0; i < extruders.size(); i++) {
         auto          extruder = extruders[i] - 1;
@@ -4355,11 +4613,32 @@ void SelectMachineDialog::reset_and_sync_ams_list()
         auto colour_rgb = wxColour((int) rgb[0], (int) rgb[1], (int) rgb[2], (int) rgb[3]);
         if (extruder >= materials.size() || extruder < 0 || extruder >= display_materials.size()) continue;
 
-        MaterialItem *item = new MaterialItem(m_scrollable_region, colour_rgb, _L(display_materials[extruder]));
-        m_sizer_material->Add(item, 0, wxALL, FromDIP(4));
+        MaterialItem* item = nullptr;
+        if (use_double_extruder)
+        {
 
+            if (m_filaments_map[extruder] == 1)
+            {
+                item = new MaterialItem(m_filament_left_panel, colour_rgb, _L(display_materials[extruder]));
+                m_sizer_ams_mapping_left->Add(item, 0, wxALL, FromDIP(5));
+            }
+            else if (m_filaments_map[extruder] == 2)
+            {
+                item = new MaterialItem(m_filament_right_panel, colour_rgb, _L(display_materials[extruder]));
+                m_sizer_ams_mapping_right->Add(item, 0, wxALL, FromDIP(5));
+            }
+        }
+        else
+        {
+            item = new MaterialItem(m_filament_panel, colour_rgb, _L(display_materials[extruder]));
+            m_sizer_ams_mapping->Add(item, 0, wxALL, FromDIP(5));
+        }
+        item->SetToolTip(m_ams_tooltip);
         item->Bind(wxEVT_LEFT_UP, [this, item, materials, extruder](wxMouseEvent &e) {});
         item->Bind(wxEVT_LEFT_DOWN, [this, item, materials, extruder](wxMouseEvent &e) {
+            if (!item->m_enable) {return;}
+            if (!m_check_flag || m_print_status == PrintDialogStatus::PrintStatusUnsupportedPrinter) { return; } /*STUDIO-11301*/
+
             MaterialHash::iterator iter = m_materialList.begin();
             while (iter != m_materialList.end()) {
                 int           id   = iter->first;
@@ -4376,21 +4655,41 @@ void SelectMachineDialog::reset_and_sync_ams_list()
             wxPoint rect      = item->ClientToScreen(wxPoint(0, 0));
 
             // update ams data
-            DeviceManager *dev_manager = Slic3r::GUI::wxGetApp().getDeviceManager();
-            if (!dev_manager) return;
-            MachineObject *obj_ = dev_manager->get_selected_machine();
-
-            if (obj_ && obj_->is_support_ams_mapping()) {
+            //DeviceManager *dev_manager = Slic3r::GUI::wxGetApp().getDeviceManager();
+            //if (!dev_manager) return;
+            MachineObject* obj_ = new MachineObject("temp_obj");
+            const auto& full_config = wxGetApp().preset_bundle->full_config();
+            size_t nozzle_nums = full_config.option<ConfigOptionFloatsNullable>("nozzle_diameter")->values.size();
+            if (nozzle_nums > 1)
+            {
+                if (obj_ && can_hybrid_mapping(obj_->m_extder_data))
+                {
+                    m_mapping_popup.set_show_type(ShowType::LEFT_AND_RIGHT);
+                }
+                else if (m_filaments_map[extruder] == 1)
+                {
+                    m_mapping_popup.set_show_type(ShowType::LEFT);
+                }
+                else if(m_filaments_map[extruder] == 2)
+                {
+                    m_mapping_popup.set_show_type(ShowType::RIGHT);
+                }
+            } else {
+                m_mapping_popup.set_show_type(ShowType::RIGHT);
+            }
+            if (obj_) {
                 if (m_mapping_popup.IsShown()) return;
                 wxPoint pos = item->ClientToScreen(wxPoint(0, 0));
                 pos.y += item->GetRect().height;
                 m_mapping_popup.Move(pos);
 
-                if (obj_ && obj_->has_ams() && m_checkbox_list["use_ams"]->GetValue() && obj_->dev_id == m_printer_last_select) {
+                if (obj_) {
                     m_mapping_popup.set_parent_item(item);
+                    m_mapping_popup.set_only_show_ext_spool(false);
                     m_mapping_popup.set_current_filament_id(extruder);
                     m_mapping_popup.set_tag_texture(materials[extruder]);
-                    m_mapping_popup.update_ams_data(obj_->amsList);
+                    m_mapping_popup.set_send_win(this);//fix bug:fisrt click is not valid
+                    m_mapping_popup.update(obj_, m_ams_mapping_result);
                     m_mapping_popup.Popup();
                 }
             }
@@ -4413,10 +4712,30 @@ void SelectMachineDialog::reset_and_sync_ams_list()
         }
     }
 
-    if (extruders.size() <= 4) {
-        m_sizer_material->SetCols(extruders.size());
-    } else {
-        m_sizer_material->SetCols(4);
+    if (use_double_extruder)
+    {
+        m_filament_left_panel->Show();
+        m_filament_right_panel->Show();
+        m_filament_panel->Hide();
+
+        m_sizer_ams_mapping_left->SetCols(4);
+        m_sizer_ams_mapping_left->Layout();
+        m_filament_panel_left_sizer->Layout();
+        m_filament_left_panel->Layout();
+
+        m_sizer_ams_mapping_right->SetCols(4);
+        m_sizer_ams_mapping_right->Layout();
+        m_filament_panel_right_sizer->Layout();
+        m_filament_right_panel->Layout();
+    }
+    else
+    {
+        m_filament_left_panel->Hide();
+        m_filament_right_panel->Hide();
+        m_filament_panel->Show();
+        m_sizer_ams_mapping->SetCols(8);
+        m_sizer_ams_mapping->Layout();
+        m_filament_panel_sizer->Layout();
     }
 
     // reset_ams_material();//show "-"
@@ -4592,21 +4911,12 @@ void SelectMachineDialog::unify_deal_thumbnail_data(ThumbnailData &input_data, T
     m_cur_no_light_thumbnail_data = no_light_data;
     clone_thumbnail_data();
     MaterialHash::iterator iter               = m_materialList.begin();
-    bool                   is_connect_printer = true;
-    while (iter != m_materialList.end()) {
-        int           id   = iter->first;
-        Material *    item = iter->second;
-        MaterialItem *m    = item->item;
-        if (m->m_ams_name == "-") {
-            is_connect_printer = false;
-            break;
-        }
-        iter++;
-    }
-    if (is_connect_printer) {
+    if (m_cur_colors_in_thumbnail.size() > 0) {
         change_default_normal(-1, wxColour());
         final_deal_edge_pixels_data(m_preview_thumbnail_data);
         set_default_normal(m_preview_thumbnail_data);
+    } else {
+        set_default_normal(input_data);
     }
 }
 
@@ -4642,7 +4952,7 @@ void SelectMachineDialog::change_default_normal(int old_filament_id, wxColour te
                     wxColour temp_ams_color_in_loop = m_cur_colors_in_thumbnail[filament_id];
                     wxColour ams_color              = adjust_color_for_render(temp_ams_color_in_loop);
                     //change color
-                    new_px[3] = origin_px[3]; // alpha
+                    new_px[3]                       = ams_color.Alpha(); //origin_px[3]; // alpha
                     int origin_rgb = origin_px[0] + origin_px[1] + origin_px[2];
                     int no_light_px_rgb   = no_light_px[0] + no_light_px[1] + no_light_px[2];
                     unsigned char i               = 0;
@@ -4684,47 +4994,32 @@ void SelectMachineDialog::set_default_normal(const ThumbnailData &data)
         for (unsigned int r = 0; r < data.height; ++r) {
             unsigned int rr = (data.height - 1 - r) * data.width;
             for (unsigned int c = 0; c < data.width; ++c) {
-                unsigned char* px = (unsigned char*)data.pixels.data() + 4 * (rr + c);
-                image.SetRGB((int)c, (int)r, px[0], px[1], px[2]);
-                image.SetAlpha((int)c, (int)r, px[3]);
+                unsigned char *px = (unsigned char *) data.pixels.data() + 4 * (rr + c);
+                image.SetRGB((int) c, (int) r, px[0], px[1], px[2]);
+                image.SetAlpha((int) c, (int) r, px[3]);
             }
         }
-        image = image.Rescale(FromDIP(256), FromDIP(256));
+        image = image.Rescale(FromDIP(198), FromDIP(198));
         m_thumbnailPanel->set_thumbnail(image);
     }
 
-    m_scrollable_region->Layout();
-    m_scrollable_region->Fit();
+    m_basic_panel->Layout();
+    m_basic_panel->Fit();
 
-    m_scrollable_view->SetSize(m_scrollable_region->GetSize());
-    m_scrollable_view->SetMinSize(m_scrollable_region->GetSize());
-    m_scrollable_view->SetMaxSize(m_scrollable_region->GetSize());
-
-    //disable pei bed
-    DeviceManager* dev_manager = Slic3r::GUI::wxGetApp().getDeviceManager();
+    // disable pei bed
+    DeviceManager *dev_manager = Slic3r::GUI::wxGetApp().getDeviceManager();
     if (!dev_manager) return;
-    MachineObject* obj_ = dev_manager->get_selected_machine();
-    update_flow_cali_check(obj_);
-
-    wxSize screenSize = wxGetDisplaySize();
-    auto dialogSize = this->GetSize();
+    MachineObject *obj_       = dev_manager->get_selected_machine();
+    wxSize         screenSize = wxGetDisplaySize();
+    auto           dialogSize = this->GetSize();
 
 #ifdef __WINDOWS__
-    if (screenSize.GetHeight() < dialogSize.GetHeight()) {
-        m_need_adaptation_screen = true;
-        m_scrollable_view->SetScrollRate(0, 5);
-        m_scrollable_view->SetSize(wxSize(-1, FromDIP(220)));
-        m_scrollable_view->SetMinSize(wxSize(-1, FromDIP(220)));
-        m_scrollable_view->SetMaxSize(wxSize(-1, FromDIP(220)));
-    }
-    else {
-        m_scrollable_view->SetScrollRate(0, 0);
-    }
+
 #endif // __WXOSX_MAC__
     // basic info
     auto       aprint_stats = m_plater->get_partplate_list().get_current_fff_print().print_statistics();
     wxString   time;
-    PartPlate* plate = m_plater->get_partplate_list().get_curr_plate();
+    PartPlate *plate = m_plater->get_partplate_list().get_curr_plate();
     if (plate) {
         if (plate->get_slice_result()) { time = wxString::Format("%s", short_time(get_time_dhms(plate->get_slice_result()->print_statistics.modes[0].time))); }
     }
@@ -4732,8 +5027,7 @@ void SelectMachineDialog::set_default_normal(const ThumbnailData &data)
     char weight[64];
     if (wxGetApp().app_config->get("use_inches") == "1") {
         ::sprintf(weight, "  %.2f oz", aprint_stats.total_weight * 0.035274);
-    }
-    else {
+    } else {
         ::sprintf(weight, "  %.2f g", aprint_stats.total_weight);
     }
 
@@ -4743,6 +5037,13 @@ void SelectMachineDialog::set_default_normal(const ThumbnailData &data)
 
 void SelectMachineDialog::set_default_from_sdcard()
 {
+    DeviceManager *dev_manager = Slic3r::GUI::wxGetApp().getDeviceManager();
+    if (!dev_manager) return;
+    MachineObject *obj_ = dev_manager->get_selected_machine();
+    if (!obj_) { return; };
+
+    m_comboBox_printer->GetTextCtrl()->SetValue(obj_->dev_name);
+
     m_print_plate_total = m_required_data_plate_data_list.size();
     update_page_turn_state(true);
 
@@ -4751,10 +5052,10 @@ void SelectMachineDialog::set_default_from_sdcard()
     if (data.pixels.size() > 0) {
         wxMemoryInputStream mis((unsigned char*)data.pixels.data(), data.pixels.size());
         wxImage image = wxImage(mis);
-        image = image.Rescale(FromDIP(256), FromDIP(256));
+        image = image.Rescale(FromDIP(198), FromDIP(198));
         m_thumbnailPanel->set_thumbnail(image);
     }
-   
+
     //for black list
     std::vector<std::string> materials;
     std::vector<std::string> brands;
@@ -4765,6 +5066,43 @@ void SelectMachineDialog::set_default_from_sdcard()
         display_materials.push_back(fo.type);
         materials.push_back(fo.type);
         brands.push_back(fo.brand);
+    }
+
+    auto opt_nozzle_diameters = m_required_data_config.option<ConfigOptionFloatsNullable>("nozzle_diameter");
+    auto diameters_count = 1;
+    if (opt_nozzle_diameters) {
+        diameters_count = opt_nozzle_diameters->size();
+    }
+
+    //std::vector<int> filament_map;
+    m_filaments_map.clear();
+    if (m_required_data_plate_data_list[m_print_plate_idx]->config.option<ConfigOptionInts>("filament_map")){
+        m_filaments_map = m_required_data_plate_data_list[m_print_plate_idx]->config.option<ConfigOptionInts>("filament_map")->values;
+    }
+
+    // ams mapping area
+    if (diameters_count > 1) {
+        m_filament_left_panel->Show();
+        m_filament_right_panel->Show();
+        m_filament_panel->Hide();
+
+        m_sizer_ams_mapping_left->SetCols(4);
+        m_sizer_ams_mapping_left->Layout();
+        m_filament_panel_left_sizer->Layout();
+        m_filament_left_panel->Layout();
+
+        m_sizer_ams_mapping_right->SetCols(4);
+        m_sizer_ams_mapping_right->Layout();
+        m_filament_panel_right_sizer->Layout();
+        m_filament_right_panel->Layout();
+
+    } else {
+        m_filament_left_panel->Hide();
+        m_filament_right_panel->Hide();
+        m_filament_panel->Show();
+        m_sizer_ams_mapping->SetCols(8);
+        m_sizer_ams_mapping->Layout();
+        m_filament_panel_sizer->Layout();
     }
 
     //init MaterialItem
@@ -4778,19 +5116,39 @@ void SelectMachineDialog::set_default_from_sdcard()
     }
 
     m_ams_mapping_result.clear();
-    m_sizer_material->Clear();
+    m_sizer_ams_mapping->Clear();
+    m_sizer_ams_mapping_left->Clear();
+    m_sizer_ams_mapping_right->Clear();
     m_materialList.clear();
     m_filaments.clear();
-
 
     for (auto i = 0; i < m_required_data_plate_data_list[m_print_plate_idx]->slice_filaments_info.size(); i++) {
         FilamentInfo fo = m_required_data_plate_data_list[m_print_plate_idx]->slice_filaments_info[i];
 
-        MaterialItem* item = new MaterialItem(m_scrollable_region,  wxColour(fo.color), fo.type);
-        m_sizer_material->Add(item, 0, wxALL, FromDIP(4));
+        MaterialItem* item = nullptr;
+
+        if (diameters_count > 1) {
+            if (fo.id < m_filaments_map.size()) {
+                auto nozzle_id = m_filaments_map[fo.id];
+
+                if (nozzle_id == 1) {
+                    item = new MaterialItem(m_filament_left_panel, wxColour(fo.color), fo.get_display_filament_type());
+                    m_sizer_ams_mapping_left->Add(item, 0, wxALL, FromDIP(5));
+                } else if (nozzle_id == 2) {
+                    item = new MaterialItem(m_filament_right_panel, wxColour(fo.color), fo.get_display_filament_type());
+                    m_sizer_ams_mapping_right->Add(item, 0, wxALL, FromDIP(5));
+                }
+            }
+        } else {
+            item = new MaterialItem(m_filament_panel, wxColour(fo.color), fo.get_display_filament_type());
+            m_sizer_ams_mapping->Add(item, 0, wxALL, FromDIP(5));
+        }
 
         item->Bind(wxEVT_LEFT_UP, [this, item, materials](wxMouseEvent& e) {});
-        item->Bind(wxEVT_LEFT_DOWN, [this, item, materials, fo](wxMouseEvent& e) {
+        item->Bind(wxEVT_LEFT_DOWN, [this, obj_, item, materials, diameters_count, fo](wxMouseEvent& e) {
+            if (!item->m_enable) {return;}
+            if (!m_check_flag || m_print_status == PrintDialogStatus::PrintStatusUnsupportedPrinter) { return; } /*STUDIO-11301*/
+
             MaterialHash::iterator iter = m_materialList.begin();
             while (iter != m_materialList.end()) {
                 int           id = iter->first;
@@ -4809,26 +5167,32 @@ void SelectMachineDialog::set_default_from_sdcard()
 
             auto    mouse_pos = ClientToScreen(e.GetPosition());
             wxPoint rect = item->ClientToScreen(wxPoint(0, 0));
-            // update ams data
-            DeviceManager* dev_manager = Slic3r::GUI::wxGetApp().getDeviceManager();
-            if (!dev_manager) return;
-            MachineObject* obj_ = dev_manager->get_selected_machine();
 
-            if (obj_ && obj_->is_support_ams_mapping()) {
+            if (obj_) {
                 if (m_mapping_popup.IsShown()) return;
                 wxPoint pos = item->ClientToScreen(wxPoint(0, 0));
                 pos.y += item->GetRect().height;
                 m_mapping_popup.Move(pos);
 
-                if (obj_ &&
-                    obj_->has_ams() &&
-                    m_checkbox_list["use_ams"]->GetValue() &&
-                    obj_->dev_id == m_printer_last_select)
+                if (diameters_count > 1) {
+                    if (obj_ && can_hybrid_mapping(obj_->m_extder_data)) {
+                        m_mapping_popup.set_show_type(ShowType::LEFT_AND_RIGHT);
+                    } else if (m_filaments_map[m_current_filament_id] == 1) {
+                        m_mapping_popup.set_show_type(ShowType::LEFT);
+                    } else if (m_filaments_map[m_current_filament_id] == 2) {
+                        m_mapping_popup.set_show_type(ShowType::RIGHT);
+                    }
+                } else {
+                    m_mapping_popup.set_show_type(ShowType::RIGHT);
+                }
+
+                if (obj_ && obj_->dev_id == m_printer_last_select)
                 {
                     m_mapping_popup.set_parent_item(item);
                     m_mapping_popup.set_current_filament_id(fo.id);
                     m_mapping_popup.set_tag_texture(fo.type);
-                    m_mapping_popup.update_ams_data(obj_->amsList);
+                    m_mapping_popup.set_send_win(this);
+                    m_mapping_popup.update(obj_, m_ams_mapping_result);
                     m_mapping_popup.Popup();
                 }
             }
@@ -4844,37 +5208,17 @@ void SelectMachineDialog::set_default_from_sdcard()
     }
 
     if (m_required_data_plate_data_list[m_print_plate_idx]->slice_filaments_info.size() <= 4) {
-        m_sizer_material->SetCols(m_required_data_plate_data_list[m_print_plate_idx]->slice_filaments_info.size());
+        m_sizer_ams_mapping->SetCols(m_required_data_plate_data_list[m_print_plate_idx]->slice_filaments_info.size());
     }
     else {
-        m_sizer_material->SetCols(4);
+        m_sizer_ams_mapping->SetCols(4);
     }
 
-    m_scrollable_region->Layout();
-    m_scrollable_region->Fit();
-
-    m_scrollable_view->SetSize(m_scrollable_region->GetSize());
-    m_scrollable_view->SetMinSize(m_scrollable_region->GetSize());
-    m_scrollable_view->SetMaxSize(m_scrollable_region->GetSize());
-
-    set_flow_calibration_state(true);
+    m_basic_panel->Layout();
+    m_basic_panel->Fit();
 
     wxSize screenSize = wxGetDisplaySize();
     auto dialogSize = this->GetSize();
-
-#ifdef __WINDOWS__
-    if (screenSize.GetHeight() < dialogSize.GetHeight()) {
-        m_need_adaptation_screen = true;
-        m_scrollable_view->SetScrollRate(0, 5);
-        m_scrollable_view->SetSize(wxSize(-1, FromDIP(220)));
-        m_scrollable_view->SetMinSize(wxSize(-1, FromDIP(220)));
-        m_scrollable_view->SetMaxSize(wxSize(-1, FromDIP(220)));
-    }
-    else {
-        m_scrollable_view->SetScrollRate(0, 0);
-    }
-#endif // __WXOSX_MAC__
-
 
     reset_ams_material();
 
@@ -4894,65 +5238,120 @@ void SelectMachineDialog::set_default_from_sdcard()
 
 void SelectMachineDialog::update_page_turn_state(bool show)
 {
-    m_bitmap_last_plate->Show(show);
-    m_bitmap_next_plate->Show(show);
+     m_bitmap_last_plate->Show(show);
+     m_bitmap_next_plate->Show(show);
 
-    if (show) {
-        if (m_print_plate_idx <= 0) { m_bitmap_last_plate->Hide(); }
-        else { m_bitmap_last_plate->Show(); }
+     if (show) {
+         if (m_print_plate_idx <= 0) { m_bitmap_last_plate->Disable(); }
+         else { m_bitmap_last_plate->Enable(); }
 
-        if ((m_print_plate_idx + 1) >= m_print_plate_total) { m_bitmap_next_plate->Hide(); }
-        else { m_bitmap_next_plate->Show(); }
+         if ((m_print_plate_idx + 1) >= m_print_plate_total) { m_bitmap_next_plate->Disable(); }
+         else { m_bitmap_next_plate->Enable(); }
 
-        if (m_print_plate_total == 1) {
-            m_bitmap_last_plate->Show(false);
-            m_bitmap_next_plate->Show(false);
-        }
-    }
+         if (m_print_plate_total == 1) {
+             m_bitmap_last_plate->Show(false);
+             m_bitmap_next_plate->Show(false);
+         }
+     }
 }
 
 void SelectMachineDialog::sys_color_changed()
 {
     if (wxGetApp(). dark_mode()) {
         //rename_button->SetIcon("ams_editable_light");
-        m_rename_button->SetBitmap(ams_editable_light->bmp());
+        m_rename_button->SetBitmap(rename_editable_light->bmp());
 
     }
     else {
-        m_rename_button->SetBitmap(ams_editable->bmp());
+        m_rename_button->SetBitmap(rename_editable->bmp());
     }
     m_rename_button->Refresh();
 }
 
 bool SelectMachineDialog::Show(bool show)
 {
-    // set default value when show this dialog
     if (show) {
+        EnableEditing(true);
+        m_options_other->Show();
         m_refresh_timer->Start(LIST_REFRESH_INTERVAL);
-        show_status(PrintDialogStatus::PrintStatusInit);
-        wxGetApp().UpdateDlgDarkUI(this);
-        wxGetApp().reset_to_active();
-        set_default();
-        update_user_machine_list();
-
-        Layout();
-        Fit();
-        CenterOnParent();
-    }
-    else {
+    } else {
         m_refresh_timer->Stop();
-        DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
-        if (dev) {
-            MachineObject* obj_ = dev->get_selected_machine();
-            if (obj_ && obj_->connection_type() == "cloud" /*&& m_print_type == FROM_SDCARD_VIEW*/) {
-                if (obj_->is_connected()) {
-                    obj_->disconnect();
-                }
 
+        DeviceManager *dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+        if (dev) {
+            MachineObject *obj_ = dev->get_selected_machine();
+            if (obj_ && obj_->connection_type() == "cloud" /*&& m_print_type == FROM_SDCARD_VIEW*/) {
+                if (obj_->is_connected()) { obj_->disconnect(); }
             }
         }
+
+        return DPIDialog::Show(false);
     }
+    show_init();
+    show_status(PrintDialogStatus::PrintStatusInit);
+
+    PresetBundle& preset_bundle = *wxGetApp().preset_bundle;
+    const auto& project_config = preset_bundle.project_config;
+
+    const t_config_enum_values &enum_keys_map = ConfigOptionEnum<BedType>::get_enum_values();
+    const ConfigOptionEnum<BedType>* bed_type=project_config.option<ConfigOptionEnum<BedType>>("curr_bed_type");
+    std::string plate_name;
+    for (auto& elem : enum_keys_map) {
+        if (elem.second == bed_type->value)
+            plate_name = elem.first;
+    }
+
+    if (plate_name.empty()) {
+        m_text_bed_type->Hide();
+    }
+    else {
+        wxString name = format_bed_name(plate_name);
+        if (name.length() > 8) {
+            m_text_bed_type->SetFont(Label::Body_9);
+        }
+        else {
+            m_text_bed_type->SetFont(Label::Body_12);
+        }
+        m_text_bed_type->SetLabelText(name);
+        m_text_bed_type->Show();
+    }
+
+    // set default value when show this dialog
+    wxGetApp().UpdateDlgDarkUI(this);
+    wxGetApp().reset_to_active();
+    set_default();
+    update_user_machine_list();
+
+    Layout();
+    Fit();
+    CenterOnParent();
     return DPIDialog::Show(show);
+}
+
+void SelectMachineDialog::show_init() {
+    m_ams_mapping_result.clear();
+}
+
+wxString SelectMachineDialog::format_bed_name(std::string plate_name)
+{
+    wxString name;
+    if (plate_name == "Cool Plate") {
+        name = _L("Cool");
+        m_bed_image->SetBitmap(create_scaled_bitmap("bed_cool", this, 32));
+    } else if (plate_name == "Engineering Plate") {
+        name = _L("Engineering");
+        m_bed_image->SetBitmap(create_scaled_bitmap("bed_engineering", this, 32));
+    } else if (plate_name == "High Temp Plate") {
+        name = _L("High Temp");
+        m_bed_image->SetBitmap(create_scaled_bitmap("bed_high_templ", this, 32));
+    } else if (plate_name == "Textured PEI Plate") {
+        name = "PEI";
+        m_bed_image->SetBitmap(create_scaled_bitmap("bed_pei", this, 32));
+    } else if (plate_name == "Supertack Plate") {
+        name = _L("Cool(Supertack)");
+        m_bed_image->SetBitmap(create_scaled_bitmap("bed_cool_supertack", this, 32));
+    }
+    return name;
 }
 
 SelectMachineDialog::~SelectMachineDialog()
@@ -4975,52 +5374,78 @@ void SelectMachineDialog::update_lan_machine_list()
         if (!mobj->is_avaliable()) continue;
         if (!mobj->is_online()) continue;
         if (!mobj->is_lan_mode_printer()) continue;
-        /*if (mobj->is_in_printing()) {op->set_printer_state(PrinterState::BUSY);}*/
-
         if (mobj->has_access_right()) {
-                auto b = mobj->dev_name;
-
-                // clear machine list
-
-                //m_comboBox_printer->Clear();
-                std::vector<std::string>              machine_list;
-                wxArrayString                         machine_list_name;
-                std::map<std::string, MachineObject*> option_list;
-
-                // same machine only appear once
-
-               /* machine_list = sort_string(machine_list);
-                for (auto tt = machine_list.begin(); tt != machine_list.end(); tt++) {
-                    for (auto it = option_list.begin(); it != option_list.end(); it++) {
-                        if (it->second->dev_name == *tt) {
-                            m_list.push_back(it->second);
-                            wxString dev_name_text = from_u8(it->second->dev_name);
-                            if (it->second->is_lan_mode_printer()) {
-                                dev_name_text += "(LAN)";
-                            }
-                            machine_list_name.Add(dev_name_text);
-                            break;
-                        }
-                    }
-                }
-
-                m_comboBox_printer->Set(machine_list_name);
-
-                MachineObject* obj = dev->get_selected_machine();
-                if (obj) {
-                    m_printer_last_select = obj->dev_id;
-                }
-                else {
-                    m_printer_last_select = "";
-                }*/
-                //op->set_printer_state(PrinterState::LOCK);
-            }
+            std::vector<std::string>               machine_list;
+            wxArrayString                          machine_list_name;
+            std::map<std::string, MachineObject *> option_list;
+        }
 
     }
-
-
-
     BOOST_LOG_TRIVIAL(trace) << "SelectMachineDialog update_lan_devices end";
+}
+
+
+std::string SelectMachineDialog::get_print_status_info(PrintDialogStatus status)
+{
+    switch (status) {
+    case PrintStatusInit: return "PrintStatusInit";
+    case PrintStatusNoUserLogin: return "PrintStatusNoUserLogin";
+    case PrintStatusInvalidPrinter: return "PrintStatusInvalidPrinter";
+    case PrintStatusConnectingServer: return "PrintStatusConnectingServer";
+    case PrintStatusReading: return "PrintStatusReading";
+    case PrintStatusReadingFinished: return "PrintStatusReadingFinished";
+    case PrintStatusReadingTimeout: return "PrintStatusReadingTimeout";
+    case PrintStatusInUpgrading: return "PrintStatusInUpgrading";
+    case PrintStatusNeedUpgradingAms: return "PrintStatusNeedUpgradingAms";
+    case PrintStatusInSystemPrinting: return "PrintStatusInSystemPrinting";
+    case PrintStatusInPrinting: return "PrintStatusInPrinting";
+    case PrintStatusDisableAms: return "PrintStatusDisableAms";
+    case PrintStatusAmsMappingSuccess: return "PrintStatusAmsMappingSuccess";
+    case PrintStatusAmsMappingInvalid: return "PrintStatusAmsMappingInvalid";
+    case PrintStatusAmsMappingU0Invalid: return "PrintStatusAmsMappingU0Invalid";
+    case PrintStatusAmsMappingValid: return "PrintStatusAmsMappingValid";
+    case PrintStatusAmsMappingByOrder: return "PrintStatusAmsMappingByOrder";
+    case PrintStatusRefreshingMachineList: return "PrintStatusRefreshingMachineList";
+    case PrintStatusSending: return "PrintStatusSending";
+    case PrintStatusSendingCanceled: return "PrintStatusSendingCanceled";
+    case PrintStatusLanModeNoSdcard: return "PrintStatusLanModeNoSdcard";
+    case PrintStatusLanModeSDcardNotAvailable: return "PrintStatusLanModeSDcardNotAvailable";
+    case PrintStatusNoSdcard: return "PrintStatusNoSdcard";
+    case PrintStatusUnsupportedPrinter: return "PrintStatusUnsupportedPrinter";
+    case PrintStatusTimelapseNoSdcard: return "PrintStatusTimelapseNoSdcard";
+    case PrintStatusNotSupportedPrintAll: return "PrintStatusNotSupportedPrintAll";
+    case PrintStatusInvalidMapping: return "PrintStatusInvalidMapping";
+    }
+    return "unknown";
+}
+
+//w42
+void SelectMachineDialog::remove_area()
+{
+    //m_scrollable_view->Hide();
+    //m_isSwitch->Hide();
+    //m_simplebook->Show(false);
+    //select_use_box->Hide();
+    //m_line_schedule->Hide();
+    //m_line_materia->Hide();
+    //m_sizer_select->Show(false);
+    //m_sizer_select->Layout();
+    
+    //m_button_sync = new Button(this, _L("Sync"));
+    //m_button_sync->SetBackgroundColor(m_btn_bg_enable);
+    //m_button_sync->SetBorderColor(m_btn_bg_enable);
+    //m_button_sync->SetTextColor(StateColor::darkModeColorFor("#FFFFFE"));
+    //m_button_sync->SetSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
+    //m_button_sync->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
+    //m_button_sync->SetMinSize(SELECT_MACHINE_DIALOG_BUTTON_SIZE);
+    //m_button_sync->SetCornerRadius(FromDIP(12));
+    //m_button_sync->Bind(wxEVT_BUTTON, &SelectMachineDialog::on_sync_btn, this);
+    //m_sizer_main->Add(m_button_sync, 0, wxALIGN_CENTER_HORIZONTAL, FromDIP(30));
+
+    //SetSizer(m_sizer_main);
+    Layout();
+    Fit();
+    Thaw();
 }
 
 //y24
@@ -5035,120 +5460,34 @@ std::string SelectMachineDialog::NormalizeVendor(const std::string& str)
     return normalized;
 }
 
-EditDevNameDialog::EditDevNameDialog(Plater *plater /*= nullptr*/)
-    : DPIDialog(static_cast<wxWindow *>(wxGetApp().mainframe), wxID_ANY, _L("Modifying the device name"), wxDefaultPosition, wxDefaultSize, wxCAPTION | wxCLOSE_BOX)
-{
-    std::string icon_path = (boost::format("%1%/images/QIDIStudioTitle.ico") % resources_dir()).str();
-    SetIcon(wxIcon(encode_path(icon_path.c_str()), wxBITMAP_TYPE_ICO));
-
-    SetBackgroundColour(*wxWHITE);
-    wxBoxSizer *m_sizer_main = new wxBoxSizer(wxVERTICAL);
-    auto        m_line_top   = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(-1, 1), wxTAB_TRAVERSAL);
-    m_line_top->SetBackgroundColour(wxColour(166, 169, 170));
-    m_sizer_main->Add(m_line_top, 0, wxEXPAND, 0);
-    m_sizer_main->Add(0, 0, 0, wxTOP, FromDIP(38));
-    m_textCtr = new ::TextInput(this, wxEmptyString, wxEmptyString, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(260), FromDIP(40)), wxTE_PROCESS_ENTER);
-    m_textCtr->GetTextCtrl()->SetSize(wxSize(-1, FromDIP(22)));
-    m_textCtr->SetMinSize(wxSize(FromDIP(260), FromDIP(40)));
-    m_sizer_main->Add(m_textCtr, 0, wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT, FromDIP(40));
-
-    m_static_valid = new wxStaticText(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize, 0);
-    m_static_valid->Wrap(-1);
-    m_static_valid->SetFont(::Label::Body_13);
-    m_static_valid->SetForegroundColour(wxColour(255, 111, 0));
-    m_sizer_main->Add(m_static_valid, 0, wxALIGN_CENTER_HORIZONTAL | wxTOP | wxLEFT | wxRIGHT, FromDIP(10));
-
-
-    m_button_confirm = new Button(this, _L("Confirm"));
-    // y96
-    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
-    m_button_confirm->SetBackgroundColor(btn_bg_blue);
-    m_button_confirm->SetBorderColor(wxColour(68, 121, 251));
-    m_button_confirm->SetTextColor(wxColour(255, 255, 255));
-    m_button_confirm->SetSize(wxSize(FromDIP(72), FromDIP(24)));
-    m_button_confirm->SetMinSize(wxSize(FromDIP(72), FromDIP(24)));
-    m_button_confirm->SetCornerRadius(FromDIP(12));
-    m_button_confirm->Bind(wxEVT_BUTTON, &EditDevNameDialog::on_edit_name, this);
-
-    m_sizer_main->Add(m_button_confirm, 0, wxALIGN_CENTER_HORIZONTAL | wxTOP, FromDIP(10));
-    m_sizer_main->Add(0, 0, 0, wxBOTTOM, FromDIP(38));
-
-    SetSizer(m_sizer_main);
-    Layout();
-    Fit();
-    Centre(wxBOTH);
-    wxGetApp().UpdateDlgDarkUI(this);
-}
-
-EditDevNameDialog::~EditDevNameDialog() {}
-
-void EditDevNameDialog::set_machine_obj(MachineObject *obj)
-{
-    m_info = obj;
-    if (m_info)
-        m_textCtr->GetTextCtrl()->SetValue(from_u8(m_info->dev_name));
-}
-
-void EditDevNameDialog::on_dpi_changed(const wxRect &suggested_rect)
-{
-    m_button_confirm->SetSize(wxSize(FromDIP(72), FromDIP(24)));
-    m_button_confirm->SetMinSize(wxSize(FromDIP(72), FromDIP(24)));
-}
-
-void EditDevNameDialog::on_edit_name(wxCommandEvent &e)
-{
-    m_static_valid->SetLabel(wxEmptyString);
-    auto     m_valid_type = Valid;
-    wxString info_line;
-    auto     new_dev_name = m_textCtr->GetTextCtrl()->GetValue();
-
-    //y51
-    const char *      unusable_symbols = "<>[]:\\|?*\"";
-    const std::string unusable_suffix  = PresetCollection::get_suffix_modified();
-
-    for (size_t i = 0; i < std::strlen(unusable_symbols); i++) {
-        if (new_dev_name.find_first_of(unusable_symbols[i]) != std::string::npos) {
-            info_line    = _L("Name is invalid;") + _L("illegal characters:") + " " + unusable_symbols;
-            m_valid_type = NoValid;
-            break;
+//y58
+void SelectMachineDialog::init_vendors() {
+    const auto enabled_vendors = wxGetApp().app_config->vendors();
+    for (const auto vendor : enabled_vendors) {
+        std::map<std::string, std::set<std::string>> model_map = vendor.second;
+        for (auto model_name : model_map) {
+            qidi_printers.emplace(model_name.first);
         }
     }
+}
 
-    if (m_valid_type == Valid && new_dev_name.find(unusable_suffix) != std::string::npos) {
-        info_line    = _L("Name is invalid;") + _L("illegal suffix:") + "\n\t" + from_u8(PresetCollection::get_suffix_modified());
-        m_valid_type = NoValid;
-    }
-
-    if (m_valid_type == Valid && new_dev_name.empty()) {
-        info_line    = _L("The name is not allowed to be empty.");
-        m_valid_type = NoValid;
-    }
-
-    if (m_valid_type == Valid && new_dev_name.find_first_of(' ') == 0) {
-        info_line    = _L("The name is not allowed to start with space character.");
-        m_valid_type = NoValid;
-    }
-
-    if (m_valid_type == Valid && new_dev_name.find_last_of(' ') == new_dev_name.length() - 1) {
-        info_line    = _L("The name is not allowed to end with space character.");
-        m_valid_type = NoValid;
-    }
-
-    if (m_valid_type == NoValid) {
-        m_static_valid->SetLabel(info_line);
-        Layout();
-    }
-
-    if (m_valid_type == Valid) {
-        m_static_valid->SetLabel(wxEmptyString);
-        DeviceManager *dev      = Slic3r::GUI::wxGetApp().getDeviceManager();
-        if (dev) {
-            auto           utf8_str = new_dev_name.ToUTF8();
-            auto           name     = std::string(utf8_str.data(), utf8_str.length());
-            if (m_info)
-                dev->modify_device_name(m_info->dev_id, name);
+//y58
+void SelectMachineDialog::update_image(std::string select_machine_type) {
+    if (!select_machine_type.empty()) {
+        std::string machine_type_normalize;
+        for (std::string machine_vendor : qidi_printers)
+        {
+            if (NormalizeVendor(machine_vendor) == NormalizeVendor(select_machine_type))
+            {
+                machine_type_normalize = machine_vendor;
+                break;
+            }
         }
-        DPIDialog::EndModal(wxID_CLOSE);
+        std::string machine_icon_path = Slic3r::resources_dir() + "/" + "profiles" + "/" + "thumbnail" + "/" + machine_type_normalize + "_thumbnail.png";
+        m_printer_image->SetBitmap(create_scaled_bitmap(machine_icon_path, this, 52));
+    }
+    else{
+        m_printer_image->SetBitmap(create_scaled_bitmap("printer_placeholder", this, 52));
     }
 }
 
@@ -5191,7 +5530,7 @@ void EditDevNameDialog::on_edit_name(wxCommandEvent &e)
  }
 
  void ThumbnailPanel::render(wxDC& dc) {
-     
+
      if (wxGetApp().dark_mode() && m_brightness_value < SHOW_BACKGROUND_BITMAP_PIXEL_THRESHOLD) {
          #ifdef __WXMSW__
              wxMemoryDC memdc;
@@ -5205,112 +5544,294 @@ void EditDevNameDialog::on_edit_name(wxCommandEvent &e)
      }
      else
          dc.DrawBitmap(m_bitmap, 0, 0);
-     
+
  }
 
  ThumbnailPanel::~ThumbnailPanel() {}
 
- PinCodePanel::PinCodePanel(wxWindow* parent, int type, wxWindowID winid /*= wxID_ANY*/, const wxPoint& pos /*= wxDefaultPosition*/, const wxSize& size /*= wxDefaultSize*/)
+ PrintOption::PrintOption(wxWindow *parent, wxString title, wxString tips, std::vector<POItem> ops, std::string param)
+     : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize)
  {
-     wxPanel::Create(parent, winid, pos, SELECT_MACHINE_ITEM_SIZE);
-     Bind(wxEVT_PAINT, &PinCodePanel::OnPaint, this);
-     SetSize(SELECT_MACHINE_ITEM_SIZE);
-     SetMaxSize(SELECT_MACHINE_ITEM_SIZE);
-     SetMinSize(SELECT_MACHINE_ITEM_SIZE);
+#ifdef __WINDOWS__
+     SetDoubleBuffered(true);
+#endif //__WINDOWS__
+     Bind(wxEVT_PAINT, &PrintOption::OnPaint, this);
 
-     m_type = type;
-     this->Bind(wxEVT_ENTER_WINDOW, &PinCodePanel::on_mouse_enter, this);
-     this->Bind(wxEVT_LEAVE_WINDOW, &PinCodePanel::on_mouse_leave, this);
-     this->Bind(wxEVT_LEFT_UP, &PinCodePanel::on_mouse_left_up, this);
+     SetMinSize(wxSize(-1, FromDIP(28)));
+     SetMaxSize(wxSize(-1, FromDIP(28)));
+
+     m_ops = ops;
+     m_param = param;
+
+     SetBackgroundColour(StateColor::darkModeColorFor(*wxWHITE));
+     wxBoxSizer *sizer = new wxBoxSizer(wxHORIZONTAL);
+
+     m_printoption_title = new Label(this, title);
+     m_printoption_title->SetFont(Label::Head_13);
+     //m_printoption_title->SetBackgroundColour(0xF8F8F8);
+     m_printoption_title->SetToolTip(tips);
+
+     m_printoption_item = new PrintOptionItem(this, m_ops, param);
+     m_printoption_item->SetFont(Label::Body_13);
+
+     sizer->Add(m_printoption_title, 0, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL, 0);
+     sizer->AddStretchSpacer();
+     sizer->Add(m_printoption_item, 0, wxALIGN_RIGHT | wxALIGN_CENTER_VERTICAL, 0);
+
+     SetSizer(sizer);
+     Layout();
+     Fit();
  }
 
- void PinCodePanel::OnPaint(wxPaintEvent& event)
+void PrintOption::OnPaint(wxPaintEvent &event)
  {
      wxPaintDC dc(this);
-     render(dc);
- }
-
- void PinCodePanel::render(wxDC& dc)
- {
-#ifdef __WXMSW__
-     wxSize     size = GetSize();
-     wxMemoryDC memdc;
-     wxBitmap   bmp(size.x, size.y);
-     memdc.SelectObject(bmp);
-     memdc.Blit({ 0, 0 }, size, &dc, { 0, 0 });
-
-     {
-         wxGCDC dc2(memdc);
-         doRender(dc2);
-     }
-
-     memdc.SelectObject(wxNullBitmap);
-     dc.DrawBitmap(bmp, 0, 0);
-#else
      doRender(dc);
+ }
+
+void PrintOption::render(wxDC &dc)
+{
+#ifdef __WXMSW__
+    wxSize     size = GetSize();
+    wxMemoryDC memdc;
+    wxBitmap   bmp(size.x, size.y);
+    memdc.SelectObject(bmp);
+    memdc.Blit({0, 0}, size, &dc, {0, 0});
+
+    {
+        wxGCDC dc2(memdc);
+        doRender(dc2);
+    }
+
+    memdc.SelectObject(wxNullBitmap);
+    dc.DrawBitmap(bmp, 0, 0);
+#else
+    doRender(dc);
 #endif
- }
+}
 
- void PinCodePanel::doRender(wxDC& dc)
+void PrintOption::doRender(wxDC &dc)
+{
+    auto size = GetSize();
+    dc.SetPen(wxPen(*wxTRANSPARENT_PEN));
+    dc.SetBrush(GetBackgroundColour());
+    dc.DrawRoundedRectangle(0, 0, size.x, size.y, FromDIP(3));
+}
+
+void PrintOption::setValue(std::string value)
+{
+    m_printoption_item->setValue(value); }
+
+bool PrintOption::contain_opt(const std::string &opt) const
+{
+    for (const auto &op : m_ops)
+    {
+        if (op.key == opt)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void PrintOption::update_options(std::vector<POItem> ops, const wxString &tips)
+{
+    if (m_ops != ops)
+    {
+        m_ops = ops;
+        m_printoption_item->update_options(ops);
+    }
+
+    if (m_printoption_title->GetToolTipText() != tips) { m_printoption_title->SetToolTip(tips); }
+}
+
+void PrintOption::update_tooltip(const wxString &tips)
+{
+    if (m_printoption_title->GetToolTipText() != tips) { m_printoption_title->SetToolTip(tips); }
+}
+
+std::string PrintOption::getValue()
+{
+    return m_printoption_item->getValue();
+}
+
+int PrintOption::getValueInt()
+{
+    if (m_printoption_item->getValue() == "off") {
+        return 0;
+    } else if (m_printoption_item->getValue() == "on") {
+        return 1;
+    } else if (m_printoption_item->getValue() == "auto") {
+        return 2;
+    } else {
+        return 2;
+    }
+}
+
+PrintOptionItem::PrintOptionItem(wxWindow *parent, std::vector<POItem> ops, std::string param)
+  : ComboBox(parent, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(parent->FromDIP(70), parent->FromDIP(24)), 0, nullptr, wxCB_READONLY)
+{
+    Bind(wxEVT_COMBOBOX, &PrintOptionItem::on_combobox_changed, this);
+    m_param = param;
+    update_options(ops);
+}
+
+void PrintOptionItem::update_options(std::vector<POItem> ops) {
+    if (m_ops != ops) {
+        m_ops = ops;
+
+        ComboBox::Clear();
+        selected_key.clear();
+        for (const auto &entry : m_ops) { Append(entry.value); }
+
+        Layout();
+        Fit();
+    }
+}
+
+void PrintOptionItem::on_combobox_changed(wxCommandEvent &evt) {
+    const auto &new_key = get_key(evt.GetString());
+    setValue(new_key);
+}
+
+wxString PrintOptionItem::get_display_str(const std::string &key) const {
+    for (const auto &entry : m_ops) {
+        if (entry.key == key) { return entry.value; }
+    }
+
+    return wxEmptyString;
+}
+
+std::string PrintOptionItem::get_key(const wxString &display_val) const {
+    for (const auto &entry : m_ops) {
+        if (entry.value == display_val) { return entry.key; }
+    }
+
+    return std::string();
+}
+
+void PrintOptionItem::setValue(std::string value) {
+    if (selected_key != value) {
+       selected_key = value;
+       ComboBox::SetStringSelection(get_display_str(value));
+
+       if (!m_param.empty()) {
+           AppConfig *config = wxGetApp().app_config;
+           if (selected_key == "auto") {
+               config->set_str("print", m_param, "2");
+           } else if (selected_key == "on") {
+               config->set_str("print", m_param, "1");
+           } else if (selected_key == "off") {
+               config->set_str("print", m_param, "0");
+           }
+        }
+
+        wxCommandEvent event(EVT_SWITCH_PRINT_OPTION);
+        event.SetString(selected_key);
+        event.SetEventObject(GetParent());
+        wxPostEvent(GetParent(), event);
+    }
+}
+
+ SendModeSwitchButton::SendModeSwitchButton(wxWindow *parent, wxString mode, bool sel)
+     : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize)
  {
-     auto size = GetSize();
+#ifdef __WINDOWS__
+     SetDoubleBuffered(true);
+#endif //__WINDOWS__
 
-     //m_bitmap = ScalableBitmap(this, "bind_device_ping_code",10);
+     is_selected = sel;
+     SetLabel(mode);
+     Bind(wxEVT_PAINT, &SendModeSwitchButton::OnPaint, this);
+     Bind(wxEVT_ENTER_WINDOW, [this](auto &e) { SetCursor(wxCURSOR_HAND); });
+     Bind(wxEVT_LEAVE_WINDOW, [this](auto &e) { SetCursor(wxCURSOR_ARROW); });
 
-     m_bitmap = ScalableBitmap(this, wxGetApp().dark_mode() ? "bind_device_ping_code_dark" : "bind_device_ping_code_light", 10);
+     SetBackgroundColour(*wxWHITE);
+     static Slic3r::GUI::BitmapCache cache;
+     m_img_selected       = ScalableBitmap(this, "switch_send_mode_on", 28);
+     m_img_unselected     = ScalableBitmap(this, "switch_send_mode_off", 28);
+     m_img_selected_tag   = ScalableBitmap(this, "switch_send_mode_tag_on", 16);
+     m_img_unselected_tag = ScalableBitmap(this, "switch_send_mode_tag_off", 16);
 
-     dc.DrawBitmap(m_bitmap.bmp(), wxPoint(FromDIP(12), (size.y - m_bitmap.GetBmpSize().y) / 2));
-     dc.SetFont(::Label::Head_13);
-     dc.SetTextForeground(StateColor::darkModeColorFor(SELECT_MACHINE_GREY900));
-     wxString txt;
-     if (m_type == 0) { txt = _L("Bind with Pin Code"); }
-     else if (m_type == 1) { txt = _L("Bind with Access Code"); }
+     auto tagSize = wxSize(FromDIP(185), FromDIP(28));
 
-     auto txt_size = dc.GetTextExtent(txt);
-     dc.DrawText(txt, wxPoint(FromDIP(28), (size.y - txt_size.y) / 2));
-
-     if (m_hover) {
-         dc.SetPen(SELECT_MACHINE_BRAND);
-         dc.SetBrush(*wxTRANSPARENT_BRUSH);
-         dc.DrawRectangle(0, 0, size.x, size.y);
-     }
+     SetMinSize(tagSize);
+     SetMaxSize(tagSize);
+     wxGetApp().UpdateDarkUIWin(this);
  }
 
- void PinCodePanel::on_mouse_enter(wxMouseEvent& evt)
- {
-     m_hover = true;
-     Refresh();
- }
+void SendModeSwitchButton::OnPaint(wxPaintEvent &event)
+{
+    wxPaintDC dc(this);
+    doRender(dc);
+}
 
- void PinCodePanel::on_mouse_leave(wxMouseEvent& evt)
- {
-     m_hover = false;
-     Refresh();
- }
+void SendModeSwitchButton::render(wxDC &dc)
+{
+#ifdef __WXMSW__
+    wxSize     size = GetSize();
+    wxMemoryDC memdc;
+    wxBitmap   bmp(size.x, size.y);
+    memdc.SelectObject(bmp);
+    memdc.Blit({0, 0}, size, &dc, {0, 0});
 
- void PinCodePanel::on_mouse_left_up(wxMouseEvent& evt)
- {
-     if (m_type == 0) {
-        if (wxGetApp().getAgent() && wxGetApp().getAgent()->is_user_login()){
-             wxGetApp().popup_ping_bind_dialog();
-         }
-         else{
-             auto m_confirm_login_dlg = new SecondaryCheckDialog(nullptr, wxID_ANY, _L("Bind with Pin Code"), SecondaryCheckDialog::ButtonStyle::ONLY_CONFIRM, wxDefaultPosition);
-             m_confirm_login_dlg->SetSize(wxSize(FromDIP(270), FromDIP(158)));
-             m_confirm_login_dlg->update_text(_L("Please log in before binding your device with a PIN code.\nAlternatively, you can use LAN mode to bind your device. Learn about LAN mode."));
-             m_confirm_login_dlg->update_btn_label(_L("Go to Login"), _L(""));
-             m_confirm_login_dlg->Bind(EVT_SECONDARY_CHECK_CONFIRM, [this](wxCommandEvent& e) {
-                 //m_confirm_login_dlg->on_hide();
-                 wxGetApp().request_login();
-                 return;
-                 });
-             m_confirm_login_dlg->on_show();
-         }
-     }
-     else if (m_type == 1) {
-         InputIpAddressDialog dlgo;
-         dlgo.ShowModal();
-     }
- }
+    {
+        wxGCDC dc2(memdc);
+        doRender(dc2);
+    }
 
- }} // namespace Slic3r::GUI
+    memdc.SelectObject(wxNullBitmap);
+    dc.DrawBitmap(bmp, 0, 0);
+#else
+    doRender(dc);
+#endif
+}
+
+void SendModeSwitchButton::doRender(wxDC &dc)
+{
+    dc.SetPen(wxPen(*wxTRANSPARENT_PEN));
+    dc.SetBrush(wxBrush(*wxTRANSPARENT_BRUSH));
+
+    auto size = GetSize();
+    auto textSize = dc.GetTextExtent(GetLabel());
+    auto left =(size.x - textSize.x - m_img_selected_tag.GetBmpSize().x - FromDIP(8)) / 2;
+
+    dc.SetFont(::Label::Head_14);
+
+    if (is_selected) {
+        dc.DrawBitmap(m_img_selected.bmp(), wxPoint(0, 0));
+        dc.DrawBitmap(m_img_selected_tag.bmp(), wxPoint(left, (size.y - m_img_selected_tag.GetBmpSize().y) / 2));
+        dc.SetTextForeground(0x4479fb);
+    }else {
+        dc.DrawBitmap(m_img_unselected.bmp(), wxPoint(0, 0));
+        dc.DrawBitmap(m_img_unselected_tag.bmp(), wxPoint(left, (size.y - m_img_selected_tag.GetBmpSize().y) / 2));
+        dc.SetTextForeground(0x5C5C5C);
+    }
+    dc.DrawText(GetLabel(), left + m_img_selected_tag.GetBmpSize().x + FromDIP(8), (size.y - textSize.y) / 2);
+}
+
+void SendModeSwitchButton::on_left_down(wxMouseEvent &evt)
+{
+   setSelected(!is_selected);
+}
+
+void SendModeSwitchButton::msw_rescale()
+{
+    m_img_selected.msw_rescale();
+    m_img_unselected.msw_rescale();
+    m_img_selected_tag.msw_rescale();
+    m_img_unselected_tag.msw_rescale();
+    Refresh();
+}
+
+void SendModeSwitchButton::setSelected(bool selected)
+{
+    if (is_selected != selected)
+    {
+        is_selected = selected;
+        Refresh();
+    }
+}
+
+}} // namespace Slic3r::GUI

@@ -3277,6 +3277,15 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionString());
     def->cli = ConfigOptionDef::nocli;
 
+    //y61
+    def = this->add("box_id", coString);
+    def->set_default_value(new ConfigOptionString());
+    def->cli = ConfigOptionDef::nocli;
+
+    def = this->add("is_support_timelapse", coBool);
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(false));
+
     def = this->add("printer_variant", coString);
     //def->label = L("Printer variant");
     def->label = "Printer variant";
@@ -3506,8 +3515,8 @@ void PrintConfigDef::init_fff_params()
     def->cli = ConfigOptionDef::nocli;
 
     def = this->add("extruder_ams_count", coStrings);
-    def->label = "Extruder ams count";
-    def->tooltip = "Ams counts of per extruder";
+    def->label = "Extruder box count";
+    def->tooltip = "BOX counts of per extruder";
     def->set_default_value(new ConfigOptionStrings { });
 
     def = this->add("printer_extruder_id", coInts);

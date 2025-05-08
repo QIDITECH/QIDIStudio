@@ -609,7 +609,7 @@ namespace Slic3r
         }
 
         if (machine_filament_list.empty())
-            throw FilamentGroupException(FilamentGroupException::EmptyAmsFilaments,"Empty ams filament in For-Match mode.");
+            throw FilamentGroupException(FilamentGroupException::EmptyAmsFilaments,"Empty box filament in For-Match mode.");
 
         std::map<int, int> unprintable_limit_indices; // key stores filament idx in used_filament, value stores unprintable extruder
         extract_unprintable_limit_indices(ctx.model_info.unprintable_filaments, used_filaments, unprintable_limit_indices);

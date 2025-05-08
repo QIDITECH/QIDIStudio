@@ -32,7 +32,7 @@ void BindJob::on_exception(const std::exception_ptr &eptr)
     try {
         if (eptr)
             std::rethrow_exception(eptr);
-    } catch (std::exception &e) {
+    } catch (std::exception &/*e*/) {
         PlaterJob::on_exception(eptr);
     }
 }
@@ -108,7 +108,7 @@ void BindJob::process()
     );
 
     if (result < 0) {
-        BOOST_LOG_TRIVIAL(trace) << "login: result = " << result;
+        BOOST_LOG_TRIVIAL(info) << "login: result = " << result;
 
         if (result_code == QIDI_NETWORK_ERR_BIND_ECODE_LOGIN_REPORT_FAILED || result_code == QIDI_NETWORK_ERR_BIND_GET_PRINTER_TICKET_TIMEOUT) {
             int         error_code;
@@ -116,8 +116,7 @@ void BindJob::process()
             try
             {
                 error_code = stoi(result_info);
-                wxString error_msg;
-                wxGetApp().get_hms_query()->query_print_error_msg(error_code, error_msg);
+                wxString error_msg = wxGetApp().get_hms_query()->query_print_error_msg(m_dev_id, error_code);
                 result_info = error_msg.ToStdString();
             }
             catch (...) {
@@ -131,7 +130,7 @@ void BindJob::process()
 
     DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
     if (!dev) {
-        BOOST_LOG_TRIVIAL(trace) << "login: dev is null";
+        BOOST_LOG_TRIVIAL(error) << "login: dev is null";
         post_fail_event(result_code, result_info);
         return;
     }

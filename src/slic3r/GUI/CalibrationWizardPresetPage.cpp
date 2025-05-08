@@ -6,9 +6,22 @@
 #include "libslic3r/Print.hpp"
 #include "Tab.hpp"
 
+#define CALIBRATION_LABEL_SIZE wxSize(FromDIP(150), FromDIP(24))
+#define SYNC_BUTTON_SIZE (wxSize(FromDIP(50), FromDIP(50)))
+#define CALIBRATION_TEXT_INPUT_Y_SIZE FromDIP(20)
+
+#define LEFT_EXTRUDER_ID  1
+#define RIGHT_EXTRUDER_ID 0
+
 namespace Slic3r { namespace GUI {
 static int PA_LINE = 0;
 static int PA_PATTERN = 1;
+
+static bool is_virtual_slot(int ams_id)
+{
+    return ams_id == VIRTUAL_TRAY_MAIN_ID || ams_id == VIRTUAL_TRAY_DEPUTY_ID;
+}
+
 //w29
 static int PA_TOWER = 2;
 
@@ -28,6 +41,11 @@ CaliPresetCaliStagePanel::CaliPresetCaliStagePanel(
 
     this->SetSizer(m_top_sizer);
     m_top_sizer->Fit(this);
+}
+
+void CaliPresetCaliStagePanel::msw_rescale()
+{
+    flow_ratio_input->GetTextCtrl()->SetSize(wxSize(-1, CALIBRATION_TEXT_INPUT_Y_SIZE));
 }
 
 void CaliPresetCaliStagePanel::create_panel(wxWindow* parent)

@@ -17,6 +17,9 @@ public:
         const wxSize& size = wxDefaultSize,
         long style = wxTAB_TRAVERSAL);
     void create_panel(wxWindow* parent);
+
+    void msw_rescale();
+
     //w29
     void set_parent(CalibrationPresetPage* parent) { m_stage_panel_parent = parent; }
     //w29
@@ -25,6 +28,9 @@ protected:
     wxBoxSizer*   m_top_sizer;
     wxPanel*       input_panel;
     CalibrationPresetPage* m_stage_panel_parent;
+
+    
+    TextInput *    flow_ratio_input;
 };
 
 //w29

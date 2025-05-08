@@ -152,9 +152,7 @@ void AMSSetting::create()
     // tip line
     m_sizer_remain_inline = new wxBoxSizer(wxVERTICAL);
 
-    m_tip_remain_line1 = new Label(m_panel_body,
-        _L("The BOX will estimate QIDI filament's remaining capacity after the filament info is updated. During printing, remaining capacity will be updated automatically.")
-    );
+    m_tip_remain_line1 = new Label(m_panel_body, _L("BOX will attempt to estimate the remaining capacity of the QIDI Tech filaments."));
     m_tip_remain_line1->SetFont(::Label::Body_13);
     m_tip_remain_line1->SetForegroundColour(AMS_SETTING_GREY700);
     m_tip_remain_line1->SetSize(wxSize(AMS_SETTING_BODY_WIDTH, -1));

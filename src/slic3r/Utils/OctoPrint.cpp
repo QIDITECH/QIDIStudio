@@ -130,6 +130,7 @@ bool OctoPrint::test(wxString &msg) const
 
     auto http = Http::get(std::move(url));
     set_auth(http);
+    BOOST_LOG_TRIVIAL(info) << boost::format("Before uploading, %1%:Test at: %2%") % name % url;
     http.on_error([&](std::string body, std::string error, unsigned status) {
             BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error getting version: %2%, HTTP %3%, body: `%4%`") % name % error % status % body;
             res = false;
@@ -158,6 +159,7 @@ bool OctoPrint::test(wxString &msg) const
                 res = false;
                 msg = "Could not parse server response";
             }
+            BOOST_LOG_TRIVIAL(info) << boost::format("Get version success. The version msg is %1%") % msg;
         })
 #ifdef WIN32
         .ssl_revoke_best_effort(m_ssl_revoke_best_effort)
@@ -243,16 +245,19 @@ bool OctoPrint::upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, Erro
     if (upload_data.post_action == PrintHostPostUploadAction::StartPrint)
         http.form_add("print", "true");
 
+    //y61
+    // http.form_add("plateindex", std::to_string(partplate_list.get_curr_plate_index()));
+
     //y53
     progress_percentage = 0;
-
+    BOOST_LOG_TRIVIAL(info) << boost::format("Uploading the file to device %1%, url: %2%") % name % url;
     http.form_add_file("file", upload_data.source_path.string(), upload_filename.string())
         .on_complete([&](std::string body, unsigned status) {
             BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: File uploaded: HTTP %2%: %3%") % name % status % body;
         })
         .on_error([&](std::string body, std::string error, unsigned status) {
             //y40 y53
-            if (progress_percentage < 0.99){
+            if (progress_percentage < 0.99) {
                 if (status == 404)
                 {
                     body = ("Network connection fails.");
@@ -265,6 +270,8 @@ bool OctoPrint::upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, Erro
                 error_fn(format_error(body, error, status));
                 res = false;
             }
+            else
+                res = true;
         })
         .on_progress([&](Http::Progress progress, bool &cancel) {
             prorgess_fn(std::move(progress), cancel);
@@ -325,6 +332,7 @@ std::string OctoPrint::get_status(wxString& msg) const
 
     auto http = Http::get(std::move(url));
     set_auth(http);
+    BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Get status at: %2%") % name % url;
     //y36
     http.timeout_connect(4)
         .on_error([&](std::string body, std::string error, unsigned status) {
@@ -336,9 +344,9 @@ std::string OctoPrint::get_status(wxString& msg) const
             else
                 body += ("Unable to get required resources from Aliyun server, please check your network settings.");
         }
-        BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error getting version: %2%, HTTP %3%, body: `%4%`") % name % error % status % body;
         print_state = "offline";
         msg = format_error(body, error, status);
+        BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error getting version: %2%, HTTP %3%, body: `%4%`") % name % error % status % body;
             })
         .on_complete([&](std::string body, unsigned) {
                 BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: Got print_stats: %2%") % name % body;
@@ -397,6 +405,7 @@ float OctoPrint::get_progress(wxString& msg) const
 
     auto http = Http::get(std::move(url));
     set_auth(http);
+    BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Get progress at: %2%") % name % url;
     http.timeout_connect(4)
         .on_error([&](std::string body, std::string error, unsigned status) {
         if (status == 404)
@@ -407,14 +416,12 @@ float OctoPrint::get_progress(wxString& msg) const
             else
                 body += ("Unable to get required resources from Aliyun server, please check your network settings.");
         }
-        BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error getting version: %2%, HTTP %3%, body: `%4%`") % name % error % status %
-            body;
         res = false;
         msg = format_error(body, error, status);
-            })
+        BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error getting version: %2%, HTTP %3%, body: `%4%`") % name % error % status %
+            body;
+        })
         .on_complete([&](std::string body, unsigned) {
-                BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: Got display_status: %2%") % name % body;
-
                 try {
                     // All successful HTTP requests will return a json encoded object in the form of :
                     // {result: <response data>}
@@ -438,6 +445,7 @@ float OctoPrint::get_progress(wxString& msg) const
                     res = false;
                     msg = "Could not parse server response";
                 }
+                BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: Got display_status: %2%, msg is %3%") % name % body %msg;
             })
 #ifdef _WIN32
                 .ssl_revoke_best_effort(m_ssl_revoke_best_effort)
@@ -452,324 +460,64 @@ float OctoPrint::get_progress(wxString& msg) const
                     return process;
 }
 
+
 //w42
-bool OctoPrint::get_printer_state(wxString& msg)
+bool OctoPrint::send_command_to_printer(wxString& msg, wxString commond) const
 {
-    return true;
-    const char* name = get_name();
+   // printer_state: http://192.168.20.66/printer/objects/query?print_stats
+   const char* name = get_name();
+   std::string gcode = "G28";
+   std::string commond_str = commond.ToStdString();
+   std::string json_body = "{\"script\": \"" + commond_str + "\"}";
 
-    std::string print_state = "";
-    float       process = 0;
-    auto        url = make_url("printer/objects/query?print_stats=state&display_status=progress");
-
-    BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Get version at: %2%") % name % url;
-
-    auto http = Http::get(std::move(url));
-    set_auth(http);
-    http.timeout_connect(4)
-        .on_error([&](std::string body, std::string error, unsigned status) {
-        if (status == 404) {
-            body = ("Network connection fails.");
-            if (body.find("AWS") != std::string::npos)
-                body += ("Unable to get required resources from AWS server, please check your network settings.");
-            else
-                body += ("Unable to get required resources from Aliyun server, please check your network settings.");
-        }
-        BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error getting version: %2%, HTTP %3%, body: `%4%`") % name % error % status %
-            body;
-        print_state = "offline";
-        msg = format_error(body, error, status);
-            })
-        .on_complete([&](std::string body, unsigned) {
-                BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: Got print_stats and process: %2%") % name % body;
-                try {
-                    // All successful HTTP requests will return a json encoded object in the form of :
-                    // {result: <response data>}
-                    std::stringstream ss(body);
-                    pt::ptree         ptree;
-                    pt::read_json(ss, ptree);
-                    if (ptree.front().first != "result") {
-                        msg = "Could not parse server response";
-                        print_state = "offline";
-                        process = 0;
-
-                    }
-                    if (!ptree.front().second.get_optional<std::string>("status")) {
-                        msg = "Could not parse server response";
-                        print_state = "offline";
-
-                    }
-                    print_state = ptree.get<std::string>("result.status.print_stats.state");
-                    BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Got state: %2%") % name % print_state;
-                    ;
-                }
-                catch (const std::exception&) {
-                    print_state = "offline";
-                    msg = "Could not parse server response";
-                }
-            })
+   auto url = make_url("printer/gcode/script");
+    bool successful = false;
+   Http http = Http::post(std::move(url));
+   http.header("Content-Type", "application/json")
+       .set_post_body(json_body)
+       .timeout_connect(4)
+       .on_error([&](std::string body, std::string error, unsigned status) {
+       BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error sending G-code: %2%, HTTP %3%, body: %4%")
+           % name % error % status % body;
+           })
+       .on_complete([&](std::string body, unsigned status) {
+               BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: G-code sent successfully: %2%") % name % gcode;
+               successful = true;
+           })
 #ifdef _WIN32
-                .ssl_revoke_best_effort(m_ssl_revoke_best_effort)
-                .on_ip_resolve([&](std::string address) {
-                // Workaround for Windows 10/11 mDNS resolve issue, where two mDNS resolves in succession fail.
-                // Remember resolved address to be reused at successive REST API call.
-                msg = GUI::from_u8(address);
-                    })
+               .ssl_revoke_best_effort(m_ssl_revoke_best_effort)
 #endif // _WIN32
-                .perform_sync();
-
-                    return print_state == "standby" ? true : false;
+               .perform_sync();
+   
+   return successful;
 }
 
-bool OctoPrint::get_box_state(wxString& msg)
+//y60
+bool OctoPrint::send_timelapse_status(wxString& msg, std::string ip, bool status) const
 {
-    const char* name = get_name();
-    int box_count = 0;
-
-    auto url = make_url("server/files/config/saved_variables.cfg");
-
-    BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Getting saved variables at: %2%") % name % url;
-
-    auto http = Http::get(std::move(url));
-    set_auth(http);
-    http.timeout_connect(4)
-        .on_error([&](std::string body, std::string error, unsigned status) {
-        BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error getting saved variables: %2%, HTTP %3%, body: `%4%`")
-            % name % error % status % body;
-        msg = format_error(body, error, status);
-            })
-        .on_complete([&](std::string body, unsigned) {
-                try {
-                    std::istringstream cfg_stream(body);
-                    std::string line;
-
-                    while (std::getline(cfg_stream, line)) {
-                        if (line.find("box_count = ") != std::string::npos) {
-                            size_t value_start = line.find("=") + 1;
-                            std::string value_str = line.substr(value_start);
-
-                            // Trim whitespace
-                            value_str.erase(0, value_str.find_first_not_of(" "));
-                            value_str.erase(value_str.find_last_not_of(" ") + 1);
-
-                            box_count = std::stoi(value_str);
-                            BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: Got box_count value: %2%") % name % box_count;
-                            break;
-                        }
-                    }
-                }
-                catch (const std::exception& e) {
-                    msg = wxString::Format("Error parsing box_count value: %s", e.what());
-                }
-            })
+   const char* name = get_name();
+   std::string status_str = status ? "true" : "false";
+   std::string url = (boost::format("http://%1%:7125/machine/timelapse/settings?enabled=%2%") % ip % status_str).str();
+   bool successful = false;
+   std::string json_body = "{}";
+   Http http = Http::post(std::move(url));
+   http.header("Content-Type", "application/json")
+       .set_post_body(json_body)
+       .timeout_connect(4)
+       .on_error([&](std::string body, std::string error, unsigned status) {
+       BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error sending G-code: %2%, HTTP %3%, body: %4%")
+           % name % error % status % body;
+           })
+       .on_complete([&](std::string body, unsigned status) {
+               BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: G-code sent successfully: %2%") % name % status_str;
+               successful = true;
+           })
 #ifdef _WIN32
-                .ssl_revoke_best_effort(m_ssl_revoke_best_effort)
-                .on_ip_resolve([&](std::string address) {
-                msg = GUI::from_u8(address);
-                    })
+               .ssl_revoke_best_effort(m_ssl_revoke_best_effort)
 #endif // _WIN32
-                .perform_sync();
-                    if (box_count > 0)
-                        return true;
-                    else
-                        return false;
-}
-
-GUI::Box_info OctoPrint::get_box_info(wxString& msg)
-{
-    const char* name = get_name();
-    int box_count = 0;
-    GUI::Box_info filament_info;
-
-    auto url = make_url("server/files/config/saved_variables.cfg");
-
-    BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Getting saved variables at: %2%") % name % url;
-
-    auto http = Http::get(std::move(url));
-    set_auth(http);
-    http.timeout_connect(4)
-        .on_error([&](std::string body, std::string error, unsigned status) {
-        BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error getting saved variables: %2%, HTTP %3%, body: `%4%`")
-            % name % error % status % body;
-        msg = format_error(body, error, status);
-            })
-        .on_complete([&](std::string body, unsigned) {
-                try {
-                    std::istringstream cfg_stream(body);
-                    std::string line;
-                    filament_info = GUI::Box_info();
-
-                    while (std::getline(cfg_stream, line)) {
-                        line.erase(0, line.find_first_not_of(" "));
-                        line.erase(line.find_last_not_of(" ") + 1);
-
-                        if (line.find("box_count = ") != std::string::npos) {
-                            size_t value_start = line.find("=") + 1;
-                            std::string value_str = line.substr(value_start);
-
-                            value_str.erase(0, value_str.find_first_not_of(" "));
-                            value_str.erase(value_str.find_last_not_of(" ") + 1);
-
-                            box_count = std::stoi(value_str);
-                            filament_info.box_count = box_count; 
-                            BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: Got box_count value: %2%") % name % box_count;
-                        }
-                        for (int i = 0; i < box_count * 4; ++i) {
-                            std::string color_key = "color_slot" + std::to_string(i);
-                            std::string filament_key = "filament_slot" + std::to_string(i);
-                            std::string vendor_key = "vendor_slot" + std::to_string(i);
-                            std::string slot_key = "slot" + std::to_string(i);
-
-                            // Create regex patterns for exact variable name matches
-                            std::regex color_pattern("^\\s*" + color_key + "\\s*=");
-                            std::regex filament_pattern("^\\s*" + filament_key + "\\s*=");
-                            std::regex vendor_pattern("^\\s*" + vendor_key + "\\s*=");
-                            std::regex slot_pattern("^\\s*" + slot_key + "\\s*=");
-
-                            if (std::regex_search(line, color_pattern)) {
-                                size_t value_start = line.find("=") + 1;
-                                std::string value_str = line.substr(value_start);
-                                value_str.erase(0, value_str.find_first_not_of(" "));
-                                value_str.erase(value_str.find_last_not_of(" ") + 1);
-                                filament_info.filament_color_index[i] = std::stoi(value_str);
-                            }
-                            else if (std::regex_search(line, filament_pattern)) {
-                                size_t value_start = line.find("=") + 1;
-                                std::string value_str = line.substr(value_start);
-                                value_str.erase(0, value_str.find_first_not_of(" "));
-                                value_str.erase(value_str.find_last_not_of(" ") + 1);
-                                filament_info.filament_index[i] = std::stoi(value_str);
-                            }
-                            else if (std::regex_search(line, vendor_pattern)) {
-                                size_t value_start = line.find("=") + 1;
-                                std::string value_str = line.substr(value_start);
-                                value_str.erase(0, value_str.find_first_not_of(" "));
-                                value_str.erase(value_str.find_last_not_of(" ") + 1);
-                                filament_info.filament_vendor[i] = std::stoi(value_str);
-                            }
-                            else if (std::regex_search(line, slot_pattern)) {
-                                size_t value_start = line.find("=") + 1;
-                                std::string value_str = line.substr(value_start);
-                                value_str.erase(0, value_str.find_first_not_of(" "));
-                                value_str.erase(value_str.find_last_not_of(" ") + 1);
-                                filament_info.slot_state[i] = std::stoi(value_str);
-                            }
-                        }
-                    }
-                }
-                catch (const std::exception& e) {
-                    msg = wxString::Format("Error parsing config values: %s", e.what());
-                }
-            })
-#ifdef _WIN32
-                .ssl_revoke_best_effort(m_ssl_revoke_best_effort)
-                .on_ip_resolve([&](std::string address) {
-                msg = GUI::from_u8(address);
-                    })
-#endif // _WIN32
-                .perform_sync();
-
-                    return filament_info;
-}
-
-void OctoPrint::get_color_filament_str(wxString& msg, GUI::Box_info& machine_filament_info)
-{
-    const char* name = get_name();
-    auto url = make_url("server/files/config/officiall_filas_list.cfg");
-
-    BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Getting saved variables at: %2%") % name % url;
-
-    auto http = Http::get(std::move(url));
-    set_auth(http);
-    http.timeout_connect(4)
-        .on_error([&](std::string body, std::string error, unsigned status) {
-        BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error getting saved variables: %2%, HTTP %3%, body: `%4%`")
-            % name % error % status % body;
-        msg = format_error(body, error, status);
-            })
-        .on_complete([&](std::string body, unsigned) {
-                try {
-                    boost::property_tree::ptree pt;
-                    std::istringstream is(body);
-                    boost::property_tree::ini_parser::read_ini(is, pt);
-
-                    int slots_to_process = machine_filament_info.box_count * 4;
-
-                    for (int i = 0; i < slots_to_process && i < 16; i++) {
-                        int fila_index = machine_filament_info.filament_index[i];
-                        std::string section_name = "fila" + std::to_string(fila_index);
-
-                        try {
-                            std::string fila_id = pt.get<std::string>(section_name + ".fila_id", "");
-                            machine_filament_info.filament_id[i] = fila_id;
-
-                            std::string vendor = pt.get<std::string>(section_name + ".vendor", "");
-                            if (!vendor.empty()) {
-                                machine_filament_info.filament_vendor[i] =
-                                    vendor == "QIDI" ? 1 : 2;
-                            }
-                        }
-                        catch (const boost::property_tree::ptree_error& e) {
-                            BOOST_LOG_TRIVIAL(warning) << boost::format("%1%: Could not find filament info for index %2%: %3%")
-                                % name % fila_index % e.what();
-                        }
-
-                        int color_index = machine_filament_info.filament_color_index[i];
-                        std::string color_key = std::to_string(color_index);
-
-                        try {
-                            std::string color_value = pt.get<std::string>("colordict." + color_key, "");
-                            machine_filament_info.filment_colors[i] = color_value;
-                        }
-                        catch (const boost::property_tree::ptree_error& e) {
-                            BOOST_LOG_TRIVIAL(warning) << boost::format("%1%: Could not find color for index %2%: %3%")
-                                % name % color_index % e.what();
-                        }
-                    }
-                    msg = wxString::Format("Successfully loaded filament and color information for %d boxes",
-                        machine_filament_info.box_count);
-                }
-                catch (const std::exception& e) {
-                    msg = wxString::Format("Error parsing config values: %s", e.what());
-                }
-            })
-#ifdef _WIN32
-                .ssl_revoke_best_effort(m_ssl_revoke_best_effort)
-                .on_ip_resolve([&](std::string address) {
-                msg = GUI::from_u8(address);
-                    })
-#endif // _WIN32
-                .perform_sync();
-                    machine_filament_info.filament_index[0]=0;
-
-}
-
-std::pair<std::string, float> OctoPrint::send_command_to_printer(wxString& msg)
-{
-    // printer_state: http://192.168.20.66/printer/objects/query?print_stats
-    const char* name = get_name();
-    std::string gcode = "G28";
-    std::string json_body = "{\"script\": \"" + gcode + "\"}";
-
-    auto url = make_url("printer/gcode/script");
-
-    Http http = Http::post(std::move(url));
-    http.header("Content-Type", "application/json")
-        .set_post_body(json_body)
-        .timeout_connect(4)
-        .on_error([&](std::string body, std::string error, unsigned status) {
-        BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error sending G-code: %2%, HTTP %3%, body: %4%")
-            % name % error % status % body;
-            })
-        .on_complete([&](std::string body, unsigned status) {
-                BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: G-code sent successfully: %2%") % name % gcode;
-            })
-#ifdef _WIN32
-                .ssl_revoke_best_effort(m_ssl_revoke_best_effort)
-#endif // _WIN32
-                .perform_sync();
-    
-    return std::make_pair("test", 0.01);
+               .perform_sync();
+   
+   return successful;
 }
 
 std::pair<std::string, float> OctoPrint::get_status_progress(wxString& msg) const
@@ -789,6 +537,7 @@ std::pair<std::string, float> OctoPrint::get_status_progress(wxString& msg) cons
 
     auto http = Http::get(std::move(url));
     set_auth(http);
+    BOOST_LOG_TRIVIAL(info) << boost::format("Get status progress, the url is %1%") % url;
     // B64 //y6
     http.timeout_connect(4)
         .on_error([&](std::string body, std::string error, unsigned status) {
@@ -800,42 +549,41 @@ std::pair<std::string, float> OctoPrint::get_status_progress(wxString& msg) cons
             else
                 body += ("Unable to get required resources from Aliyun server, please check your network settings.");
         }
-        BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error getting version: %2%, HTTP %3%, body: `%4%`") % name % error % status %
-            body;
         print_state = "offline";
         msg = format_error(body, error, status);
-            })
+        BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error getting version: %2%, HTTP %3%, body: `%4%`") % name % error % status % body;
+        })
         .on_complete([&](std::string body, unsigned) {
-                BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: Got print_stats and process: %2%") % name % body;
-                try {
-                    // All successful HTTP requests will return a json encoded object in the form of :
-                    // {result: <response data>}
-                    std::stringstream ss(body);
-                    pt::ptree         ptree;
-                    pt::read_json(ss, ptree);
-                    if (ptree.front().first != "result") {
-                        msg = "Could not parse server response";
-                        print_state = "offline";
-                        process = 0;
-                        return;
-                    }
-                    if (!ptree.front().second.get_optional<std::string>("status")) {
-                        msg = "Could not parse server response";
-                        print_state = "offline";
-                        process = 0;
-                        return;
-                    }
-                    print_state = ptree.get<std::string>("result.status.print_stats.state");
-                    process = std::stof(ptree.get<std::string>("result.status.display_status.progress"));
-                    BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Got state: %2%") % name % print_state;
-                    ;
-                }
-                catch (const std::exception&) {
+            BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: Got print_stats and process: %2%") % name % body;
+            try {
+                // All successful HTTP requests will return a json encoded object in the form of :
+                // {result: <response data>}
+                std::stringstream ss(body);
+                pt::ptree         ptree;
+                pt::read_json(ss, ptree);
+                if (ptree.front().first != "result") {
+                    msg = "Could not parse server response";
                     print_state = "offline";
                     process = 0;
-                    msg = "Could not parse server response";
+                    return;
                 }
-            })
+                if (!ptree.front().second.get_optional<std::string>("status")) {
+                    msg = "Could not parse server response";
+                    print_state = "offline";
+                    process = 0;
+                    return;
+                }
+                print_state = ptree.get<std::string>("result.status.print_stats.state");
+                process = std::stof(ptree.get<std::string>("result.status.display_status.progress"));
+                BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Got state: %2%") % name % print_state;
+                ;
+            }
+            catch (const std::exception&) {
+                print_state = "offline";
+                process = 0;
+                msg = "Could not parse server response";
+            }
+        })
 #ifdef _WIN32
         .ssl_revoke_best_effort(m_ssl_revoke_best_effort)
         .on_ip_resolve([&](std::string address) {

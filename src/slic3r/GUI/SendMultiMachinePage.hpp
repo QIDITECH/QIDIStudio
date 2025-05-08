@@ -14,6 +14,10 @@
 #include "AmsMappingPopup.hpp"
 #include "SelectMachine.hpp"
 
+#include <wx/wx.h>
+#include <thread>
+#include <mutex>
+
 // y21
 namespace Slic3r {
 namespace GUI {
@@ -33,9 +37,6 @@ namespace GUI {
 #define  DESIGN_LARGE_COMBOBOX_SIZE wxSize(FromDIP(160), -1)
 #define  DESIGN_INPUT_SIZE wxSize(FromDIP(50), -1)
 
-#define MATERIAL_ITEM_SIZE wxSize(FromDIP(64), FromDIP(34))
-#define MATERIAL_ITEM_REAL_SIZE wxSize(FromDIP(62), FromDIP(32))
-#define MAPPING_ITEM_REAL_SIZE wxSize(FromDIP(48), FromDIP(45))
 
 #define THUMBNAIL_SIZE FromDIP(128)
 
@@ -163,6 +164,11 @@ private:
     Button*                             m_button_add{ nullptr };
     bool                                m_isNetMode = false;
 
+    //y61
+    std::thread                         m_statusThread;
+    std::atomic<bool>                   m_stopThread{false};
+    std::mutex                          m_mutex;
+
 public:
     SendMultiMachinePage(Plater* plater = nullptr);
     ~SendMultiMachinePage();
@@ -177,7 +183,7 @@ public:
 
     QDT::PrintParams request_params(MachineObject* obj);
 
-    bool get_ams_mapping_result(std::string& mapping_array_str, std::string& ams_mapping_info);
+    bool get_ams_mapping_result(std::string &mapping_array_str, std::string &mapping_array_str2, std::string &ams_mapping_info);
     wxBoxSizer* create_item_title(wxString title, wxWindow* parent, wxString tooltip);
     wxBoxSizer* create_item_checkbox(wxString title, wxWindow* parent, wxString tooltip, int padding_left, std::string param);
     wxBoxSizer* create_item_input(wxString str_before, wxString str_after, wxWindow* parent, wxString tooltip, std::string param);
@@ -194,6 +200,14 @@ public:
     std::string get_project_name() { return into_u8(m_current_project_name); };
     //y29
     void OnSelectedDevice(wxCommandEvent& evt);
+    //y58
+    void send_to_3mf();
+
+    //y61
+    void StartThread();
+    void StopThread(); 
+    void ThreadWorker();
+    void OnClose(wxCloseEvent& event);
 
 protected:
     void OnSelectRadio(wxMouseEvent& event);

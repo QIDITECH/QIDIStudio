@@ -16,10 +16,10 @@
 
 namespace Slic3r {
 
-wxDEFINE_EVENT(EVT_SHOW_ERROR_INFO, wxCommandEvent);
+wxDEFINE_EVENT(EVT_SHOW_ERROR_INFO_SEND, wxCommandEvent);
 
 QDTStatusBarSend::QDTStatusBarSend(wxWindow *parent, int id)
- : m_self{new wxPanel(parent, id == -1 ? wxID_ANY : id)} 
+ : m_self{new wxPanel(parent, id == -1 ? wxID_ANY : id)}
     , m_sizer(new wxBoxSizer(wxHORIZONTAL))
 {
     m_self->SetBackgroundColour(wxColour(255,255,255));
@@ -32,7 +32,8 @@ QDTStatusBarSend::QDTStatusBarSend(wxWindow *parent, int id)
     m_status_text->SetFont(::Label::Body_13);
     m_status_text->SetMaxSize(wxSize(m_self->FromDIP(360), m_self->FromDIP(40)));
 
-    m_prog = new wxGauge(m_self, wxID_ANY, 100, wxDefaultPosition, wxSize(-1, m_self->FromDIP(6)), wxGA_HORIZONTAL);
+    //y58
+    m_prog = new QDTGauge(m_self, wxID_ANY, 100, wxDefaultPosition, wxSize(-1, m_self->FromDIP(6)), wxGA_HORIZONTAL);
     m_prog->SetMinSize(wxSize(m_self->FromDIP(300),m_self->FromDIP(6)));
     m_prog->SetValue(0);
 
@@ -57,11 +58,9 @@ QDTStatusBarSend::QDTStatusBarSend(wxWindow *parent, int id)
     m_cancelbutton->SetBorderColor(btn_bd_white);
     m_cancelbutton->SetTextColor(btn_txt_white);
     m_cancelbutton->SetCornerRadius(m_self->FromDIP(12));
-    m_cancelbutton->Bind(wxEVT_BUTTON, 
+    m_cancelbutton->Bind(wxEVT_BUTTON,
         [this](wxCommandEvent &evt) {
-        m_was_cancelled = true;
-        if (m_cancel_cb_fina)
-            m_cancel_cb_fina();
+        cancel();
     });
 
     m_stext_percent = new wxStaticText(m_self, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, 0);
@@ -83,10 +82,10 @@ QDTStatusBarSend::QDTStatusBarSend(wxWindow *parent, int id)
     m_link_show_error->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {
         if (!m_show_error_info_state) { m_show_error_info_state = true; m_static_bitmap_show_error->SetBitmap(m_bitmap_show_error_close); }
         else { m_show_error_info_state = false; m_static_bitmap_show_error->SetBitmap(m_bitmap_show_error_open); }
-        wxCommandEvent* evt = new wxCommandEvent(EVT_SHOW_ERROR_INFO);
-        wxQueueEvent(this->m_self->GetParent(), evt); 
+        wxCommandEvent* evt = new wxCommandEvent(EVT_SHOW_ERROR_INFO_SEND);
+        wxQueueEvent(this->m_self->GetParent(), evt);
     });
-   
+
 
     m_link_show_error->Hide();
     m_static_bitmap_show_error->Hide();
@@ -97,7 +96,7 @@ QDTStatusBarSend::QDTStatusBarSend(wxWindow *parent, int id)
     m_static_bitmap_show_error->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {
         if (!m_show_error_info_state) {m_show_error_info_state = true;m_static_bitmap_show_error->SetBitmap(m_bitmap_show_error_close);}
         else {m_show_error_info_state = false;m_static_bitmap_show_error->SetBitmap(m_bitmap_show_error_open);}
-        wxCommandEvent* evt = new wxCommandEvent(EVT_SHOW_ERROR_INFO);
+        wxCommandEvent* evt = new wxCommandEvent(EVT_SHOW_ERROR_INFO_SEND);
         wxQueueEvent(this->m_self->GetParent(), evt);
     });
 
@@ -206,9 +205,9 @@ void QDTStatusBarSend::stop_busy()
     m_busy = false;
 }
 
-void QDTStatusBarSend::set_cancel_callback_fina(QDTStatusBarSend::CancelFn ccb) 
-{ 
-    m_cancel_cb_fina = ccb; 
+void QDTStatusBarSend::set_cancel_callback_fina(QDTStatusBarSend::CancelFn ccb)
+{
+    m_cancel_cb_fina = ccb;
      if (ccb) {
         m_sizer->Show(m_cancelbutton);
     } else {
@@ -385,6 +384,64 @@ void QDTStatusBarSend::disable_cancel_button()
 void QDTStatusBarSend::enable_cancel_button()
 {
     m_cancelbutton->Enable();
+}
+
+void QDTStatusBarSend::cancel()
+{
+    m_was_cancelled = true;
+    if (m_cancel_cb_fina) m_cancel_cb_fina();
+}
+
+//y58
+wxBEGIN_EVENT_TABLE(QDTGauge, wxGauge)
+EVT_PAINT(QDTGauge::OnPaint)
+wxEND_EVENT_TABLE()
+
+QDTGauge::QDTGauge(wxWindow* parent,
+    wxWindowID id,
+    int range,
+    const wxPoint& pos,
+    const wxSize& size,
+    long style)
+    : wxGauge(parent, id, range, pos, size, style)
+{
+    SetBackgroundStyle(wxBG_STYLE_PAINT);
+}
+
+void QDTGauge::SetValue(int value)
+{
+    if (value < 0) value = 0;
+    if (value > GetRange()) value = GetRange();
+
+    wxGauge::SetValue(value);
+
+    Refresh();
+}
+
+void QDTGauge::OnPaint(wxPaintEvent& event)
+{
+    wxAutoBufferedPaintDC dc(this);
+
+    wxRect rect = GetClientRect();
+
+    dc.SetBrush(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    dc.SetPen(*wxTRANSPARENT_PEN);
+    dc.DrawRectangle(rect);
+
+    int progressWidth = 0;
+    if (GetRange() > 0)
+    {
+        progressWidth = (rect.width - 2) * GetValue() / GetRange();
+    }
+
+    wxRect progressRect(rect.x + 1, rect.y + 1, progressWidth, rect.height - 2);
+    dc.SetBrush(wxColour(68, 121, 251));
+    dc.SetPen(*wxTRANSPARENT_PEN);
+    dc.DrawRectangle(progressRect);
+
+    dc.SetBrush(*wxTRANSPARENT_BRUSH);
+    dc.SetPen(wxPen(wxSystemSettings::GetColour(wxSYS_COLOUR_3DSHADOW), 1));
+    dc.DrawRectangle(rect);
 }
 
 }

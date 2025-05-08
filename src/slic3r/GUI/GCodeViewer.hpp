@@ -380,16 +380,6 @@ class GCodeViewer
         }
     };
 
-    // helper to render shells
-    struct Shells
-    {
-        GLVolumeCollection volumes;
-        bool visible{ false };
-        //QDS: always load shell when preview
-        int print_id{ -1 };
-        int print_modify_count { -1 };
-        bool previewing{ false };
-    };
 
     // helper to render extrusion paths
     struct Extrusions
@@ -720,9 +710,18 @@ public:
         std::vector<bool>  m_tool_visibles;
     };
 
+    struct ExtruderFilament
+    {
+        std::string   type;
+        std::string   hex_color;
+        unsigned char filament_id;
+        bool is_support_filament;
+    };
+
     enum class EViewType : unsigned char
     {
-        FeatureType = 0,
+        Summary = 0,
+        FeatureType,
         Height,
         Width,
         Feedrate,
@@ -735,10 +734,21 @@ public:
         LayerTime,
         Count
     };
-
+    // helper to render shells
+    struct Shells
+    {
+        GLVolumeCollection volumes;
+        bool               visible{false};
+        // QDS: always load shell when preview
+        int  print_id{-1};
+        int  print_modify_count{-1};
+        bool previewing{false};
+    };
     //QDS
     ConflictResultOpt m_conflict_result;
+    GCodeCheckResult  m_gcode_check_result;
     FilamentPrintableResult filament_printable_reuslt;
+    Shells            m_shells;
 
 private:
     std::vector<int> m_plater_extruder;
@@ -750,6 +760,11 @@ private:
     //QDS: add only gcode mode
     bool m_only_gcode_in_preview {false};
     std::vector<size_t> m_ssid_to_moveid_map;
+
+    //QDS: extruder dispensing filament
+    std::vector<ExtruderFilament> m_left_extruder_filament;
+    std::vector<ExtruderFilament> m_right_extruder_filament;
+    size_t m_nozzle_nums;
 
     std::vector<TBuffer> m_buffers{ static_cast<size_t>(EMoveType::Extrude) };
     // bounding box of toolpaths
@@ -776,7 +791,7 @@ private:
     SequentialView m_sequential_view;
     IMSlider* m_moves_slider;
     IMSlider* m_layers_slider;
-    Shells m_shells;
+
     /*QDS GUI refactor, store displayed items in color scheme combobox */
     std::vector<EViewType> view_type_items;
     std::vector<std::string> view_type_items_str;
@@ -791,7 +806,6 @@ private:
 #if ENABLE_GCODE_VIEWER_STATISTICS
     Statistics m_statistics;
 #endif // ENABLE_GCODE_VIEWER_STATISTICS
-    std::array<float, 2> m_detected_point_sizes = { 0.0f, 0.0f };
     GCodeProcessorResult::SettingsIds m_settings_ids;
     std::array<SequentialRangeCap, 2> m_sequential_range_caps;
 
@@ -901,6 +915,11 @@ public:
     void push_combo_style();
     void pop_combo_style();
 
+    //y55
+    static bool is_show_speed;
+    static void SetShowSpeed() { is_show_speed = true; }
+
+
 private:
     void load_toolpaths(const GCodeProcessorResult& gcode_result, const BuildVolume& build_volume, const std::vector<BoundingBoxf3>& exclude_bounding_box);
     //QDS: always load shell at preview
@@ -911,6 +930,7 @@ private:
 
     //QDS: GUI refactor: add canvas size
     void render_legend(float &legend_height, int canvas_width, int canvas_height, int right_margin);
+    void render_legend_color_arr_recommen(float window_padding);
     void render_slider(int canvas_width, int canvas_height);
 
 #if ENABLE_GCODE_VIEWER_STATISTICS

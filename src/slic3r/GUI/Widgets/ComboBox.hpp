@@ -9,15 +9,15 @@
 
 class ComboBox : public wxWindowWithItems<TextInput, wxItemContainer>
 {
-    std::vector<wxString>         texts;
-    std::vector<wxString>         tips;
-    std::vector<wxBitmap>         icons;
-    std::vector<void *>           datas;
-    std::vector<wxClientDataType> types;
+    typedef DropDown::Item Item;
+    std::vector<Item>      items;
 
     DropDown               drop;
     bool     drop_down = false;
     bool     text_off = false;
+    bool     is_replace_text_to_image = false;
+    wxString replace_text;
+    wxString image_for_text;
 
 public:
     ComboBox(wxWindow *      parent,
@@ -38,6 +38,10 @@ public:
 
     int Append(const wxString &item, const wxBitmap &bitmap, void *clientData);
 
+    int Append(const wxString &item, const wxBitmap &bitmap, const wxString &group, void *clientData = nullptr);
+
+    void set_replace_text(wxString text, wxString image_name);
+
     unsigned int GetCount() const override;
 
     int  GetSelection() const override;
@@ -54,6 +58,9 @@ public:
     void SetLabel(const wxString &label) override;
     wxString GetLabel() const override;
 
+    int GetFlag(unsigned int n);
+    void SetFlag(unsigned int n, int value);
+
     void SetTextLabel(const wxString &label);
     wxString GetTextLabel() const;
 
@@ -63,10 +70,17 @@ public:
     wxString GetItemTooltip(unsigned int n) const;
     void     SetItemTooltip(unsigned int n, wxString const &value);
 
+    wxString GetItemAlias(unsigned int n) const;
+    void     SetItemAlias(unsigned int n, wxString const &value);
+
     wxBitmap GetItemBitmap(unsigned int n);
     void     SetItemBitmap(unsigned int n, wxBitmap const &bitmap);
     bool     is_drop_down(){return drop_down;}
     void     DeleteOneItem(unsigned int pos) { DoDeleteOneItem(pos); }
+
+    //y58
+    void SetAble(bool able);
+
 protected:
     virtual int  DoInsertItems(const wxArrayStringsAdapter &items,
                                unsigned int                 pos,
@@ -96,6 +110,9 @@ private:
     void onMove(wxMoveEvent &event);
 
     DECLARE_EVENT_TABLE()
+
+    //y58
+    bool is_able = true;
 };
 
 #endif // !slic3r_GUI_ComboBox_hpp_

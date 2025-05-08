@@ -992,6 +992,9 @@ static std::vector<std::string> s_Preset_printer_options {
     ,"support_box_temp_control"
     //y60
     ,"is_support_3mf"
+    //y61
+    , "box_id"
+    , "is_support_timelapse"
 };
 
 static std::vector<std::string> s_Preset_sla_print_options {

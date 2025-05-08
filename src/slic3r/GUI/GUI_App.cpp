@@ -5,6 +5,7 @@
 #include "GUI_Factories.hpp"
 #include "slic3r/GUI/UserManager.hpp"
 #include "slic3r/GUI/TaskManager.hpp"
+#include "slic3r/GUI/OpenGLManager.hpp"
 #include "format.hpp"
 
 // Localization headers: include libslic3r version first so everything in this file
@@ -119,6 +120,13 @@
 #include "dark_mode.hpp"
 #include "wx/headerctrl.h"
 #include "wx/msw/headerctrl.h"
+
+typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS2)(
+    HANDLE hProcess,
+    USHORT *pProcessMachine,
+    USHORT *pNativeMachine
+);
+
 #endif // _MSW_DARK_MODE
 #endif // __WINDOWS__
 
@@ -147,6 +155,7 @@ namespace pt = boost::property_tree;
 struct StaticQIDILib
 {
     static void reset();
+    static void release();
 };
 
 namespace Slic3r {
@@ -1032,9 +1041,9 @@ static void generic_exception_handle()
         std::terminate();
         //throw;
     } catch (const std::exception& ex) {
-        wxLogError(format_wxstr(_L("QIDIStudio got an unhandled exception: %1%"), ex.what()));
         BOOST_LOG_TRIVIAL(error) << boost::format("Uncaught exception: %1%") % ex.what();
         flush_logs();
+        wxLogError(format_wxstr(_L("QIDIStudio got an unhandled exception: %1%"), ex.what()));
         throw;
     }
 //#endif
@@ -1342,13 +1351,6 @@ void GUI_App::post_init()
             mainframe->refresh_plugin_tips();
         });
 
-    // update hms info
-    CallAfter([this] {
-            if (hms_query)
-                hms_query->check_hms_info();
-        });
-
-
     DeviceManager::load_filaments_blacklist_config();
 
     // remove old log files over LOG_FILES_MAX_NUM
@@ -1569,6 +1571,17 @@ int GUI_App::download_plugin(std::string name, std::string package_name, Install
     fs::path tmp_path = target_file_path;
     tmp_path += format(".%1%%2%", get_current_pid(), ".tmp");
 
+#if defined(__WINDOWS__)
+    if (is_running_on_arm64()) {
+        //set to arm64 for plugins
+        std::map<std::string, std::string> current_headers = Slic3r::Http::get_extra_headers();
+        current_headers["X-QDT-OS-Type"] = "windows_arm";
+
+        Slic3r::Http::set_extra_headers(current_headers);
+        BOOST_LOG_TRIVIAL(info) << boost::format("download_plugin: set X-QDT-OS-Type to windows_arm");
+    }
+#endif
+
     // get_url
     std::string  url = get_plugin_url(name, app_config->get_country_code());
     std::string download_url;
@@ -1625,6 +1638,17 @@ int GUI_App::download_plugin(std::string name, std::string package_name, Install
                 err_msg += "[download_plugin 1] on_error: " + error + ", body = " + body;
                 result = -1;
         }).perform_sync();
+
+#if defined(__WINDOWS__)
+    if (is_running_on_arm64()) {
+        //set back
+        std::map<std::string, std::string> current_headers = Slic3r::Http::get_extra_headers();
+        current_headers["X-QDT-OS-Type"] = "windows";
+
+        Slic3r::Http::set_extra_headers(current_headers);
+        BOOST_LOG_TRIVIAL(info) << boost::format("download_plugin: set X-QDT-OS-Type back to windows");
+    }
+#endif
 
     bool cancel = false;
     if (result < 0) {
@@ -1769,14 +1793,28 @@ int GUI_App::install_plugin(std::string name, std::string package_name, InstallP
                     size_t n = mz_zip_reader_get_extra(&archive, stat.m_file_index, extra.data(), extra.size());
                     dest_file = decode(extra.substr(0, n), stat.m_filename);
                 }
-                auto dest_file_path = boost::filesystem::path(dest_file);
-                dest_file = dest_file_path.filename().string();
-                auto dest_path = boost::filesystem::path(plugin_folder.string() + "/" + dest_file);
+                auto dest_path = plugin_folder / dest_file;
+                boost::filesystem::create_directories(dest_path.parent_path());
                 std::string dest_zip_file = encode_path(dest_path.string().c_str());
                 try {
                     if (fs::exists(dest_path))
                         fs::remove(dest_path);
-                    mz_bool res = mz_zip_reader_extract_to_file(&archive, stat.m_file_index, dest_zip_file.c_str(), 0);
+                    mz_bool res = 0;
+#ifndef WIN32
+                    if (S_ISLNK(stat.m_external_attr >> 16)) {
+                        std::string link(stat.m_uncomp_size + 1, 0);
+                        res = mz_zip_reader_extract_to_mem(&archive, stat.m_file_index, link.data(), stat.m_uncomp_size, 0);
+                        try {
+                            boost::filesystem::create_symlink(link, dest_path);
+                        } catch (const std::exception &e) {
+                            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " create_symlink:" << e.what();
+                        }
+                    } else {
+#endif
+                        res = mz_zip_reader_extract_to_file(&archive, stat.m_file_index, dest_zip_file.c_str(), 0);
+#ifndef WIN32
+                    }
+#endif
                     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", extract  %1% from plugin zip %2%\n") % dest_file % stat.m_filename;
                     if (res == 0) {
 #ifdef WIN32
@@ -1789,26 +1827,6 @@ int GUI_App::install_plugin(std::string name, std::string package_name, InstallP
                             close_zip_reader(&archive);
                             if (pro_fn) { pro_fn(InstallStatusUnzipFailed, 0, cancel); }
                             return InstallStatusUnzipFailed;
-                        }
-                    }
-                    else {
-                        if (pro_fn) {
-                            pro_fn(InstallStatusNormal, 50 + i/num_entries, cancel);
-                        }
-                        try {
-                            auto backup_path = boost::filesystem::path(backup_folder.string() + "/" + dest_file);
-                            if (fs::exists(backup_path))
-                                fs::remove(backup_path);
-                            std::string error_message;
-                            CopyFileResult cfr = copy_file(dest_path.string(), backup_path.string(), error_message, false);
-                            if (cfr != CopyFileResult::SUCCESS) {
-                                BOOST_LOG_TRIVIAL(error) << "Copying to backup failed(" << cfr << "): " << error_message;
-                            }
-                        }
-                        catch (const std::exception& e)
-                        {
-                            BOOST_LOG_TRIVIAL(error) << "Copying to backup failed: " << e.what();
-                            //continue
                         }
                     }
                 }
@@ -1830,7 +1848,38 @@ int GUI_App::install_plugin(std::string name, std::string package_name, InstallP
     }
 
     close_zip_reader(&archive);
-
+    {
+        fs::path dir_path(plugin_folder);
+        if (fs::exists(dir_path) && fs::is_directory(dir_path)) {
+            int file_count = 0, file_index = 0;
+            for (fs::directory_iterator it(dir_path); it != fs::directory_iterator(); ++it) {
+                if (fs::is_regular_file(it->status())) { ++file_count; }
+            }
+            for (fs::directory_iterator it(dir_path); it != fs::directory_iterator(); ++it) {
+                BOOST_LOG_TRIVIAL(info) << " current path:" << it->path().string();
+                if (it->path().string() == backup_folder) {
+                    continue;
+                }
+                auto dest_path = backup_folder.string() + "/" + it->path().filename().string();
+                if (fs::is_regular_file(it->status())) {
+                    BOOST_LOG_TRIVIAL(info) << " copy file:" << it->path().string() << "," << it->path().filename();
+                    try {
+                        if (pro_fn) { pro_fn(InstallStatusNormal, 50 + file_index / file_count, cancel); }
+                        file_index++;
+                        if (fs::exists(dest_path)) { fs::remove(dest_path); }
+                        std::string    error_message;
+                        CopyFileResult cfr = copy_file(it->path().string(), dest_path, error_message, false);
+                        if (cfr != CopyFileResult::SUCCESS) { BOOST_LOG_TRIVIAL(error) << "Copying to backup failed(" << cfr << "): " << error_message; }
+                    } catch (const std::exception &e) {
+                        BOOST_LOG_TRIVIAL(error) << "Copying to backup failed: " << e.what();
+                    }
+                } else {
+                    BOOST_LOG_TRIVIAL(info) << " copy framework:" << it->path().string() << "," << it->path().filename();
+                    copy_framework(it->path().string(), dest_path);
+                }
+            }
+        }
+    }
     if (pro_fn)
         pro_fn(InstallStatusInstallCompleted, 100, cancel);
     if (name == "plugins")
@@ -2139,8 +2188,6 @@ void GUI_App::init_networking_callbacks()
                 
                 MachineObject* obj = this->m_device_manager->get_user_machine(dev_id);
                 if (obj) {
-                    obj->is_ams_need_update = false;
-
                     auto sel = this->m_device_manager->get_selected_machine();
 
                     if (sel && sel->dev_id == dev_id) {
@@ -2154,9 +2201,13 @@ void GUI_App::init_networking_callbacks()
                     if (!this->is_enable_multi_machine()) {
                         if ((sel == obj || sel == nullptr) && obj->is_ams_need_update) {
                             GUI::wxGetApp().sidebar().load_ams_list(obj->dev_id, obj);
+                            obj->is_ams_need_update = false;
                         }
                     }
                 }
+
+                if (GUI::wxGetApp().plater())
+                    GUI::wxGetApp().plater()->update_machine_sync_status();
             });
         };
 
@@ -2205,6 +2256,9 @@ void GUI_App::init_networking_callbacks()
                 if (obj) {
                     obj->parse_json(msg, DeviceManager::key_field_only);
                 }
+
+                if (GUI::wxGetApp().plater())
+                    GUI::wxGetApp().plater()->update_machine_sync_status();
                 });
         };
         m_agent->set_on_local_message_fn(lan_message_arrive_fn);
@@ -2233,7 +2287,34 @@ GUI_App::~GUI_App()
         delete preset_updater;
     }
 
+    StaticQIDILib::release();
+
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< boost::format(": exit");
+}
+
+bool GUI_App::is_blocking_printing(MachineObject *obj_)
+{
+    DeviceManager *dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+    if (!dev) return true;
+    std::string target_model;
+    if (obj_ == nullptr) {
+        auto        obj_         = dev->get_selected_machine();
+        target_model = obj_->printer_type;
+    } else {
+        target_model = obj_->printer_type;
+    }
+
+    PresetBundle *preset_bundle = wxGetApp().preset_bundle;
+    std::string    source_model  = preset_bundle->printers.get_edited_preset().get_printer_type(preset_bundle);
+
+    if (source_model != target_model) {
+        std::vector<std::string>      compatible_machine = dev->get_compatible_machine(target_model);
+        vector<std::string>::iterator it                 = find(compatible_machine.begin(), compatible_machine.end(), source_model);
+        if (it == compatible_machine.end()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // If formatted for github, plaintext with OpenGL extensions enclosed into <details>.
@@ -2245,17 +2326,25 @@ std::string GUI_App::get_gl_info(bool for_github)
 
 wxGLContext* GUI_App::init_glcontext(wxGLCanvas& canvas)
 {
-    return m_opengl_mgr.init_glcontext(canvas);
+    const auto& p_ogl_manager = get_opengl_manager();
+    if (!p_ogl_manager) {
+        return nullptr;
+    }
+    return p_ogl_manager->init_glcontext(canvas);
 }
 
 bool GUI_App::init_opengl()
 {
+    const auto& p_ogl_mananager = get_opengl_manager();
+    if (!p_ogl_mananager) {
+        return false;
+    }
 #ifdef __linux__
-    bool status = m_opengl_mgr.init_gl();
+    bool status = p_ogl_mananager->init_gl();
     m_opengl_initialized = true;
     return status;
 #else
-    return m_opengl_mgr.init_gl();
+    return p_ogl_mananager->init_gl();
 #endif
 }
 
@@ -2363,8 +2452,7 @@ void GUI_App::init_app_config()
             BOOST_LOG_TRIVIAL(error) << __FUNCTION__
             << "Configuration file may be corrupted and is not able to be parsed.Please delete the file and try again.";
             throw Slic3r::RuntimeError(
-                _u8L("QIDIStudio configuration file may be corrupted and is not able to be parsed."
-                     "Please delete the file and try again.") +
+                _u8L("QIDIStudio configuration file read failed. Please manually backup and delete it, and then restart QIDIStudio software.") +
                 "\n\n" + app_config->config_path() + "\n\n" + error);
         }
         // Save orig_version here, so its empty if no app_config existed before this run.
@@ -2405,7 +2493,11 @@ std::map<std::string, std::string> GUI_App::get_extra_header()
     extra_headers.insert(std::make_pair("X-QDT-Client-Name", SLIC3R_APP_NAME));
     extra_headers.insert(std::make_pair("X-QDT-Client-Version", VersionInfo::convert_full_version(SLIC3R_VERSION)));
 #if defined(__WINDOWS__)
+#ifdef _M_X64
     extra_headers.insert(std::make_pair("X-QDT-OS-Type", "windows"));
+#else
+    extra_headers.insert(std::make_pair("X-QDT-OS-Type", "windows_arm"));
+#endif
 #elif defined(__APPLE__)
     extra_headers.insert(std::make_pair("X-QDT-OS-Type", "macos"));
 #elif defined(__LINUX__)
@@ -2482,8 +2574,71 @@ void GUI_App::init_single_instance_checker(const std::string &name, const std::s
     m_single_instance_checker = std::make_unique<wxSingleInstanceChecker>(boost::nowide::widen(name), boost::nowide::widen(path));
 }
 
+
+#ifdef __APPLE__
+void GUI_App::MacPowerCallBack(void* refcon, io_service_t service, natural_t messageType, void * messageArgument)
+{
+    BOOST_LOG_TRIVIAL(info) << "MacPowerCallBack messageType:" << messageType;
+
+    DeviceManager* dev_manager = wxGetApp().getDeviceManager();
+
+    static std::string last_selected_machine;
+    if (messageType == kIOMessageSystemWillSleep)
+    {
+        if (dev_manager)
+        {
+            MachineObject* obj = dev_manager->get_selected_machine();
+            last_selected_machine = obj ? obj->dev_id : "";
+            BOOST_LOG_TRIVIAL(info) << "MacPowerCallBack save selected machine:" << last_selected_machine;
+        }
+
+        IOAllowPowerChange(service, (long) messageArgument);
+    }
+    else if(messageType == kIOMessageSystemHasPoweredOn)
+    {
+        if (dev_manager && !last_selected_machine.empty())
+        {
+            dev_manager->set_selected_machine(last_selected_machine, true);
+            BOOST_LOG_TRIVIAL(info) << "MacPowerCallBack restore selected machine:" << last_selected_machine;
+        }
+    };
+}
+
+
+void GUI_App::RegisterMacPowerCallBack()
+{
+    m_mac_io_service = IORegisterForSystemPower(m_mac_refcon, &m_mac_io_notify_port, MacPowerCallBack, &m_mac_io_obj);
+    if (m_mac_io_service == 0)
+    {
+        BOOST_LOG_TRIVIAL(error) << "RegisterMacPowerCallBack failed";
+        return;
+    }
+
+    CFRunLoopAddSource(CFRunLoopGetCurrent(), IONotificationPortGetRunLoopSource(m_mac_io_notify_port), kCFRunLoopCommonModes);
+    m_mac_powercallback_registered = true;
+    BOOST_LOG_TRIVIAL(error) << "RegisterMacPowerCallBack success";
+}
+
+void GUI_App::UnRegisterMacPowerCallBack()
+{
+    if (m_mac_powercallback_registered)
+    {
+        CFRunLoopRemoveSource(CFRunLoopGetCurrent(), IONotificationPortGetRunLoopSource(m_mac_io_notify_port), kCFRunLoopCommonModes);
+        IODeregisterForSystemPower(&m_mac_io_obj);
+        IOServiceClose(m_mac_io_service);
+        IONotificationPortDestroy(m_mac_io_notify_port);
+        m_mac_powercallback_registered = false;
+        BOOST_LOG_TRIVIAL(info) << "UnRegisterMacPowerCallBack";
+    }
+}
+#endif
+
 bool GUI_App::OnInit()
 {
+#ifdef __APPLE__
+    RegisterMacPowerCallBack();
+#endif
+
     try {
         return on_init_inner();
     //1.9.5
@@ -2496,6 +2651,10 @@ bool GUI_App::OnInit()
 
 int GUI_App::OnExit()
 {
+#ifdef __APPLE__
+    UnRegisterMacPowerCallBack();
+#endif
+
     stop_sync_user_preset();
 
     if (m_device_manager) {
@@ -2535,12 +2694,39 @@ class wxBoostLog : public wxLog
     }
 };
 
+std::string get_system_info()
+{
+    std::stringstream out;
+
+    std::string b_start  = "";
+    std::string b_end    = "";
+    std::string line_end = "\n";
+
+    out << b_start << "Operating System:    " << b_end << wxPlatformInfo::Get().GetOperatingSystemFamilyName() << line_end;
+    out << b_start << "System Architecture: " << b_end << wxPlatformInfo::Get().GetBitnessName() << line_end;
+    out << b_start <<
+#if defined _WIN32
+        "Windows Version:     "
+#else
+        // Hopefully some kind of unix / linux.
+        "System Version:      "
+#endif
+        << b_end << wxPlatformInfo::Get().GetOperatingSystemDescription() << line_end;
+    out << b_start << "Total RAM size [MB]: " << b_end << Slic3r::format_memsize_MB(Slic3r::total_physical_memory());
+
+    return out.str();
+}
+
 bool GUI_App::on_init_inner()
 {
     wxLog::SetActiveTarget(new wxBoostLog());
 #if QDT_RELEASE_TO_PUBLIC
     wxLog::SetLogLevel(wxLOG_Message);
 #endif
+
+    //set preset text
+    auto preset_path = fs::path(Slic3r::data_dir()) / PRESET_SYSTEM_DIR;
+    m_install_preset_fail_text = wxString::Format(_L("Failed to install preset files to %s.\nPlease make sure QIDI Studio has permission to delete and write in this directory,\nand it is not being occupied by the system or other applications."), preset_path.string());
 
     // Set initialization of image handlers before any UI actions - See GH issue #7469
     wxInitAllImageHandlers();
@@ -2594,6 +2780,34 @@ bool GUI_App::on_init_inner()
 #endif
 
     BOOST_LOG_TRIVIAL(info) << boost::format("gui mode, Current QIDIStudio Version %1%")%SLIC3R_VERSION;
+    BOOST_LOG_TRIVIAL(info) << get_system_info();
+
+#if defined(__WINDOWS__)
+    HMODULE hKernel32 = GetModuleHandleW(L"kernel32.dll");
+    m_is_arm64 = false;
+    if (hKernel32) {
+        auto fnIsWow64Process2 = (LPFN_ISWOW64PROCESS2)GetProcAddress(hKernel32, "IsWow64Process2");
+        if (fnIsWow64Process2) {
+            USHORT processMachine = 0;
+            USHORT nativeMachine = 0;
+            if (fnIsWow64Process2(GetCurrentProcess(), &processMachine, &nativeMachine)) {
+                if (nativeMachine == IMAGE_FILE_MACHINE_ARM64) {//IMAGE_FILE_MACHINE_ARM64
+                    m_is_arm64 = true;
+                }
+                BOOST_LOG_TRIVIAL(info) << boost::format("processMachine architecture %1%, nativeMachine %2% m_is_arm64 %3%")%(int)(processMachine) %(int) nativeMachine %m_is_arm64;
+            }
+            else {
+                BOOST_LOG_TRIVIAL(info) << boost::format("IsWow64Process2 failed, set m_is_arm64 to %1%") %m_is_arm64;
+            }
+        }
+        else {
+            BOOST_LOG_TRIVIAL(info) << boost::format("can not find IsWow64Process2, set m_is_arm64 to %1%") %m_is_arm64;
+        }
+    }
+    else {
+        BOOST_LOG_TRIVIAL(info) << boost::format("can not find kernel32, set m_is_arm64 to %1%") %m_is_arm64;
+    }
+#endif
     // Enable this to get the default Win32 COMCTRL32 behavior of static boxes.
 //    wxSystemOptions::SetOption("msw.staticbox.optimized-paint", 0);
     // Enable this to disable Windows Vista themes for all wxNotebooks. The themes seem to lead to terrible
@@ -2686,6 +2900,17 @@ bool GUI_App::on_init_inner()
 
     app_config->set("version", SLIC3R_VERSION);
     app_config->save();
+
+    const auto& p_ogl_manager = get_opengl_manager();
+    if (p_ogl_manager) {
+        const auto& msaa_type = app_config->get("msaa_type");
+        p_ogl_manager->set_msaa_type(msaa_type);
+        const bool is_fxaa_enabled = app_config->get_bool("enable_advanced_antialiasing");
+        p_ogl_manager->set_fxaa_enabled(is_fxaa_enabled);
+
+        const bool gizmo_keep_screen_size = app_config->get_bool("gizmo_keep_screen_size");
+        p_ogl_manager->set_gizmo_keep_screen_size_enabled(gizmo_keep_screen_size);
+    }
 
     QDTSplashScreen * scrn = nullptr;
     const bool show_splash_screen = true;
@@ -2863,7 +3088,10 @@ bool GUI_App::on_init_inner()
             // Enable all substitutions (in both user and system profiles), but log the substitutions in user profiles only.
             // If there are substitutions in system profiles, then a "reconfigure" event shall be triggered, which will force
             // installation of a compatible system preset, thus nullifying the system preset substitutions.
-            init_params->preset_substitutions = preset_bundle->load_presets(*app_config, ForwardCompatibilitySubstitutionRule::EnableSystemSilent);
+            std::string errors_cummulative;
+            std::tie(init_params->preset_substitutions, errors_cummulative) = preset_bundle->load_presets(*app_config, ForwardCompatibilitySubstitutionRule::EnableSystemSilent);
+            if (!errors_cummulative.empty())
+                show_error(nullptr, errors_cummulative);
         }
         catch (const std::exception& ex) {
             show_error(nullptr, ex.what());
@@ -2910,6 +3138,7 @@ bool GUI_App::on_init_inner()
     if (plater_ != nullptr) {
         plater_->reset_project_dirty_initial_presets();
         plater_->update_project_dirty_from_presets();
+        plater_->get_partplate_list().set_filament_count(preset_bundle->filament_presets.size());
     }
 
     // QDS:
@@ -3240,6 +3469,8 @@ void GUI_App::init_label_colours()
     m_color_hovered_btn_label       = is_dark_mode ? wxColour(255, 255, 254) : wxColour(0,0,0);
     m_color_default_btn_label       = is_dark_mode ? wxColour(255, 255, 254): wxColour(0,0,0);
     m_color_selected_btn_bg         = is_dark_mode ? wxColour(84, 84, 91)   : wxColour(206, 206, 206);
+#elif __linux__
+    m_color_label_default           = is_dark_mode ? wxColour(250, 250, 250) : m_color_label_sys;
 #else
     m_color_label_default = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
 #endif
@@ -3572,7 +3803,7 @@ bool GUI_App::tabs_as_menu() const
 
 wxSize GUI_App::get_min_size() const
 {
-    return wxSize(76*m_em_unit, 49 * m_em_unit);
+    return wxSize(std::max(1000, 76*m_em_unit), std::max(600, 49 * m_em_unit));
 }
 
 float GUI_App::toolbar_icon_scale(const bool is_limited/* = false*/) const
@@ -3678,9 +3909,8 @@ void GUI_App::recreate_GUI(const wxString &msg_name)
     obj_list()->set_min_height();
     update_mode();
 
-    //check hms info for different language
-    if (hms_query)
-        hms_query->check_hms_info();
+    // clear previous hms query, so that the hms info can use different language
+    if (hms_query) hms_query->clear_hms_info();
 
     //QDS: trigger restore project logic here, and skip confirm
     plater_->trigger_restore_project(1);
@@ -3718,7 +3948,8 @@ void GUI_App::ShowUserGuide() {
         bool res = false;
         GuideFrame GuideDlg(this);
         //if (GuideDlg.IsFirstUse())
-        res = GuideDlg.run();
+        bool config_applied = false;
+        res = GuideDlg.run(config_applied);
         if (res) {
             load_current_presets();
             update_publish_status();
@@ -3784,7 +4015,8 @@ void GUI_App::ShowOnlyFilament() {
         bool       res = false;
         GuideFrame GuideDlg(this);
         GuideDlg.SetStartPage(GuideFrame::GuidePage::QDT_FILAMENT_ONLY);
-        res = GuideDlg.run();
+        bool config_applied = false;
+        res = GuideDlg.run(config_applied);
         if (res) {
             load_current_presets();
 
@@ -3952,12 +4184,42 @@ void GUI_App::load_gcode(wxWindow* parent, wxString& input_file) const
         input_file = dialog.GetPath();
 }
 
-wxString GUI_App::transition_tridid(int trid_id)
+wxString GUI_App::transition_tridid(int trid_id) const
 {
-    wxString maping_dict[8] = { "A", "B", "C", "D", "E", "F", "G" };
-    int id_index = ceil(trid_id / 4);
-    int id_suffix = (trid_id + 1) % 4 == 0 ? 4 : (trid_id + 1) % 4;
-    return wxString::Format("%s%d", maping_dict[id_index], id_suffix);
+    if (trid_id == VIRTUAL_TRAY_MAIN_ID || trid_id == VIRTUAL_TRAY_DEPUTY_ID)
+    {
+        assert(0);
+        return wxString("Ext");
+    }
+
+    wxString maping_dict[] = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" };
+
+    if (trid_id >= 128 * 4) {
+        trid_id -= 128 * 4;
+        int id_index = trid_id / 4;
+        return wxString::Format("%s", maping_dict[id_index]);
+    }
+    else {
+        // int id_index = ceil(trid_id / 4);
+        // int id_suffix = trid_id % 4 + 1;
+        //return wxString::Format("%s%d", maping_dict[id_index], id_suffix);
+        int group = trid_id / 4 + 1;
+        char suffix = 'A' + trid_id % 4;
+        return wxString::Format("%d%c", group, suffix);
+    }
+}
+
+wxString GUI_App::transition_tridid(int trid_id, bool is_n3s) const
+{
+    if (is_n3s)
+    {
+        const char base = 'A' + (trid_id - 128);
+        wxString prefix("HT-");
+        prefix.append(base);
+        return prefix;
+    }
+
+    return transition_tridid(trid_id);
 }
 
 //QDS
@@ -4363,7 +4625,7 @@ std::string GUI_App::handle_web_request(std::string cmd)
             //         mainframe->m_confirm_download_plugin_dlg = new SecondaryCheckDialog(mainframe, wxID_ANY, _L("Install network plug-in"), SecondaryCheckDialog::ButtonStyle::ONLY_CONFIRM);
             //         mainframe->m_confirm_download_plugin_dlg->SetSize(wxSize(270, 158));
             //         mainframe->m_confirm_download_plugin_dlg->update_text(_L("Please Install network plug-in before log in."));
-            //         mainframe->m_confirm_download_plugin_dlg->update_btn_label(_L("Install Network Plug-in"), _L(""));
+            //         mainframe->m_confirm_download_plugin_dlg->update_btn_label(_L("Install Network Plug-in"), "");
 
             //         mainframe->m_confirm_download_plugin_dlg->Bind(EVT_SECONDARY_CHECK_CONFIRM, [this, post_login](wxCommandEvent& e) {
             //             mainframe->m_confirm_download_plugin_dlg->Close();
@@ -4415,7 +4677,7 @@ std::string GUI_App::handle_web_request(std::string cmd)
             else if (command_str.compare("homepage_printhistory_get")==0)
             {
                 CallAfter([this] {
-                    if (mainframe && mainframe->m_webview) { mainframe->m_webview->ShowUserPrintTask(true); }                    
+                    if (mainframe && mainframe->m_webview) { mainframe->m_webview->ShowUserPrintTask(true,true); }
                     });
             }
             else if (command_str.compare("homepage_leftmenu_change_width") == 0) {
@@ -4463,7 +4725,7 @@ std::string GUI_App::handle_web_request(std::string cmd)
         }
     }
     catch (...) {
-        BOOST_LOG_TRIVIAL(trace) << "parse json cmd failed " << cmd;
+        BOOST_LOG_TRIVIAL(warning) << "parse json cmd failed " << cmd;
         return "";
     }
     return "";
@@ -4629,6 +4891,45 @@ void GUI_App::enable_user_preset_folder(bool enable)
     }
 }
 
+void GUI_App::save_privacy_policy_history(bool agree, std::string source)
+{
+    json j;
+    wxDateTime::TimeZone tz(wxDateTime::Local);
+    long offset = tz.GetOffset();
+    std::string timezone = get_timezone_utc_hm(offset);
+
+    std::time_t now = std::time(nullptr);
+    std::tm* utc_time = std::gmtime(&now);
+    std::ostringstream time_str;
+    time_str << std::put_time(utc_time, "%Y-%m-%d %H:%M:%S") << " " << timezone;
+    j["action"] = agree ? "agree" : "skip";
+    j["source"] = source;
+    if (app_config)
+        j["uuid"] = app_config->get("slicer_uuid");
+    j["time"] = time_str.str();
+    j["user_id"] = "default_user";
+    if (m_agent && agree) {
+        if (!m_agent->get_user_id().empty() && m_agent->is_user_login())
+            j["user_id"] = m_agent->get_user_id();
+        m_agent->track_event("privacy_policy", j.dump());
+    }
+    BOOST_LOG_TRIVIAL(info) << "privacy_policy: source = " << source << ", value = " << j.dump();
+
+    boost::filesystem::path dir = (boost::filesystem::path(Slic3r::data_dir()) / "track").make_preferred();
+    std::string dir_str = dir.string();
+    if (!fs::exists(dir_str)) {
+        fs::create_directory(dir_str);
+    }
+
+    std::string path = (boost::filesystem::path(Slic3r::data_dir()) / "track" / ("history.txt")).make_preferred().string();
+    boost::nowide::ofstream c;
+    c.open(path, std::ios::app);
+    if (c.is_open()) {
+        c << j.dump() << "\n";
+        c.close();
+    }
+}
+
 void GUI_App::on_set_selected_machine(wxCommandEvent &evt)
 {
     DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
@@ -4741,6 +5042,7 @@ void GUI_App::check_update(bool show_tips, int by_user)
     auto curr_version = Semver::parse(SLIC3R_VERSION);
     auto remote_version = Semver::parse(version_info.version_str);
     if (curr_version && remote_version && (*remote_version > *curr_version)) {
+        wxGetApp().app_config->set("app", "cloud_version", version_info.version_str);
         if (version_info.force_upgrade) {
             wxGetApp().app_config->set_bool("force_upgrade", version_info.force_upgrade);
             wxGetApp().app_config->set("upgrade", "force_upgrade", true);
@@ -5185,7 +5487,6 @@ void GUI_App::sync_preset(Preset* preset)
     long long update_time = 0;
     // only sync user's preset
     if (!preset->is_user()) return;
-    if (preset->is_custom_defined()) return;
 
     auto setting_id = preset->setting_id;
     std::map<std::string, std::string> values_map;
@@ -5573,6 +5874,34 @@ static const wxLanguageInfo* linux_get_existing_locale_language(const wxLanguage
 }
 #endif
 
+bool GUI_App::is_gl_version_greater_or_equal_to(unsigned int major, unsigned int minor) const
+{
+    return OpenGLManager::get_gl_info().is_version_greater_or_equal_to(major, minor);
+}
+
+bool GUI_App::is_glsl_version_greater_or_equal_to(unsigned int major, unsigned int minor) const
+{
+    return OpenGLManager::get_gl_info().is_glsl_version_greater_or_equal_to(major, minor);
+}
+
+void GUI_App::bind_shader(const std::shared_ptr<GLShaderProgram>& p_shader)
+{
+    const auto& p_ogl_manager = get_opengl_manager();
+    if (!p_ogl_manager) {
+        return;
+    }
+    p_ogl_manager->bind_shader(p_shader);
+}
+
+void GUI_App::unbind_shader()
+{
+    const auto& p_ogl_manager = get_opengl_manager();
+    if (!p_ogl_manager) {
+        return;
+    }
+    p_ogl_manager->unbind_shader();
+}
+
 int GUI_App::GetSingleChoiceIndex(const wxString& message,
                                 const wxString& caption,
                                 const wxArrayString& choices,
@@ -5926,10 +6255,11 @@ void GUI_App::show_ip_address_enter_dialog(wxString title)
 {
     auto evt = new wxCommandEvent(EVT_SHOW_IP_DIALOG);
     evt->SetString(title);
+    evt->SetInt(-1);
     wxQueueEvent(this, evt);
 }
 
-bool GUI_App::show_modal_ip_address_enter_dialog(wxString title)
+bool GUI_App::show_modal_ip_address_enter_dialog(bool input_sn, wxString title)
 {
     DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
     if (!dev) return false;
@@ -5937,6 +6267,7 @@ bool GUI_App::show_modal_ip_address_enter_dialog(wxString title)
     auto obj = dev->get_selected_machine();
 
     InputIpAddressDialog dlg(nullptr);
+    dlg.m_need_input_sn = input_sn;
     dlg.set_machine_obj(obj);
     if (!title.empty()) dlg.update_title(title);
 
@@ -5967,7 +6298,8 @@ bool GUI_App::show_modal_ip_address_enter_dialog(wxString title)
 void  GUI_App::show_ip_address_enter_dialog_handler(wxCommandEvent& evt)
 {
     wxString title = evt.GetString();
-    show_modal_ip_address_enter_dialog(title);
+    int mode = evt.GetInt();
+    show_modal_ip_address_enter_dialog(mode == -1?false:true, title);
 }
 
 //void GUI_App::add_config_menu(wxMenuBar *menu)
@@ -6209,7 +6541,7 @@ std::vector<std::pair<unsigned int, std::string>> GUI_App::get_selected_presets(
 // This is called when:
 // - Exporting config_bundle
 // - Taking snapshot
-bool GUI_App::check_and_save_current_preset_changes(const wxString& caption, const wxString& header, bool remember_choice/* = true*/, bool dont_save_insted_of_discard/* = false*/)
+bool GUI_App::check_and_save_current_preset_changes(const wxString& caption, const wxString& header, bool remember_choice/* = true*/, bool dont_save_insted_of_discard/* = false*/, ForceOption force_op/* = Discard*/)
 {
     if (has_current_preset_changes()) {
         int act_buttons = UnsavedChangesDialog::ActionButtons::SAVE;
@@ -6218,11 +6550,8 @@ bool GUI_App::check_and_save_current_preset_changes(const wxString& caption, con
         if (remember_choice)
             act_buttons |= UnsavedChangesDialog::ActionButtons::REMEMBER_CHOISE;
         UnsavedChangesDialog dlg(caption, header, "", act_buttons);
-        if (dlg.ShowModal() == wxID_CANCEL)
-            return false;
 
-        if (dlg.save_preset())  // save selected changes
-        {
+        auto handle_save_action = [this,&dlg](){
             //QDS: add project embedded preset relate logic
             for (const UnsavedChangesDialog::PresetData& nt : dlg.get_names_and_types())
                 preset_bundle->save_changes_for_preset(nt.name, nt.type, dlg.get_unselected_options(nt.type), nt.save_to_project);
@@ -6237,6 +6566,21 @@ bool GUI_App::check_and_save_current_preset_changes(const wxString& caption, con
 
             //MessageDialog(nullptr, _L_PLURAL("Modifications to the preset have been saved",
             //                                 "Modifications to the presets have been saved", dlg.get_names_and_types().size())).ShowModal();
+        };
+
+        if (force_op == ForceOption::fopDiscard)
+            return true;
+        if (force_op == ForceOption::fopSave) {
+            handle_save_action();
+            return true;
+        }
+
+        if (dlg.ShowModal() == wxID_CANCEL)
+            return false;
+
+        if (dlg.save_preset())  // save selected changes
+        {
+            handle_save_action();
         }
     }
 
@@ -6260,14 +6604,11 @@ void GUI_App::apply_keeped_preset_modifications()
 //                      => Current project isn't saved => UnsavedChangesDialog: "Keep / Discard / Save / Cancel"
 // Close ConfigWizard   => Current project is saved    => UnsavedChangesDialog: "Keep / Discard / Save / Cancel"
 // Note: no_nullptr postponed_apply_of_keeped_changes indicates that thie function is called after ConfigWizard is closed
-bool GUI_App::check_and_keep_current_preset_changes(const wxString& caption, const wxString& header, int action_buttons, bool* postponed_apply_of_keeped_changes/* = nullptr*/)
+bool GUI_App::check_and_keep_current_preset_changes(const wxString& caption, const wxString& header, int action_buttons, bool* postponed_apply_of_keeped_changes/* = nullptr*/, ForceOption force_op)
 {
     if (has_current_preset_changes()) {
         bool is_called_from_configwizard = postponed_apply_of_keeped_changes != nullptr;
-
         UnsavedChangesDialog dlg(caption, header, "", action_buttons);
-        if (dlg.ShowModal() == wxID_CANCEL)
-            return false;
 
         auto reset_modifications = [this, is_called_from_configwizard]() {
             //if (is_called_from_configwizard)
@@ -6281,57 +6622,87 @@ bool GUI_App::check_and_keep_current_preset_changes(const wxString& caption, con
             load_current_presets(false);
         };
 
-        if (dlg.discard())
+        auto handle_discard_option = [ this, reset_modifications](){
             reset_modifications();
+            };
+
+        auto handle_save_option = [this,&dlg, reset_modifications]() {
+            const auto& preset_names_and_types = dlg.get_names_and_types();
+            for (const UnsavedChangesDialog::PresetData& nt : preset_names_and_types)
+                preset_bundle->save_changes_for_preset(nt.name, nt.type, dlg.get_unselected_options(nt.type), nt.save_to_project);
+
+            // if we saved changes to the new presets, we should to
+            // synchronize config.ini with the current selections.
+            preset_bundle->export_selections(*app_config);
+
+            //wxString text = _L_PLURAL("Modifications to the preset have been saved",
+            //    "Modifications to the presets have been saved", preset_names_and_types.size());
+            //if (!is_called_from_configwizard)
+            //    text += "\n\n" + _L("All modifications will be discarded for new project.");
+
+            //MessageDialog(nullptr, text).ShowModal();
+            reset_modifications();
+            };
+
+        auto handle_transfer_option = [this, &dlg, is_called_from_configwizard, postponed_apply_of_keeped_changes, reset_modifications]() {
+            const auto& preset_names_and_types = dlg.get_names_and_types();
+            // execute this part of code only if not all modifications are keeping to the new project
+            // OR this function is called when ConfigWizard is closed and "Keep modifications" is selected
+            for (const UnsavedChangesDialog::PresetData& nt : preset_names_and_types) {
+                Preset::Type type = nt.type;
+                Tab* tab = get_tab(type);
+                std::vector<std::string> selected_options = dlg.get_selected_options(type);
+                if (type == Preset::TYPE_PRINTER) {
+                    auto it = std::find(selected_options.begin(), selected_options.end(), "extruders_count");
+                    if (it != selected_options.end()) {
+                        // erase "extruders_count" option from the list
+                        selected_options.erase(it);
+                        // cache the extruders count
+                        static_cast<TabPrinter*>(tab)->cache_extruder_cnt();
+                    }
+                }
+                std::vector<std::string> selected_options2;
+                std::transform(selected_options.begin(), selected_options.end(), std::back_inserter(selected_options2), [](auto& o) {
+                    auto i = o.find('#');
+                    return i != std::string::npos ? o.substr(0, i) : o;
+                    });
+                tab->cache_config_diff(selected_options2);
+                if (!is_called_from_configwizard)
+                    tab->m_presets->discard_current_changes();
+            }
+            if (is_called_from_configwizard)
+                *postponed_apply_of_keeped_changes = true;
+            else
+                apply_keeped_preset_modifications();
+            };
+
+        if (force_op == ForceOption::fopDiscard) {
+            handle_discard_option();
+            return true;
+        }
+        if (force_op == ForceOption::fopTransfer) {
+            handle_transfer_option();
+            return true;
+        }
+        if (force_op == ForceOption::fopSave) {
+            handle_save_option();
+            return true;
+        }
+
+        if (dlg.ShowModal() == wxID_CANCEL)
+            return false;
+
+        if (dlg.discard())
+            handle_discard_option();
         else  // save selected changes
         {
             //QDS: add project embedded preset relate logic
             const auto& preset_names_and_types = dlg.get_names_and_types();
             if (dlg.save_preset()) {
-                for (const UnsavedChangesDialog::PresetData& nt : preset_names_and_types)
-                    preset_bundle->save_changes_for_preset(nt.name, nt.type, dlg.get_unselected_options(nt.type), nt.save_to_project);
-
-                // if we saved changes to the new presets, we should to
-                // synchronize config.ini with the current selections.
-                preset_bundle->export_selections(*app_config);
-
-                //wxString text = _L_PLURAL("Modifications to the preset have been saved",
-                //    "Modifications to the presets have been saved", preset_names_and_types.size());
-                //if (!is_called_from_configwizard)
-                //    text += "\n\n" + _L("All modifications will be discarded for new project.");
-
-                //MessageDialog(nullptr, text).ShowModal();
-                reset_modifications();
+                handle_save_option();
             }
             else if (dlg.transfer_changes() && (dlg.has_unselected_options() || is_called_from_configwizard)) {
-                // execute this part of code only if not all modifications are keeping to the new project
-                // OR this function is called when ConfigWizard is closed and "Keep modifications" is selected
-                for (const UnsavedChangesDialog::PresetData& nt : preset_names_and_types) {
-                    Preset::Type type = nt.type;
-                    Tab* tab = get_tab(type);
-                    std::vector<std::string> selected_options = dlg.get_selected_options(type);
-                    if (type == Preset::TYPE_PRINTER) {
-                        auto it = std::find(selected_options.begin(), selected_options.end(), "extruders_count");
-                        if (it != selected_options.end()) {
-                            // erase "extruders_count" option from the list
-                            selected_options.erase(it);
-                            // cache the extruders count
-                            static_cast<TabPrinter*>(tab)->cache_extruder_cnt();
-                        }
-                    }
-                    std::vector<std::string> selected_options2;
-                    std::transform(selected_options.begin(), selected_options.end(), std::back_inserter(selected_options2), [](auto & o) {
-                        auto i = o.find('#');
-                        return i != std::string::npos ? o.substr(0, i) : o;
-                    });
-                    tab->cache_config_diff(selected_options2);
-                    if (!is_called_from_configwizard)
-                        tab->m_presets->discard_current_changes();
-                }
-                if (is_called_from_configwizard)
-                    *postponed_apply_of_keeped_changes = true;
-                else
-                    apply_keeped_preset_modifications();
+                handle_transfer_option();
             }
         }
     }
@@ -6789,7 +7160,7 @@ int GUI_App::extruders_cnt() const
 {
     const Preset& preset = preset_bundle->printers.get_selected_preset();
     return preset.printer_technology() == ptSLA ? 1 :
-           preset.config.option<ConfigOptionFloats>("nozzle_diameter")->values.size();
+           preset.config.option<ConfigOptionFloatsNullable>("nozzle_diameter")->values.size();
 }
 
 // extruders count from edited printer preset
@@ -6797,7 +7168,7 @@ int GUI_App::extruders_edited_cnt() const
 {
     const Preset& preset = preset_bundle->printers.get_edited_preset();
     return preset.printer_technology() == ptSLA ? 1 :
-           preset.config.option<ConfigOptionFloats>("nozzle_diameter")->values.size();
+           preset.config.option<ConfigOptionFloatsNullable>("nozzle_diameter")->values.size();
 }
 
 // QDS
@@ -6887,13 +7258,19 @@ bool GUI_App::run_wizard(ConfigWizard::RunReason reason, ConfigWizard::StartPage
                 start_page == ConfigWizard::SP_PRINTERS ? GuideFrame::QDT_MODELS_ONLY :
                 GuideFrame::QDT_MODELS;
     wizard.SetStartPage(page);
-    bool       res = wizard.run();
+
+    bool config_applied = false;
+    bool       res = wizard.run(config_applied);
 
     if (res) {
         load_current_presets();
         update_publish_status();
         mainframe->refresh_plugin_tips();
         // QDS: remove SLA related message
+    }
+    else if (config_applied){
+        MessageDialog msg_dlg(mainframe, m_install_preset_fail_text, _L("Install presets failed"), wxAPPLY | wxOK);
+        msg_dlg.ShowModal();
     }
 
     return res;
@@ -6973,6 +7350,41 @@ void GUI_App::gcode_thumbnails_debug()
     }
 }
 #endif // ENABLE_THUMBNAIL_GENERATOR_DEBUG
+
+const std::shared_ptr<OpenGLManager>& GUI_App::get_opengl_manager() const
+{
+    if (m_p_opengl_mgr) {
+        return m_p_opengl_mgr;
+    }
+
+    const bool rt = OpenGLManager::init();
+    if (rt)
+    {
+        m_p_opengl_mgr = std::make_shared<OpenGLManager>();
+        return m_p_opengl_mgr;
+    }
+    static std::shared_ptr<OpenGLManager> s_empty{nullptr};
+    return s_empty;
+}
+
+const std::shared_ptr<GLShaderProgram>& GUI_App::get_shader(const std::string &shader_name) const
+{
+    const auto& p_ogl_manager = get_opengl_manager();
+    if (p_ogl_manager) {
+        return p_ogl_manager->get_shader(shader_name);
+    }
+
+    return nullptr;
+}
+
+const std::shared_ptr<GLShaderProgram> GUI_App::get_current_shader() const
+{
+    const auto& p_ogl_manager = get_opengl_manager();
+    if (p_ogl_manager) {
+        return p_ogl_manager->get_current_shader();
+    }
+    return nullptr;
+}
 
 void GUI_App::window_pos_save(wxTopLevelWindow* window, const std::string &name)
 {
@@ -7065,24 +7477,25 @@ bool GUI_App::config_wizard_startup()
 
 void GUI_App::check_updates(const bool verbose)
 {
-	PresetUpdater::UpdateResult updater_result;
-	try {
-		//updater_result = preset_updater->config_update(app_config->orig_version(), verbose ? PresetUpdater::UpdateParams::SHOW_TEXT_BOX : PresetUpdater::UpdateParams::SHOW_NOTIFICATION);
-		updater_result = preset_updater->config_update(app_config->orig_version(), PresetUpdater::UpdateParams::SHOW_TEXT_BOX);
-		if (updater_result == PresetUpdater::R_INCOMPAT_EXIT) {
-			mainframe->Close();
-		}
-		else if (updater_result == PresetUpdater::R_INCOMPAT_CONFIGURED) {
+    PresetUpdater::UpdateResult updater_result;
+    try {
+        //updater_result = preset_updater->config_update(app_config->orig_version(), verbose ? PresetUpdater::UpdateParams::SHOW_TEXT_BOX : PresetUpdater::UpdateParams::SHOW_NOTIFICATION);
+        updater_result = preset_updater->config_update(app_config->orig_version(), PresetUpdater::UpdateParams::SHOW_TEXT_BOX);
+        if (updater_result == PresetUpdater::R_INCOMPAT_EXIT) {
+            MessageDialog msg_dlg(mainframe, m_install_preset_fail_text, _L("Install presets failed"), wxAPPLY | wxOK);
+            msg_dlg.ShowModal();
+        }
+        else if (updater_result == PresetUpdater::R_INCOMPAT_CONFIGURED) {
             m_app_conf_exists = true;
-		}
-		else if (verbose && updater_result == PresetUpdater::R_NOOP) {
-			MsgNoUpdates dlg;
-			dlg.ShowModal();
-		}
-	}
-	catch (const std::exception & ex) {
-		show_error(nullptr, ex.what());
-	}
+        }
+        else if (verbose && updater_result == PresetUpdater::R_NOOP) {
+            MsgNoUpdates dlg;
+            dlg.ShowModal();
+        }
+    }
+    catch (const std::exception & ex) {
+        show_error(nullptr, ex.what());
+    }
 }
 
 void GUI_App::check_config_updates_from_updater()
@@ -7093,6 +7506,43 @@ void GUI_App::check_config_updates_from_updater()
 void GUI_App::check_config_updates_from_menu()
 {
     check_updates(true);
+}
+
+void GUI_App::set_picking_effect(EPickingEffect effect)
+{
+    if (m_picking_effect != effect)
+    {
+        std::string str_picking_effect{};
+        switch (effect)
+        {
+        case EPickingEffect::Disabled:
+            str_picking_effect = "Disabled";
+            break;
+        case EPickingEffect::StencilOutline:
+            str_picking_effect = "StencilOutline";
+            break;
+        case EPickingEffect::Silhouette:
+            str_picking_effect = "Silhouette";
+            break;
+        }
+        BOOST_LOG_TRIVIAL(info) << "Switched picking effect to: " << str_picking_effect;
+        m_picking_effect = effect;
+    }
+}
+
+EPickingEffect GUI_App::get_picking_effect() const
+{
+    return m_picking_effect;
+}
+
+void GUI_App::set_picking_color(const ColorRGB& color)
+{
+    m_picking_color = color;
+}
+
+const ColorRGB& GUI_App::get_picking_color() const
+{
+    return m_picking_color;
 }
 
 bool GUI_App::open_browser_with_warning_dialog(const wxString& url, int flags/* = 0*/)

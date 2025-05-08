@@ -28,8 +28,8 @@ class ConfigManipulation
     // function to loading of changed configuration 
     std::function<void()>                                       load_config = nullptr;
     std::function<void (const std::string&, bool toggle, int opt_index)>   cb_toggle_field = nullptr;
-    std::function<void (const std::string&, bool toggle)>   cb_toggle_line = nullptr;
-    // callback to propagation of changed value, if needed 
+    std::function<void(const std::string &, bool toggle, int opt_index)> cb_toggle_line  = nullptr;
+    // callback to propagation of changed value, if needed
     std::function<void(const std::string&, const boost::any&)>  cb_value_change = nullptr;
     //QDS: change local config to const DynamicPrintConfig
     const DynamicPrintConfig* local_config = nullptr;
@@ -41,7 +41,7 @@ class ConfigManipulation
 public:
     ConfigManipulation(std::function<void()> load_config,
         std::function<void(const std::string&, bool toggle, int opt_index)> cb_toggle_field,
-        std::function<void(const std::string&, bool toggle)> cb_toggle_line,
+        std::function<void(const std::string&, bool toggle, int opt_index)> cb_toggle_line,
         std::function<void(const std::string&, const boost::any&)>  cb_value_change,
         //QDS: change local config to DynamicPrintConfig
         const DynamicPrintConfig* local_config = nullptr,
@@ -66,11 +66,11 @@ public:
     void    apply(DynamicPrintConfig* config, DynamicPrintConfig* new_config);
     t_config_option_keys const &applying_keys() const;
     void    toggle_field(const std::string& field_key, const bool toggle, int opt_index = -1);
-    void    toggle_line(const std::string& field_key, const bool toggle);
+    void    toggle_line(const std::string& field_key, const bool toggle, int opt_index = -1);
 
     // FFF print
     void    update_print_fff_config(DynamicPrintConfig* config, const bool is_global_config = false, const bool is_plate_config = false);
-    void    toggle_print_fff_options(DynamicPrintConfig* config, const bool is_global_config = false);
+    void    toggle_print_fff_options(DynamicPrintConfig* config, int variant_index, const bool is_global_config = false);
     void    apply_null_fff_config(DynamicPrintConfig *config, std::vector<std::string> const &keys, std::map<ObjectBase*, ModelConfig*> const & configs);
 
     //QDS: FFF filament nozzle temperature range
@@ -79,6 +79,9 @@ public:
     void    check_nozzle_temperature_initial_layer_range(DynamicPrintConfig* config);
     void    check_filament_max_volumetric_speed(DynamicPrintConfig *config);
     void    check_chamber_temperature(DynamicPrintConfig* config);
+    //58
+    void    check_box_temperature(DynamicPrintConfig* config);
+    
     void    set_is_QDT_Printer(bool is_qdt_printer) { is_QDT_Printer = is_qdt_printer; };
     // SLA print
     void    update_print_sla_config(DynamicPrintConfig* config, const bool is_global_config = false);
@@ -94,6 +97,9 @@ public:
 
 private:
     bool get_temperature_range(DynamicPrintConfig *config, int &range_low, int &range_high);
+
+    //y58
+    bool get_box_temperature_range(DynamicPrintConfig *config, int &range_low, int &range_high);
 };
 
 } // GUI

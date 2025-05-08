@@ -236,14 +236,20 @@ void BackgroundSlicingProcess::process_fff()
 	 	wxQueueEvent(GUI::wxGetApp().mainframe->m_plater, evt.Clone());
 
 	 	m_temp_output_path = this->get_current_plate()->get_tmp_gcode_path();
-		// y21
-	 	if (!m_temp_output_path.empty()) {
-	 		BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(" %1%: export gcode from %2% directly to %3%")%__LINE__%m_temp_output_path %m_export_path;
-	 	}
-	 	else {
-	 		m_fff_print->export_gcode_from_previous_file(m_temp_output_path, m_gcode_result, [this](const ThumbnailsParams& params) { return this->render_thumbnails(params); });
-	 		BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(" %1%: export_gcode_from_previous_file from %2% finished")%__LINE__ % m_temp_output_path;
-	 	}
+		//// y21
+	 //	if (!m_temp_output_path.empty()) {
+	 //		BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(" %1%: export gcode from %2% directly to %3%")%__LINE__%m_temp_output_path %m_export_path;
+	 //	}
+	 //	else {
+	 //		m_fff_print->export_gcode_from_previous_file(m_temp_output_path, m_gcode_result, [this](const ThumbnailsParams& params) { return this->render_thumbnails(params); });
+	 //		BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(" %1%: export_gcode_from_previous_file from %2% finished")%__LINE__ % m_temp_output_path;
+	 //	}
+		if(m_gcode_result->moves.empty()){
+			m_fff_print->export_gcode_from_previous_file(m_temp_output_path, m_gcode_result, [this](const ThumbnailsParams& params) { return this->render_thumbnails(params); });
+			BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(" %1%: export_gcode_from_previous_file from %2% finished")%__LINE__ % m_temp_output_path;
+		}
+		else
+			BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(" %1%: export gcode from %2% directly to %3%")%__LINE__%m_temp_output_path %m_export_path;
 	 }
 	 else {
 	 	//QDS: reset the gcode before reload_print in slicing_completed event processing
@@ -254,6 +260,10 @@ void BackgroundSlicingProcess::process_fff()
 	 	BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(" %1%: gcode_result reseted, will start print::process")%__LINE__;
 	 	m_print->process();
 	 	BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(" %1%: after print::process, send slicing complete event to gui...")%__LINE__;
+		 if (m_current_plate->get_real_filament_map_mode(preset_bundle.project_config) < FilamentMapMode::fmmManual) {
+            std::vector<int> f_maps = m_fff_print->get_filament_maps();
+            m_current_plate->set_filament_maps(f_maps);
+		}
 
 	 	wxCommandEvent evt(m_event_slicing_completed_id);
 	 	// Post the Slicing Finished message for the G-code viewer to update.

@@ -29,64 +29,66 @@
 #include "wx/textctrl.h"
 
 namespace Slic3r {
-    namespace GUI {
+namespace GUI {
 
-        class ZUserLogin : public wxDialog
-        {
-        public:
-            ZUserLogin();
-            virtual ~ZUserLogin();
+class ZUserLogin : public wxDialog
+{
+public:
+    ZUserLogin();
+    virtual ~ZUserLogin();
 
-            void load_url(wxString& url);
+    void load_url(wxString& url);
 
-            std::string w2s(wxString sSrc);
+    std::string w2s(wxString sSrc);
 
-            void UpdateState();
-            void OnIdle(wxIdleEvent& evt);
-            // void OnClose(wxCloseEvent &evt);
+    void UpdateState();
+    void OnIdle(wxIdleEvent& evt);
+    // void OnClose(wxCloseEvent &evt);
 
-            void OnNavigationRequest(wxWebViewEvent& evt);
-            void OnNavigationComplete(wxWebViewEvent& evt);
-            void OnDocumentLoaded(wxWebViewEvent& evt);
-            void OnNewWindow(wxWebViewEvent& evt);
-            void OnError(wxWebViewEvent& evt);
-            void OnTitleChanged(wxWebViewEvent& evt);
-            void OnFullScreenChanged(wxWebViewEvent& evt);
-            void OnScriptMessage(wxWebViewEvent& evt);
+    void OnNavigationRequest(wxWebViewEvent& evt);
+    void OnNavigationComplete(wxWebViewEvent& evt);
+    void OnDocumentLoaded(wxWebViewEvent& evt);
+    void OnNewWindow(wxWebViewEvent& evt);
+    void OnError(wxWebViewEvent& evt);
+    void OnTitleChanged(wxWebViewEvent& evt);
+    void OnFullScreenChanged(wxWebViewEvent& evt);
+    void OnScriptMessage(wxWebViewEvent& evt);
 
-            void OnScriptResponseMessage(wxCommandEvent& evt);
-            void RunScript(const wxString& javascript);
+    void OnScriptResponseMessage(wxCommandEvent& evt);
+    void RunScript(const wxString& javascript);
 
-            bool m_networkOk;
-            bool ShowErrorPage();
+    bool m_networkOk;
+    bool ShowErrorPage();
 
-            bool run();
+    bool run();
 
-            static int web_sequence_id;
-        private:
-            wxTimer* m_timer{ nullptr };
-            void     OnTimer(wxTimerEvent& event);
+    std::string GetStudioLanguage();
 
-        private:
-            wxString   TargetUrl;
-            wxWebView* m_browser;
+    static int web_sequence_id;
+private:
+    wxTimer* m_timer{ nullptr };
+    void     OnTimer(wxTimerEvent& event);
+
+private:
+    wxString   TargetUrl;
+    wxWebView* m_browser;
 
 
 #if wxUSE_WEBVIEW_IE
-            wxMenuItem* m_script_object_el;
-            wxMenuItem* m_script_date_el;
-            wxMenuItem* m_script_array_el;
+    wxMenuItem* m_script_object_el;
+    wxMenuItem* m_script_date_el;
+    wxMenuItem* m_script_array_el;
 #endif
-            // Last executed JavaScript snippet, for convenience.
-            wxString m_javascript;
-            wxString m_response_js;
+    // Last executed JavaScript snippet, for convenience.
+    wxString m_javascript;
+    wxString m_response_js;
 
-            wxString m_qdt_user_agent;
+    wxString m_qdt_user_agent;
 
-            DECLARE_EVENT_TABLE()
-        };
+    DECLARE_EVENT_TABLE()
+};
 
-    }
+}
 } // namespace Slic3r::GUI
 
 #endif 

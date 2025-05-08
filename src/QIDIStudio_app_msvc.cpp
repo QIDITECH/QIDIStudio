@@ -42,10 +42,10 @@ public:
         wc.lpfnWndProc = OpenGLVersionCheck::supports_opengl2_wndproc;
         wc.hInstance = (HINSTANCE)GetModuleHandle(nullptr);
         wc.hbrBackground = (HBRUSH)(COLOR_BACKGROUND);
-        wc.lpszClassName = L"BambuStudio_opengl_version_check";
+        wc.lpszClassName = L"QIDIStudio_opengl_version_check";
         wc.style = CS_OWNDC;
         if (RegisterClass(&wc)) {
-            HWND hwnd = CreateWindowW(wc.lpszClassName, L"BambuStudio_opengl_version_check", WS_OVERLAPPEDWINDOW, 0, 0, 640, 480, 0, 0, wc.hInstance, (LPVOID)this);
+            HWND hwnd = CreateWindowW(wc.lpszClassName, L"QIDIStudio_opengl_version_check", WS_OVERLAPPEDWINDOW, 0, 0, 640, 480, 0, 0, wc.hInstance, (LPVOID)this);
             if (hwnd) {
                 message_pump_exit = false;
                 while (GetMessage(&msg, NULL, 0, 0) > 0 && !message_pump_exit)
@@ -280,7 +280,7 @@ int APIENTRY wWinMain(HINSTANCE /* hInstance */, HINSTANCE /* hPrevInstance */, 
 #endif
         );
         if (qidistu_main == nullptr) {
-            printf("could not locate the function bambustu_main in QIDIStudio.dll\n");
+            printf("could not locate the function qidistu_main in QIDIStudio.dll\n");
             return -1;
         }
         // argc minus the trailing nullptr of the argv

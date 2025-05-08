@@ -26,10 +26,28 @@ class wxFont;
 
 namespace Slic3r {
 
+//y58
+class QDTGauge : public wxGauge
+{
+public:
+    QDTGauge(wxWindow* parent,
+        wxWindowID id,
+        int range = 100,
+        const wxPoint& pos = wxDefaultPosition,
+        const wxSize& size = wxDefaultSize,
+        long style = wxGA_HORIZONTAL);
+
+    virtual void SetValue(int value) override;
+
+    void OnPaint(wxPaintEvent& event);
+
+    wxDECLARE_EVENT_TABLE();
+};
+
 class QDTStatusBarSend : public ProgressIndicator
 {
     wxPanel *     m_self; // we cheat! It should be the base class but: perl!
-    wxGauge *     m_prog;
+    QDTGauge *     m_prog;
     Label *       m_link_show_error;
     wxBoxSizer*   m_sizer_status_text;
     wxStaticBitmap* m_static_bitmap_show_error;
@@ -86,6 +104,9 @@ public:
 
     void disable_cancel_button();
     void enable_cancel_button();
+
+    void    cancel();
+
 private:
     bool     m_show_error_info_state = false;
     bool     m_busy = false;
@@ -98,7 +119,7 @@ namespace GUI {
 using Slic3r::QDTStatusBarSend;
 }
 
-wxDECLARE_EVENT(EVT_SHOW_ERROR_INFO, wxCommandEvent);
+wxDECLARE_EVENT(EVT_SHOW_ERROR_INFO_SEND, wxCommandEvent);
 
 } // namespace Slic3r
 

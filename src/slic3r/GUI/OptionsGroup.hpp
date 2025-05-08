@@ -13,7 +13,7 @@
 #include "Field.hpp"
 #include "I18N.hpp"
 
-// Translate the ifdef 
+// Translate the ifdef
 #ifdef __WXOSX__
     #define wxOSX true
 #else
@@ -57,7 +57,7 @@ public:
     bool        undo_to_sys{false}; // QDS: object config
     bool        toggle_visible{true}; // QDS: hide some line
 
-    size_t		full_width {0}; 
+    size_t		full_width {0};
 	wxColour*	full_Label_color {nullptr};
 	bool		blink	{false};
     widget_t	widget {nullptr};
@@ -127,6 +127,7 @@ public:
     wxFont			label_font {wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT) };
 	int				sidetext_width{ -1 };
 	int				sublabel_width{ -1 };
+	bool			draw_multi_extruder { false };
 
     /// Returns a copy of the pointer of the parent wxWindow.
     /// Accessor function is because users are not allowed to change the parent
@@ -193,6 +194,8 @@ public:
 	void				set_max_win_width(int max_win_width);
 
 	bool				is_activated() { return sizer != nullptr; }
+
+	void remove_option_if(std::function<bool(std::string const &)> const & comp);
 
 	//y47
 	void                set_label_width(int width) { label_width = width; }

@@ -53,6 +53,8 @@ public:
     virtual std::string                get_status(wxString& curl_msg) const = 0;
     virtual float                      get_progress(wxString& curl_msg) const = 0;
     virtual std::pair<std::string, float>       get_status_progress(wxString& curl_msg) const = 0;
+    virtual bool send_command_to_printer(wxString& curl_msg, wxString commond) const = 0;
+    virtual bool send_timelapse_status(wxString& msg, std::string ip, bool status) const = 0;
     virtual wxString get_test_ok_msg () const = 0;
     virtual wxString get_test_failed_msg (wxString &msg) const = 0;
     virtual bool upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, ErrorFn error_fn) const = 0;
@@ -80,12 +82,13 @@ protected:
 
 struct PrintHostJob
 {
-    // y10
-    std::chrono::system_clock::time_point create_time;
-    int                                   sendinginterval;
+    // y10 //y58
+    std::chrono::system_clock::time_point create_time = std::chrono::system_clock::now();
+    int                                   sendinginterval = 0;
     PrintHostUpload upload_data;
     std::unique_ptr<PrintHost> printhost;
     bool cancelled = false;
+    bool is_3mf = false;
 
     PrintHostJob() {}
     PrintHostJob(const PrintHostJob&) = delete;
@@ -95,6 +98,7 @@ struct PrintHostJob
         , cancelled(other.cancelled)
         , create_time(std::move(other.create_time))
         , sendinginterval(other.sendinginterval)
+        , is_3mf(other.is_3mf)
     {}
 
     PrintHostJob(DynamicPrintConfig *config)
@@ -111,6 +115,8 @@ struct PrintHostJob
         // y10
         create_time = std::move(other.create_time);
         sendinginterval = other.sendinginterval;
+        //y58
+        is_3mf = other.is_3mf;
 
         return *this;
     }

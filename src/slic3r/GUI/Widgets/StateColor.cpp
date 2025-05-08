@@ -25,6 +25,7 @@ static std::map<wxColour, wxColour> gDarkColors{
     {"#DBFDD5", "#3B3B40"},
     {"#000000", "#FFFFFE"},
     {"#F4F4F4", "#36363D"},
+    {"#F7F7F7", "#333337"},
     {"#DBDBDB", "#4A4A51"},
     {"#96fafa", "#283232"},
     {"#323A3C", "#E5E5E6"},
@@ -39,6 +40,7 @@ static std::map<wxColour, wxColour> gDarkColors{
     {"#2B3436", "#808080"},
     {"#ABABAB", "#ABABAB"},
     {"#D9D9D9", "#2D2D32"},
+    {"#EBF9F0", "#293F34"},
     {"#e0ffff", "#0078d7"},
     {"#afeeff", "#4479fb"},
     //{"#F0F0F0", "#4C4C54"},
@@ -56,7 +58,6 @@ inline wxColour darkModeColorFor2(wxColour const &color)
     if (!gDarkMode)
         return color;
     auto iter = gDarkColors.find(color);
-    wxFAIL(iter != gDarkColors.end());
     if (iter != gDarkColors.end()) return iter->second;
     return color;
 }
@@ -72,7 +73,6 @@ wxColour StateColor::lightModeColorFor(wxColour const &color)
 {
     static std::map<wxColour, wxColour> gLightColors = revert(gDarkColors);
     auto iter = gLightColors.find(color);
-    wxFAIL(iter != gLightColors.end());
     if (iter != gLightColors.end()) return iter->second;
     return color;
 }

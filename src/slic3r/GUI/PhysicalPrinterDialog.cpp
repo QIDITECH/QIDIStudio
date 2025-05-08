@@ -59,7 +59,7 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_
     const Preset &sel_preset  = m_presets->get_edited_preset();
     std::string suffix = _CTX_utf8(L_CONTEXT("Copy", "PresetName"), "PresetName");
     PresetBundle &printer_bundle = *wxGetApp().preset_bundle;
-    std::string printer_name_u8 = printer_name.ToStdString();
+    std::string printer_name_u8 = into_u8(printer_name);
     PhysicalPrinter* printer = printer_bundle.physical_printers.find_printer(printer_name_u8);
     wxString   input_name = "";
     std::string   inherits = "";

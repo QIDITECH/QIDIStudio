@@ -94,6 +94,10 @@ public:
     
     bool is_running() const { return m_running.load(); }
     void cancel() { m_canceled.store(true); }
+
+    public:
+    /*type check*/
+    virtual bool is_print_job() const { return false; }
 };
 
 // Jobs defined inside the group class will be managed so that only one can
