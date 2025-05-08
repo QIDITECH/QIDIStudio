@@ -14645,3 +14645,6 @@ msgstr "Informace o filamentu v BOXu se změnily. Prosím, proveďte jejich resy
 
 msgid "BOX message has change"
 msgstr "Zpráva v BOXu byla změněna."
+
+msgid "Flushing"
+msgstr "Čistící"

@@ -16188,3 +16188,6 @@ msgstr "Les informations du filament dans la BOX ont été modifiées. Veuillez 
 
 msgid "BOX message has change"
 msgstr "Le message de la BOX a été modifié"
+
+msgid "Flushing"
+msgstr "Rinçage"

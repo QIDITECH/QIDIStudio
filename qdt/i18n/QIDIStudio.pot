@@ -12950,3 +12950,66 @@ msgstr ""
 
 msgid "Switch to Device tab"
 msgstr ""
+
+msgid "Synchronize filament list from BOX."
+msgstr ""
+
+msgid "Sync Box information"
+msgstr ""
+
+msgid "Please select the printer in the list to get box info."
+msgstr ""
+
+msgid "Sync"
+msgstr ""
+
+msgid "Synchronize Box Filament Information"
+msgstr ""
+
+msgid "Add unused Box filaments to filaments list."
+msgstr ""
+
+msgid "Only synchronize filament type and color, not including Box slot information."
+msgstr ""
+
+msgid "Are you sure to synchronize the filaments from Box?"
+msgstr ""
+
+msgid "Box not connected. Please check the printer and box connect."
+msgstr ""
+
+msgid "Successfully sent. Will automatically jump to the device page in %s s."
+msgstr ""
+
+msgid "Successfully sent. Close current page in %s s."
+msgstr ""
+
+msgid "The selected printer is not connect box, please check."
+msgstr ""
+
+msgid "Failed to set the box printing slot..."
+msgstr ""
+
+msgid "This Printer has not connect the box, please check."
+msgstr ""
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you can click it to modify"
+msgstr ""
+
+msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you cannot click it to modify"
+msgstr ""
+
+msgid "BOX Slots"
+msgstr ""
+
+msgid "Use BOX"
+msgstr ""
+
+msgid "The filament information in the BOX has changed. Please resynchronize it."
+msgstr ""
+
+msgid "BOX message has change"
+msgstr ""
+
+msgid "Flushing"
+msgstr ""

@@ -20029,3 +20029,6 @@ msgstr "BOX中的耗材信息已变更，请重新同步"
 
 msgid "BOX message has change"
 msgstr "BOX消息已更新"
+
+msgid "Flushing"
+msgstr "冲刷"

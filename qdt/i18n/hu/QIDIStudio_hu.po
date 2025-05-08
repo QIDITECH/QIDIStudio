@@ -16230,3 +16230,6 @@ msgstr "A BOX-ban lévő filament információ megváltozott. Kérjük, szinkron
 
 msgid "BOX message has change"
 msgstr "A BOX üzenet megváltozott"
+
+msgid "Flushing"
+msgstr "Öblítés"

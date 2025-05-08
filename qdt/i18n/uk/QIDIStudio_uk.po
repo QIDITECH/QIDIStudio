@@ -16303,3 +16303,6 @@ msgstr "Інформація про філамент у BOX змінилася. 
 
 msgid "BOX message has change"
 msgstr "Повідомлення BOX змінилося"
+
+msgid "Flushing"
+msgstr "Промивання"

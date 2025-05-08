@@ -1741,7 +1741,7 @@ Sidebar::Sidebar(Plater *parent)
     wxBoxSizer* bSizer39;
     bSizer39 = new wxBoxSizer( wxHORIZONTAL );
     p->m_filament_icon = new ScalableButton(p->m_panel_filament_title, wxID_ANY, "filament");
-    p->m_staticText_filament_settings = new Label(p->m_panel_filament_title, _L("Project Filaments"), LB_PROPAGATE_MOUSE_EVENT);
+    p->m_staticText_filament_settings = new Label(p->m_panel_filament_title, _L("Filaments"), LB_PROPAGATE_MOUSE_EVENT);
     bSizer39->Add(p->m_filament_icon, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, FromDIP(10));
     bSizer39->Add( p->m_staticText_filament_settings, 0, wxALIGN_CENTER );
     bSizer39->Add(FromDIP(10), 0, 0, 0, 0);
@@ -1762,7 +1762,7 @@ Sidebar::Sidebar(Plater *parent)
     // QDS
     // add wiping dialog
     //wiping_dialog_button->SetFont(wxGetApp().normal_font());
-    p->m_flushing_volume_btn = new Button(p->m_panel_filament_title, _L("Flushing volumes"));
+    p->m_flushing_volume_btn = new Button(p->m_panel_filament_title, _L("Flushing"));
     p->m_flushing_volume_btn->SetFont(Label::Body_10);
     p->m_flushing_volume_btn->SetPaddingSize(wxSize(FromDIP(6),FromDIP(3)));
     p->m_flushing_volume_btn->SetCornerRadius(FromDIP(8));

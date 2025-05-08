@@ -16250,3 +16250,6 @@ msgstr "Filamentinformationen i BOX har ändrats. Vänligen synkronisera om den.
 
 msgid "BOX message has change"
 msgstr "BOX-meddelandet har ändrats"
+
+msgid "Flushing"
+msgstr "Spolning"

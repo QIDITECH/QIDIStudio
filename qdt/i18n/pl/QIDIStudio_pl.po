@@ -16135,3 +16135,6 @@ msgstr "Informacje o filamentach w BOX-ie uległy zmianie. Proszę je zsynchroni
 
 msgid "BOX message has change"
 msgstr "Komunikat BOX-a został zmieniony"
+
+msgid "Flushing"
+msgstr "Płukanie"

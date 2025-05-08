@@ -16230,3 +16230,6 @@ msgstr "De filamentinformatie in de BOX is gewijzigd. Synchroniseer deze opnieuw
 
 msgid "BOX message has change"
 msgstr "BOX-bericht is gewijzigd"
+
+msgid "Flushing"
+msgstr "Spoelen"

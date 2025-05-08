@@ -16236,3 +16236,6 @@ msgstr "La información del filamento en la BOX ha cambiado. Por favor, resincro
 
 msgid "BOX message has change"
 msgstr "El mensaje de la BOX ha cambiado"
+
+msgid "Flushing"
+msgstr "Lavado"

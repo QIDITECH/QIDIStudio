@@ -16219,3 +16219,6 @@ msgstr "As informações do filamento na BOX foram alteradas. Por favor, ressinc
 
 msgid "BOX message has change"
 msgstr "A mensagem da BOX foi alterada"
+
+msgid "Flushing"
+msgstr "Limpeza"

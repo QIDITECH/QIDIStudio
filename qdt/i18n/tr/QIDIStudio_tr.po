@@ -14413,3 +14413,6 @@ msgstr "BOX içindeki filament bilgisi değişti. Lütfen yeniden senkronize edi
 
 msgid "BOX message has change"
 msgstr "BOX mesajı değişti"
+
+msgid "Flushing"
+msgstr "Temizleme"

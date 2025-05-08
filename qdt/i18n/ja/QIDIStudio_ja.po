@@ -16167,3 +16167,6 @@ msgstr "BOX内のフィラメント情報が変更されました。再同期し
 
 msgid "BOX message has change"
 msgstr "BOXメッセージが変更されました"
+
+msgid "Flushing"
+msgstr "フラッシング"

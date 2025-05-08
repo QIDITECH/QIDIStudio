@@ -14111,3 +14111,6 @@ msgstr "BOX 내 필라멘트 정보가 변경되었습니다. 다시 동기화�
 
 msgid "BOX message has change"
 msgstr "BOX 메시지가 변경되었습니다"
+
+msgid "Flushing"
+msgstr "플러싱"

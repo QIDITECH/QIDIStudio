@@ -16226,3 +16226,6 @@ msgstr "Die Filamentinformationen in der BOX haben sich geändert. Bitte synchro
 
 msgid "BOX message has change"
 msgstr "BOX-Nachricht wurde geändert"
+
+msgid "Flushing"
+msgstr "Spülen"
