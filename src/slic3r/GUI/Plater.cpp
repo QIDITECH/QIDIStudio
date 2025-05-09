@@ -14552,7 +14552,7 @@ void Plater::export_gcode(bool prefer_removable)
         if (wxGetApp().preset_bundle->prints.get_edited_preset().config.opt_string("filename_format") == "{input_filename_base}.gcode")
             default_output_file = fs::path(into_u8(p->get_export_gcode_filename("", true, p->partplate_list.get_curr_plate_index() == PLATE_ALL_IDX ? true : false)));
         else
-            default_output_file = fs::path(into_u8(this->p->background_process.output_filepath_for_project("")));
+            default_output_file = fs::path(this->p->background_process.output_filepath_for_project(""));
 
     } catch (const Slic3r::PlaceholderParserError &ex) {
         // Show the error with monospaced font.
