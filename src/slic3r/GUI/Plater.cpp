@@ -3368,9 +3368,7 @@ std::map<int, DynamicPrintConfig> Sidebar::build_filament_box_list(std::vector<s
         tray_config.set_key_value("filament_exist", new ConfigOptionBools{ true });  //default
 
         tray_config.set_key_value("filament_multi_colors", new ConfigOptionStrings{});
-        for (int j = 0; j < 4; ++j) {
-            tray_config.opt<ConfigOptionStrings>("filament_multi_colors")->values.push_back(into_u8(wxColour(color[j]).GetAsString(wxC2S_HTML_SYNTAX)));
-        }
+        tray_config.opt<ConfigOptionStrings>("filament_multi_colors")->values.push_back(into_u8(wxColour(color[i]).GetAsString(wxC2S_HTML_SYNTAX)));
         filament_ams_list.emplace('A' + i, std::move(tray_config));
     }
 
@@ -3388,9 +3386,7 @@ std::map<int, DynamicPrintConfig> Sidebar::build_filament_box_list(std::vector<s
         tray_config.set_key_value("filament_exist", new ConfigOptionBools{ true });  //default
 
         tray_config.set_key_value("filament_multi_colors", new ConfigOptionStrings{});
-        for (int j = 0; j < 4; ++j) {
-            tray_config.opt<ConfigOptionStrings>("filament_multi_colors")->values.push_back(into_u8(wxColour(color[j]).GetAsString(wxC2S_HTML_SYNTAX)));
-        }
+        tray_config.opt<ConfigOptionStrings>("filament_multi_colors")->values.push_back(into_u8(wxColour(color.back()).GetAsString(wxC2S_HTML_SYNTAX)));
         filament_ams_list.emplace('A' + count + 1, std::move(tray_config));
     }
 

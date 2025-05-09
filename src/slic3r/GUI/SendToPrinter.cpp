@@ -1912,8 +1912,18 @@ void SendToPrinterDialog::set_default()
             show_error(this, ex.what(), false);
         }
     }
-    else
-        filename = m_plater->get_output_filename();
+    else{
+        try{
+            filename = m_plater->get_output_filename();
+        }
+        catch (const Slic3r::PlaceholderParserError& ex) {
+            // Show the error with monospaced font.
+            show_error(this, ex.what(), true);
+        }
+        catch (const std::exception &ex) {
+            show_error(this, ex.what(), false);
+        }
+    }
 
     if (m_print_plate_idx == PLATE_ALL_IDX && filename.empty()) {
         filename = _L("Untitled");
