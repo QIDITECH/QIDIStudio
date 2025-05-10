@@ -374,8 +374,11 @@ void SendMultiMachinePage::on_sys_color_changed()
 
 void SendMultiMachinePage::refresh_user_device()
 {
-    sizer_machine_list->Clear(true);
+    m_pauseThread = true;
+    std::lock_guard<std::mutex> lock(m_mutex);
+
     m_device_items.clear();
+    sizer_machine_list->Clear(true);
     SelectedItems.clear();
     unSelectedItems.clear();
 
@@ -436,6 +439,8 @@ void SendMultiMachinePage::refresh_user_device()
     scroll_macine_list->Scroll(0, 0);
     scroll_macine_list->Layout();
     sizer_machine_list->Layout();
+
+    m_pauseThread = false;
 }
 
 QDT::PrintParams SendMultiMachinePage::request_params(MachineObject* obj)
@@ -1833,6 +1838,7 @@ void SendMultiMachinePage::StartThread() {
         return;
     }
     m_stopThread = false;
+    m_pauseThread = false;
     m_statusThread = std::thread(&SendMultiMachinePage::ThreadWorker, this);
 }
 
@@ -1850,10 +1856,16 @@ void SendMultiMachinePage::ThreadWorker() {
     wxString msg = "";
     while (!m_stopThread) {
         std::lock_guard<std::mutex> lock(m_mutex);
-        for (auto it = m_device_items.begin(); it != m_device_items.end(); it++) {
-            MachineObject* temp_obj = it->second->get_obj();
-            temp_obj->ams_exist_bits = qidi.get_box_state(msg, temp_obj->dev_url) ? 1 : 0;
-            it->second->Refresh();
+        for(auto device : m_device_items) {
+            if (m_pauseThread)
+                break;
+            try {
+                MachineObject* temp_obj = device.second->get_obj();
+                temp_obj->ams_exist_bits = qidi.get_box_state(msg, temp_obj->dev_url) ? 1 : 0;
+            }
+            catch (const std::exception& error) {
+                continue;
+            }
         }
     }
 }
