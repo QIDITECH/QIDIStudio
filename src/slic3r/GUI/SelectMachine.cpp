@@ -1859,8 +1859,12 @@ void SelectMachineDialog::show_status(PrintDialogStatus status, std::vector<wxSt
     } else if (status == PrintDialogStatus::PrintStatusInSystemPrinting) {
         wxString msg_text = _L("The printer is executing instructions. Please restart printing after it ends");
         update_print_status_msg(msg_text, true, false, true);
-    } else if (status == PrintDialogStatus::PrintStatusInPrinting) {
-        wxString msg_text = _L("The printer is busy on other print job");
+    //y62
+    } else if (status == PrintDialogStatus::PrintStatusPrinterOffline) {
+        wxString msg_text = _L("The printer is offline, please check.");
+        update_print_status_msg(msg_text, true, false, true);
+    } else if (status == PrintDialogStatus::PrintStatusPrinterNotStandby) {
+        wxString msg_text = _L("The printer is not standby, please check.");
         update_print_status_msg(msg_text, true, false, true);
     } else if (status == PrintDialogStatus::PrintStatusAmsOnSettingup) {
         update_print_status_msg(_L("BOX is setting up. Please try again later."), false, false, true);
@@ -2318,16 +2322,13 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
         m_plater->export_gcode(output_path);
     }
 
-    msg = _L("Test the network");
-    m_status_bar->update_status(msg, m_is_canceled, 10, true);
-
     if (m_isNetMode)
     {
         PrintHostJob upload_job(machine_url, machine_ip);
         upload_job.upload_data.upload_path = upload_file_name;
         upload_job.upload_data.post_action = PrintHostPostUploadAction::StartPrint;
         upload_job.upload_data.source_path = output_path.string();
-        upload_job.is_3mf = qidi_3mf;
+        upload_job.upload_data.is_3mf = qidi_3mf;
         start_to_send(std::move(upload_job));
     }
     else
@@ -2340,7 +2341,7 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
         upload_job.upload_data.upload_path = upload_file_name;
         upload_job.upload_data.post_action = PrintHostPostUploadAction::StartPrint;
         upload_job.upload_data.source_path = output_path.string();
-        upload_job.is_3mf = qidi_3mf;
+        upload_job.upload_data.is_3mf = qidi_3mf;
         start_to_send(std::move(upload_job));
     }
 
@@ -2577,6 +2578,9 @@ void SelectMachineDialog::start_to_send(PrintHostJob upload_job) {
     else if (printer_status == "offline") {
         show_status(PrintDialogStatus::PrintStatusPrinterOffline);
         return;
+    } else if (printer_status != "standby"){
+        show_status(PrintDialogStatus::PrintStatusPrinterNotStandby);
+        return;
     }
 
     if(!m_ams_mapping_result.empty()){
@@ -2628,9 +2632,21 @@ void SelectMachineDialog::start_to_send(PrintHostJob upload_job) {
         cancel = this->m_is_canceled;
         int gui_progress = progress.ultotal > 0 ? 100 * progress.ulnow / progress.ultotal : 0;
         OctoPrint::progress_percentage = gui_progress / 100.f;
-        wxString msg = _L("Sending...");
-        bool is_undisplay = false;
-        m_status_bar->update_status(msg, is_undisplay, std::floor(10 + gui_progress * 0.9), true);
+        //y62
+        if(gui_progress < 100){
+            wxString msg = _L("Sending...");
+            bool is_undisplay = false;
+            m_status_bar->update_status(msg, is_undisplay, std::floor(10 + gui_progress * 0.9), true);
+        }
+        else{
+            std::vector<std::string> dot = {"..", "....", "......"};
+            for(int i = 0; i < 3; i++){
+                wxString msg = _L("Waiting for the printer's response") + dot[i];
+                bool is_undisplay = false;
+                m_status_bar->update_status(msg, is_undisplay, 100, true);
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            }
+        }
     },
     [this](wxString error) {
         show_status(PrintDialogStatus::PrintStatusPublicUploadFiled);

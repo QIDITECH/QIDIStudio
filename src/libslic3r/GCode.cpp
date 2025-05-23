@@ -2844,17 +2844,12 @@ std::string GCode::generate_box_temp_command(const std::vector<unsigned int>& al
     for (unsigned int extruder : all_extruders) {
         if (extruder < 16) {  
             vt_values[extruder] = m_config.box_temperature.get_at(extruder);
-        }
-    }
-
-    for (int i = 0; i < 16; ++i) {
-        if (vt_values[i] != 0) {
-            temp_parts.push_back("VT" + std::to_string(i) + "=" + std::to_string(vt_values[i]));
+            temp_parts.push_back("VT" + std::to_string(extruder) + "=" + std::to_string(vt_values[extruder]));
         }
     }
 
     if (temp_parts.empty()) {
-        return "";
+        return "DISABLE_BOX_HEATER\n";
     }
     else {
         return "DISABLE_BOX_HEATER\nBOX_TEMP_SET " + std::accumulate(

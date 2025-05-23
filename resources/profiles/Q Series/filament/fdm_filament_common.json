@@ -17,6 +17,7 @@
     "cool_plate_temp" : ["60"],
     "dont_slow_down_outer_wall" : ["0"],
     "during_print_exhaust_fan_speed": ["100"],
+    "enable_pressure_advance": ["1"],
     "eng_plate_temp_initial_layer" : ["60"],
     "eng_plate_temp" : ["60"],
     "fan_cooling_layer_time": ["60"],

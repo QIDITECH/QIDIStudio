@@ -13013,3 +13013,18 @@ msgstr ""
 
 msgid "Flushing"
 msgstr ""
+
+msgid "The printer is offline, please check."
+msgstr ""
+
+msgid "The printer is not standby, please check."
+msgstr ""
+
+msgid "Box temperature"
+msgstr ""
+
+msgid "Support control box temperature"
+msgstr ""
+
+msgid "Waiting for the printer's response"
+msgstr ""

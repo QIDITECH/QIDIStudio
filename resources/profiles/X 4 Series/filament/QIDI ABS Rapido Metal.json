@@ -6,7 +6,7 @@
     "from": "system",
     "instantiation": "false",
     "inherits": "fdm_filament_common",
-    "box_temperature_range_high": ["65"],
+    "box_temperature_range_high": ["55"],
     "chamber_temperatures": ["55"],
     "close_fan_the_first_x_layers": ["3"],
     "during_print_exhaust_fan_speed": ["0"],

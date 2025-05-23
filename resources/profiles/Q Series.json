@@ -180,7 +180,7 @@
             "name": "Generic PLA+@Q-Series",
             "sub_path": "filament/Generic PLA+.json"
         },
-		{
+        {
             "name": "QIDI PLA-CF@Q-Series",
             "sub_path": "filament/QIDI PLA-CF.json"
         },
@@ -852,6 +852,18 @@
         {
             "name": "Generic PC @Qidi Q1 Pro 0.8 nozzle",
             "sub_path": "filament/Generic PC @Qidi Q1 Pro 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI TPU-Aero@Q-Series",
+            "sub_path": "filament/QIDI TPU-Aero.json"
+        },
+        {
+            "name": "QIDI TPU-Aero @Qidi Q1 Pro 0.4 nozzle",
+            "sub_path": "filament/QIDI TPU-Aero @Qidi Q1 Pro 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI TPU-Aero @Qidi Q1 Pro 0.6 nozzle",
+            "sub_path": "filament/QIDI TPU-Aero @Qidi Q1 Pro 0.6 nozzle.json"
         }
     ],
     "machine_list": [

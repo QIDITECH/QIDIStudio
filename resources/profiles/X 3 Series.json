@@ -2076,6 +2076,34 @@
         {
             "name": "Generic PC @Qidi X-Smart 3 0.8 nozzle",
             "sub_path": "filament/Generic PC @Qidi X-Smart 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI TPU-Aero@X3",
+            "sub_path": "filament/QIDI TPU-Aero.json"
+        },
+        {
+            "name": "QIDI TPU-Aero @Qidi X-Max 3 0.4 nozzle",
+            "sub_path": "filament/QIDI TPU-Aero @Qidi X-Max 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI TPU-Aero @Qidi X-Plus 3 0.4 nozzle",
+            "sub_path": "filament/QIDI TPU-Aero @Qidi X-Plus 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI TPU-Aero @Qidi X-Smart 3 0.4 nozzle",
+            "sub_path": "filament/QIDI TPU-Aero @Qidi X-Smart 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI TPU-Aero @Qidi X-Max 3 0.6 nozzle",
+            "sub_path": "filament/QIDI TPU-Aero @Qidi X-Max 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI TPU-Aero @Qidi X-Plus 3 0.6 nozzle",
+            "sub_path": "filament/QIDI TPU-Aero @Qidi X-Plus 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI TPU-Aero @Qidi X-Smart 3 0.6 nozzle",
+            "sub_path": "filament/QIDI TPU-Aero @Qidi X-Smart 3 0.6 nozzle.json"
         }
     ],
     "machine_list": [

@@ -1,0 +1,12 @@
+{
+    "type": "filament",
+    "filament_id": "GFU97",
+    "setting_id": "GFSR97",
+    "name": "QIDI TPU-Aero @Qidi X-Max 3 0.6 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI TPU-Aero@X3",
+    "filament_flow_ratio": ["0.55"],
+    "pressure_advance": ["0.033"],
+	"compatible_printers": ["X-Max 3 0.6 nozzle"]
+}

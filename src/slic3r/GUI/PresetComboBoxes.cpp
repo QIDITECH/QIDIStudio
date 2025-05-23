@@ -1367,9 +1367,6 @@ void PlaterPresetComboBox::update()
         }
     }
 
-    //y59
-    GUI::wxGetApp().sidebar().update_sync_status(nullptr);
-
     update_selection();
     if (m_type == Preset::TYPE_FILAMENT) {
         update_badge_according_flag();
@@ -1540,7 +1537,7 @@ void TabPresetComboBox::update()
     }
 
     if (m_type == Preset::TYPE_FILAMENT)
-        add_ams_filaments(into_u8(selected));
+        add_box_filaments(into_u8(selected));
 
     //QDS: add project embedded preset logic
     if (!project_embedded_presets.empty())

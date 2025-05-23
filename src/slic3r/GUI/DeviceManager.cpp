@@ -1183,7 +1183,7 @@ int MachineObject::ams_filament_mapping(
             }
         }
         //y59
-        if (picked_src_idx >= 0 && picked_tar_idx >= 0) {
+        if (picked_src_idx >= 0 && picked_tar_idx >= 0 && box_filament_infos[picked_tar_idx].slot_id != "-1") {
             result[picked_src_idx].tray_id  = distance_map[k][picked_tar_idx].tray_id;
             result[picked_src_idx].color = box_filament_infos[picked_tar_idx].color;
             result[picked_src_idx].type     = box_filament_infos[picked_tar_idx].type;

@@ -246,7 +246,10 @@ bool OctoPrint::upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, Erro
         http.form_add("print", "true");
 
     //y61
-    // http.form_add("plateindex", std::to_string(partplate_list.get_curr_plate_index()));
+    if (upload_data.is_3mf) {
+        http.form_add("plateindex", std::to_string(GUI::wxGetApp().plater()->get_partplate_list().get_curr_plate_index() + 1));
+    //    json_body = "{\"plateindex\" : \"" + std::to_string(GUI::wxGetApp().plater()->get_partplate_list().get_curr_plate_index()) + "\" }";
+    }
 
     //y53
     progress_percentage = 0;

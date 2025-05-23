@@ -16306,3 +16306,18 @@ msgstr "Повідомлення BOX змінилося"
 
 msgid "Flushing"
 msgstr "Промивання"
+
+msgid "The printer is offline, please check."
+msgstr "Принтер офлайн, будь ласка, перевірте."
+
+msgid "The printer is not standby, please check."
+msgstr "Принтер не в режимі очікування, будь ласка, перевірте."
+
+msgid "Box temperature"
+msgstr "Температура блоку"
+
+msgid "Support control box temperature"
+msgstr "Температура блоку керування підтримками"
+
+msgid "Waiting for the printer's response"
+msgstr "Очікування відповіді принтера"

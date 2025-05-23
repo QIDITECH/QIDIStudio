@@ -14199,3 +14199,18 @@ msgstr "Сообщение BOX изменено"
 
 msgid "Flushing"
 msgstr "Промывка"
+
+msgid "The printer is offline, please check."
+msgstr "Принтер отключен, пожалуйста, проверьте."
+
+msgid "The printer is not standby, please check."
+msgstr "Принтер не в режиме ожидания, пожалуйста, проверьте."
+
+msgid "Box temperature"
+msgstr "Температура блока"
+
+msgid "Support control box temperature"
+msgstr "Температура блока управления поддержками"
+
+msgid "Waiting for the printer's response"
+msgstr "Ожидание ответа от принтера"

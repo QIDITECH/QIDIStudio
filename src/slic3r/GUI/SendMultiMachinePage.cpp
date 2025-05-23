@@ -374,8 +374,7 @@ void SendMultiMachinePage::on_sys_color_changed()
 
 void SendMultiMachinePage::refresh_user_device()
 {
-    m_pauseThread = true;
-    std::lock_guard<std::mutex> lock(m_mutex);
+    StopThread(); 
 
     m_device_items.clear();
     sizer_machine_list->Clear(true);
@@ -440,7 +439,7 @@ void SendMultiMachinePage::refresh_user_device()
     scroll_macine_list->Layout();
     sizer_machine_list->Layout();
 
-    m_pauseThread = false;
+    StartThread();
 }
 
 QDT::PrintParams SendMultiMachinePage::request_params(MachineObject* obj)
@@ -1838,7 +1837,6 @@ void SendMultiMachinePage::StartThread() {
         return;
     }
     m_stopThread = false;
-    m_pauseThread = false;
     m_statusThread = std::thread(&SendMultiMachinePage::ThreadWorker, this);
 }
 
@@ -1855,17 +1853,11 @@ void SendMultiMachinePage::ThreadWorker() {
     QIDINetwork qidi;
     wxString msg = "";
     while (!m_stopThread) {
-        std::lock_guard<std::mutex> lock(m_mutex);
         for(auto device : m_device_items) {
-            if (m_pauseThread)
+            if (m_stopThread)
                 break;
-            try {
-                MachineObject* temp_obj = device.second->get_obj();
-                temp_obj->ams_exist_bits = qidi.get_box_state(msg, temp_obj->dev_url) ? 1 : 0;
-            }
-            catch (const std::exception& error) {
-                continue;
-            }
+            MachineObject* temp_obj = device.second->get_obj();
+            temp_obj->ams_exist_bits = qidi.get_box_state(msg, temp_obj->dev_url) ? 1 : 0;
         }
     }
 }

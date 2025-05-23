@@ -16253,3 +16253,18 @@ msgstr "BOX-meddelandet har ändrats"
 
 msgid "Flushing"
 msgstr "Spolning"
+
+msgid "The printer is offline, please check."
+msgstr "Skrivaren är offline, vänligen kontrollera."
+
+msgid "The printer is not standby, please check."
+msgstr "Skrivaren är inte i viloläge, vänligen kontrollera."
+
+msgid "Box temperature"
+msgstr "Lådtemperatur"
+
+msgid "Support control box temperature"
+msgstr "Stödstyrlådans temperatur"
+
+msgid "Waiting for the printer's response"
+msgstr "Väntar på skrivarens svar"

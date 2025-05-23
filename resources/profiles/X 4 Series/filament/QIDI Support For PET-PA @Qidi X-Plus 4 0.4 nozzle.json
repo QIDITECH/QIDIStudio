@@ -1,0 +1,9 @@
+{
+    "type": "filament",
+    "setting_id": "GFSN96",
+    "name": "QIDI Support For PET/PA @Qidi X-Plus 4 0.4 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI Support For PET/PA@X4",
+	"compatible_printers": ["X-Plus 4 0.4 nozzle"]
+}

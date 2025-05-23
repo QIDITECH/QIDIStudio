@@ -3596,7 +3596,7 @@ void GetBoxInfoDialog::generate_filament_id(GUI::Box_info& machine_filament_info
         machine_filament_info.filament_id[i] = temp_filament_id;
     }
 
-    if(machine_filament_info.slot_state.back() != 0)
+
     {
         std::string temp_ext_filament_id = filament_id;
         temp_ext_filament_id = temp_ext_filament_id + "_" + std::to_string(machine_filament_info.filament_vendor.back());

@@ -2456,6 +2456,9 @@ void Sidebar::update_presets(Preset::Type preset_type)
     wxGetApp().preset_bundle->export_selections(*wxGetApp().app_config);
 
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << boost::format(": exit.");
+    
+    //y61
+    GUI::wxGetApp().sidebar().update_sync_status(nullptr);
 }
 
 //QDS
@@ -3373,7 +3376,7 @@ std::map<int, DynamicPrintConfig> Sidebar::build_filament_box_list(std::vector<s
     }
 
     //ext filament
-    if(slot_state.back() != 0){
+    {
         DynamicPrintConfig tray_config;
         tray_config.set_key_value("filament_id", new ConfigOptionStrings{ id.back() });
         tray_config.set_key_value("tag_uid", new ConfigOptionStrings{ "" });  //clear
@@ -9304,16 +9307,14 @@ void Plater::priv::on_action_print_plate(SimpleEvent&)
         wxString msg = "";
         GUI::Box_info filament_info;
         filament_info = qidi.get_box_info(msg, box_ip);
-        GUI::Box_info cur_box_info = q->get_cur_box_info();
+        GUI::Box_info cur_box_info;
+        cur_box_info = q->get_cur_box_info();
 
         if (filament_info.filament_index != cur_box_info.filament_index
             || filament_info.filament_vendor != cur_box_info.filament_vendor
             || filament_info.filament_color_index != cur_box_info.filament_color_index
             || filament_info.slot_state != cur_box_info.slot_state
             || filament_info.slot_id != cur_box_info.slot_id
-            || filament_info.filament_id != cur_box_info.filament_id
-            || filament_info.filament_colors != cur_box_info.filament_colors
-            || filament_info.filament_type != cur_box_info.filament_type
             || filament_info.box_count != cur_box_info.box_count
             || filament_info.auto_reload_detect != cur_box_info.auto_reload_detect) {
             has_diff = true;
@@ -14544,11 +14545,11 @@ void Plater::export_gcode(bool prefer_removable)
         unsigned int state = this->p->update_restart_background_process(false, false);
         if (state & priv::UPDATE_BACKGROUND_PROCESS_INVALID)
             return;
-        //y56
-        if (wxGetApp().preset_bundle->prints.get_edited_preset().config.opt_string("filename_format") == "{input_filename_base}.gcode")
-            default_output_file = fs::path(into_u8(p->get_export_gcode_filename("", true, p->partplate_list.get_curr_plate_index() == PLATE_ALL_IDX ? true : false)));
-        else
-            default_output_file = fs::path(this->p->background_process.output_filepath_for_project(""));
+        // //y56
+        // if (wxGetApp().preset_bundle->prints.get_edited_preset().config.opt_string("filename_format") == "{input_filename_base}.gcode")
+        //     default_output_file = fs::path(into_u8(p->get_export_gcode_filename("", true, p->partplate_list.get_curr_plate_index() == PLATE_ALL_IDX ? true : false)));
+        // else
+        default_output_file = fs::path(this->p->background_process.output_filepath_for_project(""));
 
     } catch (const Slic3r::PlaceholderParserError &ex) {
         // Show the error with monospaced font.

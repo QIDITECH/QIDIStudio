@@ -16229,3 +16229,18 @@ msgstr "BOX-Nachricht wurde geändert"
 
 msgid "Flushing"
 msgstr "Spülen"
+
+msgid "The printer is offline, please check."
+msgstr "Der Drucker ist offline, bitte überprüfen."
+
+msgid "The printer is not standby, please check."
+msgstr "Der Drucker befindet sich nicht im Standby-Modus, bitte überprüfen."
+
+msgid "Box temperature"
+msgstr "Gehäusetemperatur"
+
+msgid "Support control box temperature"
+msgstr "Temperatur der Steuerbox für Stützen"
+
+msgid "Waiting for the printer's response"
+msgstr "Warten auf Antwort des Druckers"

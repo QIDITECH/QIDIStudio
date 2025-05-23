@@ -14648,3 +14648,18 @@ msgstr "Zpráva v BOXu byla změněna."
 
 msgid "Flushing"
 msgstr "Čistící"
+
+msgid "The printer is offline, please check."  
+msgstr "Tiskárna je offline, prosím zkontrolujte."
+
+msgid "The printer is not standby, please check."  
+msgstr "Tiskárna není v pohotovostním režimu, prosím zkontrolujte."
+
+msgid "Box temperature"  
+msgstr "Teplota boxu"
+
+msgid "Support control box temperature"  
+msgstr "Teplota ovládacího boxu podpory"
+
+msgid "Waiting for the printer's response"  
+msgstr "Čekání na odpověď tiskárny"

@@ -167,8 +167,6 @@ private:
     //y61
     std::thread                         m_statusThread;
     std::atomic<bool>                   m_stopThread{false};
-    std::atomic<bool>                   m_pauseThread{ false };
-    std::mutex                          m_mutex;
 
 public:
     SendMultiMachinePage(Plater* plater = nullptr);

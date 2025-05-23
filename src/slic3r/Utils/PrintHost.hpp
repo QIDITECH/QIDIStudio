@@ -33,7 +33,7 @@ struct PrintHostUpload
     boost::filesystem::path upload_path;
     std::string group;
     std::string storage;
-
+    bool is_3mf = false;
     
     PrintHostPostUploadAction post_action { PrintHostPostUploadAction::None };
 };
@@ -88,7 +88,6 @@ struct PrintHostJob
     PrintHostUpload upload_data;
     std::unique_ptr<PrintHost> printhost;
     bool cancelled = false;
-    bool is_3mf = false;
 
     PrintHostJob() {}
     PrintHostJob(const PrintHostJob&) = delete;
@@ -98,7 +97,6 @@ struct PrintHostJob
         , cancelled(other.cancelled)
         , create_time(std::move(other.create_time))
         , sendinginterval(other.sendinginterval)
-        , is_3mf(other.is_3mf)
     {}
 
     PrintHostJob(DynamicPrintConfig *config)
@@ -115,8 +113,6 @@ struct PrintHostJob
         // y10
         create_time = std::move(other.create_time);
         sendinginterval = other.sendinginterval;
-        //y58
-        is_3mf = other.is_3mf;
 
         return *this;
     }

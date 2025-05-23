@@ -16138,3 +16138,18 @@ msgstr "Komunikat BOX-a został zmieniony"
 
 msgid "Flushing"
 msgstr "Płukanie"
+
+msgid "The printer is offline, please check."
+msgstr "Drukarka jest offline, proszę to sprawdzić."
+
+msgid "The printer is not standby, please check."
+msgstr "Drukarka nie jest w trybie standby, proszę to sprawdzić."
+
+msgid "Box temperature"
+msgstr "Temperatura obudowy"
+
+msgid "Support control box temperature"
+msgstr "Temperatura skrzynki sterującej podpór"
+
+msgid "Waiting for the printer's response"
+msgstr "Oczekiwanie na odpowiedź drukarki"

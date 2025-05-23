@@ -1,0 +1,9 @@
+{
+    "type": "filament",
+    "setting_id": "GFSN95",
+    "name": "QIDI Support For PAHT @Qidi X-Plus 4 0.8 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI Support For PAHT@X4",
+	"compatible_printers": ["X-Plus 4 0.8 nozzle"]
+}

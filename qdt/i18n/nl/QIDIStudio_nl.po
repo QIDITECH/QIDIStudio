@@ -16233,3 +16233,18 @@ msgstr "BOX-bericht is gewijzigd"
 
 msgid "Flushing"
 msgstr "Spoelen"
+
+msgid "The printer is offline, please check."
+msgstr "De printer is offline, controleer dit alstublieft."
+
+msgid "The printer is not standby, please check."
+msgstr "De printer staat niet in stand-by, controleer dit alstublieft."
+
+msgid "Box temperature"
+msgstr "Behuizingstemperatuur"
+
+msgid "Support control box temperature"
+msgstr "Temperatuur ondersteuningsregelkast"
+
+msgid "Waiting for the printer's response"
+msgstr "Wachten op reactie van de printer"

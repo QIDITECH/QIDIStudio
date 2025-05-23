@@ -20032,3 +20032,18 @@ msgstr "BOX消息已更新"
 
 msgid "Flushing"
 msgstr "冲刷"
+
+msgid "The printer is offline, please check."
+msgstr "打印机已离线，请检查。"
+
+msgid "The printer is not standby, please check."
+msgstr "打印机未处于待机状态，请检查。"
+
+msgid "Box temperature"
+msgstr "盒子温度"
+
+msgid "Support control box temperature"
+msgstr "支撑控制盒子温度"
+
+msgid "Waiting for the printer's response"
+msgstr "等待打印机响应"

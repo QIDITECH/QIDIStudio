@@ -2193,7 +2193,7 @@ void TabPrint::build()
         optgroup->append_single_option_line("vertical_shell_speed", "", 0);
         optgroup->append_single_option_line("top_surface_speed", "", 0);
         //y32
-        optgroup->append_single_option_line("enable_overhang_speed", "print-settings/slow-down-for-overhang");
+        optgroup->append_single_option_line("enable_overhang_speed", "print-settings/slow-down-for-overhang", 0);
         Line line = { L("Overhang speed"), L("This is the speed for various overhang degrees. Overhang degrees are expressed as a percentage of line width. 0 speed means no slowing down for the overhang degree range and wall speed is used") };
         //y32
         line.label_path = "print-settings/slow-down-for-overhang";

@@ -1,0 +1,12 @@
+{
+    "type": "filament",
+    "filament_id": "GFU97",
+    "setting_id": "GFSR97",
+    "name": "QIDI TPU-Aero @Qidi X-Smart 3 0.4 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI TPU-Aero@X3",
+    "additional_cooling_fan_speed": ["0"],
+    "additional_cooling_fan_speed_unseal": ["0"],
+	"compatible_printers": ["X-Smart 3 0.4 nozzle"]
+}

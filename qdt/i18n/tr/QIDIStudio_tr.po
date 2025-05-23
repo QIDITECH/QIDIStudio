@@ -14416,3 +14416,18 @@ msgstr "BOX mesajı değişti"
 
 msgid "Flushing"
 msgstr "Temizleme"
+
+msgid "The printer is offline, please check."
+msgstr "Yazıcı çevrimdışı, lütfen kontrol edin."
+
+msgid "The printer is not standby, please check."
+msgstr "Yazıcı bekleme modunda değil, lütfen kontrol edin."
+
+msgid "Box temperature"
+msgstr "Kutu sıcaklığı"
+
+msgid "Support control box temperature"
+msgstr "Destek kontrol kutusu sıcaklığı"
+
+msgid "Waiting for the printer's response"
+msgstr "Yazıcı yanıtı bekleniyor"

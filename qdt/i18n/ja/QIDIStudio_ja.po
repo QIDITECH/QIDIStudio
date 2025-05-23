@@ -16170,3 +16170,18 @@ msgstr "BOXメッセージが変更されました"
 
 msgid "Flushing"
 msgstr "フラッシング"
+
+msgid "The printer is offline, please check."
+msgstr "プリンターがオフラインです。確認してください。"
+
+msgid "The printer is not standby, please check."
+msgstr "プリンターがスタンバイ状態ではありません。確認してください。"
+
+msgid "Box temperature"
+msgstr "ボックス温度"
+
+msgid "Support control box temperature"
+msgstr "サポート制御ボックス温度"
+
+msgid "Waiting for the printer's response"
+msgstr "プリンターの応答を待機中"

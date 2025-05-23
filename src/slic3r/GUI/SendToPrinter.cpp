@@ -944,16 +944,13 @@ void SendToPrinterDialog::on_ok(wxCommandEvent &event)
         m_plater->export_gcode(output_path);
     }
 
-    msg = _L("Test the network");
-    m_status_bar->update_status(msg, m_is_canceled, 10, true);
-
     if (m_isNetMode)
     {
         PrintHostJob upload_job(machine_url, machine_ip);
         upload_job.upload_data.upload_path = upload_file_name;
         upload_job.upload_data.post_action = PrintHostPostUploadAction::None;
         upload_job.upload_data.source_path = output_path.string();
-        upload_job.is_3mf = qidi_3mf;
+        upload_job.upload_data.is_3mf = qidi_3mf;
         start_to_send(std::move(upload_job));
     }
     else
@@ -966,7 +963,7 @@ void SendToPrinterDialog::on_ok(wxCommandEvent &event)
         upload_job.upload_data.upload_path = upload_file_name;
         upload_job.upload_data.post_action = PrintHostPostUploadAction::None;
         upload_job.upload_data.source_path = output_path.string();
-        upload_job.is_3mf = qidi_3mf;
+        upload_job.upload_data.is_3mf = qidi_3mf;
         start_to_send(std::move(upload_job));
     }
 //     BOOST_LOG_TRIVIAL(info) << "print_job: on_ok to send";
@@ -1128,9 +1125,21 @@ void SendToPrinterDialog::start_to_send(PrintHostJob upload_job) {
             cancel = m_is_canceled;
             int gui_progress = progress.ultotal > 0 ? 100 * progress.ulnow / progress.ultotal : 0;
             OctoPrint::progress_percentage = gui_progress / 100.f;
-            wxString msg = _L("Sending...");
-            bool is_undisplay = false;
-            m_status_bar->update_status(msg, is_undisplay, std::floor(10 + gui_progress * 0.9), true);
+            //y62
+            if(gui_progress < 100){
+                wxString msg = _L("Sending...");
+                bool is_undisplay = false;
+                m_status_bar->update_status(msg, is_undisplay, std::floor(10 + gui_progress * 0.9), true);
+            }
+            else{
+                std::vector<std::string> dot = {"..", "....", "......"};
+                for(int i = 0; i < 3; i++){
+                    wxString msg = _L("Waiting for the printer's response") + dot[i];
+                    bool is_undisplay = false;
+                    m_status_bar->update_status(msg, is_undisplay, 100, true);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                }
+            }
         },
         [this](wxString error) {
             show_status(PrintDialogStatus::PrintStatusPublicUploadFiled);

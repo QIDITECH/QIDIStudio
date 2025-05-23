@@ -1109,6 +1109,7 @@ void AmsMapingPopup::update(MachineObject* obj, const std::vector<FilamentInfo>&
     std::vector<std::string> filament_type = GUI::wxGetApp().plater()->box_msg.filament_type;
     std::vector<std::string> filament_id = GUI::wxGetApp().plater()->box_msg.filament_id;
     std::vector<int> slot_id = GUI::wxGetApp().plater()->box_msg.slot_id;
+    std::vector<int> slot_state = GUI::wxGetApp().plater()->box_msg.slot_state;
     int box_count = GUI::wxGetApp().plater()->box_msg.box_count;
 
     //for (int i = 0; i < 4 * box_count; i++) {
@@ -1161,65 +1162,95 @@ void AmsMapingPopup::update(MachineObject* obj, const std::vector<FilamentInfo>&
         std::vector<MappingContainer *> right_four_slot_containers;
         //y59
         //for (std::map<std::string, Ams *>::iterator ams_iter = obj->amsList.begin(); ams_iter != obj->amsList.end(); ams_iter++) {
-        for (int i = 0; i < 1; i++) {
-            int ams_indx = 0;
-            int nozzle_id = 0;
+        //y61
+        for(int box_num = 0; box_num < box_count; box_num++){
+            for (int j = 0; j < 1; j++) {
 
-            auto sizer_mapping_list = new wxBoxSizer(wxHORIZONTAL);
-            auto ams_mapping_item_container = new MappingContainer(nozzle_id == 0 ? m_right_marea_panel : m_left_marea_panel, "QIDI-BOX", 4);
-            ams_mapping_item_container->SetName(nozzle_id == 0 ? m_right_marea_panel->GetName() : m_left_marea_panel->GetName());
-            ams_mapping_item_container->SetSizer(sizer_mapping_list);
-            ams_mapping_item_container->Layout();
+                int ams_indx = 0;
+                int nozzle_id = 0;
 
-            m_has_unmatch_filament = false;
+                auto sizer_mapping_list = new wxBoxSizer(wxHORIZONTAL);
+                auto ams_mapping_item_container = new MappingContainer(nozzle_id == 0 ? m_right_marea_panel : m_left_marea_panel, "QIDI-BOX", 4);
+                ams_mapping_item_container->SetName(nozzle_id == 0 ? m_right_marea_panel->GetName() : m_left_marea_panel->GetName());
+                ams_mapping_item_container->SetSizer(sizer_mapping_list);
+                ams_mapping_item_container->Layout();
 
-            std::vector<TrayData>                      tray_datas;
-            for (int i = 0; i < 4 * box_count; i++) {
-                TrayData td;
+                m_has_unmatch_filament = false;
 
-                td.id = i;
-                td.ams_id = box_count;
-                td.slot_id = slot_id[i];
+                std::vector<TrayData>                      tray_datas;
+                for (int i = box_num * 4; i < (box_num + 1) * 4; i++) {
+                    TrayData td;
+
+                    td.id = i;
+
+                    td.ams_id = box_num + 1;
+                    if(slot_state[i])
+                        td.slot_id = slot_id[i];
+                    else
+                        td.slot_id = -1;
 
 
-                td.type = NORMAL;
-                td.remain = 0;
-                std::string color = filament_colors[i];
-                td.colour = AmsTray::decode_color((color.erase(0, 1)) + "FF");
-                td.name = filament_type[i];
-                td.filament_type = filament_type[i];
-                td.ctype = TrayType::NORMAL;
-                //for (int j = 0; j < 4 * box_count; j++) {
-                //    td.material_cols.push_back(AmsTray::decode_color((filament_colors[i].erase(0, 1)) + "FF"));
-                //}
+                    td.type = NORMAL;
+                    td.remain = 0;
+                    std::string color = filament_colors[i];
+                    td.colour = AmsTray::decode_color((color.erase(0, 1)) + "FF");
+                    td.name = filament_type[i];
+                    td.filament_type = filament_type[i];
+                    td.ctype = TrayType::NORMAL;
+                    //for (int j = 0; j < 4 * box_count; j++) {
+                    //    td.material_cols.push_back(AmsTray::decode_color((filament_colors[i].erase(0, 1)) + "FF"));
+                    //}
 
-                tray_datas.push_back(td);
+                    tray_datas.push_back(td);
+                }
+
+                ams_mapping_item_container->Show();
+                add_ams_mapping(tray_datas, obj->ams_calibrate_remain_flag, ams_mapping_item_container, sizer_mapping_list);
+                m_amsmapping_container_sizer_list.push_back(sizer_mapping_list);
+                m_amsmapping_container_list.push_back(ams_mapping_item_container);
+
+                if (nozzle_id == 0) {
+                    has_right_ams = true;
+                    if (ams_mapping_item_container->get_slots_num() == 1) {
+                        right_one_slot_containers.push_back(ams_mapping_item_container);
+                    }
+                    else {
+                        right_four_slot_containers.push_back(ams_mapping_item_container);
+                    }
+                }
+                else if (nozzle_id == 1) {
+                    has_left_ams = true;
+                    if (ams_mapping_item_container->get_slots_num() == 1) {
+                        left_one_slot_containers.push_back(ams_mapping_item_container);
+                    }
+                    else {
+                        left_four_slots_containers.push_back(ams_mapping_item_container);
+                    }
+                }
+                //y59 //y61
             }
+        }
 
-            ams_mapping_item_container->Show();
-            add_ams_mapping(tray_datas, obj->ams_calibrate_remain_flag, ams_mapping_item_container, sizer_mapping_list);
-            m_amsmapping_container_sizer_list.push_back(sizer_mapping_list);
-            m_amsmapping_container_list.push_back(ams_mapping_item_container);
+        //y61
+        //ext
+        {
+            TrayData td;
 
-            if (nozzle_id == 0) {
-                has_right_ams = true;
-                if (ams_mapping_item_container->get_slots_num() == 1) {
-                    right_one_slot_containers.push_back(ams_mapping_item_container);
-                }
-                else {
-                    right_four_slot_containers.push_back(ams_mapping_item_container);
-                }
-            }
-            else if (nozzle_id == 1) {
-                has_left_ams = true;
-                if (ams_mapping_item_container->get_slots_num() == 1) {
-                    left_one_slot_containers.push_back(ams_mapping_item_container);
-                }
-                else {
-                    left_four_slots_containers.push_back(ams_mapping_item_container);
-                }
-            }
-            //y59
+            td.id = 0;
+
+            td.ams_id = -1;
+
+            td.slot_id = -1;
+
+
+            td.type = NORMAL;
+            td.remain = 0;
+            std::string color = filament_colors.back();
+            td.colour = AmsTray::decode_color((color.erase(0, 1)) + "FF");
+            td.name = filament_type.back();
+            td.filament_type = filament_type.back();
+            td.ctype = TrayType::NORMAL;
+            add_ext_ams_mapping(td, m_right_extra_slot);
         }
 
         _add_containers(this, left_one_slot_containers, left_four_slots_containers, m_sizer_ams_basket_left);

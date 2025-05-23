@@ -145,6 +145,7 @@ enum PrintDialogStatus : unsigned int {
     PrinterNotConnectBox,
     BoxhasSomeProblem,
     PrintStatusPrinterOffline,
+    PrintStatusPrinterNotStandby,
 };
 
 class Material

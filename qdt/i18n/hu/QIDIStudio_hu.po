@@ -16233,3 +16233,18 @@ msgstr "A BOX üzenet megváltozott"
 
 msgid "Flushing"
 msgstr "Öblítés"
+
+msgid "The printer is offline, please check."
+msgstr "A nyomtató offline állapotban van, kérem ellenőrizze."
+
+msgid "The printer is not standby, please check."
+msgstr "A nyomtató nem készenléti módban van, kérem ellenőrizze."
+
+msgid "Box temperature"
+msgstr "Doboz hőmérséklet"
+
+msgid "Support control box temperature"
+msgstr "Támaszték vezérlődoboz hőmérséklete"
+
+msgid "Waiting for the printer's response"
+msgstr "Várakozás a nyomtató válaszára"
