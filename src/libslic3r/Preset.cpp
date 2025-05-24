@@ -2605,14 +2605,13 @@ const Preset* PresetCollection::get_preset_parent(const Preset& child) const
 const Preset *PresetCollection::get_preset_base(const Preset &child) const
 {
     //y60
-    //if (child.is_system || child.is_default)
-    //    return &child;
-    //// Handle user preset
-    //if (child.inherits().empty())
-    //    return &child; // this is user root
-    //auto inherits = find_preset(child.inherits());
-    //return inherits ? get_preset_base(*inherits) : nullptr;
-    return &child;
+    if (child.is_system || child.is_default)
+        return &child;
+    // Handle user preset
+    if (child.inherits().empty())
+        return &child; // this is user root
+    auto inherits = find_preset(child.inherits());
+    return inherits ? get_preset_base(*inherits) : nullptr;
 }
 
 // Return vendor of the first parent profile, for which the vendor is defined, or null if such profile does not exist.

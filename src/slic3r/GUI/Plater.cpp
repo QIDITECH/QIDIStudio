@@ -2565,7 +2565,9 @@ bool  Sidebar::reset_bed_type_combox_choices() {
     const VendorProfile::PrinterModel *pm     = PresetUtils::system_printer_model(*curr);
     if (!pm) {
         auto curr_parent = bundle->printers.get_selected_preset_parent();
-        pm               = PresetUtils::system_printer_model(*curr_parent);
+        //y62
+        if(curr_parent)
+            pm = PresetUtils::system_printer_model(*curr_parent);
     }
     //y58
     //if (m_last_combo_bedtype_count != 0 && pm) {
