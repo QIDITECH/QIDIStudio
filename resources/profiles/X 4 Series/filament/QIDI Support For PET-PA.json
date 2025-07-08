@@ -1,6 +1,6 @@
 {
     "type": "filament",
-    "filament_id": "GFN96",
+    "filament_id": "QD_0_1_33",
     "setting_id": "GFSN96",
     "name": "QIDI Support For PET/PA@X4",
     "from": "system",
@@ -18,7 +18,7 @@
     "filament_flow_ratio": ["0.91"],
     "filament_is_support": ["1"],
     "filament_max_volumetric_speed": ["8"],
-    "filament_type": ["Support For PET/PA"],
+    "filament_type": ["PA-S"],
     "impact_strength_z":["4.5"],
     "nozzle_temperature_initial_layer": ["280"],
     "nozzle_temperature_range_high": ["280"],
