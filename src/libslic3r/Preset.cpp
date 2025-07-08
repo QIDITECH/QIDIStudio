@@ -153,6 +153,51 @@ static const std::unordered_map<std::string, std::string> pre_family_model_map {
     { "SL1",        "SL1" },
 }};
 
+
+// 中间版本兼容性处理，如果是nil值，先改成default值，再进行扩展
+void extend_default_config_length(DynamicPrintConfig& config, const bool set_nil_to_default, const DynamicPrintConfig& defaults)
+{
+    constexpr int default_param_length = 1;
+    int filament_variant_length = default_param_length;
+    int process_variant_length = default_param_length;
+    int machine_variant_length = default_param_length;
+
+    if(config.has("filament_extruder_variant"))
+        filament_variant_length = config.option<ConfigOptionStrings>("filament_extruder_variant")->size();
+    if(config.has("print_extruder_variant"))
+        process_variant_length = config.option<ConfigOptionStrings>("print_extruder_variant")->size();
+    if(config.has("printer_extruder_variant"))
+        machine_variant_length = config.option<ConfigOptionStrings>("printer_extruder_variant")->size();
+
+    auto replace_nil_and_resize = [&](const std::string & key, int length){
+        ConfigOption* raw_ptr = config.option(key);
+        ConfigOptionVectorBase* opt_vec = static_cast<ConfigOptionVectorBase *>(raw_ptr);
+        if(set_nil_to_default && raw_ptr->is_nil() && defaults.has(key) && std::find(filament_extruder_override_keys.begin(), filament_extruder_override_keys.end(), key) == filament_extruder_override_keys.end()){
+            opt_vec->clear();
+            opt_vec->resize(length, defaults.option(key));
+        }
+        else{
+            opt_vec->resize(length, raw_ptr);
+        }
+    };
+
+    for(auto& key :config.keys()){
+        if(auto iter = print_options_with_variant.find(key); iter != print_options_with_variant.end()){
+            replace_nil_and_resize(key, process_variant_length);
+        }
+        else if(auto iter = filament_options_with_variant.find(key); iter != filament_options_with_variant.end()){
+            replace_nil_and_resize(key, filament_variant_length);
+        }
+        else if(auto iter = printer_options_with_variant_1.find(key); iter != printer_options_with_variant_1.end()){
+            replace_nil_and_resize(key, machine_variant_length);
+        }
+        else if(auto iter = printer_options_with_variant_2.find(key); iter != printer_options_with_variant_2.end()){
+            replace_nil_and_resize(key, machine_variant_length * 2);
+        }
+    }
+}
+
+
 VendorProfile VendorProfile::from_ini(const ptree &tree, const boost::filesystem::path &path, bool load_all)
 {
     static const std::string printer_model_key = "printer_model:";
@@ -851,8 +896,10 @@ static std::vector<std::string> s_Preset_print_options {
     "top_shell_layers", "top_shell_thickness", "bottom_shell_layers", "bottom_shell_thickness",  "ensure_vertical_shell_thickness", "reduce_crossing_wall", "detect_thin_wall",
     "detect_overhang_wall", "top_color_penetration_layers", "bottom_color_penetration_layers",
     "smooth_speed_discontinuity_area","smooth_coefficient",
-    "seam_position", "wall_sequence", "is_infill_first", "sparse_infill_density", "sparse_infill_pattern", "sparse_infill_anchor", "sparse_infill_anchor_max",
-    "top_surface_pattern", "bottom_surface_pattern", "internal_solid_infill_pattern", "infill_direction", "bridge_angle","infill_shift_step", "infill_rotate_step", "symmetric_infill_y_axis",
+    "seam_position", "wall_sequence", "is_infill_first", "sparse_infill_density", "sparse_infill_pattern", "sparse_infill_anchor", "sparse_infill_anchor_max", "top_surface_pattern",
+    "bottom_surface_pattern", "internal_solid_infill_pattern", "infill_direction", "bridge_angle", "infill_shift_step", "skeleton_infill_density", "infill_lock_depth", "skin_infill_depth", "skin_infill_density",
+    "infill_rotate_step",
+    "symmetric_infill_y_axis",
     "minimum_sparse_infill_area", "reduce_infill_retraction", "ironing_pattern", "ironing_type",
     "ironing_flow", "ironing_speed", "ironing_spacing","ironing_direction", "ironing_inset",
     "max_travel_detour_distance",
@@ -878,13 +925,14 @@ static std::vector<std::string> s_Preset_print_options {
     "bridge_no_support", "thick_bridges", "max_bridge_length", "print_sequence",
     "filename_format", "wall_filament", "support_bottom_z_distance",
     "sparse_infill_filament", "solid_infill_filament", "support_filament", "support_interface_filament","support_interface_not_for_body",
-    "ooze_prevention", "standby_temperature_delta", "interface_shells", "line_width", "initial_layer_line_width",
-    "inner_wall_line_width", "outer_wall_line_width", "sparse_infill_line_width", "internal_solid_infill_line_width",
+    "ooze_prevention", "standby_temperature_delta", "interface_shells", "line_width", "initial_layer_line_width", "inner_wall_line_width",
+    "outer_wall_line_width", "sparse_infill_line_width", "internal_solid_infill_line_width",
+    "skin_infill_line_width","skeleton_infill_line_width",
     "top_surface_line_width", "support_line_width", "infill_wall_overlap", "bridge_flow",
     "elefant_foot_compensation", "xy_contour_compensation", "xy_hole_compensation", "resolution", "enable_prime_tower", "prime_tower_enable_framework",
     "prime_tower_width", "prime_tower_brim_width", "prime_tower_skip_points","prime_tower_max_speed",
     "prime_tower_rib_wall","prime_tower_extra_rib_length","prime_tower_rib_width","prime_tower_fillet_wall","prime_tower_infill_gap","prime_tower_lift_speed","prime_tower_lift_height",
-    "enable_circle_compensation", "circle_compensation_manual_offset", "apply_scarf_seam_on_circles",
+    "prime_tower_flat_ironing","enable_circle_compensation", "circle_compensation_manual_offset", "apply_scarf_seam_on_circles",
     "wipe_tower_no_sparse_layers", "compatible_printers", "compatible_printers_condition", "inherits",
     "flush_into_infill", "flush_into_objects", "flush_into_support","process_notes",
     // QDS
@@ -907,7 +955,7 @@ static std::vector<std::string> s_Preset_print_options {
     "print_flow_ratio",
     //Orca
     "exclude_object", /*"seam_slope_type",*/ "seam_slope_conditional", "scarf_angle_threshold", /*"seam_slope_start_height", */"seam_slope_entire_loop",/* "seam_slope_min_length",*/
-    "seam_slope_steps", "seam_slope_inner_walls", "role_base_wipe_speed"/*, "seam_slope_gap"*/,
+    "seam_slope_steps", "seam_slope_inner_walls", "role_base_wipe_speed" /*, "seam_slope_gap"*/, "precise_outer_wall",
     "interlocking_beam", "interlocking_orientation", "interlocking_beam_layer_count", "interlocking_depth", "interlocking_boundary_avoidance", "interlocking_beam_width"
     //w16
     ,"resonance_avoidance", "min_resonance_avoidance_speed", "max_resonance_avoidance_speed"
@@ -915,8 +963,9 @@ static std::vector<std::string> s_Preset_print_options {
     ,"seal"
 };
 
-static std::vector<std::string> s_Preset_filament_options {
-    /*"filament_colour", */ "default_filament_colour","required_nozzle_HRC","filament_diameter", "filament_type", "filament_soluble", "filament_is_support","filament_scarf_seam_type", "filament_scarf_height", "filament_scarf_gap","filament_scarf_length",
+static std::vector<std::string> s_Preset_filament_options {/*"filament_colour", */ "default_filament_colour", "required_nozzle_HRC", "filament_diameter", "filament_type",
+                                                          "filament_soluble", "filament_is_support", "filament_printable", "filament_scarf_seam_type", "filament_scarf_height",
+                                                          "filament_scarf_gap", "filament_scarf_length",
     "filament_max_volumetric_speed", "impact_strength_z", "filament_ramming_volumetric_speed",
     "filament_flow_ratio", "filament_density", "filament_adhesiveness_category", "filament_cost", "filament_minimal_purge_on_wipe_tower",
     "nozzle_temperature", "nozzle_temperature_initial_layer",
@@ -945,7 +994,8 @@ static std::vector<std::string> s_Preset_filament_options {
     "enable_pressure_advance", "pressure_advance", "chamber_temperatures","filament_notes",
     "filament_long_retractions_when_cut","filament_retraction_distances_when_cut","filament_shrink",
     //QDS filament change length while the extruder color
-    "filament_change_length","filament_prime_volume",
+    "filament_change_length","filament_prime_volume","filament_flush_volumetric_speed","filament_flush_temp",
+    "long_retractions_when_ec", "retraction_distances_when_ec",
     //w13
     "additional_cooling_fan_speed_unseal"
     //w14
@@ -968,7 +1018,7 @@ static std::vector<std::string> s_Preset_printer_options {
     "single_extruder_multi_material", "machine_start_gcode", "machine_end_gcode","printing_by_object_gcode","before_layer_change_gcode", "layer_change_gcode", "time_lapse_gcode", "change_filament_gcode",
     "printer_model", "printer_variant", "printer_extruder_id", "printer_extruder_variant", "extruder_variant_list", "default_nozzle_volume_type",
     "printable_height", "extruder_printable_height", "extruder_clearance_dist_to_rod",  "extruder_clearance_max_radius","extruder_clearance_height_to_lid", "extruder_clearance_height_to_rod",
-    "nozzle_height", "unprintable_filament_types", "master_extruder_id",
+    "nozzle_height", "master_extruder_id",
     "default_print_profile", "inherits",
     "silent_mode",
     // QDS
@@ -995,6 +1045,8 @@ static std::vector<std::string> s_Preset_printer_options {
     //y61
     , "box_id"
     , "is_support_timelapse"
+    //y65
+    , "is_support_multi_box"
 };
 
 static std::vector<std::string> s_Preset_sla_print_options {
@@ -1278,6 +1330,7 @@ void PresetCollection::load_presets(
                     if (inherit_preset) {
                         preset.config = inherit_preset->config;
                         preset.filament_id = inherit_preset->filament_id;
+                        extend_default_config_length(config, false, {});
                         preset.config.update_diff_values_to_child_config(config, extruder_id_name, extruder_variant_name, *key_set1, *key_set2);
                     }
                     else {
@@ -1290,6 +1343,7 @@ void PresetCollection::load_presets(
                         // Find a default preset for the config. The PrintPresetCollection provides different default preset based on the "printer_technology" field.
                         preset.config = default_preset.config;
                         preset.config.apply(std::move(config));
+                        extend_default_config_length(preset.config, true, default_preset.config);
                     }
                     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " load preset: " << name << " and filament_id: " << preset.filament_id << " and base_id: " << preset.base_id;
 
@@ -1854,6 +1908,9 @@ bool PresetCollection::load_user_preset(std::string name, std::map<std::string, 
             // Find a default preset for the config. The PrintPresetCollection provides different default preset based on the "printer_technology" field.
             new_config = default_preset.config;
         }
+
+        extend_default_config_length(cloud_config, false, {});
+
         if (inherit_preset) {
             std::string extruder_id_name, extruder_variant_name;
             std::set<std::string> *key_set1 = nullptr, *key_set2 = nullptr;
@@ -1861,8 +1918,10 @@ bool PresetCollection::load_user_preset(std::string name, std::map<std::string, 
 
             new_config.update_diff_values_to_child_config(cloud_config, extruder_id_name, extruder_variant_name, *key_set1, *key_set2);
         }
-        else
+        else{
             new_config.apply(std::move(cloud_config));
+            extend_default_config_length(new_config, true, default_preset.config);
+        }
         Preset::normalize(new_config);
         // Report configuration fields, which are misplaced into a wrong group.
         std::string incorrect_keys = Preset::remove_invalid_keys(new_config, default_preset.config);

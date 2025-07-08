@@ -20,8 +20,8 @@ class Polyline : public MultiPoint {
 public:
     Polyline() {};
     Polyline(const Polyline& other) : MultiPoint(other.points), fitting_result(other.fitting_result) {}
-    Polyline(Polyline &&other) : MultiPoint(std::move(other.points)), fitting_result(std::move(other.fitting_result))  {}
-    Polyline(std::initializer_list<Point> list) : MultiPoint(list) { 
+    Polyline(Polyline &&other) noexcept : MultiPoint(std::move(other.points)), fitting_result(std::move(other.fitting_result))  {}
+    Polyline(std::initializer_list<Point> list) : MultiPoint(list) {
         fitting_result.clear();
     }
     explicit Polyline(const Point &p1, const Point &p2) {

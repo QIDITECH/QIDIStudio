@@ -57,12 +57,14 @@ struct FilamentBaseInfo
     std::string vendor;
     int nozzle_temp_range_low{ 220 };
     int nozzle_temp_range_high{ 220 };
+    int temperature_vitrification = INT_MAX;
     //y58
     int box_temp_range_low{ 0 };
     int box_temp_range_high{ 35 };
 
     bool is_support{ false };
     bool is_system{ true };
+    int  filament_printable = 3;
 };
 
 // Bundle of Print + Filament + Printer presets.
@@ -125,7 +127,7 @@ public:
     //QDS: get vendor's current version
     Semver get_vendor_profile_version(std::string vendor_name);
 
-    std::optional<FilamentBaseInfo> get_filament_by_filament_id(const std::string& filament_id) const;
+    std::optional<FilamentBaseInfo> get_filament_by_filament_id(const std::string& filament_id, const std::string& printer_name = std::string()) const;
 
     //QDS: project embedded preset logic
     PresetsConfigSubstitutions load_project_embedded_presets(std::vector<Preset*> project_presets, ForwardCompatibilitySubstitutionRule substitution_rule);

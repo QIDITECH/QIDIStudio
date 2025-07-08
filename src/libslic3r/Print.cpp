@@ -202,6 +202,9 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
         "filament_retraction_distances_when_cut",
         "grab_length",
         "bed_temperature_formula",
+        "filament_notes",
+        "process_notes",
+        "printer_notes",
         //w13
         "additional_cooling_fan_speed_unseal",
         //w14
@@ -290,6 +293,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
             || opt_key == "prime_tower_lift_height"
             || opt_key == "prime_tower_brim_width"
             || opt_key == "prime_tower_skip_points"
+            || opt_key == "prime_tower_flat_ironing"
             || opt_key == "prime_tower_rib_wall"
             || opt_key == "prime_tower_extra_rib_length"
             || opt_key == "prime_tower_rib_width"
@@ -321,6 +325,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
             steps.emplace_back(psSkirtBrim);
         } else if (opt_key == "filament_soluble"
                 || opt_key == "filament_is_support"
+                || opt_key == "filament_printable"
                 || opt_key == "impact_strength_z"
                 || opt_key == "filament_scarf_seam_type"
                 || opt_key == "filament_scarf_height"
@@ -1414,7 +1419,7 @@ StringObjectException Print::validate(StringObjectException *warning, Polygons* 
                 if (!validate_extrusion_width(object->config(), "support_line_width", layer_height, err_msg))
                     return {err_msg, object, "support_line_width"};
             }
-            for (const char *opt_key : { "inner_wall_line_width", "outer_wall_line_width", "sparse_infill_line_width", "internal_solid_infill_line_width", "top_surface_line_width" })
+            for (const char *opt_key : { "inner_wall_line_width", "outer_wall_line_width", "sparse_infill_line_width", "internal_solid_infill_line_width", "top_surface_line_width","skin_infill_line_width" ,"skeleton_infill_line_width"})
 				for (const PrintRegion &region : object->all_regions())
                     if (!validate_extrusion_width(region.config(), opt_key, layer_height, err_msg))
 		            	return  {err_msg, object, opt_key};
@@ -2010,12 +2015,6 @@ void Print::process(std::unordered_map<std::string, long long>* slice_time, bool
             }
             // check map valid both in auto and mannual mode
             std::transform(filament_maps.begin(), filament_maps.end(), filament_maps.begin(), [](int value) {return value - 1; });
-            if (!ToolOrdering::check_tpu_group(used_filaments, filament_maps, &m_config)) {
-                int master_extruder_id = m_config.master_extruder_id.value - 1; // to 0 based
-                std::string nozzle_name = master_extruder_id == 0 ? L("left") : L("right");
-                std::string exception_str = L("TPU is incompatible with BOX and must be printed seperately in the ") + nozzle_name + L(" nozzle.\nPlease adjust the filament group accordingly.");
-                throw Slic3r::RuntimeError(exception_str);
-            }
 
             //        print_object_instances_ordering = sort_object_instances_by_max_z(print);
             print_object_instance_sequential_active = print_object_instances_ordering.begin();
@@ -2464,6 +2463,7 @@ int Print::get_hrc_by_nozzle_type(const NozzleType&type)
             nozzle_type_to_hrc = {
                 {"hardened_steel",55},
                 {"stainless_steel",20},
+                {"tungsten_carbide", 85},
                 {"brass",2},
                 {"undefine",0}
             };
@@ -2541,14 +2541,12 @@ std::vector<std::set<int>> Print::get_physical_unprintable_filaments(const std::
     if (extruder_num < 2)
         return physical_unprintables;
 
-    auto get_unprintable_extruder_id = [&](unsigned int filament_idx)->int {
-        if (m_config.unprintable_filament_types.empty())
-            return -1;
-        for (int eid = 0; eid < m_config.unprintable_filament_types.values.size(); ++eid) {
-            std::vector<std::string> extruder_unprintables = split_string(m_config.unprintable_filament_types.values[eid], ',');
-            auto iter = std::find(extruder_unprintables.begin(), extruder_unprintables.end(), m_config.filament_type.values[filament_idx]);
-            if (iter != extruder_unprintables.end())
-                return eid;
+    auto get_unprintable_extruder_id = [&](unsigned int filament_idx) -> int {
+        int status = m_config.filament_printable.values[filament_idx];
+        for (int i = 0; i < extruder_num; ++i) {
+            if (!(status >> i & 1)) {
+                return i;
+            }
         }
         return -1;
     };
@@ -2558,9 +2556,6 @@ std::vector<std::set<int>> Print::get_physical_unprintable_filaments(const std::
     for (auto f : used_filaments) {
         if (m_config.filament_type.get_at(f) == "TPU")
             tpu_filaments.insert(f);
-    }
-    if (tpu_filaments.size() > 1) {
-        throw Slic3r::RuntimeError(_u8L("Only supports up to one TPU filament."));
     }
 
     for (auto f : used_filaments) {
@@ -4177,7 +4172,7 @@ int Print::load_cached_data(const std::string& directory)
     return ret;
 }
 
-BoundingBoxf3 PrintInstance::get_bounding_box() {
+BoundingBoxf3 PrintInstance::get_bounding_box() const {
     return print_object->model_object()->instance_bounding_box(*model_instance, false);
 }
 

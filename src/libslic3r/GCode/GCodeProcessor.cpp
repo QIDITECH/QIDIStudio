@@ -2778,7 +2778,7 @@ bool GCodeProcessor::get_last_z_from_gcode(const std::string& gcode_str, double&
             line_str.erase(line_str.find_last_not_of(" ") + 1);
 
             //command which may have z movement
-            if (line_str.size() > 5 && (line_str.find("G0 ") == 0
+            if (line_str.size() > 4 && (line_str.find("G0 ") == 0
                                        || line_str.find("G1 ") == 0
                                        || line_str.find("G2 ") == 0
                                        || line_str.find("G3 ") == 0))
@@ -5450,6 +5450,16 @@ void GCodeProcessor::process_T(const std::string_view command)
 }
 
 
+void GCodeProcessor::init_filament_maps_and_nozzle_type_when_import_only_gcode()
+{
+    if (m_filament_maps.empty()) {
+        m_filament_maps.assign((int) EnforcerBlockerType::ExtruderMax, 1);
+    }
+    if (m_result.nozzle_type.empty()) {
+        m_result.nozzle_type.assign((int) EnforcerBlockerType::ExtruderMax, NozzleType::ntUndefine);
+    }
+}
+
 void GCodeProcessor::process_filament_change(int id)
 {
     assert(id < m_result.filaments_count);
@@ -5872,7 +5882,7 @@ void GCodeProcessor::update_slice_warnings()
     warning.params.clear();
     warning.level=1;
 
-    std::vector<int>nozzle_hrc_lists(m_result.nozzle_type.size(), 0);
+    std::vector<int> nozzle_hrc_lists(m_result.nozzle_type.size(), 0);
     // store the nozzle hrc of each extruder
     for (size_t idx = 0; idx < m_result.nozzle_type.size(); ++idx)
         nozzle_hrc_lists[idx] = Print::get_hrc_by_nozzle_type(m_result.nozzle_type[idx]);

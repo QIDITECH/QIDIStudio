@@ -46,7 +46,7 @@ void GCodeWriter::set_extruders(std::vector<unsigned int> extruder_ids)
 std::string GCodeWriter::preamble()
 {
     std::ostringstream gcode;
-    
+
     if (FLAVOR_IS_NOT(gcfMakerWare)) {
         gcode << "G90\n";
         gcode << "G21\n";
@@ -67,7 +67,7 @@ std::string GCodeWriter::preamble()
         }
         gcode << this->reset_e(true);
     }
-    
+
     return gcode.str();
 }
 
@@ -83,7 +83,7 @@ std::string GCodeWriter::set_temperature(unsigned int temperature, bool wait, in
 {
     if (wait && (FLAVOR_IS(gcfMakerWare) || FLAVOR_IS(gcfSailfish)))
         return "";
-    
+
     std::string code, comment;
     if (wait && FLAVOR_IS_NOT(gcfTeacup) && FLAVOR_IS_NOT(gcfRepRapFirmware)) {
         code = "M109";
@@ -96,7 +96,7 @@ std::string GCodeWriter::set_temperature(unsigned int temperature, bool wait, in
         }
         comment = "set nozzle temperature";
     }
-    
+
     std::ostringstream gcode;
     gcode << code << " ";
     if (FLAVOR_IS(gcfMach3) || FLAVOR_IS(gcfMachinekit)) {
@@ -114,10 +114,10 @@ std::string GCodeWriter::set_temperature(unsigned int temperature, bool wait, in
         }
     }
     gcode << " ; " << comment << "\n";
-    
+
     if ((FLAVOR_IS(gcfTeacup) || FLAVOR_IS(gcfRepRapFirmware)) && wait)
         gcode << "M116 ; wait for temperature to be reached\n";
-    
+
     return gcode.str();
 }
 
@@ -211,9 +211,9 @@ std::string GCodeWriter::set_acceleration_impl(unsigned int acceleration)
 
     if (acceleration == 0 || acceleration == m_last_acceleration)
         return std::string();
-    
+
     m_last_acceleration = acceleration;
-    
+
     std::ostringstream gcode;
     if (FLAVOR_IS(gcfRepetier)) {
         // M201: Set max printing acceleration
@@ -242,7 +242,7 @@ std::string GCodeWriter::set_acceleration_impl(unsigned int acceleration)
     //QDS
     if (GCodeWriter::full_gcode_comment) gcode << " ; adjust acceleration";
     gcode << "\n";
-    
+
     return gcode.str();
 }
 
@@ -314,10 +314,10 @@ std::string GCodeWriter::update_progress(unsigned int num, unsigned int tot, boo
 {
     if (FLAVOR_IS_NOT(gcfMakerWare) && FLAVOR_IS_NOT(gcfSailfish))
         return "";
-    
+
     unsigned int percent = (unsigned int)floor(100.0 * num / tot + 0.5);
     if (!allow_100) percent = std::min(percent, (unsigned int)99);
-    
+
     std::ostringstream gcode;
     gcode << "M73 P" << percent;
     //QDS
@@ -406,6 +406,7 @@ std::string GCodeWriter::lazy_lift(LiftType lift_type, bool spiral_vase, bool to
             if (tool_change && this->config.prime_tower_lift_height.value > 0) target_lift = this->config.prime_tower_lift_height.value;
         }
     }
+
     // QDS
     if (m_lifted == 0 && m_to_lift == 0 && target_lift > 0) {
         if (spiral_vase) {
@@ -438,20 +439,24 @@ std::string GCodeWriter::eager_lift(const LiftType type, bool tool_change)
         }
     }
 
+    double to_lift = target_lift - m_lifted;
+    if (to_lift < EPSILON)
+        return lift_move;
+
     // QDS: spiral lift only safe with known position
     // TODO: check the arc will move within bed area
     if (type == LiftType::SpiralLift && this->is_current_position_clear()) {
-        double radius = target_lift / (2 * PI * atan(GCodeWriter::slope_threshold));
-        // static spiral alignment when no move in x,y plane.
-        // spiral centra is a radius distance to the right (y=0)
-        Vec2d ij_offset = { radius, 0 };
-        if (target_lift > 0) {
-            lift_move = this->_spiral_travel_to_z(m_pos(2) + target_lift, ij_offset, "spiral lift Z",tool_change);
+        if (to_lift > 0) {
+            double radius = to_lift / (2 * PI * atan(GCodeWriter::slope_threshold));
+            // static spiral alignment when no move in x,y plane.
+            // spiral centra is a radius distance to the right (y=0)
+            Vec2d ij_offset = { radius, 0 };
+            lift_move = this->_spiral_travel_to_z(m_pos(2) + to_lift, ij_offset, "spiral lift Z",tool_change);
         }
     }
     //QDS: if position is unknown use normal lift
-    else if (target_lift > 0) {
-        lift_move = _travel_to_z(m_pos(2) + target_lift, "normal lift Z",tool_change);
+    else if (to_lift > 0) {
+        lift_move = _travel_to_z(m_pos(2) + to_lift, "normal lift Z", tool_change);
     }
     m_lifted = target_lift;
     m_to_lift = 0;
@@ -595,7 +600,7 @@ std::string GCodeWriter::travel_to_z(double z, const std::string &comment)
             m_lifted = 0.;
         return "";
     }
-    
+
     /*  In all the other cases, we perform an actual Z move and cancel
         the lift. */
     m_lifted = 0;
@@ -760,7 +765,7 @@ std::string GCodeWriter::_retract(double length, double restart_extra, const std
             gcode = w.string();
         }
     }
-    
+
     if (FLAVOR_IS(gcfMakerWare))
         gcode += "M103 ; extruder off\n";
 
@@ -770,7 +775,7 @@ std::string GCodeWriter::_retract(double length, double restart_extra, const std
 std::string GCodeWriter::unretract()
 {
     std::string gcode;
-    
+
     if (FLAVOR_IS(gcfMakerWare))
         gcode = "M101 ; extruder on\n";
 
@@ -790,9 +795,10 @@ std::string GCodeWriter::unretract()
             gcode += w.string();
         }
     }
-    
+
     return gcode;
 }
+
 
 std::string GCodeWriter::unlift()
 {

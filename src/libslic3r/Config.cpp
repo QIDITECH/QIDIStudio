@@ -1477,6 +1477,51 @@ void ConfigBase::save_to_json(const std::string &file, const std::string &name, 
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ":" <<__LINE__ << boost::format(", saved config to %1%\n")%file;
 }
 
+//y66
+void ConfigBase::save_to_temp_json(const std::string &file, std::map<std::string, std::string> key_values) const
+{
+    json j;
+    //record the headers
+    for(auto key_value : key_values)
+    {
+        j[key_value.first] = key_value.second;
+    }
+
+    //record all the key-values
+    for (const std::string &opt_key : this->keys())
+    {
+        const ConfigOption* opt = this->option(opt_key);
+        if ( opt->is_scalar() ) {
+            if (opt->type() == coString)
+                //keep \n, \r, \t
+                j[opt_key] = (dynamic_cast<const ConfigOptionString *>(opt))->value;
+            else
+                j[opt_key] = opt->serialize();
+        }
+        else {
+            const ConfigOptionVectorBase* vec = static_cast<const ConfigOptionVectorBase*>(opt);
+            //if (!vec->empty())
+            std::vector<std::string> string_values = vec->vserialize();
+
+            /*for (int i = 0; i < string_values.size(); i++)
+            {
+            std::string string_value = escape_string_cstyle(string_values[i]);
+            j[opt_key][i] = string_value;
+            }*/
+
+            json j_array(string_values);
+            j[opt_key] = j_array;
+        }
+    }
+
+    boost::nowide::ofstream c;
+    c.open(file, std::ios::out | std::ios::trunc);
+    c << std::setw(4) << j << std::endl;
+    c.close();
+
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ":" <<__LINE__ << boost::format(", saved config to %1%\n")%file;
+}
+
 void ConfigBase::save(const std::string &file) const
 {
     boost::nowide::ofstream c;

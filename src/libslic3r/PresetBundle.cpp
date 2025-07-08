@@ -83,7 +83,16 @@ PresetBundle::PresetBundle()
     this->filaments.default_preset().compatible_printers_condition();
     this->filaments.default_preset().inherits();
     // Set all the nullable values to nils.
-    this->filaments.default_preset().config.null_nullables();
+    {
+        auto& default_config = this->filaments.default_preset().config;
+        for(const std::string& opt_key : default_config.keys()){
+            ConfigOption* opt = default_config.optptr(opt_key, false);
+            bool is_override_key = std::find(filament_extruder_override_keys.begin(),filament_extruder_override_keys.end(), opt_key) != filament_extruder_override_keys.end();
+            if(!is_override_key || !opt->nullable()) 
+                continue;
+            opt->deserialize("nil",ForwardCompatibilitySubstitutionRule::Disable);
+        }
+    }
 
     this->sla_materials.default_preset().config.optptr("sla_material_settings_id", true);
     this->sla_materials.default_preset().compatible_printers_condition();
@@ -334,7 +343,7 @@ Semver PresetBundle::get_vendor_profile_version(std::string vendor_name)
     return result_ver;
 }
 
-std::optional<FilamentBaseInfo> PresetBundle::get_filament_by_filament_id(const std::string& filament_id) const
+std::optional<FilamentBaseInfo> PresetBundle::get_filament_by_filament_id(const std::string& filament_id, const std::string& printer_name) const
 {
     if (filament_id.empty())
         return std::nullopt;
@@ -365,7 +374,20 @@ std::optional<FilamentBaseInfo> PresetBundle::get_filament_by_filament_id(const 
                 info.box_temp_range_high = config.option<ConfigOptionInts>("box_temperature_range_high")->values[0];
             if (config.has("box_temperature_range_low"))
                 info.box_temp_range_low = config.option<ConfigOptionInts>("box_temperature_range_low")->values[0];
-            return info;
+            if(config.has("temperature_vitrification"))
+                info.temperature_vitrification = config.option<ConfigOptionInts>("temperature_vitrification")->values[0];
+
+            if (!printer_name.empty()) {
+                std::vector<std::string> compatible_printers = config.option<ConfigOptionStrings>("compatible_printers")->values;
+                auto iter = std::find(compatible_printers.begin(), compatible_printers.end(), printer_name);
+                if (iter != compatible_printers.end() && config.has("filament_printable")) {
+                    info.filament_printable = config.option<ConfigOptionInts>("filament_printable")->values[0];
+                    return info;
+                }
+            }
+            else {
+                return info;
+            }
         }
     }
     return std::nullopt;
@@ -802,10 +824,10 @@ bool PresetBundle::import_json_presets(PresetsConfigSubstitutions &            s
         boost::optional<Semver>            version              = Semver::parse(version_str);
         if (!version) return false;
         Semver app_version = *(Semver::parse(SLIC3R_VERSION));
-        if (version->maj() > app_version.maj()) {
+        /*if (version->maj() > app_version.maj()) {
             BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << " Preset incompatibla, not loading: " << name;
             return false;
-        }
+        }*/
 
         PresetCollection *collection = nullptr;
         if (config.has("printer_settings_id"))
@@ -842,6 +864,7 @@ bool PresetBundle::import_json_presets(PresetsConfigSubstitutions &            s
         }
         if (inherit_preset) {
             new_config = inherit_preset->config;
+            new_config.apply(std::move(config));
         } else {
             // We support custom root preset now
             auto inherits_config2 = dynamic_cast<ConfigOptionString *>(inherits_config);
@@ -853,8 +876,9 @@ bool PresetBundle::import_json_presets(PresetsConfigSubstitutions &            s
             // Find a default preset for the config. The PrintPresetCollection provides different default preset based on the "printer_technology" field.
             const Preset &default_preset = collection->default_preset_for(config);
             new_config                   = default_preset.config;
+            new_config.apply(std::move(config));
+            extend_default_config_length(new_config, true, default_preset.config);
         }
-        new_config.apply(std::move(config));
 
         Preset &preset     = collection->load_preset(collection->path_from_name(name, inherit_preset == nullptr), name, std::move(new_config), false);
         if (key_values.find(QDT_JSON_KEY_FILAMENT_ID) != key_values.end())

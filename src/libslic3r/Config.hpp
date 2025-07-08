@@ -2570,6 +2570,9 @@ public:
 
     static size_t load_from_gcode_string_legacy(ConfigBase& config, const char* str, ConfigSubstitutionContext& substitutions);
 
+    //y66
+    void save_to_temp_json(const std::string &file, std::map<std::string, std::string> key_values) const;
+
 private:
     // Set a configuration value from a string.
     bool set_deserialize_raw(const t_config_option_key& opt_key_src, const std::string& value, ConfigSubstitutionContext& substitutions, bool append);

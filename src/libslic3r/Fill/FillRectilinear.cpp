@@ -1423,10 +1423,10 @@ static SegmentIntersection& end_of_vertical_run(SegmentedIntersectionLine &il, S
 }
 
 static void traverse_graph_generate_polylines(const ExPolygonWithOffset              &poly_with_offset,
-    const FillParams                       &params,
-    std::vector<SegmentedIntersectionLine> &segs,
-    const bool                              consistent_pattern,
-    Polylines                              &polylines_out)
+                                              const FillParams                       &params,
+                                              std::vector<SegmentedIntersectionLine> &segs,
+                                              const bool                              consistent_pattern,
+                                              Polylines                              &polylines_out)
 {
     // For each outer only chords, measure their maximum distance to the bow of the outer contour.
     // Mark an outer only chord as consumed, if the distance is low.
@@ -1597,7 +1597,7 @@ static void traverse_graph_generate_polylines(const ExPolygonWithOffset         
             int i_vertical = it->vertical_outside();
             auto vertical_link_quality = (i_vertical == -1 || vline.intersections[i_vertical + (going_up ? 0 : -1)].consumed_vertical_up) ?
             	SegmentIntersection::LinkQuality::Invalid : it->vertical_outside_quality();
-#if 0  	
+#if 0
             if (vertical_link_quality == SegmentIntersection::LinkQuality::Valid ||
             	// Follow the link if there is no horizontal link available.
             	(! intersection_horizontal_valid && vertical_link_quality != SegmentIntersection::LinkQuality::Invalid)) {
@@ -2585,7 +2585,7 @@ static std::vector<MonotonicRegionLink> chain_monotonic_regions(
                 path.emplace_back(MonotonicRegionLink{ next_region, next_dir });
                 assert(left_neighbors_unprocessed[next_region - regions.data()] == 1);
                 left_neighbors_unprocessed[next_region - regions.data()] = 0;
-				print_ant("\tRegion (%1%:%2%,%3%) (%4%:%5%,%6%) length to prev %7%", 
+				print_ant("\tRegion (%1%:%2%,%3%) (%4%:%5%,%6%) length to prev %7%",
                     next_region->left.vline,
                     next_dir ? next_region->left.high : next_region->left.low,
                     next_dir ? next_region->left.low  : next_region->left.high,
@@ -2833,6 +2833,8 @@ bool FillRectilinear::fill_surface_by_lines(const Surface *surface, const FillPa
 
     // Rotate polygons so that we can work with vertical lines here
     std::pair<float, Point> rotate_vector = this->_infill_direction(surface);
+    if (params.locked_zag)
+        rotate_vector.first += float(M_PI/2.);
     rotate_vector.first += angleBase;
 
     assert(params.density > 0.0001f && params.density <= 1.f);
@@ -2886,7 +2888,6 @@ bool FillRectilinear::fill_surface_by_lines(const Surface *surface, const FillPa
         x0 += params.horiz_move - (gap_line - 1) * line_spacing;
         n_vlines += 1;
     }
-
 #ifdef SLIC3R_DEBUG
     static int iRun = 0;
     BoundingBox bbox_svg = poly_with_offset.bounding_box_outer();
@@ -2972,7 +2973,7 @@ bool FillRectilinear::fill_surface_by_lines(const Surface *surface, const FillPa
         //assert(! it->has_duplicate_points());
         it->remove_duplicate_points();
 
-        //get origin direction infill
+         //get origin direction infill
         if (params.symmetric_infill_y_axis) {
             it->symmetric_y(params.symmetric_y_axis);
         }
@@ -2983,6 +2984,8 @@ bool FillRectilinear::fill_surface_by_lines(const Surface *surface, const FillPa
     for (Polyline &polyline : polylines_out)
         assert(! polyline.has_duplicate_points());
 #endif /* SLIC3R_DEBUG */
+
+
 
     return true;
 }
@@ -3368,6 +3371,121 @@ void FillMonotonicLineWGapFill::fill_surface_by_lines(const Surface* surface, co
         //FIXME rather simplify the paths to avoid very short edges?
         //assert(! it->has_duplicate_points());
         it->remove_duplicate_points();
+    }
+}
+
+void FillLockedZag::fill_surface_locked_zag (const Surface *                          surface,
+                                             const FillParams &                       params,
+                                             std::vector<std::pair<Polylines, Flow>> &multi_width_polyline)
+{
+    // merge different part exps
+    // diff skin flow
+    Polylines skin_lines;
+    Polylines skeloton_lines;
+    double    offset_threshold  = params.skin_infill_depth;
+    double    overlap_threshold = params.infill_lock_depth;
+    Surface   cross_surface     = *surface;
+    Surface   zig_surface       = *surface;
+    // inner exps
+    // inner union exps
+    ExPolygons zig_expas   = offset_ex({surface->expolygon}, -offset_threshold);
+    ExPolygons cross_expas = diff_ex(surface->expolygon, zig_expas);
+
+    bool       zig_get    = false;
+    FillParams zig_params = params;
+    zig_params.horiz_move = 0;
+    // generate skeleton for diff density
+    auto generate_for_different_flow = [&multi_width_polyline](const std::map<Flow, ExPolygons> &flow_params, const Polylines &polylines) {
+        auto it = flow_params.begin();
+        while (it != flow_params.end()) {
+            ExPolygons region_exp = union_safety_offset_ex(it->second);
+
+            Polylines polys = intersection_pl(polylines, region_exp);
+            multi_width_polyline.emplace_back(polys, it->first);
+            it++;
+        }
+    };
+
+    auto it = this->lock_param.skeleton_density_params.begin();
+    while (it != this->lock_param.skeleton_density_params.end()) {
+        ExPolygons region_exp = union_safety_offset_ex(it->second);
+        ExPolygons exps       = intersection_ex(region_exp, zig_expas);
+        zig_params.density    = it->first;
+        exps                  = intersection_ex(offset_ex(exps, overlap_threshold), surface->expolygon);
+        for (ExPolygon &exp : exps) {
+            zig_surface.expolygon = exp;
+
+            Polylines zig_polylines_out = this->fill_surface(&zig_surface, zig_params);
+            skeloton_lines.insert(skeloton_lines.end(), zig_polylines_out.begin(), zig_polylines_out.end());
+        }
+        it++;
+    }
+
+    // set skeleton flow
+    generate_for_different_flow(this->lock_param.skeleton_flow_params, skeloton_lines);
+
+    // skin exps
+    bool       cross_get      = false;
+    FillParams cross_params   = params;
+    cross_params.locked_zag = false;
+    auto skin_density         = this->lock_param.skin_density_params.begin();
+    while (skin_density != this->lock_param.skin_density_params.end()) {
+        ExPolygons region_exp = union_safety_offset_ex(skin_density->second);
+        ExPolygons exps       = intersection_ex(region_exp, cross_expas);
+        cross_params.density  = skin_density->first;
+        for (ExPolygon &exp : exps) {
+            cross_surface.expolygon       = exp;
+            Polylines cross_polylines_out = this->fill_surface(&cross_surface, cross_params);
+            skin_lines.insert(skin_lines.end(), cross_polylines_out.begin(), cross_polylines_out.end());
+        }
+        skin_density++;
+    }
+
+    generate_for_different_flow(this->lock_param.skin_flow_params, skin_lines);
+}
+
+void FillLockedZag::fill_surface_extrusion(const Surface *surface, const FillParams &params, ExtrusionEntitiesPtr &out)
+{
+    Polylines polylines;
+    ThickPolylines thick_polylines;
+    std::vector<std::pair<Polylines, Flow>> multi_width_polyline;
+    try {
+        this->fill_surface_locked_zag(surface, params, multi_width_polyline);
+    }
+    catch (InfillFailedException&) {}
+
+    if (!thick_polylines.empty() || !multi_width_polyline.empty()) {
+        // Save into layer.
+        ExtrusionEntityCollection* eec = nullptr;
+        out.push_back(eec = new ExtrusionEntityCollection());
+        // Only concentric fills are not sorted.
+        eec->no_sort = this->no_sort();
+        size_t idx   = eec->entities.size();
+        {
+            for (std::pair<Polylines, Flow> &poly_with_flow: multi_width_polyline) {
+                // calculate actual flow from spacing (which might have been adjusted by the infill
+                // pattern generator)
+                double flow_mm3_per_mm = poly_with_flow.second.mm3_per_mm();
+                double flow_width      = poly_with_flow.second.width();
+                if (params.using_internal_flow) {
+                    // if we used the internal flow we're not doing a solid infill
+                    // so we can safely ignore the slight variation that might have
+                    // been applied to f->spacing
+                } else {
+                    Flow new_flow   = poly_with_flow.second.with_spacing(this->spacing);
+                    flow_mm3_per_mm = new_flow.mm3_per_mm();
+                    flow_width      = new_flow.width();
+                }
+            extrusion_entities_append_paths(
+                eec->entities, std::move(poly_with_flow.first),
+                params.extrusion_role,
+                flow_mm3_per_mm, float(flow_width), poly_with_flow.second.height());
+            }
+        }
+        if (!params.can_reverse) {
+            for (size_t i = idx; i < eec->entities.size(); i++)
+                eec->entities[i]->set_reverse();
+        }
     }
 }
 
