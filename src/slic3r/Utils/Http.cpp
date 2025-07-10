@@ -365,7 +365,7 @@ void Http::priv::set_put_body(const fs::path &path)
 	if (!ec) {
 		putFile = std::make_unique<fs::ifstream>(path, std::ios_base::binary |std::ios_base::in);
 		::curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
-		::curl_easy_setopt(curl, CURLOPT_READDATA, (void *) (putFile.get()));
+		::curl_easy_setopt(curl, CURLOPT_READDATA, (void *) &putFile);
 		::curl_easy_setopt(curl, CURLOPT_INFILESIZE, filesize);
 	}
 }
@@ -432,9 +432,6 @@ void Http::priv::http_perform()
 	}
 
 	CURLcode res = ::curl_easy_perform(curl);
-
-    putFile.reset();
-
 	if (res != CURLE_OK) {
 		if (res == CURLE_ABORTED_BY_CALLBACK) {
 			if (cancel) {
@@ -488,7 +485,11 @@ Http::Http(Http &&other) : p(std::move(other.p)) {}
 
 Http::~Http()
 {
-    assert(! p || ! p->putFile);
+	if (p && p->putFile)
+	{
+		p->putFile.reset();
+	}
+
 	if (p && p->io_thread.joinable()) {
 		p->io_thread.detach();
 	}

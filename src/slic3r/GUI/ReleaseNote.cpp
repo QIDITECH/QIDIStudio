@@ -28,17 +28,13 @@ wxDEFINE_EVENT(EVT_SECONDARY_CHECK_CONFIRM, wxCommandEvent);
 wxDEFINE_EVENT(EVT_SECONDARY_CHECK_CANCEL, wxCommandEvent);
 wxDEFINE_EVENT(EVT_SECONDARY_CHECK_DONE, wxCommandEvent);
 wxDEFINE_EVENT(EVT_SECONDARY_CHECK_RESUME, wxCommandEvent);
-wxDEFINE_EVENT(EVT_LOAD_VAMS_TRAY, wxCommandEvent);
 wxDEFINE_EVENT(EVT_CHECKBOX_CHANGE, wxCommandEvent);
 wxDEFINE_EVENT(EVT_ENTER_IP_ADDRESS, wxCommandEvent);
 wxDEFINE_EVENT(EVT_CLOSE_IPADDRESS_DLG, wxCommandEvent);
 wxDEFINE_EVENT(EVT_CHECK_IP_ADDRESS_FAILED, wxCommandEvent);
 wxDEFINE_EVENT(EVT_CHECK_IP_ADDRESS_LAYOUT, wxCommandEvent);
 wxDEFINE_EVENT(EVT_SECONDARY_CHECK_RETRY, wxCommandEvent);
-wxDEFINE_EVENT(EVT_PRINT_ERROR_STOP, wxCommandEvent);
 wxDEFINE_EVENT(EVT_UPDATE_NOZZLE, wxCommandEvent);
-wxDEFINE_EVENT(EVT_JUMP_TO_HMS, wxCommandEvent);
-wxDEFINE_EVENT(EVT_JUMP_TO_LIVEVIEW, wxCommandEvent);
 wxDEFINE_EVENT(EVT_UPDATE_TEXT_MSG, wxCommandEvent);
 wxDEFINE_EVENT(EVT_ERROR_DIALOG_BTN_CLICKED, wxCommandEvent);
 
@@ -1091,140 +1087,49 @@ void PrintErrorDialog::init_button(PrintErrorButton style,wxString buton_text)
     print_error_button->SetCornerRadius(FromDIP(5));
     print_error_button->Hide();
     m_button_list[style] = print_error_button;
-
+    m_button_list[style]->Bind(wxEVT_LEFT_DOWN, [this, style](wxMouseEvent& e)
+    {
+        wxCommandEvent evt(EVT_ERROR_DIALOG_BTN_CLICKED);
+        evt.SetInt(style);
+        post_event(evt);
+        e.Skip();
+    });
 }
 
 void PrintErrorDialog::init_button_list()
 {
     init_button(RESUME_PRINTING, _L("Resume Printing"));
-    m_button_list[RESUME_PRINTING]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e) {
-        post_event(wxCommandEvent(EVT_SECONDARY_CHECK_RESUME));
-        e.Skip();
-    });
-
-    init_button(RESUME_PRINTING_DEFECTS, _L("Resume Printing(defects acceptable)"));
-    m_button_list[RESUME_PRINTING_DEFECTS]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e) {
-        post_event(wxCommandEvent(EVT_SECONDARY_CHECK_RESUME));
-        e.Skip();
-    });
-
-
-    init_button(RESUME_PRINTING_PROBELM_SOLVED, _L("Resume Printing(problem solved)"));
-    m_button_list[RESUME_PRINTING_PROBELM_SOLVED]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e) {
-        post_event(wxCommandEvent(EVT_SECONDARY_CHECK_RESUME));
-        e.Skip();
-    });
-
-    init_button(STOP_PRINTING, _L("Stop Printing"));
-    m_button_list[STOP_PRINTING]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e) {
-        post_event(wxCommandEvent(EVT_PRINT_ERROR_STOP));
-        e.Skip();
-    });
+    init_button(RESUME_PRINTING_DEFECTS, _L("Resume (defects acceptable)"));
+    init_button(RESUME_PRINTING_PROBELM_SOLVED, _L("Resume (problem solved)"));
+    init_button(STOP_PRINTING, _L("Stop Printing"));// pop up recheck dialog?
 
     init_button(CHECK_ASSISTANT, _L("Check Assistant"));
-    m_button_list[CHECK_ASSISTANT]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e) {
-        post_event(wxCommandEvent(EVT_JUMP_TO_HMS));
-        this->on_hide();
-    });
 
     init_button(FILAMENT_EXTRUDED, _L("Filament Extruded, Continue"));
-    m_button_list[FILAMENT_EXTRUDED]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e) {
-        post_event(wxCommandEvent(EVT_SECONDARY_CHECK_DONE));
-        e.Skip();
-    });
 
     init_button(RETRY_FILAMENT_EXTRUDED, _L("Not Extruded Yet, Retry"));
-    m_button_list[RETRY_FILAMENT_EXTRUDED]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e) {
-        wxCommandEvent evt(EVT_SECONDARY_CHECK_RETRY, GetId());
-        e.SetEventObject(this);
-        GetEventHandler()->ProcessEvent(evt);
-        this->on_hide();
-    });
 
     init_button(CONTINUE, _L("Finished, Continue"));
-    m_button_list[CONTINUE]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e) {
-        wxCommandEvent evt(EVT_ERROR_DIALOG_BTN_CLICKED);
-        evt.SetInt(CONTINUE);
-        post_event(evt);
-        e.Skip();
-    });
 
     init_button(LOAD_VIRTUAL_TRAY, _L("Load Filament"));
-    m_button_list[LOAD_VIRTUAL_TRAY]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e) {
-        post_event(wxCommandEvent(EVT_LOAD_VAMS_TRAY));
-        e.Skip();
-    });
 
     init_button(OK_BUTTON, _L("OK"));
-    m_button_list[OK_BUTTON]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e) {
-        wxCommandEvent evt(EVT_SECONDARY_CHECK_CONFIRM, GetId());
-        e.SetEventObject(this);
-        GetEventHandler()->ProcessEvent(evt);
-        this->on_hide();
-    });
 
     init_button(FILAMENT_LOAD_RESUME, _L("Filament Loaded, Resume"));
-    m_button_list[FILAMENT_LOAD_RESUME]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e) {
-        post_event(wxCommandEvent(EVT_SECONDARY_CHECK_RESUME));
-        e.Skip();
-    });
 
     init_button(JUMP_TO_LIVEVIEW, _L("View Liveview"));
-    m_button_list[JUMP_TO_LIVEVIEW]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e) {
-        post_event(wxCommandEvent(EVT_JUMP_TO_LIVEVIEW));
-        e.Skip();
-    });
 
     init_button(NO_REMINDER_NEXT_TIME, _L("No Reminder Next Time"));
-    m_button_list[NO_REMINDER_NEXT_TIME]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e) {
-        wxCommandEvent evt(EVT_ERROR_DIALOG_BTN_CLICKED);
-        evt.SetInt(NO_REMINDER_NEXT_TIME);
-        post_event(evt);
-        e.Skip();
-    });
 
     init_button(IGNORE_NO_REMINDER_NEXT_TIME, _L("Ignore. Don't Remind Next Time"));
-    m_button_list[IGNORE_NO_REMINDER_NEXT_TIME]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e) {
-        wxCommandEvent evt(EVT_ERROR_DIALOG_BTN_CLICKED);
-        evt.SetInt(IGNORE_NO_REMINDER_NEXT_TIME);
-        post_event(evt);
-        e.Skip();
-    });
 
     init_button(IGNORE_RESUME, _L("Ignore this and Resume"));
-    m_button_list[IGNORE_RESUME]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e)
-        {
-            wxCommandEvent evt(EVT_ERROR_DIALOG_BTN_CLICKED);
-            evt.SetInt(IGNORE_RESUME);
-            post_event(evt);
-            e.Skip();
-        });
 
     init_button(PROBLEM_SOLVED_RESUME, _L("Problem Solved and Resume"));
-    m_button_list[PROBLEM_SOLVED_RESUME]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e)
-        {
-            wxCommandEvent evt(EVT_ERROR_DIALOG_BTN_CLICKED);
-            evt.SetInt(PROBLEM_SOLVED_RESUME);
-            post_event(evt);
-            e.Skip();
-        });
 
     init_button(STOP_BUZZER, _L("Stop Buzzer"));
-    m_button_list[STOP_BUZZER]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e)
-        {
-            wxCommandEvent evt(EVT_ERROR_DIALOG_BTN_CLICKED);
-            evt.SetInt(STOP_BUZZER);
-            post_event(evt);
-            e.Skip();
-        });
 
     init_button(RETRY_PROBLEM_SOLVED, _L("Retry (problem solved)"));
-    m_button_list[RETRY_PROBLEM_SOLVED]->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent &e) {
-        wxCommandEvent evt(EVT_ERROR_DIALOG_BTN_CLICKED);
-        evt.SetInt(RETRY_PROBLEM_SOLVED);
-        post_event(evt);
-        e.Skip();
-    });
 }
 
 PrintErrorDialog::~PrintErrorDialog()
@@ -1415,9 +1320,9 @@ void ConfirmBeforeSendDialog::update_text(std::vector<ConfirmBeforeSendInfo> tex
         if (enable_warning_clr && text.level == ConfirmBeforeSendInfo::InfoLevel::Warning) {
             label_item->SetForegroundColour(wxColour(0xFF, 0x6F, 0x00));
         }
-        label_item->SetMaxSize(wxSize(FromDIP(500), -1));
-        label_item->SetMinSize(wxSize(FromDIP(500), -1));
-        label_item->Wrap(FromDIP(500));
+        label_item->SetMaxSize(wxSize(FromDIP(494), -1));
+        label_item->SetMinSize(wxSize(FromDIP(494), -1));
+        label_item->Wrap(FromDIP(494));
         label_item->Layout();
         sizer_text_release_note->Add(label_item, 0, wxALIGN_CENTER | wxALL, FromDIP(3));
         height += label_item->GetSize().y;
@@ -1425,9 +1330,9 @@ void ConfirmBeforeSendDialog::update_text(std::vector<ConfirmBeforeSendInfo> tex
 
     m_vebview_release_note->Layout();
     if (height < FromDIP(500))
-        m_vebview_release_note->SetMinSize(wxSize(FromDIP(500), height + FromDIP(25)));
+        m_vebview_release_note->SetMinSize(wxSize(-1, height + FromDIP(25)));
     else {
-        m_vebview_release_note->SetMinSize(wxSize(FromDIP(500), FromDIP(500)));
+        m_vebview_release_note->SetMinSize(wxSize(-1, FromDIP(500)));
     }
 
     Layout();
@@ -1690,7 +1595,7 @@ InputIpAddressDialog::InputIpAddressDialog(wxWindow *parent)
 
     /*other*/
     m_test_right_msg = new Label(this, Label::Body_13, wxEmptyString, LB_AUTO_WRAP);
-    m_test_right_msg->SetForegroundColour(wxColour(61, 203, 115));
+    m_test_right_msg->SetForegroundColour(wxColour(68, 121, 251));
     m_test_right_msg->Hide();
 
     m_test_wrong_msg = new Label(this, Label::Body_13, wxEmptyString, LB_AUTO_WRAP);
@@ -2254,7 +2159,7 @@ void InputIpAddressDialog::on_text(wxCommandEvent &evt)
     if (current_input_index == 1){
         if (str_sn.length() == 15) {
             m_button_ok->Enable(true);
-            StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+            StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed), std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
                                     std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
             m_button_ok->SetTextColor(StateColor::darkModeColorFor("#FFFFFE"));
             m_button_ok->SetBackgroundColor(btn_bg_blue);

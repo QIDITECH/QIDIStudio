@@ -840,7 +840,14 @@ void AmsMapingPopup::on_left_down(wxMouseEvent &evt)
         auto left = item->GetSize();
 
         if (pos.x > p_rect.x && pos.y > p_rect.y && pos.x < (p_rect.x + item->GetSize().x) && pos.y < (p_rect.y + item->GetSize().y)) {
-            if (item->m_tray_data.type == TrayType::NORMAL  && !is_match_material(item->m_tray_data.filament_type)) return;
+            if (item->m_tray_data.type == TrayType::NORMAL) {
+                if (!m_ext_mapping_filatype_check && (item->m_ams_id == VIRTUAL_TRAY_MAIN_ID || item->m_ams_id == VIRTUAL_TRAY_DEPUTY_ID)) {
+                    // Do nothing
+                } else {
+                    if(!is_match_material(item->m_tray_data.filament_type)) { return; }
+                }
+            }
+
             if (item->m_tray_data.type == TrayType::EMPTY) return;
             if ((m_show_type == ShowType::LEFT && item->GetParent()->GetName() == "left") ||
                 (m_show_type == ShowType::RIGHT && item->GetParent()->GetName() == "right") ||
@@ -1187,7 +1194,7 @@ void AmsMapingPopup::update(MachineObject* obj, const std::vector<FilamentInfo>&
                     if(slot_state[i])
                         td.slot_id = slot_id[i];
                     else
-                        td.slot_id = -1;
+                        td.slot_id = VIRTUAL_TRAY_MAIN_ID;
 
 
                     td.type = NORMAL;
@@ -1231,16 +1238,16 @@ void AmsMapingPopup::update(MachineObject* obj, const std::vector<FilamentInfo>&
             }
         }
 
-        //y61
+        //y61 //y67
         //ext
         {
             TrayData td;
 
             td.id = 0;
 
-            td.ams_id = -1;
+            td.ams_id = VIRTUAL_TRAY_MAIN_ID;
 
-            td.slot_id = -1;
+            td.slot_id = VIRTUAL_TRAY_MAIN_ID;
 
 
             td.type = NORMAL;
@@ -1250,6 +1257,7 @@ void AmsMapingPopup::update(MachineObject* obj, const std::vector<FilamentInfo>&
             td.name = filament_type.back();
             td.filament_type = filament_type.back();
             td.ctype = TrayType::NORMAL;
+            m_right_extra_slot->send_win = send_win;
             add_ext_ams_mapping(td, m_right_extra_slot);
         }
 
@@ -1389,7 +1397,7 @@ void AmsMapingPopup::add_ext_ams_mapping(TrayData tray_data, MappingItem* item)
         }
 
         item->Bind(wxEVT_LEFT_DOWN, [this, tray_data, item](wxMouseEvent& e) {
-            if (!is_match_material(tray_data.filament_type)) return;
+            if (m_ext_mapping_filatype_check && !is_match_material(tray_data.filament_type)) return;
             item->send_event(m_current_filament_id);
             Dismiss();
             });
@@ -2224,7 +2232,7 @@ void AmsReplaceMaterialDialog::create()
         std::pair<wxColour, int>(wxColour(38, 46, 48), StateColor::Enabled));
 
 
-    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(54, 97, 201), StateColor::Pressed), std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
+    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(40, 90, 22), StateColor::Pressed), std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     m_button_sizer->Add( 0, 0, 1, wxEXPAND, 0 );
 
     m_main_sizer->Add(0,0,0, wxTOP, FromDIP(12));

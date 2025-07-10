@@ -925,6 +925,8 @@ private:
     //QDS: always load shell at preview
     //void load_shells(const Print& print, bool initialized);
     void refresh_render_paths(bool keep_sequential_current_first, bool keep_sequential_current_last) const;
+    template<typename Iterator>
+    void render_sub_paths(Iterator it_path, Iterator it_end, GLShaderProgram &shader, int uniform_color, unsigned int draw_type);
     void render_toolpaths();
     void render_shells();
 

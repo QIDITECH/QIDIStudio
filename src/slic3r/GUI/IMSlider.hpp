@@ -131,6 +131,9 @@ public:
     void on_change_color_mode(bool is_dark);
     void set_menu_enable(bool enable = true) { m_menu_enable = enable; }
 
+    //y65
+    bool get_is_can_change_color() const { return m_can_change_color; }
+
 protected:
     void add_custom_gcode(std::string custom_gcode);
     void add_code_as_tick(Type type, int selected_extruder = -1);

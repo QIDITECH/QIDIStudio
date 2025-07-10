@@ -227,7 +227,7 @@ bool GLGizmoBase::render_combo(const std::string &label, const std::vector<std::
     return is_changed;
 }
 
-void GLGizmoBase::render_cross_mark(const Transform3d& matrix, const Vec3f &target, bool is_single)
+void GLGizmoBase::render_cross_mark(const Transform3d& matrix, const Vec3f &target)
 {
     if (!m_cross_mark.is_initialized()) {
         GLModel::Geometry geo;
@@ -260,18 +260,18 @@ void GLGizmoBase::render_cross_mark(const Transform3d& matrix, const Vec3f &targ
     p_ogl_manager->set_line_width(2.0f);
 
     Transform3d model_matrix{ Transform3d::Identity() };
-    model_matrix = get_corss_mask_model_matrix(ECrossMaskType::X, target, is_single);
+    model_matrix = get_corss_mask_model_matrix(ECrossMaskType::X, target);
     p_flat_shader->set_uniform("view_model_matrix", view_model_matrix * model_matrix);
     p_flat_shader->set_uniform("projection_matrix", proj_matrix);
     m_cross_mark.set_color({ 1.0f, 0.0f, 0.0f, 1.0f });
     m_cross_mark.render_geometry();
 
-    model_matrix = get_corss_mask_model_matrix(ECrossMaskType::Y, target, is_single);
+    model_matrix = get_corss_mask_model_matrix(ECrossMaskType::Y, target);
     p_flat_shader->set_uniform("view_model_matrix", view_model_matrix * model_matrix);
     m_cross_mark.set_color({ 0.0f, 1.0f, 0.0f, 1.0f });
     m_cross_mark.render_geometry();
 
-    model_matrix = get_corss_mask_model_matrix(ECrossMaskType::Z, target, is_single);
+    model_matrix = get_corss_mask_model_matrix(ECrossMaskType::Z, target);
     p_flat_shader->set_uniform("view_model_matrix", view_model_matrix * model_matrix);
     m_cross_mark.set_color({ 0.0f, 0.0f, 1.0f, 1.0f });
     m_cross_mark.render_geometry();
@@ -368,6 +368,14 @@ void GLGizmoBase::set_hover_id(int id)
 void GLGizmoBase::set_highlight_color(const std::array<float, 4>& color)
 {
     m_highlight_color = color;
+}
+
+void GLGizmoBase::enable_grabber(unsigned int id , bool enable) {
+    if (enable) {
+        enable_grabber(id);
+    } else {
+        disable_grabber(id);
+    }
 }
 
 void GLGizmoBase::enable_grabber(unsigned int id)
@@ -595,7 +603,7 @@ void GLGizmoBase::do_stop_dragging(bool perform_mouse_cleanup)
     m_parent.refresh_camera_scene_box();
 }
 
-BoundingBoxf3 GLGizmoBase::get_cross_mask_aabb(const Transform3d& matrix, const Vec3f& target, bool is_single) const
+BoundingBoxf3 GLGizmoBase::get_cross_mask_aabb(const Transform3d& matrix, const Vec3f& target) const
 {
     BoundingBoxf3 t_aabb;
     t_aabb.reset();
@@ -604,7 +612,7 @@ BoundingBoxf3 GLGizmoBase::get_cross_mask_aabb(const Transform3d& matrix, const 
         const auto& t_cross_aabb = m_cross_mark.get_bounding_box();
         Transform3d model_matrix{ Transform3d::Identity() };
         // x axis aabb
-        model_matrix = get_corss_mask_model_matrix(ECrossMaskType::X, target, is_single);
+        model_matrix = get_corss_mask_model_matrix(ECrossMaskType::X, target);
         auto t_x_axis_aabb = t_cross_aabb.transformed(matrix * model_matrix);
         t_x_axis_aabb.defined = true;
         t_aabb.merge(t_x_axis_aabb);
@@ -612,7 +620,7 @@ BoundingBoxf3 GLGizmoBase::get_cross_mask_aabb(const Transform3d& matrix, const 
         // end x axis aabb
 
         // y axis aabb
-        model_matrix = get_corss_mask_model_matrix(ECrossMaskType::Y, target, is_single);
+        model_matrix = get_corss_mask_model_matrix(ECrossMaskType::Y, target);
         auto t_y_axis_aabb = t_cross_aabb.transformed(matrix * model_matrix);
         t_y_axis_aabb.defined = true;
         t_aabb.merge(t_y_axis_aabb);
@@ -620,7 +628,7 @@ BoundingBoxf3 GLGizmoBase::get_cross_mask_aabb(const Transform3d& matrix, const 
         // end y axis aabb
 
         // z axis aabb
-        model_matrix = get_corss_mask_model_matrix(ECrossMaskType::Z, target, is_single);
+        model_matrix = get_corss_mask_model_matrix(ECrossMaskType::Z, target);
         auto t_z_axis_aabb = t_cross_aabb.transformed(matrix * model_matrix);
         t_z_axis_aabb.defined = true;
         t_aabb.merge(t_z_axis_aabb);
@@ -645,11 +653,11 @@ void GLGizmoBase::modify_radius(float& radius) const
     }
 }
 
-Transform3d GLGizmoBase::get_corss_mask_model_matrix(ECrossMaskType type, const Vec3f& target, bool is_single) const
+Transform3d GLGizmoBase::get_corss_mask_model_matrix(ECrossMaskType type, const Vec3f& target) const
 {
     double half_length = 4.0;
-    const auto center_x = is_single ? target + Vec3f(half_length * 0.5f, 0.0f, 0.0f) : target;
-    const float scale = is_single ? half_length : 2.0f * half_length;
+    const auto center_x = target;
+    const float scale = 2.0f * half_length;
     Transform3d model_matrix{ Transform3d::Identity() };
     if (ECrossMaskType::X == type) {
         model_matrix.data()[3 * 4 + 0] = center_x.x();
@@ -660,14 +668,14 @@ Transform3d GLGizmoBase::get_corss_mask_model_matrix(ECrossMaskType type, const 
         model_matrix.data()[2 * 4 + 2] = 1.0f;
     }
     else if (ECrossMaskType::Y == type) {
-        const auto center_y = is_single ? target + Vec3f(0.0f, half_length * 0.5f, 0.0f) : target;
+        const auto center_y = target;
         model_matrix = Geometry::translation_transform(center_y.cast<double>())
             * Geometry::rotation_transform({ 0.0f, 0.0f, 0.5 * PI })
             * Geometry::scale_transform({ scale, 1.0f, 1.0f });
     }
 
     else if (ECrossMaskType::Z == type) {
-        const auto center_z = is_single ? target + Vec3f(0.0f, 0.0f, half_length * 0.5f) : target;
+        const auto center_z = target;
         model_matrix = Geometry::translation_transform(center_z.cast<double>())
             * Geometry::rotation_transform({ 0.0f, -0.5 * PI, 0.0f })
             * Geometry::scale_transform({ scale, 1.0f, 1.0f });

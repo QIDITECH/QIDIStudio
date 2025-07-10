@@ -110,8 +110,8 @@ bool try_pop_up_before_slice(bool is_slice_all, Plater* plater_ref, PartPlate* p
 }
 
 
-static const StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), 
-                                    std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+static const StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed), 
+                                    std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
                                     std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
 
 static const StateColor btn_bd_blue(std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));

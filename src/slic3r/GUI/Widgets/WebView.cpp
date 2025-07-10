@@ -183,6 +183,41 @@ public:
     wxWebView *m_webView;
 };
 
+#define QIDI_LOCK_FILE_NAME "qidi_lockfile"
+wxString WebView::BuildEdgeUserDataPath()
+{
+#ifdef __WIN32__
+    static wxString data_dir;
+    if (!data_dir.empty()) { return data_dir; }
+
+    data_dir = wxStandardPaths::Get().GetUserLocalDataDir();
+    data_dir.append("\\WebView2Cache\\");
+
+    // find a path
+    for (int qidi_id = 0; qidi_id < std::numeric_limits<int>::max(); qidi_id++) {
+        wxString qidi_dir = data_dir + wxString::Format("%d", qidi_id);
+        if (!wxDir::Exists(qidi_dir) && !wxDir::Make(qidi_dir, 511, wxPATH_MKDIR_FULL)) { break; } /*maybe don't have access rights to create dir, break*/
+
+        wxString qidi_lock_file = qidi_dir + "\\" QIDI_LOCK_FILE_NAME;
+
+        static wxFile lockFile;
+        if (lockFile.Exists(qidi_lock_file)) { DeleteFileW(qidi_lock_file.wc_str()); }/*try delete previous file so that we could lock it by wxFile::write_excl*/
+
+        if (lockFile.Open(qidi_lock_file, wxFile::write_excl)) {
+            data_dir = qidi_dir;
+            break;
+        }
+        
+        if (!lockFile.Exists(qidi_lock_file)) { break; } /*maybe don't have access rights to create file, break*/
+    }
+
+    return data_dir;
+
+#else
+    return wxEmptyString;
+#endif
+}
+
 wxWebView* WebView::CreateWebView(wxWindow * parent, wxString const & url)
 {
 #if wxUSE_WEBVIEW_EDGE
@@ -205,6 +240,7 @@ wxWebView* WebView::CreateWebView(wxWindow * parent, wxString const & url)
 
 #ifdef __WIN32__
     wxWebView* webView = new WebViewEdge;
+    //webView->SetUserDataPathOption(BuildEdgeUserDataPath());
 #elif defined(__WXOSX__)
     wxWebView *webView = new WebViewWebKit;
 #else
@@ -312,7 +348,7 @@ bool WebView::RunScript(wxWebView *webView, wxString const &javascript)
         }, NULL);
         return true;
 #endif
-} catch (std::exception &/*e*/) {
+    } catch (std::exception &/*e*/) {
         return false;
     }
 }

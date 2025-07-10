@@ -80,7 +80,7 @@ void CalibrationPanel::create_preset_box(wxWindow* parent, wxBoxSizer* sizer_sid
         {
             if (!m_filament_choice->is_selected_physical_printer())
                 wxGetApp().preset_bundle->physical_printers.unselect_printer();
-            std::string preset_name = m_filament_choice->GetString(selection).ToUTF8().data();
+            std::string preset_name = Preset::remove_suffix_modified(m_filament_choice->GetString(selection).ToUTF8().data());
             if (preset_name.find("PETG") != std::string::npos && m_tabpanel->GetSelection() == 1) {
                 wxMessageBox("PETG filaments are not suitable for pressure advance calibration", "Warning", wxOK | wxICON_ERROR);
             }

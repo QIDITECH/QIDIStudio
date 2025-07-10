@@ -236,6 +236,8 @@ bool OctoPrint::upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, Erro
     //     % upload_parent_path.string()
     //     % (upload_data.post_action == PrintHostPostUploadAction::StartPrint ? "true" : "false");
 
+
+    BOOST_LOG_TRIVIAL(info) << boost::format("Uploading the file to device %1%, url: %2%") % name % url;
     auto http = Http::post(std::move(url));
     set_auth(http);
 
@@ -253,13 +255,13 @@ bool OctoPrint::upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, Erro
 
     //y53
     progress_percentage = 0;
-    BOOST_LOG_TRIVIAL(info) << boost::format("Uploading the file to device %1%, url: %2%") % name % url;
     http.form_add_file("file", upload_data.source_path.string(), upload_filename.string())
         .on_complete([&](std::string body, unsigned status) {
-            BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: File uploaded: HTTP %2%: %3%") % name % status % body;
+            BOOST_LOG_TRIVIAL(info) << boost::format("%1%: File uploaded: HTTP %2%: %3%") % name % status % body;
         })
         .on_error([&](std::string body, std::string error, unsigned status) {
             //y40 y53
+            BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error uploading file: %2%, HTTP %3%, body: `%4%`") % name % error % status % body;
             if (progress_percentage < 0.99) {
                 if (status == 404)
                 {
@@ -469,7 +471,6 @@ bool OctoPrint::send_command_to_printer(wxString& msg, wxString commond) const
 {
    // printer_state: http://192.168.20.66/printer/objects/query?print_stats
    const char* name = get_name();
-   std::string gcode = "G28";
    std::string commond_str = commond.ToStdString();
    std::string json_body = "{\"script\": \"" + commond_str + "\"}";
 
@@ -484,7 +485,7 @@ bool OctoPrint::send_command_to_printer(wxString& msg, wxString commond) const
            % name % error % status % body;
            })
        .on_complete([&](std::string body, unsigned status) {
-               BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: G-code sent successfully: %2%") % name % gcode;
+               BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: G-code sent successfully: %2%") % name % json_body;
                successful = true;
            })
 #ifdef _WIN32

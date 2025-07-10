@@ -137,8 +137,8 @@ PingCodeBindDialog::PingCodeBindDialog(Plater* plater /*= nullptr*/)
     m_button_bind = new Button(request_bind_panel, _L("Confirm"));
 
     StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Disabled),
-        std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed),
-        std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+        std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
+        std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
         std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     m_button_bind->SetBackgroundColor(btn_bg_blue);
     m_button_bind->SetBorderColor(*wxWHITE);
@@ -480,7 +480,7 @@ PingCodeBindDialog::~PingCodeBindDialog() {
      m_link_Terms_title->SetFont(Label::Head_13);
      m_link_Terms_title->SetMaxSize(wxSize(FromDIP(450), -1));
      m_link_Terms_title->Wrap(FromDIP(450));
-     m_link_Terms_title->SetForegroundColour(wxColour(0x4479FB));   // y96
+     m_link_Terms_title->SetForegroundColour(wxColour("#4479FB"));   // y96
      m_link_Terms_title->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {
          wxString txt = _L("Thank you for purchasing a QIDI Tech device.Before using your QIDI Tech device, please read the termsand conditions.By clicking to agree to use your QIDI Tech device, you agree to abide by the Privacy Policy and Terms of Use(collectively, the \"Terms\"). If you do not comply with or agree to the QIDI Tech Privacy Policy, please do not use QIDI Tech equipment and services.");
          ConfirmBeforeSendDialog confirm_dlg(this, wxID_ANY, _L("Terms and Conditions"), ConfirmBeforeSendDialog::ButtonStyle::ONLY_CONFIRM);
@@ -499,7 +499,7 @@ PingCodeBindDialog::~PingCodeBindDialog() {
      m_link_privacy_title->SetFont(Label::Head_13);
      m_link_privacy_title->SetMaxSize(wxSize(FromDIP(450), -1));
      m_link_privacy_title->Wrap(FromDIP(450));
-     m_link_privacy_title->SetForegroundColour(wxColour(0x4479FB));
+     m_link_privacy_title->SetForegroundColour(wxColour("#4479FB"));
      m_link_privacy_title->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {
          std::string url;
          std::string country_code = Slic3r::GUI::wxGetApp().app_config->get_country_code();
@@ -540,7 +540,7 @@ PingCodeBindDialog::~PingCodeBindDialog() {
      m_link_notice_title->SetFont(Label::Head_13);
      m_link_notice_title->SetMaxSize(wxSize(FromDIP(450), -1));
      m_link_notice_title->Wrap(FromDIP(450));
-     m_link_notice_title->SetForegroundColour(wxColour(0x4479FB));
+     m_link_notice_title->SetForegroundColour(wxColour("#4479FB"));
      m_link_notice_title->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_HAND); });
      m_link_notice_title->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_ARROW); });
      m_link_notice_title->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {
@@ -677,8 +677,8 @@ PingCodeBindDialog::~PingCodeBindDialog() {
      m_button_bind = new Button(button_panel, _L("Confirm"));
 
      StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Disabled),
-         std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed),
-         std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+         std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
+         std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
          std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
      m_button_bind->SetBackgroundColor(btn_bg_blue);
      m_button_bind->SetBorderColor(*wxWHITE);
@@ -1032,7 +1032,7 @@ UnBindMachineDialog::UnBindMachineDialog(Plater *plater /*= nullptr*/)
 
      m_sizer_button->Add(0, 0, 1, wxEXPAND, 5);
      m_button_unbind = new Button(this, _L("Confirm"));
-     StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+     StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Hovered),
                              std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
      m_button_unbind->SetBackgroundColor(btn_bg_blue);
      m_button_unbind->SetBorderColor(wxColour(68, 121, 251));

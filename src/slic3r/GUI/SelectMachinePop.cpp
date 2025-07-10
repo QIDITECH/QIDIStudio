@@ -329,7 +329,7 @@ SelectMachinePopup::SelectMachinePopup(wxWindow *parent)
     m_scrolledWindow->Layout();
     m_sizxer_scrolledWindow->Fit(m_scrolledWindow);
 
-#if !QDT_RELEASE_TO_PUBLIC && defined(__WINDOWS__)
+#if defined(__WINDOWS__)
 	m_sizer_search_bar = new wxBoxSizer(wxVERTICAL);
 	m_search_bar = new wxSearchCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	m_search_bar->SetDescriptiveText(_L("Search"));
@@ -527,7 +527,7 @@ void SelectMachinePopup::update_other_devices()
             m_other_list_machine_panel.push_back(mpanel);
             m_sizer_other_devices->Add(op, 0, wxEXPAND, 0);
         }
-#if !QDT_RELEASE_TO_PUBLIC && defined(__WINDOWS__)
+#if defined(__WINDOWS__)
         if (!search_for_printer(mobj)) {
             op->Hide();
         }
@@ -653,7 +653,7 @@ void SelectMachinePopup::update_user_devices()
         MachineObjectPanel* op = nullptr;
         if (i < m_user_list_machine_panel.size()) {
             op = m_user_list_machine_panel[i]->mPanel;
-#if !QDT_RELEASE_TO_PUBLIC && defined(__WINDOWS__)
+#if defined(__WINDOWS__)
 			if (!search_for_printer(mobj)) {
 				op->Hide();
 			} else {
@@ -781,10 +781,12 @@ bool SelectMachinePopup::search_for_printer(MachineObject* obj)
         return true;
     }
 
-	const auto& ip_it = obj->dev_ip.find(search_text);
-	if (ip_it != std::string::npos) {
-		return true;
+#if !QDT_RELEASE_TO_PUBLIC
+    const auto& ip_it = obj->dev_ip.find(search_text);
+    if (ip_it != std::string::npos) {
+        return true;
     }
+#endif
 
     return false;
 }
@@ -883,7 +885,7 @@ EditDevNameDialog::EditDevNameDialog(Plater *plater /*= nullptr*/)
 
 
     m_button_confirm = new Button(this, _L("Confirm"));
-    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(54, 97, 201), StateColor::Pressed), std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
+    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed), std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     m_button_confirm->SetBackgroundColor(btn_bg_blue);
     m_button_confirm->SetBorderColor(wxColour(68, 121, 251));
     m_button_confirm->SetTextColor(wxColour(255, 255, 255));

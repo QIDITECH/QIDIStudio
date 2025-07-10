@@ -94,7 +94,7 @@ HistoryWindow::HistoryWindow(wxWindow* parent, const std::vector<PACalibResult>&
 
     Button *   mew_btn = new Button(scroll_window, _L("New"));
     // y96
-    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed), std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
                             std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     mew_btn->SetBackgroundColour(*wxWHITE);
     mew_btn->SetBackgroundColor(btn_bg_blue);
@@ -321,6 +321,7 @@ void HistoryWindow::sync_history_data() {
     auto title_name = new Label(m_history_data_panel, _L("Name"));
     title_name->SetFont(Label::Head_14);
     gbSizer->Add(title_name, {0, get_colume_idx(CaliColumnType::Cali_Name, curr_obj) }, {1, 1}, wxBOTTOM, FromDIP(15));
+    BOOST_LOG_TRIVIAL(info) << "=====================" << title_name->GetLabelText().ToStdString();
 
     auto title_preset_name = new Label(m_history_data_panel, _L("Filament"));
     title_preset_name->SetFont(Label::Head_14);
@@ -365,9 +366,6 @@ void HistoryWindow::sync_history_data() {
         wxString preset_name = get_preset_name_by_filament_id(result.filament_id);
         auto preset_name_value = new Label(m_history_data_panel, preset_name);
 
-        wxString nozzle_name = get_nozzle_volume_type_name(result.nozzle_volume_type);
-        auto     nozzle_name_label = new Label(m_history_data_panel, nozzle_name);
-
         auto k_str = wxString::Format("%.3f", result.k_value);
         auto n_str = wxString::Format("%.3f", result.n_coef);
         auto k_value = new Label(m_history_data_panel, k_str);
@@ -394,8 +392,8 @@ void HistoryWindow::sync_history_data() {
             });
 
         auto edit_button = new Button(m_history_data_panel, _L("Edit"));
-        StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed),
-            std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+        StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
+            std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
             std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
         edit_button->SetBackgroundColour(*wxWHITE);
         edit_button->SetBackgroundColor(btn_bg_blue);
@@ -424,8 +422,11 @@ void HistoryWindow::sync_history_data() {
 
         gbSizer->Add(name_value, {i, get_colume_idx(CaliColumnType::Cali_Name, curr_obj)}, {1, 1}, wxBOTTOM, FromDIP(15));
         gbSizer->Add(preset_name_value, {i, get_colume_idx(CaliColumnType::Cali_Filament, curr_obj)}, {1, 1}, wxBOTTOM, FromDIP(15));
-        if (curr_obj && curr_obj->is_multi_extruders())
+        if (curr_obj && curr_obj->is_multi_extruders()) {
+            wxString nozzle_name       = get_nozzle_volume_type_name(result.nozzle_volume_type);
+            auto     nozzle_name_label = new Label(m_history_data_panel, nozzle_name);
             gbSizer->Add(nozzle_name_label, {i, get_colume_idx(CaliColumnType::Cali_Nozzle, curr_obj)}, {1, 1}, wxBOTTOM, FromDIP(15));
+        }
         gbSizer->Add(k_value, {i, get_colume_idx(CaliColumnType::Cali_K_Value, curr_obj)}, {1, 1}, wxBOTTOM, FromDIP(15));
         //gbSizer->Add(n_value, { i, 3 }, { 1, 1 }, wxBOTTOM, FromDIP(15));
         gbSizer->Add(delete_button, {i, get_colume_idx(CaliColumnType::Cali_Delete, curr_obj)}, {1, 1}, wxBOTTOM, FromDIP(15));
@@ -563,8 +564,8 @@ EditCalibrationHistoryDialog::EditCalibrationHistoryDialog(wxWindow             
 
     auto btn_sizer = new wxBoxSizer(wxHORIZONTAL);
     Button* save_btn = new Button(top_panel, _L("Save"));
-    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed),
-        std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
+        std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
         std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     save_btn->SetBackgroundColour(*wxWHITE);
     save_btn->SetBackgroundColor(btn_bg_blue);
@@ -824,7 +825,7 @@ NewCalibrationHistoryDialog::NewCalibrationHistoryDialog(wxWindow *parent, const
 
     auto       btn_sizer = new wxBoxSizer(wxHORIZONTAL);
     Button *   ok_btn  = new Button(top_panel, _L("Ok"));
-    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed), std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
                             std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     ok_btn->SetBackgroundColour(*wxWHITE);
     ok_btn->SetBackgroundColor(btn_bg_blue);

@@ -46,7 +46,7 @@ class ComboBox;
 class Button;
 
 namespace Slic3r {
-
+class BackgroundSlicingProcess;
 class BuildVolume;
 class Model;
 class ModelObject;
@@ -91,6 +91,7 @@ class PlaterPresetComboBox;
 class PartPlateList;
 class SyncNozzleAndAmsDialog;
 class FinishSyncAmsDialog;
+class Bed3D;
 class FinishSyncBoxDialog;
 using t_optgroups = std::vector <std::shared_ptr<ConfigOptionsGroup>>;
 
@@ -146,7 +147,7 @@ class Sidebar : public wxPanel
     ScalableButton *  ams_btn{nullptr};
     bool                                    m_last_slice_state = false;
     SyncNozzleAndAmsDialog*                 m_sna_dialog{nullptr};
-    FinishSyncBoxDialog*                    m_fna_dialog{nullptr};
+    FinishSyncAmsDialog*                    m_fna_dialog{nullptr};
     std::vector<BedType>                    m_cur_combox_bed_types;
     std::string                             m_cur_image_bed_type;
     int                                     m_last_combo_bedtype_count{0};
@@ -158,6 +159,7 @@ class Sidebar : public wxPanel
     void update_sync_ams_btn_enable(wxUpdateUIEvent &e);
 
 public:
+    enum DockingState { None, Left, Right };
     Sidebar(Plater *parent);
     Sidebar(Sidebar &&) = delete;
     Sidebar(const Sidebar &) = delete;
@@ -182,7 +184,7 @@ public:
     BedType get_cur_select_bed_type();
     std::string get_cur_select_bed_image();
     void set_bed_type_accord_combox(BedType bed_type);
-    bool reset_bed_type_combox_choices();
+    bool reset_bed_type_combox_choices(bool is_sidebar_init = false);
     bool use_default_bed_type(bool is_qdt_preset = true);
     void change_top_border_for_mode_sizer(bool increase_border);
     void msw_rescale();
@@ -226,7 +228,6 @@ public:
     void sync_box_list();
     void load_box_list();
     std::map<int, DynamicPrintConfig> build_filament_box_list(std::vector<std::string> id, std::vector<std::string> color, std::vector<int> slot_state, std::vector<int> slot_id, std::vector<std::string> type);
-    void updata_filament_list();
 
     PlaterPresetComboBox *  printer_combox();
     ObjectList*             obj_list();
@@ -334,10 +335,12 @@ public:
     Sidebar& sidebar();
     const Model& model() const;
     Model& model();
+    Bed3D& bed();
     const Print& fff_print() const;
     Print& fff_print();
     const SLAPrint& sla_print() const;
     SLAPrint& sla_print();
+    BackgroundSlicingProcess &background_process();
 
     void reset_flags_when_new_or_close_project();
     //w29
@@ -401,6 +404,8 @@ public:
     void invalid_all_plate_thumbnails();
     void force_update_all_plate_thumbnails();
 
+    const VendorProfile::PrinterModel *get_curr_printer_model();
+
     static wxColour get_next_color_for_filament();
     static wxString get_slice_warning_string(GCodeProcessorResult::SliceWarning& warning);
 
@@ -437,9 +442,12 @@ public:
     bool is_view3D_overhang_shown() const;
     void show_view3D_overhang(bool show);
 
+    bool is_sidebar_enabled() const;
+    void enable_sidebar(bool enabled);
     bool is_sidebar_collapsed() const;
     void collapse_sidebar(bool show);
-
+    Sidebar::DockingState get_sidebar_docking_state() const;
+    void                  reset_window_layout(int width = -1);
     // Called after the Preferences dialog is closed and the program settings are saved.
     // Update the UI based on the current preferences.
     void update_ui_from_settings();
@@ -564,7 +572,7 @@ public:
     // QDS: return false if not changed
     bool leave_gizmos_stack();
 
-    void on_filament_change(size_t filament_idx);
+    bool on_filament_change(size_t filament_idx);
     void on_filament_count_change(size_t extruders_count);
     void on_filaments_delete(size_t extruders_count, size_t filament_id, int replace_filament_id = -1);
     std::vector<std::array<float, 4>> get_extruders_colors();
@@ -595,8 +603,8 @@ public:
         EMPTY_FILAMENT
     };
     void pop_warning_and_go_to_device_page(wxString printer_name, PrinterWarningType type, const wxString &title);
-    bool check_printer_initialized(MachineObject *obj, bool only_warning = false);
-    bool is_same_printer_for_connected_and_selected();
+    bool check_printer_initialized(MachineObject *obj, bool only_warning = false,bool popup_warning = true);
+    bool is_same_printer_for_connected_and_selected(bool popup_warning = true);
     bool is_printer_configed_by_QDT();
     // QDS
     //void show_action_buttons(const bool is_ready_to_slice) const;
@@ -630,6 +638,8 @@ public:
     int get_prepare_state();
     //QDS: add print job releated functions
     void get_print_job_data(PrintPrepareData* data);
+    void set_print_job_plate_idx(int plate_idx);
+
     int get_send_calibration_finished_event();
     int get_print_finished_event();
     int get_send_finished_event();
@@ -665,7 +675,7 @@ public:
     //QDS:
     void edit_text();
     bool can_edit_text() const;
-
+    std::string get_3mf_filename() { return m_3mf_path; };
     bool can_delete() const;
     bool can_delete_all() const;
     bool can_add_model() const;
@@ -708,7 +718,6 @@ public:
 #endif
 
     bool init_collapse_toolbar();
-    void enable_collapse_toolbar(bool enable);
 
     const Camera& get_camera() const;
     Camera& get_camera();
@@ -736,6 +745,7 @@ public:
     void update_slicing_context_to_current_partplate();
     //QDS: show object info
     void show_object_info();
+    void show_assembly_info();
     //QDS
     bool show_publish_dialog(bool show = true);
     //QDS: post process string object exception strings by warning types
@@ -761,7 +771,7 @@ public:
 
     const GLToolbar& get_collapse_toolbar() const;
     GLToolbar& get_collapse_toolbar();
-
+    int get_collapse_toolbar_size();
     void update_preview_bottom_toolbar();
     void update_preview_moves_slider();
     void enable_preview_moves_slider(bool enable);
@@ -927,6 +937,9 @@ public:
     void setUploadCount(int uploadcount);
     int getInterval();
     void setInterval(int interval);
+    //y65
+    bool is_can_change_color();
+
     //y59
     Box_msg box_msg;
 
@@ -939,7 +952,7 @@ public:
 private:
     struct priv;
     std::unique_ptr<priv> p;
-
+    std::string           m_3mf_path;
     // Set true during PopupMenu() tracking to suppress immediate error message boxes.
     // The error messages are collected to m_tracking_popup_menu_error_message instead and these error messages
     // are shown after the pop-up dialog closes.

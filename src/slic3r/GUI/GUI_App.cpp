@@ -1098,10 +1098,11 @@ void GUI_App::post_init()
 
             std::string download_params_url = url_decode(this->init_params->input_files.front());
             auto input_str_arr = split_str(download_params_url, "file=");
-
+            if (input_str_arr.size() > 1) {input_str_arr.erase(input_str_arr.begin());}
 
             std::string download_url;
 #if QDT_RELEASE_TO_PUBLIC
+			short ext_url_open_state = -1; // -1 not set, wxNO not open, wxYES open
             for (auto input_str : input_str_arr) {
                 if (boost::starts_with(input_str, "http://makerworld") ||
                     boost::starts_with(input_str, "https://makerworld") ||
@@ -1110,6 +1111,18 @@ void GUI_App::post_init()
                     boost::algorithm::contains(input_str, "amazonaws.com") ||
                     boost::algorithm::contains(input_str, "aliyuncs.com")) {
                     download_url = input_str;
+                }
+                else {
+                    if (ext_url_open_state == -1) {
+
+                        MessageDialog msg_dlg(nullptr,
+                                              _L("This file is not from a trusted site, do you want to open it anyway?"), "",
+                                              wxAPPLY | wxYES_NO);
+                        ext_url_open_state   = msg_dlg.ShowModal();
+                    }
+                    if (ext_url_open_state == wxID_YES) {
+                        download_url = input_str;
+                    }
                 }
             }
 #else
@@ -2050,10 +2063,25 @@ void GUI_App::init_networking_callbacks()
                     //subscribe device
                     if (m_agent->is_user_login()) {
                         m_agent->start_device_subscribe();
+
+                        /*disconnect lan*/
+                        DeviceManager* dev = this->getDeviceManager();
+                        if (!dev) return;
+
+                        MachineObject *obj = dev->get_selected_machine();
+                        if (!obj) return;
+
+                        if (obj->nt_try_local_tunnel && obj->connection_type() == "cloud") {
+                            if (obj->is_connected()) {
+                                obj->disconnect();
+                            }
+                            obj->nt_reset_data();
+                        }
+
                         /* resubscribe the cache dev list */
                         if (this->is_enable_multi_machine()) {
-                            DeviceManager* dev = this->getDeviceManager();
-                            if (dev && !dev->subscribe_list_cache.empty()) {
+
+                            if (!dev->subscribe_list_cache.empty()) {
                                 dev->subscribe_device_list(dev->subscribe_list_cache);
                             }
                         }
@@ -2085,9 +2113,7 @@ void GUI_App::init_networking_callbacks()
                     obj->command_get_access_code();
                     if (m_agent)
                         m_agent->install_device_cert(obj->dev_id, obj->is_lan_mode_printer());
-                    if (!is_enable_multi_machine()) {
-                        GUI::wxGetApp().sidebar().load_ams_list(obj->dev_id, obj);
-                    }
+                    GUI::wxGetApp().sidebar().load_ams_list(obj->dev_id, obj);
                 }
                 });
             });
@@ -2191,18 +2217,16 @@ void GUI_App::init_networking_callbacks()
                     auto sel = this->m_device_manager->get_selected_machine();
 
                     if (sel && sel->dev_id == dev_id) {
-                        obj->parse_json(msg);
+                        obj->parse_json("cloud", msg);
                     }
                     else {
-                        obj->parse_json(msg, true);
+                        obj->parse_json("cloud", msg, true);
                     }
                     
 
-                    if (!this->is_enable_multi_machine()) {
-                        if ((sel == obj || sel == nullptr) && obj->is_ams_need_update) {
-                            GUI::wxGetApp().sidebar().load_ams_list(obj->dev_id, obj);
-                            obj->is_ams_need_update = false;
-                        }
+                    if ((sel == obj || sel == nullptr) && obj->is_ams_need_update) {
+                        GUI::wxGetApp().sidebar().load_ams_list(obj->dev_id, obj);
+                        obj->is_ams_need_update = false;
                     }
                 }
 
@@ -2242,19 +2266,12 @@ void GUI_App::init_networking_callbacks()
                 
                 this->process_network_msg(dev_id, msg);
                 MachineObject* obj = m_device_manager->get_my_machine(dev_id);
-                if (!obj || !obj->is_lan_mode_printer()) {
-                    obj = m_device_manager->get_local_machine(dev_id);
-                }
 
                 if (obj) {
-                    obj->parse_json(msg, DeviceManager::key_field_only);
+                    obj->parse_json("lan", msg, DeviceManager::key_field_only);
                     if (this->m_device_manager->get_selected_machine() == obj && obj->is_ams_need_update) {
                         GUI::wxGetApp().sidebar().load_ams_list(obj->dev_id, obj);
                     }
-                }
-                obj = m_device_manager->get_local_machine(dev_id);
-                if (obj) {
-                    obj->parse_json(msg, DeviceManager::key_field_only);
                 }
 
                 if (GUI::wxGetApp().plater())
@@ -2298,8 +2315,10 @@ bool GUI_App::is_blocking_printing(MachineObject *obj_)
     if (!dev) return true;
     std::string target_model;
     if (obj_ == nullptr) {
-        auto        obj_         = dev->get_selected_machine();
-        target_model = obj_->printer_type;
+        auto obj_ = dev->get_selected_machine();
+        if (obj_) {
+            target_model = obj_->printer_type;
+        }
     } else {
         target_model = obj_->printer_type;
     }
@@ -2910,6 +2929,9 @@ bool GUI_App::on_init_inner()
 
         const bool gizmo_keep_screen_size = app_config->get_bool("gizmo_keep_screen_size");
         p_ogl_manager->set_gizmo_keep_screen_size_enabled(gizmo_keep_screen_size);
+
+        const bool cancel_glmultidraw = app_config->get_bool("cancel_glmultidraw");
+        p_ogl_manager->set_cancle_glmultidraw(cancel_glmultidraw);
     }
 
     QDTSplashScreen * scrn = nullptr;
@@ -3615,7 +3637,11 @@ static void update_dark_children_ui(wxWindow* window, bool just_buttons_update =
     is_btn = false;*/
     if (!window) return;
 
-    wxGetApp().UpdateDarkUI(window);
+    if (ScalableButton* btn = dynamic_cast<ScalableButton*>(window)) {
+        btn->UpdateDarkUI();
+    } else {
+        wxGetApp().UpdateDarkUI(window);
+    }
 
     auto children = window->GetChildren();
     for (auto child : children) {
@@ -5432,23 +5458,33 @@ void GUI_App::show_dialog(wxString msg)
     }
 }
 
-void  GUI_App::push_notification(wxString msg, wxString title, UserNotificationStyle style)
+void  GUI_App::push_notification(const MachineObject* obj, wxString msg, wxString title, UserNotificationStyle style)
 {
-    if (!this->is_enable_multi_machine()) {
-        if (style == UserNotificationStyle::UNS_NORMAL) {
-            if (m_info_dialog_content.empty()) {
-                wxCommandEvent* evt = new wxCommandEvent(EVT_SHOW_DIALOG);
-                evt->SetString(msg);
-                GUI::wxGetApp().QueueEvent(evt);
-                m_info_dialog_content = msg;
-            }
+    if (this->is_enable_multi_machine())
+    {
+        if (m_device_manager && (obj != m_device_manager->get_selected_machine()))
+        {
+            return;
         }
-        else if (style == UserNotificationStyle::UNS_WARNING_CONFIRM) {
-            GUI::wxGetApp().CallAfter([msg, title] {
+    }
+
+    if (style == UserNotificationStyle::UNS_NORMAL)
+    {
+        if (m_info_dialog_content.empty())
+        {
+            wxCommandEvent* evt = new wxCommandEvent(EVT_SHOW_DIALOG);
+            evt->SetString(msg);
+            GUI::wxGetApp().QueueEvent(evt);
+            m_info_dialog_content = msg;
+        }
+    }
+    else if (style == UserNotificationStyle::UNS_WARNING_CONFIRM)
+    {
+        GUI::wxGetApp().CallAfter([msg, title]
+            {
                 GUI::MessageDialog msg_dlg(nullptr, msg, title, wxICON_WARNING | wxOK);
                 msg_dlg.ShowModal();
             });
-        }
     }
 }
 
@@ -6863,6 +6899,7 @@ void GUI_App::MacOpenURL(const wxString& url)
 
     if (!url.empty() && boost::starts_with(url, "qidistudioopen://")) {
         auto input_str_arr = split_str(url.ToStdString(), "qidistudioopen://");
+        if (input_str_arr.size() > 1) {input_str_arr.erase(input_str_arr.begin());}
 
         std::string download_origin_url;
         for (auto input_str : input_str_arr) {
@@ -7696,6 +7733,41 @@ void GUI_App::disassociate_files(std::wstring extend)
 
 #endif // __WXMSW__
 
+bool is_soluble_filament(int extruder_id)
+{
+    auto &filament_presets = Slic3r::GUI::wxGetApp().preset_bundle->filament_presets;
+    auto &filaments        = Slic3r::GUI::wxGetApp().preset_bundle->filaments;
+
+    if (extruder_id >= filament_presets.size()) return false;
+
+    Slic3r::Preset *filament = filaments.find_preset(filament_presets[extruder_id]);
+    if (filament == nullptr) return false;
+
+    Slic3r::ConfigOptionBools *support_option = dynamic_cast<Slic3r::ConfigOptionBools *>(filament->config.option("filament_soluble"));
+    if (support_option == nullptr) return false;
+
+    return support_option->get_at(0);
+};
+
+bool has_filaments(const std::vector<string>& model_filaments) {
+    auto &filament_presets = Slic3r::GUI::wxGetApp().preset_bundle->filament_presets;
+    auto model_objects = Slic3r::GUI::wxGetApp().plater()->model().objects;
+    const Slic3r::DynamicPrintConfig &config = wxGetApp().preset_bundle->full_config();
+    Model::setExtruderParams(config, filament_presets.size());
+
+    auto get_filament_name = [](int id) { return Model::extruderParamsMap.find(id) != Model::extruderParamsMap.end() ? Model::extruderParamsMap.at(id).materialName : "PLA"; };
+    for (const ModelObject *mo : model_objects) {
+        for (auto vol : mo->volumes) {
+            auto ve = vol->get_extruders();
+            for (auto id : ve) {
+                auto name = get_filament_name(id);
+                if (find(model_filaments.begin(), model_filaments.end(), name) != model_filaments.end()) return true;
+            }
+        }
+    }
+    return false;
+}
+
 bool is_support_filament(int extruder_id)
 {
     auto &filament_presets = Slic3r::GUI::wxGetApp().preset_bundle->filament_presets;
@@ -7706,9 +7778,20 @@ bool is_support_filament(int extruder_id)
     Slic3r::Preset *filament = filaments.find_preset(filament_presets[extruder_id]);
     if (filament == nullptr) return false;
 
-    Slic3r::ConfigOptionBools *support_option = dynamic_cast<Slic3r::ConfigOptionBools *>(filament->config.option("filament_is_support"));
-    if (support_option == nullptr) return false;
+    std::string filament_type = filament->config.option<ConfigOptionStrings>("filament_type")->values[0];
 
+    Slic3r::ConfigOptionBools *support_option = dynamic_cast<Slic3r::ConfigOptionBools *>(filament->config.option("filament_is_support"));
+
+    if (filament_type == "PETG" || filament_type == "PLA") {
+        std::vector<string> model_filaments;
+        if (filament_type == "PETG")
+            model_filaments.emplace_back("PLA");
+        else {
+            model_filaments = {"PETG", "TPU", "TPU-BOX"};
+        }
+        if (has_filaments(model_filaments)) return true;
+    }
+    if (support_option == nullptr) return false;
     return support_option->get_at(0);
 };
 

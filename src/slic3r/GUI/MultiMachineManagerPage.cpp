@@ -187,7 +187,7 @@ void MultiMachineItem::doRender(wxDC& dc)
         else if (state_device > 2 && state_device < 7) {
             dc.SetFont(Label::Body_12);
             dc.SetTextForeground(wxColour(68, 121, 251));
-            if (obj_->get_curr_stage().IsEmpty() && obj_->subtask_) {
+            if (obj_->get_curr_stage() == _L("Printing") && obj_->subtask_) {
                 //wxString layer_info = wxString::Format(_L("Layer: %d/%d"), obj_->curr_layer, obj_->total_layers);
                 wxString progress_info = wxString::Format("%d", obj_->subtask_->task_progress);
                 wxString left_time = wxString::Format("%s", get_left_time(obj_->mc_left_time));
@@ -281,8 +281,8 @@ MultiMachineManagerPage::MultiMachineManagerPage(wxWindow* parent)
 
     //edit prints
     auto m_btn_bg_enable = StateColor(
-        std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed),
-        std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+        std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
+        std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
         std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal)
     );
 

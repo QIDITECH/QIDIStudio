@@ -40,8 +40,8 @@ static void update_ui(wxWindow* window)
 
 static const char g_min_cluster_color = 1;
 static const char g_max_color = (int) EnforcerBlockerType::ExtruderMax;
-const  StateColor ok_btn_bg(std::pair<wxColour, int>(wxColour(27, 136, 68), StateColor::Pressed),
-                     std::pair<wxColour, int>(wxColour(61, 203, 115), StateColor::Hovered),
+const  StateColor ok_btn_bg(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
+                     std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
                      std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
 const StateColor  ok_btn_disable_bg(std::pair<wxColour, int>(wxColour(205, 201, 201), StateColor::Pressed),
                                    std::pair<wxColour, int>(wxColour(205, 201, 201), StateColor::Hovered),
@@ -89,8 +89,8 @@ wxBoxSizer* ObjColorDialog::create_btn_sizer(long flags,bool exist_error)
         std::pair<wxColour, int>(wxColour(38, 46, 48), StateColor::Normal)
     );
     StateColor calc_btn_bg(
-        std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed),
-        std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+        std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
+        std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
         std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal)
     );
     StateColor calc_btn_bd(
@@ -200,7 +200,7 @@ ObjColorDialog::ObjColorDialog(wxWindow *parent, Slic3r::ObjDialogInOut &in_out,
     else {
         wxBoxSizer *  error_mtl_sizer       = new wxBoxSizer(wxVERTICAL);
 
-        wxStaticText *error_mtl_title       = new wxStaticText(this, wxID_ANY, _L("Some faces not define color."));
+        wxStaticText *error_mtl_title       = new wxStaticText(this, wxID_ANY, _L("Some faces don't have color defined."));
         if (!in_out.lost_material_name.empty()) {
             error_mtl_title->SetLabel(_L("mtl file exist error,could not find the material:") + " " + in_out.lost_material_name + ".");
         }
@@ -236,7 +236,7 @@ ObjColorDialog::ObjColorDialog(wxWindow *parent, Slic3r::ObjDialogInOut &in_out,
                   EndModal(wxCANCEL);
                   return;
               }
-              m_panel_ObjColor->clear_instance();
+              m_panel_ObjColor->clear_instance_and_revert_offset();
               m_panel_ObjColor->send_new_filament_to_ui();
               EndModal(wxID_OK);
             }, wxID_OK);
@@ -360,9 +360,11 @@ ObjColorPanel::ObjColorPanel(wxWindow *parent, Slic3r::ObjDialogInOut &in_out, c
                 auto mo = m_obj_in_out.model->objects[0];
                 mo->add_instance();
                 auto mv  = mo->volumes[0];
+                m_thumbnail_offset = Slic3r::Vec3d::Zero();
                 auto box = mo->bounding_box();
                 if (box.min.x() < 0 || box.min.y() < 0 || box.min.z() < 0) {
-                    mv->translate(box.min.x() < 0 ? -box.min.x() : 0, box.min.y() < 0 ? -box.min.y() : 0, box.min.z() < 0 ? -box.min.z() : 0);
+                    m_thumbnail_offset = Slic3r::Vec3d(box.min.x() < 0 ? -box.min.x() : 0, box.min.y() < 0 ? -box.min.y() : 0, box.min.z() < 0 ? -box.min.z() : 0);
+                    mv->translate(m_thumbnail_offset);
                 }
             }
 
@@ -521,7 +523,7 @@ void ObjColorPanel::cancel_paint_color() {
     m_filament_ids.clear();
     auto mo = m_obj_in_out.model->objects[0];
     mo->config.set("extruder", 1);
-    clear_instance();
+    clear_instance_and_revert_offset();
     auto mv = mo->volumes[0];
     mv->mmu_segmentation_facets.reset();
     mv->config.set("extruder", 1);
@@ -558,7 +560,7 @@ wxBoxSizer *ObjColorPanel::create_approximate_match_btn_sizer(wxWindow *parent)
 {
     auto       btn_sizer = new wxBoxSizer(wxHORIZONTAL);
     // y96
-    StateColor calc_btn_bg(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+    StateColor calc_btn_bg(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed), std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
                            std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     StateColor calc_btn_bd(std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     StateColor calc_btn_text(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Normal));
@@ -584,7 +586,7 @@ wxBoxSizer *ObjColorPanel::create_approximate_match_btn_sizer(wxWindow *parent)
 wxBoxSizer *ObjColorPanel::create_add_btn_sizer(wxWindow *parent)
 {
     auto       btn_sizer = new wxBoxSizer(wxHORIZONTAL);
-    StateColor calc_btn_bg(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+    StateColor calc_btn_bg(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed), std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
                            std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     StateColor calc_btn_bd(std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     StateColor calc_btn_text(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Normal));
@@ -610,7 +612,7 @@ wxBoxSizer *ObjColorPanel::create_add_btn_sizer(wxWindow *parent)
 wxBoxSizer *ObjColorPanel::create_reset_btn_sizer(wxWindow *parent)
 {
     auto       btn_sizer = new wxBoxSizer(wxHORIZONTAL);
-    StateColor calc_btn_bg(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+    StateColor calc_btn_bg(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed), std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
                            std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     StateColor calc_btn_bd(std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     StateColor calc_btn_text(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Normal));
@@ -935,10 +937,15 @@ void ObjColorPanel::set_view_angle_type(int value)
 }
 
 
-void ObjColorPanel::clear_instance()
+void ObjColorPanel::clear_instance_and_revert_offset()
 {
     auto mo = m_obj_in_out.model->objects[0];
     mo->clear_instances();
+    auto mv  = mo->volumes[0];
+    auto box = mo->bounding_box();
+    if (!m_thumbnail_offset.isApprox(Slic3r::Vec3d::Zero())) {
+        mv->translate(-m_thumbnail_offset);
+    }
 }
 
 bool ObjColorPanel::do_show(bool show) {

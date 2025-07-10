@@ -54,7 +54,7 @@ TipsDialog::TipsDialog(wxWindow *parent, const wxString &title, const wxString &
     wxBoxSizer *m_sizer_left   = new wxBoxSizer(wxHORIZONTAL);
 
     auto dont_show_again = create_item_checkbox(_L("Don't show again"), this, _L("Don't show again"), "do_not_show_tips");
-    m_sizer_left->Add(dont_show_again, 1, wxALL, FromDIP(5));
+    m_sizer_left->Add(dont_show_again, 1, wxALL, FromDIP(0));
 
     m_sizer_bottom->Add(m_sizer_left, 1, wxEXPAND, FromDIP(5));
 
@@ -105,7 +105,7 @@ wxBoxSizer *TipsDialog::create_item_checkbox(wxString title, wxWindow *parent, w
 {
     wxBoxSizer *m_sizer_checkbox = new wxBoxSizer(wxHORIZONTAL);
 
-    m_sizer_checkbox->Add(0, 0, 0, wxEXPAND | wxLEFT, 5);
+     //m_sizer_checkbox->Add(0, 0, 0, wxEXPAND | wxLEFT, 5);
 
     auto checkbox = new ::CheckBox(parent);
     m_sizer_checkbox->Add(checkbox, 0, wxALIGN_CENTER, 0);
@@ -131,8 +131,8 @@ wxBoxSizer *TipsDialog::create_item_checkbox(wxString title, wxWindow *parent, w
 Button *TipsDialog::add_button(wxWindowID btn_id, const wxString &label, bool set_focus /*= false*/)
 {
     Button* btn = new Button(this, label, "", 0, 0, btn_id);
-    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(54, 97, 201), StateColor::Pressed),
-                            std::pair<wxColour, int>(wxColour(78, 133, 255), StateColor::Hovered),
+    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
+                            std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
                             std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
 
     StateColor btn_bd_blue(std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));

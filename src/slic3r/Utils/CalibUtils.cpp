@@ -38,24 +38,27 @@ std::vector<std::string> not_support_auto_pa_cali_filaments = {
 
 void get_default_k_n_value(const std::string &filament_id, float &k, float &n)
 {
-    if (filament_id.compare("GFG00") == 0) {
-        // PETG
-        k = 0.04;
+    if (filament_id.compare("GFU01") == 0) {
+        /* TPU 95A */
+        k = 0.25;
         n = 1.0;
-    } else if (filament_id.compare("GFB00") == 0 || filament_id.compare("GFB50") == 0) {
-        // ABS
-        k = 0.04;
+    } else if (filament_id.compare("GFU03") == 0) {
+        /* TPU 90A */
+        k = 0.35;
         n = 1.0;
-    } else if (filament_id.compare("GFU01") == 0) {
-        // TPU
-        k = 0.2;
+    } else if (filament_id.compare("GFU04") == 0) {
+        /* TPU 85A */
+        k = 0.65;
         n = 1.0;
-    } else if (filament_id.compare("GFB01") == 0) {
-        // ASA
+    } else if (filament_id.compare("GFG00") == 0 || filament_id.compare("GFG01") == 0 || filament_id.compare("GFG60") == 0 || filament_id.compare("GFL06") == 0 ||
+               filament_id.compare("GFL55") == 0 || filament_id.compare("GFG99") == 0 || filament_id.compare("GFG98") == 0 || filament_id.compare("GFG97") == 0 ||
+               filament_id.compare("GFG50") == 0 || filament_id.compare("GFU02") == 0 || filament_id.compare("GFU98") == 0 || filament_id.compare("GFS00") == 0 ||
+               filament_id.compare("GFS02") == 0) {
+        /* 0.04 filaments */
         k = 0.04;
         n = 1.0;
     } else {
-        // PLA , other
+        /* other */
         k = 0.02;
         n = 1.0;
     }
@@ -124,6 +127,8 @@ static wxString to_wstring_name(std::string name)
         return _L("Hardened Steel");
     } else if (name == "stainless_steel") {
         return _L("Stainless Steel");
+    } else if (name == "tungsten_carbide") {
+        return _L("Tungsten Carbide");
     }
 
     return wxEmptyString;
@@ -1337,6 +1342,7 @@ bool CalibUtils::process_and_store_3mf(Model *model, const DynamicPrintConfig &f
 
     Print *fff_print = dynamic_cast<Print *>(print);
     fff_print->set_calib_params(params);
+    fff_print->set_QDT_Printer(true);
 
     //StringObjectException warning;
     //auto err = print->validate(&warning);
@@ -1358,9 +1364,22 @@ bool CalibUtils::process_and_store_3mf(Model *model, const DynamicPrintConfig &f
     PlateDataPtrs plate_data_list;
     partplate_list.store_to_3mf_structure(plate_data_list, true, 0);
 
+    DeviceManager *dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+    if (!dev) {
+        error_message = _L("Need select printer");
+        return false;
+    }
+
+    MachineObject *obj_ = dev->get_selected_machine();
+    if (obj_ == nullptr) {
+        error_message = _L("Need select printer");
+        return false;
+    }
+
     for (auto plate_data : plate_data_list) {
         plate_data->gcode_file      = temp_gcode_path;
         plate_data->is_sliced_valid = true;
+        plate_data->printer_model_id = obj_->printer_type;
         FilamentInfo& filament_info = plate_data->slice_filaments_info.front();
         filament_info.type          = full_config.opt_string("filament_type", 0);
     }

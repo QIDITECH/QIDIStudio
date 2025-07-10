@@ -172,7 +172,7 @@ void ExtrusionCalibration::create()
 
     m_button_cali = new Button(m_step_1_panel, _L("Start calibration"));
     // y96
-    m_btn_bg_blue = StateColor(std::pair<wxColour, int>(wxColour(238, 238, 238), StateColor::Disabled), std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+    m_btn_bg_blue = StateColor(std::pair<wxColour, int>(wxColour(238, 238, 238), StateColor::Disabled), std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed), std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
         std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     m_button_cali->SetBackgroundColor(m_btn_bg_blue);
     m_button_cali->SetFont(Label::Body_13);
@@ -183,7 +183,7 @@ void ExtrusionCalibration::create()
     m_button_cali->Bind(wxEVT_BUTTON, &ExtrusionCalibration::on_click_cali, this);
 
     m_cali_cancel = new Button(m_step_1_panel, _L("Cancel"));
-    m_btn_bg_blue = StateColor(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+    m_btn_bg_blue = StateColor(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed), std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
         std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     m_cali_cancel->SetBackgroundColor(m_btn_bg_blue);
     m_cali_cancel->SetBorderColor(wxColour(68, 121, 251));
@@ -258,7 +258,7 @@ void ExtrusionCalibration::create()
 
     // save button
     m_button_save_result = new Button(m_step_2_panel, _L("Save"));
-    m_btn_bg_blue = StateColor(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+    m_btn_bg_blue = StateColor(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed), std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
         std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     m_button_save_result->SetBackgroundColor(m_btn_bg_blue);
     m_button_save_result->SetFont(Label::Body_13);

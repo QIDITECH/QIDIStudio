@@ -66,10 +66,9 @@ class GLGizmoMmuSegmentation : public GLGizmoPainterBase
 public:
     GLGizmoMmuSegmentation(GLCanvas3D& parent, const std::string& icon_filename, unsigned int sprite_id);
     ~GLGizmoMmuSegmentation() override = default;
-
+    void data_changed(bool is_serializing) override;
     void render_painter_gizmo() const override;
     void render_non_manifold_edges() const;
-    void set_painter_gizmo_data(const Selection& selection) override;
 
     void render_triangles(const Selection& selection) const override;
 
@@ -87,6 +86,7 @@ public:
 
 protected:
     // QDS
+    void                 set_painter_gizmo_data(const Selection &selection) override;
     std::array<float, 4> get_cursor_hover_color() const override;
     void on_set_state() override;
 

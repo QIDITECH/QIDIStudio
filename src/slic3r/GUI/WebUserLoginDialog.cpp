@@ -18,6 +18,7 @@
 
 #include <boost/cast.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "MainFrame.hpp"
 #include <boost/dll.hpp>
@@ -157,7 +158,7 @@ void ZUserLogin::OnIdle(wxIdleEvent& WXUNUSED(evt))
 void ZUserLogin::OnNavigationRequest(wxWebViewEvent& evt)
 {
     // wxLogMessage("%s", "Navigation request to '" + evt.GetURL() + "'(target='" + evt.GetTarget() + "')");
-
+    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": " << evt.GetURL().ToUTF8().data();
     UpdateState();
 }
 
@@ -167,6 +168,8 @@ void ZUserLogin::OnNavigationRequest(wxWebViewEvent& evt)
 void ZUserLogin::OnNavigationComplete(wxWebViewEvent& evt)
 {
     // wxLogMessage("%s", "Navigation complete; url='" + evt.GetURL() + "'");
+    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": " << evt.GetURL().ToUTF8().data();
+
     m_browser->Show();
     Layout();
     UpdateState();
@@ -177,6 +180,7 @@ void ZUserLogin::OnNavigationComplete(wxWebViewEvent& evt)
  */
 void ZUserLogin::OnDocumentLoaded(wxWebViewEvent& evt)
 {
+    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": " << evt.GetURL().ToUTF8().data();
     // Only notify if the document is the main frame, not a subframe
     wxString      tmpUrl = evt.GetURL();
 
@@ -188,6 +192,8 @@ void ZUserLogin::OnDocumentLoaded(wxWebViewEvent& evt)
  */
 void ZUserLogin::OnNewWindow(wxWebViewEvent& evt)
 {
+    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": " << evt.GetURL().ToUTF8().data();
+
     wxString flag = " (other)";
 
     if (evt.GetNavigationAction() == wxWEBVIEW_NAV_ACTION_USER) {
@@ -301,6 +307,7 @@ case type: category = #type; break;
             ShowErrorPage();
     }
 
+    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": " << evt.GetURL().ToUTF8().data();
     // wxLogMessage("%s", "Error; url='" + evt.GetURL() + "', error='" +
     // category + " (" + evt.GetString() + ")'");
 
@@ -333,6 +340,7 @@ bool ZUserLogin::ShowErrorPage()
 std::string ZUserLogin::GetStudioLanguage()
 {
     std::string strLanguage = wxGetApp().app_config->get("language");
+    boost::trim(strLanguage);
     if (strLanguage.empty()) strLanguage = "en";
 
     return strLanguage;

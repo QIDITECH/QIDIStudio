@@ -1138,6 +1138,10 @@ void ImGuiWrapper::tooltip(const char *label, float wrap_width)
     ImGui::EndTooltip();
 }
 
+void ImGuiWrapper::tooltip(const std::string &label, float wrap_width) {
+    tooltip(label.c_str(), wrap_width);
+}
+
 void ImGuiWrapper::tooltip(const wxString &label, float wrap_width)
 {
     ImGui::BeginTooltip();
@@ -2479,7 +2483,7 @@ void ImGuiWrapper::push_confirm_button_style() {
     if (m_is_dark_mode) {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(68.0f/ 255.0f, 121.0f / 255.0f, 251.0f / 255.0f, 1.f));
         ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(68.0f/ 255.0f, 121.0f / 255.0f, 251.0f / 255.0f, 1.f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(61.f / 255.f, 203.f / 255.f, 115.f / 255.f, 1.f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(100.f / 255.f, 150.f / 255.f, 255.f / 255.f, 1.f));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.f / 255.f, 0.f / 255.f, 121.f / 255.f, 1.f));
         ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 1.f, 1.f, 0.88f));
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.88f));
@@ -2487,7 +2491,7 @@ void ImGuiWrapper::push_confirm_button_style() {
     else {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(68.0f/ 255.0f, 121.0f / 255.0f, 251.0f / 255.0f, 1.f));
         ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(68.0f/ 255.0f, 121.0f / 255.0f, 251.0f / 255.0f, 1.f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(61.f / 255.f, 203.f / 255.f, 115.f / 255.f, 1.f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(100.f / 255.f, 150.f / 255.f, 255.f / 255.f, 1.f));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.f / 255.f, 0.f / 255.f, 121.f / 255.f, 1.f));
         ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.f, 1.f, 1.f, 1.f));
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.f));

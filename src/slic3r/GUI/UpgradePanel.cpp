@@ -223,8 +223,8 @@ MachineInfoPanel::MachineInfoPanel(wxWindow* parent, wxWindowID id, const wxPoin
     m_main_right_sizer->Add(0, FromDIP(50), 0, wxEXPAND, FromDIP(5));
 
     m_button_upgrade_firmware = new Button(this, _L("Update firmware"));
-    StateColor btn_bg(std::pair<wxColour, int>(wxColour(255, 255, 255), StateColor::Disabled), std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed),
-                      std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered), std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Enabled),
+    StateColor btn_bg(std::pair<wxColour, int>(wxColour(255, 255, 255), StateColor::Disabled), std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
+                      std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered), std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Enabled),
                       std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));    // y96
     StateColor btn_bd(std::pair<wxColour, int>(wxColour(144, 144, 144), StateColor::Disabled), std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Enabled));
     StateColor btn_text(std::pair<wxColour, int>(wxColour(144, 144, 144), StateColor::Disabled), std::pair<wxColour, int>(wxColour(255, 255, 255), StateColor::Enabled));
@@ -683,13 +683,8 @@ void MachineInfoPanel::update_ams_ext(MachineObject *obj)
                 }
             } else {
                 m_ahb_panel->m_ams_new_version_img->Hide();
-                if (obj->ahb_new_version_number.empty()) {
-                    wxString ver_text = wxString::Format("%s", obj->module_vers.find("ahb")->second.sw_ver);
-                    hub_ver           = ver_text;
-                } else {
-                    wxString ver_text = wxString::Format("%s(%s)", obj->module_vers.find("ahb")->second.sw_ver, _L("Latest version"));
-                    hub_ver           = ver_text;
-                }
+                wxString ver_text = wxString::Format("%s(%s)", obj->module_vers.find("ahb")->second.sw_ver, _L("Latest version"));
+                hub_ver = ver_text;
             }
         } else {
             auto ver_item = obj->new_ver_list.find("ahb");
@@ -858,26 +853,16 @@ void MachineInfoPanel::update_ams_ext(MachineObject *obj)
                             }
                             else {
                                 amspanel->m_ams_new_version_img->Hide();
-                                if (obj->ams_new_version_number.empty()) {
-                                    wxString ver_text = wxString::Format("%s", it->second.sw_ver);
-                                    if ((it->second.firmware_status & 0x3) == FIRMWARE_STASUS::BETA) {
-                                        amspanel->m_staticText_beta_version->Show();
-                                    }
-                                    else {
-                                        amspanel->m_staticText_beta_version->Hide();
-                                    }
-                                    ams_ver = ver_text;
+                                wxString ver_text = wxString::Format("%s", it->second.sw_ver, _L("Latest version"));
+                                if ((it->second.firmware_status & 0x3) == FIRMWARE_STASUS::BETA)
+                                {
+                                    amspanel->m_staticText_beta_version->Show();
                                 }
-                                else {
-                                    wxString ver_text = wxString::Format("%s", it->second.sw_ver, _L("Latest version"));
-                                    if ((it->second.firmware_status & 0x3) == FIRMWARE_STASUS::BETA) {
-                                        amspanel->m_staticText_beta_version->Show();
-                                    }
-                                    else {
-                                        amspanel->m_staticText_beta_version->Hide();
-                                    }
-                                    ams_ver = ver_text;
+                                else
+                                {
+                                    amspanel->m_staticText_beta_version->Hide();
                                 }
+                                ams_ver = ver_text;
                             }
                         }
                         else if (!it->second.sw_new_ver.empty() && (it->second.sw_new_ver != it->second.sw_ver)) {
