@@ -68,8 +68,11 @@ WORKDIR /QIDIStudio
 # It might conflict with your mapped user, remove if user ubuntu exist
 RUN if id "ubuntu" >/dev/null 2>&1; then userdel -r ubuntu; fi
 
-
-# Use bash as the shell
+# It's easier to run Bambu Studio as the same username,
+# UID and GID as your workstation.  Since we bind mount
+# your home directory into the container, it's handy
+# to keep permissions the same.  Just in case, defaults
+# are root.
 
 # Set ARG values
 # If user was passed from build it will create a user same
@@ -114,11 +117,8 @@ RUN ./BuildLinux.sh -s
 ENV container=podman
 RUN ./BuildLinux.sh -i
 
-# It's easier to run QIDI Studio as the same username,
-# UID and GID as your workstation.  Since we bind mount
-# your home directory into the container, it's handy
-# to keep permissions the same.  Just in case, defaults
-# are root.
+
+# Use bash as the shell
 SHELL ["/bin/bash", "-l", "-c"]
 
 # Point FFMPEG Library search to the binary built upon QIDIStudio build time

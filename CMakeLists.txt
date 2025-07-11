@@ -44,6 +44,7 @@ set(IS_CROSS_COMPILE FALSE)
 
 set(FLATPAK FALSE CACHE BOOL "Not copy FFMPEG file")
 
+
 if (APPLE)
     set(CMAKE_FIND_FRAMEWORK LAST)
     set(CMAKE_FIND_APPBUNDLE LAST)
@@ -170,6 +171,14 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # WIN10SDK_PATH is used to point CMake to the WIN10 SDK installation directory.
 # We pick it from environment if it is not defined in another way
 if(WIN32)
+    if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/hooks/pre-commit"  AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
+        message(STATUS ".git: directory")
+        configure_file(
+            "${CMAKE_SOURCE_DIR}/scripts/hooks/pre-commit"
+            "${CMAKE_SOURCE_DIR}/.git/hooks/pre-commit"
+        )
+    endif()
+
     find_package(PkgConfig REQUIRED)
     if(NOT DEFINED WIN10SDK_PATH)
         if(DEFINED ENV{WIN10SDK_PATH})
@@ -366,7 +375,7 @@ endif()
 function(slic3r_remap_configs targets from_Cfg to_Cfg)
     if(MSVC)
         string(TOUPPER ${from_Cfg} from_CFG)
-    
+
         foreach(tgt ${targets})
             if(TARGET ${tgt})
                 set_target_properties(${tgt} PROPERTIES MAP_IMPORTED_CONFIG_${from_CFG} ${to_Cfg})
@@ -668,7 +677,7 @@ function(qidistudio_copy_dlls target config postfix output_dlls)
         ${_out_dir}/avutil-59.dll
         PARENT_SCOPE
     )
-    
+
 endfunction()
 
 function(qidistudio_copy_sos target config postfix output_sos)

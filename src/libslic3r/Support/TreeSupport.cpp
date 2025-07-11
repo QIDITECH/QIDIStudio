@@ -639,7 +639,7 @@ TreeSupport::TreeSupport(PrintObject& object, const SlicingParameters &slicing_p
     SVG svg(debug_out_path("machine_boarder.svg"), m_object->bounding_box());
     if (svg.is_opened()) svg.draw(m_machine_border, "yellow");
 #endif
-BOOST_LOG_TRIVIAL(debug) << "tree support construct finish";
+    BOOST_LOG_TRIVIAL(debug) << "tree support construct finish";
 }
 
 void add_overhang(Layer *layer, const ExPolygon &overhang, int type)
@@ -1142,6 +1142,7 @@ void TreeSupport::detect_overhangs(bool check_support_necessity/* = false*/)
         }
     }
 
+
     for (auto &cluster : overhangClusters) {
         bool enforce_add = false;
         // remove small overhangs
@@ -1527,7 +1528,7 @@ void TreeSupport::generate_toolpaths()
         const Layer *layer = m_object->layers().front();
         for (const ExPolygon &expoly : layer->lslices) {
             raft_areas.push_back(expoly);
-        }
+    }
     }
 
     if (m_object->support_layer_count() > m_raft_layers) {
@@ -1620,7 +1621,6 @@ void TreeSupport::generate_toolpaths()
 
     if (m_object->support_layer_count() <= m_raft_layers)
         return;
-
 
     // generate tree support tool paths
     tbb::parallel_for(
@@ -1893,7 +1893,7 @@ void TreeSupport::generate()
         generate_tree_support_3D(*m_object, this, this->throw_on_cancel);
         return;
     }
-
+    
     profiler.stage_start(STAGE_total);
 
     // Generate overhang areas
@@ -2381,7 +2381,7 @@ void TreeSupport::draw_circles()
                     if (obj_layer_nr>0 && node.distance_to_top < 0)
                         append(roof_gap_areas, area);
                     else if (m_support_params.num_top_interface_layers > 0 && obj_layer_nr > 0 && (node.support_roof_layers_below == 0 || node.support_roof_layers_below == 1) &&
-                            node.distance_to_top >= m_support_params.num_top_interface_layers) {
+                             node.distance_to_top >= m_support_params.num_top_interface_layers) {
                         append(roof_1st_layer, area);
                         max_layers_above_roof1 = std::max(max_layers_above_roof1, node.dist_mm_to_top);
                     }
@@ -2540,7 +2540,7 @@ void TreeSupport::draw_circles()
                 contours.emplace_back(to_polygons(base_areas_lower));
                 printZ_to_lightninglayer[lower_layer->print_z] = overhangs.size() - 1;
 
-                #ifdef SUPPORT_TREE_DEBUG_TO_SVG
+#ifdef SUPPORT_TREE_DEBUG_TO_SVG
                 if (!overhang.empty() && !base_areas_lower.empty()) {
                     std::string fname = debug_out_path("lightning_%d_%.2f.svg", layer_nr, ts_layer->print_z);
                     SVG::export_expolygons(fname, {{base_areas_lower, {"base_areas_lower", "red", 0.5}}, {overhang, {"overhang", "blue", 0.5}}});
@@ -3251,7 +3251,7 @@ void TreeSupport::drop_nodes()
 #endif
                 coordf_t next_radius = calc_radius(node.dist_mm_to_top + height_next);
                 auto avoidance_next = get_avoidance(next_radius, obj_layer_nr_next);
-
+                
                 Point  to_outside         = projection_onto(avoidance_next, node.position);
                 Point  direction_to_outer = to_outside - node.position;
                 if (node.skin_direction != Point(0, 0) && node.dist_mm_to_top < 3) {
@@ -3267,7 +3267,7 @@ void TreeSupport::drop_nodes()
                     Point candidate_vertex = node.position;
                     const coordf_t max_move_between_samples = max_move_distance + radius_sample_resolution + EPSILON; // 100 micron extra for rounding errors.
                     // use get_collision instead of get_avoidance here (See STUDIO-4252)
-                    bool           is_outside               = move_out_expolys(get_collision(next_radius,layer_nr_next), candidate_vertex, max_move_between_samples, max_move_between_samples);
+                    bool           is_outside               = move_out_expolys(get_collision(next_radius,obj_layer_nr_next), candidate_vertex, max_move_between_samples, max_move_between_samples);
                     if (is_outside) {
                         direction_to_outer = candidate_vertex - node.position;
                         dist2_to_outer    = vsize2_with_unscale(direction_to_outer);
@@ -3836,7 +3836,7 @@ void TreeSupport::generate_contact_points()
                     added = true;
                 };
                 return contact_node;
-                };
+            };
 
             for (const auto& overhang_with_type : layer->loverhangs_with_type)  {
                 const auto &overhang_part = overhang_with_type.first;

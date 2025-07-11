@@ -258,6 +258,23 @@ int Http::priv::xfercb_legacy(void *userp, double dltotal, double dlnow, double 
 
 size_t Http::priv::form_file_read_cb(char *buffer, size_t size, size_t nitems, void *userp)
 {
+	//y65
+	// try {
+	// 	auto putFile = reinterpret_cast<std::unique_ptr<fs::ifstream>*>(userp);
+	// 	if (!putFile) { throw std::runtime_error(std::string("The unique_ptr is nullptr! please check"));  return CURL_READFUNC_ABORT; }
+
+	// 	fs::ifstream* fstream = putFile->get();
+	// 	if (!fstream) { throw std::runtime_error(std::string("The fstream is nullptr! please check")); return CURL_READFUNC_ABORT; }
+
+
+	// 	fstream->read(buffer, size * nitems);
+	// 	return fstream->gcount();
+	// } catch (const std::exception &) {
+	// 	return CURL_READFUNC_ABORT;
+	// }
+
+	// return CURL_READFUNC_ABORT;
+
 	auto stream = reinterpret_cast<fs::ifstream*>(userp);
 
 	try {
