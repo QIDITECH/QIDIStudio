@@ -5,10 +5,10 @@ set(SLIC3R_APP_NAME "QIDIStudio")
 set(SLIC3R_APP_KEY "QIDIStudio")
 
 if(NOT DEFINED QDT_RELEASE_TO_PUBLIC)
-set(QDT_RELEASE_TO_PUBLIC "0")
+set(QDT_RELEASE_TO_PUBLIC "1")
 endif()
 if(NOT DEFINED QDT_INTERNAL_TESTING)
-set(QDT_INTERNAL_TESTING "1")
+set(QDT_INTERNAL_TESTING "0")
 endif()
 
 # The build_version should start from 50 in master branch
