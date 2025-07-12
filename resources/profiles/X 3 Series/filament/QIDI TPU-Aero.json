@@ -14,7 +14,7 @@
     "filament_flow_ratio": ["0.5"],
     "filament_max_volumetric_speed": ["6"],
     "filament_retraction_length": ["0"],
-    "filament_type": ["TPU"],
+    "filament_type": ["TPU-AERO"],
     "filament_vendor": ["QIDI"],
     "impact_strength_z":["88.7"],
     "nozzle_temperature_initial_layer": ["250"],

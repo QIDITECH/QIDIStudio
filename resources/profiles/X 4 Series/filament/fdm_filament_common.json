@@ -7,7 +7,7 @@
     "additional_cooling_fan_speed_unseal": ["0"],
     "additional_cooling_fan_speed": ["0"],
     "bed_type": ["Cool Plate"],
-    "box_temperature_range_high": ["35"],
+    "box_temperature_range_high": ["0"],
     "box_temperature_range_low": ["0"],
     "box_temperature": ["0"],
     "chamber_temperatures": ["0"],
