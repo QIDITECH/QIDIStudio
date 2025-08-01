@@ -21,6 +21,8 @@
     "outer_wall_acceleration": ["2000"],
     "outer_wall_line_width": "0.22",
     "outer_wall_speed": ["60"],
+    "skin_infill_line_width": "0.22",
+    "skeleton_infill_line_width": "0.22",
     "sparse_infill_line_width": "0.22",
     "sparse_infill_pattern": "gyroid",
     "sparse_infill_speed": ["100"],

@@ -19,6 +19,8 @@
     "outer_wall_line_width": "0.82",
     "overhang_3_4_speed": ["25"],
     "overhang_4_4_speed": ["5"],
+    "skin_infill_line_width": "0.82",
+    "skeleton_infill_line_width": "0.82",
     "sparse_infill_line_width": "0.82",
     "sparse_infill_speed": ["100"],
     "support_line_width": "0.82",

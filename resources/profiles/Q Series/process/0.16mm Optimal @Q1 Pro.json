@@ -17,6 +17,8 @@
     "overhang_1_4_speed": ["60"],
     "overhang_2_4_speed": ["30"],
     "overhang_3_4_speed": ["10"],
+    "skin_infill_line_width": "0.22",
+    "skeleton_infill_line_width": "0.22",
     "sparse_infill_speed": ["330"],
     "support_bottom_z_distance": "0.16",
     "support_threshold_angle": "25",

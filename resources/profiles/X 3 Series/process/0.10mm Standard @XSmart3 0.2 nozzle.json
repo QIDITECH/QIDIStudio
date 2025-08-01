@@ -18,6 +18,8 @@
     "layer_height": "0.1",
     "line_width": "0.22",
     "outer_wall_line_width": "0.22",
+    "skin_infill_line_width": "0.22",
+    "skeleton_infill_line_width": "0.22",
     "sparse_infill_line_width": "0.22",
     "sparse_infill_speed": ["100"],
     "support_bottom_z_distance": "0.1",

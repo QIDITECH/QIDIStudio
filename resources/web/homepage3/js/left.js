@@ -2,6 +2,7 @@
 
 var m_HotModelList=null;
 var m_HasNetworkPlugin=true;
+var m_GetPrintHistoryStatus=false;
 
 function OnInit()
 {
@@ -10,25 +11,36 @@ function OnInit()
 
 	SendMsg_GetLoginInfo();
 	GotoMenu( 'home' );
+	$("#Login2").hover(function() {
+		$("#DropdownWrapper").css("visibility", "visible");
+	}, function() {
+		$("#DropdownWrapper").css("visibility", "hidden");
+	});
+	OnUpdatePluginInstalltip();
 }
 
 function HandleStudio( pVal )
 {
 	let strCmd = pVal['command'];
-	
 
 	if(strCmd=='studio_userlogin')
 	{
+		let lastLoginInfo = pVal;
+		SetLoginInfo(pVal['data']['avatar'],pVal['data']['name']);
+		if (!m_GetPrintHistoryStatus) {
+			SendMsg_GetPrintHistory();
+		}
 		SetLoginInfo(pVal['data']['avatar'],pVal['data']['name']);
 	}
 	else if(strCmd=='studio_useroffline')
 	{
+		m_GetPrintHistoryStatus=false;
 		SetUserOffline();
 	}
 	else if( strCmd=="network_plugin_installtip" )
 	{
 		let nShow=pVal["show"]*1;
-		
+
 	    if(nShow==1)
 		{
 			$("#NoPluginTip").show();
@@ -41,9 +53,9 @@ function HandleStudio( pVal )
 			$("#NoPluginTip").hide();
 			m_HasNetworkPlugin=true;
 		}
-	}	
+	}
 	else if(strCmd=='homepage_leftmenu_clicked')
-	{						
+	{				
 		let NewMenu=pVal['menu'];
 		//alert('LeftMenu Clicked:'+strMenu );
 		
@@ -62,7 +74,11 @@ function HandleStudio( pVal )
 		let nShow=pVal['show'];
 		
 		ShowMenuBtn(NewMenu,nShow);
-	}	
+	}
+	else if(strCmd=='printhistory_task_show')
+	{
+		m_GetPrintHistoryStatus=true;
+	}
 }
 
 var NowMenu='';
@@ -132,30 +148,34 @@ function ShowMenuBtn( MenuName,nShow)
 }
 
 
-function SetLoginInfo( strAvatar, strName ) 
+function SetLoginInfo( strAvatar, strName )
 {
 	$("#Login1").hide();
 	
 	$("#UserName").text(strName);
-	
-    let OriginAvatar=$("#Login2 #UserAvatarIcon").prop("src");
-	if(strAvatar!=OriginAvatar && strAvatar.length != 0)
+	$("#DropdownUserName").text(strName);
+
+  let OriginAvatar=$("#UserAvatarIcon").prop("src");
+	if(strAvatar!=OriginAvatar) {
+		$("#UserAvatarIcon").prop("src",strAvatar);
+		$("#DropdownAvatar").css("background-image", "url('"+strAvatar+"')");
+	}else
 	{
-		$("#Login2 #UserAvatarIcon").prop("src",strAvatar);
+		//alert('Avatar is Same');
 	}
-	else
-		$("#Login2 #UserAvatarIcon").prop("src", "../image/userdark.png");
-	
+
 	$("#Login2").show();
 	$("#Login2").css("display","flex");
 }
 
 function SetUserOffline()
 {
-	$("#UserAvatarIcon").prop("src","../image/logo2.png");
+	$("#UserAvatarIcon").prop("src","img/left_home_account.svg");
+	$("#DropdownAvatar").css("background-image","../img/left_home_account.svg");
 	$("#UserName").text('');
-	$("#Login2").hide();	
-	
+	$("#DropdownUserName").text('');
+	$("#Login2").hide();
+
 	$("#Login1").show();
 	$("#Login1").css("display","flex");
 }
@@ -199,8 +219,17 @@ function OnLogOut()
 	var tSend={};
 	tSend['sequence_id']=Math.round(new Date() / 1000);
 	tSend['command']="homepage_logout";
-	
-	SendWXMessage( JSON.stringify(tSend) );	
+
+	SendWXMessage( JSON.stringify(tSend) );
+}
+
+function OnUpdatePluginInstalltip()
+{
+	var tSend={};
+	tSend['sequence_id']=Math.round(new Date() / 1000);
+	tSend['command']="update_plugin_installtip";
+
+	SendWXMessage( JSON.stringify(tSend) );
 }
 
 function SendMsg_CheckNewTag()
@@ -217,8 +246,17 @@ function BeginDownloadNetworkPlugin()
 	var tSend={};
 	tSend['sequence_id']=Math.round(new Date() / 1000);
 	tSend['command']="begin_network_plugin_download";
-	
-	SendWXMessage( JSON.stringify(tSend) );		
+
+	SendWXMessage( JSON.stringify(tSend) );
+}
+
+function SendMsg_GetPrintHistory()
+{
+	var tSend={};
+	tSend['sequence_id']=Math.round(new Date() / 1000);
+	tSend['command']="homepage_printhistory_get";
+
+	SendWXMessage( JSON.stringify(tSend) );
 }
 
 var WidthBoundary=168;
