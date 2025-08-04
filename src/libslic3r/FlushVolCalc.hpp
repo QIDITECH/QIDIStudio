@@ -15,14 +15,13 @@ extern const int g_max_flush_volume;
 class FlushVolCalculator
 {
 public:
-    FlushVolCalculator(int min, int max, bool is_multi_extruder, NozzleVolumeType volume_type, float multiplier = 1.0f);
+    FlushVolCalculator(int min, int max, int flush_dataset, float multiplier = 1.0f);
     ~FlushVolCalculator()
     {
     }
 
     int calc_flush_vol(unsigned char src_a, unsigned char src_r, unsigned char src_g, unsigned char src_b,
         unsigned char dst_a, unsigned char dst_r, unsigned char dst_g, unsigned char dst_b);
-
 
     int calc_flush_vol_rgb(unsigned char src_r,unsigned char src_g,unsigned char src_b,
         unsigned char dst_r, unsigned char dst_g, unsigned char dst_b);
@@ -34,7 +33,7 @@ private:
     int m_min_flush_vol;
     int m_max_flush_vol;
     float m_multiplier;
-    FlushPredict::FlushMachineType m_machine_type;
+    int m_flush_dataset;
 };
 
 

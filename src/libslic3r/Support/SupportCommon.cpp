@@ -328,8 +328,8 @@ SupportGeneratorLayersPtr generate_raft_base(
     }
 
     // How much to inflate the support columns to be stable. This also applies to the 1st layer, if no raft layers are to be printed.
-    const float inflate_factor_fine      = float(scale_((slicing_params.raft_layers() > 1) ? 0.5 : EPSILON));
-    const float inflate_factor_1st_layer = std::max(0.f, float(scale_(object.config().raft_first_layer_expansion)) - inflate_factor_fine);
+    const float inflate_factor_fine = float(scale_((slicing_params.raft_layers() > 1) ? 0.5 : EPSILON));
+    float  inflate_factor_1st_layer = float(scale_(object.config().raft_first_layer_expansion));
     SupportGeneratorLayer       *contacts         = top_contacts         .empty() ? nullptr : top_contacts         .front();
     SupportGeneratorLayer       *interfaces       = interface_layers     .empty() ? nullptr : interface_layers     .front();
     SupportGeneratorLayer       *base_interfaces  = base_interface_layers.empty() ? nullptr : base_interface_layers.front();
@@ -389,7 +389,11 @@ SupportGeneratorLayersPtr generate_raft_base(
             new_layer.height  = slicing_params.first_print_layer_height;
             new_layer.bottom_z = 0.;
             first_layer = union_(std::move(first_layer), base);
-            new_layer.polygons = inflate_factor_1st_layer > 0 ? expand(first_layer, inflate_factor_1st_layer) : first_layer;
+            if (inflate_factor_1st_layer < 0) { //means auto
+                inflate_factor_1st_layer = scale_(2.);
+                new_layer.polygons       = expand(first_layer, inflate_factor_1st_layer - inflate_factor_fine);
+            } else
+                new_layer.polygons = inflate_factor_1st_layer > inflate_factor_fine ? expand(first_layer, inflate_factor_1st_layer - inflate_factor_fine) : first_layer;
         }
         // Insert the base layers.
         for (size_t i = 1; i < slicing_params.base_raft_layers; ++ i) {
@@ -423,8 +427,17 @@ SupportGeneratorLayersPtr generate_raft_base(
             //if (object.has_brim())
             //    trimming = offset(object.layers().front()->lslices, (float)scale_(object.config().brim_object_gap.value), SUPPORT_SURFACES_OFFSET_PARAMETERS);
             //else
-                trimming = offset(object.layers().front()->lslices, (float)scale_(support_params.gap_xy_first_layer), SUPPORT_SURFACES_OFFSET_PARAMETERS);
-            if (inflate_factor_1st_layer > SCALED_EPSILON) {
+            trimming = offset(object.layers().front()->lslices, (float)scale_(support_params.gap_xy_first_layer), SUPPORT_SURFACES_OFFSET_PARAMETERS);
+            if (inflate_factor_1st_layer < 0) { //means auto
+                //for (const auto &expoly : to_expolygons(raft)) {
+                //    //TODO: it's hard to get the exact support height here
+                //    inflate_factor_1st_layer = std::max(0.,
+                //                                        scale_(expoly.map_moment_to_expansion(max_speed, contacts_with_height.empty() ? 0 : contacts_with_height[0]->print_z)));
+                //}
+                inflate_factor_1st_layer = scale_(2.);
+            }
+            if (inflate_factor_1st_layer > inflate_factor_fine + SCALED_EPSILON) {
+                inflate_factor_1st_layer = inflate_factor_1st_layer - inflate_factor_fine;
                 // Inflate in multiple steps to avoid leaking of the support 1st layer through object walls.
                 auto  nsteps = std::max(5, int(ceil(inflate_factor_1st_layer / support_params.first_layer_flow.scaled_width())));
                 float step   = inflate_factor_1st_layer / nsteps;
@@ -1463,7 +1476,8 @@ void generate_support_toolpaths(
     const SupportGeneratorLayersPtr     &top_contacts,
     const SupportGeneratorLayersPtr     &intermediate_layers,
     const SupportGeneratorLayersPtr     &interface_layers,
-    const SupportGeneratorLayersPtr     &base_interface_layers)
+    const SupportGeneratorLayersPtr     &base_interface_layers,
+    const std::vector<ExPolygons>       &cooldown_areas)
 {
     // loop_interface_processor with a given circle radius.
     LoopInterfaceProcessor loop_interface_processor(1.5 * support_params.support_material_interface_flow.scaled_width());
@@ -1595,7 +1609,7 @@ void generate_support_toolpaths(
     std::vector<LayerCache>             layer_caches(support_layers.size());
 
     tbb::parallel_for(tbb::blocked_range<size_t>(n_raft_layers, support_layers.size()),
-        [&config, &slicing_params, &support_params, &support_layers, &bottom_contacts, &top_contacts, &intermediate_layers, &interface_layers, &base_interface_layers, &layer_caches, &loop_interface_processor,
+        [&config, &slicing_params, &support_params, &support_layers, &bottom_contacts, &top_contacts, &intermediate_layers, &interface_layers, &base_interface_layers, &cooldown_areas, &layer_caches, &loop_interface_processor,
             &bbox_object, &angles, &interface_angles, n_raft_layers, link_max_length_factor]
             (const tbb::blocked_range<size_t>& range) {
         // Indices of the 1st layer in their respective container at the support layer height.
@@ -1810,6 +1824,29 @@ void generate_support_toolpaths(
                         support_params, sheath, no_sort);
             }
 
+            if (!cooldown_areas.empty() && !cooldown_areas[support_layer_id].empty()) {
+                std::function<void(ExtrusionEntitiesPtr &)> setOverhangDegreeImpl = [&](ExtrusionEntitiesPtr &entities) {
+                    for (auto entityPtr : entities) {
+                        if (overlaps(to_expolygons(entityPtr->polygons_covered_by_width()), cooldown_areas[support_layer_id])) {
+                            if (ExtrusionEntityCollection *collection = dynamic_cast<ExtrusionEntityCollection *>(entityPtr)) {
+                                setOverhangDegreeImpl(collection->entities);
+                            } else if (ExtrusionPath *path = dynamic_cast<ExtrusionPath *>(entityPtr)) {
+                                path->set_overhang_degree(10);
+                            } else if (ExtrusionMultiPath *multipath = dynamic_cast<ExtrusionMultiPath *>(entityPtr)) {
+                                for (ExtrusionPath &path : multipath->paths) { path.set_overhang_degree(10); }
+                            } else if (ExtrusionLoop *loop = dynamic_cast<ExtrusionLoop *>(entityPtr)) {
+                                for (ExtrusionPath &path : loop->paths) { path.set_overhang_degree(10); }
+                            }
+                        }
+                    }
+                };
+                setOverhangDegreeImpl(base_layer.extrusions);
+                setOverhangDegreeImpl(top_contact_layer.extrusions);
+                setOverhangDegreeImpl(bottom_contact_layer.extrusions);
+                setOverhangDegreeImpl(interface_layer.extrusions);
+                setOverhangDegreeImpl(base_interface_layer.extrusions);
+            }
+
             // Merge base_interface_layers to base_layers to avoid unneccessary retractions
             if (! base_layer.empty() && ! base_interface_layer.empty() && ! base_layer.polygons_to_extrude().empty() && ! base_interface_layer.polygons_to_extrude().empty() &&
                 base_layer.could_merge(base_interface_layer))
@@ -1998,6 +2035,7 @@ sub clip_with_shape {
     }
 }
 */
+
 /*!
  * \brief Unions two Polygons. Ensures that if the input is non empty that the output also will be non empty.
  * \param first[in] The first Polygon.

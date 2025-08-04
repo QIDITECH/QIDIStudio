@@ -23,7 +23,6 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/filesystem/string_file.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/nowide/iostream.hpp>
@@ -975,28 +974,30 @@ std::string Model::get_backup_path()
         buf << this->id().id;
 
         backup_path = parent_path.string() + buf.str();
-        BOOST_LOG_TRIVIAL(info) << boost::format("model %1%, id %2%, backup_path empty, set to %3%")%this%this->id().id%backup_path;
+        std::string backup_path_safe = PathSanitizer::sanitize(backup_path);
+        BOOST_LOG_TRIVIAL(info) << boost::format("model %1%, id %2%, backup_path empty, set to %3%")%this%this->id().id % backup_path_safe;
         boost::filesystem::path temp_path(backup_path);
         if (boost::filesystem::exists(temp_path))
         {
-            BOOST_LOG_TRIVIAL(info) << boost::format("model %1%, id %2%, remove previous %3%")%this%this->id().id%backup_path;
+            BOOST_LOG_TRIVIAL(info) << boost::format("model %1%, id %2%, remove previous %3%")%this%this->id().id % backup_path_safe;
             boost::filesystem::remove_all(temp_path);
         }
     }
     boost::filesystem::path temp_path(backup_path);
-    try {
+    std::string temp_path_safe = PathSanitizer::sanitize(temp_path);
+    try {    
         if (!boost::filesystem::exists(temp_path))
         {
-            BOOST_LOG_TRIVIAL(info) << "create /3D/Objects in " << temp_path;
+            BOOST_LOG_TRIVIAL(info) << "create /3D/Objects in " << temp_path_safe;
             boost::filesystem::create_directories(backup_path + "/3D/Objects");
-            BOOST_LOG_TRIVIAL(info) << "create /Metadata in " << temp_path;
+            BOOST_LOG_TRIVIAL(info) << "create /Metadata in " << temp_path_safe;
             boost::filesystem::create_directories(backup_path + "/Metadata");
-            BOOST_LOG_TRIVIAL(info) << "create /lock.txt in " << temp_path;
-            boost::filesystem::save_string_file(backup_path + "/lock.txt",
+            BOOST_LOG_TRIVIAL(info) << "create /lock.txt in " << temp_path_safe;
+            save_string_file(backup_path + "/lock.txt",
                 boost::lexical_cast<std::string>(get_current_pid()));
         }
     } catch (std::exception &ex) {
-        BOOST_LOG_TRIVIAL(error) << "Failed to create backup path" << temp_path << ": " << ex.what();
+        BOOST_LOG_TRIVIAL(error) << "Failed to create backup path" << temp_path_safe << ": " << ex.what();
     }
 
     return backup_path;
@@ -1008,7 +1009,7 @@ void Model::remove_backup_path_if_exist()
         boost::filesystem::path temp_path(backup_path);
         if (boost::filesystem::exists(temp_path))
         {
-            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format("model %1%, id %2% remove backup_path %3%")%this%this->id().id%backup_path;
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format("model %1%, id %2% remove backup_path %3%") % this % this->id().id % PathSanitizer::sanitize(backup_path);
             boost::filesystem::remove_all(temp_path);
         }
 	backup_path.clear();
@@ -1020,11 +1021,11 @@ std::string Model::get_backup_path(const std::string &sub_path)
     auto path = get_backup_path() + "/" + sub_path;
     try {
         if (!boost::filesystem::exists(path)) {
-            BOOST_LOG_TRIVIAL(info) << "create missing sub_path" << path;
+            BOOST_LOG_TRIVIAL(info) << "create missing sub_path" << PathSanitizer::sanitize(path);
             boost::filesystem::create_directories(path);
         }
     } catch (std::exception &ex) {
-        BOOST_LOG_TRIVIAL(error) << "Failed to create missing sub_path" << path << ": " << ex.what();
+        BOOST_LOG_TRIVIAL(error) << "Failed to create missing sub_path" << PathSanitizer::sanitize(path) << ": " << ex.what();
     }
     return path;
 }
@@ -1038,11 +1039,11 @@ void Model::set_backup_path(std::string const& path)
         return;
     }
     if (!backup_path.empty()) {
-        BOOST_LOG_TRIVIAL(info) << __FUNCTION__<<boost::format(", model %1%, id %2%, remove previous backup %3%")%this%this->id().id%backup_path;
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", model %1%, id %2%, remove previous backup %3%") % this % this->id().id % PathSanitizer::sanitize(backup_path);
         Slic3r::remove_backup(*this, true);
     }
     backup_path = path;
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__<<boost::format(", model %1%, id %2%, set backup to %3%")%this%this->id().id%backup_path;
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", model %1%, id %2%, set backup to %3%") % this % this->id().id % PathSanitizer::sanitize(backup_path);
 }
 
 void Model::load_from(Model& model)
@@ -1370,6 +1371,11 @@ bool ModelObject::is_seam_painted() const
 bool ModelObject::is_mm_painted() const
 {
     return std::any_of(this->volumes.cbegin(), this->volumes.cend(), [](const ModelVolume *mv) { return mv->is_mm_painted(); });
+}
+
+bool ModelObject::is_fuzzy_skin_painted() const
+{
+    return std::any_of(this->volumes.cbegin(), this->volumes.cend(), [](const ModelVolume *mv) { return mv->is_fuzzy_skin_facets_painted(); });
 }
 
 void ModelObject::sort_volumes(bool full_sort)
@@ -1805,6 +1811,7 @@ void ModelObject::convert_units(ModelObjectPtrs& new_objects, ConversionType con
             vol->source.is_from_builtin_objects = volume->source.is_from_builtin_objects;
 
             vol->supported_facets.assign(volume->supported_facets);
+            vol->fuzzy_skin_facets.assign(volume->fuzzy_skin_facets);
             vol->seam_facets.assign(volume->seam_facets);
             vol->mmu_segmentation_facets.assign(volume->mmu_segmentation_facets);
 
@@ -2005,7 +2012,6 @@ bool ModelVolume::is_the_only_one_part() const
     }
     return true;
 }
-
 
 Transform3d ModelObject::calculate_cut_plane_inverse_matrix(const std::array<Vec3d, 4>& plane_points)
 {
@@ -2326,6 +2332,7 @@ ModelObjectPtrs ModelObject::cut(size_t instance, std::array<Vec3d, 4> plane_poi
         const auto volume_matrix = volume->get_matrix();
 
         volume->supported_facets.reset();
+        volume->fuzzy_skin_facets.reset();
         volume->seam_facets.reset();
         volume->mmu_segmentation_facets.reset();
 
@@ -2416,6 +2423,7 @@ ModelObjectPtrs ModelObject::segment(size_t instance, unsigned int max_extruders
         const auto volume_matrix = volume->get_matrix();
 
         volume->supported_facets.reset();
+        volume->fuzzy_skin_facets.reset();
         volume->seam_facets.reset();
 
         if (!volume->is_model_part()) {
@@ -2993,6 +3001,7 @@ void ModelVolume::set_material_id(t_model_material_id material_id)
 
 void ModelVolume::reset_extra_facets() {
     this->supported_facets.reset();
+    this->fuzzy_skin_facets.reset();
     this->seam_facets.reset();
     this->mmu_segmentation_facets.reset();
 }
@@ -3230,6 +3239,14 @@ const Polygon& ModelVolume::get_convex_hull_2d(const Transform3d &trafo_instance
     return m_convex_hull_2d;
 }
 
+void ModelVolume::set_transformation(const Geometry::Transformation &transformation) {
+    m_transformation = transformation;
+}
+
+void ModelVolume::set_transformation(const Transform3d &trafo) {
+    m_transformation.set_from_transform(trafo);
+}
+
 int ModelVolume::get_repaired_errors_count() const
 {
     const RepairedMeshErrors &stats = this->mesh().stats().repaired_errors;
@@ -3320,6 +3337,7 @@ size_t ModelVolume::split(unsigned int max_extruders, float scale_det)
             this->mmu_segmentation_facets.reset();
             this->exterior_facets.reset();
             this->supported_facets.reset();
+            this->fuzzy_skin_facets.reset();
             this->seam_facets.reset();
             for (size_t i = 0; i < cur_face_count; i++) {
                 if (ships[idx].find(i) != ships[idx].end()) {
@@ -3341,7 +3359,6 @@ size_t ModelVolume::split(unsigned int max_extruders, float scale_det)
                 }
             }
         }
-
         this->object->volumes[ivolume]->set_offset(Vec3d::Zero());
         this->object->volumes[ivolume]->center_geometry_after_creation();
         this->object->volumes[ivolume]->translate(offset);
@@ -3350,6 +3367,9 @@ size_t ModelVolume::split(unsigned int max_extruders, float scale_det)
         this->object->volumes[ivolume]->config.set("extruder", this->extruder_id());
         //this->object->volumes[ivolume]->config.set("extruder", auto_extruder_id(max_extruders, extruder_counter));
         this->object->volumes[ivolume]->m_is_splittable = 0;
+        if (this->is_text()) {
+            this->object->volumes[ivolume]->clear_text_info();
+        }
         ++ idx;
         last_all_mesh_face_count += cur_face_count;
     }
@@ -3397,6 +3417,7 @@ void ModelVolume::assign_new_unique_ids_recursive()
     ObjectBase::set_new_unique_id();
     config.set_new_unique_id();
     supported_facets.set_new_unique_id();
+    fuzzy_skin_facets.set_new_unique_id();
     seam_facets.set_new_unique_id();
     mmu_segmentation_facets.set_new_unique_id();
 }
@@ -3481,9 +3502,59 @@ void ModelVolume::convert_from_meters()
     this->source.is_converted_from_meters = true;
 }
 
+void ModelVolume::set_text_configuration(const TextConfiguration text_configuration) {
+    m_text_info.text_configuration = text_configuration;
+}
+
 const Transform3d &ModelVolume::get_matrix(bool dont_translate, bool dont_rotate, bool dont_scale, bool dont_mirror) const
 {
     return m_transformation.get_matrix(dont_translate, dont_rotate, dont_scale, dont_mirror);
+}
+
+void ModelInstance::set_transformation(const Geometry::Transformation& transformation)
+{
+    m_transformation = transformation;
+    m_assemble_scalling_factor_dirty = true;
+}
+
+const Geometry::Transformation& ModelInstance::get_assemble_transformation() const
+{
+    if (m_assemble_scalling_factor_dirty)
+    {
+        m_assemble_transformation.set_scaling_factor(m_transformation.get_scaling_factor());
+        m_assemble_scalling_factor_dirty = false;
+    }
+    return m_assemble_transformation;
+}
+
+void ModelInstance::set_assemble_transformation(const Geometry::Transformation &transformation)
+{
+    m_assemble_initialized    = true;
+    m_assemble_transformation = transformation;
+}
+
+void ModelInstance::set_assemble_from_transform(const Transform3d &transform)
+{
+    m_assemble_initialized = true;
+    m_assemble_transformation.set_from_transform(transform);
+}
+
+void ModelInstance::set_assemble_offset(const Vec3d &offset)
+{
+    m_assemble_initialized = true;
+    m_assemble_transformation.set_offset(offset);
+}
+
+void ModelInstance::set_scaling_factor(const Vec3d& scaling_factor)
+{
+    m_transformation.set_scaling_factor(scaling_factor);
+    m_assemble_scalling_factor_dirty = true;
+}
+
+void ModelInstance::set_scaling_factor(Axis axis, double scaling_factor)
+{
+    m_transformation.set_scaling_factor(axis, scaling_factor);
+    m_assemble_scalling_factor_dirty = true;
 }
 
 void ModelInstance::transform_mesh(TriangleMesh* mesh, bool dont_translate) const
@@ -4050,9 +4121,9 @@ void FacetsAnnotation::get_facets(const ModelVolume& mv, std::vector<indexed_tri
 }
 
 void FacetsAnnotation::set_enforcer_block_type_limit(const ModelVolume  &mv,
-    EnforcerBlockerType max_type,
-    EnforcerBlockerType to_delete_filament,
-    EnforcerBlockerType replace_filament)
+                                                     EnforcerBlockerType max_type,
+                                                     EnforcerBlockerType to_delete_filament,
+                                                     EnforcerBlockerType replace_filament)
 {
     TriangleSelector selector(mv.mesh());
     selector.deserialize(m_data, false, max_type, to_delete_filament, replace_filament);
@@ -4251,6 +4322,13 @@ bool model_custom_supports_data_changed(const ModelObject& mo, const ModelObject
     return model_property_changed(mo, mo_new,
         [](const ModelVolumeType t) { return t == ModelVolumeType::MODEL_PART; },
         [](const ModelVolume &mv_old, const ModelVolume &mv_new){ return mv_old.supported_facets.timestamp_matches(mv_new.supported_facets); });
+}
+
+bool model_custom_fuzzy_skin_data_changed(const ModelObject &mo, const ModelObject &mo_new)
+{
+    return model_property_changed(
+        mo, mo_new, [](const ModelVolumeType t) { return t == ModelVolumeType::MODEL_PART; },
+        [](const ModelVolume &mv_old, const ModelVolume &mv_new) { return mv_old.fuzzy_skin_facets.timestamp_matches(mv_new.fuzzy_skin_facets); });
 }
 
 bool model_custom_seam_data_changed(const ModelObject& mo, const ModelObject& mo_new)

@@ -1775,7 +1775,7 @@ static inline std::pair<SupportGeneratorLayer*, SupportGeneratorLayer*> new_cont
 
         // Contact layer will be printed with a normal flow, but
         // it will support layers printed with a bridging flow.
-        if (object_config.thick_bridges && SupportMaterialInternal::has_bridging_extrusions(layer) && print_config.independent_support_layer_height) {
+        if (object_config.thick_bridges && SupportMaterialInternal::has_bridging_extrusions(layer)/* && print_config.independent_support_layer_height*/) {
             coordf_t bridging_height = 0.;
             for (const LayerRegion* region : layer.regions())
                 bridging_height += region->region().bridging_height_avg(print_config);
@@ -2928,7 +2928,7 @@ SupportGeneratorLayersPtr PrintObjectSupportMaterial::raft_and_intermediate_supp
     for (size_t i = 0; i < top_contacts.size(); ++i)
         assert(top_contacts[i]->height > 0.);
 #endif /* _DEBUG */
-
+    
     return intermediate_layers;
 }
 

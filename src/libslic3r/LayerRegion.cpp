@@ -49,7 +49,7 @@ Flow LayerRegion::bridging_flow(FlowRole role, bool thick_bridge) const
 // Fill in layerm->fill_surfaces by trimming the layerm->slices by the cummulative layerm->fill_surfaces.
 void LayerRegion::slices_to_fill_surfaces_clipped()
 {
-    // Note: this method should be idempotent, but fill_surfaces gets modified 
+    // Note: this method should be idempotent, but fill_surfaces gets modified
     // in place. However we're now only using its boundaries (which are invariant)
     // so we're safe. This guarantees idempotence of prepare_infill() also in case
     // that combine_infill() turns some fill_surface into VOID surfaces.
@@ -128,7 +128,7 @@ void LayerRegion::auto_circle_compensation(SurfaceCollection& slices, const Auto
     }
 }
 
-void LayerRegion::make_perimeters(const SurfaceCollection &slices, SurfaceCollection *fill_surfaces, ExPolygons *fill_no_overlap, std::vector<LoopNode> &loop_nodes)
+void LayerRegion::make_perimeters(const SurfaceCollection &slices, const PerimeterRegions &perimeter_regions, SurfaceCollection *fill_surfaces, ExPolygons *fill_no_overlap, std::vector<LoopNode> &loop_nodes)
 {
     this->perimeters.clear();
     this->thin_fills.clear();
@@ -151,7 +151,6 @@ void LayerRegion::make_perimeters(const SurfaceCollection &slices, SurfaceCollec
         &this->layer()->object()->config(),
         &print_config,
         spiral_mode,
-        
         // output:
         &this->perimeters,
         &this->thin_fills,
@@ -160,17 +159,18 @@ void LayerRegion::make_perimeters(const SurfaceCollection &slices, SurfaceCollec
         fill_no_overlap,
         &loop_nodes
     );
-    
+
     if (this->layer()->lower_layer != nullptr)
         // Cummulative sum of polygons over all the regions.
         g.lower_slices = &this->layer()->lower_layer->lslices;
     if (this->layer()->upper_layer != NULL)
         g.upper_slices = &this->layer()->upper_layer->lslices;
-    
+
     g.layer_id              = (int)this->layer()->id();
     g.ext_perimeter_flow    = this->flow(frExternalPerimeter);
     g.overhang_flow         = this->bridging_flow(frPerimeter, object_config.thick_bridges);
     g.solid_infill_flow     = this->flow(frSolidInfill);
+    g.perimeter_regions     = &perimeter_regions;
 
     if (this->layer()->object()->config().wall_generator.value == PerimeterGeneratorType::Arachne && !spiral_mode)
         g.process_arachne();
@@ -612,6 +612,7 @@ void LayerRegion::process_external_surfaces(const Layer *lower_layer, const Poly
             shells = union_ex(shells, areas_to_be_solid);
     }
 
+
 //    m_fill_surfaces.remove_types({ stBottomBridge, stBottom, stTop, stInternal, stInternalSolid });
     fill_surfaces.clear();
     unsigned zones_expolygons_count = 0;
@@ -639,7 +640,6 @@ void LayerRegion::process_external_surfaces(const Layer *lower_layer, const Poly
 
 #else
 
-
 #endif
 
 void LayerRegion::prepare_fill_surfaces()
@@ -652,7 +652,7 @@ void LayerRegion::prepare_fill_surfaces()
     /*  Note: in order to make the psPrepareInfill step idempotent, we should never
         alter fill_surfaces boundaries on which our idempotency relies since that's
         the only meaningful information returned by psPerimeters. */
-    
+
     bool spiral_mode = this->layer()->object()->print()->config().spiral_mode;
 
 #if 0
@@ -752,7 +752,7 @@ void LayerRegion::export_region_fill_surfaces_to_svg(const char *path) const
     const float transparency = 0.5f;
     for (const Surface &surface : this->fill_surfaces.surfaces) {
         svg.draw(surface.expolygon, surface_type_to_color_name(surface.surface_type), transparency);
-        svg.draw_outline(surface.expolygon, "black", "blue", scale_(0.05)); 
+        svg.draw_outline(surface.expolygon, "black", "blue", scale_(0.05));
     }
     export_surface_type_legend_to_svg(svg, legend_pos);
     svg.Close();
@@ -841,4 +841,3 @@ void LayerRegion::simplify_loop(ExtrusionLoop* loop)
 }
 
 }
- 

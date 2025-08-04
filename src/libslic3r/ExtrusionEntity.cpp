@@ -67,11 +67,9 @@ void ExtrusionPath::polygons_covered_by_spacing(Polygons &out, const float scale
     polygons_append(out, offset(this->polyline, 0.5f * float(flow.scaled_spacing()) + scaled_epsilon));
 }
 
-//1.9.7.52
 bool ExtrusionPath::can_merge(const ExtrusionPath& other)
 {
-    return overhang_degree == other.overhang_degree &&
-            curve_degree==other.curve_degree &&
+    return  curve_degree==other.curve_degree &&
             mm3_per_mm == other.mm3_per_mm &&
             width == other.width &&
             height == other.height &&

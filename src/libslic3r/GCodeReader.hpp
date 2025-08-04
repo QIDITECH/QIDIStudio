@@ -171,6 +171,10 @@ public:
         return c;
     }
 
+    GCodeConfig get_config() const
+    { 
+        return m_config;
+    }
 private:
     template<typename ParseLineCallback, typename LineEndCallback>
     bool        parse_file_raw_internal(const std::string &filename, ParseLineCallback parse_line_callback, LineEndCallback line_end_callback);

@@ -418,7 +418,7 @@ Polylines remove_points_from_polygon(const Polygon &polygon, const std::vector<V
 {
     assert(polygon.size() > 2);
     Polylines                     result;
-    std::vector<PointWithFlag>    new_pl;// add intersection points for gaps, where bool indicates whether it's a gap point.
+    std::vector<PointWithFlag>    new_pl; // add intersection points for gaps, where bool indicates whether it's a gap point.
     std::vector<IntersectionInfo> inter_info;
     Vec2f                         ray = is_left ? Vec2f(-1, 0) : Vec2f(1, 0);
     auto                          polygon_box  = get_extents(polygon);
@@ -632,7 +632,7 @@ public:
 	// Extrude with an explicitely provided amount of extrusion.
     WipeTowerWriter &extrude_explicit(float x, float y, float e, float f = 0.f, bool record_length = false ,LimitFlow limit_flow = LimitFlow::LimitPrintFlow)
 	{
-		if ((std::abs(x - m_current_pos.x()) <= (float)EPSILON) && (std::abs(y - m_current_pos.y()) < (float)EPSILON) && e == 0.f && (f == 0.f || f == m_current_feedrate))
+        if ((std::abs(x - m_current_pos.x()) <= (float)EPSILON) && (std::abs(y - m_current_pos.y()) < (float)EPSILON) && e == 0.f && (f == 0.f || f == m_current_feedrate))
 			// Neither extrusion nor a travel move.
 			return *this;
 
@@ -823,41 +823,7 @@ public:
         } while (i != index_of_closest);
         return (*this);
     }
-    WipeTowerWriter &line(const WipeTower *wipe_tower, Vec2f p0, Vec2f p1,const float f = 0.f)
-    {
-        bool need_change_flow = wipe_tower->need_thick_bridge_flow(p0.y());
-        if (need_change_flow) {
-            set_extrusion_flow(wipe_tower->extrusion_flow(0.2));
-            append(";" + GCodeProcessor::reserved_tag(GCodeProcessor::ETags::Height) + std::to_string(0.2) + "\n");
-        }
-        if (abs(x() - p0.x()) > abs(x() - p1.x())) std::swap(p0, p1);
-        travel(p0.x(), y());
-        travel(x(), p0.y());
-        extrude(p1, f);
-        if (need_change_flow) {
-            set_extrusion_flow(wipe_tower->get_extrusion_flow());
-            append(";" + GCodeProcessor::reserved_tag(GCodeProcessor::ETags::Height) + std::to_string(m_layer_height) + "\n");
-        }
-        return (*this);
-    }
 
-    WipeTowerWriter &rectangle_fill_box(const WipeTower *wipe_tower, const WipeTower::box_coordinates &fill_box, std::vector<Vec2f> &finish_rect_wipe_path, const float f = 0.f)
-    {
-        float width  = fill_box.rd.x() - fill_box.ld.x();
-        float height = fill_box.ru.y() - fill_box.rd.y();
-        if (height > wipe_tower->m_perimeter_width - wipe_tower->WT_EPSILON) {
-            rectangle_fill_box(wipe_tower, fill_box.ld, width, height, f);
-            Vec2f target = (pos() == fill_box.ld ? fill_box.rd : (pos() == fill_box.rd ? fill_box.ru : (pos() == fill_box.ru ? fill_box.lu : fill_box.ld)));
-            finish_rect_wipe_path.emplace_back(pos());
-            finish_rect_wipe_path.emplace_back(target);
-        } else if (height > wipe_tower->WT_EPSILON) {
-            line(wipe_tower, fill_box.ld, fill_box.rd);
-            Vec2f target = (pos() == fill_box.ld ? fill_box.rd : fill_box.ld);
-            finish_rect_wipe_path.emplace_back(pos());
-            finish_rect_wipe_path.emplace_back(target);
-        }
-        return (*this);
-    }
     WipeTowerWriter &rectangle_fill_box(const WipeTower* wipe_tower, const Vec2f &ld, float width, float height, const float f = 0.f)
     {
         bool need_change_flow = wipe_tower->need_thick_bridge_flow(ld.y());
@@ -896,7 +862,41 @@ public:
         } while (i != index_of_closest);
         return (*this);
     }
+    WipeTowerWriter &line(const WipeTower *wipe_tower, Vec2f p0, Vec2f p1,const float f = 0.f)
+    {
+        bool need_change_flow = wipe_tower->need_thick_bridge_flow(p0.y());
+        if (need_change_flow) {
+            set_extrusion_flow(wipe_tower->extrusion_flow(0.2));
+            append(";" + GCodeProcessor::reserved_tag(GCodeProcessor::ETags::Height) + std::to_string(0.2) + "\n");
+        }
+        if (abs(x() - p0.x()) > abs(x() - p1.x())) std::swap(p0, p1);
+        travel(p0.x(), y());
+        travel(x(), p0.y());
+        extrude(p1, f);
+        if (need_change_flow) {
+            set_extrusion_flow(wipe_tower->get_extrusion_flow());
+            append(";" + GCodeProcessor::reserved_tag(GCodeProcessor::ETags::Height) + std::to_string(m_layer_height) + "\n");
+        }
+        return (*this);
+    }
 
+    WipeTowerWriter &rectangle_fill_box(const WipeTower *wipe_tower, const WipeTower::box_coordinates &fill_box, std::vector<Vec2f> &finish_rect_wipe_path, const float f = 0.f)
+    {
+        float width  = fill_box.rd.x() - fill_box.ld.x();
+        float height = fill_box.ru.y() - fill_box.rd.y();
+        if (height > wipe_tower->m_perimeter_width - wipe_tower->WT_EPSILON) {
+            rectangle_fill_box(wipe_tower, fill_box.ld, width, height, f);
+            Vec2f target = (pos() == fill_box.ld ? fill_box.rd : (pos() == fill_box.rd ? fill_box.ru : (pos() == fill_box.ru ? fill_box.lu : fill_box.ld)));
+            finish_rect_wipe_path.emplace_back(pos());
+            finish_rect_wipe_path.emplace_back(target);
+        } else if (height > wipe_tower->WT_EPSILON) {
+            line(wipe_tower, fill_box.ld, fill_box.rd);
+            Vec2f target = (pos() == fill_box.ld ? fill_box.rd : fill_box.ld);
+            finish_rect_wipe_path.emplace_back(pos());
+            finish_rect_wipe_path.emplace_back(target);
+        }
+        return (*this);
+    }
     WipeTowerWriter& rectangle(const WipeTower::box_coordinates& box, const float f = 0.f)
     {
         rectangle(Vec2f(box.ld.x(), box.ld.y()),
@@ -904,7 +904,6 @@ public:
                   box.ru.y() - box.rd.y(), f);
         return (*this);
     }
-
     WipeTowerWriter &polygon(const Polygon &wall_polygon, const float f = 0.f)
     {
         Polyline    pl = to_polyline(wall_polygon);
@@ -1079,7 +1078,7 @@ public:
 
 	WipeTowerWriter& flush_planner_queue()
 	{
-		m_gcode += "G4 S0\n"; 
+		m_gcode += "G4 S0\n";
 		return *this;
 	}
 
@@ -1521,9 +1520,10 @@ TriangleMesh WipeTower::its_make_rib_tower(float width, float depth, float heigh
     Polygon      bottom = rib_section(width, depth, rib_length, rib_width, fillet_wall);
     Polygon      top    = rib_section(width, depth, std::sqrt(width * width + depth * depth), rib_width, fillet_wall);
     if (fillet_wall)
-    assert(bottom.points.size() == top.points.size());
+        assert(bottom.points.size() == top.points.size());
     int     offset       = bottom.points.size();
     res.its.vertices.reserve(offset * 2);
+    if (bottom.area() < scaled(EPSILON) || top.area() < scaled(EPSILON) || bottom.points.size() != top.points.size()) return res;
     auto    faces_bottom = Triangulation::triangulate(bottom);
     auto    faces_top    = Triangulation::triangulate(top);
     res.its.indices.reserve(offset * 2 + faces_bottom.size() + faces_top.size());
@@ -1546,6 +1546,7 @@ TriangleMesh WipeTower::its_make_rib_tower(float width, float depth, float heigh
 
 TriangleMesh WipeTower::its_make_rib_brim(const Polygon& brim, float layer_height) {
     TriangleMesh res;
+    if (brim.area() < scaled(EPSILON))return res;
     int          offset = brim.size();
     res.its.vertices.reserve(brim.size() * 2);
     auto    faces= Triangulation::triangulate(brim);
@@ -2844,7 +2845,7 @@ WipeTower::ToolChangeResult WipeTower::merge_tcr(ToolChangeResult &first, ToolCh
     WipeTower::ToolChangeResult out = first;
     if ((first.end_pos - second.start_pos).norm() > (float)EPSILON) {
         std::string travel_gcode = "G1 X" + Slic3r::float_to_string_decimal_point(second.start_pos.x(), 3) + " Y" +
-                                   Slic3r::float_to_string_decimal_point(second.start_pos.y(), 3) + "F" + std::to_string(m_max_speed) + "\n";
+                                   Slic3r::float_to_string_decimal_point(second.start_pos.y(), 3) + " F" + std::to_string(m_max_speed) + "\n";
         bool need_insert_travel = true;
         if (second.is_tool_change
             && is_approx(second.start_pos.x(), second.tool_change_start_pos.x())
@@ -3885,7 +3886,6 @@ void WipeTower::generate_wipe_tower_blocks()
         }
     }
 }
-
 void WipeTower::calc_block_infill_gap()
 {
     //1.calc block infill gap width
@@ -3966,6 +3966,7 @@ void WipeTower::calc_block_infill_gap()
      }
      m_extra_spacing = 1.f;
 }
+
 void WipeTower::plan_tower_new()
 {
     if (m_wipe_tower_brim_width < 0) m_wipe_tower_brim_width = get_auto_brim_by_height(m_wipe_tower_height);
@@ -4436,7 +4437,7 @@ WipeTower::ToolChangeResult WipeTower::only_generate_out_wall(bool is_new_mode)
         .set_initial_tool(m_current_tool)
         .set_y_shift(m_y_shift - (m_current_shape == SHAPE_REVERSED ? m_layer_info->toolchanges_depth() : 0.f));
 
-        set_for_wipe_tower_writer(writer);
+    set_for_wipe_tower_writer(writer);
 
     // Slow down on the 1st layer.
     bool first_layer = is_first_layer();
@@ -4717,9 +4718,11 @@ bool WipeTower::is_valid_last_layer(int tool) const
 }
 float WipeTower::get_block_gap_width(int tool,bool is_nozzlechangle)
 {
-    assert(m_block_infill_gap_width.count(m_filpar[tool].category));
+    //assert(m_block_infill_gap_width.count(m_filpar[tool].category));//The code contains logic that attempts to access non-existent blocks, 
+                                                                     // such as in case of involving two extruders with only a single head and a single layer,
+                                                                     // some code will attempt to access the block's nozzle_change_gap_width, even though the block does not exist.
     if (!m_block_infill_gap_width.count(m_filpar[tool].category)) {
-        return m_perimeter_width;
+        return is_nozzlechangle ? m_nozzle_change_perimeter_width : m_perimeter_width;
     }
     return is_nozzlechangle ? m_block_infill_gap_width[m_filpar[tool].category].second : m_block_infill_gap_width[m_filpar[tool].category].first;
 

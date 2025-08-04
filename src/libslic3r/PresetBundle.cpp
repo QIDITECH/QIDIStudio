@@ -39,6 +39,8 @@ static std::vector<std::string> s_project_options {
     "flush_volumes_matrix",
     // QDS
     "filament_colour",
+    "filament_colour_type",
+    "filament_multi_colour",
     "wipe_tower_x",
     "wipe_tower_y",
     "wipe_tower_rotation_angle",
@@ -88,7 +90,7 @@ PresetBundle::PresetBundle()
         for(const std::string& opt_key : default_config.keys()){
             ConfigOption* opt = default_config.optptr(opt_key, false);
             bool is_override_key = std::find(filament_extruder_override_keys.begin(),filament_extruder_override_keys.end(), opt_key) != filament_extruder_override_keys.end();
-            if(!is_override_key || !opt->nullable()) 
+            if(!is_override_key || !opt->nullable())
                 continue;
             opt->deserialize("nil",ForwardCompatibilitySubstitutionRule::Disable);
         }
@@ -917,7 +919,7 @@ void PresetBundle::save_user_presets(AppConfig& config, std::vector<std::string>
     //QDS: change directory by design
     const std::string dir_user_presets = data_dir() + "/" + PRESET_USER_DIR + "/"+ user_sub_folder;
 
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << boost::format(" enter, save to %1%")%dir_user_presets;
+    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << boost::format(" enter, save to %1%") % PathSanitizer::sanitize(dir_user_presets);
 
     fs::path user_folder(data_dir() + "/" + PRESET_USER_DIR);
     if (!fs::exists(user_folder))
@@ -939,7 +941,7 @@ void PresetBundle::update_user_presets_directory(const std::string preset_folder
     //QDS: change directory by design
     const std::string dir_user_presets = data_dir() + "/" + PRESET_USER_DIR + "/"+ preset_folder;
 
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << boost::format(" enter, update directory to %1%")%dir_user_presets;
+    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << boost::format(" enter, update directory to %1%") % PathSanitizer::sanitize(dir_user_presets);
 
     fs::path user_folder(data_dir() + "/" + PRESET_USER_DIR);
     if (!fs::exists(user_folder))
@@ -1698,12 +1700,28 @@ void PresetBundle::load_selections(AppConfig &config, const PresetPreferences& p
             break;
         this->filament_presets.emplace_back(remove_ini_suffix(config.get("presets", name)));
     }
+
+    // Load data from AppConfig to ProjectConfig when Studio is initialized.
     std::vector<std::string> filament_colors;
     if (config.has("presets", "filament_colors")) {
         boost::algorithm::split(filament_colors, config.get("presets", "filament_colors"), boost::algorithm::is_any_of(","));
     }
     filament_colors.resize(filament_presets.size(), "#4479FB"); // y6
     project_config.option<ConfigOptionStrings>("filament_colour")->values = filament_colors;
+
+    std::vector<std::string> multi_filament_colors;
+    if (config.has("presets", "filament_multi_colors")) {
+        boost::algorithm::split(multi_filament_colors, config.get("presets", "filament_multi_colors"), boost::algorithm::is_any_of(","));
+    }
+    if (multi_filament_colors.size() == 0) project_config.option<ConfigOptionStrings>("filament_multi_colour")->values = filament_colors;
+    else project_config.option<ConfigOptionStrings>("filament_multi_colour")->values = multi_filament_colors;
+
+    std::vector<std::string> filament_color_types;
+    if (config.has("presets", "filament_color_types")) {
+        boost::algorithm::split(filament_color_types, config.get("presets", "filament_color_types"), boost::algorithm::is_any_of(","));
+    }
+    filament_color_types.resize(filament_presets.size(), "1");
+    project_config.option<ConfigOptionStrings>("filament_colour_type")->values = filament_color_types;
 
     std::vector<int> filament_maps(filament_colors.size(), 1);
     project_config.option<ConfigOptionInts>("filament_map")->values = filament_maps;
@@ -1808,9 +1826,18 @@ void PresetBundle::export_selections(AppConfig &config)
         sprintf(name, "filament_%02u", i);
         config.set("presets", name, filament_presets[i]);
     }
+    // Load project config data into app config
     CNumericLocalesSetter locales_setter;
     std::string           filament_colors = boost::algorithm::join(project_config.option<ConfigOptionStrings>("filament_colour")->values, ",");
     config.set("presets", "filament_colors", filament_colors);
+
+    // Load filament multi color data into app config
+    std::string           filament_multi_colors = boost::algorithm::join(project_config.option<ConfigOptionStrings>("filament_multi_colour")->values, ",");
+    config.set("presets", "filament_multi_colors", filament_multi_colors);
+
+    // Load filament color type data into app config
+    std::string           filament_color_types = boost::algorithm::join(project_config.option<ConfigOptionStrings>("filament_colour_type")->values, ",");
+    config.set("presets", "filament_color_types", filament_color_types);
 
     std::string flush_volumes_matrix = boost::algorithm::join(project_config.option<ConfigOptionFloats>("flush_volumes_matrix")->values |
                                                              boost::adaptors::transformed(static_cast<std::string (*)(double)>(std::to_string)),
@@ -1845,10 +1872,13 @@ void PresetBundle::set_num_filaments(unsigned int n, std::string new_color)
     else {
         filament_presets.resize(n);
     }
-
     ConfigOptionStrings* filament_color = project_config.option<ConfigOptionStrings>("filament_colour");
+    ConfigOptionStrings *filament_multi_color = project_config.option<ConfigOptionStrings>("filament_multi_colour");
+    ConfigOptionStrings* filament_color_type = project_config.option<ConfigOptionStrings>("filament_colour_type");
     ConfigOptionInts* filament_map = project_config.option<ConfigOptionInts>("filament_map");
     filament_color->resize(n);
+    filament_multi_color->resize(n);
+    filament_color_type->resize(n);
     filament_map->values.resize(n, 1);
     ams_multi_color_filment.resize(n);
 
@@ -1857,6 +1887,8 @@ void PresetBundle::set_num_filaments(unsigned int n, std::string new_color)
         if (!new_color.empty()) {
             for (unsigned i = old_filament_count; i < n; i++) {
                 filament_color->values[i] = new_color;
+                filament_multi_color->values[i] = new_color;
+                filament_color_type->values[i]  = "1";  // default color type
             }
         }
     }
@@ -1870,9 +1902,24 @@ void PresetBundle::update_num_filaments(unsigned int to_del_flament_id)
     assert(to_del_flament_id < old_filament_count);
     filament_presets.erase(filament_presets.begin() + to_del_flament_id);
 
-    ConfigOptionStrings *filament_color = project_config.option<ConfigOptionStrings>("filament_colour");
-    ConfigOptionInts* filament_map = project_config.option<ConfigOptionInts>("filament_map");
+    // update edited_preset
+    {
+        Preset& edited_preset = filaments.get_edited_preset();
+        bool    edited_preset_deleted = true;
+        for (std::string filament_preset_name : filament_presets) {
+            if (filament_preset_name == edited_preset.name) {
+                edited_preset_deleted = false;
+            }
+        }
+        if (edited_preset_deleted) {
+            filaments.select_preset_by_name(filament_presets.front(), false);
+        }
+    }
 
+    ConfigOptionStrings *filament_color = project_config.option<ConfigOptionStrings>("filament_colour");
+    ConfigOptionStrings *filament_multi_color = project_config.option<ConfigOptionStrings>("filament_multi_colour");
+    ConfigOptionStrings *filament_color_type  = project_config.option<ConfigOptionStrings>("filament_colour_type");
+    ConfigOptionInts* filament_map = project_config.option<ConfigOptionInts>("filament_map");
     if (filament_color->values.size() > to_del_flament_id) {
         filament_color->values.erase(filament_color->values.begin() + to_del_flament_id);
         if (filament_map->values.size() > to_del_flament_id) {
@@ -1884,12 +1931,18 @@ void PresetBundle::update_num_filaments(unsigned int to_del_flament_id)
         filament_map->values.resize(to_del_flament_id, 1);
     }
 
-    if (ams_multi_color_filment.size() > to_del_flament_id){
-        ams_multi_color_filment.erase(ams_multi_color_filment.begin() + to_del_flament_id);
-    }
-    else {
-        ams_multi_color_filment.resize(to_del_flament_id);
-    }
+    // lambda function to erase or resize the container
+    auto erase_or_resize = [to_del_flament_id](auto& container) {
+        if (container.size() > to_del_flament_id) {
+            container.erase(container.begin() + to_del_flament_id);
+        } else {
+            container.resize(to_del_flament_id);
+        }
+    };
+
+    erase_or_resize(filament_multi_color->values);
+    erase_or_resize(filament_color_type->values);
+    erase_or_resize(ams_multi_color_filment);
 
     update_multi_material_filament_presets(to_del_flament_id);
 }
@@ -1904,7 +1957,7 @@ void PresetBundle::get_ams_cobox_infos(AMSComboInfo& combox_info)
         auto  filament_color       = ams.opt_string("filament_colour", 0u);
         auto  ams_name             = ams.opt_string("tray_name", 0u);
         auto  filament_changed     = !ams.has("filament_changed") || ams.opt_bool("filament_changed");
-        auto  filament_multi_color = ams.opt<ConfigOptionStrings>("filament_multi_colors")->values;
+        auto  filament_multi_color = ams.opt<ConfigOptionStrings>("filament_multi_colour")->values;
         if (filament_id.empty()) {
             continue;
         }
@@ -1952,6 +2005,7 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "use_map:" << use_map << " enable_append:" << enable_append;
     std::vector<std::string> ams_filament_presets;
     std::vector<std::string> ams_filament_colors;
+    std::vector<std::string> ams_filament_color_types;
     std::vector<AMSMapInfo>  ams_array_maps;
     ams_multi_color_filment.clear();
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": filament_ams_list size: %1%") % filament_ams_list.size();
@@ -1960,6 +2014,7 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
         bool valid{false};
         bool is_map{false};
         std::string filament_color  = "";
+        std::string filament_color_type = "";
         std::string filament_preset = "";
         std::vector<std::string> mutli_filament_color;
     };
@@ -1970,8 +2025,9 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
         auto & ams = entry.second;
         auto filament_id = ams.opt_string("filament_id", 0u);
         auto filament_color = ams.opt_string("filament_colour", 0u);
+        auto filament_color_type = ams.opt_string("filament_colour_type", 0u);
         auto filament_changed = !ams.has("filament_changed") || ams.opt_bool("filament_changed");
-        auto filament_multi_color = ams.opt<ConfigOptionStrings>("filament_multi_colors")->values;
+        auto filament_multi_color = ams.opt<ConfigOptionStrings>("filament_multi_colour")->values;
         //y59
         auto ams_id     = std::to_string(std::stoi(ams.opt_string("slot_id", 0u)) / 4 + 1);
         
@@ -1990,6 +2046,7 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
                 ams_filament_presets.push_back("Generic PLA");//for unknow matieral
                 auto default_unknown_color = "#CECECE";
                 ams_filament_colors.push_back(default_unknown_color);
+                ams_filament_color_types.push_back("1");
                 if (filament_multi_color.size() == 0) {
                     filament_multi_color.push_back(default_unknown_color);
                 }
@@ -2000,6 +2057,7 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
         if (!filament_changed && this->filament_presets.size() > ams_filament_presets.size()) {
             ams_filament_presets.push_back(this->filament_presets[ams_filament_presets.size()]);
             ams_filament_colors.push_back(filament_color);
+            ams_filament_color_types.push_back(filament_color_type);
             ams_multi_color_filment.push_back(filament_multi_color);
             continue;
         }
@@ -2022,6 +2080,7 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
                 if (ams_filament_presets.size() < this->filament_presets.size()) {
                     ams_filament_presets.push_back(this->filament_presets[ams_filament_presets.size()]);
                     ams_filament_colors.push_back(filament_color);
+                    ams_filament_color_types.push_back(filament_color_type);
                     ams_multi_color_filment.push_back(filament_multi_color);
                     unknowns.emplace_back(&ams, has_type ? L("The filament may not be compatible with the current machine settings. Generic filament presets will be used.") :
                                                            L("The filament model is unknown. Still using the previous filament preset."));
@@ -2042,29 +2101,31 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
         }
         ams_filament_presets.push_back(iter->name);
         ams_filament_colors.push_back(filament_color);
+        ams_filament_color_types.push_back(filament_color_type);
         ams_multi_color_filment.push_back(filament_multi_color);
     }
     if (ams_filament_presets.empty())
         return 0;
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "get filament_colour and from config";
     ConfigOptionStrings *filament_color = project_config.option<ConfigOptionStrings>("filament_colour");
+    ConfigOptionStrings *filament_color_type = project_config.option<ConfigOptionStrings>("filament_colour_type");
     ConfigOptionInts *   filament_map = project_config.option<ConfigOptionInts>("filament_map");
     if (use_map) {
         auto check_has_merge_info = [](std::map<int, AMSMapInfo> &maps, MergeFilamentInfo &merge_info, int exist_colors_size) {
-            std::map<int, bool> done;
-            for (int i = 0; i < maps.size(); i++) {
+            std::set<int> done;
+            for (auto it_i = maps.begin(); it_i != maps.end(); ++it_i) {
                 std::vector<int> same_ams;
-                same_ams.emplace_back(i);
-                for (size_t j = i + 1; j < maps.size(); j++) {
-                    if (done.find(j) != done.end()) {
+                same_ams.emplace_back(it_i->first);
+                for (auto it_j = std::next(it_i); it_j != maps.end(); ++it_j) {
+                    if (done.find(it_j->first) != done.end()) {
                         continue;
                     }
-                    if (maps[i].slot_id == "" || maps[i].ams_id == ""){//reserve
+                    if (it_i->second.slot_id == "" || it_i->second.ams_id == ""){
                         continue;
                     }
-                    if (maps[i].slot_id == maps[j].slot_id && maps[i].ams_id == maps[j].ams_id) {
-                        same_ams.emplace_back(j);
-                        done[j] =true;
+                    if (it_i->second.slot_id == it_j->second.slot_id && it_i->second.ams_id == it_j->second.ams_id) {
+                        same_ams.emplace_back(it_j->first);
+                        done.insert(it_j->first);
                     }
                 }
                 if (same_ams.size() > 1) {
@@ -2084,6 +2145,7 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
         };
         std::vector<AmsInfo> need_append_colors;
         auto exist_colors = filament_color->values;
+        auto exist_color_types = filament_color_type->values;
         auto exist_filament_presets = this->filament_presets;
         std::vector<std::vector<std::string>> exist_multi_color_filment;
         exist_multi_color_filment.resize(exist_colors.size());
@@ -2095,6 +2157,7 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
                 auto valid_index = get_map_index(ams_array_maps, maps[i]);
                 if (valid_index >= 0 && valid_index < ams_filament_presets.size()) {
                     exist_colors[i]           = ams_filament_colors[valid_index];
+                    exist_color_types[i]      = ams_filament_color_types[valid_index];
                     exist_filament_presets[i] = ams_filament_presets[valid_index];
                     exist_multi_color_filment[i] = ams_multi_color_filment[valid_index];
                 } else {
@@ -2113,12 +2176,14 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
                 if (!ams_infos[i].is_map) {
                     need_append_colors.emplace_back(ams_infos[i]);
                     ams_filament_colors[i]     = "";
+                    ams_filament_color_types[i] = "";
                     ams_filament_presets[i]    = "";
                     ams_multi_color_filment[i] = std::vector<std::string>();
                 }
             }
             else {
                 ams_filament_colors[i]     = "";
+                ams_filament_color_types[i] = "";
                 ams_filament_presets[i]    = "";
                 ams_multi_color_filment[i] = std::vector<std::string>();
             }
@@ -2126,6 +2191,8 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
         //delete redundant color
         ams_filament_colors.erase(std::remove_if(ams_filament_colors.begin(), ams_filament_colors.end(), [](std::string &value) { return value.empty(); }),
                                   ams_filament_colors.end());
+        ams_filament_color_types.erase(std::remove_if(ams_filament_color_types.begin(), ams_filament_color_types.end(), [](std::string &value) { return value.empty(); }),
+                                       ams_filament_color_types.end());
         ams_filament_presets.erase(std::remove_if(ams_filament_presets.begin(), ams_filament_presets.end(), [](std::string &value) { return value.empty(); }),
                                    ams_filament_presets.end());
         ams_multi_color_filment.erase(std::remove_if(ams_multi_color_filment.begin(), ams_multi_color_filment.end(),
@@ -2151,11 +2218,14 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
                 }
                 exist_filament_presets.push_back(need_append_colors[i].filament_preset);
                 exist_colors.push_back(need_append_colors[i].filament_color);
+                exist_color_types.push_back(need_append_colors[i].filament_color_type);
                 exist_multi_color_filment.push_back(need_append_colors[i].mutli_filament_color);
             }
         }
         filament_color->resize(exist_colors.size());
         filament_color->values = exist_colors;
+        filament_color_type->resize(exist_colors.size());
+        filament_color_type->values = exist_color_types;
         ams_multi_color_filment = exist_multi_color_filment;
         this->filament_presets = exist_filament_presets;
         filament_map->values.resize(exist_filament_presets.size(), 1);
@@ -2163,13 +2233,37 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
     else {//overwrite
         filament_color->resize(ams_filament_presets.size());
         filament_color->values = ams_filament_colors;
+        filament_color_type->resize(ams_filament_presets.size());
+        filament_color_type->values = ams_filament_color_types;
         this->filament_presets = ams_filament_presets;
         filament_map->values.resize(ams_filament_colors.size(), 1);
     }
-
+    // Update ams_multi_color_filment
+    update_filament_multi_color();
     update_multi_material_filament_presets();
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "finish sync ams list";
     return this->filament_presets.size();
+}
+
+void PresetBundle::update_filament_multi_color()
+{
+    std::vector<std::string> exsit_multi_colors;
+    for (auto &fil_item : ams_multi_color_filment){
+        if (fil_item.empty()) break;
+        if (fil_item.size() == 1)
+            exsit_multi_colors.push_back(fil_item[0]);
+        else {
+            std::string colors = "";
+            for (auto &color : fil_item){
+                   colors += color + " ";
+            }
+            colors.erase(colors.size() - 1); // remove last space
+            exsit_multi_colors.push_back(colors);
+        }
+    }
+    ConfigOptionStrings *filament_multi_colour = project_config.option<ConfigOptionStrings>("filament_multi_colour");
+    filament_multi_colour->resize(exsit_multi_colors.size());
+    filament_multi_colour->values = exsit_multi_colors;
 }
 
 std::vector<int> PresetBundle::get_used_tpu_filaments(const std::vector<int> &used_filaments)
@@ -2493,7 +2587,7 @@ bool PresetBundle::support_different_extruders()
 DynamicPrintConfig PresetBundle::full_config(bool apply_extruder, std::optional<std::vector<int>>filament_maps) const
 {
     return (this->printers.get_edited_preset().printer_technology() == ptFFF) ?
-    this->full_fff_config(apply_extruder, filament_maps) :
+        this->full_fff_config(apply_extruder, filament_maps) :
         this->full_sla_config();
 }
 
@@ -2907,6 +3001,32 @@ ConfigSubstitutions PresetBundle::load_config_file(const std::string &path, Forw
     return ConfigSubstitutions{};
 }
 
+
+//some filament presets split from one to sperate ones
+//following map recording these filament presets
+//for example: previously ''Bambu PLA Basic @BBL H2D 0.6 nozzle' was saved in ''Bambu PLA Basic @BBL H2D' with 0.4
+static std::map<std::string, std::map<std::string, std::string>> filament_preset_convert = {
+{"Bambu Lab H2D 0.6 nozzle", {{"Bambu PLA Basic @BBL H2D", "Bambu PLA Basic @BBL H2D 0.6 nozzle"},
+                              {"Bambu PLA Matte @BBL H2D", "Bambu PLA Matte @BBL H2D 0.6 nozzle"},
+                              {"Bambu ABS @BBL H2D", "Bambu ABS @BBL H2D 0.6 nozzle"}}},
+{"Bambu Lab H2D 0.8 nozzle", {{"Bambu PETG HF @BBL H2D 0.6 nozzle", "Bambu PETG HF @BBL H2D 0.8 nozzle"},
+                              {"Bambu ASA @BBL H2D 0.6 nozzle", "Bambu ASA @BBL H2D 0.8 nozzle"}}}
+};
+
+//convert the old filament preset to new one after split
+static void convert_filament_preset_name(std::string& machine_name, std::string& filament_name)
+{
+    auto machine_iter = filament_preset_convert.find(machine_name);
+    if (machine_iter != filament_preset_convert.end())
+    {
+        std::map<std::string, std::string>& filament_maps = machine_iter->second;
+        auto filament_iter = filament_maps.find(filament_name);
+        if (filament_iter != filament_maps.end())
+        {
+            filament_name = filament_iter->second;
+        }
+    }
+}
 // Load a config file from a boost property_tree. This is a private method called from load_config_file.
 // is_external == false on if called from ConfigWizard
 void PresetBundle::load_config_file_config(const std::string &name_or_path, bool is_external, DynamicPrintConfig &&config, Semver file_version, bool selected)
@@ -3080,6 +3200,8 @@ void PresetBundle::load_config_file_config(const std::string &name_or_path, bool
         auto old_filament_profile_names = config.option<ConfigOptionStrings>("filament_settings_id", true);
         old_filament_profile_names->values.resize(num_filaments, std::string());
 
+        auto old_machine_profile_name = config.option<ConfigOptionString>("printer_settings_id", true);
+
         if (num_filaments <= 1) {
             // Split the "compatible_printers_condition" and "inherits" from the cummulative vectors to separate filament presets.
             inherits                      = inherits_values[1];
@@ -3101,8 +3223,13 @@ void PresetBundle::load_config_file_config(const std::string &name_or_path, bool
             std::string filament_id = filament_ids[0];
             //QDS: add config related logs
             BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << boost::format(": load single filament preset from filament_settings_id");
-            if (is_external)
+            if (is_external) {
+                if (inherits.empty())
+                    convert_filament_preset_name(old_machine_profile_name->value, old_filament_profile_names->values.front());
+                else
+                    convert_filament_preset_name(old_machine_profile_name->value, inherits);
                 loaded = this->filaments.load_external_preset(name_or_path, name, old_filament_profile_names->values.front(), config, filament_different_keys_set, PresetCollection::LoadAndSelect::Always, file_version, filament_id).first;
+            }
             else {
                 // called from Config Wizard.
 				loaded= &this->filaments.load_preset(this->filaments.path_from_name(name, inherits.empty()), name, config, true, file_version);
@@ -3167,6 +3294,11 @@ void PresetBundle::load_config_file_config(const std::string &name_or_path, bool
                 std::string filament_id = filament_ids[i];
 
                 // Load all filament presets, but only select the first one in the preset dialog.
+                std::string& filament_inherit = cfg.opt_string("inherits", true);
+                if (filament_inherit.empty() && (i < int(old_filament_profile_names->values.size())))
+                    convert_filament_preset_name(old_machine_profile_name->value, old_filament_profile_names->values[i]);
+                else
+                    convert_filament_preset_name(old_machine_profile_name->value, filament_inherit);
                 auto [loaded, modified] = this->filaments.load_external_preset(name_or_path, name,
                     (i < int(old_filament_profile_names->values.size())) ? old_filament_profile_names->values[i] : "",
                     std::move(cfg),
@@ -3792,7 +3924,7 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
     PresetsConfigSubstitutions substitutions;
 
     //QDS: add config related logs
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(" enter, path %1%, compatibility_rule %2%")%path.c_str()%compatibility_rule;
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(" enter, path %1%, compatibility_rule %2%") % PathSanitizer::sanitize(path) % compatibility_rule;
     if (flags.has(LoadConfigBundleAttribute::ResetUserProfile) || flags.has(LoadConfigBundleAttribute::LoadSystem))
         // Reset this bundle, delete user profile files if SaveImported.
         this->reset(flags.has(LoadConfigBundleAttribute::SaveImported));
@@ -3854,7 +3986,7 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
             }
             else if (boost::iequals(it.key(), QDT_JSON_KEY_DESCRIPTION)) {
                 //get description
-                BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< ": parse "<<root_file<<", got description:  " << it.value();
+                //BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ": parse "<<root_file<<", got description:  " << it.value();
             }
             else if (boost::iequals(it.key(), QDT_JSON_KEY_NAME)) {
                 //get name
@@ -3951,7 +4083,18 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
                 } else if (boost::iequals(it.key(), QDT_JSON_KEY_DEFAULT_BED_TYPE)) {
                     // get bed type
                     model.default_bed_type = it.value();
-                } else if (boost::iequals(it.key(), QDT_JSON_KEY_IMAGE_BED_TYPE)) {
+                } else if (boost::iequals(it.key(), QDT_JSON_KEY_RIGHT_ICON_OFFSET_BED)) {
+                    model.right_icon_offset_bed = it.value();
+                } else if (boost::iequals(it.key(), QDT_JSON_KEY_BOTTOM_TEXTURE_END_NAME)) {
+                    model.bottom_texture_end_name = it.value();
+                } else if (boost::iequals(it.key(), QDT_JSON_KEY_BOTTOM_TEXTURE_RECT)) {
+                    model.bottom_texture_rect = it.value();
+                } else if (boost::iequals(it.key(), QDT_JSON_KEY_MIDDLE_TEXTURE_RECT)) {
+                    model.middle_texture_rect = it.value();
+                } else if (boost::iequals(it.key(), QDT_JSON_KEY_USE_RECT_GRID)) {
+                    model.use_rect_grid = it.value();
+                }
+                else if (boost::iequals(it.key(), QDT_JSON_KEY_IMAGE_BED_TYPE)) {
                     model.image_bed_type = it.value();
                 }
                 else if (boost::iequals(it.key(), QDT_JSON_KEY_BED_TEXTURE)) {
@@ -4164,7 +4307,7 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
             loaded.description = description;
             loaded.setting_id = setting_id;
             loaded.filament_id = filament_id;
-            BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << __LINE__ << ", " << loaded.name << " load filament_id: " << filament_id;
+            BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << " " << __LINE__ << ", " << loaded.name << " load filament_id: " << filament_id;
             if (presets_collection->type() == Preset::TYPE_FILAMENT) {
                 if (filament_id.empty() && "Template" != vendor_name) {
                     BOOST_LOG_TRIVIAL(error) << __FUNCTION__<< ": can not find filament_id for " << preset_name;
@@ -4203,7 +4346,7 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
         config_maps.emplace(preset_name, loaded.config);
         ++count;
         //QDS: add config related logs
-        BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << boost::format(", got preset %1%, from %2%")%loaded.name %subfile;
+        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << boost::format(", got preset %1%")%loaded.name;
         return reason;
     };
 

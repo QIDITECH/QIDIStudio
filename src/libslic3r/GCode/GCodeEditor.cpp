@@ -447,7 +447,7 @@ std::string GCodeEditor::write_layer_gcode(
         //QDS
         if (additional_fan_speed_new != m_additional_fan_speed) {
             m_additional_fan_speed = additional_fan_speed_new;
-            if (type == SetFanType::sfImmediatelyApply)
+            if (type == SetFanType::sfImmediatelyApply && m_config.auxiliary_fan.value)
                 new_gcode += GCodeWriter::set_additional_fan(m_additional_fan_speed);
             else if (type == SetFanType::sfChangingLayer)
                 this->m_set_addition_fan_changing_layer = true;
@@ -519,7 +519,7 @@ std::string GCodeEditor::write_layer_gcode(
             //QDS: force to write a fan speed command again
             if (m_current_fan_speed != -1)
                 new_gcode += GCodeWriter::set_fan(m_config.gcode_flavor, m_current_fan_speed);
-            if (m_additional_fan_speed != -1)
+            if (m_additional_fan_speed != -1 && m_config.auxiliary_fan.value)
                 new_gcode += GCodeWriter::set_additional_fan(m_additional_fan_speed);
         } else if (line->type & CoolingLine::TYPE_SET_FAN_CHANGING_LAYER) {
             //QDS: check whether fan speed need to changed when change layer
@@ -527,7 +527,7 @@ std::string GCodeEditor::write_layer_gcode(
                 new_gcode += GCodeWriter::set_fan(m_config.gcode_flavor, m_current_fan_speed);
                 m_set_fan_changing_layer = false;
             }
-            if (m_additional_fan_speed != -1 && m_set_addition_fan_changing_layer) {
+            if (m_additional_fan_speed != -1 && m_set_addition_fan_changing_layer && m_config.auxiliary_fan.value) {
                 new_gcode += GCodeWriter::set_additional_fan(m_additional_fan_speed);
                 m_set_addition_fan_changing_layer = false;
             }

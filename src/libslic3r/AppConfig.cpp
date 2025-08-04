@@ -43,7 +43,7 @@ static const std::string MODELS_STR = "models";
 
 const std::string AppConfig::SECTION_FILAMENTS = "filaments";
 const std::string AppConfig::SECTION_MATERIALS = "sla_materials";
-
+const std::string AppConfig::SECTION_EMBOSS_STYLE = "font";
 std::string AppConfig::get_language_code()
 {
     std::string get_lang = get("language");
@@ -177,12 +177,19 @@ void AppConfig::set_defaults()
     if (get("ams_sync_match_full_use_color_dist").empty())
         set_bool("ams_sync_match_full_use_color_dist", false);
     if (get("enable_sidebar_resizable").empty())
-        set_bool("enable_sidebar_resizable", false);
+        set_bool("enable_sidebar_resizable", true);
+    if (get("enable_sidebar_floatable").empty())
+        set_bool("enable_sidebar_floatable", false);
+
+    if (get("export_sources_full_pathnames").empty())
+        set_bool("export_sources_full_pathnames", false);
 
     if (get("zoom_to_mouse").empty())
         set_bool("zoom_to_mouse", false);
     if (get("show_shells_in_preview").empty())
         set_bool("show_shells_in_preview", true);
+    if (get("enable_text_styles").empty())
+        set_bool("enable_text_styles", false);
     if (get("enable_lod").empty())
         set_bool("enable_lod", true);
     if (get("gamma_correct_in_import_obj").empty())
@@ -201,6 +208,10 @@ void AppConfig::set_defaults()
     if (get("show_hints").empty())
         set_bool("show_hints", false);
 //#endif
+    if (get("support_backup_fonts").empty())
+        set_bool("support_backup_fonts", true);
+    if (get("custom_back_font_name").empty())
+        set("custom_back_font_name", "");
     if (get("enable_multi_machine").empty())
         set_bool("enable_multi_machine", false);
 
@@ -387,11 +398,10 @@ void AppConfig::set_defaults()
         set_bool("backup_switch", true);
     }
 
-    //1.9.7.52
     if (get("liveview", "auto_stop_liveview").empty()) {
         set("liveview", "auto_stop_liveview", true);
     }
-    
+
     if (get("backup_interval").empty()) {
         set("backup_interval", "10");
     }
@@ -450,7 +460,6 @@ void AppConfig::set_defaults()
     if (get("is_split_compound").empty()) {
         set_bool("is_split_compound", false);
     }
-
     if (get("play_slicing_video").empty()) {
         set_bool("play_slicing_video", true);
     }
@@ -544,7 +553,6 @@ std::string AppConfig::load()
             BOOST_LOG_TRIVIAL(info) << "AppConfig::load() open fail:" << AppConfig::loading_path();
             return "Line break format may be incorrect.";
         }
-
 #ifdef WIN32
         std::stringstream input_stream;
         input_stream << ifs.rdbuf();
@@ -691,8 +699,11 @@ std::string AppConfig::load()
                             m_filament_presets = iter.value().get<std::vector<std::string>>();
                         } else if (iter.key() == "filament_colors") {
                             m_filament_colors = iter.value().get<std::vector<std::string>>();
-                        }
-                        else {
+                        } else if(iter.key() == "filament_multi_colors") {
+                           m_filament_multi_colors = iter.value().get<std::vector<std::string>>();
+                        } else if(iter.key() == "filament_color_types") {
+                           m_filament_color_types = iter.value().get<std::vector<std::string>>();
+                        } else {
                             if (iter.value().is_string())
                                 m_storage[it.key()][iter.key()] = iter.value().get<std::string>();
                             else {
@@ -776,6 +787,13 @@ void AppConfig::save()
     for (const auto &filament_color : m_filament_colors) {
         j["app"]["filament_colors"].push_back(filament_color);
     }
+    for (const auto &filament_multi_color : m_filament_multi_colors) {
+       j["app"]["filament_multi_colors"].push_back(filament_multi_color);
+    }
+
+    for (const auto &filament_color_type : m_filament_color_types) {
+       j["app"]["filament_color_types"].push_back(filament_color_type);
+    }
 
     for (const auto &cali_info : m_printer_cali_infos) {
         json cali_json;
@@ -811,7 +829,7 @@ void AppConfig::save()
         } else if (category.first == "presets") {
             json j_filament_array;
             for(const auto& kvp : category.second) {
-                if (boost::starts_with(kvp.first, "filament") && kvp.first != "filament_colors") {
+                if (boost::starts_with(kvp.first, "filament") && kvp.first != "filament_colors" && kvp.first != "filament_multi_colors" && kvp.first != "filament_color_types") {
                     j_filament_array.push_back(kvp.second);
                 } else {
                     j[category.first][kvp.first] = kvp.second;

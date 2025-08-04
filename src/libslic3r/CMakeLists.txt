@@ -6,6 +6,16 @@ include(PrecompiledHeader)
 string(TIMESTAMP COMPILE_TIME %Y%m%d-%H%M%S)
 set(SLIC3R_BUILD_TIME ${COMPILE_TIME})
 
+if("${QDT_RELEASE_TO_PUBLIC}" STREQUAL "0")
+execute_process(
+    COMMAND git rev-parse HEAD
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_SHA1
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+set(SLIC3R_COMPILE_VERSION "${GIT_SHA1}")
+endif()
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libslic3r_version.h.in ${CMAKE_CURRENT_BINARY_DIR}/libslic3r_version.h @ONLY)
 
 if (MINGW)
@@ -26,6 +36,8 @@ set(lisbslic3r_sources
     AABBTreeLines.hpp
     AABBMesh.hpp
     AABBMesh.cpp
+    Algorithm/LineSegmentation/LineSegmentation.cpp
+    Algorithm/LineSegmentation/LineSegmentation.hpp
     AnyPtr.hpp
     AStar.hpp
     BoundingBox.cpp
@@ -120,6 +132,8 @@ set(lisbslic3r_sources
     Frustum.hpp
     FlushVolCalc.cpp
     FlushVolCalc.hpp
+    FuzzySkin.cpp
+    FuzzySkin.hpp
     format.hpp
     Format/3mf.cpp
     Format/3mf.hpp
@@ -464,7 +478,7 @@ if (APPLE)
         )
 endif ()
 
-add_library(libslic3r STATIC ${lisbslic3r_sources} 
+add_library(libslic3r STATIC ${lisbslic3r_sources}
     "${CMAKE_CURRENT_BINARY_DIR}/libslic3r_version.h"
     ${OpenVDBUtils_SOURCES})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${lisbslic3r_sources})
@@ -502,6 +516,13 @@ if (_opts)
     list(FILTER _opts_good EXCLUDE REGEX frounding-math)
     set_target_properties(${_cgal_tgt} PROPERTIES INTERFACE_COMPILE_OPTIONS "${_opts_good}")
     target_compile_options(libslic3r_cgal PRIVATE "${_opts_bad}")
+endif()
+
+if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 14.1)
+    set_property(TARGET libslic3r PROPERTY CXX_STANDARD 17)
+    set_property(TARGET libslic3r PROPERTY CXX_EXTENSIONS OFF)
+    set_property(TARGET libslic3r_cgal PROPERTY CXX_STANDARD 17)
+    set_property(TARGET libslic3r_cgal PROPERTY CXX_EXTENSIONS OFF)
 endif()
 
 target_link_libraries(libslic3r_cgal PRIVATE ${_cgal_tgt} libigl mcut)

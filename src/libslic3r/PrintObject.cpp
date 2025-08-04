@@ -75,7 +75,7 @@ PrintObject::PrintObject(Print* print, ModelObject* model_object, const Transfor
 	// snug height and an approximate bounding box in XY.
     BoundingBoxf3  bbox        = model_object->raw_bounding_box();
     Vec3d 		   bbox_center = bbox.center();
-    
+
 	// We may need to rotate the bbox / bbox_center from the original instance to the current instance.
 	double z_diff = Geometry::rotation_diff_z(model_object->instances.front()->get_rotation(), instances.front().model_instance->get_rotation());
 	if (std::abs(z_diff) > EPSILON) {
@@ -523,6 +523,7 @@ void PrintObject::prepare_infill()
     this->discover_vertical_shells();
     m_print->throw_if_canceled();
 
+
     // this will detect bridges and reverse bridges
     // and rearrange top/bottom/internal surfaces
     // It produces enlarged overlapping bridging areas.
@@ -627,13 +628,13 @@ void PrintObject::infill()
 
         //BOOST_LOG_TRIVIAL(debug) << "Filling layers in parallel - start";
         tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, m_layers.size()),
-            [this, &adaptive_fill_octree = adaptive_fill_octree, &support_fill_octree = support_fill_octree](const tbb::blocked_range<size_t>& range) {
-                for (size_t layer_idx = range.begin(); layer_idx < range.end(); ++ layer_idx) {
-                    m_print->throw_if_canceled();
-                    m_layers[layer_idx]->make_fills(adaptive_fill_octree.get(), support_fill_octree.get(), this->m_lightning_generator.get());
-                }
-            }
+           tbb::blocked_range<size_t>(0, m_layers.size()),
+           [this, &adaptive_fill_octree = adaptive_fill_octree, &support_fill_octree = support_fill_octree](const tbb::blocked_range<size_t>& range) {
+               for (size_t layer_idx = range.begin(); layer_idx < range.end(); ++ layer_idx) {
+                   m_print->throw_if_canceled();
+                   m_layers[layer_idx]->make_fills(adaptive_fill_octree.get(), support_fill_octree.get(), this->m_lightning_generator.get());
+               }
+           }
         );
         m_print->throw_if_canceled();
         BOOST_LOG_TRIVIAL(debug) << "Filling layers in parallel - end";
@@ -1110,7 +1111,9 @@ bool PrintObject::invalidate_state_by_config_options(
                    || opt_key == "skeleton_infill_density"
                    || opt_key == "skin_infill_density"
                    || opt_key == "infill_lock_depth"
-                   || opt_key == "skin_infill_depth") {
+                   || opt_key == "skin_infill_depth"
+                   || opt_key == "locked_skin_infill_pattern"
+                   || opt_key == "locked_skeleton_infill_pattern") {
             steps.emplace_back(posPrepareInfill);
         } else if (opt_key == "sparse_infill_density") {
             // One likely wants to reslice only when switching between zero infill to simulate boolean difference (subtracting volumes),
@@ -1159,6 +1162,7 @@ bool PrintObject::invalidate_state_by_config_options(
             steps.emplace_back(posSlice);
         } else if (
                opt_key == "seam_position"
+            || opt_key == "seam_placement_away_from_overhangs"
             || opt_key == "seam_slope_conditional"
             || opt_key == "scarf_angle_threshold"
             || opt_key == "seam_slope_entire_loop"
@@ -1169,15 +1173,13 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "role_base_wipe_speed"
             || opt_key == "support_speed"
             || opt_key == "support_interface_speed"
-            //1.9.5
             || opt_key == "smooth_speed_discontinuity_area"
             || opt_key == "smooth_coefficient"
             || opt_key == "overhang_1_4_speed"
             || opt_key == "overhang_2_4_speed"
             || opt_key == "overhang_3_4_speed"
             || opt_key == "overhang_4_4_speed"
-            //1.9.5
-            || opt_key == "overhang_totally_speed"  
+            || opt_key == "overhang_totally_speed"
             || opt_key == "bridge_speed"
             || opt_key == "outer_wall_speed"
             || opt_key == "small_perimeter_speed"
@@ -1186,7 +1188,14 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "inner_wall_speed"
             || opt_key == "internal_solid_infill_speed"
             || opt_key == "top_surface_speed"
-            || opt_key == "vertical_shell_speed") {
+            || opt_key == "vertical_shell_speed"
+            || opt_key == "enable_height_slowdown"
+            || opt_key == "slowdown_start_height"
+            || opt_key == "slowdown_start_speed"
+            || opt_key == "slowdown_start_acc"
+            || opt_key == "slowdown_end_height"
+            || opt_key == "slowdown_end_speed"
+            || opt_key == "slowdown_end_acc" ) {
             invalidated |= m_print->invalidate_step(psGCodeExport);
         } else if (
                opt_key == "flush_into_infill"
@@ -1908,6 +1917,8 @@ void PrintObject::discover_vertical_shells()
 //    PROFILE_OUTPUT(debug_out_path("discover_vertical_shells-profile.txt").c_str());
 }
 
+
+
 void PrintObject::discover_shell_for_perimeters()
 {
     const size_t num_regions = this->num_printing_regions();
@@ -2056,14 +2067,14 @@ void PrintObject::bridge_over_infill()
 #endif
 #ifdef DEBUG_BRIDGE_OVER_INFILL
                                 debug_draw(std::to_string(lidx) + "_candidate_processing_" + std::to_string(area(unsupported)),
-                                to_lines(unsupported), to_lines(intersection(to_polygons(s->expolygon), expand(unsupported, 5 * spacing))),
-                                to_lines(diff(to_polygons(s->expolygon), expand(worth_bridging, spacing))),
+                                    to_lines(unsupported), to_lines(intersection(to_polygons(s->expolygon), expand(unsupported, 5 * spacing))),
+                                    to_lines(diff(to_polygons(s->expolygon), expand(worth_bridging, spacing))),
                                     to_lines(unsupported_area));
 #endif
                             }
                         }
                     }
-                } 
+                }
 #if USE_TBB_IN_INFILL
                 });
 #endif
@@ -2771,7 +2782,7 @@ void PrintObject::bridge_over_infill()
 
                 SurfacesPtr internal_infills = region->fill_surfaces.filter_by_type(stInternal);
                 ExPolygons new_internal_infills = diff_ex(internal_infills, cut_from_infill); // 新的稀疏填充区域，去掉生成的桥接区域
-                new_internal_infills            = diff_ex(new_internal_infills, additional_ensuring); 
+                new_internal_infills            = diff_ex(new_internal_infills, additional_ensuring);
                 for (const ExPolygon &ep : new_internal_infills) {
                     new_surfaces.emplace_back(stInternal, ep);
                 }
@@ -2784,7 +2795,7 @@ void PrintObject::bridge_over_infill()
                                 Surface tmp{*surface, {}};
                                 tmp.surface_type = stInternalBridge;
                                 tmp.bridge_angle = cs.bridge_angle;
-                                for (const ExPolygon &ep : union_ex(cs.new_polys)) {
+                                for (const ExPolygon &ep : intersection_ex(union_ex(cs.new_polys),region->fill_expolygons)) {
                                     new_surfaces.emplace_back(tmp, ep);
                                 }
                                 break;
@@ -2814,7 +2825,7 @@ void PrintObject::bridge_over_infill()
                 region->fill_surfaces.append(new_surfaces);
             }
         }
-        });
+});
 
     BOOST_LOG_TRIVIAL(info) << "Bridge over infill - End" << log_memory_info();
 
@@ -3600,6 +3611,7 @@ template void PrintObject::remove_bridges_from_contacts<Polygons>(
 SupportNecessaryType PrintObject::is_support_necessary()
 {
     const double cantilevel_dist_thresh = scale_(6);
+
     TreeSupport tree_support(*this, m_slicing_params);
     tree_support.support_type = SupportType::stTreeAuto; // need to set support type to fully utilize the power of feature detection
     tree_support.detect_overhangs(true);
@@ -3805,7 +3817,7 @@ void PrintObject::project_and_append_custom_facets(
         if (mv->is_model_part()) {
             const indexed_triangle_set custom_facets = seam
                     ? mv->seam_facets.get_facets_strict(*mv, type)
-                    : mv->supported_facets.get_facets_strict(*mv, type);
+                    : mv->supported_facets.get_facets_strict(*mv, type);//just for support
             if (! custom_facets.indices.empty()) {
                 if (seam)
                     project_triangles_to_slabs(this->layers(), custom_facets,

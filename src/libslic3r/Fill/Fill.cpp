@@ -26,6 +26,9 @@ struct SurfaceFillParams
     unsigned int 	extruder = 0;
 	// Infill pattern, adjusted for the density etc.
     InfillPattern  	pattern = InfillPattern(0);
+	//for locked zag
+    InfillPattern   skin_pattern = InfillPattern(0);
+    InfillPattern   skeleton_pattern = InfillPattern(0);
 
     // FillBase
     // in unscaled coordinates
@@ -99,6 +102,8 @@ struct SurfaceFillParams
 		RETURN_COMPARE_NON_EQUAL(symmetric_infill_y_axis);
 		RETURN_COMPARE_NON_EQUAL(infill_lock_depth);
 		RETURN_COMPARE_NON_EQUAL(skin_infill_depth);
+        RETURN_COMPARE_NON_EQUAL_TYPED(unsigned, skin_pattern);
+        RETURN_COMPARE_NON_EQUAL_TYPED(unsigned, skeleton_pattern);
 
 		return false;
 	}
@@ -124,7 +129,9 @@ struct SurfaceFillParams
 				this->infill_rotate_step            == rhs.infill_rotate_step &&
 				this->symmetric_infill_y_axis	== rhs.symmetric_infill_y_axis &&
 				this->infill_lock_depth      ==  rhs.infill_lock_depth &&
-				this->skin_infill_depth      ==  rhs.skin_infill_depth;
+				this->skin_infill_depth      ==  rhs.skin_infill_depth &&
+				this-> skin_pattern     == rhs.skin_pattern &&
+				this-> skeleton_pattern == rhs.skeleton_pattern;
 	}
 };
 
@@ -166,7 +173,6 @@ std::vector<SurfaceFill> group_fills(const Layer &layer, LockRegionParam &lock_p
             flow_params.insert({flow, {exp}});
         else
             it->second.push_back(exp);
-        it++;
     };
 
 	auto append_density_param = [](std::map<float, ExPolygons> &density_params, float density, const ExPolygon &exp) {
@@ -175,7 +181,6 @@ std::vector<SurfaceFill> group_fills(const Layer &layer, LockRegionParam &lock_p
             density_params.insert({density, {exp}});
         else
             it->second.push_back(exp);
-        it++;
     };
 
 	for (size_t region_id = 0; region_id < layer.regions().size(); ++ region_id) {
@@ -194,7 +199,8 @@ std::vector<SurfaceFill> group_fills(const Layer &layer, LockRegionParam &lock_p
                 if (params.pattern == ipLockedZag) {
                     params.infill_lock_depth = scale_(region_config.infill_lock_depth);
                     params.skin_infill_depth = scale_(region_config.skin_infill_depth);
-
+                    params.skin_pattern      = region_config.locked_skin_infill_pattern.value;
+                    params.skeleton_pattern  = region_config.locked_skeleton_infill_pattern.value;
 				}
             if (params.pattern == ipCrossZag || params.pattern == ipLockedZag){
                 params.infill_shift_step     = scale_(region_config.infill_shift_step);
@@ -582,6 +588,10 @@ void Layer::make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive:
         } else if (surface_fill.params.pattern == ipLightning){
             dynamic_cast<FillLightning::Filler*>(f.get())->generator = lightning_generator;
 		}
+		else if (surface_fill.params.pattern == ipMonotonicLine){
+			FillMonotonicLineWGapFill* fill_monoline = dynamic_cast<FillMonotonicLineWGapFill*>(f.get());
+			fill_monoline->apply_gap_compensation = this->object()->print()->config().apply_top_surface_compensation;
+		}
 		else if (surface_fill.params.pattern == ipFloatingConcentric) {
 			FillFloatingConcentric* fill_contour = dynamic_cast<FillFloatingConcentric*>(f.get());
 			assert(fill_contour != nullptr);
@@ -660,6 +670,7 @@ void Layer::make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive:
             params.infill_lock_depth = surface_fill.params.infill_lock_depth;
             params.skin_infill_depth = surface_fill.params.skin_infill_depth;
             f->set_lock_region_param(lock_param);
+            f->set_skin_and_skeleton_pattern(surface_fill.params.skin_pattern, surface_fill.params.skeleton_pattern);
 		}
         if (surface_fill.params.pattern == ipCrossZag || surface_fill.params.pattern == ipLockedZag) {
             if (f->layer_id % 2 == 0) {

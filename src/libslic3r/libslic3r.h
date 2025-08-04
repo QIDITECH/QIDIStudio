@@ -67,7 +67,7 @@ static constexpr double SPARSE_INFILL_RESOLUTION = 0.04;
 
 static constexpr double SUPPORT_RESOLUTION = 0.0375;
 #define                 SCALED_SUPPORT_RESOLUTION (SUPPORT_RESOLUTION / SCALING_FACTOR)
-// Maximum perimeter length for the loop to apply the small perimeter speed. 
+// Maximum perimeter length for the loop to apply the small perimeter speed.
 #define                 SMALL_PERIMETER_LENGTH(LENGTH)  (((LENGTH)/SCALING_FACTOR)*2*PI)
 static constexpr double INSET_OVERLAP_TOLERANCE = 0.4;
 // 3mm ring around the top / bottom / bridging areas.
@@ -111,7 +111,7 @@ using deque =
 template<typename T, typename Q>
 inline T unscale(Q v) { return T(v) * T(SCALING_FACTOR); }
 
-enum Axis { 
+enum Axis {
 	X=0,
 	Y,
 	Z,
@@ -184,7 +184,7 @@ inline void append_reversed(std::vector<T>& dest, std::vector<T>&& src)
 
 // Casting an std::vector<> from one type to another type without warnings about a loss of accuracy.
 template<typename T_TO, typename T_FROM>
-std::vector<T_TO> cast(const std::vector<T_FROM> &src) 
+std::vector<T_TO> cast(const std::vector<T_FROM> &src)
 {
     std::vector<T_TO> dst;
     dst.reserve(src.size());
@@ -222,7 +222,7 @@ ForwardIt lower_bound_by_predicate(ForwardIt first, ForwardIt last, LowerThanKey
     ForwardIt it;
     typename std::iterator_traits<ForwardIt>::difference_type count, step;
     count = std::distance(first, last);
- 
+
     while (count > 0) {
         it = first;
         step = count / 2;
@@ -241,10 +241,10 @@ ForwardIt lower_bound_by_predicate(ForwardIt first, ForwardIt last, LowerThanKey
 template<class ForwardIt, class T, class Compare=std::less<>>
 ForwardIt binary_find(ForwardIt first, ForwardIt last, const T& value, Compare comp={})
 {
-    // Note: BOTH type T and the type after ForwardIt is dereferenced 
-    // must be implicitly convertible to BOTH Type1 and Type2, used in Compare. 
+    // Note: BOTH type T and the type after ForwardIt is dereferenced
+    // must be implicitly convertible to BOTH Type1 and Type2, used in Compare.
     // This is stricter than lower_bound requirement (see above)
- 
+
     first = std::lower_bound(first, last, value, comp);
     return first != last && !comp(value, *first) ? first : last;
 }
@@ -253,10 +253,10 @@ ForwardIt binary_find(ForwardIt first, ForwardIt last, const T& value, Compare c
 template<class ForwardIt, class LowerThanKeyPredicate, class EqualToKeyPredicate>
 ForwardIt binary_find_by_predicate(ForwardIt first, ForwardIt last, LowerThanKeyPredicate lower_thank_key, EqualToKeyPredicate equal_to_key)
 {
-    // Note: BOTH type T and the type after ForwardIt is dereferenced 
-    // must be implicitly convertible to BOTH Type1 and Type2, used in Compare. 
+    // Note: BOTH type T and the type after ForwardIt is dereferenced
+    // must be implicitly convertible to BOTH Type1 and Type2, used in Compare.
     // This is stricter than lower_bound requirement (see above)
- 
+
     first = lower_bound_by_predicate(first, last, lower_thank_key);
     return first != last && equal_to_key(*first) ? first : last;
 }
@@ -317,7 +317,7 @@ template<class I> struct is_scaled_coord
 // return type will be bool.
 // For more info how to use, see docs for std::enable_if
 //
-template<class T, class O = T> 
+template<class T, class O = T>
 using FloatingOnly = std::enable_if_t<std::is_floating_point<T>::value, O>;
 
 template<class T, class O = T>

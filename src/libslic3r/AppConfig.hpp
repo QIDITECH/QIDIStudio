@@ -71,7 +71,7 @@ public:
 		if (it == m_storage.end())
 			return false;
 		auto it2 = it->second.find(key);
-		if (it2 == it->second.end()) 
+		if (it2 == it->second.end())
 			return false;
 		value = it2->second;
 		return true;
@@ -80,7 +80,7 @@ public:
 		{ std::string value; this->get(section, key, value); return value; }
 	std::string 		get(const std::string &key) const
 		{ std::string value; this->get("app", key, value); return value; }
-	bool get_bool(const std::string &key) const { return this->get(key) == "true" || this->get(key) == "1"; }
+    bool get_bool(const std::string &key) const { return this->get(key) == "true" || this->get(key) == "1"; }
 	void			    set(const std::string &section, const std::string &key, const std::string &value)
 	{
 #ifndef NDEBUG
@@ -253,7 +253,8 @@ public:
 
 	static const std::string SECTION_FILAMENTS;
     static const std::string SECTION_MATERIALS;
-	
+    static const std::string SECTION_EMBOSS_STYLE;
+
 	//w13
 	bool get_seal() { return m_seal; }
 	void set_seal(bool val) { m_seal = val; }
@@ -291,6 +292,8 @@ private:
 
 	std::vector<std::string>									m_filament_presets;
     std::vector<std::string>									m_filament_colors;
+	std::vector<std::string>									m_filament_multi_colors;
+	std::vector<std::string>									m_filament_color_types;
 
 	std::vector<PrinterCaliInfo>								m_printer_cali_infos;
 	//w13

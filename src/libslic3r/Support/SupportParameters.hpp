@@ -160,13 +160,13 @@ struct SupportParameters {
                                             this->support_density > 0.95 || this->with_sheath ? ipRectilinear :
                                                                                                 ipSupportBase;
         this->interface_fill_pattern = (this->interface_density > 0.95 ? ipRectilinear : ipSupportBase);
-        this->raft_interface_fill_pattern = this->raft_interface_density > 0.95 ? ipRectilinear : ipSupportBase;
+		this->raft_interface_fill_pattern = this->raft_interface_density > 0.95 ? ipRectilinear : ipSupportBase;
         if (object_config.support_interface_pattern == smipGrid)
             this->contact_fill_pattern = ipGrid;
         else if (object_config.support_interface_pattern == smipRectilinearInterlaced || object_config.support_interface_pattern == smipAuto)
             this->contact_fill_pattern = ipRectilinear;
         else
-        this->contact_fill_pattern = object_config.support_interface_pattern == smipConcentric ?
+            this->contact_fill_pattern = object_config.support_interface_pattern == smipConcentric ?
             ipConcentric :
             (this->interface_density > 0.95 ? ipRectilinear : ipSupportBase);
 
@@ -220,7 +220,7 @@ struct SupportParameters {
             }
         }
 
-        if(object_config.tree_support_wall_count.value==0){
+        if(object_config.tree_support_wall_count.value==-1){
             tree_support_branch_diameter_double_wall = support_filament_strength;
             this->tree_branch_diameter_double_wall_area_scaled = 0.25*sqr(scaled<double>(tree_support_branch_diameter_double_wall))*M_PI;
         }else{
@@ -258,7 +258,7 @@ struct SupportParameters {
     Flow 		support_material_flow;
     Flow 		support_material_interface_flow;
     Flow 		support_material_bottom_interface_flow;
-    // Flow at raft inteface & contact layers.
+	// Flow at raft inteface & contact layers.
 	Flow    				raft_interface_flow;
     coordf_t support_extrusion_width;
     // Is merging of regions allowed? Could the interface & base support regions be printed with the same extruder?

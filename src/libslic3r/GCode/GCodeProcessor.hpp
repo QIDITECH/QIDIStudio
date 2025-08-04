@@ -393,6 +393,7 @@ namespace Slic3r {
         std::unique_ptr<TrieNode> root;
     };
 
+
     class GCodeProcessor
     {
         static const std::vector<std::string> ReservedTags;
@@ -415,7 +416,6 @@ namespace Slic3r {
             Total_Layer_Number_Placeholder,
             Wipe_Tower_Start,
             Wipe_Tower_End,
-            //1.9.7.52
             Used_Filament_Weight_Placeholder,
             Used_Filament_Volume_Placeholder,
             Used_Filament_Length_Placeholder,
@@ -443,10 +443,10 @@ namespace Slic3r {
         // checks the given gcode for reserved tags and returns true when finding any
         // (the first max_count found tags are returned into found_tag)
         static bool contains_reserved_tags(const std::string& gcode, unsigned int max_count, std::vector<std::string>& found_tag);
-        static bool get_last_position_from_gcode(const std::string &gcode_str, Vec3f &pos);
 
         static int get_gcode_last_filament(const std::string &gcode_str);
         static bool get_last_z_from_gcode(const std::string& gcode_str, double& z);
+        static bool get_last_position_from_gcode(const std::string &gcode_str, Vec3f &pos);
 
         static const float Wipe_Width;
         static const float Wipe_Height;
@@ -686,7 +686,6 @@ namespace Slic3r {
             friend class GCodeProcessor;
         };
 
-        //1.9.7.52
         struct TimeProcessContext
         {
             UsedFilaments used_filaments; // stores the accurate filament usage info
@@ -770,6 +769,7 @@ namespace Slic3r {
             float filament_load_times;
             float filament_unload_times;
             float extruder_change_times;
+            float prepare_compensation_time;
 
             std::array<TimeMachine, static_cast<size_t>(PrintEstimatedStatistics::ETimeMode::Count)> machines;
 
@@ -778,7 +778,7 @@ namespace Slic3r {
             // post process the file with the given filename to add remaining time lines M73
             // and updates moves' gcode ids accordingly
             void post_process(const std::string& filename, std::vector<GCodeProcessorResult::MoveVertex>& moves, std::vector<size_t>& lines_ends, const TimeProcessContext& context);
-            private:
+        private:
             void handle_offsets_of_first_process(
                 const std::vector<std::pair<unsigned int, unsigned int>>& offsets,
                 std::vector<GCodeProcessorResult::MoveVertex>& moves,
@@ -1020,7 +1020,6 @@ namespace Slic3r {
         int m_object_label_id{-1};
         float m_print_z{0.0f};
         std::vector<float> m_remaining_volume;
-        //1.9.7.52
         std::vector<Extruder> m_filament_lists;
         std::vector<int> m_filament_nozzle_temp;
         std::vector<std::string> m_filament_types;
@@ -1067,6 +1066,7 @@ namespace Slic3r {
         size_t m_last_default_color_id;
         bool m_detect_layer_based_on_tag {false};
         int m_seams_count;
+        bool m_measure_g29_time {false};
 #if ENABLE_GCODE_VIEWER_STATISTICS
         std::chrono::time_point<std::chrono::high_resolution_clock> m_start_time;
 #endif // ENABLE_GCODE_VIEWER_STATISTICS
@@ -1111,7 +1111,8 @@ namespace Slic3r {
                                               const std::vector<int>      &filament_map,
                                               const std::vector<std::set<int>>& unprintable_filament_types );
         void apply_config(const PrintConfig& config);
-        //1.9.7.52
+
+        DynamicConfig export_config_for_render() const;
         void set_filaments(const std::vector<Extruder>&filament_lists) { m_filament_lists=filament_lists;}
 
         void enable_stealth_time_estimator(bool enabled);
@@ -1296,8 +1297,10 @@ namespace Slic3r {
         // Processes T line (Select Tool)
         void process_T(const GCodeReader::GCodeLine& line);
         void process_T(const std::string_view command);
-
         void process_M1020(const GCodeReader::GCodeLine &line);
+
+        void process_M622(const GCodeReader::GCodeLine &line);
+        void process_M623(const GCodeReader::GCodeLine &line);
 
         void process_filament_change(int id);
         //QDS: different path_type is only used for arc move

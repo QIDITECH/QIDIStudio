@@ -125,6 +125,7 @@ struct SupportNode
     bool           is_sharp_tail   = false;
     bool           valid = true;
     bool           fading          = false;
+    double         overhang_degree = 0.0;  // overhang degree for cooling just like perimeter
     ExPolygon      overhang; // when type==ePolygon, set this value to get original overhang area
     coordf_t       origin_area;
 
@@ -432,7 +433,6 @@ private:
     SlicingParameters        m_slicing_params;
     // Various precomputed support parameters to be shared with external functions.
     SupportParameters   m_support_params;
-    //1.9.5
     size_t          m_raft_layers = 0;  // number of raft layers, including raft base, raft interface, raft gap
     size_t          m_highest_overhang_layer = 0;
     std::vector<std::vector<MinimumSpanningTree>> m_spanning_trees;

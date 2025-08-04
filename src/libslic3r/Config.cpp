@@ -849,7 +849,7 @@ int ConfigBase::load_from_json(const std::string &file, ConfigSubstitutionContex
             }
         }
         return true;
-    };
+        };
 
     try {
         boost::nowide::ifstream ifs(file);
@@ -1474,7 +1474,7 @@ void ConfigBase::save_to_json(const std::string &file, const std::string &name, 
     c << std::setw(4) << j << std::endl;
     c.close();
 
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ":" <<__LINE__ << boost::format(", saved config to %1%\n")%file;
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ":" << __LINE__ << boost::format(", saved config to %1%\n") % PathSanitizer::sanitize(file);
 }
 
 //y66
