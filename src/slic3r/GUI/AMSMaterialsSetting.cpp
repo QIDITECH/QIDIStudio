@@ -9,6 +9,8 @@
 #include <wx/dcgraph.h>
 #include "CalibUtils.hpp"
 #include "../Utils/ColorSpaceConvert.hpp"
+#include "EncodedFilament.hpp"
+
 namespace Slic3r { namespace GUI {
 
 wxDEFINE_EVENT(EVT_SELECTED_COLOR, wxCommandEvent);
@@ -178,6 +180,11 @@ void AMSMaterialsSetting::create_panel_normal(wxWindow* parent)
 
     m_clr_picker->Bind(wxEVT_LEFT_DOWN, &AMSMaterialsSetting::on_clr_picker, this);
     m_sizer_colour->Add(m_clr_picker, 0, 0, 0);
+    m_clr_name = new Label(parent, wxEmptyString);
+    m_clr_name->SetForegroundColour(*wxBLACK);
+    m_clr_name->SetBackgroundColour(*wxWHITE);
+    m_clr_name->SetFont(Label::Body_13);
+    m_sizer_colour->Add(m_clr_name, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, FromDIP(10));
 
     wxBoxSizer* m_sizer_temperature = new wxBoxSizer(wxHORIZONTAL);
     m_title_temperature = new wxStaticText(parent, wxID_ANY, _L("Nozzle\nTemperature"), wxDefaultPosition, wxSize(AMS_MATERIALS_SETTING_LABEL_WIDTH, -1), 0);
@@ -724,18 +731,34 @@ void AMSMaterialsSetting::set_color(wxColour color)
     //m_clrData->SetColour(color);
     m_clr_picker->is_empty(false);
     m_clr_picker->set_color(color);
+
+    FilamentColor fila_color;
+    fila_color.m_colors.insert(color);
+    fila_color.EndSet(m_clr_picker->ctype);
+    auto clr_query = GUI::wxGetApp().get_filament_color_code_query();
+    m_clr_name->SetLabelText(clr_query->GetFilaColorName(ams_filament_id, fila_color));
 }
 
 void AMSMaterialsSetting::set_empty_color(wxColour color)
 {
     m_clr_picker->is_empty(true);
     m_clr_picker->set_color(color);
+    m_clr_name->SetLabelText(wxEmptyString);
 }
 
 void AMSMaterialsSetting::set_colors(std::vector<wxColour> colors)
 {
     //m_clrData->SetColour(color);
     m_clr_picker->set_colors(colors);
+
+    if (!colors.empty())
+    {
+        FilamentColor fila_color;
+        for (const auto& clr : colors) { fila_color.m_colors.insert(clr); }
+        fila_color.EndSet(m_clr_picker->ctype);
+        auto clr_query = GUI::wxGetApp().get_filament_color_code_query();
+        m_clr_name->SetLabelText(clr_query->GetFilaColorName(ams_filament_id, fila_color));
+    }
 }
 
 void AMSMaterialsSetting::set_ctype(int ctype)
@@ -1075,11 +1098,6 @@ void AMSMaterialsSetting::post_select_event(int index) {
     wxPostEvent(m_comboBox_filament, event);
 }
 
-void AMSMaterialsSetting::msw_rescale()
-{
-    m_clr_picker->msw_rescale();
-}
-
 void AMSMaterialsSetting::on_select_cali_result(wxCommandEvent &evt)
 {
     m_pa_cali_select_id = evt.GetSelection();
@@ -1241,9 +1259,7 @@ void AMSMaterialsSetting::on_select_filament(wxCommandEvent &evt)
         PACalibResult default_item;
         default_item.cali_idx = -1;
         default_item.filament_id = ams_filament_id;
-        std::vector<std::string> machine_list = {"N1", "N2S", "C11", "C12", "C13", "BL-P001", "BL-P002"};
-        auto iter = std::find(machine_list.begin(), machine_list.end(), obj->printer_type);
-        if (iter == machine_list.end()) {
+        if (obj->is_support_auto_flow_calibration) {
             default_item.k_value = -1;
             default_item.n_coef  = -1;
         }
@@ -1335,7 +1351,7 @@ void AMSMaterialsSetting::on_dpi_changed(const wxRect &suggested_rect)
     m_input_nozzle_max->GetTextCtrl()->SetSize(wxSize(-1, FromDIP(20)));
     m_input_nozzle_min->GetTextCtrl()->SetSize(wxSize(-1, FromDIP(20)));
     m_input_k_val->GetTextCtrl()->SetSize(wxSize(-1, FromDIP(20)));
-    //m_clr_picker->msw_rescale();
+    m_clr_picker->msw_rescale();
     degree->msw_rescale();
     bitmap_max_degree->SetBitmap(degree->bmp());
     bitmap_min_degree->SetBitmap(degree->bmp());
@@ -1369,6 +1385,7 @@ void ColorPicker::msw_rescale()
 {
     m_bitmap_border = create_scaled_bitmap("color_picker_border", nullptr, 25);
     m_bitmap_border_dark = create_scaled_bitmap("color_picker_border_dark", nullptr, 25);
+    m_bitmap_transparent = create_scaled_bitmap("transparent_color_picker", nullptr, 25);
 
     Refresh();
 }
@@ -1423,7 +1440,10 @@ void ColorPicker::doRender(wxDC& dc)
     if (m_selected) radius -= FromDIP(1);
 
     if (alpha == 0) {
-        dc.DrawBitmap(m_bitmap_transparent, 0, 0);
+        wxSize bmp_size = m_bitmap_transparent.GetSize();
+        int center_x = (size.x - bmp_size.x) / 2;
+        int center_y = (size.y - bmp_size.y) / 2;
+        dc.DrawBitmap(m_bitmap_transparent, center_x, center_y);
     }
     else if (alpha != 254 && alpha != 255) {
         if (transparent_changed) {
@@ -1439,7 +1459,11 @@ void ColorPicker::doRender(wxDC& dc)
             replace.push_back(fill_replace);
             m_bitmap_transparent = ScalableBitmap(this, "transparent_color_picker", 25, false, false, true, replace).bmp();
             transparent_changed = false;
-            dc.DrawBitmap(m_bitmap_transparent, 0, 0);
+
+            wxSize bmp_size = m_bitmap_transparent.GetSize();
+            int center_x = (size.x - bmp_size.x) / 2;
+            int center_y = (size.y - bmp_size.y) / 2;
+            dc.DrawBitmap(m_bitmap_transparent, center_x, center_y);
         }
     }
     else {

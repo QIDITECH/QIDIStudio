@@ -17210,8 +17210,8 @@ msgstr "Sikeresen elküldve. Automatikusan átirányítja az eszköz oldalra %s 
 msgid "Successfully sent. Close current page in %s s."
 msgstr "Sikeresen elküldve. Az aktuális oldal bezárása %s másodperc múlva."
 
-msgid "The selected printer is not connect box, please check."
-msgstr "A kiválasztott nyomtató nincs csatlakoztatva a BOX-hoz, kérjük ellenőrizze."
+msgid "The selected printer is not connected to the BOX or the filaments are not synchronized. Please check."
+msgstr "A kiválasztott nyomtató nincs csatlakoztatva a BOX-hoz, vagy a filamentek nincsenek szinkronban. Kérjük, ellenőrizze."
 
 msgid "Failed to set the box printing slot..."
 msgstr "A BOX nyomtatási rekeszének beállítása sikertelen..."
@@ -17260,3 +17260,12 @@ msgid "Current printer is printing now"​​
 
 msgid "Please do not mix-use the Ext with BOX"
 msgstr "Ne keverd a külső anyagot az BOX-sel"
+
+msgid "Recommended box temperature"
+msgstr "Ajánlott kamra hőmérséklet"
+
+msgid "Recommended box temperature range of this filament. 0 means no set"
+msgstr "Az ilyen típusú filament ajánlott kamrahőmérséklet-tartománya. 0 értéknél nincs beállítás"
+
+msgid "Set the temperature of the box during printing, set to 0 (representing off)."
+msgstr "Állítsa be a kamra hőmérsékletét nyomtatás közben. Állítsa 0-ra (kikapcsolva)."

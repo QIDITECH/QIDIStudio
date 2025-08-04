@@ -22,7 +22,15 @@ struct prePrintInfo
     prePrintInfoType  type;
     wxString msg;
     wxString tips;
+    wxString wiki_url;
     int index;
+
+public:
+    bool operator==(const prePrintInfo& other) const {
+        return level == other.level && type == other.type &&
+               msg == other.msg && tips == other.tips &&
+               wiki_url == other.wiki_url && index == other.index;
+    }
 };
 
 enum PrintDialogStatus : unsigned int {
@@ -58,6 +66,7 @@ enum PrintDialogStatus : unsigned int {
     PrintStatusBlankPlate,
     PrintStatusUnsupportedPrinter,
     PrintStatusInvalidMapping,
+
     PrintStatusPrinterErrorEnd,
 
     // Errors for filament, Block Print
@@ -68,6 +77,7 @@ enum PrintDialogStatus : unsigned int {
     PrintStatusAmsMappingMixInvalid,
     PrintStatusTPUUnsupportAutoCali,
     PrintStatusHasFilamentInBlackListError,
+
     PrintStatusFilamentErrorEnd,
 
     PrintStatusErrorEnd,//->end error<-
@@ -109,13 +119,20 @@ enum PrintDialogStatus : unsigned int {
     PrintStatusPublicInitFailed,
     PrintStatusPublicUploadFiled,
 
-    //y65
-    PrintStatusPrinterOffline,
+    //y68
+    QDTPrinterErrorBegin,
     PrintStatusPrinterNotStandby,
     PrintStatusPinrterPrinting,
-    PrinterNotConnectBox,
-    PrintStatusNeedUpgradingBox,
+    PrintStatusPrinterOffline,
+    QDTPrinterErrorEnd,
+
+    //y68
+    QDTBoxErrorBegin,
     BoxhasSomeProblem,
+    PrintStatusNeedUpgradingBox,
+    PrinterNotConnectBox,
+    QDTBoxErrorEnd,
+
 };
 
 class PrePrintChecker
@@ -127,13 +144,16 @@ public:
 public:
     void clear();
     /*auto merge*/
-    void add(PrintDialogStatus state, wxString msg, wxString tip);
+    void add(PrintDialogStatus state, wxString msg, wxString tip, const wxString& wiki_url);
     static ::std::string get_print_status_info(PrintDialogStatus status);
 
 	wxString get_pre_state_msg(PrintDialogStatus status);
-    static bool is_error(PrintDialogStatus status) { return (PrintStatusErrorBegin < status) && (PrintStatusErrorEnd > status); };
-    static bool is_error_printer(PrintDialogStatus status) { return (PrintStatusPrinterErrorBegin < status) && (PrintStatusPrinterErrorEnd > status); };
-    static bool is_error_filament(PrintDialogStatus status) { return (PrintStatusFilamentErrorBegin < status) && (PrintStatusFilamentErrorEnd > status); };
+
+    //y68
+    static bool is_error(PrintDialogStatus status) { return ((PrintStatusErrorBegin < status) && (PrintStatusErrorEnd > status)) || ((QDTPrinterErrorBegin < status) && (QDTBoxErrorEnd > status)); };
+    static bool is_error_printer(PrintDialogStatus status) { return ((PrintStatusPrinterErrorBegin < status) && (PrintStatusPrinterErrorEnd > status)) || ((QDTPrinterErrorBegin < status) && (QDTPrinterErrorEnd > status)); };
+    static bool is_error_filament(PrintDialogStatus status) { return ((PrintStatusFilamentErrorBegin < status) && (PrintStatusFilamentErrorEnd > status)) || ((QDTBoxErrorBegin < status) || (QDTBoxErrorEnd > status)); };
+    
     static bool is_warning(PrintDialogStatus status) { return (PrintStatusWarningBegin < status) && (PrintStatusWarningEnd > status); };
     static bool is_warning_printer(PrintDialogStatus status) { return (PrintStatusPrinterWarningBegin < status) && (PrintStatusPrinterWarningEnd > status); };
     static bool is_warning_filament(PrintDialogStatus status) { return (PrintStatusFilamentWarningBegin < status) && (PrintStatusFilamentWarningEnd > status); };
@@ -172,17 +192,13 @@ class PrinterMsgPanel : public wxPanel
 public:
     PrinterMsgPanel(wxWindow *parent);
 
-     void SetLabelList(const std::vector<wxString> &texts, const wxColour &colour);
-
-	// void SetLabelSingle(const  wxString &texts,const wxColour& colour);
-
-     wxString GetLabel();
-     std::vector<wxString> GetLabelList();
+public:
+    bool  UpdateInfos(const std::vector<prePrintInfo>& infos);
 
  private:
-    wxBoxSizer *         m_sizer = nullptr;
-    std::vector<Label *> m_labels;
-    std::vector<wxString> m_last_texts;
+    wxBoxSizer*  m_sizer = nullptr;
+    std::vector<prePrintInfo> m_infos;
+
 };
 
 

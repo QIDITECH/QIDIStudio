@@ -86,6 +86,8 @@ BonjourDialog::BonjourDialog(wxWindow *parent, Slic3r::PrinterTechnology tech)
 	, timer_state(0)
 	, tech(tech)
 {
+	SetBackgroundColour(*wxWHITE);
+
 	const int em = GUI::wxGetApp().em_unit();
 	list->SetMinSize(wxSize(40 * em, 30 * em));
 	list->SetTextColour(StateColor::darkModeColorFor(wxColour("#323A3C")));

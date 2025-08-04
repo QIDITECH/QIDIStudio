@@ -1557,6 +1557,16 @@ void Tab::on_value_change(const std::string& opt_key, const boost::any& value)
     if (opt_key == "support_filament") {
         int filament_id           = m_config->opt_int("support_filament") - 1; // the displayed id is based from 1, while internal id is based from 0
         int interface_filament_id = m_config->opt_int("support_interface_filament") - 1;
+        auto           &filament_presets      = Slic3r::GUI::wxGetApp().preset_bundle->filament_presets;
+        auto           &filaments             = Slic3r::GUI::wxGetApp().preset_bundle->filaments;
+        bool            support_TPU           = false;
+        if (filament_id >= 0 && filament_id < filament_presets.size()) {
+            Slic3r::Preset *filament      = filaments.find_preset(filament_presets[filament_id]);
+            if (filament) {
+                std::string filament_type = filament->config.option<ConfigOptionStrings>("filament_type")->values[0];
+                support_TPU               = filament_type == "PLA" && has_filaments({"TPU", "TPU-AMS"});
+            }
+        }
         if (is_support_filament(filament_id) && !is_soluble_filament(filament_id) && !has_filaments({"TPU", "TPU-Box"})) {
             wxString           msg_text = _L("Non-soluble support materials are not recommended for support base. \n"
                                                        "Are you sure to use them for support base? \n");
@@ -1565,16 +1575,24 @@ void Tab::on_value_change(const std::string& opt_key, const boost::any& value)
             if (dialog.ShowModal() == wxID_NO) {
                 new_conf.set_key_value("support_filament", new ConfigOptionInt(0));
                 m_config_manipulation.apply(m_config, &new_conf);
+                on_value_change(opt_key, 0);
             }
             wxGetApp().plater()->update();
         }
-        if (is_soluble_filament(filament_id) &&
-             !(m_config->opt_float("support_top_z_distance") == 0 && m_config->opt_float("support_interface_spacing") == 0 &&
+        if ((is_soluble_filament(filament_id) || support_TPU) &&
+            !(m_config->opt_float("support_top_z_distance") == 0 && m_config->opt_float("support_interface_spacing") == 0 &&
+              m_config->opt_float("support_object_xy_distance") == 0 &&
               m_config->opt_enum<SupportMaterialInterfacePattern>("support_interface_pattern") == SupportMaterialInterfacePattern::smipRectilinearInterlaced &&
               filament_id == interface_filament_id)) {
-            wxString msg_text = _L("When using soluble material for the support, We recommend the following settings:\n"
-                                   "0 top z distance, 0 interface spacing, interlaced rectilinear pattern, disable independent support layer height \n"
-                                   "and use soluble materials for both support interface and support base");
+            wxString msg_text;
+            if (support_TPU)
+                msg_text = _L("When using PLA to support TPU, We recommend the following settings:\n"
+                              "0 top z distance, 0 interface spacing, 0 support/object xy distance, interlaced rectilinear pattern, disable \n"
+                              "independent support layer height and use PLA for both support interface and support base");
+            else
+                msg_text = _L("When using soluble material for the support, We recommend the following settings:\n"
+                                   "0 top z distance, 0 interface spacing, 0 support/object xy distance, interlaced rectilinear pattern, disable \n"
+                                   "independent support layer height and use soluble materials for both support interface and support base");
             msg_text += "\n\n" + _L("Change these settings automatically? \n"
                                     "Yes - Change these settings automatically\n"
                                     "No  - Do not change these settings for me");
@@ -1583,6 +1601,7 @@ void Tab::on_value_change(const std::string& opt_key, const boost::any& value)
             if (dialog.ShowModal() == wxID_YES) {
                 new_conf.set_key_value("support_top_z_distance", new ConfigOptionFloat(0));
                 new_conf.set_key_value("support_interface_spacing", new ConfigOptionFloat(0));
+                new_conf.set_key_value("support_object_xy_distance", new ConfigOptionFloat(0));
                 new_conf.set_key_value("support_interface_pattern",
                                        new ConfigOptionEnum<SupportMaterialInterfacePattern>(SupportMaterialInterfacePattern::smipRectilinearInterlaced));
                 new_conf.set_key_value("independent_support_layer_height", new ConfigOptionBool(false));
@@ -1593,44 +1612,56 @@ void Tab::on_value_change(const std::string& opt_key, const boost::any& value)
         }
     }
 
-    // BBS popup a message to ask the user to set optimum parameters for support interface if support materials are used
+    // QDS popup a message to ask the user to set optimum parameters for support interface if support materials are used
     if (opt_key == "support_interface_filament") {
         int filament_id           = m_config->opt_int("support_filament") - 1;
         int interface_filament_id = m_config->opt_int("support_interface_filament") - 1; // the displayed id is based from 1, while internal id is based from 0
+        auto           &filament_presets      = Slic3r::GUI::wxGetApp().preset_bundle->filament_presets;
+        auto           &filaments             = Slic3r::GUI::wxGetApp().preset_bundle->filaments;
+        bool            support_TPU = false;
+        if (interface_filament_id >= 0 && interface_filament_id < filament_presets.size()) {
+            Slic3r::Preset *filament      = filaments.find_preset(filament_presets[interface_filament_id]);
+            if (filament) {
+                std::string filament_type = filament->config.option<ConfigOptionStrings>("filament_type")->values[0];
+                support_TPU               = filament_type == "PLA" && has_filaments({"TPU", "TPU-AMS"});
+            }
+        }
+
         if ((is_support_filament(interface_filament_id) &&
              !(m_config->opt_float("support_top_z_distance") == 0 && m_config->opt_float("support_interface_spacing") == 0 &&
-               m_config->opt_enum<SupportMaterialInterfacePattern>("support_interface_pattern") == SupportMaterialInterfacePattern::smipRectilinearInterlaced)) ||
+                              m_config->opt_enum<SupportMaterialInterfacePattern>("support_interface_pattern") == SupportMaterialInterfacePattern::smipRectilinearInterlaced &&
+               (support_TPU ? m_config->opt_float("support_object_xy_distance") == 0 : -1))) ||
             (is_soluble_filament(interface_filament_id) && !is_soluble_filament(filament_id))) {
             wxString msg_text;
-            if (!is_soluble_filament(interface_filament_id)) {
+            if (support_TPU) {
+                msg_text = _L("When using PLA to support TPU, We recommend the following settings:\n"
+                              "0 top z distance, 0 interface spacing, 0 support/object xy distance, interlaced rectilinear pattern, disable \n"
+                              "independent support layer height and use PLA for both support interface and support base");
+            }
+            else if (!is_soluble_filament(interface_filament_id)) {
                 msg_text = _L("When using support material for the support interface, We recommend the following settings:\n"
                               "0 top z distance, 0 interface spacing, interlaced rectilinear pattern and disable independent support layer height");
-                msg_text += "\n\n" + _L("Change these settings automatically? \n"
-                                        "Yes - Change these settings automatically\n"
-                                        "No  - Do not change these settings for me");
-            } else {
+            }else {
                 msg_text = _L("When using soluble material for the support interface, We recommend the following settings:\n"
-                              "0 top z distance, 0 interface spacing, interlaced rectilinear pattern, disable independent support layer height \n"
-                              "and use soluble materials for both support interface and support base");
-                msg_text += "\n\n" + _L("Change these settings automatically? \n"
-                                        "Yes - Change these settings automatically\n"
-                                        "No  - Do not change these settings for me");
+                              "0 top z distance, 0 interface spacing, 0 support/object xy distance, interlaced rectilinear pattern, disable \n"
+                              "independent support layer height and use soluble materials for both support interface and support base");
             }
+            msg_text += "\n\n" + _L("Change these settings automatically? \n"
+                                                "Yes - Change these settings automatically\n"
+                                                "No  - Do not change these settings for me");
             MessageDialog      dialog(wxGetApp().plater(), msg_text, "Suggestion", wxICON_WARNING | wxYES | wxNO);
             DynamicPrintConfig new_conf = *m_config;
             if (dialog.ShowModal() == wxID_YES) {
-                auto &filament_presets = Slic3r::GUI::wxGetApp().preset_bundle->filament_presets;
-                auto &filaments        = Slic3r::GUI::wxGetApp().preset_bundle->filaments;
-                Slic3r::Preset *filament         = filaments.find_preset(filament_presets[interface_filament_id]);
-                std::string     filament_type    = filament->config.option<ConfigOptionStrings>("filament_type")->values[0];
-
                 new_conf.set_key_value("support_top_z_distance", new ConfigOptionFloat(0));
                 new_conf.set_key_value("support_interface_spacing", new ConfigOptionFloat(0));
-                new_conf.set_key_value("support_interface_pattern", new ConfigOptionEnum<SupportMaterialInterfacePattern>(SupportMaterialInterfacePattern::smipRectilinearInterlaced));
+                                new_conf.set_key_value("support_interface_pattern",
+                                       new ConfigOptionEnum<SupportMaterialInterfacePattern>(SupportMaterialInterfacePattern::smipRectilinearInterlaced));
                 new_conf.set_key_value("independent_support_layer_height", new ConfigOptionBool(false));
                 m_config_manipulation.apply(m_config, &new_conf);
-                if ((filament_type == "PLA" && has_filaments({"TPU", "TPU-Box"})) || (is_soluble_filament(interface_filament_id) && !is_soluble_filament(filament_id)))
+                if (support_TPU || (is_soluble_filament(interface_filament_id) && !is_soluble_filament(filament_id))) {
+                    new_conf.set_key_value("support_object_xy_distance", new ConfigOptionFloat(0));
                     new_conf.set_key_value("support_filament", new ConfigOptionInt(interface_filament_id + 1));
+                }
             }
             wxGetApp().plater()->update();
         }
@@ -2148,12 +2179,18 @@ void TabPrint::build()
         optgroup = page->new_optgroup(L("Seam"), L"param_seam");
         //y32
         optgroup->append_single_option_line("seam_position", "print-settings/seam");
+        optgroup->append_single_option_line("seam_placement_away_from_overhangs", "print-settings/seam");
         optgroup->append_single_option_line("seam_gap", "print-settings/seam");
-        optgroup->append_single_option_line("seam_slope_conditional");
-        optgroup->append_single_option_line("scarf_angle_threshold");
-        optgroup->append_single_option_line("seam_slope_entire_loop");
-        optgroup->append_single_option_line("seam_slope_steps");
-        optgroup->append_single_option_line("seam_slope_inner_walls");
+        optgroup->append_single_option_line("seam_slope_conditional", "print-settings/seam");
+        optgroup->append_single_option_line("scarf_angle_threshold", "print-settings/seam");
+        optgroup->append_single_option_line("seam_slope_entire_loop", "print-settings/seam");
+        optgroup->append_single_option_line("seam_slope_steps", "print-settings/seam");
+        optgroup->append_single_option_line("seam_slope_inner_walls", "print-settings/seam");
+        optgroup->append_single_option_line("override_filament_scarf_seam_setting", "print-settings/seam");
+        optgroup->append_single_option_line("seam_slope_type", "print-settings/seam");
+        optgroup->append_single_option_line("seam_slope_start_height", "print-settings/seam");
+        optgroup->append_single_option_line("seam_slope_gap", "print-settings/seam");
+        optgroup->append_single_option_line("seam_slope_min_length", "print-settings/seam");
         optgroup->append_single_option_line("wipe_speed", "print-settings/seam");
         optgroup->append_single_option_line("role_base_wipe_speed", "print-settings/seam");
 
@@ -2234,12 +2271,14 @@ void TabPrint::build()
         optgroup->append_single_option_line("sparse_infill_density");
         //y32
         optgroup->append_single_option_line("sparse_infill_pattern", "print-settings/fill-patterns");
-        optgroup->append_single_option_line("skin_infill_density");
-        optgroup->append_single_option_line("skeleton_infill_density");
-        optgroup->append_single_option_line("infill_lock_depth");
-        optgroup->append_single_option_line("skin_infill_depth");
-        optgroup->append_single_option_line("skin_infill_line_width", "print-settings/fill-patterns");
-        optgroup->append_single_option_line("skeleton_infill_line_width", "print-settings/fill-patterns");
+        optgroup->append_single_option_line("locked_skin_infill_pattern", "fill-patterns#infill types and their properties of sparse", -1, true);
+        optgroup->append_single_option_line("skin_infill_density", "", -1, true);
+        optgroup->append_single_option_line("locked_skeleton_infill_pattern", "fill-patterns#infill types and their properties of sparse", -1, true);
+        optgroup->append_single_option_line("skeleton_infill_density", "", -1, true);
+        optgroup->append_single_option_line("infill_lock_depth", "", -1, true);
+        optgroup->append_single_option_line("skin_infill_depth", "", -1, true);
+        optgroup->append_single_option_line("skin_infill_line_width", "print-settings/fill-patterns", -1, true);
+        optgroup->append_single_option_line("skeleton_infill_line_width", "print-settings/fill-patterns", -1, true);
 
         optgroup->append_single_option_line("symmetric_infill_y_axis");
         optgroup->append_single_option_line("infill_shift_step");
@@ -2285,6 +2324,13 @@ void TabPrint::build()
         line.append_option(optgroup->get_option("overhang_4_4_speed", 0));
         line.append_option(optgroup->get_option("overhang_totally_speed", 0));
         optgroup->append_line(line);
+        optgroup->append_single_option_line("enable_height_slowdown", "", 0);
+        optgroup->append_single_option_line("slowdown_start_height", "", 0);
+        optgroup->append_single_option_line("slowdown_start_speed", "", 0);
+        optgroup->append_single_option_line("slowdown_start_acc", "", 0);
+        optgroup->append_single_option_line("slowdown_end_height", "", 0);
+        optgroup->append_single_option_line("slowdown_end_speed", "", 0);
+        optgroup->append_single_option_line("slowdown_end_acc", "", 0);
         optgroup->append_single_option_line("bridge_speed", "", 0);
         optgroup->append_single_option_line("gap_infill_speed", "", 0);
         optgroup->append_single_option_line("support_speed", "", 0);
@@ -2418,7 +2464,7 @@ void TabPrint::build()
         optgroup->append_single_option_line("flush_into_support");
 
         optgroup = page->new_optgroup(L("Special mode"), L"param_special");
-        optgroup->append_single_option_line("slicing_mode");
+        optgroup->append_single_option_line("slicing_mode", "special-slicing-modes");
         //y32
         optgroup->append_single_option_line("print_sequence", "print-settings/print-by-object");
         optgroup->append_single_option_line("spiral_mode", "print-settings/spiral-print");
@@ -3317,7 +3363,9 @@ void TabFilament::update_filament_overrides_page()
                                             "filament_retraction_distances_when_cut"
                                         };
 
-    const int extruder_idx = m_variant_combo->GetSelection(); // #ys_FIXME
+    const int selection = m_variant_combo->GetSelection();
+    auto opt = dynamic_cast<ConfigOptionVectorBase *>(m_config->option("filament_retraction_length"));
+    const int extruder_idx = selection < 0 || selection >= static_cast<int>(opt->size()) ? 0 : selection;
 
     const bool have_retract_length = dynamic_cast<ConfigOptionVectorBase *>(m_config->option("filament_retraction_length"))->is_nil(extruder_idx) ||
                                      m_config->opt_float_nullable("filament_retraction_length", extruder_idx) > 0;

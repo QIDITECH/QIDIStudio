@@ -107,7 +107,8 @@ std::map<std::string, std::vector<SimpleSettingData>>  SettingsFactory::PART_CAT
                     }},
     { L("Speed"), {{"outer_wall_speed", "",1},{"inner_wall_speed", "",2},{"sparse_infill_speed", "",3},{"top_surface_speed", "",4}, {"internal_solid_infill_speed", "",5},
                     {"enable_overhang_speed", "",6}, {"overhang_1_4_speed", "",7}, {"overhang_2_4_speed", "",8}, {"overhang_3_4_speed", "",9}, {"overhang_4_4_speed", "",10}, {"overhang_totally_speed", "",11},
-                    {"bridge_speed", "",12}, {"gap_infill_speed", "",13}
+                    {"bridge_speed", "",12}, {"gap_infill_speed", "",13}, {"enable_height_slowdown", "", 14}, {"slowdown_start_height", "", 15}, {"slowdown_start_speed", "", 16}, {"slowdown_start_acc", "", 17}, 
+                    {"slowdown_end_height", "", 18}, {"slowdown_end_speed", "", 19}, {"slowdown_end_acc", "", 20}
                     }}
 };
 
@@ -255,7 +256,7 @@ std::map<std::string, std::string> SettingsFactory::CATEGORY_ICON =
     { L("Shell")                , "blank_14"    },
     { L("Infill")               , "blank_14"    },
     { L("Ironing")              , "blank_14"    },
-    { L("Fuzzy Skin")           , "menu_fuzzy_skin"  },
+    { L("Fuzzy Skin")           , "fuzzy_skin"  },
     { L("Support")              , "support"     },
     { L("Speed")                , "blank_14"    },
     { L("Extruders")            , "blank_14"    },
@@ -501,15 +502,19 @@ void MenuFactory::append_menu_item_delete_all_cutter(wxMenu *menu)
 
 void MenuFactory::append_menu_item_edit_text(wxMenu *menu)
 {
-#ifdef __WINDOWS__
+    wxString name = _L("Edit Text");
+    if (menu != &m_text_part_menu) {
+        const int menu_item_id = menu->FindItem(name);
+        if (menu_item_id != wxNOT_FOUND)
+            menu->Destroy(menu_item_id);
+        if (plater() == nullptr)
+            return;
+        if (!plater()->can_edit_text())
+            return;
+    }
     append_menu_item(
         menu, wxID_ANY, _L("Edit Text"), "", [](wxCommandEvent &) { plater()->edit_text(); }, "", nullptr,
         []() { return plater()->can_edit_text(); }, m_parent);
-#else
-    append_menu_item(
-        menu, wxID_ANY, _L("Edit Text"), "", [](wxCommandEvent &) { plater()->edit_text(); }, "", nullptr,
-        []() { return plater()->can_edit_text(); }, m_parent);
-#endif
 }
 
 void MenuFactory::append_menu_item_edit_svg(wxMenu *menu)
@@ -528,15 +533,26 @@ void MenuFactory::append_menu_item_edit_svg(wxMenu *menu)
 
     if (menu != &m_svg_part_menu) {
         const int menu_item_id = menu->FindItem(name);
-        if (menu_item_id != wxNOT_FOUND) menu->Destroy(menu_item_id);
+        if (menu_item_id != wxNOT_FOUND)
+            menu->Destroy(menu_item_id);
         if (!can_edit_svg()) return;
     }
 
     wxString    description = _L("Change SVG source file, projection, size, ...");
     std::string icon        = "svg_part";
     auto        open_svg    = [](const wxCommandEvent &) {
-        GLGizmosManager &mng = plater()->get_view3D_canvas3D()->get_gizmos_manager();
-        if (mng.get_current_type() == GLGizmosManager::Svg) mng.open_gizmo(GLGizmosManager::Svg); // close() and reopen - move to be visible
+        const auto& p_plater = plater();
+        if (!p_plater) {
+            return;
+        }
+        const auto& p_canvas = p_plater->get_current_canvas3D();
+        if (!p_canvas) {
+            return;
+        }
+        GLGizmosManager &mng = p_canvas->get_gizmos_manager();
+        if (mng.get_current_type() == GLGizmosManager::Svg) {
+            mng.open_gizmo(GLGizmosManager::Svg); // close() and reopen - move to be visible
+        }
         mng.open_gizmo(GLGizmosManager::Svg);
     };
     append_menu_item(menu, wxID_ANY, name, description, open_svg, icon, nullptr, can_edit_svg, m_parent);
@@ -1498,6 +1514,7 @@ void MenuFactory::init(wxWindow* parent)
     //create_object_menu();
     create_sla_object_menu();
     //create_part_menu();
+    create_text_part_menu();
     create_svg_part_menu();
     create_qdt_object_menu();
     create_qdt_part_menu();
@@ -1533,6 +1550,7 @@ wxMenu* MenuFactory::object_menu()
     append_menu_items_convert_unit(&m_object_menu);
     append_menu_items_flush_options(&m_object_menu);
     append_menu_item_invalidate_cut_info(&m_object_menu);
+    append_menu_item_edit_text(&m_object_menu);
     append_menu_item_edit_svg(&m_object_menu);
     append_menu_item_change_filament(&m_object_menu);
     {
@@ -1546,7 +1564,7 @@ wxMenu* MenuFactory::sla_object_menu()
 {
     append_menu_items_convert_unit(&m_sla_object_menu);
     append_menu_item_settings(&m_sla_object_menu);
-    //append_menu_item_edit_text(&m_sla_object_menu);
+    append_menu_item_edit_text(&m_sla_object_menu);
     append_menu_item_edit_svg(&m_object_menu);
     //update_menu_items_instance_manipulation(mtObjectSLA);
     return &m_sla_object_menu;

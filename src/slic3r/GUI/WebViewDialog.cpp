@@ -849,8 +849,8 @@ bool WebViewPanel::SaveBase64ToLocal(std::string Base64Buf, std::string FileName
 {
     int   nSize  = wxBase64DecodedSize(Base64Buf.length());
     char *DstBuf = new char[nSize + 1];
-    if (!DstBuf) 
-    { 
+    if (!DstBuf)
+    {
         BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": New Failed. Memory Not Enough";
         return false;
     }
@@ -1141,7 +1141,11 @@ void WebViewPanel::ShowUserPrintTask(bool bShow, bool bForce)
             task_query_params.limit  = 5;
             task_query_params.offset = 0;
             int result               = agent->get_user_tasks(task_query_params, &m_TaskInfo);
+
+#if !QDT_RELEASE_TO_PUBLIC
             BOOST_LOG_TRIVIAL(trace) << "task_manager: get_task_list task_info=" << m_TaskInfo;
+#endif
+
             if (result == 0) {
                 try {
                     json j = json::parse(m_TaskInfo);
@@ -1149,6 +1153,7 @@ void WebViewPanel::ShowUserPrintTask(bool bShow, bool bForce)
 
                     auto body2 = from_u8(m_TaskInfo);
                     body2.insert(1, "\"command\": \"printhistory_task_show\", ");
+                    WebView::RunScript(m_browserLeft, wxString::Format("window.postMessage(%s)", body2));
                     RunScript(wxString::Format("window.postMessage(%s)", body2));
 
                     SetLeftMenuShow("printhistory", 1);
@@ -1202,7 +1207,7 @@ void WebViewPanel::update_mode()
     */
 void WebViewPanel::OnNavigationRequest(wxWebViewEvent& evt)
 {
-    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": " << evt.GetURL().ToUTF8().data();
+    //BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": " << evt.GetURL().ToUTF8().data();
     const wxString &url = evt.GetURL();
     if (url.StartsWith("File://") || url.StartsWith("file://")) {
         if (!url.Contains("/web/homepage3/")) {
@@ -1288,7 +1293,7 @@ void WebViewPanel::OnNavigationComplete(wxWebViewEvent& evt)
 
     //m_browser->Show();
     Layout();
-    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": " << evt.GetURL().ToUTF8().data();
+    //BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": " << evt.GetURL().ToUTF8().data();
     if (wxGetApp().get_mode() == comDevelop)
         wxLogMessage("%s", "Navigation complete; url='" + evt.GetURL() + "'");
     UpdateState();
@@ -1325,7 +1330,7 @@ void WebViewPanel::OnTitleChanged(wxWebViewEvent &evt)
     */
 void WebViewPanel::OnNewWindow(wxWebViewEvent& evt)
 {
-    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": " << evt.GetURL().ToUTF8().data();
+    //BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": " << evt.GetURL().ToUTF8().data();
     wxString flag = " (other)";
 
     if (evt.GetNavigationAction() == wxWEBVIEW_NAV_ACTION_USER)
@@ -1588,7 +1593,7 @@ void WebViewPanel::OnSelectAll(wxCommandEvent& WXUNUSED(evt))
     */
 void WebViewPanel::OnError(wxWebViewEvent& evt)
 {
-    BOOST_LOG_TRIVIAL(info) << "HomePage OnError, Url = " << evt.GetURL() << " , Message: "<<evt.GetString();
+    //BOOST_LOG_TRIVIAL(info) << "HomePage OnError, Url = " << evt.GetURL() << " , Message: "<<evt.GetString();
 
 #define WX_ERROR_CASE(type) \
     case type: \

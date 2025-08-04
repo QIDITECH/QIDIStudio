@@ -50,7 +50,6 @@ void PrintJob::prepare()
     if (&job_data) {
         std::string temp_file = Slic3r::resources_dir() + "/check_access_code.txt";
         auto check_access_code_path = temp_file.c_str();
-        BOOST_LOG_TRIVIAL(trace) << "sned_job: check_access_code_path = " << check_access_code_path;
         job_data._temp_path = fs::path(check_access_code_path);
     }
 
@@ -140,7 +139,7 @@ wxString PrintJob::get_http_error_msg(unsigned int status, std::string body)
         ;
     }
     return wxEmptyString;
-} 
+}
 
 void PrintJob::process()
 {
@@ -256,6 +255,7 @@ void PrintJob::process()
     params.auto_bed_leveling    = this->auto_bed_leveling;
     params.auto_flow_cali       = this->auto_flow_cali;
     params.auto_offset_cali     = this->auto_offset_cali;
+    params.task_ext_change_assist = this->task_ext_change_assist;
 
     if (m_print_type == "from_sdcard_view") {
         params.dst_file = m_dst_path;
@@ -299,6 +299,7 @@ void PrintJob::process()
 
                 std::regex pattern("_+");
                 params.project_name = std::regex_replace(mall_model_name, pattern, "_");
+                params.project_name = truncate_string(params.project_name, 100);
             }
             catch (...) {}
         }
@@ -356,8 +357,6 @@ void PrintJob::process()
         }
     }
 
-    
-
     if (params.preset_name.empty() && m_print_type == "from_normal") { params.preset_name = wxString::Format("%s_plate_%d", m_project_name, curr_plate_idx).ToStdString(); }
     if (params.project_name.empty()) {params.project_name = m_project_name;}
 
@@ -383,12 +382,12 @@ void PrintJob::process()
     bool is_try_lan_mode = false;
     bool is_try_lan_mode_failed = false;
 
-    auto update_fn = [this, 
+    auto update_fn = [this,
         &is_try_lan_mode,
         &is_try_lan_mode_failed,
-        &msg, 
-        &error_str, 
-        &curr_percent, 
+        &msg,
+        &error_str,
+        &curr_percent,
         &error_text,
         StagePercentPoint
     ](int stage, int code, std::string info) {
@@ -471,7 +470,7 @@ void PrintJob::process()
             return was_canceled();
         };
 
-    
+
     DeviceManager* dev = wxGetApp().getDeviceManager();
     MachineObject* obj = dev->get_selected_machine();
 
@@ -593,7 +592,7 @@ void PrintJob::process()
                 this->update_status(curr_percent, _L("Sending print job through cloud service"));
                 result = m_agent->start_print(params, update_fn, cancel_fn, wait_fn);
             }
-        } 
+        }
     } else {
         if (this->has_sdcard) {
             this->update_status(curr_percent, _L("Sending print job over LAN"));
@@ -631,7 +630,7 @@ void PrintJob::process()
         if (result != QIDI_NETWORK_ERR_CANCELED) {
             this->show_error_info(msg_text, 0, "", "");
         }
-        
+
         BOOST_LOG_TRIVIAL(error) << "print_job: failed, result = " << result;
     } else {
         // wait for printer mqtt ready the same job id

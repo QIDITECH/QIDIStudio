@@ -141,7 +141,7 @@ struct Box_msg {
 };
 
 class Sidebar : public wxPanel
-{   
+{
     ConfigOptionMode    m_mode;
     Button *         btn_sync{nullptr};
     ScalableButton *  ams_btn{nullptr};
@@ -404,7 +404,9 @@ public:
     void invalid_all_plate_thumbnails();
     void force_update_all_plate_thumbnails();
 
-    const VendorProfile::PrinterModel *get_curr_printer_model();
+    const VendorProfile::PrinterModel * get_curr_printer_model();
+    std::map<std::string, std::string> get_bed_texture_maps();
+    int                                get_right_icon_offset_bed();
 
     static wxColour get_next_color_for_filament();
     static wxString get_slice_warning_string(GCodeProcessorResult::SliceWarning& warning);
@@ -528,6 +530,7 @@ public:
     void reslice_SLA_until_step(SLAPrintObjectStep step, const ModelObject &object, bool postpone_error_messages = false);
 
     void clear_before_change_mesh(int obj_idx);
+    void clear_before_change_mesh(int obj_idx, int vol_idx);
     void changed_mesh(int obj_idx);
 
     void changed_object(ModelObject &object);
@@ -578,6 +581,7 @@ public:
     std::vector<std::array<float, 4>> get_extruders_colors();
     // QDS
     void on_bed_type_change(BedType bed_type,bool is_gcode_file = false);
+
     bool update_filament_colors_in_full_config();
     void config_change_notification(const DynamicPrintConfig &config, const std::string& key);
     void on_config_change(const DynamicPrintConfig &config);
@@ -586,6 +590,8 @@ public:
     // On activating the parent window.
     void on_activate();
     std::vector<std::string> get_extruder_colors_from_plater_config(const GCodeProcessorResult* const result = nullptr) const;
+    std::vector<std::string> get_filament_colors_render_info() const;
+    std::vector<std::string> get_filament_color_render_type() const;
     std::vector<std::string> get_colors_for_color_print(const GCodeProcessorResult* const result = nullptr) const;
 
     void set_global_filament_map_mode(FilamentMapMode mode);
@@ -594,7 +600,6 @@ public:
     FilamentMapMode get_global_filament_map_mode() const;
 
     void update_menus();
-
     wxString get_selected_printer_name_in_combox();
     enum class PrinterWarningType {
         NOT_CONNECTED,
@@ -887,6 +892,8 @@ public:
 
     void toggle_non_manifold_edges();
     bool is_show_non_manifold_edges();
+    void toggle_text_cs();
+    bool is_show_text_cs();
     void toggle_show_wireframe();
     bool is_show_wireframe() const;
     void enable_wireframe(bool status);
@@ -905,6 +912,7 @@ public:
     wxMenu* plate_menu();
     wxMenu* object_menu();
     wxMenu* part_menu();
+    wxMenu* text_part_menu();
     wxMenu* svg_part_menu();
     wxMenu* cut_connector_menu();
     wxMenu* sla_object_menu();
@@ -920,6 +928,7 @@ public:
     static bool has_illegal_filename_characters(const std::string& name);
     static void show_illegal_characters_warning(wxWindow* parent);
 
+
     std::string get_preview_only_filename() { return m_preview_only_filename; };
 
     bool last_arrange_job_is_finished()
@@ -929,6 +938,10 @@ public:
     };
     std::atomic<bool> m_arrange_running{false};
     void              reset_check_status() { m_check_status = 0; }
+
+    void mark_plate_toolbar_image_dirty();
+    bool is_plate_toolbar_image_dirty() const;
+    void clear_plate_toolbar_image_dirty();
 
     //y
     void resetUploadCount();
@@ -968,6 +981,7 @@ private:
     std::string m_preview_only_filename;
     int m_valid_plates_count { 0 };
     int m_check_status = 0; // 0 not check, 1 check success, 2 check failed
+    bool m_b_plate_toolbar_image_dirty{ true };
 
     void suppress_snapshots();
     void allow_snapshots();

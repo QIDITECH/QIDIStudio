@@ -9,7 +9,6 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/filesystem/string_file.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/log/trivial.hpp>
@@ -171,7 +170,7 @@ struct Update
 
 	friend std::ostream& operator<<(std::ostream& os, const Update &self)
 	{
-		os << "Update(" << self.source.string() << " -> " << self.target.string() << ')';
+        os << "Update(" << PathSanitizer::sanitize(self.source.string()) << " -> " << PathSanitizer::sanitize(self.target.string()) << ')';
 		return os;
 	}
 };
@@ -320,8 +319,8 @@ bool PresetUpdater::priv::get_file(const std::string &url, const fs::path &targe
 
     BOOST_LOG_TRIVIAL(info) << format("[QDS Updater]download file `%1%`, stored to `%2%`, tmp path `%3%`",
         url,
-        target_path.string(),
-        tmp_path.string());
+        PathSanitizer::sanitize(target_path),
+        PathSanitizer::sanitize(tmp_path));
 
     Slic3r::Http::get(url)
         .on_progress([this](Slic3r::Http::Progress, bool &cancel_http) {
@@ -386,11 +385,11 @@ bool PresetUpdater::priv::extract_file(const fs::path &source_path, const fs::pa
             {
                 res = mz_zip_reader_extract_to_file(&archive, stat.m_file_index, dest_file.c_str(), 0);
                 if (!res) {
-                    BOOST_LOG_TRIVIAL(error) << "[QDT Updater]extract file "<<stat.m_filename<<" to dest "<<dest_file<<" failed";
+                    BOOST_LOG_TRIVIAL(error) << "[QDT Updater]extract file " << stat.m_filename << " to dest " << PathSanitizer::sanitize(dest_file) << " failed";
                     close_zip_reader(&archive);
                     return res;
                 }
-                BOOST_LOG_TRIVIAL(info) << "[QDT Updater]successfully extract file " << stat.m_file_index << " to "<<dest_file;
+                BOOST_LOG_TRIVIAL(info) << "[QDT Updater]successfully extract file " << stat.m_file_index << " to " << PathSanitizer::sanitize(dest_file);
             }
             catch (const std::exception& e)
             {
@@ -648,7 +647,7 @@ bool PresetUpdater::priv::sync_resources(std::string http_url, std::map<std::str
                     for (auto sub : resource.sub_caches) {
                         if (fs::exists(cache_path / sub)) {
                             fs::remove_all(cache_path / sub);
-                            BOOST_LOG_TRIVIAL(info) << "[QDT Updater]remove cache path " << (cache_path / sub).string();
+                            BOOST_LOG_TRIVIAL(info) << "[QDT Updater]remove cache path " << PathSanitizer::sanitize((cache_path / sub).string());
                         }
                     }
                 }
@@ -657,14 +656,14 @@ bool PresetUpdater::priv::sync_resources(std::string http_url, std::map<std::str
                 remove_config_files(resource.vendor, PRESET_SUBPATH);
             }
             // extract the file downloaded
-            BOOST_LOG_TRIVIAL(info) << "[QDT Updater]start to unzip the downloaded file " << cache_file_path << " to "<<cache_path;
+            BOOST_LOG_TRIVIAL(info) << "[QDT Updater]start to unzip the downloaded file " << PathSanitizer::sanitize(cache_file_path) << " to "<< PathSanitizer::sanitize(cache_path);
             if (!fs::exists(cache_path))
                 fs::create_directories(cache_path);
             if (!extract_file(cache_file_path, cache_path)) {
-                BOOST_LOG_TRIVIAL(warning) << "[QDT Updater]extract resource " << resource_it.first << " failed, path: " << cache_file_path;
+                BOOST_LOG_TRIVIAL(warning) << "[QDT Updater]extract resource " << resource_it.first << " failed, path: " << PathSanitizer::sanitize(cache_file_path);
                 continue;
             }
-            BOOST_LOG_TRIVIAL(info) << "[QDT Updater]finished unzip the downloaded file " << cache_file_path;
+            BOOST_LOG_TRIVIAL(info) << "[QDT Updater]finished unzip the downloaded file " << PathSanitizer::sanitize(cache_file_path);
 
             // save the description to disk
             if (changelog_file.empty())
@@ -1067,9 +1066,9 @@ void PresetUpdater::priv::sync_tooltip(std::string http_url, std::string languag
         fs::path cache_root = fs::path(data_dir()) / "resources/tooltip";
         try {
             auto vf = cache_root / "common" / "version";
-            if (fs::exists(vf)) fs::load_string_file(vf, common_version);
+            if (fs::exists(vf)) Slic3r::load_string_file(vf, common_version);
             vf = cache_root / language / "version";
-            if (fs::exists(vf)) fs::load_string_file(vf, language_version);
+            if (fs::exists(vf)) Slic3r::load_string_file(vf, language_version);
         } catch (...) {}
         std::map<std::string, Resource> resources
         {
@@ -1154,11 +1153,11 @@ void PresetUpdater::priv::sync_plugins(std::string http_url, std::string plugin_
         if (need_delete_cache) {
             if (fs::exists(cache_plugin_folder))
             {
-                BOOST_LOG_TRIVIAL(info) << "[remove_old_networking_plugins] remove the plugins directory "<<cache_plugin_folder.string();
+                BOOST_LOG_TRIVIAL(info) << "[remove_old_networking_plugins] remove the plugins directory " << PathSanitizer::sanitize(cache_plugin_folder);
                 try {
                     fs::remove_all(cache_plugin_folder);
                 } catch (...) {
-                    BOOST_LOG_TRIVIAL(error) << "Failed  removing the plugins file " << cache_plugin_folder.string();
+                    BOOST_LOG_TRIVIAL(error) << "Failed  removing the plugins file " << PathSanitizer::sanitize(cache_plugin_folder);
                 }
             }
             //create this directory again
@@ -1227,13 +1226,13 @@ void PresetUpdater::priv::sync_printer_config(std::string http_url)
 
     try {
         if (fs::exists(config_folder / "version.txt")) {
-            fs::load_string_file(config_folder / "version.txt", curr_version);
+            Slic3r::load_string_file(config_folder / "version.txt", curr_version);
             boost::algorithm::trim(curr_version);
         }
     } catch (...) {}
     try {
         if (fs::exists(cache_folder / "version.txt")) {
-            fs::load_string_file(cache_folder / "version.txt", cached_version);
+            Slic3r::load_string_file(cache_folder / "version.txt", cached_version);
             boost::algorithm::trim(cached_version);
         }
     } catch (...) {}
@@ -1273,7 +1272,7 @@ void PresetUpdater::priv::sync_printer_config(std::string http_url)
     bool result = false;
     try {
         if (fs::exists(cache_folder / "version.txt")) {
-            fs::load_string_file(cache_folder / "version.txt", cached_version);
+            Slic3r::load_string_file(cache_folder / "version.txt", cached_version);
             boost::algorithm::trim(cached_version);
             result = true;
         }
@@ -1404,13 +1403,13 @@ Updates PresetUpdater::priv::get_printer_config_updates(bool update) const
     std::string             resc_version;
     try {
         if (fs::exists(resc_folder / "version.txt")) {
-            fs::load_string_file(resc_folder / "version.txt", resc_version);
+            Slic3r::load_string_file(resc_folder / "version.txt", resc_version);
             boost::algorithm::trim(resc_version);
         }
     } catch (...) {}
     try {
         if (fs::exists(config_folder / "version.txt")) {
-            fs::load_string_file(config_folder / "version.txt", curr_version);
+            Slic3r::load_string_file(config_folder / "version.txt", curr_version);
             boost::algorithm::trim(curr_version);
         }
     } catch (...) {}

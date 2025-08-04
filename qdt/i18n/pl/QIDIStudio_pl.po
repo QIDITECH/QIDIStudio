@@ -17118,8 +17118,8 @@ msgstr "Wysłano pomyślnie. Automatyczne przejście do strony urządzenia za %s
 msgid "Successfully sent. Close current page in %s s."
 msgstr "Wysłano pomyślnie. Zamknięcie bieżącej strony za %s s."
 
-msgid "The selected printer is not connect box, please check."
-msgstr "Wybrana drukarka nie jest podłączona do BOX-a, proszę sprawdzić."
+msgid "The selected printer is not connected to the BOX or the filaments are not synchronized. Please check."
+msgstr "Wybrana drukarka nie jest podłączona do BOX-a lub filamenty nie są zsynchronizowane. Proszę to sprawdzić."
 
 msgid "Failed to set the box printing slot..."
 msgstr "Nie udało się ustawić gniazda drukującego BOX-a..."
@@ -17168,3 +17168,12 @@ msgid "Current printer is printing now"​​
 
 msgid "Please do not mix-use the Ext with BOX"
 msgstr "Nie używaj jednocześnie szpuli zewnętrznej i BOX"
+
+msgid "Recommended box temperature"
+msgstr "Zalecana temperatura komory"
+
+msgid "Recommended box temperature range of this filament. 0 means no set"
+msgstr "Zalecany zakres temperatury komory dla tego filamentu. 0 oznacza brak ustawienia"
+
+msgid "Set the temperature of the box during printing, set to 0 (representing off)."
+msgstr "Ustaw temperaturę komory podczas drukowania. Ustaw na 0 (wyłączone)."

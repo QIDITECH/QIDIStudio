@@ -13682,7 +13682,7 @@ msgstr ""
 msgid "Successfully sent. Close current page in %s s."
 msgstr ""
 
-msgid "The selected printer is not connect box, please check."
+msgid "The selected printer is not connected to the BOX or the filaments are not synchronized. Please check."
 msgstr ""
 
 msgid "Failed to set the box printing slot..."

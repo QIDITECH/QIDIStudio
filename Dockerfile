@@ -68,7 +68,7 @@ WORKDIR /QIDIStudio
 # It might conflict with your mapped user, remove if user ubuntu exist
 RUN if id "ubuntu" >/dev/null 2>&1; then userdel -r ubuntu; fi
 
-# It's easier to run Bambu Studio as the same username,
+# It's easier to run QIDI Studio as the same username,
 # UID and GID as your workstation.  Since we bind mount
 # your home directory into the container, it's handy
 # to keep permissions the same.  Just in case, defaults

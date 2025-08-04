@@ -17213,8 +17213,8 @@ msgstr "Inviato con successo. Reindirizzamento automatico alla pagina del dispos
 msgid "Successfully sent. Close current page in %s s."
 msgstr "Inviato con successo. Chiusura pagina corrente tra %s s."
 
-msgid "The selected printer is not connect box, please check."
-msgstr "La stampante selezionata non è connessa alla BOX, verificare."
+msgid "The selected printer is not connected to the BOX or the filaments are not synchronized. Please check."
+msgstr "La stampante selezionata non è connessa alla BOX oppure i filamenti non sono sincronizzati. Si prega di verificare."
 
 msgid "Failed to set the box printing slot..."
 msgstr "Impostazione dello slot di stampa della BOX fallita..."
@@ -17263,3 +17263,12 @@ msgid "Current printer is printing now"​​
 
 msgid "Please do not mix-use the Ext with BOX"
 msgstr "Non utilizzare contemporaneamente Ext con BOX."
+
+msgid "Recommended box temperature"
+msgstr "Temperatura consigliata della camera"
+
+msgid "Recommended box temperature range of this filament. 0 means no set"
+msgstr "Intervallo di temperatura consigliato della camera per questo filamento. 0 significa non impostato"
+
+msgid "Set the temperature of the box during printing, set to 0 (representing off)."
+msgstr "Imposta la temperatura della camera durante la stampa. Imposta a 0 (spento)."

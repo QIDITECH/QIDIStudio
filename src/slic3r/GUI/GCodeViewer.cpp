@@ -547,11 +547,11 @@ void GCodeViewer::SequentialView::GCodeWindow::load_gcode(const std::string& fil
     try
     {
         m_file.open(boost::filesystem::path(m_filename));
-        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": mapping file " << m_filename;
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": mapping file " << PathSanitizer::sanitize(m_filename);
     }
     catch (...)
     {
-        BOOST_LOG_TRIVIAL(error) << "Unable to map file " << m_filename << ". Cannot show G-code window.";
+        BOOST_LOG_TRIVIAL(error) << "Unable to map file " << PathSanitizer::sanitize(m_filename) << ". Cannot show G-code window.";
         reset();
     }
 }
@@ -632,7 +632,7 @@ void GCodeViewer::SequentialView::GCodeWindow::render(float top, float bottom, f
         }
         catch (...)
         {
-            BOOST_LOG_TRIVIAL(error) << "Error while loading from file " << m_filename << ". Cannot show G-code window.";
+            BOOST_LOG_TRIVIAL(error) << "Error while loading from file " << PathSanitizer::sanitize(m_filename) << ". Cannot show G-code window.";
             return;
         }
         *const_cast<uint64_t*>(&m_selected_line_id) = curr_line_id;
@@ -721,7 +721,7 @@ void GCodeViewer::SequentialView::GCodeWindow::stop_mapping_file()
     //QDS: add log to trace the gcode file issue
     if (m_file.is_open()) {
         m_file.close();
-        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": finished mapping file " << m_filename;
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": finished mapping file " << PathSanitizer::sanitize(m_filename);
     }
 }
 //QDS: GUI refactor: move to the right
@@ -1007,7 +1007,9 @@ void GCodeViewer::load(const GCodeProcessorResult& gcode_result, const Print& pr
     }
 
     //QDS: add logs
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": gcode result %1%, new id %2%, gcode file %3% ") % (&gcode_result) % m_last_result_id % gcode_result.filename;
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__
+                            << boost::format(": gcode result %1%, new id %2%, gcode file %3% ") % (&gcode_result) % m_last_result_id %
+                                   PathSanitizer::sanitize(gcode_result.filename);
 
     // release gpu memory, if used
     reset();
@@ -1960,7 +1962,7 @@ void GCodeViewer::export_toolpaths_to_obj(const char* filename) const
 
     FILE* fp = boost::nowide::fopen(mat_filename.string().c_str(), "w");
     if (fp == nullptr) {
-        BOOST_LOG_TRIVIAL(error) << "GCodeViewer::export_toolpaths_to_obj: Couldn't open " << mat_filename.string().c_str() << " for writing";
+        BOOST_LOG_TRIVIAL(error) << "GCodeViewer::export_toolpaths_to_obj: Couldn't open " << PathSanitizer::sanitize(mat_filename) << " for writing";
         return;
     }
 
@@ -1980,7 +1982,7 @@ void GCodeViewer::export_toolpaths_to_obj(const char* filename) const
     // save geometry file
     fp = boost::nowide::fopen(filename, "w");
     if (fp == nullptr) {
-        BOOST_LOG_TRIVIAL(error) << "GCodeViewer::export_toolpaths_to_obj: Couldn't open " << filename << " for writing";
+        BOOST_LOG_TRIVIAL(error) << "GCodeViewer::export_toolpaths_to_obj: Couldn't open " << PathSanitizer::sanitize(filename) << " for writing";
         return;
     }
 
@@ -4268,7 +4270,8 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
     bool imperial_units = wxGetApp().app_config->get("use_inches") == "1";
     float window_padding = 4.0f * m_scale;
     const float icon_size = ImGui::GetTextLineHeight() * 0.7;
-    std::map<std::string, float> offsets;
+    std::map<std::string, float> fil_table_offsets;
+    std::map<std::string, float> time_est_table_offsets;
     std::map<int, double> model_volume_of_extruders_all_plates; // map<extruder_idx, volume>
     std::map<int, double> flushed_volume_of_extruders_all_plates; // map<extruder_idx, flushed volume>
     std::map<int, double> wipe_tower_volume_of_extruders_all_plates; // map<extruder_idx, flushed volume>
@@ -4465,7 +4468,7 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
         std::vector<std::pair<std::string, float>> title_offsets;
         for (int i = 0; i < offsets_.size(); i++) {
             title_offsets.push_back({ title_columns[i].first, offsets_[i] });
-            offsets[title_columns[i].first] = offsets_[i];
+            fil_table_offsets[title_columns[i].first] = offsets_[i];
         }
         append_headers(title_offsets);
     }
@@ -4476,7 +4479,7 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
         for (auto it = model_volume_of_extruders_all_plates.begin(); it != model_volume_of_extruders_all_plates.end(); it++) {
             if (i < model_used_filaments_m_all_plates.size() && i < model_used_filaments_g_all_plates.size()) {
                 std::vector<std::pair<std::string, float>> columns_offsets;
-                columns_offsets.push_back({ std::to_string(it->first + 1), offsets[_u8L("Filament")]});
+                columns_offsets.push_back({ std::to_string(it->first + 1), fil_table_offsets[_u8L("Filament")] });
 
                 char buf[64];
 
@@ -4487,31 +4490,31 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
                         ::sprintf(buf, imperial_units ? "%.2f in\n%.2f oz" : "%.2f m\n%.2f g", model_used_filaments_m_all_plates[i], model_used_filaments_g_all_plates[i] / unit_conver);
                     else
                         ::sprintf(buf, imperial_units ? "%.2f in    %.2f oz" : "%.2f m    %.2f g", model_used_filaments_m_all_plates[i], model_used_filaments_g_all_plates[i] / unit_conver);
-                    columns_offsets.push_back({ buf, offsets[_u8L("Model")] });
+                    columns_offsets.push_back({ buf, fil_table_offsets[_u8L("Model")] });
                     column_sum_m += model_used_filaments_m_all_plates[i];
                     column_sum_g += model_used_filaments_g_all_plates[i];
                 }
                 if (displayed_columns & ColumnData::Support) {
                     ::sprintf(buf, imperial_units ? "%.2f in\n%.2f oz" : "%.2f m\n%.2f g", support_used_filaments_m_all_plates[i], support_used_filaments_g_all_plates[i] / unit_conver);
-                    columns_offsets.push_back({ buf, offsets[_u8L("Support")] });
+                    columns_offsets.push_back({ buf, fil_table_offsets[_u8L("Support")] });
                     column_sum_m += support_used_filaments_m_all_plates[i];
                     column_sum_g += support_used_filaments_g_all_plates[i];
                 }
                 if (displayed_columns & ColumnData::Flushed) {
                     ::sprintf(buf, imperial_units ? "%.2f in\n%.2f oz" : "%.2f m\n%.2f g", flushed_filaments_m_all_plates[i], flushed_filaments_g_all_plates[i] / unit_conver);
-                    columns_offsets.push_back({ buf, offsets[_u8L("Flushed")] });
+                    columns_offsets.push_back({ buf, fil_table_offsets[_u8L("Flushed")] });
                     column_sum_m += flushed_filaments_m_all_plates[i];
                     column_sum_g += flushed_filaments_g_all_plates[i];
                 }
                 if (displayed_columns & ColumnData::WipeTower) {
                     ::sprintf(buf, imperial_units ? "%.2f in\n%.2f oz" : "%.2f m\n%.2f g", wipe_tower_used_filaments_m_all_plates[i], wipe_tower_used_filaments_g_all_plates[i] / unit_conver);
-                    columns_offsets.push_back({ buf, offsets[_u8L("Tower")] });
+                    columns_offsets.push_back({ buf, fil_table_offsets[_u8L("Tower")] });
                     column_sum_m += wipe_tower_used_filaments_m_all_plates[i];
                     column_sum_g += wipe_tower_used_filaments_g_all_plates[i];
                 }
                 if ((displayed_columns & ~ColumnData::Model) > 0) {
                     ::sprintf(buf, imperial_units ? "%.2f in\n%.2f oz" : "%.2f m\n%.2f g", column_sum_m, column_sum_g / unit_conver);
-                    columns_offsets.push_back({ buf, offsets[_u8L("Total")] });
+                    columns_offsets.push_back({ buf, fil_table_offsets[_u8L("Total")] });
                 }
 
                 append_item(true, filament_colors[it->first], columns_offsets);
@@ -4531,7 +4534,7 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
             window->DrawList->AddLine(separator.Min, ImVec2(separator.Max.x, separator.Min.y), ImGui::GetColorU32(ImGuiCol_Separator));
 
             std::vector<std::pair<std::string, float>> columns_offsets;
-            columns_offsets.push_back({_u8L("Total"), offsets[_u8L("Filament")]});
+            columns_offsets.push_back({ _u8L("Total"), fil_table_offsets[_u8L("Filament")] });
             double total_model_used_filament_m = 0;
             double total_model_used_filament_g = 0;
             double total_support_used_filament_m = 0;
@@ -4551,7 +4554,7 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
                     ::sprintf(buf, imperial_units ? "%.2f in\n%.2f oz" : "%.2f m\n%.2f g", total_model_used_filament_m, total_model_used_filament_g / unit_conver);
                 else
                     ::sprintf(buf, imperial_units ? "%.2f in    %.2f oz" : "%.2f m    %.2f g", total_model_used_filament_m, total_model_used_filament_g / unit_conver);
-                columns_offsets.push_back({buf, offsets[_u8L("Model")]});
+                columns_offsets.push_back({buf, fil_table_offsets[_u8L("Model")]});
             }
             if (displayed_columns & ColumnData::Support) {
                 std::for_each(support_used_filaments_m_all_plates.begin(), support_used_filaments_m_all_plates.end(), [&total_support_used_filament_m](double value) {
@@ -4561,7 +4564,7 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
                     total_support_used_filament_g += value;
                     });
                 ::sprintf(buf, imperial_units ? "%.2f in\n%.2f oz" : "%.2f m\n%.2f g", total_support_used_filament_m, total_support_used_filament_g / unit_conver);
-                columns_offsets.push_back({buf, offsets[_u8L("Support")]});
+                columns_offsets.push_back({ buf, fil_table_offsets[_u8L("Support")] });
             }
             if (displayed_columns & ColumnData::Flushed) {
                 std::for_each(flushed_filaments_m_all_plates.begin(), flushed_filaments_m_all_plates.end(), [&total_flushed_filament_m](double value) {
@@ -4571,7 +4574,7 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
                     total_flushed_filament_g += value;
                     });
                 ::sprintf(buf, imperial_units ? "%.2f in\n%.2f oz" : "%.2f m\n%.2f g", total_flushed_filament_m, total_flushed_filament_g / unit_conver);
-                columns_offsets.push_back({buf, offsets[_u8L("Flushed")]});
+                columns_offsets.push_back({ buf, fil_table_offsets[_u8L("Flushed")] });
             }
             if (displayed_columns & ColumnData::WipeTower) {
                 std::for_each(wipe_tower_used_filaments_m_all_plates.begin(), wipe_tower_used_filaments_m_all_plates.end(), [&total_wipe_tower_used_filament_m](double value) {
@@ -4581,13 +4584,13 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
                     total_wipe_tower_used_filament_g += value;
                     });
                 ::sprintf(buf, imperial_units ? "%.2f in\n%.2f oz" : "%.2f m\n%.2f g", total_wipe_tower_used_filament_m, total_wipe_tower_used_filament_g / unit_conver);
-                columns_offsets.push_back({buf, offsets[_u8L("Tower")]});
+                columns_offsets.push_back({ buf, fil_table_offsets[_u8L("Tower")] });
             }
             if ((displayed_columns & ~ColumnData::Model) > 0) {
                 ::sprintf(buf, imperial_units ? "%.2f in\n%.2f oz" : "%.2f m\n%.2f g",
                           total_model_used_filament_m + total_support_used_filament_m + total_flushed_filament_m + total_wipe_tower_used_filament_m,
                           (total_model_used_filament_g + total_support_used_filament_g + total_flushed_filament_g + total_wipe_tower_used_filament_g) / unit_conver);
-                columns_offsets.push_back({buf, offsets[_u8L("Total")]});
+                columns_offsets.push_back({ buf, fil_table_offsets[_u8L("Total")] });
             }
             append_item(false, m_tools.m_tool_colors[0], columns_offsets);
         }
@@ -4599,6 +4602,28 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
         ::sprintf(buf, "%.2f", total_cost_all_plates);
         imgui.text(buf);
 
+        // Calculating Column Offsets for the Time Estimation Table
+        {
+            std::vector<std::string>                                   time_labels;
+            std::vector<std::string>                                   time_values;
+            std::vector<std::pair<std::string, std::vector<::string>>> time_columns;
+
+            for (auto it = plate_time.begin(); it != plate_time.end(); it++) {
+                time_labels.push_back(_u8L("Plate") + " " + std::to_string(it->first + 1));
+                time_values.push_back(short_time(get_time_dhms(it->second)));
+            }
+            if (plate_time.size() > 1) {
+                time_labels.push_back(_u8L("Total"));
+                time_values.push_back(short_time(get_time_dhms(total_time_all_plates)));
+            }
+
+            time_columns.push_back({_u8L("Plate"), time_labels});
+            time_columns.push_back({_u8L("Time"), time_values});
+
+            auto time_offsets = calculate_offsets(time_columns);
+            for (int i = 0; i < time_offsets.size(); i++) { time_est_table_offsets[time_columns[i].first] = time_offsets[i]; }
+        }
+
         ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize() * 0.1));
         ImGui::Dummy({ window_padding, window_padding });
         ImGui::SameLine();
@@ -4606,8 +4631,8 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
 
         for (auto it = plate_time.begin(); it != plate_time.end(); it++) {
             std::vector<std::pair<std::string, float>> columns_offsets;
-            columns_offsets.push_back({ _u8L("Plate") + " " + std::to_string(it->first + 1), offsets[_u8L("Filament")]});
-            columns_offsets.push_back({ short_time(get_time_dhms(it->second)), offsets[_u8L("Model")] });
+            columns_offsets.push_back({_u8L("Plate") + " " + std::to_string(it->first + 1), time_est_table_offsets[_u8L("Plate")]});
+            columns_offsets.push_back({short_time(get_time_dhms(it->second)), time_est_table_offsets[_u8L("Time")]});
             append_item(false, m_tools.m_tool_colors[0], columns_offsets);
         }
 
@@ -4620,8 +4645,8 @@ void GCodeViewer::render_all_plates_stats(const std::vector<const GCodeProcessor
             const bool item_visible = ImGui::ItemAdd(separator, 0);
             window->DrawList->AddLine(separator.Min, ImVec2(separator.Max.x, separator.Min.y), ImGui::GetColorU32(ImGuiCol_Separator));
             std::vector<std::pair<std::string, float>> columns_offsets;
-            columns_offsets.push_back({ _u8L("Total"), offsets[_u8L("Filament")] });
-            columns_offsets.push_back({ short_time(get_time_dhms(total_time_all_plates)), offsets[_u8L("Model")] });
+            columns_offsets.push_back({_u8L("Total"), time_est_table_offsets[_u8L("Plate")]});
+            columns_offsets.push_back({short_time(get_time_dhms(total_time_all_plates)), time_est_table_offsets[_u8L("Time")]});
             append_item(false, m_tools.m_tool_colors[0], columns_offsets);
         }
     }
@@ -6197,9 +6222,10 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
             imgui.text(prepare_str + ":");
             ImGui::SameLine(max_len);
             if (timelapse_time != 0.0f)
-                imgui.text(short_time(get_time_dhms(time_mode.prepare_time)) + " + " + short_time(get_time_dhms(timelapse_time)));
+                //y68
+                imgui.text(short_time(get_time_dhms(time_mode.prepare_time + 600.0f)) + " + " + short_time(get_time_dhms(timelapse_time)));
             else
-                imgui.text(short_time(get_time_dhms(time_mode.prepare_time)));
+                imgui.text(short_time(get_time_dhms(time_mode.prepare_time + 600.0f)));
         }
         ImGui::Dummy({ window_padding, window_padding });
         ImGui::SameLine();
@@ -6210,7 +6236,7 @@ void GCodeViewer::render_legend(float &legend_height, int canvas_width, int canv
         ImGui::SameLine();
         imgui.text(total_str + ":");
         ImGui::SameLine(max_len);
-        imgui.text(short_time(get_time_dhms(time_mode.time)));
+        imgui.text(short_time(get_time_dhms(time_mode.time + 600.0f))); //y68
 
         auto show_mode_button = [this, &imgui, can_show_mode_button](const wxString& label, PrintEstimatedStatistics::ETimeMode mode) {
             if (can_show_mode_button(mode)) {

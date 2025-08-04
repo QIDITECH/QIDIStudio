@@ -53,6 +53,7 @@ static const int PARTPLATE_ICON_SIZE = 16;
 static const int PARTPLATE_EDIT_PLATE_NAME_ICON_SIZE = 12;
 static const int PARTPLATE_PLATE_NAME_FIX_HEIGHT_SIZE = 20;
 static const int PARTPLATE_ICON_GAP_TOP = 3;
+static const int PARTPLATE_NAME_EDIT_ICON_GAP_LEFT = 3;
 //B
 static const int PARTPLATE_ICON_GAP_LEFT = 10;
 static const int PARTPLATE_ICON_GAP_Y = 5;
@@ -417,6 +418,15 @@ void PartPlate::calc_height_limit() {
 		BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << "Unable to create height limit top lines\n";
 }
 
+int PartPlate::get_right_icon_offset_bed() {
+    if (&wxGetApp() && wxGetApp().plater()) {
+        auto offset = wxGetApp().plater()->get_right_icon_offset_bed();
+        return offset == 0 ? PARTPLATE_ICON_GAP_LEFT : offset;
+    } else {
+        return PARTPLATE_ICON_GAP_LEFT;
+    }
+}
+
 void PartPlate::calc_vertex_for_plate_name(GLTexture &texture, GLModel &gl_model)
 {
 	if (texture.get_width() > 0 && texture.get_height()) {
@@ -428,10 +438,10 @@ void PartPlate::calc_vertex_for_plate_name(GLTexture &texture, GLModel &gl_model
 		w                  = int(factor * (texture.get_width() * 16) / texture.get_height());
 		h                  = PARTPLATE_PLATE_NAME_FIX_HEIGHT_SIZE;
 		Vec2d p            = bed_ext[3] + Vec2d(0, PARTPLATE_PLATENAME_OFFSET_Y + h * texture.m_original_height / texture.get_height());
-		poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + offset_x), scale_(p(1) - h )});
-		poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + w - offset_x), scale_(p(1) - h )});
-		poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + w - offset_x), scale_(p(1) )});
-		poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + offset_x), scale_(p(1) )});
+        poly.contour.append({scale_(p(0) + PARTPLATE_NAME_EDIT_ICON_GAP_LEFT + offset_x), scale_(p(1) - h)});
+        poly.contour.append({scale_(p(0) + PARTPLATE_NAME_EDIT_ICON_GAP_LEFT + w - offset_x), scale_(p(1) - h)});
+        poly.contour.append({scale_(p(0) + PARTPLATE_NAME_EDIT_ICON_GAP_LEFT + w - offset_x), scale_(p(1))});
+        poly.contour.append({scale_(p(0) + PARTPLATE_NAME_EDIT_ICON_GAP_LEFT + offset_x), scale_(p(1))});
 
 		auto triangles = triangulate_expolygon_2f(poly, NORMALS_UP);
         gl_model.reset();
@@ -455,38 +465,23 @@ void PartPlate::calc_vertex_for_plate_name_edit_icon(GLTexture *texture, int ind
 	if (texture && texture->get_width() > 0 && texture->get_height()) {
 		w    = int(factor * (texture->get_original_width() * 16) / texture->get_height()) + 1;
 
-		poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + w), scale_(p(1) - h )});
-		poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + w + PARTPLATE_EDIT_PLATE_NAME_ICON_SIZE), scale_(p(1) - h)});
-		poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + w + PARTPLATE_EDIT_PLATE_NAME_ICON_SIZE), scale_(p(1))});
-		poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + w), scale_(p(1) )});
+        poly.contour.append({scale_(p(0) + PARTPLATE_NAME_EDIT_ICON_GAP_LEFT + w), scale_(p(1) - h)});
+        poly.contour.append({scale_(p(0) + PARTPLATE_NAME_EDIT_ICON_GAP_LEFT + w + PARTPLATE_EDIT_PLATE_NAME_ICON_SIZE), scale_(p(1) - h)});
+        poly.contour.append({scale_(p(0) + PARTPLATE_NAME_EDIT_ICON_GAP_LEFT + w + PARTPLATE_EDIT_PLATE_NAME_ICON_SIZE), scale_(p(1))});
+        poly.contour.append({scale_(p(0) + PARTPLATE_NAME_EDIT_ICON_GAP_LEFT + w), scale_(p(1))});
 
 		triangles = triangulate_expolygon_2f(poly, NORMALS_UP);
 	} else {
 
-		poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + offset_x ), scale_(p(1) - h )});
-		poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + offset_x + PARTPLATE_EDIT_PLATE_NAME_ICON_SIZE), scale_(p(1) - h)});
-		poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + offset_x + PARTPLATE_EDIT_PLATE_NAME_ICON_SIZE), scale_(p(1))});
-		poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + offset_x), scale_(p(1) )});
+        poly.contour.append({scale_(p(0) + PARTPLATE_NAME_EDIT_ICON_GAP_LEFT + offset_x), scale_(p(1) - h)});
+        poly.contour.append({scale_(p(0) + PARTPLATE_NAME_EDIT_ICON_GAP_LEFT + offset_x + PARTPLATE_EDIT_PLATE_NAME_ICON_SIZE), scale_(p(1) - h)});
+        poly.contour.append({scale_(p(0) + PARTPLATE_NAME_EDIT_ICON_GAP_LEFT + offset_x + PARTPLATE_EDIT_PLATE_NAME_ICON_SIZE), scale_(p(1))});
+        poly.contour.append({scale_(p(0) + PARTPLATE_NAME_EDIT_ICON_GAP_LEFT + offset_x), scale_(p(1))});
 
 		triangles = triangulate_expolygon_2f(poly, NORMALS_UP);
     }
     gl_model.reset();
     if (!gl_model.init_model_from_poly(triangles, GROUND_Z))
-		BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << "Unable to generate geometry buffers for icons\n";
-}
-
-void PartPlate::calc_vertex_for_icons_background(int icon_count, GeometryBuffer &buffer)
-{
-	ExPolygon poly;
-    Vec2d &   p = m_partplate_list->m_shape[2];
-
-	poly.contour.append({ scale_(p(0) + PARTPLATE_ICON_GAP_LEFT), scale_(p(1) - icon_count * (PARTPLATE_ICON_SIZE + PARTPLATE_ICON_GAP_Y) - PARTPLATE_ICON_GAP_TOP) });
-	poly.contour.append({ scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + PARTPLATE_ICON_SIZE), scale_(p(1) - icon_count * (PARTPLATE_ICON_SIZE + PARTPLATE_ICON_GAP_Y)- PARTPLATE_ICON_GAP_TOP) });
-	poly.contour.append({ scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + PARTPLATE_ICON_SIZE), scale_(p(1) - PARTPLATE_ICON_GAP_TOP)});
-	poly.contour.append({ scale_(p(0) + PARTPLATE_ICON_GAP_LEFT), scale_(p(1) - PARTPLATE_ICON_GAP_TOP) });
-
-	auto triangles = triangulate_expolygon_2f(poly, NORMALS_UP);
-	if (!buffer.set_from_triangles(triangles, GROUND_Z))
 		BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << "Unable to generate geometry buffers for icons\n";
 }
 
@@ -1392,6 +1387,85 @@ bool PartPlate::check_mixture_of_pla_and_petg(const DynamicPrintConfig &config)
         return false;
 
     return true;
+}
+
+bool PartPlate::check_compatible_of_nozzle_and_filament(const DynamicPrintConfig &config, const std::vector<std::string> &filament_presets, std::string &error_msg)
+{
+    float nozzle_diameter = config.option<ConfigOptionFloatsNullable>("nozzle_diameter")->values[0];
+    auto  volume_type_opt = config.option<ConfigOptionEnumsGeneric>("nozzle_volume_type");
+
+    auto get_filament_alias = [](std::string preset_name) -> std::string {
+        size_t      at_pos = preset_name.find('@');
+        std::string alias  = preset_name.substr(0, at_pos);
+        size_t      first  = alias.find_first_not_of(' ');
+        if (first == std::string::npos) return "";
+        size_t last = alias.find_last_not_of(' ');
+        return alias.substr(first, last - first + 1);
+    };
+
+    bool with_same_volume_type = std::all_of(volume_type_opt->values.begin(), volume_type_opt->values.end(),
+                                             [first_value = volume_type_opt->values[0]](int value) { return value == first_value; });
+
+    std::set<std::string> selected_filament_alias;
+    for (auto &filament_preset : filament_presets) { selected_filament_alias.insert(get_filament_alias(filament_preset)); }
+
+    auto get_incompatible_selected = [&](const NozzleVolumeType volume_type) -> std::set<std::string> {
+        std::vector<std::string> incompatible_filaments = Print::get_incompatible_filaments_by_nozzle(nozzle_diameter, volume_type);
+        std::set<std::string>    ret;
+        for (auto &filament : selected_filament_alias) {
+            if (std::find(incompatible_filaments.begin(), incompatible_filaments.end(), filament) != incompatible_filaments.end()) ret.insert(filament);
+        }
+        return ret;
+    };
+
+    auto get_nozzle_msg = [](const float nozzle_diameter, const NozzleVolumeType volume_type) -> std::string {
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(1) << nozzle_diameter;
+        std::string nozzle_msg = oss.str();
+        ((nozzle_msg += "mm ") += _u8L(get_nozzle_volume_type_string(volume_type))) += _u8L(" nozzle");
+        return nozzle_msg;
+    };
+
+    auto get_incompatible_filament_msg = [](const std::set<std::string> &incompatible_selected_filaments) -> std::string {
+        std::string filament_str;
+        size_t      idx = 0;
+        for (const auto &filament : incompatible_selected_filaments) {
+            if (idx > 0) filament_str += ',';
+            filament_str += filament;
+            ++idx;
+        }
+        return filament_str;
+    };
+
+    error_msg.clear();
+
+    std::set<int>                                     nozzle_volumes(volume_type_opt->values.begin(), volume_type_opt->values.end());
+    std::map<NozzleVolumeType, std::set<std::string>> incompatible_selected_map;
+
+    for (auto volume_type_value : nozzle_volumes) {
+        NozzleVolumeType volume_type           = static_cast<NozzleVolumeType>(volume_type_value);
+        auto             incompatible_selected = get_incompatible_selected(volume_type);
+        if (!incompatible_selected.empty()) incompatible_selected_map[volume_type] = incompatible_selected;
+    }
+
+    if (incompatible_selected_map.empty()) return true;
+
+    if (incompatible_selected_map.size() == 1) {
+        auto             elem                  = incompatible_selected_map.begin();
+        NozzleVolumeType volume_type           = elem->first;
+        auto             incompatible_selected = elem->second;
+        error_msg = GUI::format(_L("It is not recommended to print the following filament(s) with %1%: %2%\n"), get_nozzle_msg(nozzle_diameter, volume_type),
+                                get_incompatible_filament_msg(incompatible_selected));
+    } else {
+        std::string warning_msg = _u8L("It is not recommended to use the following nozzle and filament combinations:\n");
+        for (auto &elem : incompatible_selected_map) {
+            NozzleVolumeType volume_type           = elem.first;
+            auto             incompatible_selected = elem.second;
+            warning_msg += GUI::format(_L("%1% with %2%\n"),get_nozzle_msg(nozzle_diameter, volume_type), get_incompatible_filament_msg(incompatible_selected));
+        }
+        error_msg = warning_msg;
+    }
+    return false;
 }
 
 /*Vec3d PartPlate::calculate_wipe_tower_size(const DynamicPrintConfig &config, const double w, const double wipe_volume, int plate_extruder_size, bool use_global_objects) const
@@ -2353,76 +2427,6 @@ void PartPlate::set_logo_box_by_bed(const BoundingBoxf3& box)
 	}
 }
 
-void PartPlate::generate_print_polygon(ExPolygon &print_polygon)
-{
-	auto compute_points = [&print_polygon](Vec2d& center, double radius, double start_angle, double stop_angle, int count)
-	{
-		double angle, angle_steps;
-		angle_steps = (stop_angle - start_angle) / (count - 1);
-		for(int j = 0; j < count; j++ )
-		{
-			double angle = start_angle + j * angle_steps;
-			double x = center(0) + ::cos(angle) * radius;
-			double y = center(1) + ::sin(angle) * radius;
-			print_polygon.contour.append({ scale_(x), scale_(y) });
-		}
-	};
-
-	int points_count = 8;
-	if (m_shape.size() == 4)
-	{
-			//rectangle case
-			for (int i = 0; i < 4; i++)
-			{
-				const Vec2d& p = m_shape[i];
-				Vec2d center;
-				double start_angle, stop_angle, angle_steps, radius_x, radius_y, radius;
-				switch (i) {
-					case 0:
-						radius = 5.f;
-						center(0) = p(0) + radius;
-						center(1) = p(1) + radius;
-						start_angle = PI;
-						stop_angle = 1.5 * PI;
-						compute_points(center, radius, start_angle, stop_angle, points_count);
-						break;
-					case 1:
-						print_polygon.contour.append({ scale_(p(0)), scale_(p(1)) });
-						break;
-					case 2:
-						radius_x = (int)(p(0)) % 10;
-                        radius_y = (int)(p(1)) % 10;
-						radius = (radius_x > radius_y)?radius_y: radius_x;
-						if (radius < 5.0)
-							radius = 5.f;
-						center(0) = p(0) - radius;
-						center(1) = p(1) - radius;
-						start_angle = 0;
-						stop_angle = 0.5 * PI;
-						compute_points(center, radius, start_angle, stop_angle, points_count);
-						break;
-					case 3:
-                        radius_x = (int)(p(0)) % 10;
-						radius_y = (int)(p(1)) % 10;
-						radius = (radius_x > radius_y)?radius_y: radius_x;
-						if (radius < 5.0)
-							radius = 5.f;
-						center(0) = p(0) + radius;
-						center(1) = p(1) - radius;
-						start_angle = 0.5 * PI;
-						stop_angle = PI;
-						compute_points(center, radius, start_angle, stop_angle, points_count);
-						break;
-				}
-			}
-	}
-	else {
-		for (const Vec2d& p : m_shape) {
-			print_polygon.contour.append({ scale_(p(0)), scale_(p(1)) });
-		}
-	}
-}
-
 void PartPlate::generate_exclude_polygon(ExPolygon &exclude_polygon)
 {
 	auto compute_exclude_points = [&exclude_polygon](Vec2d& center, double radius, double start_angle, double stop_angle, int count)
@@ -2449,7 +2453,7 @@ void PartPlate::generate_exclude_polygon(ExPolygon &exclude_polygon)
 				double start_angle, stop_angle, angle_steps, radius_x, radius_y, radius;
 				switch (i) {
 					case 0:
-						radius = 5.f;
+                        radius = 8.f;
 						center(0) = p(0) + radius;
 						center(1) = p(1) + radius;
 						start_angle = PI;
@@ -3011,7 +3015,7 @@ void PartPlate::print() const
 	BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << boost::format(": plate index %1%, pointer %2%, print_index %3% print pointer %4%") % m_plate_index % this % m_print_index % m_print;
 	BOOST_LOG_TRIVIAL(trace) << boost::format("\t origin {%1%,%2%,%3%}, width %4%,  depth %5%, height %6%") % m_origin.x() % m_origin.y() % m_origin.z() % m_width % m_depth % m_height;
 	BOOST_LOG_TRIVIAL(trace) << boost::format("\t m_printable %1%, m_locked %2%, m_ready_for_slice %3%, m_slice_result_valid %4%,  m_tmp_gcode_path %5%, set size %6%")\
-		% m_printable % m_locked % m_ready_for_slice % m_slice_result_valid % m_tmp_gcode_path % obj_to_instance_set.size();
+		% m_printable % m_locked % m_ready_for_slice % m_slice_result_valid % PathSanitizer::sanitize(m_tmp_gcode_path) % obj_to_instance_set.size();
 	/*for (std::set<std::pair<int, int>>::iterator it = obj_to_instance_set.begin(); it != obj_to_instance_set.end(); ++it) {
 		int obj_id = it->first;
 		int instance_id = it->second;
@@ -3248,9 +3252,13 @@ void PartPlateList::generate_print_polygon(ExPolygon &print_polygon)
             print_polygon.contour.append({scale_(x), scale_(y)});
         }
     };
-
+    bool use_rect_grid = false;
+    if (&wxGetApp() && wxGetApp().plater()) {
+        auto pm       = wxGetApp().plater()->get_curr_printer_model();
+        use_rect_grid = (pm && pm->use_rect_grid == "true") ? true : false;
+    }
     int points_count = 8;
-    if (m_shape.size() == 4) {
+    if (m_shape.size() == 4 && !use_rect_grid) {
         // rectangle case
         for (int i = 0; i < 4; i++) {
             const Vec2d &p = m_shape[i];
@@ -3258,7 +3266,7 @@ void PartPlateList::generate_print_polygon(ExPolygon &print_polygon)
             double       start_angle, stop_angle, radius_x, radius_y, radius;
             switch (i) {
             case 0:
-                radius      = 5.f;
+                radius      = 8.f;
                 center(0)   = p(0) + radius;
                 center(1)   = p(1) + radius;
                 start_angle = PI;
@@ -3319,7 +3327,7 @@ void PartPlateList::generate_exclude_polygon(ExPolygon &exclude_polygon)
             double       start_angle, stop_angle, radius;
             switch (i) {
             case 0:
-                radius      = 5.f;
+                radius      = 8.f;
                 center(0)   = p(0) + radius;
                 center(1)   = p(1) + radius;
                 start_angle = PI;
@@ -3424,11 +3432,11 @@ void PartPlateList::calc_vertex_for_number(int index, bool one_number, GLModel &
 #else // in the bottom
     Vec2d &p        = m_shape[1];
     float  offset_x = one_number ? PARTPLATE_TEXT_OFFSET_X1 : PARTPLATE_TEXT_OFFSET_X2;
-
-    poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + offset_x), scale_(p(1) + PARTPLATE_TEXT_OFFSET_Y)});
-    poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + PARTPLATE_ICON_SIZE - offset_x), scale_(p(1) + PARTPLATE_TEXT_OFFSET_Y)});
-    poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + PARTPLATE_ICON_SIZE - offset_x), scale_(p(1) + PARTPLATE_ICON_SIZE - PARTPLATE_TEXT_OFFSET_Y)});
-    poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + offset_x), scale_(p(1) + PARTPLATE_ICON_SIZE - PARTPLATE_TEXT_OFFSET_Y)});
+    auto   right_icon_offset_bed = m_plate_list.size() > 0 ? m_plate_list[0]->get_right_icon_offset_bed() : PARTPLATE_ICON_GAP_LEFT;
+    poly.contour.append({scale_(p(0) + right_icon_offset_bed + offset_x), scale_(p(1) + PARTPLATE_TEXT_OFFSET_Y)});
+    poly.contour.append({scale_(p(0) + right_icon_offset_bed + PARTPLATE_ICON_SIZE - offset_x), scale_(p(1) + PARTPLATE_TEXT_OFFSET_Y)});
+    poly.contour.append({scale_(p(0) + right_icon_offset_bed + PARTPLATE_ICON_SIZE - offset_x), scale_(p(1) + PARTPLATE_ICON_SIZE - PARTPLATE_TEXT_OFFSET_Y)});
+    poly.contour.append({scale_(p(0) + right_icon_offset_bed + offset_x), scale_(p(1) + PARTPLATE_ICON_SIZE - PARTPLATE_TEXT_OFFSET_Y)});
 #endif
     auto triangles = triangulate_expolygon_2f(poly, NORMALS_UP);
     gl_model.reset();
@@ -3439,14 +3447,11 @@ void PartPlateList::calc_vertex_for_icons(int index, GLModel &gl_model)
 {
     ExPolygon poly;
     Vec2d &   p = m_shape[2];
-
-    poly.contour.append(
-        {scale_(p(0) + PARTPLATE_ICON_GAP_LEFT), scale_(p(1) - index * (PARTPLATE_ICON_SIZE + PARTPLATE_ICON_GAP_Y) - PARTPLATE_ICON_GAP_TOP - PARTPLATE_ICON_SIZE)});
-    poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + PARTPLATE_ICON_SIZE),
-                         scale_(p(1) - index * (PARTPLATE_ICON_SIZE + PARTPLATE_ICON_GAP_Y) - PARTPLATE_ICON_GAP_TOP - PARTPLATE_ICON_SIZE)});
-    poly.contour.append(
-        {scale_(p(0) + PARTPLATE_ICON_GAP_LEFT + PARTPLATE_ICON_SIZE), scale_(p(1) - index * (PARTPLATE_ICON_SIZE + PARTPLATE_ICON_GAP_Y) - PARTPLATE_ICON_GAP_TOP)});
-    poly.contour.append({scale_(p(0) + PARTPLATE_ICON_GAP_LEFT), scale_(p(1) - index * (PARTPLATE_ICON_SIZE + PARTPLATE_ICON_GAP_Y) - PARTPLATE_ICON_GAP_TOP)});
+    auto      right_icon_offset_bed = m_plate_list.size() > 0 ? m_plate_list[0]->get_right_icon_offset_bed() : PARTPLATE_ICON_GAP_LEFT;
+    poly.contour.append({scale_(p(0) + right_icon_offset_bed), scale_(p(1) - index * (PARTPLATE_ICON_SIZE + PARTPLATE_ICON_GAP_Y) - PARTPLATE_ICON_GAP_TOP - PARTPLATE_ICON_SIZE)});
+    poly.contour.append({scale_(p(0) + right_icon_offset_bed + PARTPLATE_ICON_SIZE), scale_(p(1) - index * (PARTPLATE_ICON_SIZE + PARTPLATE_ICON_GAP_Y) - PARTPLATE_ICON_GAP_TOP - PARTPLATE_ICON_SIZE)});
+    poly.contour.append({scale_(p(0) + right_icon_offset_bed + PARTPLATE_ICON_SIZE), scale_(p(1) - index * (PARTPLATE_ICON_SIZE + PARTPLATE_ICON_GAP_Y) - PARTPLATE_ICON_GAP_TOP)});
+    poly.contour.append({scale_(p(0) + right_icon_offset_bed), scale_(p(1) - index * (PARTPLATE_ICON_SIZE + PARTPLATE_ICON_GAP_Y) - PARTPLATE_ICON_GAP_TOP)});
 
     auto triangles = triangulate_expolygon_2f(poly, NORMALS_UP);
     gl_model.reset();
@@ -5871,8 +5876,9 @@ int PartPlateList::store_to_3mf_structure(PlateDataPtrs& plate_data_list, bool w
 				plate_data_item->objects_and_instances.emplace_back(it->first, it->second);
 		}
 
-		BOOST_LOG_TRIVIAL(info) << __FUNCTION__ <<boost::format(": plate %1%, gcode_filename=%2%, with_slice_info=%3%, slice_valid %4%, object item count %5%.")
-			%i %m_plate_list[i]->m_gcode_result->filename % with_slice_info %m_plate_list[i]->is_slice_result_valid()%plate_data_item->objects_and_instances.size();
+		BOOST_LOG_TRIVIAL(info) << __FUNCTION__ <<boost::format(": plate %1%, gcode_filename=%2%, with_slice_info=%3%, slice_valid %4%, object item count %5%.") % i %
+                                       PathSanitizer::sanitize(m_plate_list[i]->m_gcode_result->filename) % with_slice_info % m_plate_list[i]->is_slice_result_valid() %
+                                       plate_data_item->objects_and_instances.size();
 
 		if (with_slice_info) {
 			if (m_plate_list[i]->get_slice_result() && m_plate_list[i]->is_slice_result_valid()) {
@@ -5942,8 +5948,9 @@ int PartPlateList::load_from_3mf_structure(PlateDataPtrs& plate_data_list, int f
 		{
 			BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << boost::format(":plate index %1% seems invalid, skip it")% plate_data_list[i]->plate_index;
 		}
-		BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": plate %1%, gcode_file %2%, is_sliced_valid %3%, toolpath_outside %4%, is_support_used %5% is_label_object_enabled %6%")
-			%i %plate_data_list[i]->gcode_file %plate_data_list[i]->is_sliced_valid %plate_data_list[i]->toolpath_outside %plate_data_list[i]->is_support_used %plate_data_list[i]->is_label_object_enabled;
+		BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": plate %1%, gcode_file %2%, is_sliced_valid %3%, toolpath_outside %4%, is_support_used %5% is_label_object_enabled %6%") % i %
+                                       PathSanitizer::sanitize(plate_data_list[i]->gcode_file) % plate_data_list[i]->is_sliced_valid % plate_data_list[i]->toolpath_outside %
+                                       plate_data_list[i]->is_support_used % plate_data_list[i]->is_label_object_enabled;
 		//load object and instance from 3mf
 		//just test for file correct or not, we will rebuild later
 		/*for (std::vector<std::pair<int, int>>::iterator it = plate_data_list[i]->objects_and_instances.begin(); it != plate_data_list[i]->objects_and_instances.end(); ++it)
@@ -5971,7 +5978,7 @@ int PartPlateList::load_from_3mf_structure(PlateDataPtrs& plate_data_list, int f
 		gcode_result->warnings = plate_data_list[i]->warnings;
         gcode_result->filament_maps = plate_data_list[i]->filament_maps;
 		if (m_plater && !plate_data_list[i]->thumbnail_file.empty()) {
-			BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": plate %1%, load thumbnail from %2%.")%(i+1) %plate_data_list[i]->thumbnail_file;
+			BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": plate %1%, load thumbnail from %2%.") % (i + 1) % PathSanitizer::sanitize(plate_data_list[i]->thumbnail_file);
 			if (boost::filesystem::exists(plate_data_list[i]->thumbnail_file)) {
 				m_plate_list[index]->load_thumbnail_data(plate_data_list[i]->thumbnail_file, m_plate_list[index]->thumbnail_data);
 				BOOST_LOG_TRIVIAL(info) << __FUNCTION__ <<boost::format(": plate %1% after load, width %2%, height %3%, size %4%!")
@@ -5981,7 +5988,7 @@ int PartPlateList::load_from_3mf_structure(PlateDataPtrs& plate_data_list, int f
 
 		if (m_plater && !plate_data_list[i]->no_light_thumbnail_file.empty()) {
 			if (boost::filesystem::exists(plate_data_list[i]->no_light_thumbnail_file)) {
-				BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": plate %1%, load no_light_thumbnail_file from %2%.")%(i+1) %plate_data_list[i]->no_light_thumbnail_file;
+				BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": plate %1%, load no_light_thumbnail_file from %2%.") % (i + 1) % PathSanitizer::sanitize(plate_data_list[i]->no_light_thumbnail_file);
 				m_plate_list[index]->load_thumbnail_data(plate_data_list[i]->no_light_thumbnail_file, m_plate_list[index]->no_light_thumbnail_data);
 			}
 		}
@@ -5994,13 +6001,13 @@ int PartPlateList::load_from_3mf_structure(PlateDataPtrs& plate_data_list, int f
 		}*/
 		if (m_plater && !plate_data_list[i]->top_file.empty()) {
 			if (boost::filesystem::exists(plate_data_list[i]->top_file)) {
-				BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": plate %1%, load top_thumbnail from %2%.")%(i+1) %plate_data_list[i]->top_file;
+                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": plate %1%, load top_thumbnail from %2%.") % (i + 1) % PathSanitizer::sanitize(plate_data_list[i]->top_file);
 				m_plate_list[index]->load_thumbnail_data(plate_data_list[i]->top_file, m_plate_list[index]->top_thumbnail_data);
 			}
 		}
 		if (m_plater && !plate_data_list[i]->pick_file.empty()) {
 			if (boost::filesystem::exists(plate_data_list[i]->pick_file)) {
-				BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": plate %1%, load pick_thumbnail from %2%.")%(i+1) %plate_data_list[i]->pick_file;
+                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": plate %1%, load pick_thumbnail from %2%.") % (i + 1) % PathSanitizer::sanitize(plate_data_list[i]->pick_file);
 				m_plate_list[index]->load_thumbnail_data(plate_data_list[i]->pick_file, m_plate_list[index]->pick_thumbnail_data);
 			}
 		}
@@ -6132,15 +6139,54 @@ void PartPlateList::init_bed_type_info()
     BedTextureInfo::TexturePart pei_part2(74, -10, 148, 12, "qdt_bed_pei_bottom.svg");
     BedTextureInfo::TexturePart pte_part1(10, 52, 8.393f, 192, "qdt_bed_pte_left.svg");
     BedTextureInfo::TexturePart pte_part2(74, -10, 148, 12, "qdt_bed_pte_bottom.svg");
-
+    auto bed_texture_maps        = wxGetApp().plater()->get_bed_texture_maps();
+    std::string bottom_texture_end_name = bed_texture_maps.find("bottom_texture_end_name") != bed_texture_maps.end() ? bed_texture_maps["bottom_texture_end_name"] : "";
+    std::string bottom_texture_rect_str = bed_texture_maps.find("bottom_texture_rect") != bed_texture_maps.end() ? bed_texture_maps["bottom_texture_rect"] : "";
+    std::string middle_texture_rect_str = bed_texture_maps.find("middle_texture_rect") != bed_texture_maps.end() ? bed_texture_maps["middle_texture_rect"] : "";
+    std::array<float, 4>        bottom_texture_rect = {0, 0, 0, 0}, middle_texture_rect = {0, 0, 0, 0};
+    if (bottom_texture_rect_str.size() > 0) {
+        std::vector<std::string> items;
+        boost::algorithm::erase_all(bottom_texture_rect_str, " ");
+        boost::split(items, bottom_texture_rect_str, boost::is_any_of(","));
+        if (items.size() == 4) {
+            for (int i = 0; i < items.size(); i++) {
+                bottom_texture_rect[i] = std::atof(items[i].c_str());
+            }
+        }
+    }
+    if (middle_texture_rect_str.size() > 0) {
+        std::vector<std::string> items;
+        boost::algorithm::erase_all(middle_texture_rect_str, " ");
+        boost::split(items, middle_texture_rect_str, boost::is_any_of(","));
+        if (items.size() == 4) {
+            for (int i = 0; i < items.size(); i++) {
+                middle_texture_rect[i] = std::atof(items[i].c_str());
+            }
+        }
+    }
     auto is_single_extruder = wxGetApp().preset_bundle->get_printer_extruder_count() == 1;
     if (!is_single_extruder) {
         m_allow_bed_type_in_double_nozzle.clear();
         pte_part1 = BedTextureInfo::TexturePart(57, 300, 236.12f, 10.f, "qdt_bed_pte_middle.svg");
+        auto &middle_rect = middle_texture_rect;
+        if (middle_rect[2] > 0.f) {
+            pte_part1 = BedTextureInfo::TexturePart(middle_rect[0], middle_rect[1], middle_rect[2], middle_rect[3], "qdt_bed_pte_middle.svg");
+        }
         pte_part2 = BedTextureInfo::TexturePart(45, -14.5, 70, 8, "qdt_bed_pte_left_bottom.svg");
-
+        auto &bottom_rect = bottom_texture_rect;
+        if (bottom_texture_end_name.size() > 0 && bottom_rect[2] > 0.f) {
+            std::string pte_part2_name = "qdt_bed_pte_bottom_" + bottom_texture_end_name + ".svg";
+            pte_part2 = BedTextureInfo::TexturePart(bottom_rect[0], bottom_rect[1], bottom_rect[2], bottom_rect[3], pte_part2_name);
+        }
         pei_part1  = BedTextureInfo::TexturePart(57, 300, 236.12f, 10.f, "qdt_bed_pei_middle.svg");
+        if (middle_rect[2] > 0.f) {
+            pei_part1 = BedTextureInfo::TexturePart(middle_rect[0], middle_rect[1], middle_rect[2], middle_rect[3], "qdt_bed_pte_middle.svg");
+        }
         pei_part2  = BedTextureInfo::TexturePart(45, -14.5, 70, 8, "qdt_bed_pei_left_bottom.svg");
+        if (bottom_texture_end_name.size() > 0 && bottom_rect[2] > 0.f) {
+            std::string pei_part2_name = "qdt_bed_pei_bottom_" + bottom_texture_end_name + ".svg";
+            pei_part2                  = BedTextureInfo::TexturePart(bottom_rect[0], bottom_rect[1], bottom_rect[2], bottom_rect[3], pei_part2_name);
+        }
         m_allow_bed_type_in_double_nozzle[(int) btPEI] = true;
         m_allow_bed_type_in_double_nozzle[(int) btPTE] = true;
     }
@@ -6166,8 +6212,8 @@ void PartPlateList::init_bed_type_info()
     float base_width  = 256;//standard 256*256 for single_extruder
     float base_height = 256;
     if (!is_single_extruder) {//standard 350*325 for double_extruder
-        base_width  = 350;
-        base_height = 320;
+        base_width  = bed_width;
+        base_height = bed_height;
     }
     float x_rate      = bed_width / base_width;
     float y_rate      = bed_height / base_height;

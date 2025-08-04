@@ -14,10 +14,7 @@
 #include <boost/system/error_code.hpp>
 #include <boost/shared_ptr.hpp>
 
-//B35
-#if defined __linux__
 #include <boost/array.hpp>
-#endif
 
 namespace Slic3r {
 

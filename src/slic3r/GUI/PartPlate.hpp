@@ -152,16 +152,15 @@ private:
 
     void init();
     bool valid_instance(int obj_id, int instance_id);
-    void generate_print_polygon(ExPolygon &print_polygon);
     void generate_exclude_polygon(ExPolygon &exclude_polygon);
     void generate_logo_polygon(ExPolygon &logo_polygon);
     void generate_logo_polygon(ExPolygon &logo_polygon,const BoundingBoxf3& box);
     void calc_bounding_boxes() const;
     void calc_height_limit();
+    int get_right_icon_offset_bed();
 
     void calc_vertex_for_plate_name(GLTexture &texture, GLModel &buffer);
     void calc_vertex_for_plate_name_edit_icon(GLTexture *texture, int index, GLModel &buffer);
-    void calc_vertex_for_icons_background(int icon_count, GeometryBuffer &buffer);
     bool calc_bed_3d_boundingbox(BoundingBoxf3 & box_in_plate_origin);
     void render_logo(bool bottom, bool render_cali = true);
     void render_logo_texture(GLTexture &logo_texture, GLModel &logo_buffer, bool bottom);
@@ -318,6 +317,7 @@ public:
     bool check_filament_printable(const DynamicPrintConfig & config, wxString& error_message);
     bool check_tpu_printable_status(const DynamicPrintConfig & config, const std::vector<int> &tpu_filaments);
     bool check_mixture_of_pla_and_petg(const DynamicPrintConfig & config);
+    bool check_compatible_of_nozzle_and_filament(const DynamicPrintConfig & config, const std::vector<std::string>& filament_presets, std::string& error_msg);
 
     /* instance related operations*/
     //judge whether instance is bound in plate or not

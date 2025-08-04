@@ -15427,8 +15427,8 @@ msgstr "Başarıyla gönderildi. %s saniye sonra cihaz sayfasına otomatik geçi
 msgid "Successfully sent. Close current page in %s s."
 msgstr "Başarıyla gönderildi. %s saniye sonra mevcut sayfa kapatılacak."
 
-msgid "The selected printer is not connect box, please check."
-msgstr "Seçilen yazıcı BOX'a bağlı değil, lütfen kontrol edin."
+msgid "The selected printer is not connected to the BOX or the filaments are not synchronized. Please check."
+msgstr "Seçilen yazıcı BOX'a bağlı değil veya filamentler senkronize edilmemiş. Lütfen kontrol edin."
 
 msgid "Failed to set the box printing slot..."
 msgstr "BOX yazdırma yuvası ayarlanamadı..."
@@ -15477,3 +15477,12 @@ msgid "Current printer is printing now"​​
 
 msgid "Please do not mix-use the Ext with BOX"
 msgstr "Lütfen Ext'i BOX ile karıştırarak kullanmayın"
+
+msgid "Recommended box temperature"
+msgstr "Önerilen hazne sıcaklığı"
+
+msgid "Recommended box temperature range of this filament. 0 means no set"
+msgstr "Bu filament için önerilen hazne sıcaklık aralığı. 0, ayar yapılmadı anlamına gelir"
+
+msgid "Set the temperature of the box during printing, set to 0 (representing off)."
+msgstr "Yazdırma sırasında hazne sıcaklığını ayarlayın. 0'a ayarlayın (kapalı)."

@@ -126,11 +126,9 @@ bool OctoPrint::test(wxString &msg) const
     bool res = true;
     auto url = make_url("api/version");
 
-    // BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Get version at: %2%") % name % url;
-
+    BOOST_LOG_TRIVIAL(info) << boost::format("Before uploading, %1%:Test at: %2%") % name % url;
     auto http = Http::get(std::move(url));
     set_auth(http);
-    BOOST_LOG_TRIVIAL(info) << boost::format("Before uploading, %1%:Test at: %2%") % name % url;
     http.on_error([&](std::string body, std::string error, unsigned status) {
             BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error getting version: %2%, HTTP %3%, body: `%4%`") % name % error % status % body;
             res = false;
@@ -333,11 +331,9 @@ std::string OctoPrint::get_status(wxString& msg) const
     std::string print_state = "standby";
     auto url = make_url("printer/objects/query?print_stats=state");
 
-    // BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Get version at: %2%") % name % url;
-
+    BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Get version at: %2%") % name % url;
     auto http = Http::get(std::move(url));
     set_auth(http);
-    BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Get status at: %2%") % name % url;
     //y36
     http.timeout_connect(4)
         .on_error([&](std::string body, std::string error, unsigned status) {
@@ -406,11 +402,9 @@ float OctoPrint::get_progress(wxString& msg) const
     bool res = true;
     auto url = make_url("printer/objects/query?display_status=progress");
     float  process = 0;
-    // BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Get version at: %2%") % name % url;
-
+    BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Get version at: %2%") % name % url;
     auto http = Http::get(std::move(url));
     set_auth(http);
-    BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Get progress at: %2%") % name % url;
     http.timeout_connect(4)
         .on_error([&](std::string body, std::string error, unsigned status) {
         if (status == 404)
@@ -537,11 +531,9 @@ std::pair<std::string, float> OctoPrint::get_status_progress(wxString& msg) cons
     float       process = 0;
     auto        url = make_url("printer/objects/query?print_stats=state&display_status=progress");
 
-    //BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Get version at: %2%") % name % url;
-
+    BOOST_LOG_TRIVIAL(info) << boost::format("Get status progress, the url is %1%") % url;
     auto http = Http::get(std::move(url));
     set_auth(http);
-    BOOST_LOG_TRIVIAL(info) << boost::format("Get status progress, the url is %1%") % url;
     // B64 //y6
     http.timeout_connect(4)
         .on_error([&](std::string body, std::string error, unsigned status) {
@@ -706,8 +698,7 @@ bool QIDILink::get_storage(wxArrayString& storage_path, wxArrayString& storage_n
     };
     std::vector<StorageInfo> storage;
 
-    // BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Get storage at: %2%") % name % url;
-
+    BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Get storage at: %2%") % name % url;
     wxString wlang = GUI::wxGetApp().current_language_code();
     std::string lang = GUI::format(wlang.SubString(0, 1));
 

@@ -98,7 +98,7 @@ void TempInput::Create(wxWindow *parent, wxString text, wxString label, wxString
         if (m_read_only) return;
         // enter input mode
         auto temp = text_ctrl->GetValue();
-        if (temp.length() > 0 && temp[0] == (0x5f)) { 
+        if (temp.length() > 0 && temp[0] == (0x5f)) {
             text_ctrl->SetValue(wxEmptyString);
         }
         if (wdialog != nullptr) { wdialog->Dismiss(); }
@@ -137,7 +137,7 @@ void TempInput::Create(wxWindow *parent, wxString text, wxString label, wxString
     });
     text_ctrl->Bind(wxEVT_RIGHT_DOWN, [this](auto &e) {}); // disable context menu
     text_ctrl->Bind(wxEVT_LEFT_DOWN, [this](auto &e) {
-        if (m_read_only) { 
+        if (m_read_only) {
             return;
         } else {
             e.Skip();
@@ -199,8 +199,8 @@ void TempInput::SetTagTemp(int temp)
     }
 }
 
-void TempInput::SetTagTemp(wxString temp) 
-{ 
+void TempInput::SetTagTemp(wxString temp)
+{
     if (text_ctrl->GetValue() != temp) {
         text_ctrl->SetValue(temp);
         messureSize();
@@ -208,8 +208,8 @@ void TempInput::SetTagTemp(wxString temp)
     }
 }
 
-void TempInput::SetCurrTemp(int temp) 
-{ 
+void TempInput::SetCurrTemp(int temp)
+{
     auto tp = wxString::Format("%d", temp);
     if (GetLabel() != tp) {
         SetLabel(tp);
@@ -217,7 +217,7 @@ void TempInput::SetCurrTemp(int temp)
     }
 }
 
-void TempInput::SetCurrTemp(wxString temp) 
+void TempInput::SetCurrTemp(wxString temp)
 {
     if (GetLabel() != temp) {
         SetLabel(temp);
@@ -237,23 +237,23 @@ void TempInput::Warning(bool warn, WarningType type)
     if (warning_mode) {
         if (wdialog == nullptr) {
             wdialog = new PopupWindow(this);
-            wdialog->SetBackgroundColour(wxColour(0xFFFFFF));
+            wdialog->SetBackgroundColour(wxColour("#FFFFFF"));
 
             wdialog->SetSizeHints(wxDefaultSize, wxDefaultSize);
 
             wxBoxSizer *sizer_body = new wxBoxSizer(wxVERTICAL);
 
             auto body = new wxPanel(wdialog, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-            body->SetBackgroundColour(wxColour(0xFFFFFF));
+            body->SetBackgroundColour(wxColour("#FFFFFF"));
 
 
             wxBoxSizer *sizer_text;
             sizer_text = new wxBoxSizer(wxHORIZONTAL);
 
-           
 
-            warning_text = new wxStaticText(body, wxID_ANY, 
-                                            wxEmptyString, 
+
+            warning_text = new wxStaticText(body, wxID_ANY,
+                                            wxEmptyString,
                                             wxDefaultPosition, wxDefaultSize,
                                             wxALIGN_CENTER_HORIZONTAL);
             warning_text->SetFont(::Label::Body_12);
@@ -276,7 +276,7 @@ void TempInput::Warning(bool warn, WarningType type)
 
         wxString warning_string;
         if (type == WarningType::WARNING_TOO_HIGH)
-        warning_string = _L("The maximum temperature cannot exceed ") + wxString::Format("%d", max_temp);
+             warning_string = _L("The maximum temperature cannot exceed ") + wxString::Format("%d", max_temp);
         else if (type == WarningType::WARNING_TOO_LOW)
              warning_string = _L("The minmum temperature should not be less than ") + wxString::Format("%d", min_temp);
         warning_text->SetLabel(warning_string);
@@ -330,6 +330,7 @@ void TempInput::SetLabelColor(StateColor const &color)
 void TempInput::Rescale()
 {
     if (this->normal_icon.bmp().IsOk()) this->normal_icon.msw_rescale();
+    if (this->actice_icon.bmp().IsOk()) this->actice_icon.msw_rescale();
     if (this->degree_icon.bmp().IsOk()) this->degree_icon.msw_rescale();
     if (this->round_scale_hint_icon.bmp().IsOk()) this->round_scale_hint_icon.msw_rescale();
     messureSize();
@@ -492,19 +493,19 @@ void TempInput::render(wxDC &dc)
     auto text = wxWindow::GetLabel();
     dc.SetFont(::Label::Head_14);
     labelSize = dc.GetMultiLineTextExtent(wxWindow::GetLabel());
-    
+
     if (!IsEnabled()) {
         dc.SetTextForeground(wxColour(0xAC, 0xAC, 0xAC));
         dc.SetTextBackground(background_color.colorForStates((int) StateColor::Disabled));
-    } 
+    }
     else {
         dc.SetTextForeground(wxColour(0x32, 0x3A, 0x3D));
         dc.SetTextBackground(background_color.colorForStates((int) states));
     }
-        
+
 
     /*if (!text.IsEmpty()) {
-        
+
     }*/
     wxSize textSize = text_ctrl->GetSize();
     if (align_right) {

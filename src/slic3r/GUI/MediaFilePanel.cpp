@@ -326,7 +326,7 @@ void MediaFilePanel::SetMachineObject(MachineObject* obj)
                 json j;
                 j["code"] = err;
                 j["dev_id"] = m_machine;
-                j["dev_ip"] = m_lan_ip;
+                j["dev_ip"] = "";
                 NetworkAgent* agent = wxGetApp().getAgent();
                 if (status == PrinterFileSystem::Failed && err != 0) {
                     j["result"] = "failed";
@@ -357,7 +357,7 @@ void MediaFilePanel::SetMachineObject(MachineObject* obj)
                 json j;
                 j["code"] = result;
                 j["dev_id"] = m_machine;
-                j["dev_ip"] = m_lan_ip;
+                j["dev_ip"] = "";
                 if (result > 1) {
                     // download failed
                     j["result"] = "failed";
@@ -521,7 +521,9 @@ void MediaFilePanel::fetchUrl(boost::weak_ptr<PrinterFileSystem> wfs)
                 url += "&cli_id=" + wxGetApp().app_config->get("slicer_uuid");
                 url += "&cli_ver=" + std::string(SLIC3R_VERSION);
             }
+#if !QDT_RELEASE_TO_PUBLIC
             BOOST_LOG_TRIVIAL(info) << "MediaFilePanel::fetchUrl: camera_url: " << hide_passwd(url, {"?uid=", "authkey=", "passwd="});
+#endif
             CallAfter([=] {
                 boost::shared_ptr fs(wfs.lock());
                 if (!fs || fs != m_image_grid->GetFileSystem()) return;

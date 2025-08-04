@@ -116,7 +116,7 @@ static const StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(40, 90, 22
 
 static const StateColor btn_bd_blue(std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
 
-static const StateColor btn_text_green(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Normal));
+static const StateColor btn_text_blue(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Normal));
 
 static const StateColor btn_bg_white(std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Pressed),
                                      std::pair<wxColour, int>(wxColour(238, 238, 238), StateColor::Hovered),
@@ -222,7 +222,7 @@ FilamentMapDialog::FilamentMapDialog(wxWindow                       *parent,
 
         m_ok_btn->SetBackgroundColor(btn_bg_blue);
         m_ok_btn->SetBorderColor(btn_bd_blue);
-        m_ok_btn->SetTextColor(btn_text_green);
+        m_ok_btn->SetTextColor(btn_text_blue);
         m_cancel_btn->SetBackgroundColor(btn_bg_white);
         m_cancel_btn->SetBorderColor(btn_bd_white);
         m_cancel_btn->SetTextColor(btn_text_white);

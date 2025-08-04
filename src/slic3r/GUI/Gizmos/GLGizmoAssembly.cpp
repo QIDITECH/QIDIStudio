@@ -21,10 +21,15 @@
 namespace Slic3r {
 namespace GUI {
 
-GLGizmoAssembly::GLGizmoAssembly(GLCanvas3D& parent, const std::string& icon_filename, unsigned int sprite_id) :
-    GLGizmoMeasure(parent, icon_filename, sprite_id)
+GLGizmoAssembly::GLGizmoAssembly(GLCanvas3D& parent, unsigned int sprite_id) :
+    GLGizmoMeasure(parent, sprite_id)
 {
     m_measure_mode       = EMeasureMode::ONLY_ASSEMBLY;
+}
+
+std::string GLGizmoAssembly::get_icon_filename(bool is_dark_mode) const
+{
+    return is_dark_mode ? "toolbar_assembly_dark.svg" : "toolbar_assembly.svg";
 }
 
 bool GLGizmoAssembly::on_init() {
@@ -50,7 +55,6 @@ std::string GLGizmoAssembly::on_get_name() const
 bool GLGizmoAssembly::on_is_activable() const
 {
     const Selection& selection = m_parent.get_selection();
-    //1.9.5
     if (selection.is_wipe_tower()) {
         return false;
     }
@@ -118,7 +122,7 @@ void GLGizmoAssembly::on_render_input_window(float x, float y, float bottom_limi
     }
     show_tooltip_information(caption_max, x, get_cur_y);
 
-    float f_scale =m_parent.get_gizmos_manager().get_layout_scale();
+    float f_scale = m_parent.get_main_toolbar_scale();
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, 4.0f * f_scale));
 
     ImGui::PopStyleVar(2);

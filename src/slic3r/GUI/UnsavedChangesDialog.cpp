@@ -1282,8 +1282,11 @@ static wxString get_string_value(std::string opt_key, const DynamicPrintConfig& 
     }
     opt_idx = orig_opt_idx >= 0 ? orig_opt_idx : 0;
     opt_key = get_pure_opt_key(opt_key);
+    auto option = config.option(opt_key);
+    auto opt_vector = dynamic_cast<const ConfigOptionVectorBase *>(option);
 
-    if (config.option(opt_key)->is_nil())
+    if (option->is_scalar() && config.option(opt_key)->is_nil() ||
+        option->is_vector() && opt_vector && opt_idx >= 0 && opt_idx < opt_vector->size() && opt_vector->is_nil(opt_idx))
         return _L("N/A");
 
     wxString out;
@@ -1392,14 +1395,18 @@ static wxString get_string_value(std::string opt_key, const DynamicPrintConfig& 
             opt_key == "top_surface_pattern" ||
             opt_key == "bottom_surface_pattern" ||
             opt_key == "internal_solid_infill_pattern" ||
-            opt_key == "sparse_infill_pattern");
+            opt_key == "sparse_infill_pattern" ||
+            opt_key == "locked_skin_infill_pattern" ||
+            opt_key == "locked_skeleton_infill_pattern");
     }
     case coEnums: {
         return get_string_from_enum(opt_key, config,
             opt_key == "top_surface_pattern" ||
             opt_key == "bottom_surface_pattern" ||
             opt_key == "internal_solid_infill_pattern" ||
-            opt_key == "sparse_infill_pattern",
+            opt_key == "sparse_infill_pattern" ||
+            opt_key == "locked_skin_infill_pattern" ||
+            opt_key == "locked_skeleton_infill_pattern",
             opt_idx);
     }
     case coPoint: {
@@ -2197,7 +2204,7 @@ void DiffPresetDialog::update_tree()
             wxString right_val = get_string_value(opt_key, right_congig);
 
             Search::Option option = searcher.get_option(opt_key, get_full_label(opt_key, left_config), type);
-            if (option.opt_key() != opt_key) {
+            if (option.opt_key() != opt_key || (option.category.empty() && option.group.empty())) {
                 // temporary solution, just for testing
                 m_tree->Append(opt_key, type, "Undef category", "Undef group", opt_key, left_val, right_val, "question");
                 // When founded option isn't the correct one.

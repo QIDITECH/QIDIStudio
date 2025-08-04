@@ -15208,8 +15208,8 @@ msgstr "Успешно отправлено. Автоматический пер
 msgid "Successfully sent. Close current page in %s s."
 msgstr "Успешно отправлено. Закрытие текущей страницы через %s с."
 
-msgid "The selected printer is not connect box, please check."
-msgstr "Выбранный принтер не подключен к BOX, проверьте."
+msgid "The selected printer is not connected to the BOX or the filaments are not synchronized. Please check."
+msgstr "Выбранный принтер не подключён к BOX или нити не синхронизированы. Пожалуйста, проверьте."
 
 msgid "Failed to set the box printing slot..."
 msgstr "Не удалось установить слот печати BOX..."
@@ -15258,3 +15258,12 @@ msgid "Current printer is printing now"​​
 
 msgid "Please do not mix-use the Ext with BOX"
 msgstr "Пожалуйста, не используйте Ext и BOX вместе."
+
+msgid "Recommended box temperature"
+msgstr "Рекомендуемая температура камеры"
+
+msgid "Recommended box temperature range of this filament. 0 means no set"
+msgstr "Рекомендуемый диапазон температуры камеры для этого филамента. 0 означает отсутствие настройки"
+
+msgid "Set the temperature of the box during printing, set to 0 (representing off)."
+msgstr "Установите температуру камеры во время печати. Установите на 0 (выключено)."

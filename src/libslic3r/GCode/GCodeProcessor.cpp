@@ -335,7 +335,7 @@ static void planner_forward_pass_kernel(GCodeProcessor::TimeBlock& prev, GCodePr
     // speeds have already been reset, maximized, and reverse planned by reverse planner.
     // If nominal length is true, max junction speed is guaranteed to be reached. No need to recheck.
 
-    // ���ǰһ��block������ɼ��٣���ôҪ��������ٵ����ٶȣ����¼��㵱ǰblock��entry�ٶ�
+    // 如果前一个block不能完成加速，那么要根据其加速到的速度，重新计算当前block的entry速度
     if (!prev.flags.nominal_length) {
         if (prev.feedrate_profile.entry < curr.feedrate_profile.entry) {
             float entry_speed = std::min(curr.feedrate_profile.entry, max_allowable_speed(-prev.acceleration, prev.feedrate_profile.entry, prev.distance));
@@ -3805,7 +3805,7 @@ void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
         TimeMachine::State& prev = machine.prev;
         std::vector<TimeBlock>& blocks = machine.blocks;
 
-        // m_feedrate ��gcode�н�����ã��ڱ�֤��С�ٶ����Ƶ�����¸���feedrate
+        // m_feedrate 从gcode中解析获得，在保证最小速度限制的情况下赋给feedrate
         curr.feedrate = (delta_pos[E] == 0.0f) ?
             minimum_travel_feedrate(static_cast<PrintEstimatedStatistics::ETimeMode>(i), m_feedrate) :
             minimum_feedrate(static_cast<PrintEstimatedStatistics::ETimeMode>(i), m_feedrate);
@@ -3828,7 +3828,7 @@ void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
         block.layer_id = std::max<unsigned int>(1, m_layer_id);
         block.flags.prepare_stage = m_processing_start_custom_gcode;
 
-        // calculates block acceleration�����㵱ǰblock������ܵ���ļ��ٶ�
+        // calculates block acceleration，计算当前block的最高能到达的加速度
         float acceleration =
             (type == EMoveType::Travel) ? get_travel_acceleration(static_cast<PrintEstimatedStatistics::ETimeMode>(i)) :
             (is_extrusion_only_move(delta_pos) ?
@@ -3862,7 +3862,7 @@ void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
         }
 
         // calculates block cruise feedrate
-        // �ٳ�ǰ���ϵ���������㵱ǰblock����ܵ�����ٶ�
+        // 刨除前后关系，单纯计算当前block最高能到达的速度
         float min_feedrate_factor = 1.0f;
         for (unsigned char a = X; a <= E; ++a) {
             curr.axis_feedrate[a] = curr.feedrate * delta_pos[a] * inv_distance;

@@ -2,6 +2,7 @@
 #include "I18N.hpp"
 #include "Widgets/Label.hpp"
 #include "MsgDialog.hpp"
+#include "QDTUtil.hpp"
 
 namespace Slic3r { namespace GUI {
 

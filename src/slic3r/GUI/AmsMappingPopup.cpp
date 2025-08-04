@@ -1354,7 +1354,7 @@ void AmsMapingPopup::add_ams_mapping(std::vector<TrayData> tray_data, bool remai
 
         // temp
         if (tray_data[i].type == EMPTY) {
-            m_mapping_item->set_data(m_tag_material, wxColour(0xCE, 0xCE, 0xCE), "-", remain_detect_flag, tray_data[i]);
+            m_mapping_item->set_data(m_tag_material, wxColour(0xEE, 0xEE, 0xEE), "-", remain_detect_flag, tray_data[i]);
             m_mapping_item->Bind(wxEVT_LEFT_DOWN, [this, tray_data, i, m_mapping_item](wxMouseEvent &e) {
 
                 if (!m_mapping_from_multi_machines) {
@@ -1392,7 +1392,7 @@ void AmsMapingPopup::add_ext_ams_mapping(TrayData tray_data, MappingItem* item)
             item->set_data(m_tag_material, tray_data.colour, tray_data.name, false, tray_data);
         }
         else {
-            item->set_data(m_tag_material, wxColour(0xEE, 0xEE, 0xEE), tray_data.name, false, tray_data, true);
+            item->set_data(m_tag_material, tray_data.colour, tray_data.name, false, tray_data, true);
             m_has_unmatch_filament = true;
         }
 
@@ -1507,8 +1507,8 @@ static void _DrawRemainArea(const MappingItem *item, const TrayData &dd, bool su
     int full_range_width = size.x;
 
     /*range background*/
-    dc.SetPen(wxColour(0xE4E4E4));
-    dc.SetBrush(wxColour(0xE4E4E4));
+    dc.SetPen(wxColour("#E4E4E4"));
+    dc.SetBrush(wxColour("#E4E4E4"));
     int bg_height = item->FromDIP(6);
     int bg_width  = full_range_width - (2 * x_margin);
     dc.DrawRoundedRectangle(x_margin, y_margin, bg_width, bg_height, item->FromDIP(2));
@@ -1565,7 +1565,10 @@ void MappingItem::render(wxDC &dc)
     dc.SetFont(::Label::Head_13);
 
     auto txt_colour = m_coloul.GetLuminance() < 0.6 ? *wxWHITE : wxColour(0x26, 0x2E, 0x30);
-    txt_colour      = m_unmatch ? wxColour(0xCE, 0xCE, 0xCE) : txt_colour;
+
+    if (m_unmatch || m_name == "-") { txt_colour = wxColour(0xCE, 0xCE, 0xCE); }
+   // txt_colour      = m_unmatch ? wxColour(0xCE, 0xCE, 0xCE) : txt_colour;
+
     if (m_coloul.Alpha() == 0) txt_colour = wxColour(0x26, 0x2E, 0x30);
     dc.SetTextForeground(txt_colour);
 
@@ -1598,7 +1601,7 @@ void MappingItem::set_data(const wxString &tag_name, wxColour colour, wxString n
             if (!m_name.IsEmpty() && (m_name != "-")) {
                 const wxString &msg = wxString::Format(_L("Note: the filament type(%s) does not match with the filament type(%s) in the slicing file. "
                                                           "If you want to use this slot, you can install %s instead of %s and change slot information on the 'Device' page."),
-                                                           m_name, tag_name, m_name, tag_name);
+                                                           m_name, tag_name, tag_name, m_name);
                 SetToolTip(msg);
             } else {
                 const wxString &msg = wxString::Format(_L("Note: the slot is empty or undefined. If you want to use this slot, you can install %s and change slot information on the 'Device' page."), tag_name);
@@ -1606,7 +1609,7 @@ void MappingItem::set_data(const wxString &tag_name, wxColour colour, wxString n
             }
 
         } else {
-            SetToolTip(_L("Note: Only the BOX slots loaded with the same material type can be selected."));
+            SetToolTip(_L("Note: Only filament-loaded slots can be selected."));
         }
     }
     else
@@ -1655,14 +1658,14 @@ void MappingItem::doRender(wxDC &dc)
             }
         }
     }
-    else if (color.Alpha() == 0 && !m_unmatch) {
+    else if (color.Alpha() == 0) {
         dc.DrawBitmap(m_transparent_mapping_item.bmp(), 0, (size.y - MAPPING_ITEM_REAL_SIZE.y) / 2 + get_remain_area_height());
     }
     else {
         dc.DrawRectangle(0, (size.y - MAPPING_ITEM_REAL_SIZE.y) / 2 + get_remain_area_height(), MAPPING_ITEM_REAL_SIZE.x, MAPPING_ITEM_REAL_SIZE.y);
     }
 
-    wxColour side_colour = wxColour(0xE4E4E4);
+    wxColour side_colour = wxColour("#E4E4E4");
 
     dc.SetPen(side_colour);
     dc.SetBrush(wxBrush(side_colour));
@@ -2012,14 +2015,14 @@ AmsIntroducePopup::AmsIntroducePopup(wxWindow* parent)
 
     m_staticText_top = new Label(this, _L("Do not Enable BOX"));
     m_staticText_top->SetFont(::Label::Head_13);
-   // m_staticText_top->SetForegroundColour(wxColour(0x323A3D));
+    // m_staticText_top->SetForegroundColour(wxColour("#323A3D"));
     m_staticText_top->Wrap(-1);
     bSizer4->Add(m_staticText_top, 0, wxALL, 5);
 
     m_staticText_bottom =  new Label(this, _L("Print using materials mounted on the back of the case"));
     m_staticText_bottom->Wrap(-1);
     m_staticText_bottom->SetFont(::Label::Body_13);
-    m_staticText_bottom->SetForegroundColour(wxColour(0x6B6B6B));
+    m_staticText_bottom->SetForegroundColour(wxColour("#6B6B6B"));
     bSizer4->Add(m_staticText_bottom, 0, wxALL, 5);
 
     wxBoxSizer* bSizer5;
@@ -2583,7 +2586,7 @@ void AmsRMGroup::doRender(wxDC& dc)
 
         dc.SetPen(*wxTRANSPARENT_PEN);
 
-        if (tray_color == *wxWHITE) dc.SetPen(wxPen(wxColour(0xEEEEEE), 2));
+      if (tray_color == *wxWHITE) dc.SetPen(wxPen(wxColour("#EEEEEE"), 2));
         dc.SetBrush(wxBrush(tray_color));
 
         int x = size.x / 2;
@@ -2633,14 +2636,14 @@ void AmsRMGroup::doRender(wxDC& dc)
         //draw tray
         dc.SetFont(::Label::Body_12);
         auto text_size = dc.GetTextExtent(tray_name);
-        dc.SetTextForeground(tray_color.GetLuminance() < 0.6 ? *wxWHITE : wxColour(0x262E30));
-        if (tray_color.Alpha() == 0) {dc.SetTextForeground(wxColour(0x262E30));}
+        dc.SetTextForeground(tray_color.GetLuminance() < 0.6 ? *wxWHITE : wxColour("#262E30"));
+        if (tray_color.Alpha() == 0) { dc.SetTextForeground(wxColour("#262E30")); }
 
         dc.DrawText(tray_name, x_center - text_size.x / 2, size.y - y_center - text_size.y / 2);
 
         //draw split line
         dc.SetPen(wxPen(*wxWHITE, 2));
-        if (tray_color.Alpha() == 0) {dc.SetPen(wxPen(wxColour(0xCECECE), 2));}
+        if (tray_color.Alpha() == 0) { dc.SetPen(wxPen(wxColour("#CECECE"), 2)); }
         dc.SetBrush(*wxTRANSPARENT_BRUSH);
         auto pos_sp_start = CalculateEndpoint(wxPoint(x, y), (360 - startAngle),  size.x / 2 - FromDIP(3));
         dc.DrawLine(wxPoint(x, y), pos_sp_start);
@@ -2664,7 +2667,7 @@ void AmsRMGroup::doRender(wxDC& dc)
     //dc.DrawBitmap(bitmap_backup_tips_1.bmp(), wxPoint((size.x - bitmap_backup_tips_1.GetBmpSize().x) / 2, (size.y - bitmap_backup_tips_1.GetBmpSize().y) / 2));
 
     //draw material
-    dc.SetTextForeground(wxColour(0x323A3D));
+    dc.SetTextForeground(wxColour("#323A3D"));
     dc.SetFont(Label::Head_15);
     auto text_size = dc.GetTextExtent(m_material_name);
     dc.DrawText(m_material_name, (size.x - text_size.x) / 2,(size.y - text_size.y) / 2 - FromDIP(12));
@@ -2738,7 +2741,7 @@ void AmsHumidityLevelList::doRender(wxDC& dc)
 
 
     //dry / wet
-    dc.SetTextForeground(wxColour(0x989898));
+    dc.SetTextForeground(wxColour("#989898"));
     dc.SetFont(::Label::Head_20);
 
     auto font_top = GetSize().y - dc.GetTextExtent(_L("DRY")).GetHeight();

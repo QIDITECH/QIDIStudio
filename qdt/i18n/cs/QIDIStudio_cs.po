@@ -15411,8 +15411,8 @@ msgstr "Úspěšně odesláno. Automatický přechod na stránku zařízení za 
 msgid "Successfully sent. Close current page in %s s."
 msgstr "Úspěšně odesláno. Uzavření aktuální stránky za %s s."
 
-msgid "The selected printer is not connect box, please check."
-msgstr "Vybraná tiskárna není připojena k BOXu, prosím zkontrolujte."
+msgid "The selected printer is not connected to the BOX or the filaments are not synchronized. Please check."
+msgstr "Vybraná tiskárna není připojena k BOX nebo filamenty nejsou synchronizovány. Prosím, zkontrolujte."
 
 msgid "Failed to set the box printing slot..."
 msgstr "Nastavení tiskového slotu BOXu selhalo..."
@@ -15461,3 +15461,12 @@ msgstr "Aktuální tiskárna právě tiskne"
 
 msgid "Please do not mix-use the Ext with BOX"
 msgstr "Prosím, nemíchejte Ext s BOX"
+
+msgid "Recommended box temperature"
+msgstr "Doporučená teplota boxu"
+
+msgid "Recommended box temperature range of this filament. 0 means no set"
+msgstr "Doporučený teplotní rozsah boxu pro toto vlákno. 0 znamená žádné nastavení."
+
+msgid "Set the temperature of the box during printing, set to 0 (representing off)."
+msgstr "Nastavte teplotu boxu během tisku. Nastavte na 0 (vypnuto)."

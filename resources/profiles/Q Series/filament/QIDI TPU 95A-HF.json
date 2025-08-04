@@ -22,5 +22,7 @@
     "pressure_advance": ["0.1"],
     "slow_down_layer_time": ["8"],
     "temperature_vitrification": ["30"],
+    "textured_plate_temp_initial_layer" : ["35"],
+    "textured_plate_temp" : ["35"],
     "compatible_printers": []
 }

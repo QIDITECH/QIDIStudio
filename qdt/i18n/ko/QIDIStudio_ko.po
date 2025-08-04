@@ -15099,8 +15099,8 @@ msgstr "성공적으로 전송되었습니다. %s초 후 장치 페이지로 자
 msgid "Successfully sent. Close current page in %s s."
 msgstr "성공적으로 전송되었습니다. %s초 후 현재 페이지를 닫습니다."
 
-msgid "The selected printer is not connect box, please check."
-msgstr "선택한 프린터가 BOX에 연결되지 않았습니다. 확인해 주세요."
+msgid "The selected printer is not connected to the BOX or the filaments are not synchronized. Please check."
+msgstr "선택한 프린터가 BOX에 연결되어 있지 않거나 필라멘트가 동기화되지 않았습니다. 확인해 주세요."
 
 msgid "Failed to set the box printing slot..."
 msgstr "BOX 인쇄 슬롯 설정에 실패했습니다..."
@@ -15149,3 +15149,12 @@ msgid "Current printer is printing now"​​
 
 msgid "Please do not mix-use the Ext with BOX"
 msgstr "Ext를 BOX와 혼용하지 마세요"
+
+msgid "Recommended box temperature"
+msgstr "권장 챔버 온도"
+
+msgid "Recommended box temperature range of this filament. 0 means no set"
+msgstr "이 필라멘트의 권장 챔버 온도 범위. 0은 미설정을 의미합니다"
+
+msgid "Set the temperature of the box during printing, set to 0 (representing off)."
+msgstr "프린팅 중 챔버 온도를 설정하세요. 0으로 설정(꺼짐)"

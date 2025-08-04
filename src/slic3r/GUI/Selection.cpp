@@ -812,6 +812,26 @@ bool Selection::is_sla_compliant() const
     return true;
 }
 
+bool Selection::has_emboss_shape() const
+{
+    if (!m_model) {
+        return false;
+    }
+
+    const int obj_idx = get_object_idx();
+    if (obj_idx < 0 || obj_idx >= m_model->objects.size()) {
+        return false;
+    }
+
+    const ModelVolumePtrs& obj_volumes = m_model->objects[obj_idx]->volumes;
+    for (size_t vol_idx = 0; vol_idx < obj_volumes.size(); vol_idx++) {
+        if (obj_volumes[vol_idx] && obj_volumes[vol_idx]->emboss_shape.has_value()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool Selection::contains_all_volumes(const std::vector<unsigned int>& volume_idxs) const
 {
     for (unsigned int i : volume_idxs) {
@@ -896,6 +916,15 @@ const GLVolume *Selection::get_volume_by_object_volumn_id(unsigned int volume_id
     }
     return nullptr;
 }
+
+const GLVolume* Selection::get_first_volume() const
+{
+    if (!m_list.size()) {
+        return nullptr;
+    }
+    return get_volume(*m_list.begin());
+}
+
 const BoundingBoxf3& Selection::get_bounding_box() const
 {
     if (!m_bounding_box.has_value()) {
@@ -1629,11 +1658,6 @@ void Selection::scale_and_translate(const Vec3d &scale, const Vec3d &world_trans
             } else
                 transform_instance_relative(v, volume_data, transformation_type, Geometry::translation_transform(world_translation) * Geometry::scale_transform(relative_scale),
                                             m_cache.dragging_center);
-            // update the instance assemble transform
-            ModelObject *            object             = m_model->objects[v.object_idx()];
-            Geometry::Transformation assemble_transform = object->instances[v.instance_idx()]->get_assemble_transformation();
-            assemble_transform.set_scaling_factor(v.get_instance_scaling_factor());
-            object->instances[v.instance_idx()]->set_assemble_transformation(assemble_transform);
         } else {
             if (!is_single_volume_or_modifier()) {
                 assert(transformation_type.world());

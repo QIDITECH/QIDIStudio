@@ -342,6 +342,7 @@ public:
     static const ImVec4 COL_BUTTON_ACTIVE;
 
     //QDS add more colors
+    static const ImVec4 COL_WHITE;
     static const ImVec4 COL_RED;
     static const ImVec4 COL_GREEN;
     static const ImVec4 COL_BLUE;
@@ -355,6 +356,7 @@ public:
     static const ImVec4 COL_SEPARATOR;
     static const ImVec4 COL_SEPARATOR_DARK;
     static const ImVec4 COL_QIDI;
+    static const ImVec4 COL_QIDI_CHANGE;
     //QDS
     static void on_change_color_mode(bool is_dark);
     static void push_toolbar_style(const float scale);

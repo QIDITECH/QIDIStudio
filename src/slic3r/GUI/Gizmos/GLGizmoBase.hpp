@@ -6,6 +6,7 @@
 
 #include "slic3r/GUI/I18N.hpp"
 #include "slic3r/GUI/3DScene.hpp"
+#include "slic3r/GUI/Gizmos/GLGizmosCommon.hpp"
 
 #include <cereal/archives/binary.hpp>
 
@@ -13,6 +14,7 @@
 #include <wx/timer.h>
 
 #include <chrono>
+#include <string>
 
 #define ENABLE_FIXED_GRABBER 1
 
@@ -27,7 +29,6 @@ class ModelObject;
 namespace GUI {
 #define MAX_NUM 9999.99
 #define MAX_SIZE "9999.99"
-
 
 class ImGuiWrapper;
 class GLCanvas3D;
@@ -60,6 +61,7 @@ public:
 
     static void update_render_colors();
     static void load_render_colors();
+
 
     struct Grabber
     {
@@ -119,7 +121,6 @@ protected:
     int m_group_id;
     EState m_state;
     int m_shortcut_key;
-    std::string m_icon_filename;
     unsigned int m_sprite_id;
     int m_hover_id;
     enum GripperType {
@@ -150,8 +151,10 @@ protected:
     mutable GLModel m_cylinder;
     GLModel m_sphere;
     GLModel m_cross_mark;
+    GLModel m_lines_mark;
 
     bool m_is_dark_mode = false;
+    bool m_is_serializing = false;
 
     std::chrono::system_clock::time_point start;
     enum DoubleShowType {
@@ -175,12 +178,12 @@ protected:
                                               DoubleShowType               show_type = DoubleShowType::Normal);
     bool render_combo(const std::string &label, const std::vector<std::string> &lines,
         size_t &selection_idx, float label_width, float item_width);
-    void render_cross_mark(const Transform3d& matrix, const Vec3f& target);
+    void render_cross_mark(const Transform3d& matrix, const Vec3f& target,bool single =false);
+    void render_lines(const std::vector<Vec3d> &points);
     static float get_grabber_size();
 
 public:
     GLGizmoBase(GLCanvas3D& parent,
-                const std::string& icon_filename,
                 unsigned int sprite_id);
     virtual ~GLGizmoBase() {}
 
@@ -196,11 +199,10 @@ public:
 
     EState get_state() const { return m_state; }
     void set_state(EState state);
+    void set_serializing(bool is_serializing);
     int get_shortcut_key() const { return m_shortcut_key; }
 
-    const std::string& get_icon_filename() const { return m_icon_filename; }
-
-    void set_icon_filename(const std::string& filename);
+    virtual std::string get_icon_filename(bool b_dark_mode) const = 0;
 
     bool is_activable() const { return on_is_activable(); }
     bool is_selectable() const { return on_is_selectable(); }
@@ -248,6 +250,8 @@ public:
     int get_count() { return ++count; }
 
     virtual BoundingBoxf3 get_bounding_box() const;
+
+    virtual bool gizmo_event(SLAGizmoEventType action, const Vec2d& mouse_position, bool shift_down, bool alt_down, bool control_down);
 
     static void  render_glmodel(GLModel &model, const std::array<float, 4> &color, Transform3d view_model_matrix, const Transform3d& projection_matrix, bool for_picking = false, float emission_factor = 0.0f);
 protected:

@@ -8,12 +8,14 @@
 
 #include "libslic3r/Model.hpp"
 #include "../GUI/MsgDialog.hpp"
+#include "QDTUtil.hpp"
 
 
 namespace Slic3r {
 namespace GUI {
 const float MIN_PA_K_VALUE = 0.0;
 const float MAX_PA_K_VALUE = 2.0;
+static const float MIN_PA_K_VALUE_STEP = 0.001;
 
 std::shared_ptr<PrintJob> CalibUtils::print_job;
 wxString wxstr_temp_dir = fs::path(fs::temp_directory_path() / "calib").wstring();
@@ -72,6 +74,19 @@ wxString get_nozzle_volume_type_name(NozzleVolumeType type)
         return _L("High Flow");
     }
     return wxString();
+}
+
+bool is_pa_params_valid(const Calib_Params &params)
+{
+    if (params.start < MIN_PA_K_VALUE || params.end > MAX_PA_K_VALUE || params.step < MIN_PA_K_VALUE_STEP || params.end < params.start + params.step) {
+        MessageDialog msg_dlg(nullptr,
+                              wxString::Format(_L("Please input valid values:\nStart value: >= %.1f\nEnd value: <= %.1f\nEnd value: > Start value\nValue step: >= %.3f)"),
+                                               MIN_PA_K_VALUE, MAX_PA_K_VALUE, MIN_PA_K_VALUE_STEP),
+                              wxEmptyString, wxICON_WARNING | wxOK);
+        msg_dlg.ShowModal();
+        return false;
+    }
+    return true;
 }
 
 void get_tray_ams_and_slot_id(MachineObject* obj, int in_tray_id, int &ams_id, int &slot_id, int &tray_id)
@@ -970,6 +985,7 @@ void CalibUtils::calib_max_vol_speed(const CalibInfo &calib_info, wxString &erro
     filament_config.set_key_value("curr_bed_type", new ConfigOptionEnum<BedType>(calib_info.bed_type));
 
     print_config.set_key_value("enable_overhang_speed", new ConfigOptionBoolsNullable{false});
+    print_config.set_key_value("enable_height_slowdown", new ConfigOptionBoolsNullable{ false });
     print_config.set_key_value("timelapse_type", new ConfigOptionEnum<TimelapseType>(tlTraditional));
     print_config.set_key_value("wall_loops", new ConfigOptionInt(1));
     print_config.set_key_value("top_shell_layers", new ConfigOptionInt(0));
@@ -1035,6 +1051,7 @@ void CalibUtils::calib_VFA(const CalibInfo &calib_info, wxString &error_message)
     filament_config.set_key_value("curr_bed_type", new ConfigOptionEnum<BedType>(calib_info.bed_type));
 
     print_config.set_key_value("enable_overhang_speed", new ConfigOptionBoolsNullable{false});
+    print_config.set_key_value("enable_height_slowdown", new ConfigOptionBoolsNullable{ false });
     print_config.set_key_value("timelapse_type", new ConfigOptionEnum<TimelapseType>(tlTraditional));
     print_config.set_key_value("wall_loops", new ConfigOptionInt(1));
     print_config.set_key_value("top_shell_layers", new ConfigOptionInt(0));
@@ -1456,7 +1473,7 @@ void CalibUtils::send_to_print(const CalibInfo &calib_info, wxString &error_mess
         j["print"]["print_numbers"]   = calib_info.params.print_numbers;
         j["print"]["flow_ratio_mode"] = flow_ratio_mode;
         j["print"]["tray_id"]         = calib_info.select_ams;
-        j["print"]["dev_id"]          = calib_info.dev_id;
+        j["print"]["dev_id"]          = QDTCrossTalk::Crosstalk_DevId(calib_info.dev_id);
         j["print"]["bed_type"]        = calib_info.bed_type;
         j["print"]["printer_prest"]   = calib_info.printer_prest ? calib_info.printer_prest->name : "";
         j["print"]["filament_prest"]  = calib_info.filament_prest ? calib_info.filament_prest->name : "";
@@ -1551,7 +1568,7 @@ void CalibUtils::send_to_print(const CalibInfo &calib_info, wxString &error_mess
     print_job->set_calibration_task(true);
 
     print_job->has_sdcard = obj_->get_sdcard_state() == MachineObject::SdcardState::HAS_SDCARD_NORMAL;
-    print_job->set_print_config(MachineBedTypeString[bed_type], true, false, false, false, true, 0, 0, 0);
+    print_job->set_print_config(MachineBedTypeString[bed_type], true, false, false, false, true, false, 0, 0, 0);
     print_job->set_print_job_finished_event(wxGetApp().plater()->get_send_calibration_finished_event(), print_job->m_project_name);
 
     {  // after send: record the print job

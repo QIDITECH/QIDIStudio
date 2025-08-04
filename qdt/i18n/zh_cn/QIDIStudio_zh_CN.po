@@ -21055,8 +21055,8 @@ msgstr "发送成功。%s秒后将自动跳转至设备页面。"
 msgid "Successfully sent. Close current page in %s s."
 msgstr "发送成功。%s秒后将关闭当前页面。"
 
-msgid "The selected printer is not connect box, please check."
-msgstr "所选打印机未连接BOX，请检查。"
+msgid "The selected printer is not connected to the BOX or the filaments are not synchronized. Please check."
+msgstr "所选打印机未连接到BOX或耗材未同步。请检查。"
 
 msgid "Failed to set the box printing slot..."
 msgstr "设置BOX打印槽位失败..."
@@ -21105,3 +21105,12 @@ msgstr "当前打印机正在打印中"
 
 msgid "Please do not mix-use the Ext with BOX"
 msgstr "请勿将Ext与BOX混用"
+
+msgid "Recommended box temperature"
+msgstr "推荐盒子温度"
+
+msgid "Recommended box temperature range of this filament. 0 means no set"
+msgstr "该耗材推荐的盒子温度范围。0表示未设置"
+
+msgid "Set the temperature of the box during printing, set to 0 (representing off)."
+msgstr "设置打印过程中的盒子温度，设为0（表示关闭）"

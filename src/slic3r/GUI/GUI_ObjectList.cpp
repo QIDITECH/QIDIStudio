@@ -4,6 +4,7 @@
 #include "GUI_Factories.hpp"
 //#include "GUI_ObjectLayers.hpp"
 #include "GUI_App.hpp"
+#include "GLToolbar.hpp"
 #include "I18N.hpp"
 #include "Plater.hpp"
 #include "BitmapComboBox.hpp"
@@ -211,7 +212,7 @@ ObjectList::ObjectList(wxWindow* parent) :
     {
         // Accelerators
         // 	wxAcceleratorEntry entries[25];
-        wxAcceleratorEntry entries[26];
+        wxAcceleratorEntry entries[27];
         int index = 0;
         entries[index++].Set(wxACCEL_CTRL, (int)'C', wxID_COPY);
         entries[index++].Set(wxACCEL_CTRL, (int)'X', wxID_CUT);
@@ -220,6 +221,7 @@ ObjectList::ObjectList(wxWindow* parent) :
         entries[index++].Set(wxACCEL_CTRL, (int)'A', wxID_SELECTALL);
         entries[index++].Set(wxACCEL_CTRL, (int)'Z', wxID_UNDO);
         entries[index++].Set(wxACCEL_CTRL, (int)'Y', wxID_REDO);
+        entries[index++].Set(wxACCEL_CTRL | wxACCEL_SHIFT, (int)'Z', wxID_REDO);
         entries[index++].Set(wxACCEL_NORMAL, WXK_BACK, wxID_DELETE);
         //entries[index++].Set(wxACCEL_NORMAL, int('+'), wxID_ADD);
         //entries[index++].Set(wxACCEL_NORMAL, WXK_NUMPAD_ADD, wxID_ADD);
@@ -234,7 +236,7 @@ ObjectList::ObjectList(wxWindow* parent) :
             numbers_cnt++;
             // index++;
         }
-        wxAcceleratorTable accel(26, entries);
+        wxAcceleratorTable accel(27, entries);
         SetAcceleratorTable(accel);
 
         this->Bind(wxEVT_MENU, [this](wxCommandEvent &evt) { this->copy();                      }, wxID_COPY);
@@ -374,6 +376,7 @@ void ObjectList::create_objects_ctrl()
     m_columns_width[colPrint] = 3;
     m_columns_width[colFilament] = 5;
     m_columns_width[colSupportPaint] = 3;
+    m_columns_width[colFuzzySkin]    = 3;
     m_columns_width[colSinking] = 3;
     m_columns_width[colColorPaint] = 3;
     m_columns_width[colEditing] = 3;
@@ -418,6 +421,7 @@ void ObjectList::create_objects_ctrl()
     // QDS
     AppendBitmapColumn(" ", colSupportPaint, wxOSX ? wxDATAVIEW_CELL_EDITABLE : wxDATAVIEW_CELL_INERT, m_columns_width[colSupportPaint] * em,
         wxALIGN_CENTER_HORIZONTAL, 0);
+    AppendBitmapColumn(" ", colFuzzySkin, wxOSX ? wxDATAVIEW_CELL_EDITABLE : wxDATAVIEW_CELL_INERT, m_columns_width[colFuzzySkin] * em, wxALIGN_CENTER_HORIZONTAL, 0);
     AppendBitmapColumn(" ", colColorPaint, wxOSX ? wxDATAVIEW_CELL_EDITABLE : wxDATAVIEW_CELL_INERT, m_columns_width[colColorPaint] * em,
         wxALIGN_CENTER_HORIZONTAL, 0);
     AppendBitmapColumn(" ", colSinking, wxOSX ? wxDATAVIEW_CELL_EDITABLE : wxDATAVIEW_CELL_INERT, m_columns_width[colSinking] * em,
@@ -599,6 +603,10 @@ void ObjectList::set_tooltip_for_item(const wxPoint& pt)
     else if (col->GetModelColumn() == (unsigned int)colSupportPaint) {
         if (node->HasSupportPainting())
             tooltip = _(L("Click the icon to edit support painting of the object"));
+
+    } else if (col->GetModelColumn() == (unsigned int) colFuzzySkin) {
+        if (node->HasFuzzySkinPainting())
+            tooltip = _(L("Click the icon to edit fuzzy skin painting of the object"));
 
     }
     else if (col->GetModelColumn() == (unsigned int)colColorPaint) {
@@ -1013,6 +1021,12 @@ void ObjectList::set_color_paint_hidden(const bool hide) const
 void ObjectList::set_support_paint_hidden(const bool hide) const
 {
     GetColumn(colSupportPaint)->SetHidden(hide);
+    update_name_column_width();
+}
+
+void GUI::ObjectList::set_fuzzy_skin_paint_hidden(const bool hide) const
+{
+    GetColumn(colFuzzySkin)->SetHidden(hide);
     update_name_column_width();
 }
 
@@ -1447,6 +1461,17 @@ void ObjectList::list_manipulation(const wxPoint& mouse_pos, bool evt_context_me
                 else
                     gizmos_mgr.reset_all_states();
             }
+        } else if (col_num == colFuzzySkin) {
+            if (wxGetApp().plater()->get_current_canvas3D()->get_canvas_type() != GLCanvas3D::CanvasAssembleView) {
+                ObjectDataViewModelNode *node = (ObjectDataViewModelNode *) item.GetID();
+                if (node && node->HasFuzzySkinPainting()) {
+                    GLGizmosManager &gizmos_mgr = wxGetApp().plater()->get_view3D_canvas3D()->get_gizmos_manager();
+                    if (gizmos_mgr.get_current_type() != GLGizmosManager::EType::FuzzySkin)
+                        gizmos_mgr.open_gizmo(GLGizmosManager::EType::FuzzySkin);
+                    else
+                        gizmos_mgr.reset_all_states();
+                }
+            }
         }
         else if (col_num == colColorPaint) {
             if (wxGetApp().plater()->get_current_canvas3D()->get_canvas_type() != GLCanvas3D::CanvasAssembleView) {
@@ -1543,9 +1568,13 @@ void ObjectList::show_context_menu(const bool evt_context_menu)
                     get_selected_item_indexes(obj_idx, vol_idx, item);
                     if (obj_idx < 0 || vol_idx < 0) return;
                     const ModelVolume *volume = object(obj_idx)->volumes[vol_idx];
-
-                    menu = volume->is_svg() ? plater->svg_part_menu() : // ORCA fixes missing "Edit SVG" item for Add/Negative/Modifier SVG objects in object list
-                           plater->part_menu();
+                    if (volume->is_text()) {
+                        menu = plater->text_part_menu();
+                    } else if (volume->is_svg()) {
+                        menu = plater->svg_part_menu();
+                    } else {
+                        menu = plater->part_menu();
+                    }
                 }
                 else {
                     menu = type & itPlate    ? plater->plate_menu() :
@@ -2364,8 +2393,8 @@ void ObjectList::load_generic_subobject(const std::string& type_name, const Mode
     // First (any) GLVolume of the selected instance. They all share the same instance matrix.
     const GLVolume* v = selection.get_volume(*selection.get_volume_idxs().begin());
     // Transform the new modifier to be aligned with the print bed.
-	const BoundingBoxf3 mesh_bb = new_volume->mesh().bounding_box();
-    new_volume->set_transformation(Geometry::Transformation::volume_to_bed_transformation(v->get_instance_transformation(), mesh_bb));
+    new_volume->set_transformation(v->get_instance_transformation().get_matrix_no_offset().inverse());
+    const BoundingBoxf3 mesh_bb = new_volume->mesh().bounding_box();
     // Set the modifier position.
     auto offset = (type_name == "Slab") ?
         // Slab: Lift to print bed
@@ -2486,10 +2515,10 @@ void GUI::ObjectList::add_new_model_object_from_old_object() {
     new_object->config.set_key_value("extruder", new ConfigOptionInt(min_extruder));
     new_object->invalidate_bounding_box();
     new_object->instances[0]->set_transformation(mo->instances[0]->get_transformation());
-    // BBS: backup
+    // QDS: backup
     Slic3r::save_object_mesh(*new_object);
     new_object->ensure_on_bed();
-    // BBS init assmeble transformation
+    // QDS init assmeble transformation
     new_object->get_model()->set_assembly_pos(new_object);
     object_idxs.push_back(model.objects.size() - 1);
     paste_objects_into_list(object_idxs);
@@ -2739,7 +2768,12 @@ void ObjectList::del_info_item(const int obj_idx, InfoItemType type)
         for (ModelVolume* mv : (*m_objects)[obj_idx]->volumes)
             mv->supported_facets.reset();
         break;
-
+    case InfoItemType::FuzzySkin:
+        cnv->get_gizmos_manager().reset_all_states();
+        Plater::TakeSnapshot(plater, "Remove fuzzy skin painting");
+        for (ModelVolume *mv : (*m_objects)[obj_idx]->volumes)
+            mv->fuzzy_skin_facets.reset();
+        break;
     // QDS: remove CustomSeam
     case InfoItemType::MmuSegmentation:
         cnv->get_gizmos_manager().reset_all_states();
@@ -3154,7 +3188,9 @@ void ObjectList::merge(bool to_multipart_object)
                 auto option = new_volume->config.option("extruder");
                 if (!option) {
                     auto opt = object->config.option("extruder");
-                    if (opt) { new_volume->config.set_key_value("extruder", new ConfigOptionInt(opt->getInt())); }
+                    if (opt) {
+                        new_volume->config.set_key_value("extruder", new ConfigOptionInt(opt->getInt()));
+                    }
                 }
                 new_volume->mmu_segmentation_facets.assign(std::move(volume->mmu_segmentation_facets));
             }
@@ -3402,6 +3438,9 @@ bool ObjectList::get_volume_by_item(const wxDataViewItem& item, ModelVolume*& vo
     auto obj_idx = get_selected_obj_idx();
     if (!item || obj_idx < 0)
         return false;
+    if (m_objects->size() <= obj_idx) {
+        return false;
+    }
     const auto volume_id = m_objects_model->GetVolumeIdByItem(item);
     const bool split_part = m_objects_model->GetItemType(item) == itVolume;
 
@@ -3432,6 +3471,9 @@ bool ObjectList::is_splittable(bool to_objects)
             auto obj_idx = get_selected_obj_idx();
             if (obj_idx < 0)
                 return false;
+            if (m_objects->size() <= obj_idx) {
+                return false;
+            }
             if ((*m_objects)[obj_idx]->volumes.size() > 1)
                 return true;
             return (*m_objects)[obj_idx]->volumes[0]->is_splittable();
@@ -3707,24 +3749,25 @@ void ObjectList::part_selection_changed()
 
                 if (type == itInfo) {
                     InfoItemType info_type = m_objects_model->GetInfoItemType(item);
-                    switch (info_type)
-                    {
-                    case InfoItemType::CustomSupports:
-                    // QDS: remove CustomSeam
-                    //case InfoItemType::CustomSeam:
-                    case InfoItemType::MmuSegmentation:
-                    {
-                        GLGizmosManager::EType gizmo_type = info_type == InfoItemType::CustomSupports ? GLGizmosManager::EType::FdmSupports :
-                                                            /*info_type == InfoItemType::CustomSeam ? GLGizmosManager::EType::Seam :*/
-                                                            GLGizmosManager::EType::MmuSegmentation;
-                        GLGizmosManager& gizmos_mgr = wxGetApp().plater()->get_view3D_canvas3D()->get_gizmos_manager();
-                        if (gizmos_mgr.get_current_type() != gizmo_type)
-                            gizmos_mgr.open_gizmo(gizmo_type);
-                        break;
+                    GLGizmosManager::EType gizmo_type = GLGizmosManager::EType::Undefined;
+                    switch (info_type){
+                        case InfoItemType::CustomSupports: {
+                            gizmo_type = GLGizmosManager::EType::FdmSupports;
+                            break;
+                        }
+                        case InfoItemType::FuzzySkin: {
+                            gizmo_type = GLGizmosManager::EType::FuzzySkin;
+                            break;
+                        }
+                        case InfoItemType::MmuSegmentation:{
+                            gizmo_type = GLGizmosManager::EType::MmuSegmentation;
+                            break;
+                        }
+                        default: { break; }
                     }
-                    // QDS: remove Sinking
-                    //case InfoItemType::Sinking: { break; }
-                    default: { break; }
+                    GLGizmosManager &gizmos_mgr = wxGetApp().plater()->get_view3D_canvas3D()->get_gizmos_manager();
+                    if (gizmos_mgr.get_current_type() != gizmo_type) {
+                        gizmos_mgr.open_gizmo(gizmo_type);
                     }
                 } else {
                     // QDS: select object to edit config
@@ -3990,7 +4033,19 @@ void ObjectList::update_info_items(size_t obj_idx, wxDataViewItemArray *selectio
             m_objects_model->SetSupportPaintState(true, item_obj,true);
         }
     }
-
+    {
+        bool shows       = m_objects_model->IsFuzzySkinPainted(item_obj);
+        bool should_show = printer_technology() == ptFFF &&
+                           std::any_of(model_object->volumes.begin(), model_object->volumes.end(), [](const ModelVolume *mv) { return !mv->fuzzy_skin_facets.empty(); });
+        if (shows && !should_show) {
+            m_objects_model->SetFuzzySkinPaintState(false, item_obj);
+        } else if (!shows && should_show) {
+            m_objects_model->SetFuzzySkinPaintState(true, item_obj);
+        }
+        if (color_mode_changed && shows) {
+            m_objects_model->SetFuzzySkinPaintState(true, item_obj, true);
+        }
+    }
     {
         bool shows = m_objects_model->IsColorPainted(item_obj);
         bool should_show = printer_technology() == ptFFF
@@ -4045,7 +4100,26 @@ void ObjectList::update_info_items(size_t obj_idx, wxDataViewItemArray *selectio
             this->set_support_paint_hidden(false);
         }
     }
+    {
+        bool shows       = this->GetColumn(colFuzzySkin)->IsShown();
+        bool should_show = false;
+        for (ModelObject *mo : *m_objects) {
+            for (ModelVolume *mv : mo->volumes) {
+                if (!mv->fuzzy_skin_facets.empty()) {
+                    should_show = true;
+                    break;
+                }
+            }
+            if (should_show)
+                break;
+        }
 
+        if (shows && !should_show) {
+            this->set_fuzzy_skin_paint_hidden(true);
+        } else if (!shows && should_show) {
+            this->set_fuzzy_skin_paint_hidden(false);
+        }
+    }
     {
         bool shows = this->GetColumn(colColorPaint)->IsShown();
         bool should_show = false;
@@ -5941,6 +6015,9 @@ void ObjectList::fix_through_netfabb()
 void ObjectList::simplify()
 {
     auto plater = wxGetApp().plater();
+    if (!plater) {
+        return;
+    }
     GLGizmosManager& gizmos_mgr = plater->get_view3D_canvas3D()->get_gizmos_manager();
 
     // Do not simplify when a gizmo is open. There might be issues with updates
@@ -5984,6 +6061,7 @@ void ObjectList::msw_rescale()
     GetColumn(colFilament)->SetWidth( 5 * em);
     // QDS
     GetColumn(colSupportPaint)->SetWidth(3 * em);
+    GetColumn(colFuzzySkin)->SetWidth(3 * em);
     GetColumn(colColorPaint)->SetWidth(3 * em);
     GetColumn(colSinking)->SetWidth(3 * em);
     GetColumn(colEditing )->SetWidth( 3 * em);
@@ -6041,12 +6119,17 @@ void ObjectList::OnEditingStarted(wxDataViewEvent &event)
     event.Veto(); // Not edit with NSTableView's text
     auto col = event.GetColumn();
     auto item = event.GetItem();
-    if (col == colPrint) {
+    const auto p_plater = wxGetApp().plater();
+    if (col == colHeight) {
+        enable_layers_editing();
+        return;
+    }
+    else if (col == colPrint) {
         toggle_printable_state();
         return;
     } else if (col == colSupportPaint) {
         ObjectDataViewModelNode* node = (ObjectDataViewModelNode*)item.GetID();
-        if (node->HasSupportPainting()) {
+        if (node && node->HasSupportPainting()) {
             GLGizmosManager& gizmos_mgr = wxGetApp().plater()->get_view3D_canvas3D()->get_gizmos_manager();
             if (gizmos_mgr.get_current_type() != GLGizmosManager::EType::FdmSupports)
                 gizmos_mgr.open_gizmo(GLGizmosManager::EType::FdmSupports);
@@ -6054,10 +6137,20 @@ void ObjectList::OnEditingStarted(wxDataViewEvent &event)
                 gizmos_mgr.reset_all_states();
         }
         return;
+    } else if (col == colFuzzySkin) {
+        ObjectDataViewModelNode *node = (ObjectDataViewModelNode *) item.GetID();
+        if (node && node->HasFuzzySkinPainting()) {
+            GLGizmosManager &gizmos_mgr = wxGetApp().plater()->get_view3D_canvas3D()->get_gizmos_manager();
+            if (gizmos_mgr.get_current_type() != GLGizmosManager::EType::FuzzySkin)
+                gizmos_mgr.open_gizmo(GLGizmosManager::EType::FuzzySkin);
+            else
+                gizmos_mgr.reset_all_states();
+        }
+        return;
     }
     else if (col == colColorPaint) {
         ObjectDataViewModelNode* node = (ObjectDataViewModelNode*)item.GetID();
-        if (node->HasColorPainting()) {
+        if (node && node->HasColorPainting()) {
             GLGizmosManager& gizmos_mgr = wxGetApp().plater()->get_view3D_canvas3D()->get_gizmos_manager();
             if (gizmos_mgr.get_current_type() != GLGizmosManager::EType::MmuSegmentation)
                 gizmos_mgr.open_gizmo(GLGizmosManager::EType::MmuSegmentation);
@@ -6437,11 +6530,6 @@ ModelObject* ObjectList::object(const int obj_idx) const
         return nullptr;
 
     return (*m_objects)[obj_idx];
-}
-
-bool ObjectList::has_paint_on_segmentation()
-{
-    return m_objects_model->HasInfoItem(InfoItemType::MmuSegmentation);
 }
 
 void ObjectList::apply_object_instance_transfrom_to_all_volumes(ModelObject *model_object, bool need_update_assemble_matrix)

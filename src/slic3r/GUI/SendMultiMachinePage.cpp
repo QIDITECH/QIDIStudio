@@ -478,7 +478,7 @@ QDT::PrintParams SendMultiMachinePage::request_params(MachineObject* obj)
     if (&job_data) {
         std::string temp_file = Slic3r::resources_dir() + "/check_access_code.txt";
         auto check_access_code_path = temp_file.c_str();
-        BOOST_LOG_TRIVIAL(trace) << "sned_job: check_access_code_path = " << check_access_code_path;
+        //BOOST_LOG_TRIVIAL(trace) << "sned_job: check_access_code_path = " << check_access_code_path;
         job_data._temp_path = fs::path(check_access_code_path);
     }
 
@@ -517,8 +517,39 @@ QDT::PrintParams SendMultiMachinePage::request_params(MachineObject* obj)
         params.ams_mapping_info = mapping_info;
     }
     else {
-        params.ams_mapping = "";
-        params.ams_mapping_info = "";
+        std::string temp;
+        std::string ams_array;
+        std::string ams_array2;
+        std::string mapping_info;
+
+        // change to old version
+        for(auto &info : m_ams_mapping_result){
+            info.tray_id = VIRTUAL_TRAY_DEPUTY_ID;
+            info.ams_id = VIRTUAL_AMS_DEPUTY_ID_STR;
+            info.slot_id = "0";
+        }
+        get_ams_mapping_result(ams_array, temp, mapping_info);
+
+        // change to new version
+        for(auto &info : m_ams_mapping_result){
+            info.tray_id = VIRTUAL_TRAY_DEPUTY_ID;
+            info.ams_id = VIRTUAL_AMS_MAIN_ID_STR;
+            info.slot_id = "0";
+        }
+        temp.clear();
+        mapping_info.clear();
+        get_ams_mapping_result(temp, ams_array2, mapping_info);
+
+        // restore
+        for(auto &info : m_ams_mapping_result){
+            info.tray_id = 0;
+            info.ams_id = "";
+            info.slot_id = "";
+        }
+
+        params.ams_mapping = ams_array;
+        params.ams_mapping2 = ams_array2;
+        params.ams_mapping_info = mapping_info;
     }
     
     params.connection_type = obj->connection_type();

@@ -152,6 +152,7 @@ const ImVec4 ImGuiWrapper::COL_BUTTON_HOVERED    = COL_ORANGE_LIGHT;
 const ImVec4 ImGuiWrapper::COL_BUTTON_ACTIVE     = ImGuiWrapper::COL_BUTTON_HOVERED;
 
 //QDS //B
+const ImVec4 ImGuiWrapper::COL_WHITE             = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 const ImVec4 ImGuiWrapper::COL_RED               = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
 const ImVec4 ImGuiWrapper::COL_GREEN             = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
 const ImVec4 ImGuiWrapper::COL_BLUE              = ImVec4(0.0f, 0.0f, 1.0f, 1.0f);
@@ -165,6 +166,7 @@ const ImVec4 ImGuiWrapper::COL_TITLE_BG          = { 0.745f, 0.745f, 0.745f, 1.0
 const ImVec4 ImGuiWrapper::COL_WINDOW_BG         = { 1.000f, 1.000f, 1.000f, 1.0f };
 const ImVec4 ImGuiWrapper::COL_WINDOW_BG_DARK    = { 45 / 255.f, 45 / 255.f, 49 / 255.f, 1.f };
 const ImVec4 ImGuiWrapper::COL_QIDI             = {68.0f/ 255.0f, 121.0f / 255.0f, 251.0f / 255, 1.0f};
+const ImVec4 ImGuiWrapper::COL_QIDI_CHANGE      = {1.0f, 111.0 / 255.0f, 0.0f / 255, 1.0f};
 
 int ImGuiWrapper::TOOLBAR_WINDOW_FLAGS = ImGuiWindowFlags_AlwaysAutoResize
                                  | ImGuiWindowFlags_NoMove
@@ -2947,6 +2949,10 @@ void ImGuiWrapper::render_draw_data(ImDrawData *draw_data)
         0.0f, 0.0f, 0.0f, 1.0f;
     shader->set_uniform("Texture", 0);
     shader->set_uniform("ProjMtx", ortho_projection);
+
+    const uint8_t stage = 0;
+    shader->set_uniform("s_texture", stage);
+
     // Will project scissor/clipping rectangles into framebuffer space
     const ImVec2 clip_off = draw_data->DisplayPos;       // (0,0) unless using multi-viewports
     const ImVec2 clip_scale = draw_data->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
@@ -2994,6 +3000,7 @@ void ImGuiWrapper::render_draw_data(ImDrawData *draw_data)
                 // Apply scissor/clipping rectangle (Y is inverted in OpenGL)
                 glsafe(::glScissor((int)clip_min.x, (int)(fb_height - clip_max.y), (int)(clip_max.x - clip_min.x), (int)(clip_max.y - clip_min.y)));
                 // Bind texture, Draw
+                glsafe(::glActiveTexture(GL_TEXTURE0 + stage));
                 glsafe(::glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->GetTexID()));
                 glsafe(::glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx))));
             }
@@ -3013,6 +3020,7 @@ void ImGuiWrapper::render_draw_data(ImDrawData *draw_data)
     glsafe(::glDisable(GL_SCISSOR_TEST));
     glsafe(::glEnable(GL_CULL_FACE));
     glsafe(::glEnable(GL_DEPTH_TEST));
+    glsafe(::glDisable(GL_BLEND));
 
     wxGetApp().unbind_shader();
 

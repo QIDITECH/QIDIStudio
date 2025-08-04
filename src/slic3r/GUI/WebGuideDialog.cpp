@@ -412,7 +412,7 @@ void GuideFrame::OnScriptMessage(wxWebViewEvent &evt)
             //wxString strJS = wxString::Format("HandleStudio(%s)", m_Res.dump(-1, ' ', false, json::error_handler_t::ignore));
             wxString strJS = wxString::Format("HandleStudio(%s)", m_Res.dump(-1, ' ', true));
 
-            BOOST_LOG_TRIVIAL(trace) << "GuideFrame::OnScriptMessage;request_userguide_profile:" << strJS.c_str();
+            //BOOST_LOG_TRIVIAL(trace) << "GuideFrame::OnScriptMessage;request_userguide_profile:" << strJS.c_str();
             wxGetApp().CallAfter([this,strJS] { RunScript(strJS); });
         }
         else if (strCmd == "request_custom_filaments") {
@@ -887,10 +887,15 @@ bool GuideFrame::apply_config(AppConfig *app_config, PresetBundle *preset_bundle
                 variant = *model_it.second.begin();
                 if (model_it.second.size() > 1) {
                     if (printer_profile.models.size() > 0) {
-                        const VendorProfile::PrinterModel& printer_model = *std::find_if(printer_profile.models.begin(), printer_profile.models.end(),
-                            [id = model_it.first](auto& m) { return m.id == id; });
-                        for (auto& vt : printer_model.variants) {
-                            if (std::find(model_it.second.begin(), model_it.second.end(), vt.name) != model_it.second.end()) { variant = vt.name; break; }
+                        auto it = std::find_if(printer_profile.models.begin(), printer_profile.models.end(), [id = model_it.first](auto &m) { return m.id == id; });
+                        if (it != printer_profile.models.end()) {
+                            const VendorProfile::PrinterModel& printer_model = *it;
+                            for (auto &vt : printer_model.variants) {
+                                if (std::find(model_it.second.begin(), model_it.second.end(), vt.name) != model_it.second.end()) {
+                                    variant = vt.name;
+                                    break;
+                                }
+                            }
                         }
                     }
                     else if (variant != PresetBundle::QDT_DEFAULT_PRINTER_VARIANT){
@@ -1031,8 +1036,9 @@ bool GuideFrame::run(bool& config_applied)
 
 int GuideFrame::GetFilamentInfo( std::string VendorDirectory, json & pFilaList, std::string filepath, std::string &sVendor, std::string &sType)
 {
-    //GetStardardFilePath(filepath);
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " GetFilamentInfo:VendorDirectory - " << VendorDirectory << ", Filepath - "<<filepath;
+    std::string VendorDir_safe = PathSanitizer::sanitize(VendorDirectory);
+    std::string filepath_safe = PathSanitizer::sanitize(filepath);
+    //BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " GetFilamentInfo:VendorDirectory - " << VendorDir_safe << ", Filepath - " << filepath_safe;
 
     try {
         boost::nowide::ifstream ifs(filepath);
@@ -1043,7 +1049,7 @@ int GuideFrame::GetFilamentInfo( std::string VendorDirectory, json & pFilaList, 
             if (jLocal.contains("filament_vendor"))
                 sVendor = jLocal["filament_vendor"][0];
             else {
-                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << filepath << " - Not Contains filament_vendor";
+                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << filepath_safe << " - Not Contains filament_vendor";
             }
         }
 
@@ -1051,7 +1057,7 @@ int GuideFrame::GetFilamentInfo( std::string VendorDirectory, json & pFilaList, 
             if (jLocal.contains("filament_type"))
                 sType = jLocal["filament_type"][0];
             else {
-                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << filepath << " - Not Contains filament_type";
+                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << filepath_safe << " - Not Contains filament_type";
             }
         }
 
@@ -1066,19 +1072,19 @@ int GuideFrame::GetFilamentInfo( std::string VendorDirectory, json & pFilaList, 
                 }
 
                 std::string FPath = pFilaList[FName]["sub_path"];
-                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " Before Format Inherits Path: VendorDirectory - " << VendorDirectory << ", sub_path - " << FPath;
-                std::string strNewFile = VendorDirectory + "/" + FPath;
+                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " Before Format Inherits Path: VendorDirectory - " << VendorDir_safe << ", sub_path - " << FPath;
+                std::string             strNewFile = VendorDirectory + "/" + FPath;
                 boost::filesystem::path inherits_path(strNewFile);
 
                 //boost::filesystem::path nf(strNewFile.c_str());
                 if (boost::filesystem::exists(inherits_path))
                     return GetFilamentInfo(VendorDirectory,pFilaList, inherits_path.string(), sVendor, sType);
                 else {
-                    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " inherits File Not Exist: " << inherits_path;
+                    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " inherits File Not Exist: " << PathSanitizer::sanitize(inherits_path);
                     return -1;
                 }
             } else {
-                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << filepath << " - Not Contains inherits";
+                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << filepath_safe << " - Not Contains inherits";
                 if (sType == "") {
                     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "sType is Empty";
                     return -1;
@@ -1092,14 +1098,14 @@ int GuideFrame::GetFilamentInfo( std::string VendorDirectory, json & pFilaList, 
             return 0;
     }
     catch(nlohmann::detail::parse_error &err) {
-        BOOST_LOG_TRIVIAL(error) << __FUNCTION__<< ": parse "<<filepath <<" got a nlohmann::detail::parse_error, reason = " << err.what();
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": parse " << filepath_safe << " got a nlohmann::detail::parse_error, reason = " << err.what();
         return -1;
     }
     catch (std::exception &e)
     {
         // wxLogMessage("GUIDE: load_profile_error  %s ", e.what());
         // wxMessageBox(e.what(), "", MB_OK);
-        BOOST_LOG_TRIVIAL(error) << __FUNCTION__<< ": parse " << filepath <<" got exception: "<<e.what();
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": parse " << filepath_safe << " got exception: " << e.what();
         return -1;
     }
 
@@ -1206,7 +1212,7 @@ int GuideFrame::LoadProfileData()
         //sync to web
         std::string strAll = m_ProfileJson.dump(-1, ' ', false, json::error_handler_t::ignore);
 
-        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ", finished, json contents: " << std::endl << strAll;
+        //BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ", finished, json contents: " << std::endl << strAll;
         json m_Res           = json::object();
         m_Res["command"]     = "userguide_profile_load_finish";
         m_Res["sequence_id"] = "10001";
@@ -1321,7 +1327,7 @@ int GuideFrame::LoadProfileFamily(std::string strVendor, std::string strFilePath
     // wxString strFolder = strFilePath.BeforeLast(boost::filesystem::path::preferred_separator);
     boost::filesystem::path file_path(strFilePath);
     boost::filesystem::path vendor_dir = boost::filesystem::absolute(file_path.parent_path() / strVendor).make_preferred();
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(",  vendor path %1%.") % vendor_dir.string();
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(",  vendor path %1%.") % PathSanitizer::sanitize(vendor_dir);
     try {
         // wxLogMessage("GUIDE: json_path1  %s", w2s(strFilePath));
 
@@ -1409,7 +1415,7 @@ int GuideFrame::LoadProfileFamily(std::string strVendor, std::string strFilePath
             std::string s2    = OneFF["sub_path"];
 
             tFilaList[s1] = OneFF;
-            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "Vendor: " << strVendor <<", tFilaList Add: " << s1;
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "Vendor: " << strVendor << ", tFilaList Add: " << s1;
         }
 
         int nFalse  = 0;
@@ -1433,7 +1439,7 @@ int GuideFrame::LoadProfileFamily(std::string strVendor, std::string strFilePath
                 ifs >> pm;
 
                 std::string strInstant = pm["instantiation"];
-                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "Load Filament:" << s1 << ",Path:" << sub_file << ",instantiation：" << strInstant;
+                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "Load Filament:" << s1 << ",Path:" << PathSanitizer::sanitize(sub_file) << ",instantiation：" << strInstant;
 
                 if (strInstant == "true") {
                     std::string sV;
@@ -1498,12 +1504,12 @@ int GuideFrame::LoadProfileFamily(std::string strVendor, std::string strFilePath
         }
 
     } catch (nlohmann::detail::parse_error &err) {
-        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": parse " << strFilePath << " got a nlohmann::detail::parse_error, reason = " << err.what();
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": parse " << PathSanitizer::sanitize(strFilePath) << " got a nlohmann::detail::parse_error, reason = " << err.what();
         return -1;
     } catch (std::exception &e) {
         // wxMessageBox(e.what(), "", MB_OK);
         // wxLogMessage("GUIDE: LoadFamily Error: %s", e.what());
-        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": parse " << strFilePath << " got exception: " << e.what();
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": parse " << PathSanitizer::sanitize(strFilePath) << " got exception: " << e.what();
         return -1;
     }
 

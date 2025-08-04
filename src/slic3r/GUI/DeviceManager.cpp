@@ -20,6 +20,8 @@
 #include <wx/dir.h>
 #include "fast_float/fast_float.h"
 
+#include "slic3r/Utils/QDTUtil.hpp"
+
 #define CALI_DEBUG
 #define MINUTE_30 1800000    //ms
 #define TIME_OUT  5000       //ms
@@ -48,11 +50,11 @@ wxString get_stage_string(int stage)
     case 5:
         return _L("M400 pause");
     case 6:
-        return _L("Paused due to filament runout");
+        return _L("Paused (filament ran out)");
     case 7:
-        return _L("Heating hotend");
+        return _L("Heating nozzle");
     case 8:
-        return _L("Calibrating extrusion");
+        return _L("Calibrating dynamic flow");
     case 9:
         return _L("Scanning bed surface");
     case 10:
@@ -68,51 +70,51 @@ wxString get_stage_string(int stage)
     case 15:
         return _L("Checking extruder temperature");
     case 16:
-        return _L("Printing was paused by the user");
+        return _L("Paused by the user");
     case 17:
-        return _L("Pause of front cover falling");
+        return _L("Pause (front cover fall off)");
     case 18:
         return _L("Calibrating the micro lidar");
     case 19:
-        return _L("Calibrating extrusion flow");
+        return _L("Calibrating flow ratio");
     case 20:
-        return _L("Paused due to nozzle temperature malfunction");
+        return _L("Pause (nozzle temperature malfunction)");
     case 21:
-        return _L("Paused due to heat bed temperature malfunction");
+        return _L("Pause (heatbed temperature malfunction)");
     case 22:
         return _L("Filament unloading");
     case 23:
-        return _L("Skip step pause");
+        return _L("Pause (step loss)");
     case 24:
         return _L("Filament loading");
     case 25:
         return _L("Motor noise cancellation");
     case 26:
-        return _L("Paused due to BOX lost");
+        return _L("Pause (BOX offline)");
     case 27:
-        return _L("Paused due to low speed of the heat break fan");
+        return _L("Pause (low speed of the heatbreak fan)");
     case 28:
-        return _L("Paused due to chamber temperature control error");
+        return _L("Pause (chamber temperature control problem)");
     case 29:
         return _L("Cooling chamber");
     case 30:
-        return _L("Paused by the Gcode inserted by user");
+        return _L("Pause (Gcode inserted by user)");
     case 31:
         return _L("Motor noise showoff");
     case 32:
-        return _L("Nozzle filament covered detected pause");
+        return _L("Pause (nozzle clumping)");
     case 33:
-        return _L("Cutter error pause");
+        return _L("Pause (cutter error)");
     case 34:
-        return _L("First layer error pause");
+        return _L("Pause (first layer error)");
     case 35:
-        return _L("Nozzle clog pause");
+        return _L("Pause (nozzle clog)");
     case 36:
-        return _L("Check printer absolute accuracy before calibration");
+        return _L("Measuring motion percision");
     case 37:
-        return _L("Absolute accuracy calibration");
+        return _L("Enhancing motion percision");
     case 38:
-        return _L("Check printer absolute accuracy after calibration");
+        return _L("Measure motion accuracy");
     case 39:
         return _L("Nozzle offset calibration");
     case 40:
@@ -126,9 +128,9 @@ wxString get_stage_string(int stage)
     case 44:
         return _L("Auto Check: Platform");
     case 45:
-        return _L("Confirming birdeye camera position");
+        return _L("Confirming BirdsEye Camera location");
     case 46:
-        return _L("Calibrating birdeye camera");
+        return _L("Calibrating BirdsEye Camera");
     case 47:
         return _L("Auto bed leveling -phase 1");
     case 48:
@@ -136,11 +138,21 @@ wxString get_stage_string(int stage)
     case 49:
         return _L("Heating chamber");
     case 50:
-        return _L("Heated bed cooling");
+        return _L("Cooling heatbed");
     case 51:
         return _L("Printing calibration lines");
+    case 52:
+        return _L("Auto Check: Material");
+    case 53:
+        return _L("Live View Camera Calibration");
+    case 54:
+        return _L("Waiting for heatbed to reach target temperature");
+    case 55:
+        return _L("Auto Check: Material Position");
+    case 56:
+        return _L("Cutting Module Offset Calibration");
     default:
-        ;
+        BOOST_LOG_TRIVIAL(info) << "stage = " << stage;
     }
     return "";
 }
@@ -314,7 +326,7 @@ bool check_filaments_printable(const std::string &tag_vendor, const std::string 
    if (filament_info.has_value() && !(filament_info->filament_printable >> extruder_idx & 1)) {
        wxString extruder_name = extruder_idx == 0 ? _L("left") : _L("right");
        ac                     = "prohibition";
-       info                   = (wxString::Format(_L("%s is not supported by %s extruder."), tag_type, extruder_name)).ToUTF8().data();
+       info                   = wxString::Format(_L("%s is not supported by %s extruder."), tag_type, extruder_name);
        in_blacklist           = true;
        return false;
    }
@@ -616,6 +628,14 @@ std::string MachineObject::convertToIp(long long ip)
     std::stringstream ss;
     ss << ((ip >> 0) & 0xFF) << "." << ((ip >> 8) & 0xFF) << "." << ((ip >> 16) & 0xFF) << "." << ((ip >> 24) & 0xFF);
     return ss.str();
+}
+
+std::string MachineObject::get_show_printer_type() const
+{
+    std::string printer_type = this->printer_type;
+    if (this->is_support_upgrade_kit && this->installed_upgrade_kit)
+        printer_type = "C12";
+    return printer_type;
 }
 
 PrinterSeries MachineObject::get_printer_series() const
@@ -922,6 +942,10 @@ std::string MachineObject::get_filament_id(std::string ams_id, std::string tray_
     return this->get_tray(ams_id, tray_id).setting_id;
 }
 
+std::string MachineObject::get_filament_type(const std::string& ams_id, const std::string& tray_id) const {
+    return this->get_tray(ams_id, tray_id).type;
+}
+
 void MachineObject::_parse_ams_status(int ams_status)
 {
     ams_status_sub = ams_status & 0xFF;
@@ -1178,7 +1202,7 @@ int MachineObject::ams_filament_mapping(
     // traverse the mapping
     std::set<int> picked_src;
     std::set<int> picked_tar;
-    //y59
+    //y59 y68
     for (int k = 0; k < distance_map.size(); k++) {
         float min_val = INT_MAX;
         int picked_src_idx = -1;
@@ -1190,14 +1214,14 @@ int MachineObject::ams_filament_mapping(
             // try to mapping to different tray
             for (int j = 0; j < distance_map[i].size(); j++) {
                 if (picked_tar.find(j) != picked_tar.end()) {
-                    if (distance_map[i][j].is_same_color
-                        && distance_map[i][j].is_type_match
-                        && distance_map[i][j].distance < (float)0.0001) {
-                        min_val = distance_map[i][j].distance;
-                        picked_src_idx = i;
-                        picked_tar_idx = j;
-                        tray_filaments[picked_tar_idx].distance = min_val;
-                    }
+                    //if (distance_map[i][j].is_same_color
+                    //    && distance_map[i][j].is_type_match
+                    //    && distance_map[i][j].distance < (float)0.0001) {
+                    //    min_val = distance_map[i][j].distance;
+                    //    //picked_src_idx = i;
+                    //    //picked_tar_idx = j;
+                    //    tray_filaments[picked_tar_idx].distance = min_val;
+                    //}
                     continue;
                 }
 
@@ -1209,29 +1233,29 @@ int MachineObject::ams_filament_mapping(
                         picked_tar_idx = j;
                         tray_filaments[picked_tar_idx].distance = min_val;
                     }
-                    else if (min_val == distance_map[i][j].distance && filaments[picked_src_idx].filament_id!= box_filament_infos[picked_src_idx].filament_id && filaments[i].filament_id == box_filament_infos[j].filament_id) {
-                        picked_src_idx = i;
-                        picked_tar_idx = j;
-                    }
+                    //else if (min_val == distance_map[i][j].distance && filaments[i].filament_id == box_filament_infos[j].filament_id) {
+                    //    picked_src_idx = i;
+                    //    picked_tar_idx = j;
+                    //}
                 }
             }
 
-            // take a retry to mapping to used tray
-            if (picked_src_idx < 0 || picked_tar_idx < 0) {
-                for (int j = 0; j < distance_map[i].size(); j++) {
-                    if (distance_map[i][j].is_same_color && distance_map[i][j].is_type_match) {
-                        if (min_val > distance_map[i][j].distance) {
-                            min_val = distance_map[i][j].distance;
-                            picked_src_idx = i;
-                            picked_tar_idx = j;
-                            tray_filaments[picked_tar_idx].distance = min_val;
-                        } else if (min_val == distance_map[i][j].distance && filaments[picked_src_idx].filament_id != tray_filaments[picked_tar_idx].filament_id && filaments[i].filament_id == tray_filaments[j].filament_id) {
-                            picked_src_idx = i;
-                            picked_tar_idx = j;
-                        }
-                    }
-                }
-            }
+            // // take a retry to mapping to used tray
+            // if (picked_src_idx < 0 || picked_tar_idx < 0) {
+            //     for (int j = 0; j < distance_map[i].size(); j++) {
+            //         if (distance_map[i][j].is_same_color && distance_map[i][j].is_type_match) {
+            //             if (min_val > distance_map[i][j].distance) {
+            //                 min_val = distance_map[i][j].distance;
+            //                 picked_src_idx = i;
+            //                 picked_tar_idx = j;
+            //                 tray_filaments[picked_tar_idx].distance = min_val;
+            //             } else if (min_val == distance_map[i][j].distance && filaments[picked_src_idx].filament_id != tray_filaments[picked_tar_idx].filament_id && filaments[i].filament_id == tray_filaments[j].filament_id) {
+            //                 picked_src_idx = i;
+            //                 picked_tar_idx = j;
+            //             }
+            //         }
+            //     }
+            // }
         }
 
         //y59
@@ -1641,8 +1665,6 @@ bool MachineObject::is_in_calibration()
     return false;
 }
 
-
-
 bool MachineObject::is_calibration_done()
 {
     return calibration_done;
@@ -1895,13 +1917,11 @@ bool MachineObject::canEnableTimelapse(wxString &error_message) const
 
 int MachineObject::command_select_extruder(int id)
 {
-    BOOST_LOG_TRIVIAL(info) << "select_extruder";
-
     json j;
     j["print"]["sequence_id"]    = std::to_string(MachineObject::m_sequence_id++);
     j["print"]["command"]        = "select_extruder";
     j["print"]["extruder_index"] = id;
-    int rtn = this->publish_json(j.dump(), 1);
+    int rtn = this->publish_json(j, 1);
     if (rtn == 0)
     {
         targ_nozzle_id_from_pc = id;
@@ -1912,22 +1932,20 @@ int MachineObject::command_select_extruder(int id)
 
 int MachineObject::command_get_version(bool with_retry)
 {
-    BOOST_LOG_TRIVIAL(info) << "command_get_version";
     json j;
     j["info"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
     j["info"]["command"] = "get_version";
     if (with_retry)
         get_version_retry = GET_VERSION_RETRYS;
-    return this->publish_json(j.dump(), 1);
+    return this->publish_json(j, 1);
 }
 
 int MachineObject::command_get_access_code() {
-    BOOST_LOG_TRIVIAL(info) << "command_get_access_code";
     json j;
     j["system"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
     j["system"]["command"] = "get_access_code";
 
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 
@@ -1938,15 +1956,15 @@ int MachineObject::command_request_push_all(bool request_now)
 
     if (diff.count() < REQUEST_PUSH_MIN_TIME) {
         if (request_now) {
-            BOOST_LOG_TRIVIAL(trace) << "static: command_request_push_all, dev_id=" << dev_id;
+            BOOST_LOG_TRIVIAL(trace) << "static: command_request_push_all, dev_id=" << QDTCrossTalk::Crosstalk_DevId(dev_id);
             last_request_push = std::chrono::system_clock::now();
         }
         else {
-            BOOST_LOG_TRIVIAL(trace) << "static: command_request_push_all: send request too fast, dev_id=" << dev_id;
+            BOOST_LOG_TRIVIAL(trace) << "static: command_request_push_all: send request too fast, dev_id=" << QDTCrossTalk::Crosstalk_DevId(dev_id);
             return -1;
         }
     } else {
-        BOOST_LOG_TRIVIAL(trace) << "static: command_request_push_all, dev_id=" << dev_id;
+        BOOST_LOG_TRIVIAL(trace) << "static: command_request_push_all, dev_id=" << QDTCrossTalk::Crosstalk_DevId(dev_id);
         last_request_push = std::chrono::system_clock::now();
     }
 
@@ -1955,7 +1973,7 @@ int MachineObject::command_request_push_all(bool request_now)
     j["pushing"]["command"]     = "pushall";
     j["pushing"]["version"]     =  1;
     j["pushing"]["push_target"] =  1;
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_pushing(std::string cmd)
@@ -1963,11 +1981,11 @@ int MachineObject::command_pushing(std::string cmd)
     auto curr_time = std::chrono::system_clock::now();
     auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(curr_time - last_request_start);
     if (diff.count() < REQUEST_START_MIN_TIME) {
-        BOOST_LOG_TRIVIAL(trace) << "static: command_request_start: send request too fast, dev_id=" << dev_id;
+        BOOST_LOG_TRIVIAL(trace) << "static: command_request_start: send request too fast, dev_id=" << QDTCrossTalk::Crosstalk_DevId(dev_id);
         return -1;
     }
     else {
-        BOOST_LOG_TRIVIAL(trace) << "static: command_request_start, dev_id=" << dev_id;
+        BOOST_LOG_TRIVIAL(trace) << "static: command_request_start, dev_id=" << QDTCrossTalk::Crosstalk_DevId(dev_id);
         last_request_start = std::chrono::system_clock::now();
     }
 
@@ -1975,41 +1993,38 @@ int MachineObject::command_pushing(std::string cmd)
         json j;
         j["pushing"]["command"] = cmd;
         j["pushing"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
-        return this->publish_json(j.dump());
+        return this->publish_json(j);
     }
     return -1;
 }
 
 int MachineObject::command_clean_print_error(std::string subtask_id, int print_error)
 {
-    BOOST_LOG_TRIVIAL(info) << "command_clean_print_error, id = " << subtask_id;
     json j;
     j["print"]["command"] = "clean_print_error";
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
     j["print"]["subtask_id"] = subtask_id;
     j["print"]["print_error"] = print_error;
 
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_upgrade_confirm()
 {
-    BOOST_LOG_TRIVIAL(info) << "command_upgrade_confirm";
     json j;
     j["upgrade"]["command"] = "upgrade_confirm";
     j["upgrade"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
     j["upgrade"]["src_id"] = 1; // 1 for slicer
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_consistency_upgrade_confirm()
 {
-    BOOST_LOG_TRIVIAL(info) << "command_consistency_upgrade_confirm";
     json j;
     j["upgrade"]["command"] = "consistency_confirm";
     j["upgrade"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
     j["upgrade"]["src_id"] = 1; // 1 for slicer
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_upgrade_firmware(FirmwareInfo info)
@@ -2026,7 +2041,7 @@ int MachineObject::command_upgrade_firmware(FirmwareInfo info)
     j["upgrade"]["version"]     = info.version;
     j["upgrade"]["src_id"]      = 1;
 
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_upgrade_module(std::string url, std::string module_type, std::string version)
@@ -2039,7 +2054,7 @@ int MachineObject::command_upgrade_module(std::string url, std::string module_ty
     j["upgrade"]["version"] = version;
     j["upgrade"]["src_id"] = 1;
 
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_xyz_abs()
@@ -2064,11 +2079,10 @@ int MachineObject::command_go_home()
 
 int MachineObject::command_go_home2()
 {
-    BOOST_LOG_TRIVIAL(info) << "New protocol of command_go_home2";
     json j;
     j["print"]["command"]     = "back_to_center";
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 // Old protocol
@@ -2090,51 +2104,56 @@ int MachineObject::command_control_fan(int fan_type, int val)
 // New protocol
 int MachineObject::command_control_fan_new(int fan_id, int val, const CommandCallBack &cb)
 {
-    BOOST_LOG_TRIVIAL(info) << "New protocol of fan setting(set speed), fan_id = " << fan_id;
     m_callback_list[std::to_string(m_sequence_id)] = cb;
     json j;
     j["print"]["command"] = "set_fan";
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
     j["print"]["fan_index"] = fan_id;
-
     j["print"]["speed"] = val;
-    BOOST_LOG_TRIVIAL(info) << "MachineObject::command_control_fan_val, set the speed of fan, fan_id = " << fan_id;
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
-int MachineObject::command_control_air_duct(int mode_id, const CommandCallBack &cb)
+int MachineObject::command_control_air_duct(int mode_id, int submode, const CommandCallBack &cb)
 {
-    BOOST_LOG_TRIVIAL(info) << "MachineObject::command_control_air_duct, set air duct, d = " << mode_id;
     m_callback_list[std::to_string(m_sequence_id)] = cb;
     json j;
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
     j["print"]["command"] = "set_airduct";
     j["print"]["modeId"] = mode_id;
+    j["print"]["submode"] = submode;
 
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
+}
+
+int MachineObject::command_task_partskip(std::vector<int> part_ids)
+{
+    json j;
+    j["print"]["command"] = "skip_objects";
+    j["print"]["obj_list"] = part_ids;
+    j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
+
+    return this->publish_json(j, 1);
 }
 
 int MachineObject::command_task_abort()
 {
-    BOOST_LOG_TRIVIAL(trace) << "command_task_abort: ";
     json j;
     j["print"]["command"] = "stop";
     j["print"]["param"] = "";
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
 
-    return this->publish_json(j.dump(), 1);
+    return this->publish_json(j, 1);
 }
 
 int MachineObject::command_task_cancel(std::string job_id)
 {
-    BOOST_LOG_TRIVIAL(trace) << "command_task_cancel: " << job_id;
     json j;
     j["print"]["command"] = "stop";
     j["print"]["param"] = "";
     j["print"]["job_id"] = job_id;
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
 
-    return this->publish_json(j.dump(), 1);
+    return this->publish_json(j, 1);
 }
 
 int MachineObject::command_task_pause()
@@ -2144,7 +2163,7 @@ int MachineObject::command_task_pause()
     j["print"]["param"] = "";
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
 
-    return this->publish_json(j.dump(), 1);
+    return this->publish_json(j, 1);
 }
 
 int MachineObject::command_task_resume()
@@ -2156,7 +2175,7 @@ int MachineObject::command_task_resume()
     j["print"]["param"] = "";
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
 
-    return this->publish_json(j.dump(), 1);
+    return this->publish_json(j, 1);
 }
 
 int MachineObject::command_hms_idle_ignore(const std::string &error_str, int type)
@@ -2168,7 +2187,7 @@ int MachineObject::command_hms_idle_ignore(const std::string &error_str, int typ
     j["print"]["err"]         = error_str;
     j["print"]["type"]        = type;
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
-    return this->publish_json(j.dump(), 1);
+    return this->publish_json(j, 1);
 }
 
 int MachineObject::command_hms_resume(const std::string& error_str, const std::string& job_id)
@@ -2182,7 +2201,7 @@ int MachineObject::command_hms_resume(const std::string& error_str, const std::s
     j["print"]["job_id"] = job_id;
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
 
-    return this->publish_json(j.dump(), 1);
+    return this->publish_json(j, 1);
 }
 
 int MachineObject::command_hms_ignore(const std::string& error_str, const std::string& job_id)
@@ -2196,7 +2215,7 @@ int MachineObject::command_hms_ignore(const std::string& error_str, const std::s
     j["print"]["job_id"] = job_id;
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
 
-    return this->publish_json(j.dump(), 1);
+    return this->publish_json(j, 1);
 }
 
 int MachineObject::command_hms_stop(const std::string &error_str, const std::string &job_id) {
@@ -2207,7 +2226,7 @@ int MachineObject::command_hms_stop(const std::string &error_str, const std::str
     j["print"]["job_id"]      = job_id;
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
 
-    return this->publish_json(j.dump(), 1);
+    return this->publish_json(j, 1);
 }
 
 int MachineObject::command_stop_buzzer()
@@ -2217,11 +2236,20 @@ int MachineObject::command_stop_buzzer()
     j["print"]["mode"] = 0;
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
 
-    return this->publish_json(j.dump(), 1);
+    return this->publish_json(j, 1);
 }
 
 int MachineObject::command_set_bed(int temp)
 {
+    if (m_support_mqtt_bet_ctrl)
+    {
+        json j;
+        j["print"]["command"] = "set_bed_temp";
+        j["print"]["temp"] = temp;
+        j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
+        return this->publish_json(j);
+    }
+
     std::string gcode_str = (boost::format("M140 S%1%\n") % temp).str();
     try {
         json j;
@@ -2253,15 +2281,13 @@ int MachineObject::command_set_nozzle(int temp)
 
 int MachineObject::command_set_nozzle_new(int nozzle_id, int temp)
 {
-    BOOST_LOG_TRIVIAL(info) << "set_nozzle_temp";
-
     json j;
     j["print"]["sequence_id"]    = std::to_string(MachineObject::m_sequence_id++);
     j["print"]["command"]        = "set_nozzle_temp";
     j["print"]["extruder_index"] = nozzle_id;
     j["print"]["target_temp"]    = temp;
 
-    return this->publish_json(j.dump(), 1);
+    return this->publish_json(j, 1);
 }
 
 int MachineObject::command_set_chamber(int temp)
@@ -2271,7 +2297,7 @@ int MachineObject::command_set_chamber(int temp)
     j["print"]["command"] = "set_ctt";
     j["print"]["ctt_val"] = temp;
 
-    return this->publish_json(j.dump(), 1);
+    return this->publish_json(j, 1);
 }
 
 int MachineObject::check_resume_condition()
@@ -2314,7 +2340,7 @@ int MachineObject::command_ams_change_filament(bool load, std::string ams_id, st
         }
     } catch (const std::exception &) {}
 
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_ams_user_settings(int ams_id, bool start_read_opt, bool tray_read_opt, bool remain_flag)
@@ -2332,7 +2358,7 @@ int MachineObject::command_ams_user_settings(int ams_id, bool start_read_opt, bo
     ams_calibrate_remain_flag = remain_flag;
     ams_user_setting_start = time(nullptr);
 
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_ams_calibrate(int ams_id)
@@ -2354,10 +2380,6 @@ int MachineObject::command_ams_filament_settings(int ams_id, int slot_id, std::s
         tag_tray_id = tag_slot_id;
     }
 
-
-    BOOST_LOG_TRIVIAL(info) << "command_ams_filament_settings, ams_id = " << tag_ams_id << ", slot_id = " << tag_slot_id << ", tray_id = " << tag_tray_id << ", tray_color = " << tray_color
-                            << ", tray_type = " << tray_type << ", filament_id = " << filament_id
-                            << ", setting_id = " << setting_id << ", temp_min: = " << nozzle_temp_min << ", temp_max: = " << nozzle_temp_max;
     json j;
     j["print"]["command"]       = "ams_filament_setting";
     j["print"]["sequence_id"]   = std::to_string(MachineObject::m_sequence_id++);
@@ -2372,7 +2394,7 @@ int MachineObject::command_ams_filament_settings(int ams_id, int slot_id, std::s
     j["print"]["nozzle_temp_max"]   = nozzle_temp_max;
     j["print"]["tray_type"]         = tray_type;
 
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_ams_refresh_rfid(std::string tray_id)
@@ -2389,7 +2411,7 @@ int MachineObject::command_ams_refresh_rfid2(int ams_id,  int slot_id)
     j["print"]["sequence_id"]   = std::to_string(MachineObject::m_sequence_id++);
     j["print"]["ams_id"]        = ams_id;
     j["print"]["slot_id"]       = slot_id;
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 
@@ -2410,11 +2432,10 @@ int MachineObject::command_ams_control(std::string action)
         j["print"]["command"] = "ams_control";
         j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
         j["print"]["param"] = action;
-        return this->publish_json(j.dump());
+        return this->publish_json(j);
     }
     return -1;
 }
-
 
 int MachineObject::command_set_chamber_light(LIGHT_EFFECT effect, int on_time, int off_time, int loops, int interval)
 {
@@ -2427,7 +2448,7 @@ int MachineObject::command_set_chamber_light(LIGHT_EFFECT effect, int on_time, i
     j["system"]["led_off_time"] = off_time;
     j["system"]["loop_times"] = loops;
     j["system"]["interval_time"] = interval;
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 
@@ -2442,26 +2463,26 @@ int MachineObject::command_set_chamber_light2(LIGHT_EFFECT effect, int on_time /
     j["system"]["led_off_time"]  = off_time;
     j["system"]["loop_times"]    = loops;
     j["system"]["interval_time"] = interval;
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_set_printer_nozzle(std::string nozzle_type, float diameter)
 {
     nozzle_setting_hold_count = HOLD_COUNT_MAX * 2;
-    BOOST_LOG_TRIVIAL(info) << "command_set_printer_nozzle, nozzle_type = " << nozzle_type << " diameter = " << diameter;
+
     json j;
     j["system"]["command"] = "set_accessories";
     j["system"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
     j["system"]["accessory_type"] = "nozzle";
     j["system"]["nozzle_type"] = nozzle_type;
     j["system"]["nozzle_diameter"] = diameter;
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_set_printer_nozzle2(int id, std::string nozzle_type, float diameter)
 {
     nozzle_setting_hold_count = HOLD_COUNT_MAX * 2;
-    BOOST_LOG_TRIVIAL(info) << "command_set_printer_nozzle2, nozzle_type = " << nozzle_type << " diameter = " << diameter;
+
     json j;
     j["print"]["command"]         = "set_nozzle";
     j["print"]["sequence_id"]     = std::to_string(MachineObject::m_sequence_id++);
@@ -2469,7 +2490,7 @@ int MachineObject::command_set_printer_nozzle2(int id, std::string nozzle_type, 
     j["print"]["type"]            = nozzle_type;
     j["print"]["diameter"]        = diameter;
     j["print"]["wear"]            = 0;
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 
@@ -2485,14 +2506,11 @@ int MachineObject::command_set_work_light(LIGHT_EFFECT effect, int on_time, int 
     j["system"]["loop_times"] = loops;
     j["system"]["interval_time"] = interval;
 
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_start_extrusion_cali(int tray_index, int nozzle_temp, int bed_temp, float max_volumetric_speed, std::string setting_id)
 {
-    BOOST_LOG_TRIVIAL(trace) << "extrusion_cali: tray_id = " << tray_index << ", nozzle_temp = " << nozzle_temp << ", bed_temp = " << bed_temp
-                            << ", max_volumetric_speed = " << max_volumetric_speed;
-
     json j;
     j["print"]["command"] = "extrusion_cali";
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
@@ -2505,8 +2523,7 @@ int MachineObject::command_start_extrusion_cali(int tray_index, int nozzle_temp,
 
     // enter extusion cali
     last_extrusion_cali_start_time = std::chrono::system_clock::now();
-    BOOST_LOG_TRIVIAL(trace) << "extrusion_cali: " << j.dump();
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_stop_extrusion_cali()
@@ -2520,8 +2537,6 @@ int MachineObject::command_stop_extrusion_cali()
 
 int MachineObject::command_extrusion_cali_set(int tray_index, std::string setting_id, std::string name, float k, float n, int bed_temp, int nozzle_temp, float max_volumetric_speed)
 {
-    BOOST_LOG_TRIVIAL(trace) << "extrusion_cali: tray_id = " << tray_index << ", setting_id = " << setting_id << ", k = " << k
-                            << ", n = " << n;
     json j;
     j["print"]["command"] = "extrusion_cali_set";
     j["print"]["sequence_id"]   = std::to_string(MachineObject::m_sequence_id++);
@@ -2536,7 +2551,7 @@ int MachineObject::command_extrusion_cali_set(int tray_index, std::string settin
         j["print"]["nozzle_temp"]   = nozzle_temp;
         j["print"]["max_volumetric_speed"] = max_volumetric_speed;
     }
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 
@@ -2547,7 +2562,7 @@ int MachineObject::command_set_printing_speed(PrintingSpeedLevel lvl)
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
     j["print"]["param"] = std::to_string((int)lvl);
 
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_set_printing_option(bool auto_recovery)
@@ -2559,7 +2574,7 @@ int MachineObject::command_set_printing_option(bool auto_recovery)
     j["print"]["option"]        = print_option;
     j["print"]["auto_recovery"] = auto_recovery;
 
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_nozzle_blob_detect(bool nozzle_blob_detect)
@@ -2570,7 +2585,7 @@ int MachineObject::command_nozzle_blob_detect(bool nozzle_blob_detect)
     j["print"]["nozzle_blob_detect"] = nozzle_blob_detect;
     nozzle_blob_detection_enabled = nozzle_blob_detect;
     nozzle_blob_detection_hold_start = time(nullptr);
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_set_prompt_sound(bool prompt_sound){
@@ -2579,7 +2594,7 @@ int MachineObject::command_set_prompt_sound(bool prompt_sound){
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
     j["print"]["sound_enable"] = prompt_sound;
 
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_set_filament_tangle_detect(bool filament_tangle_detect) {
@@ -2588,7 +2603,7 @@ int MachineObject::command_set_filament_tangle_detect(bool filament_tangle_detec
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
     j["print"]["filament_tangle_detect"] = filament_tangle_detect;
 
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_ams_switch_filament(bool switch_filament)
@@ -2599,10 +2614,9 @@ int MachineObject::command_ams_switch_filament(bool switch_filament)
     j["print"]["auto_switch_filament"] = switch_filament;
 
     ams_auto_switch_filament_flag = switch_filament;
-    BOOST_LOG_TRIVIAL(trace) << "command_ams_filament_settings:" << switch_filament;
     ams_switch_filament_start = time(nullptr);
 
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_ams_air_print_detect(bool air_print_detect)
@@ -2613,14 +2627,24 @@ int MachineObject::command_ams_air_print_detect(bool air_print_detect)
     j["print"]["air_print_detect"] = air_print_detect;
 
     ams_air_print_status = air_print_detect;
-    BOOST_LOG_TRIVIAL(trace) << "command_ams_air_print_detect:" << air_print_detect;
 
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 
 int MachineObject::command_axis_control(std::string axis, double unit, double input_val, int speed)
 {
+    if (m_support_mqtt_axis_control)
+    {
+        json j;
+        j["print"]["command"] = "xyz_ctrl";
+        j["print"]["axis"] = axis;
+        j["print"]["dir"] = input_val > 0 ? 1 : -1;
+        j["print"]["mode"] = (std::abs(input_val) >= 10) ? 1 : 0;
+        j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
+        return this->publish_json(j);
+    }
+
     double value = input_val;
     if (!is_core_xy()) {
         if ( axis.compare("Y") == 0
@@ -2662,7 +2686,7 @@ int MachineObject::command_extruder_control(int nozzle_id, double val)
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
     j["print"]["extruder_index"] = nozzle_id;
     j["print"]["length"] = (int)val;
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 bool MachineObject::is_support_command_calibration()
@@ -2685,7 +2709,7 @@ int MachineObject::command_start_calibration(bool vibration, bool bed_leveling, 
         j["print"]["command"] = "gcode_file";
         j["print"]["param"] = "/usr/etc/print/auto_cali_for_user.gcode";
         j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
-        return this->publish_json(j.dump());
+        return this->publish_json(j);
     } else {
         json j;
         j["print"]["command"] = "calibration";
@@ -2696,7 +2720,7 @@ int MachineObject::command_start_calibration(bool vibration, bool bed_leveling, 
                                 +   (vibration    ? 1 << 2 : 0)
                                 +   (bed_leveling ? 1 << 1 : 0)
                                 +   (xcam_cali    ? 1 << 0 : 0);
-        return this->publish_json(j.dump());
+        return this->publish_json(j);
     }
 }
 
@@ -2729,8 +2753,6 @@ int MachineObject::command_start_pa_calibration(const X1CCalibInfos &pa_data, in
         filament_ids += pa_data.calib_datas[i].filament_id;
     }
 
-    BOOST_LOG_TRIVIAL(info) << "extrusion_cali: " << j.dump();
-
     try {
         json js;
         js["cali_type"]       = "cali_pa_auto";
@@ -2741,7 +2763,7 @@ int MachineObject::command_start_pa_calibration(const X1CCalibInfos &pa_data, in
         if (agent) agent->track_event("cali", js.dump());
     } catch (...) {}
 
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_set_pa_calibration(const std::vector<PACalibResult> &pa_calib_values, bool is_auto_cali)
@@ -2775,8 +2797,7 @@ int MachineObject::command_set_pa_calibration(const std::vector<PACalibResult> &
                 j["print"]["filaments"][i]["n_coef"]  = "0.0";
         }
 
-        BOOST_LOG_TRIVIAL(info) << "extrusion_cali_set: " << j.dump();
-        return this->publish_json(j.dump());
+        return this->publish_json(j);
     }
 
     return -1;
@@ -2793,8 +2814,7 @@ int MachineObject::command_delete_pa_calibration(const PACalibIndexInfo& pa_cali
     j["print"]["cali_idx"]        = pa_calib.cali_idx;
     j["print"]["nozzle_diameter"] = to_string_nozzle_diameter(pa_calib.nozzle_diameter);
 
-    BOOST_LOG_TRIVIAL(info) << "extrusion_cali_del: " << j.dump();
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 //w
@@ -2808,8 +2828,7 @@ int MachineObject::command_get_pa_calibration_tab(float nozzle_diameter, const s
     j["print"]["filament_id"]     = filament_id;
     j["print"]["nozzle_diameter"] = to_string_nozzle_diameter(nozzle_diameter);
 
-    BOOST_LOG_TRIVIAL(trace) << "extrusion_cali_get: " << j.dump();
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_get_pa_calibration_tab(const PACalibExtruderInfo &calib_info)
@@ -2826,9 +2845,8 @@ int MachineObject::command_get_pa_calibration_tab(const PACalibExtruderInfo &cal
         j["print"]["nozzle_id"] = generate_nozzle_id(calib_info.nozzle_volume_type, to_string_nozzle_diameter(calib_info.nozzle_diameter)).ToStdString();
     j["print"]["nozzle_diameter"] = to_string_nozzle_diameter(calib_info.nozzle_diameter);
 
-    BOOST_LOG_TRIVIAL(info) << "extrusion_cali_get: " << j.dump();
     request_tab_from_qds = true;
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_get_pa_calibration_result(float nozzle_diameter)
@@ -2838,8 +2856,7 @@ int MachineObject::command_get_pa_calibration_result(float nozzle_diameter)
     j["print"]["sequence_id"]     = std::to_string(MachineObject::m_sequence_id++);
     j["print"]["nozzle_diameter"] = to_string_nozzle_diameter(nozzle_diameter);
 
-    BOOST_LOG_TRIVIAL(info) << "extrusion_cali_get_result: " << j.dump();
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::commnad_select_pa_calibration(const PACalibIndexInfo& pa_calib_info)
@@ -2854,8 +2871,7 @@ int MachineObject::commnad_select_pa_calibration(const PACalibIndexInfo& pa_cali
     j["print"]["filament_id"]     = pa_calib_info.filament_id;
     j["print"]["nozzle_diameter"] = to_string_nozzle_diameter(pa_calib_info.nozzle_diameter);
 
-    BOOST_LOG_TRIVIAL(info) << "extrusion_cali_sel: " << j.dump();
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_start_flow_ratio_calibration(const X1CCalibInfos& calib_data)
@@ -2878,6 +2894,9 @@ int MachineObject::command_start_flow_ratio_calibration(const X1CCalibInfos& cal
             j["print"]["filaments"][i]["nozzle_temp"]          = calib_data.calib_datas[i].nozzle_temp;
             j["print"]["filaments"][i]["def_flow_ratio"]       = std::to_string(calib_data.calib_datas[i].flow_rate);
             j["print"]["filaments"][i]["max_volumetric_speed"] = std::to_string(calib_data.calib_datas[i].max_volumetric_speed);
+            j["print"]["filaments"][i]["extruder_id"]          = calib_data.calib_datas[i].extruder_id;
+            j["print"]["filaments"][i]["ams_id"]               = calib_data.calib_datas[i].ams_id;
+            j["print"]["filaments"][i]["slot_id"]              = calib_data.calib_datas[i].slot_id;
 
             if (i > 0)
                 filament_ids += ",";
@@ -2894,8 +2913,7 @@ int MachineObject::command_start_flow_ratio_calibration(const X1CCalibInfos& cal
             if (agent) agent->track_event("cali", js.dump());
         } catch (...) {}
 
-        BOOST_LOG_TRIVIAL(info) << "flowrate_cali: " << j.dump();
-        return this->publish_json(j.dump());
+        return this->publish_json(j);
     }
     return -1;
 }
@@ -2907,37 +2925,33 @@ int MachineObject::command_get_flow_ratio_calibration_result(float nozzle_diamet
     j["print"]["sequence_id"]     = std::to_string(MachineObject::m_sequence_id++);
     j["print"]["nozzle_diameter"] = to_string_nozzle_diameter(nozzle_diameter);
 
-    BOOST_LOG_TRIVIAL(info) << "flowrate_get_result: " << j.dump();
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_ipcam_record(bool on_off)
 {
-    BOOST_LOG_TRIVIAL(info) << "command_ipcam_record = " << on_off;
     json j;
     j["camera"]["command"] = "ipcam_record_set";
     j["camera"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
     j["camera"]["control"] = on_off ? "enable" : "disable";
     camera_recording_ctl_start          = time(nullptr);
     this->camera_recording_when_printing = on_off;
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_ipcam_timelapse(bool on_off)
 {
-    BOOST_LOG_TRIVIAL(info) << "command_ipcam_timelapse " << on_off;
     json j;
     j["camera"]["command"] = "ipcam_timelapse";
     j["camera"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
     j["camera"]["control"] = on_off ? "enable" : "disable";
     camera_timelapse_hold_count = HOLD_COUNT_CAMERA;
     this->camera_timelapse = on_off;
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_ipcam_resolution_set(std::string resolution)
 {
-    BOOST_LOG_TRIVIAL(info) << "command:ipcam_resolution_set" << ", resolution:" << resolution;
     json j;
     j["camera"]["command"] = "ipcam_resolution_set";
     j["camera"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
@@ -2945,7 +2959,7 @@ int MachineObject::command_ipcam_resolution_set(std::string resolution)
     camera_resolution_hold_count = HOLD_COUNT_CAMERA;
     camera_recording_ctl_start = time(nullptr);
     this->camera_resolution = resolution;
-    return this->publish_json(j.dump());
+    return this->publish_json(j);
 }
 
 int MachineObject::command_xcam_control(std::string module_name, bool on_off, std::string lvl)
@@ -2960,8 +2974,8 @@ int MachineObject::command_xcam_control(std::string module_name, bool on_off, st
     if (!lvl.empty()) {
         j["xcam"]["halt_print_sensitivity"] = lvl;
     }
-    BOOST_LOG_TRIVIAL(info) << "command:xcam_control_set" << ", module_name:" << module_name << ", control:" << on_off << ", halt_print_sensitivity:" << lvl;
-    return this->publish_json(j.dump());
+
+    return this->publish_json(j);
 }
 
 int MachineObject::command_xcam_control_ai_monitoring(bool on_off, std::string lvl)
@@ -2973,6 +2987,49 @@ int MachineObject::command_xcam_control_ai_monitoring(bool on_off, std::string l
     xcam_ai_monitoring_sensitivity = lvl;
     return command_xcam_control("printing_monitor", on_off, lvl);
 }
+
+// refine printer function options
+int MachineObject::command_xcam_control_spaghetti_detection(bool on_off, std::string lvl)
+{
+    bool print_halt = (lvl == "never_halt") ? false : true;
+
+    xcam_spaghetti_detection       = on_off;
+    xcam_ai_monitoring_hold_start  = time(nullptr);
+    xcam_spaghetti_detection_sensitivity = lvl;
+    return command_xcam_control("spaghetti_detector", on_off, lvl);
+}
+
+int MachineObject::command_xcam_control_purgechutepileup_detection(bool on_off, std::string lvl)
+{
+    bool print_halt = (lvl == "never_halt") ? false : true;
+
+    xcam_purgechutepileup_detection = on_off;
+    xcam_ai_monitoring_hold_start  = time(nullptr);
+    xcam_purgechutepileup_detection_sensitivity = lvl;
+    return command_xcam_control("pileup_detector", on_off, lvl);
+}
+
+int MachineObject::command_xcam_control_nozzleclumping_detection(bool on_off, std::string lvl)
+{
+    bool print_halt = (lvl == "never_halt") ? false : true;
+
+    xcam_nozzleclumping_detection  = on_off;
+    xcam_ai_monitoring_hold_start  = time(nullptr);
+    xcam_nozzleclumping_detection_sensitivity = lvl;
+    return command_xcam_control("clump_detector", on_off, lvl);
+}
+
+
+int MachineObject::command_xcam_control_airprinting_detection(bool on_off, std::string lvl)
+{
+    bool print_halt = (lvl == "never_halt") ? false : true;
+
+    xcam_airprinting_detection     = on_off;
+    xcam_ai_monitoring_hold_start  = time(nullptr);
+    xcam_airprinting_detection_sensitivity = lvl;
+    return command_xcam_control("airprint_detector", on_off, lvl);
+}
+
 
 int MachineObject::command_xcam_control_buildplate_marker_detector(bool on_off)
 {
@@ -3107,14 +3164,14 @@ bool MachineObject::is_core_xy()
 
 void MachineObject::reset_update_time()
 {
-    BOOST_LOG_TRIVIAL(trace) << "reset reset_update_time, dev_id =" << dev_id;
+    BOOST_LOG_TRIVIAL(trace) << "reset reset_update_time, dev_id =" << QDTCrossTalk::Crosstalk_DevId(dev_id);
     last_update_time = std::chrono::system_clock::now();
     subscribe_counter = SUBSCRIBE_RETRY_COUNT;
 }
 
 void MachineObject::reset()
 {
-    BOOST_LOG_TRIVIAL(trace) << "reset dev_id=" << dev_id;
+    BOOST_LOG_TRIVIAL(trace) << "reset dev_id=" << QDTCrossTalk::Crosstalk_DevId(dev_id);
     last_update_time = std::chrono::system_clock::now();
     subscribe_counter = SUBSCRIBE_RETRY_COUNT;
     m_push_count = 0;
@@ -3152,6 +3209,7 @@ void MachineObject::reset()
         }
     }
     subtask_ = nullptr;
+    m_partskip_ids.clear();
 }
 
 void MachineObject::nt_reset_data()
@@ -3196,7 +3254,7 @@ bool MachineObject::is_connected()
     std::chrono::system_clock::time_point curr_time = std::chrono::system_clock::now();
     auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(curr_time - last_update_time);
     if (diff.count() > DISCONNECT_TIMEOUT) {
-        BOOST_LOG_TRIVIAL(trace) << "machine_object: dev_id=" << dev_id <<", diff count = " << diff.count();
+        BOOST_LOG_TRIVIAL(trace) << "machine_object: dev_id=" << QDTCrossTalk::Crosstalk_DevId(dev_id) <<", diff count = " << diff.count();
         return false;
     }
 
@@ -3251,19 +3309,19 @@ bool MachineObject::is_camera_busy_off()
     return false;
 }
 
-int MachineObject::publish_json(std::string json_str, int qos, int flag)
+int MachineObject::publish_json(const json& json_item, int qos, int flag)
 {
     int rtn = 0;
     if (is_lan_mode_printer()) {
-        rtn = local_publish_json(json_str, qos, flag);
+        rtn = local_publish_json(json_item.dump(), qos, flag);
     } else {
-        rtn = cloud_publish_json(json_str, qos, flag);
+        rtn = cloud_publish_json(json_item.dump(), qos, flag);
     }
 
     if (rtn == 0) {
-        BOOST_LOG_TRIVIAL(info) << "publish_json: " << json_str << " code: " << rtn;
+        BOOST_LOG_TRIVIAL(info) << "publish_json: " << QDTCrossTalk::Crosstalk_JsonLog(json_item) << " code: " << rtn;
     } else {
-        BOOST_LOG_TRIVIAL(error) << "publish_json: " << json_str << " code: " << rtn;
+        BOOST_LOG_TRIVIAL(error) << "publish_json: " << QDTCrossTalk::Crosstalk_JsonLog(json_item) << " code: " << rtn;
     }
 
     return rtn;
@@ -3358,7 +3416,7 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
                 if (j_pre["print"]["command"].get<std::string>() == "push_status") {
                     if (j_pre["print"].contains("msg")) {
                         if (j_pre["print"]["msg"].get<int>() == 0) {           //all message
-                            BOOST_LOG_TRIVIAL(trace) << "static: get push_all msg, dev_id=" << dev_id;
+                            BOOST_LOG_TRIVIAL(trace) << "static: get push_all msg, dev_id=" << QDTCrossTalk::Crosstalk_DevId(dev_id);
                             m_push_count++;
                             m_full_msg_count++;
 
@@ -3398,6 +3456,29 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
 
                         print_json.diff2all_base_reset(j_pre);
                     }
+
+                    if (j_pre["print"].contains("s_obj")){
+                        if(j_pre["print"]["s_obj"].is_array()){
+                            m_partskip_ids.clear();
+                            for(auto it=j_pre["print"]["s_obj"].begin(); it!=j_pre["print"]["s_obj"].end(); it++){
+                                m_partskip_ids.push_back(it.value().get<int>());
+                            }
+                        }
+                    }
+                }
+            }
+            if (j_pre["print"].contains("plate_idx")){ // && m_plate_index == -1
+                if (j_pre["print"]["plate_idx"].is_number())
+                {
+                    m_plate_index = j_pre["print"]["plate_idx"].get<int>();
+                }
+                else if (j_pre["print"]["plate_idx"].is_string())
+                {
+                    try
+                    {
+                        m_plate_index = std::stoi(j_pre["print"]["plate_idx"].get<std::string>());
+                    }
+                    catch (...) { BOOST_LOG_TRIVIAL(error) << "parse_json: failed to convert plate_idx to int"; }
                 }
             }
         }
@@ -3493,12 +3574,14 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
             message_delay.push_back(std::make_tuple(message_type, t_utc, delay));
         }
         else
+        {
             last_utc_time = last_update_time;
+        }
 
         if (Slic3r::get_logging_level() < level_string_to_boost("trace")) {
-            BOOST_LOG_TRIVIAL(info) << "parse_json: dev_id=" << dev_id << ", origin playload=" << j_pre.dump(0);
+            BOOST_LOG_TRIVIAL(info) << "parse_json: dev_id=" << QDTCrossTalk::Crosstalk_DevId(dev_id) << ", origin playload=" << QDTCrossTalk::Crosstalk_JsonLog(j_pre);
         } else {
-            BOOST_LOG_TRIVIAL(trace) << "parse_json: dev_id=" << dev_id << ", tunnel is=" << tunnel << ", merged playload=" << j.dump(0);
+            BOOST_LOG_TRIVIAL(trace) << "parse_json: dev_id=" << QDTCrossTalk::Crosstalk_DevId(dev_id) << ", tunnel is=" << tunnel << ", merged playload=" << QDTCrossTalk::Crosstalk_JsonLog(j);
         }
 
         // Parse version info first, as if version arrive or change, 'print' need parse again with new compatible settings
@@ -3816,9 +3899,20 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
                 if (jj["command"].get<std::string>() == "ams_change_filament") {
                     if (jj.contains("errno")) {
                         if (jj["errno"].is_number()) {
-                            if (jj["errno"].get<int>() == -2) {
-                                wxString text = _L("The current chamber temperature or the target chamber temperature exceeds 45\u2103.In order to avoid extruder clogging,low temperature filament(PLA/PETG/TPU) is not allowed to be loaded.");
-                                GUI::wxGetApp().push_notification(this, text);
+                            if (jj.contains("soft_temp")) {
+                                int soft_temp = jj["soft_temp"].get<int>();
+                                if (jj["errno"].get<int>() == -2) {
+                                    wxString text = wxString::Format(_L("The chamber temperature is too high, which may cause the filament to soften. Please wait until the chamber temperature drops below %d\u2103. You may open the front door or enable fans to cool down."), soft_temp);
+                                    GUI::wxGetApp().push_notification(this, text);
+                                } else if (jj["errno"].get<int>() == -4) {
+                                    wxString text = wxString::Format(_L("AMS temperature is too high, which may cause the filament to soften. Please wait until the AMS temperature drops below %d\u2103."), soft_temp);
+                                    GUI::wxGetApp().push_notification(this, text);
+                                }
+                            } else {
+                                if (jj["errno"].get<int>() == -2) {
+                                    wxString text = _L("The current chamber temperature or the target chamber temperature exceeds 45\u2103.In order to avoid extruder clogging,low temperature filament(PLA/PETG/TPU) is not allowed to be loaded.");
+                                    GUI::wxGetApp().push_notification(this, text);
+                                }
                             }
                         }
                     }
@@ -3960,7 +4054,7 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
                                         online_rfid = false;
                                     }
                                 }
-                                std::string str = jj.dump();
+
                                 if (jj["online"].contains("version")) {
                                     online_version = jj["online"]["version"].get<int>();
                                 }
@@ -4492,7 +4586,49 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
                         try {
                             if (jj.contains("xcam")) {
                                 if (time(nullptr) - xcam_ai_monitoring_hold_start > HOLD_TIME_3SEC) {
-                                    if (jj["xcam"].contains("printing_monitor")) {
+
+                                    if (jj["xcam"].contains("cfg")) {
+                                        xcam_disable_ai_detection_display = true;
+                                       //  std::string cfg    = jj["xcam"]["cfg"].get<std::string>();
+
+                                        int cfg                  = jj["xcam"]["cfg"].get<int>();
+                                         xcam_spaghetti_detection = get_flag_bits(cfg,7);
+                                         switch (get_flag_bits(cfg, 8, 2)) {
+                                             case 0: xcam_spaghetti_detection_sensitivity = "low"; break;
+                                             case 1: xcam_spaghetti_detection_sensitivity = "medium"; break;
+                                             case 2: xcam_spaghetti_detection_sensitivity = "high"; break;
+                                             default: break;
+                                         }
+
+                                         xcam_purgechutepileup_detection = get_flag_bits(cfg, 10);
+                                         switch (get_flag_bits(cfg, 11, 2)) {
+
+                                         case 0: xcam_purgechutepileup_detection_sensitivity = "low"; break;
+                                         case 1: xcam_purgechutepileup_detection_sensitivity = "medium"; break;
+                                         case 2: xcam_purgechutepileup_detection_sensitivity = "high"; break;
+                                         default: break;
+                                         }
+
+                                         xcam_nozzleclumping_detection = get_flag_bits(cfg, 13);
+                                         switch (get_flag_bits(cfg, 14, 2)) {
+
+                                         case 0: xcam_nozzleclumping_detection_sensitivity = "low"; break;
+                                         case 1: xcam_nozzleclumping_detection_sensitivity = "medium"; break;
+                                         case 2: xcam_nozzleclumping_detection_sensitivity = "high"; break;
+                                         default: break;
+                                         }
+
+                                         xcam_airprinting_detection    = get_flag_bits(cfg, 16);
+                                         switch (get_flag_bits(cfg, 17, 2)) {
+
+                                         case 0: xcam_airprinting_detection_sensitivity = "low"; break;
+                                         case 1: xcam_airprinting_detection_sensitivity = "medium"; break;
+                                         case 2: xcam_airprinting_detection_sensitivity = "high"; break;
+                                         default: break;
+                                         }
+
+                                    }
+                                    else if (jj["xcam"].contains("printing_monitor")) {
                                         // new protocol
                                         xcam_ai_monitoring = jj["xcam"]["printing_monitor"].get<bool>();
                                     } else {
@@ -4505,9 +4641,11 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
                                             }
                                         }
                                     }
+
                                     if (jj["xcam"].contains("halt_print_sensitivity")) {
                                         xcam_ai_monitoring_sensitivity = jj["xcam"]["halt_print_sensitivity"].get<std::string>();
                                     }
+
                                 }
 
                                 if (time(nullptr) - xcam_first_layer_hold_start > HOLD_TIME_3SEC) {
@@ -4565,14 +4703,13 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
                             int ams_status = jj["ams_status"].get<int>();
                             this->_parse_ams_status(ams_status);
                         }
-                        std::string str_j = jj.dump();
+
                         if (jj.contains("cali_version")) {
                             cali_version = jj["cali_version"].get<int>();
                         }
                         else {
                             cali_version = -1;
                         }
-                        std::string str = jj.dump();
                     }
                     catch (...) {
                         ;
@@ -4937,8 +5074,6 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
                                                 }
                                             }
 
-                                            std::string temp = tray_it->dump();
-
                                             if (tray_it->contains("cali_idx")) {
                                                 curr_tray->cali_idx = (*tray_it)["cali_idx"].get<int>();
                                             }
@@ -5031,8 +5166,6 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
                     } catch (...) {}
 #pragma endregion
                 } else if (jj["command"].get<std::string>() == "gcode_line") {
-                    //ack of gcode_line
-                    BOOST_LOG_TRIVIAL(debug) << "parse_json, ack of gcode_line = " << j.dump(4);
                     if (m_agent && is_studio_cmd(sequence_id)) {
                         json t;
                         t["dev_id"] = this->dev_id;
@@ -5041,8 +5174,6 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
                         m_agent->track_event("ack_cmd_gcode_line", t.dump());
                     }
                 } else if (jj["command"].get<std::string>() == "project_prepare") {
-                    //ack of project file
-                    BOOST_LOG_TRIVIAL(info) << "parse_json, ack of project_prepare = " << j.dump(4);
                     if (m_agent) {
                         if (jj.contains("job_id")) {
                             this->job_id_ = JsonValParser::get_longlong_val(jj["job_id"]);
@@ -5050,8 +5181,6 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
                     }
 
                 } else if (jj["command"].get<std::string>() == "project_file") {
-                    //ack of project file
-                    BOOST_LOG_TRIVIAL(debug) << "parse_json, ack of project_file = " << j.dump(4);
                     if (m_agent) {
                         json t;
                         t["dev_id"] = this->dev_id;
@@ -5226,10 +5355,6 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
                             }
                         }
                     }
-#ifdef CALI_DEBUG
-                    std::string str = jj.dump();
-                    BOOST_LOG_TRIVIAL(info) << "extrusion_cali_set: " << str;
-#endif
                     int ams_id = -1;
                     int tray_id = -1;
                     int curr_tray_id = -1;
@@ -5279,10 +5404,6 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
                         }
                     }
 
-#ifdef CALI_DEBUG
-                    std::string str = jj.dump();
-                    BOOST_LOG_TRIVIAL(info) << "extrusion_cali_sel: " << str;
-#endif
                     int ams_id       = -1;
                     int slot_id      = -1;
                     int tray_id      = -1;
@@ -5340,9 +5461,7 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
 
                 }
                 else if (jj["command"].get<std::string>() == "extrusion_cali_get") {
-                    std::string str = jj.dump();
                     if (request_tab_from_qds) {
-                        BOOST_LOG_TRIVIAL(info) << "qds extrusion_cali_get: " << str;
                         request_tab_from_qds = false;
                         reset_pa_cali_history_result();
                         bool is_succeed = true;
@@ -5411,12 +5530,10 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
                         }
                         // notify cali history to update
                     } else {
-                        BOOST_LOG_TRIVIAL(info) << "printer extrusion_cali_get: " << str;
+                        BOOST_LOG_TRIVIAL(info) << "printer extrusion_cali_get: ";
                     }
                 }
                 else if (jj["command"].get<std::string>() == "extrusion_cali_get_result") {
-                    std::string str = jj.dump();
-                    BOOST_LOG_TRIVIAL(info) << "extrusion_cali_get_result: " << str;
                     reset_pa_cali_result();
                     bool is_succeed = true;
                     if (jj.contains("result") && jj.contains("reason")) {
@@ -5508,10 +5625,6 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
                     get_flow_calib_result = true;
                     if (jj.contains("filaments") && jj["filaments"].is_array()) {
                         try {
-#ifdef CALI_DEBUG
-                            std::string str = jj.dump();
-                            BOOST_LOG_TRIVIAL(info) << "flowrate_get_result: " << str;
-#endif
                             for (auto it = jj["filaments"].begin(); it != jj["filaments"].end(); it++) {
                                 FlowRatioCalibResult flow_ratio_calib_result;
                                 flow_ratio_calib_result.tray_id     = (*it)["tray_id"].get<int>();
@@ -5616,8 +5729,11 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
             parse_state_changed_event();
         }
     }
-    catch (...) {
-        BOOST_LOG_TRIVIAL(trace) << "parse_json failed! dev_id=" << this->dev_id <<", payload = " << payload;
+    catch (const nlohmann::json::exception& e) {
+        // Handle JSON parsing exceptions if necessary
+        BOOST_LOG_TRIVIAL(trace) << "parse_json failed! dev_id=" << QDTCrossTalk::Crosstalk_DevId(this->dev_id) <<", ewhat = " << e.what();
+    } catch (...) {
+        BOOST_LOG_TRIVIAL(trace) << "parse_json failed! dev_id=" << QDTCrossTalk::Crosstalk_DevId(this->dev_id);
     }
 
     std::chrono::system_clock::time_point clock_stop = std::chrono::system_clock::now();
@@ -5664,7 +5780,7 @@ int MachineObject::publish_gcode(std::string gcode_str)
         m_agent->track_event("cmd_gcode_line", t.dump());
     }
 
-    return publish_json(j.dump(), 0);
+    return publish_json(j);
 }
 
 QDTSubTask* MachineObject::get_subtask()
@@ -5828,10 +5944,12 @@ void MachineObject::update_slice_info(std::string project_id, std::string profil
 
             if (!m_agent) return;
             if (!slice_info) return;
+            if (!get_slice_info_thread) return;/*STUDIO-12264*/
             if (get_slice_info_thread->interruption_requested()) { return;}
 
             if (plate_idx >= 0) {
                 plate_index = plate_idx;
+                this->m_plate_index = plate_idx;
             }
             else {
                 std::string subtask_json;
@@ -5878,7 +5996,10 @@ void MachineObject::update_slice_info(std::string project_id, std::string profil
                                                 slice_info->filaments_info.push_back(f);
                                             }
                                         }
+
+                                        #if !QDT_RELEASE_TO_PUBLIC
                                         BOOST_LOG_TRIVIAL(trace) << "task_info: thumbnail url=" << slice_info->thumbnail_url;
+                                        #endif
                                     }
                                 }
                             }
@@ -5894,8 +6015,7 @@ void MachineObject::update_slice_info(std::string project_id, std::string profil
                     BOOST_LOG_TRIVIAL(error) << "task_info: get subtask id failed!";
                 }
             }
-
-            this->m_plate_index = plate_index;
+            // this->m_plate_index = plate_index;
             });
     }
 }
@@ -6008,6 +6128,7 @@ std::string MachineObject::get_string_from_fantype(int type)
 
 void MachineObject::nt_condition_local_tunnel()
 {
+    return;
     int full_msg_count_limit = 2;
     if (!nt_try_local_tunnel && nt_cloud_full_msg_count == full_msg_count_limit) {
         connect(Slic3r::GUI::wxGetApp().app_config->get("enable_ssl_for_mqtt") == "true" ? true : false);
@@ -6171,6 +6292,12 @@ AmsTray MachineObject::parse_vt_tray(json vtray)
         else {
             vt_tray.color = "";
         }
+        if (vtray.contains("ctype")) {
+            vt_tray.ctype = vtray["ctype"].get<int>();
+        }
+        else {
+            vt_tray.ctype = 1;
+        }
         if (vtray.contains("nozzle_temp_max"))
             vt_tray.nozzle_temp_max = vtray["nozzle_temp_max"].get<std::string>();
         else
@@ -6194,11 +6321,13 @@ AmsTray MachineObject::parse_vt_tray(json vtray)
             vt_tray.cali_idx = -1;
         vt_tray.cols.clear();
         if (vtray.contains("cols")) {
-            if (vtray.is_array()) {
-                for (auto it = vtray.begin(); it != vtray.end(); it++) {
+            if (vtray["cols"].is_array()) {
+                for (auto it = vtray["cols"].begin(); it != vtray["cols"].end(); it++) {
                     vt_tray.cols.push_back(it.value().get<std::string>());
                 }
             }
+        } else {
+            vt_tray.cols.push_back(vt_tray.color);
         }
 
         if (vtray.contains("remain")) {
@@ -6393,6 +6522,17 @@ void MachineObject::parse_new_info(json print)
         is_support_internal_timelapse = get_flag_bits(fun, 28);
         is_support_command_homing = get_flag_bits(fun, 32);
         is_support_brtc = get_flag_bits(fun, 31);
+        m_support_mqtt_axis_control = get_flag_bits(fun, 38);
+        m_support_mqtt_bet_ctrl = get_flag_bits(fun, 39);
+
+        is_support_spaghetti_detection = get_flag_bits(fun, 42);
+        is_support_purgechutepileup_detection = get_flag_bits(fun, 43);
+        is_support_nozzleclumping_detection = get_flag_bits(fun, 44);
+        is_support_airprinting_detection = get_flag_bits(fun, 45);
+
+        m_air_duct_data.m_support_cooling_filter = get_flag_bits(fun, 46);
+        is_support_ext_change_assist = get_flag_bits(fun, 48);
+        is_support_partskip = get_flag_bits(fun, 49);
     }
 
     /*aux*/
@@ -6424,9 +6564,9 @@ void MachineObject::parse_new_info(json print)
             m_air_duct_data.modes.clear();
             m_air_duct_data.parts.clear();
 
-            m_air_duct_data.curren_mode = device["airduct"]["modeCur"].get<int>();
-
             const json& airduct = device["airduct"];
+            if (airduct.contains("modeCur")) { m_air_duct_data.curren_mode = airduct["modeCur"].get<int>();}
+            if (airduct.contains("subMode")) { m_air_duct_data.m_sub_mode = airduct["subMode"].get<int>(); }
             if (airduct.contains("modeList") && airduct["modeList"].is_array()) {
                 auto list = airduct["modeList"].get<std::vector<json>>();
 
@@ -6450,6 +6590,7 @@ void MachineObject::parse_new_info(json print)
                         }
                     }
 
+                    if (AIR_DUCT(mode.id) == AIR_DUCT::AIR_DUCT_EXHAUST) { continue; } /*STUDIO-12796*/
                     m_air_duct_data.modes[mode.id] = mode;
                 }
             }
@@ -6823,6 +6964,7 @@ void MachineObject::check_ams_filament_valid()
         auto &filament_list = data.filament_list;
         auto &checked_filament = data.checked_filament;
         for (const auto &[slot_id, curr_tray] : ams->trayList) {
+
             if (curr_tray->setting_id.size() == 8 && curr_tray->setting_id[0] == 'P' && filament_list.find(curr_tray->setting_id) == filament_list.end()) {
                 if (checked_filament.find(curr_tray->setting_id) == checked_filament.end()) {
                     need_checked_filament_id[nozzle_diameter_str].insert(curr_tray->setting_id);
@@ -6966,7 +7108,7 @@ void MachineObject::command_set_door_open_check(DoorOpenCheckState state)
          default: assert(0); return;
     }
 
-    if (publish_json(j.dump()) == 0)
+    if (publish_json(j) == 0)
     {
         xcam_door_open_check = state;
         xcam_door_open_check_start_time = time(nullptr);
@@ -6983,12 +7125,29 @@ void MachineObject::command_set_save_remote_print_file_to_storage(bool save)
         j["system"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
         j["system"]["config"] = save ? true : false;
 
-        if (publish_json(j.dump()) == 0)
+        if (publish_json(j) == 0)
         {
             xcam__save_remote_print_file_to_storage = save;
             xcam__save_remote_print_file_to_storage_start_time = time(nullptr);
         }
     }
+}
+
+wxString MachineObject::get_nozzle_replace_url() const
+{
+    const wxString& strLanguage = GUI::wxGetApp().app_config->get("language");
+    const wxString& lan_code = strLanguage.BeforeFirst('_');
+
+    const json& link_map = DeviceManager::get_json_from_config(printer_type, "print", "nozzle_replace_wiki");
+    if (link_map.contains(lan_code.ToStdString())) {
+        return link_map[lan_code.ToStdString()].get<wxString>();
+    }
+
+    if (link_map.contains("en")){
+        return link_map["en"].get<wxString>();
+    }/*retry with en*/
+
+    return "https://wiki.qidi3d.com/";
 }
 
 bool DeviceManager::EnableMultiMachine = false;
@@ -7118,7 +7277,6 @@ void DeviceManager::check_pushing()
 void DeviceManager::on_machine_alive(std::string json_str)
 {
     try {
-        //BOOST_LOG_TRIVIAL(trace) << "DeviceManager::SsdpDiscovery, json" << json_str;
         json j = json::parse(json_str);
         std::string dev_name        = j["dev_name"].get<std::string>();
         std::string dev_id          = j["dev_id"].get<std::string>();
@@ -7166,7 +7324,12 @@ void DeviceManager::on_machine_alive(std::string json_str)
                 it->second->bind_sec_link       = sec_link;
                 it->second->dev_connection_type = connect_type;
                 it->second->bind_ssdp_version   = ssdp_version;
-                BOOST_LOG_TRIVIAL(trace) << "DeviceManager::SsdpDiscovery, update userMachineList json" << json_str;
+                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " UpdateUserMachineInfo"
+                                        << ", dev_id= " << QDTCrossTalk::Crosstalk_DevId(dev_id)
+                                        << ", ip = "  << QDTCrossTalk::Crosstalk_DevIP(dev_ip)
+                                        << ", printer_name= " << QDTCrossTalk::Crosstalk_DevName(dev_name)
+                                        << ", con_type= " << connect_type << ", signal= " << printer_signal
+                                        << ", bind_state= " << bind_state;
             }
         }
 
@@ -7179,12 +7342,12 @@ void DeviceManager::on_machine_alive(std::string json_str)
 
             if (obj->dev_ip.compare(dev_ip) != 0) {
                 if ( connection_name.empty() ) {
-                    BOOST_LOG_TRIVIAL(info) << "MachineObject IP changed from " << Slic3r::GUI::wxGetApp().format_IP(obj->dev_ip) << " to " << Slic3r::GUI::wxGetApp().format_IP(dev_ip);
+                    BOOST_LOG_TRIVIAL(info) << "MachineObject IP changed from " << QDTCrossTalk::Crosstalk_DevIP(obj->dev_ip) << " to " << QDTCrossTalk::Crosstalk_DevIP(dev_ip);
                     obj->dev_ip = dev_ip;
                 }
                 else {
                     if ( obj->dev_connection_name.empty() || obj->dev_connection_name.compare(connection_name) == 0) {
-                        BOOST_LOG_TRIVIAL(info) << "MachineObject IP changed from " << Slic3r::GUI::wxGetApp().format_IP(obj->dev_ip) << " to " << Slic3r::GUI::wxGetApp().format_IP(dev_ip) << " connection_name is " << connection_name;
+                        BOOST_LOG_TRIVIAL(info) << "MachineObject IP changed from " << QDTCrossTalk::Crosstalk_DevIP(obj->dev_ip) << " to " << QDTCrossTalk::Crosstalk_DevIP(dev_ip) << " connection_name is " << connection_name;
                         if(obj->dev_connection_name.empty()){obj->dev_connection_name = connection_name;}
                         obj->dev_ip = dev_ip;
                     }
@@ -7200,20 +7363,41 @@ void DeviceManager::on_machine_alive(std::string json_str)
                 obj->bind_ssdp_version != ssdp_version ||
                 obj->printer_type != MachineObject::parse_printer_type(printer_type_str))
             {
+                if (obj->dev_connection_type != connect_type ||
+                    obj->bind_state != bind_state ||
+                    obj->bind_sec_link != sec_link ||
+                    obj->bind_ssdp_version != ssdp_version ||
+                    obj->printer_type != MachineObject::parse_printer_type(printer_type_str))
+                {
+                    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " UpdateLocalMachineInfo"
+                        << ", dev_id= " << QDTCrossTalk::Crosstalk_DevId(dev_id)
+                        << ", ip = "  << QDTCrossTalk::Crosstalk_DevIP(dev_ip)
+                        << ", printer_name= " << QDTCrossTalk::Crosstalk_DevName(dev_name)
+                        << ", con_type= " << connect_type << ", signal= " << printer_signal
+                        << ", bind_state= " << bind_state;
+                }
+                else
+                {
+                    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " UpdateLocalMachineInfo_WIFI"
+                        << ", dev_id= " << QDTCrossTalk::Crosstalk_DevId(dev_id)
+                        << ", ip = "  << QDTCrossTalk::Crosstalk_DevIP(dev_ip)
+                        << ", printer_name= " << QDTCrossTalk::Crosstalk_DevName(dev_name)
+                        << ", con_type= " << connect_type << ", signal= " << printer_signal
+                        << ", bind_state= " << bind_state;
+                }
+
                 obj->wifi_signal         = printer_signal;
                 obj->dev_connection_type = connect_type;
                 obj->bind_state          = bind_state;
                 obj->bind_sec_link       = sec_link;
                 obj->bind_ssdp_version   = ssdp_version;
                 obj->printer_type        = MachineObject::parse_printer_type(printer_type_str);
-                BOOST_LOG_TRIVIAL(trace) << "DeviceManager::SsdpDiscovery, update localMachineList json" << json_str;
             }
 
             // U0 firmware
             if (obj->dev_connection_type.empty() && obj->bind_state.empty())
                 obj->bind_state = "free";
 
-            //BOOST_LOG_TRIVIAL(debug) << "SsdpDiscovery:: Update Machine Info, printer_sn = " << dev_id << ", signal = " << printer_signal;
             obj->last_alive = Slic3r::Utils::get_current_time_utc();
             obj->m_is_online = true;
 
@@ -7246,9 +7430,9 @@ void DeviceManager::on_machine_alive(std::string json_str)
                  Slic3r::GUI::wxGetApp().app_config->set_str("ip_address", obj->dev_id, obj->dev_ip);
                  Slic3r::GUI::wxGetApp().app_config->save();
              }*/
-            BOOST_LOG_TRIVIAL(info) << "SsdpDiscovery::New Machine, ip= " << Slic3r::GUI::wxGetApp().format_IP(dev_ip) << ", printer_name= " << dev_name
-                                    << ", printer_type= " << printer_type_str << ", con_type= "
-                                    << connect_type <<", signal= " << printer_signal << ", bind_state= " << bind_state;
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " New Machine, dev_id= " << QDTCrossTalk::Crosstalk_DevId(dev_id)
+                                    << ", ip = " << QDTCrossTalk::Crosstalk_DevIP(dev_ip) <<", printer_name = " << QDTCrossTalk::Crosstalk_DevName(dev_name)
+                                    << ", con_type= " << connect_type <<", signal= " << printer_signal << ", bind_state= " << bind_state;
         }
     }
     catch (...) {
@@ -7261,13 +7445,22 @@ MachineObject* DeviceManager::insert_local_device(std::string dev_name, std::str
     MachineObject* obj;
     obj = new MachineObject(m_agent, dev_name, dev_id, dev_ip);
     obj->printer_type = MachineObject::parse_printer_type("C11");
-    obj->dev_connection_type = connection_type;
-    obj->bind_state = bind_state;
+    obj->dev_connection_type = connection_type == "farm" ? "lan":connection_type;
+    obj->bind_state          = connection_type == "farm" ? "free":bind_state;
     obj->bind_sec_link = "secure";
     obj->bind_ssdp_version = version;
     obj->m_is_online = true;
     obj->set_access_code(access_code, false);
     obj->set_user_access_code(access_code, false);
+
+
+    auto it = localMachineList.find(dev_id);
+    if (it != localMachineList.end()) {
+        localMachineList[dev_id] = obj;
+    } else {
+        localMachineList.insert(std::make_pair(dev_id, obj));
+    }
+
     return obj;
 }
 
@@ -7401,7 +7594,7 @@ void DeviceManager::clean_user_info()
 
 bool DeviceManager::set_selected_machine(std::string dev_id, bool need_disconnect)
 {
-    BOOST_LOG_TRIVIAL(info) << "set_selected_machine=" << dev_id;
+    BOOST_LOG_TRIVIAL(info) << "set_selected_machine=" << QDTCrossTalk::Crosstalk_DevId(dev_id);
     auto my_machine_list = get_my_machine_list();
     auto it = my_machine_list.find(dev_id);
 
@@ -7412,8 +7605,6 @@ bool DeviceManager::set_selected_machine(std::string dev_id, bool need_disconnec
         if (last_selected->second->connection_type() == "lan") {
             if (last_selected->second->is_connecting() && !need_disconnect)
                 return false;
-
-            if (!need_disconnect) {m_agent->disconnect_printer(); }
         }
     }
 
@@ -7431,7 +7622,6 @@ bool DeviceManager::set_selected_machine(std::string dev_id, bool need_disconnec
             } else {
                 // lan mode printer reconnect printer
                 if (m_agent) {
-                    if (!need_disconnect) {m_agent->disconnect_printer();}
                     it->second->reset();
 #if !QDT_RELEASE_TO_PUBLIC
                     it->second->connect(Slic3r::GUI::wxGetApp().app_config->get("enable_ssl_for_mqtt") == "true" ? true : false);
@@ -7461,7 +7651,6 @@ bool DeviceManager::set_selected_machine(std::string dev_id, bool need_disconnec
 #else
                     it->second->connect(it->second->local_use_ssl_for_mqtt);
 #endif
-                    m_agent->set_user_selected_machine(dev_id);
                     it->second->set_lan_mode_connection_state(true);
                 }
             }
@@ -7491,28 +7680,6 @@ MachineObject* DeviceManager::get_selected_machine()
     return nullptr;
 }
 
-void DeviceManager::add_user_subscribe()
-{
-    /* user machine */
-    std::vector<std::string> dev_list;
-    for (auto it = userMachineList.begin(); it != userMachineList.end(); it++) {
-        dev_list.push_back(it->first);
-        BOOST_LOG_TRIVIAL(trace) << "add_user_subscribe: " << it->first;
-    }
-    m_agent->add_subscribe(dev_list);
-}
-
-void DeviceManager::del_user_subscribe()
-{
-    /* user machine */
-    std::vector<std::string> dev_list;
-    for (auto it = userMachineList.begin(); it != userMachineList.end(); it++) {
-        dev_list.push_back(it->first);
-        BOOST_LOG_TRIVIAL(trace) << "del_user_subscribe: " << it->first;
-    }
-    m_agent->del_subscribe(dev_list);
-}
-
 void DeviceManager::subscribe_device_list(std::vector<std::string> dev_list)
 {
     std::vector<std::string> unsub_list;
@@ -7520,7 +7687,7 @@ void DeviceManager::subscribe_device_list(std::vector<std::string> dev_list)
     for (auto& it : subscribe_list_cache) {
         if (it != selected_machine) {
             unsub_list.push_back(it);
-            BOOST_LOG_TRIVIAL(trace) << "subscribe_device_list: unsub dev id = " << it;
+            BOOST_LOG_TRIVIAL(trace) << "subscribe_device_list: unsub dev id = " << QDTCrossTalk::Crosstalk_DevId(it);
         }
     }
     BOOST_LOG_TRIVIAL(trace) << "subscribe_device_list: unsub_list size = " << unsub_list.size();
@@ -7530,7 +7697,7 @@ void DeviceManager::subscribe_device_list(std::vector<std::string> dev_list)
     }
     for (auto& it : dev_list) {
         subscribe_list_cache.push_back(it);
-        BOOST_LOG_TRIVIAL(trace) << "subscribe_device_list: sub dev id = " << it;
+        BOOST_LOG_TRIVIAL(trace) << "subscribe_device_list: sub dev id = " << QDTCrossTalk::Crosstalk_DevId(it);
     }
     BOOST_LOG_TRIVIAL(trace) << "subscribe_device_list: sub_list size = " << subscribe_list_cache.size();
     if (!unsub_list.empty())
@@ -7553,6 +7720,7 @@ std::map<std::string, MachineObject*> DeviceManager::get_my_machine_list()
     for (auto it = localMachineList.begin(); it != localMachineList.end(); it++) {
         if (!it->second)
             continue;
+
         if (it->second->has_access_right() && it->second->is_avaliable() && it->second->is_lan_mode_printer()) {
             // remove redundant in userMachineList
             if (result.find(it->first) == result.end()) {
@@ -7893,14 +8061,36 @@ bool DeviceManager::load_filaments_blacklist_config()
             return true;
         }
         else {
-            BOOST_LOG_TRIVIAL(error) << "load filaments blacklist config failed, file = " << config_file;
+            BOOST_LOG_TRIVIAL(error) << "load filaments blacklist config failed, file = filaments_blacklist.json";
         }
     }
     catch (...) {
-        BOOST_LOG_TRIVIAL(error) << "load filaments blacklist config failed, file = " << config_file;
+        BOOST_LOG_TRIVIAL(error) << "load filaments blacklist config failed, file = filaments_blacklist.json";
         return false;
     }
     return true;
+}
+
+string DeviceManager::get_fan_text(const std::string& type_str, const std::string& key)
+{
+    std::vector<std::string> filaments;
+    std::string              config_file = Slic3r::resources_dir() + "/printers/" + type_str + ".json";
+    boost::nowide::ifstream  json_file(config_file.c_str());
+    try
+    {
+        json jj;
+        if (json_file.is_open()) {
+            json_file >> jj;
+            if (jj.contains("00.00.00.00")) {
+                json const& printer = jj["00.00.00.00"];
+                if (printer.contains("fan") && printer["fan"].contains(key)) {
+                    return printer["fan"][key].get<std::string>();
+                }
+            }
+        }
+    }
+    catch (...) {}
+    return string();
 }
 
 bool DeviceManager::is_virtual_slot(int ams_id)
@@ -7947,29 +8137,22 @@ void DeviceManager::OnSelectedMachineLost() {
     GUI::wxGetApp().sidebar().load_ams_list(string(), nullptr);
 }
 
-// moved from tao.wang and zhimin.zeng
-void check_filaments_for_ams_slot(std::string model_id,
-                                  std::string tag_vendor,
-                                  std::string tag_type,
-                                  int                ams_id,
-                                  int                slot_id,
-                                  std::string        tag_name,
-                                  bool& in_blacklist,
-                                  std::string& ac,
-                                  wxString& info)
+
+void check_filaments(std::string model_id,
+                     std::string tag_vendor,
+                     std::string tag_type,
+                     int                ams_id,
+                     int                slot_id,
+                     std::string        tag_name,
+                     bool& in_blacklist,
+                     std::string& ac,
+                     wxString& info,
+                     wxString& wiki_url)
 {
     if (tag_name.empty())
     {
         tag_name = DeviceManager::get_filament_name_from_ams(ams_id, slot_id);
     }
-
-    std::unordered_map<std::string, wxString> blacklist_prompt =
-    {
-    {"TPU: not supported", _L("TPU is not supported by Box.")},
-    {"PVA: flexible", _L("Damp PVA will become flexible and get stuck inside Box,please take care to dry it before use.")},
-    {"CF/GF: hard and brittle", _L("CF/GF filaments are hard and brittle, It's easy to break or get stuck in Box, please use with caution.")},
-    {"PLA-Glow", _L("The rough surface of PLA Glow can accelerate wear on the Box system, particularly on the internal components of the Box Lite.")}
-    };
 
     in_blacklist = false;
 
@@ -7983,6 +8166,7 @@ void check_filaments_for_ams_slot(std::string model_id,
             std::string type                   = filament_item.contains("type") ? filament_item["type"].get<std::string>() : "";
             std::string type_suffix            = filament_item.contains("type_suffix") ? filament_item["type_suffix"].get<std::string>() : "";
             std::string name                   = filament_item.contains("name") ? filament_item["name"].get<std::string>() : "";
+            std::string slot                   = filament_item.contains("slot") ? filament_item["slot"].get<std::string>() : "";
             std::vector<std::string> model_ids = filament_item.contains("model_id") ? filament_item["model_id"].get<std::vector<std::string>>() : std::vector<std::string>();
             std::string action                 = filament_item.contains("action") ? filament_item["action"].get<std::string>() : "";
             std::string description            = filament_item.contains("description") ? filament_item["description"].get<std::string>() : "";
@@ -8016,13 +8200,36 @@ void check_filaments_for_ams_slot(std::string model_id,
             std::transform(name.begin(), name.end(), name.begin(), ::tolower);
             if (!name.empty() && (name != tag_name)) { continue;}
 
+            // check loc
+            if (!slot.empty()) {
+                bool is_virtual_slot = DeviceManager::is_virtual_slot(ams_id);
+                bool check_virtual_slot = (slot == "ext");
+                bool check_ams_slot = (slot == "ams");
+                if (is_virtual_slot && !check_virtual_slot) {
+                    continue;
+                }  else if (!is_virtual_slot && !check_ams_slot) {
+                    continue;
+                }
+            }
+
             in_blacklist = true;
             ac = action;
-            info = blacklist_prompt[description];
+            info = _L(description);
+            wiki_url = filament_item.contains("wiki") ? filament_item["wiki"].get<std::string>() : "";
             return;
+
+            // Using in description
+            L("TPU is not supported by AMS.");
+            L("Damp PVA will become flexible and get stuck inside AMS,please take care to dry it before use.");
+            L("The rough surface of PLA Glow can accelerate wear on the AMS system, particularly on the internal components of the AMS Lite.");
+            L("CF/GF filaments are hard and brittle, It's easy to break or get stuck in AMS, please use with caution.");
+            L("PPS-CF is brittle and could break in bended PTFE tube above Toolhead.");
+            L("PPA-CF is brittle and could break in bended PTFE tube above Toolhead.");
         }
     }
 }
+
+
 
 void DeviceManager::check_filaments_in_blacklist(std::string model_id,
                                                  std::string tag_vendor,
@@ -8035,17 +8242,23 @@ void DeviceManager::check_filaments_in_blacklist(std::string model_id,
                                                  std::string       &ac,
                                                  wxString       &info)
 {
-    if (ams_id < 0 || slot_id < 0) {
+    wxString wiki_url;
+    check_filaments_in_blacklist_url(model_id, tag_vendor, tag_type, filament_id, ams_id, slot_id, tag_name, in_blacklist, ac, info, wiki_url);
+}
+
+void DeviceManager::check_filaments_in_blacklist_url(std::string model_id, std::string tag_vendor, std::string tag_type, const std::string& filament_id, int ams_id, int slot_id, std::string tag_name, bool& in_blacklist, std::string& ac, wxString& info, wxString& wiki_url)
+{
+    if (ams_id < 0 || slot_id < 0)
+    {
         return;
     }
 
-    if (!check_filaments_printable(tag_vendor, tag_type, filament_id, ams_id, in_blacklist, ac, info)) {
+    if (!check_filaments_printable(tag_vendor, tag_type, filament_id, ams_id, in_blacklist, ac, info))
+    {
         return;
     }
 
-    if (!DeviceManager::is_virtual_slot(ams_id)) {
-        check_filaments_for_ams_slot(model_id, tag_vendor, tag_type, ams_id, slot_id, tag_name, in_blacklist, ac, info);
-    }
+    check_filaments(model_id, tag_vendor, tag_type, ams_id, slot_id, tag_name, in_blacklist, ac, info, wiki_url);
 }
 
 std::string DeviceManager::load_gcode(std::string type_str, std::string gcode_file)
@@ -8060,7 +8273,7 @@ std::string DeviceManager::load_gcode(std::string type_str, std::string gcode_fi
             return gcode_str.str();
         }
     } catch(...) {
-        BOOST_LOG_TRIVIAL(error) << "load gcode file failed, file = " << gcode_file << ", path = " << gcode_full_path;
+        BOOST_LOG_TRIVIAL(error) << "load gcode file failed, file = " << gcode_file;
     }
 
 

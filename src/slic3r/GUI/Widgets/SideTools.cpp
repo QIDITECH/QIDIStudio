@@ -45,8 +45,8 @@ namespace Slic3r { namespace GUI {
 
 SideToolsPanel::~SideToolsPanel() { delete m_intetval_timer; }
 
-void SideToolsPanel::set_none_printer_mode() 
-{ 
+void SideToolsPanel::set_none_printer_mode()
+{
     m_none_printer = true;
     Refresh();
 }
@@ -57,26 +57,26 @@ void SideToolsPanel::on_timer(wxTimerEvent &event)
 
 void SideToolsPanel::set_current_printer_name(std::string dev_name)
 {
-    if (m_dev_name == from_u8(dev_name)) return;
+     if (m_dev_name == from_u8(dev_name) && !m_none_printer) return;
 
      m_none_printer = false;
      m_dev_name     = from_u8(dev_name);
      Refresh();
 }
 
-void SideToolsPanel::set_current_printer_signal(WifiSignal sign) 
+void SideToolsPanel::set_current_printer_signal(WifiSignal sign)
 {
-     if (last_printer_signal == sign) return;
-    
+     if (last_printer_signal == sign && !m_none_printer) return;
+
      last_printer_signal = sign;
      m_none_printer = false;
      m_wifi_type    = sign;
      Refresh();
 }
 
-void SideToolsPanel::start_interval() 
-{ 
-    m_intetval_timer->Start(SIDE_TOOL_CLICK_INTERVAL); 
+void SideToolsPanel::start_interval()
+{
+    m_intetval_timer->Start(SIDE_TOOL_CLICK_INTERVAL);
     m_is_in_interval = true;
 }
 
@@ -87,13 +87,13 @@ void SideToolsPanel::stop_interval(wxTimerEvent& event)
 }
 
 
-bool SideToolsPanel::is_in_interval() 
+bool SideToolsPanel::is_in_interval()
 {
     return m_is_in_interval;
 }
 
-void SideToolsPanel::msw_rescale() 
-{ 
+void SideToolsPanel::msw_rescale()
+{
     m_printing_img.msw_rescale();
     m_arrow_img.msw_rescale();
 
@@ -236,7 +236,7 @@ void SideToolsPanel::on_mouse_left_down(wxMouseEvent &evt)
     Refresh();
 }
 
-void SideToolsPanel::on_mouse_left_up(wxMouseEvent &evt) 
+void SideToolsPanel::on_mouse_left_up(wxMouseEvent &evt)
 {
      m_click = false;
      Refresh();
@@ -275,7 +275,13 @@ SideTools::SideTools(wxWindow *parent, wxWindowID id, const wxPoint &pos, const 
     wxBoxSizer* connection_sizer_V = new wxBoxSizer(wxVERTICAL);
     wxBoxSizer* connection_sizer_H = new wxBoxSizer(wxHORIZONTAL);
 
-    m_hyperlink = new wxHyperlinkCtrl(m_connection_info, wxID_ANY, _L("Failed to connect to the server"), wxT("https://wiki.qidi3d.com/en/software/qidi-studio/failed-to-connect-printer"), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
+
+    bool is_zh  = wxGetApp().app_config->get("language") == "zh_CN";
+    wxString hyperlink_url = is_zh ? wxT("https://wiki.qidi3d.com/zh/software/qidi-studio/troubleshooting/connect-send-problem") :
+                             wxT("https://wiki.qidi3d.com/en/software/qidi-studio/troubleshooting/connect-send-problem");
+
+
+    m_hyperlink = new wxHyperlinkCtrl(m_connection_info, wxID_ANY, _L("Failed to connect to the server"), hyperlink_url, wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
     m_hyperlink->SetBackgroundColour(wxColour(255, 111, 0));
 
     m_more_err_open = ScalableBitmap(this, "monitir_err_open", 16);
@@ -407,7 +413,7 @@ SideTools::SideTools(wxWindow *parent, wxWindowID id, const wxPoint &pos, const 
     Fit();
 }
 
-void SideTools::msw_rescale() 
+void SideTools::msw_rescale()
 {
     m_side_tools->msw_rescale();
     m_connection_info->SetCornerRadius(0);

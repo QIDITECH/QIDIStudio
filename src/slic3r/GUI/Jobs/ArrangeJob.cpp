@@ -194,7 +194,7 @@ void ArrangeJob::prepare_selected() {
 void ArrangeJob::prepare_all() {
     clear_input();
 
-    PartPlateList& plate_list = m_plater->get_partplate_list();    
+    PartPlateList& plate_list = m_plater->get_partplate_list();
     for (size_t i = 0; i < plate_list.get_plate_count(); i++) {
         PartPlate* plate = plate_list.get_plate(i);
         bool same_as_global_print_seq = true;
@@ -798,7 +798,7 @@ void ArrangeJob::finalize()
         // Move the unprintable items to the last virtual bed.
         // Note ap.apply() moves relatively according to bed_idx, so we need to subtract the orignal bed_idx
         for (ArrangePolygon& ap : m_unprintable) {
-            ap.bed_idx = beds + 1;
+            ap.bed_idx = -1;
             plate_list.postprocess_arrange_polygon(ap, true);
 
             ap.apply();
@@ -836,6 +836,7 @@ void ArrangeJob::finalize()
             NotificationManager::NotificationLevel::RegularNotificationLevel, _u8L("Arranging canceled."));
     }
     Job::finalize();
+
     m_plater->m_arrange_running.store(false);
 }
 

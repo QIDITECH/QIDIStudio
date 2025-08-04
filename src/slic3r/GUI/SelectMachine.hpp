@@ -151,7 +151,6 @@ struct Machine_info {
 #define PRINT_OPT_WIDTH  FromDIP(44)
 class PrintOptionItem : public wxPanel
 {
-
 public:
     PrintOptionItem(wxWindow *parent, std::vector<POItem> ops, std::string param = "");
     ~PrintOptionItem() {};
@@ -214,7 +213,7 @@ public:
     PrintOption(wxWindow *parent, wxString title, wxString tips, std::vector<POItem> ops, std::string param = "");
     ~PrintOption(){};
 
-    public:
+public:
     void        enable(bool en);
 
     void        setValue(std::string value);
@@ -301,6 +300,7 @@ private:
     bool                                m_is_canceled{ false };
     bool                                m_is_rename_mode{ false };
     bool                                m_check_flag {false};
+    bool                                m_ext_change_assist{ false };
     PrintPageMode                       m_print_page_mode{PrintPageMode::PrintPageModePrepare};
     std::string                         m_print_error_msg;
     std::string                         m_print_error_extra;
@@ -397,6 +397,8 @@ protected:
     Label*                              m_stext_weight{ nullptr };
     PrinterMsgPanel *                   m_statictext_ams_msg{nullptr};
     Label*                              m_txt_change_filament_times{ nullptr };
+    CheckBox*                           m_check_ext_change_assist{ nullptr };
+    Label*                              m_label_ext_change_assist{ nullptr };
 
     PrinterInfoBox*                     m_printer_box { nullptr};
     PrinterMsgPanel *                   m_text_printer_msg{nullptr};
@@ -468,7 +470,7 @@ public:
     void finish_mode();
 	void sync_ams_mapping_result(std::vector<FilamentInfo>& result);
     void prepare(int print_plate_idx);
-    void show_status(PrintDialogStatus status, std::vector<wxString> params = std::vector<wxString>());
+    void show_status(PrintDialogStatus status, std::vector<wxString> params = std::vector<wxString>(), wxString wiki_url = wxEmptyString);
     void sys_color_changed();
     void reset_timeout();
     void update_user_printer();
@@ -483,7 +485,6 @@ public:
     void show_errors(wxString& info);
     void on_ok_btn(wxCommandEvent& event);
     void Enable_Auto_Refill(bool enable);
-    void connect_printer_mqtt();
     void on_send_print();
     void clear_ip_address_config(wxCommandEvent& e);
     void on_refresh(wxCommandEvent& event);
@@ -508,10 +509,6 @@ public:
     void Enable_Send_Button(bool en);
     void on_dpi_changed(const wxRect& suggested_rect) override;
     void update_user_machine_list();
-    void     update_ams_status_msg(vector<wxString> msg, bool is_error, bool is_single);
-    void     update_priner_status_msg(vector<wxString> msg, bool is_error, bool is_single);
-    //void     update_priner_status_msg(vector<wxString> msg);
-    void update_printer_status_msg_tips(const wxString& msg_tips);
     void update_print_status_msg();
     void update_print_error_info(int code, std::string msg, std::string extra);
     bool has_timelapse_warning(wxString& msg);
@@ -560,6 +557,9 @@ private:
     void load_option_vals(MachineObject* obj);
     void save_option_vals();
     void save_option_vals(MachineObject *obj);
+
+    // enbale or disable external change assist
+    bool is_enable_external_change_assist(std::vector<FilamentInfo>& ams_mapping_result);
 };
 
 class PrinterInfoBox : public StaticBox

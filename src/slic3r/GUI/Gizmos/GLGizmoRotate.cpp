@@ -29,7 +29,7 @@ const float GLGizmoRotate::GrabberOffset = 0.15f; // in percent of radius
 
 
 GLGizmoRotate::GLGizmoRotate(GLCanvas3D& parent, GLGizmoRotate::Axis axis)
-    : GLGizmoBase(parent, "", -1)
+    : GLGizmoBase(parent, -1)
     , m_axis(axis)
     , m_angle(0.0)
     , m_center(0.0, 0.0, 0.0)
@@ -42,7 +42,7 @@ GLGizmoRotate::GLGizmoRotate(GLCanvas3D& parent, GLGizmoRotate::Axis axis)
 }
 
 GLGizmoRotate::GLGizmoRotate(const GLGizmoRotate& other)
-    : GLGizmoBase(other.m_parent, other.m_icon_filename, other.m_sprite_id)
+    : GLGizmoBase(other.m_parent, other.m_sprite_id)
     , m_axis(other.m_axis)
     , m_angle(other.m_angle)
     , m_center(other.m_center)
@@ -157,11 +157,11 @@ void GLGizmoRotate::on_render()
     const auto& shader = wxGetApp().get_shader("flat");
     if (shader) {
         wxGetApp().bind_shader(shader);
+
         const Camera& camera = wxGetApp().plater()->get_camera();
         Transform3d redius_scale_matrix;
         Geometry::scale_transform(redius_scale_matrix, { radius, radius, radius });
         Transform3d view_model_matrix = camera.get_view_matrix() * m_base_model_matrix * redius_scale_matrix;
-
 
         shader->set_uniform("view_model_matrix", view_model_matrix);
         shader->set_uniform("projection_matrix", camera.get_projection_matrix());
@@ -448,7 +448,6 @@ void GLGizmoRotate::render_grabber_extension(const BoundingBoxf3& box, bool pick
         Geometry::assemble_transform(center, Vec3d(-0.5 * PI, 0.0, m_angle)) *
         Geometry::assemble_transform(1.5 * size * Vec3d::UnitZ(), Vec3d::Zero(), Vec3d(0.75 * size, 0.75 * size, 3.0 * size));
 
-
     shader->set_uniform("view_model_matrix", view_model_matrix);
     shader->set_uniform("normal_matrix", (Matrix3d)view_model_matrix.matrix().block(0, 0, 3, 3).inverse().transpose());
     m_cone.render_geometry();
@@ -492,7 +491,6 @@ Transform3d  GLGizmoRotate::transform_to_local(const Selection &selection) const
     }
 
     return m_orient_matrix * ret;
-
 
 }
 
@@ -580,9 +578,14 @@ BoundingBoxf3 GLGizmoRotate::get_bounding_box() const
     return t_aabb;
 }
 
+std::string GLGizmoRotate::get_icon_filename(bool b_dark_mode) const
+{
+    return "";
+}
+
 //QDS: GUI refactor: add obj manipulation
-GLGizmoRotate3D::GLGizmoRotate3D(GLCanvas3D& parent, const std::string& icon_filename, unsigned int sprite_id, GizmoObjectManipulation* obj_manipulation)
-    : GLGizmoBase(parent, icon_filename, sprite_id)
+GLGizmoRotate3D::GLGizmoRotate3D(GLCanvas3D& parent, unsigned int sprite_id, GizmoObjectManipulation* obj_manipulation)
+    : GLGizmoBase(parent, sprite_id)
     //QDS: GUI refactor: add obj manipulation
     , m_object_manipulation(obj_manipulation)
 {
@@ -620,6 +623,11 @@ BoundingBoxf3 GLGizmoRotate3D::get_bounding_box() const
         t_aabb.defined = true;
     }
     return t_aabb;
+}
+
+std::string GLGizmoRotate3D::get_icon_filename(bool b_dark_mode) const
+{
+    return b_dark_mode ? "toolbar_rotate_dark.svg" : "toolbar_rotate.svg";
 }
 
 bool GLGizmoRotate3D::on_init()

@@ -595,7 +595,6 @@ AMSExtImage::AMSExtImage(wxWindow* parent, AMSPanelPos ext_pos, ExtderData *data
     }
 
     m_ext_pos = ext_pos;
-
     SetBackgroundColour(StateColor::darkModeColorFor(AMS_CONTROL_DEF_LIB_BK_COLOUR));
 
     Bind(wxEVT_PAINT, &AMSExtImage::paintEvent, this);
@@ -1055,7 +1054,7 @@ void AMSLib::render_generic_text(wxDC &dc)
         show_k_value = false;
     }
     else if (m_info.cali_idx == -1 || (m_obj && (CalibUtils::get_selected_calib_idx(m_obj->pa_calib_tab, m_info.cali_idx) == -1))) {
-        if (m_obj && m_obj->is_multi_extruders())
+        if (m_obj && m_obj->is_support_auto_flow_calibration)
             show_k_value = false;
         else
             get_default_k_n_value(m_info.filament_id, m_info.k, m_info.n);
@@ -2801,8 +2800,8 @@ AMSHumidity::AMSHumidity(wxWindow* parent, wxWindowID id, AMSinfo info, const wx
     for (int i = 1; i <= 5; i++) { ams_humidity_no_num_imgs.push_back(ScalableBitmap(this, "hum_level" + std::to_string(i) + "_no_num_light", 16)); }
     for (int i = 1; i <= 5; i++) { ams_humidity_no_num_dark_imgs.push_back(ScalableBitmap(this, "hum_level" + std::to_string(i) + "_no_num_dark", 16)); }
 
-    ams_sun_img = ScalableBitmap(this, "ams_drying", 16);
-    ams_drying_img = ScalableBitmap(this, "ams_is_drying", 16);
+    ams_sun_img = ScalableBitmap(this, "ams_drying", 20);
+    ams_drying_img = ScalableBitmap(this, "ams_is_drying", 20);
 
     Bind(wxEVT_PAINT, &AMSHumidity::paintEvent, this);
     //wxWindow::SetBackgroundColour(AMS_CONTROL_DEF_HUMIDITY_BK_COLOUR);

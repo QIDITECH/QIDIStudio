@@ -138,7 +138,6 @@ void GLGizmoBase::Grabber::render(const std::array<float, 4>& render_color, bool
     //float fullsize = 2 * (dragging ? get_dragging_half_size(size) : get_half_size(size));
     //float fullsize = get_grabber_size();
 
-
     const_cast<GLModel*>(&cube)->set_color(-1, render_color);
 
     const Camera& camera = picking ? wxGetApp().plater()->get_picking_camera() : wxGetApp().plater()->get_camera();
@@ -227,7 +226,7 @@ bool GLGizmoBase::render_combo(const std::string &label, const std::vector<std::
     return is_changed;
 }
 
-void GLGizmoBase::render_cross_mark(const Transform3d& matrix, const Vec3f &target)
+void GLGizmoBase::render_cross_mark(const Transform3d &matrix, const Vec3f &target, bool single)
 {
     if (!m_cross_mark.is_initialized()) {
         GLModel::Geometry geo;
@@ -235,7 +234,11 @@ void GLGizmoBase::render_cross_mark(const Transform3d& matrix, const Vec3f &targ
         geo.format.vertex_layout = GLModel::Geometry::EVertexLayout::P3;
 
         // x
-        geo.add_vertex(Vec3f{  -0.5f, 0.0f, 0.0f });
+        if (single) {
+            geo.add_vertex(Vec3f{0.0f, 0.0f, 0.0f});
+        } else {
+            geo.add_vertex(Vec3f{-0.5f, 0.0f, 0.0f});
+        }
         geo.add_vertex(Vec3f{  0.5f, 0.0f, 0.0f });
 
         geo.add_line(0, 1);
@@ -253,7 +256,6 @@ void GLGizmoBase::render_cross_mark(const Transform3d& matrix, const Vec3f &targ
     const auto& proj_matrix = camera.get_projection_matrix();
 
     const auto view_model_matrix = view_matrix * matrix;
-
     glsafe(::glDisable(GL_DEPTH_TEST));
 
     const auto& p_ogl_manager = wxGetApp().get_opengl_manager();
@@ -275,7 +277,48 @@ void GLGizmoBase::render_cross_mark(const Transform3d& matrix, const Vec3f &targ
     p_flat_shader->set_uniform("view_model_matrix", view_model_matrix * model_matrix);
     m_cross_mark.set_color({ 0.0f, 0.0f, 1.0f, 1.0f });
     m_cross_mark.render_geometry();
+    glsafe(::glEnable(GL_DEPTH_TEST));
+    wxGetApp().unbind_shader();
+}
 
+void GLGizmoBase::render_lines(const std::vector<Vec3d> &points)
+{
+    if (!m_lines_mark.is_initialized()) {
+        GLModel::Geometry geo;
+        geo.format.type          = GLModel::PrimitiveType::Lines;
+        geo.format.vertex_layout = GLModel::Geometry::EVertexLayout::P3;
+
+        for (int i = 1; i < points.size(); i++) {
+            Vec3f p0 = points[i - 1].cast<float>();
+            Vec3f p1 = points[i].cast<float>();
+            geo.add_vertex(p0);
+            geo.add_vertex(p1);
+            geo.add_line(i - 1, i);
+        }
+        m_lines_mark.init_from(std::move(geo));
+    }
+    const auto &p_flat_shader = wxGetApp().get_shader("flat");
+    if (!p_flat_shader) return;
+
+    wxGetApp().bind_shader(p_flat_shader);
+
+    const Camera &camera      = wxGetApp().plater()->get_camera();
+    const auto &  view_matrix = camera.get_view_matrix();
+    const auto &  proj_matrix = camera.get_projection_matrix();
+
+    const auto view_model_matrix = view_matrix;
+    glsafe(::glDisable(GL_DEPTH_TEST));
+
+    const auto &ogl_manager = wxGetApp().get_opengl_manager();
+    if (ogl_manager) { ogl_manager->set_line_width(2.0f); }
+
+    Transform3d model_matrix{Transform3d::Identity()};
+
+    p_flat_shader->set_uniform("view_model_matrix", view_model_matrix);
+    p_flat_shader->set_uniform("projection_matrix", proj_matrix);
+    m_lines_mark.set_color({1.0f, 1.0f, 0.0f, 1.0f});
+    m_lines_mark.render_geometry();
+    glsafe(::glEnable(GL_DEPTH_TEST));
     wxGetApp().unbind_shader();
 }
 
@@ -288,12 +331,11 @@ float GLGizmoBase::get_grabber_size()
     return grabber_size;
 }
 
-GLGizmoBase::GLGizmoBase(GLCanvas3D &parent, const std::string &icon_filename, unsigned int sprite_id)
+GLGizmoBase::GLGizmoBase(GLCanvas3D &parent, unsigned int sprite_id)
     : m_parent(parent)
     , m_group_id(-1)
     , m_state(Off)
     , m_shortcut_key(0)
-    , m_icon_filename(icon_filename)
     , m_sprite_id(sprite_id)
     , m_hover_id(-1)
     , m_dragging(false)
@@ -345,10 +387,6 @@ void GLGizmoBase::set_state(EState state)
     }
     m_state = state;
     on_set_state();
-}
-
-void GLGizmoBase::set_icon_filename(const std::string &filename) {
-    m_icon_filename = filename;
 }
 
 bool GLGizmoBase::on_key(const wxKeyEvent& key_event)
@@ -686,7 +724,12 @@ Transform3d GLGizmoBase::get_corss_mask_model_matrix(ECrossMaskType type, const 
 
 void GLGizmoBase::render_input_window(float x, float y, float bottom_limit)
 {
-    on_render_input_window(x, y, bottom_limit);
+    auto canvas_w = float(m_parent.get_canvas_size().get_width());
+    auto canvas_h = float(m_parent.get_canvas_size().get_height());
+    float zoom = (float)m_parent.get_active_camera().get_zoom();
+    const float final_x = 0.5 * canvas_w + x * zoom;
+
+    on_render_input_window(final_x, y, bottom_limit);
     if (m_first_input_window_render) {
         // for some reason, the imgui dialogs are not shown on screen in the 1st frame where they are rendered, but show up only with the 2nd rendered frame
         // so, we forces another frame rendering the first time the imgui window is shown
@@ -700,6 +743,11 @@ BoundingBoxf3 GLGizmoBase::get_bounding_box() const
     BoundingBoxf3 t_aabb;
     t_aabb.reset();
     return t_aabb;
+}
+
+bool GLGizmoBase::gizmo_event(SLAGizmoEventType action, const Vec2d& mouse_position, bool shift_down, bool alt_down, bool control_down)
+{
+    return false;
 }
 
 void GLGizmoBase::render_glmodel(GLModel &model, const std::array<float, 4> &color, Transform3d view_model_matrix, const Transform3d& projection_matrix, bool for_picking, float emission_factor)
@@ -735,7 +783,10 @@ std::string GLGizmoBase::get_name(bool include_shortcut) const
     return out;
 }
 
-
+void GLGizmoBase::set_serializing(bool is_serializing)
+{
+    m_is_serializing = is_serializing;
+}
 
 // Produce an alpha channel checksum for the red green blue components. The alpha channel may then be used to verify, whether the rgb components
 // were not interpolated by alpha blending or multi sampling.

@@ -40,7 +40,6 @@ void SendJob::prepare()
     if (&job_data) {
         std::string temp_file = Slic3r::resources_dir() + "/check_access_code.txt";
         auto check_access_code_path = temp_file.c_str();
-        BOOST_LOG_TRIVIAL(trace) << "sned_job: check_access_code_path = " << check_access_code_path;
         job_data._temp_path = fs::path(check_access_code_path);
     }
 }
@@ -121,8 +120,8 @@ void SendJob::process()
     std::string http_body;
 
 
-   
-   
+
+
     // local print access
     params.dev_ip = m_dev_ip;
     params.username = "qdtp";
@@ -148,7 +147,7 @@ void SendJob::process()
         m_job_finished = true;
         return;
     }
-    
+
 
     /* display info */
     msg = _L("Sending gcode file over LAN");
@@ -316,7 +315,7 @@ void SendJob::process()
         else if (params.password.empty())
             params.comments = "no_password";
 
-        if (!params.password.empty() 
+        if (!params.password.empty()
             && !params.dev_ip.empty()
             && this->has_sdcard) {
             // try to send local with record

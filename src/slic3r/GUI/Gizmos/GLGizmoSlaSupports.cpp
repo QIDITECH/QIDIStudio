@@ -26,11 +26,16 @@
 namespace Slic3r {
 namespace GUI {
 
-GLGizmoSlaSupports::GLGizmoSlaSupports(GLCanvas3D& parent, const std::string& icon_filename, unsigned int sprite_id)
-    : GLGizmoBase(parent, icon_filename, sprite_id)
+GLGizmoSlaSupports::GLGizmoSlaSupports(GLCanvas3D& parent, unsigned int sprite_id)
+    : GLGizmoBase(parent, sprite_id)
 {
 }
 
+
+std::string GLGizmoSlaSupports::get_icon_filename(bool is_dark_mode) const
+{
+    return "sla_supports.svg";
+}
 
 bool GLGizmoSlaSupports::on_init()
 {
@@ -178,7 +183,6 @@ void GLGizmoSlaSupports::render_points(const Selection& selection, bool picking)
         // Inverse matrix of the instance scaling is applied so that the mark does not scale with the object.
         const Transform3d support_matrix = Geometry::assemble_transform(support_point.pos.cast<double>()) * instance_scaling_matrix_inverse;
 
-
         if (vol->is_left_handed())
             glFrontFace(GL_CW);
 
@@ -191,6 +195,7 @@ void GLGizmoSlaSupports::render_points(const Selection& selection, bool picking)
 
             Eigen::Quaterniond q;
             q.setFromTwoVectors(Vec3d{0., 0., 1.}, instance_scaling_matrix_inverse * m_editing_cache[i].normal.cast<double>());
+
             Eigen::AngleAxisd aa(q);
             const double cone_radius = 0.25; // mm
             const double cone_height = 0.75;
@@ -251,7 +256,6 @@ void GLGizmoSlaSupports::render_points(const Selection& selection, bool picking)
                 glFrontFace(GL_CCW);
         }
     }
-
 }
 
 bool GLGizmoSlaSupports::is_mesh_point_clipped(const Vec3d& point) const

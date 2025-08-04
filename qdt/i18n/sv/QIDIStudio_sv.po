@@ -17247,8 +17247,8 @@ msgstr "Skickat. Kommer automatiskt att gå till enhetssidan om %s s."
 msgid "Successfully sent. Close current page in %s s."
 msgstr "Skickat. Stänger denna sida om %s s."
 
-msgid "The selected printer is not connect box, please check."
-msgstr "Den valda skrivaren är inte ansluten till BOX, kontrollera."
+msgid "The selected printer is not connected to the BOX or the filaments are not synchronized. Please check."
+msgstr "Den valda skrivaren är inte ansluten till BOX eller så är filamenten inte synkroniserade. Kontrollera detta."
 
 msgid "Failed to set the box printing slot..."
 msgstr "Misslyckades att ställa in BOX:s utskriftsfack..."
@@ -17297,3 +17297,12 @@ msgid "Current printer is printing now"​​
 
 msgid "Please do not mix-use the Ext with BOX"
 msgstr "Blanda inte Ext med BOX"
+
+msgid "Recommended box temperature"
+msgstr "Rekommenderad kammartemperatur"
+
+msgid "Recommended box temperature range of this filament. 0 means no set"
+msgstr "Rekommenderat temperaturområde för kammaren för detta filament. 0 betyder inte inställt"
+
+msgid "Set the temperature of the box during printing, set to 0 (representing off)."
+msgstr "Ställ in kammarens temperatur under utskrift. Ställ in på 0 (avstängd)."

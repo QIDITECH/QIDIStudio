@@ -23,8 +23,8 @@ Vec3d GetIntersectionOfRayAndPlane(Vec3d ray_position, Vec3d ray_dir, Vec3d plan
 }
 
 //QDS: GUI refactor: add obj manipulation
-GLGizmoScale3D::GLGizmoScale3D(GLCanvas3D& parent, const std::string& icon_filename, unsigned int sprite_id, GizmoObjectManipulation* obj_manipulation)
-    : GLGizmoBase(parent, icon_filename, sprite_id)
+GLGizmoScale3D::GLGizmoScale3D(GLCanvas3D& parent, unsigned int sprite_id, GizmoObjectManipulation* obj_manipulation)
+    : GLGizmoBase(parent, sprite_id)
     , m_scale(Vec3d::Ones())
     , m_offset(Vec3d::Zero())
     , m_snap_step(0.05)
@@ -141,6 +141,11 @@ bool GLGizmoScale3D::on_key(const wxKeyEvent& key_event)
     return b_processed;
 }
 
+std::string GLGizmoScale3D::get_icon_filename(bool b_dark_mode) const
+{
+    return b_dark_mode ? "toolbar_scale_dark.svg" : "toolbar_scale.svg";
+}
+
 bool GLGizmoScale3D::on_init()
 {
     for (int i = 0; i < 10; ++i)
@@ -244,6 +249,7 @@ void GLGizmoScale3D::update_grabbers_data()
     const Vec3d box_half_size   = 0.5 * m_bounding_box.size();
     bool b_asymmetric_scalling = is_asymmetric_scalling_enabled();
 
+
     bool single_instance = selection.is_single_full_instance();
     bool single_volume   = selection.is_single_modifier() || selection.is_single_volume();
 
@@ -252,20 +258,17 @@ void GLGizmoScale3D::update_grabbers_data()
     m_grabbers[0].color  = (b_asymmetric_scalling && m_hover_id == 1) ? CONSTRAINED_COLOR : AXES_COLOR[0];
     m_grabbers[1].center = Vec3d(box_half_size.x(), 0.0, -box_half_size.z());
     m_grabbers[1].color  = (b_asymmetric_scalling && m_hover_id == 0) ? CONSTRAINED_COLOR : AXES_COLOR[0];
-
     // y axis
     m_grabbers[2].center = Vec3d(0.0, -(box_half_size.y()), -box_half_size.z());
     m_grabbers[2].color  = (b_asymmetric_scalling && m_hover_id == 3) ? CONSTRAINED_COLOR : AXES_COLOR[1];
     m_grabbers[3].center = Vec3d(0.0, box_half_size.y(), -box_half_size.z());
     m_grabbers[3].color  = (b_asymmetric_scalling && m_hover_id == 2) ? CONSTRAINED_COLOR : AXES_COLOR[1];
-
     // z axis do not show 4
     m_grabbers[4].center  = Vec3d(0.0, 0.0, -(box_half_size.z()));
     m_grabbers[4].enabled = false;
 
     m_grabbers[5].center = Vec3d(0.0, 0.0, box_half_size.z());
     m_grabbers[5].color  = (b_asymmetric_scalling && m_hover_id == 4) ? CONSTRAINED_COLOR : AXES_COLOR[2];
-
     // uniform
     m_grabbers[6].center = Vec3d(-box_half_size.x(), -box_half_size.y(), -box_half_size.z());
     m_grabbers[6].color  = (b_asymmetric_scalling && m_hover_id == 8) ? CONSTRAINED_COLOR : GRABBER_UNIFORM_COL;
@@ -289,6 +292,7 @@ void GLGizmoScale3D::update_grabbers_data()
         m_grabbers[i].set_model_matrix(t_model_matrix);
     }
 }
+
 
 void GLGizmoScale3D::change_cs_by_selection() {
     int          obejct_idx, volume_idx;

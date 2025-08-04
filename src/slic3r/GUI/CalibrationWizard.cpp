@@ -7,6 +7,7 @@
 #include "Tabbook.hpp"
 #include "CaliHistoryDialog.hpp"
 #include "CalibUtils.hpp"
+#include "QDTUtil.hpp"
 //w29
 #include "MainFrame.hpp"
 
@@ -18,7 +19,6 @@ wxDEFINE_EVENT(EVT_DEVICE_CHANGED, wxCommandEvent);
 wxDEFINE_EVENT(EVT_CALIBRATION_JOB_FINISHED, wxCommandEvent);
 
 static const wxString NA_STR = _L("N/A");
-static const float MIN_PA_K_VALUE_STEP = 0.001;
 static const int MAX_PA_HISTORY_RESULTS_NUMS = 16;
 
 //w29
@@ -26,7 +26,7 @@ CalibrationWizard::CalibrationWizard(wxWindow* parent, CalibMode mode, wxWindowI
     : wxPanel(parent, id, pos, size, style) 
     , m_mode(mode)
 {
-    SetBackgroundColour(wxColour(0xEEEEEE));
+    SetBackgroundColour(wxColour("#EEEEEE"));
 
     wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
 

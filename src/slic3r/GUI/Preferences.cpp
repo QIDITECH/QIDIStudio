@@ -17,6 +17,7 @@
 #include <wx/listimpl.cpp>
 #include <map>
 #include "Gizmos/GLGizmoBase.hpp"
+#include "OpenGLManager.hpp"
 #ifdef __WINDOWS__
 #ifdef _MSW_DARK_MODE
 #include "dark_mode.hpp"
@@ -65,7 +66,7 @@ wxBoxSizer *PreferencesDialog::create_item_title(wxString title, wxWindow *paren
     return m_sizer_title;
 }
 
-wxBoxSizer *PreferencesDialog::create_item_combobox(wxString title, wxWindow *parent, wxString tooltip, std::string param, const std::vector<wxString>& label_list, const std::vector<std::string>& value_list)
+wxBoxSizer *PreferencesDialog::create_item_combobox(wxString title, wxWindow *parent, wxString tooltip, std::string param, const std::vector<wxString>& label_list, const std::vector<std::string>& value_list, std::function<void(int)> callback)
 {
     auto get_value_idx = [value_list](const std::string value) {
         size_t idx = 0;
@@ -94,14 +95,22 @@ wxBoxSizer *PreferencesDialog::create_item_combobox(wxString title, wxWindow *pa
         combobox->Append(label);
 
     auto old_value = app_config->get(param);
-    if (!old_value.empty()) { combobox->SetSelection(get_value_idx(old_value)); }
+    if (!old_value.empty()) {
+        combobox->SetSelection(get_value_idx(old_value));
+    }
+    else {
+        combobox->SetSelection(0);
+    }
 
     m_sizer_combox->Add(combobox, 0, wxALIGN_CENTER, 0);
 
     //// save config
-    combobox->GetDropDown().Bind(wxEVT_COMBOBOX, [this, param, value_list](wxCommandEvent &e) {
+    combobox->GetDropDown().Bind(wxEVT_COMBOBOX, [this, param, value_list, callback](wxCommandEvent &e) {
         app_config->set(param, value_list[e.GetSelection()]);
         app_config->save();
+        if (callback) {
+            callback(e.GetSelection());
+        }
         e.Skip();
     });
     return m_sizer_combox;
@@ -863,7 +872,7 @@ wxBoxSizer *PreferencesDialog::create_item_checkbox(wxString title, wxWindow *pa
         if (param == "enable_high_low_temp_mixed_printing") {
             if (checkbox->GetValue()) {
                 const wxString warning_title = _L("Bed Temperature Difference Warning");
-                const wxString warning_message = 
+                const wxString warning_message =
                     _L("Using filaments with significantly different temperatures may cause:\n"
                         "• Extruder clogging\n"
                         "• Nozzle damage\n"
@@ -1131,27 +1140,6 @@ wxWindow* PreferencesDialog::create_general_page()
 
     auto title_general_settings = create_item_title(_L("General Settings"), page, _L("General Settings"));
 
-    // qds supported languages
-    wxLanguage supported_languages[]{
-        wxLANGUAGE_ENGLISH,
-        wxLANGUAGE_CHINESE_SIMPLIFIED,
-        wxLANGUAGE_GERMAN,
-        wxLANGUAGE_FRENCH,
-        wxLANGUAGE_SPANISH,
-        wxLANGUAGE_SWEDISH,
-        wxLANGUAGE_DUTCH,
-        wxLANGUAGE_HUNGARIAN,
-        wxLANGUAGE_JAPANESE,
-        wxLANGUAGE_ITALIAN,
-        wxLANGUAGE_KOREAN,
-        wxLANGUAGE_RUSSIAN,
-        wxLANGUAGE_CZECH,
-        wxLANGUAGE_UKRAINIAN,
-        wxLANGUAGE_PORTUGUESE_BRAZILIAN,
-        wxLANGUAGE_TURKISH,
-        wxLANGUAGE_POLISH
-    };
-
     auto translations = wxTranslations::Get()->GetAvailableTranslations(SLIC3R_APP_KEY);
     std::vector<const wxLanguageInfo *> language_infos;
     language_infos.emplace_back(wxLocale::GetLanguageInfo(wxLANGUAGE_ENGLISH));
@@ -1159,9 +1147,9 @@ wxWindow* PreferencesDialog::create_general_page()
         const wxLanguageInfo *langinfo = wxLocale::FindLanguageInfo(translations[i]);
 
         if (langinfo == nullptr) continue;
-        int language_num = sizeof(supported_languages) / sizeof(supported_languages[0]);
-        for (auto si = 0; si < language_num; si++) {
-            if (langinfo == wxLocale::GetLanguageInfo(supported_languages[si])) {
+
+        for (auto si = 0; si < s_supported_languages.size(); si++) {
+            if (langinfo == wxLocale::GetLanguageInfo(s_supported_languages[si])) {
                 language_infos.emplace_back(langinfo);
             }
         }
@@ -1200,6 +1188,9 @@ wxWindow* PreferencesDialog::create_general_page()
     auto item_restore_hide_pop_ups = create_item_button(_L("Clear my choice for synchronizing printer preset after loading the file."), _L("Clear"), page, _L("Clear my choice for synchronizing printer preset after loading the file."), []() {
         wxGetApp().app_config->erase("app", "sync_after_load_file_show_flag");
     });
+    auto  item_restore_hide_3mf_info = create_item_button(_L("Clear my choice for Load 3mf dialog settings."), _L("Clear"), page, _L("Show the warning dialog again when importing non-QIDI 3MF files"),[]() {
+        wxGetApp().app_config->erase("app", "skip_non_qidi_3mf_warning");
+    });
     auto _3d_settings    = create_item_title(_L("3D Settings"), page, _L("3D Settings"));
     auto item_mouse_zoom_settings  = create_item_checkbox(_L("Zoom to mouse position"), page,
                                                          _L("Zoom in towards the mouse pointer's position in the 3D view, rather than the 2D window center."), 50,
@@ -1216,6 +1207,12 @@ wxWindow* PreferencesDialog::create_general_page()
     auto  enable_lod_settings       = create_item_checkbox(_L("Improve rendering performance by lod"), page,
                                                          _L("Improved rendering performance under the scene of multiple plates and many models."), 50,
                                                          "enable_lod");
+
+    std::vector<wxString> toolbar_style = { _L("Collapsible"), _L("Uncollapsible") };
+    auto item_toolbar_style = create_item_combobox(_L("Toolbar Style"), page, _L("Toolbar Style"), "toolbar_style", toolbar_style, { "0","1" }, [](int idx)->void {
+        const auto& p_ogl_manager = wxGetApp().get_opengl_manager();
+        p_ogl_manager->set_toolbar_rendering_style(idx);
+    });
 
     float range_min = 1.0, range_max = 2.5;
     auto item_grabber_size_settings = create_item_range_input(_L("Grabber scale"), page,
@@ -1311,6 +1308,7 @@ wxWindow* PreferencesDialog::create_general_page()
     sizer_page->Add(item_auto_transfer_when_switch_preset, 0, wxTOP, FromDIP(3));
     sizer_page->Add(item_mix_print_high_low_temperature, 0, wxTOP, FromDIP(3));
     sizer_page->Add(item_restore_hide_pop_ups, 0, wxTOP, FromDIP(3));
+    sizer_page->Add(item_restore_hide_3mf_info, 0, wxTOP, FromDIP(3));
     sizer_page->Add(_3d_settings, 0, wxTOP | wxEXPAND, FromDIP(20));
     sizer_page->Add(item_mouse_zoom_settings, 0, wxTOP, FromDIP(3));
     sizer_page->Add(item_show_shells_in_preview_settings, 0, wxTOP, FromDIP(3));
@@ -1318,6 +1316,7 @@ wxWindow* PreferencesDialog::create_general_page()
     sizer_page->Add(item_gamma_correct_in_import_obj, 0, wxTOP, FromDIP(3));
 
     sizer_page->Add(enable_lod_settings, 0, wxTOP, FromDIP(3));
+    sizer_page->Add(item_toolbar_style, 0, wxTOP, FromDIP(3));    
     sizer_page->Add(item_grabber_size_settings, 0, wxTOP, FromDIP(3));
     sizer_page->Add(title_presets, 0, wxTOP | wxEXPAND, FromDIP(20));
     // y9

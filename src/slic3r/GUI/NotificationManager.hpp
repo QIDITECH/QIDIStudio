@@ -154,6 +154,7 @@ enum class NotificationType
 	QDTSliceMultiExtruderHeightOutside,
 	QDTBedFilamentIncompatible,
 	QDTMixUsePLAAndPETG,
+	QDTNozzleFilamentIncompatible,
     AssemblyWarning,
     AssemblyInfo,
     NotificationTypeCount

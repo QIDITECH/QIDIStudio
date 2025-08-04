@@ -157,7 +157,7 @@ UpdatePluginDialog::UpdatePluginDialog(wxWindow* parent /*= nullptr*/)
     auto m_button_ok = new Button(this, _L("OK"));
     m_button_ok->SetBackgroundColor(btn_bg_blue);
     m_button_ok->SetBorderColor(*wxWHITE);
-    m_button_ok->SetTextColor(wxColour(0xFFFFFE));
+    m_button_ok->SetTextColor(wxColour("#FFFFFE"));
     m_button_ok->SetFont(Label::Body_12);
     m_button_ok->SetSize(wxSize(FromDIP(58), FromDIP(24)));
     m_button_ok->SetMinSize(wxSize(FromDIP(58), FromDIP(24)));
@@ -227,7 +227,7 @@ void UpdatePluginDialog::update_info(std::string json_path)
         description_str = j["description"];
     }
     catch (nlohmann::detail::parse_error& err) {
-        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": parse " << json_path << " got a nlohmann::detail::parse_error, reason = " << err.what();
+        //BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": parse " << json_path << " got a nlohmann::detail::parse_error, reason = " << err.what();
         return;
     }
 
@@ -983,9 +983,9 @@ void PrintErrorDialog::update_text_image(const wxString& text, const wxString& e
         if (!img.IsOk() && image_url.Contains("http"))
         {
             web_request = wxWebSession::GetDefault().CreateRequest(this, image_url);
-            BOOST_LOG_TRIVIAL(trace) << "monitor: create new webrequest, state = " << web_request.GetState() << ", url = " << image_url;
+            //BOOST_LOG_TRIVIAL(trace) << "monitor: create new webrequest, state = " << web_request.GetState() << ", url = " << image_url;
             if (web_request.GetState() == wxWebRequest::State_Idle) web_request.Start();
-            BOOST_LOG_TRIVIAL(trace) << "monitor: start new webrequest, state = " << web_request.GetState() << ", url = " << image_url;
+            //BOOST_LOG_TRIVIAL(trace) << "monitor: start new webrequest, state = " << web_request.GetState() << ", url = " << image_url;
         }
         else
         {
@@ -1316,14 +1316,30 @@ void ConfirmBeforeSendDialog::update_text(std::vector<ConfirmBeforeSendInfo> tex
 
     auto height = 0;
     for (auto text : texts) {
-        auto label_item = new Label(m_vebview_release_note, text.text, LB_AUTO_WRAP);
-        if (enable_warning_clr && text.level == ConfirmBeforeSendInfo::InfoLevel::Warning) {
+
+        Label* label_item = nullptr;
+        if (text.wiki_url.empty())
+        {
+            label_item = new Label(m_vebview_release_note, text.text, LB_AUTO_WRAP);
+        }
+        else
+        {
+            label_item = new Label(m_vebview_release_note, text.text + " " + _L("Please refer to Wiki before use->"), LB_AUTO_WRAP);
+            label_item->Bind(wxEVT_LEFT_DOWN, [this, text](wxMouseEvent& e) { wxLaunchDefaultBrowser(text.wiki_url);});
+            label_item->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) { SetCursor(wxCURSOR_HAND); });
+            label_item->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) { SetCursor(wxCURSOR_ARROW); });
+        }
+
+        if (enable_warning_clr && text.level == ConfirmBeforeSendInfo::InfoLevel::Warning)
+        {
             label_item->SetForegroundColour(wxColour(0xFF, 0x6F, 0x00));
         }
+
         label_item->SetMaxSize(wxSize(FromDIP(494), -1));
         label_item->SetMinSize(wxSize(FromDIP(494), -1));
         label_item->Wrap(FromDIP(494));
         label_item->Layout();
+
         sizer_text_release_note->Add(label_item, 0, wxALIGN_CENTER | wxALL, FromDIP(3));
         height += label_item->GetSize().y;
     }
@@ -1621,7 +1637,7 @@ InputIpAddressDialog::InputIpAddressDialog(wxWindow *parent)
     m_button_ok = new Button(this, _L("Connect"));
     m_button_ok->SetBackgroundColor(btn_bg_blue);
     m_button_ok->SetBorderColor(*wxWHITE);
-    m_button_ok->SetTextColor(wxColour(0xFFFFFE));
+    m_button_ok->SetTextColor(wxColour("#FFFFFE"));
     m_button_ok->SetFont(Label::Body_12);
     m_button_ok->SetSize(wxSize(FromDIP(58), FromDIP(24)));
     m_button_ok->SetMinSize(wxSize(FromDIP(58), FromDIP(24)));

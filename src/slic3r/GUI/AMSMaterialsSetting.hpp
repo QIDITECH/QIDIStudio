@@ -108,7 +108,6 @@ public:
                wxString k = wxEmptyString, wxString n = wxEmptyString);
 
     void post_select_event(int index);
-    void msw_rescale();
     void set_color(wxColour color);
     void set_empty_color(wxColour color);
     void set_colors(std::vector<wxColour> colors);
@@ -130,6 +129,7 @@ public:
     std::string    m_filament_type;
     ColorPickerPopup m_color_picker_popup;
     ColorPicker *       m_clr_picker;
+    Label*                 m_clr_name;
     std::vector<PACalibResult>  m_pa_profile_items;
 
 protected:
