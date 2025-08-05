@@ -155,12 +155,14 @@ function SetLoginInfo( strAvatar, strName )
 	$("#UserName").text(strName);
 	$("#DropdownUserName").text(strName);
 
-  let OriginAvatar=$("#UserAvatarIcon").prop("src");
-	if(strAvatar!=OriginAvatar) {
+	//y69
+  	let OriginAvatar=$("#UserAvatarIcon").prop("src");
+	if(strAvatar!=OriginAvatar && strAvatar.length != 0) {
 		$("#UserAvatarIcon").prop("src",strAvatar);
 		$("#DropdownAvatar").css("background-image", "url('"+strAvatar+"')");
 	}else
 	{
+		$("#Login2 #UserAvatarIcon").prop("src", "img/left_home_account.svg");
 		//alert('Avatar is Same');
 	}
 

@@ -3251,13 +3251,6 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
                     if (!current_print->is_step_done(psWipeTower) || !current_print->wipe_tower_data().wipe_tower_mesh_data) {
                         // update for wipe tower position
                         {
-                            int volume_idx_wipe_tower_new = m_volumes.load_wipe_tower_preview(1000 + plate_id, x + plate_origin(0), y + plate_origin(1),
-                                                                                              (float) wipe_tower_size(0), (float) wipe_tower_size(1), (float) wipe_tower_size(2),
-                                                                                              a,
-                                                                                              /*!print->is_step_done(psWipeTower)*/ true, brim_width, m_initialized);
-                            int volume_idx_wipe_tower_old = volume_idxs_wipe_tower_old[plate_id];
-                            if (volume_idx_wipe_tower_old != -1) map_glvolume_old_to_new[volume_idx_wipe_tower_old] = volume_idx_wipe_tower_new;
-
                             //y68
                             // update wipe_tower pos
                             {
@@ -3281,6 +3274,13 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
 
                             dynamic_cast<ConfigOptionFloats*>(proj_cfg.option("wipe_tower_x"))->set_at(&wt_x_opt, plate_id, 0);
                             dynamic_cast<ConfigOptionFloats*>(proj_cfg.option("wipe_tower_y"))->set_at(&wt_y_opt, plate_id, 0);
+
+                            int volume_idx_wipe_tower_new = m_volumes.load_wipe_tower_preview(1000 + plate_id, x + plate_origin(0), y + plate_origin(1),
+                                                                                              (float) wipe_tower_size(0), (float) wipe_tower_size(1), (float) wipe_tower_size(2),
+                                                                                              a,
+                                                                                              /*!print->is_step_done(psWipeTower)*/ true, brim_width, m_initialized);
+                            int volume_idx_wipe_tower_old = volume_idxs_wipe_tower_old[plate_id];
+                            if (volume_idx_wipe_tower_old != -1) map_glvolume_old_to_new[volume_idx_wipe_tower_old] = volume_idx_wipe_tower_new;
                         }
                     } else {
                         auto        tower_bottom = current_print->wipe_tower_data().wipe_tower_mesh_data->bottom;
