@@ -3064,13 +3064,18 @@ void SelectMachineDialog::on_set_finish_mapping(wxCommandEvent &evt)
             }
         }
 
-
+        //y69
+        FilamentInfo old_info;
+        FilamentInfo new_info;
         for (auto i = 0; i < m_ams_mapping_result.size(); i++) {
             if (m_ams_mapping_result[i].id == wxAtoi(selection_data_arr[5])) {
+
+                old_info = m_ams_mapping_result[i];
+
                 m_ams_mapping_result[i].tray_id = evt.GetInt();
                 auto ams_colour = wxColour(wxAtoi(selection_data_arr[0]), wxAtoi(selection_data_arr[1]), wxAtoi(selection_data_arr[2]), wxAtoi(selection_data_arr[3]));
                 wxString color = wxString::Format("#%02X%02X%02X%02X", ams_colour.Red(), ams_colour.Green(), ams_colour.Blue(), ams_colour.Alpha());
-                m_ams_mapping_result[i].color = color.ToStdString();
+                m_ams_mapping_result[i].color = color.ToStdString().erase(0, 1);
                 m_ams_mapping_result[i].ctype = ctype;
                 m_ams_mapping_result[i].colors = tray_cols;
 
@@ -3080,19 +3085,52 @@ void SelectMachineDialog::on_set_finish_mapping(wxCommandEvent &evt)
                 if (m_ams_mapping_result[i].ams_id == std::to_string(VIRTUAL_TRAY_MAIN_ID) || m_ams_mapping_result[i].ams_id == std::to_string(VIRTUAL_TRAY_DEPUTY_ID)) {
                 }else if (m_ams_mapping_result[i].ams_id >= std::to_string(0)) {
                 }
+
+                new_info = m_ams_mapping_result[i];
             }
             BOOST_LOG_TRIVIAL(trace) << "The box mapping result: id is " << m_ams_mapping_result[i].id << "tray_id is " << m_ams_mapping_result[i].tray_id;
         }
 
-        MaterialHash::iterator iter = m_materialList.begin();
-        while (iter != m_materialList.end()) {
-            Material*        item = iter->second;
-            MaterialItem *m = item->item;
-            if (item->id == m_current_filament_id) {
-                auto ams_colour = wxColour(wxAtoi(selection_data_arr[0]), wxAtoi(selection_data_arr[1]), wxAtoi(selection_data_arr[2]), wxAtoi(selection_data_arr[3]));
-                m->set_ams_info(ams_colour, selection_data_arr[4], ctype, material_cols);
+        for (auto i = 0; i < m_ams_mapping_result.size(); i++) {
+            if (m_ams_mapping_result[i].slot_id == new_info.slot_id && new_info.id != m_ams_mapping_result[i].id) {
+                int id = m_ams_mapping_result[i].id;
+                m_ams_mapping_result[i] = old_info;
+                m_ams_mapping_result[i].id = id;
+                auto color_change = AmsTray::decode_color(m_ams_mapping_result[i].color);
+                if (m_print_type == PrintFromType::FROM_NORMAL) {//todo:support sd card
+                    change_default_normal(id, color_change);
+                    final_deal_edge_pixels_data(m_preview_thumbnail_data);
+                    set_default_normal(m_preview_thumbnail_data); // do't reset ams
+                }
+
             }
-            iter++;
+
+        }
+
+        for (auto f = m_ams_mapping_result.begin(); f != m_ams_mapping_result.end(); f++) {
+            MaterialHash::iterator iter = m_materialList.begin();
+            while (iter != m_materialList.end()) {
+                int id = iter->second->id;
+                Material* item = iter->second;
+                MaterialItem* m = item->item;
+                //if (item->id == m_current_filament_id) {
+                //    auto ams_colour = wxColour(wxAtoi(selection_data_arr[0]), wxAtoi(selection_data_arr[1]), wxAtoi(selection_data_arr[2]), wxAtoi(selection_data_arr[3]));
+                //    m->set_ams_info(ams_colour, selection_data_arr[4], ctype, material_cols);
+                //}
+                if (f->id == id) {
+                    wxString ams_id;
+                    wxColour ams_col;
+                    ams_id = wxGetApp().transition_tridid(std::stoi(f->slot_id));
+                    ams_col = AmsTray::decode_color(f->color);
+                    std::vector<wxColour> cols;
+                    for (auto col : f->colors) {
+                        cols.push_back(AmsTray::decode_color(col));
+                    }
+                    m->set_ams_info(ams_col, ams_id, f->ctype, cols);
+                    break;
+                }
+                iter++;
+            }
         }
     }
 
@@ -3563,10 +3601,10 @@ void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
             has_box_machine = true;
     }
 
-    //y68
+    //y68 y69
     PresetBundle& preset_bundle = *wxGetApp().preset_bundle;
     std::string machine_preset = preset_bundle.printers.get_edited_preset().get_printer_type(&preset_bundle);
-    if(!machine_preset.empty() && machine_preset != select_machine_type)
+    if(!machine_preset.empty() && machine_preset != select_machine_type && !selection_name.empty())
     {
         show_status(PrintDialogStatus::PrintStatusUnsupportedPrinter);
         has_box_machine = false;
