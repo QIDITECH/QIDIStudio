@@ -1,0 +1,12 @@
+{
+    "type": "machine_model",
+    "name": "Q2",
+    "model_id": "Q2",
+    "nozzle_diameter": "0.4;0.2;0.6;0.8",
+    "machine_tech": "FFF",
+    "family": "Qidi",
+    "bed_model": "Q2_bed.stl",
+    "bed_texture": "Q2_bed.svg",
+    "hotend_model": "X-Series_gen3_hotend.stl",
+	"default_materials": "Generic ABS @Qidi Q2 0.4 nozzle;Generic PLA @Qidi Q2 0.4 nozzle;QIDI ABS Odorless @Qidi Q2 0.4 nozzle;QIDI ABS Rapido @Qidi Q2 0.4 nozzle;QIDI PLA Rapido @Qidi Q2 0.4 nozzle;QIDI PLA Rapido Matte @Qidi Q2 0.4 nozzle;QIDI PLA-CF @Qidi Q2 0.4 nozzle;Generic PLA Silk @Qidi Q2 0.4 nozzle;QIDI PLA Rapido Silk @Qidi Q2 0.4 nozzle"
+}

@@ -67,7 +67,7 @@ function HandleModelList( pVal )
 
 	//w22
 	let pModel = pVal['model'];
-	const vendorOrder = ["X 4 Series", "Q Series", "X 3 Series"];
+	const vendorOrder = ["Q Series", "X 4 Series", "X 3 Series"];
 	pModel.sort((a, b) => {
 		const indexA = vendorOrder.indexOf(a.vendor);
 		const indexB = vendorOrder.indexOf(b.vendor);

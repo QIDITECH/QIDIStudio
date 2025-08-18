@@ -63,7 +63,7 @@ function SortUI()
 	var ModelList=new Array();
 
 	//w22
-	const vendorOrder = ["X 4 Series", "Q Series", "X 3 Series"];
+	const vendorOrder = ["Q Series", "X 4 Series", "X 3 Series"];
 	m_ProfileItem["model"].sort((a, b) => {
 		const indexA = vendorOrder.indexOf(a.vendor);
 		const indexB = vendorOrder.indexOf(b.vendor);

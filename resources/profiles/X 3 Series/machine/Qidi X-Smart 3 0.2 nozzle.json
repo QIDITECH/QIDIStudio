@@ -7,7 +7,7 @@
     "inherits": "X-Smart 3 0.4 nozzle",
     "printer_model": "X-Smart 3",
     "printer_variant": "0.2",
-    "default_filament_profile": ["QIDI PLA Rapido 0.2 nozzle;QIDI PETG Tough 0.2 nozzle;QIDI ABS Rapido 0.2 nozzle;QIDI ABS Odorless 0.2 nozzle"],
+    "default_filament_profile": ["QIDI PLA Rapido @Qidi X-Smart 3 0.2 nozzle"],
     "default_print_profile": "0.10mm Standard @XSmart3 0.2 nozzle",
     "auxiliary_fan": ["0"],
     "max_layer_height": ["0.14"],
