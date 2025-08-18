@@ -1103,7 +1103,7 @@ public:
 		if (speed == 0)
 			m_gcode += "M107\n";
         else
-            m_gcode += "M106 S" + std::to_string(unsigned(255.0 * speed / 100.0)) + "\n";
+            m_gcode += "M106 S" + Slic3r::float_to_string_decimal_point(unsigned(255.0 * speed / 100.0)) + "\n";    //y70
 		m_last_fan_speed = speed;
 		return *this;
 	}
