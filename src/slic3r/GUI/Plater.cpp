@@ -5945,32 +5945,32 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                             show_info(q, _L("The 3mf is not from QIDI Tech, load geometry data only."), _L("Load 3mf"));
                     }
                     //w18
-                    else if (load_config && (file_version.maj() != app_version.maj())) {
-                       // version mismatch, only load geometries
-                       load_config = false;
-                       if (!load_model) {
-                           // only load config case, return directly
-                           show_info(q, _L("The Config can not be loaded."), _L("Load 3mf"));
-                           q->skip_thumbnail_invalid = false;
-                           return empty_result;
-                       }
-                       load_old_project = true;
-                       // select view to 3D
-                       q->select_view_3D("3D");
-                       // select plate 0 as default
-                       q->select_plate(0);
-                       if (load_type != LoadType::LoadGeometry) {
-                           if (en_3mf_file_type == En3mfType::From_QDS)
-                               show_info(q, _L("Due to the lower version of QIDI Studio, this 3mf file cannot be fully loaded. Please update QIDI Studio to the latest version"), _L("Load 3mf"));
-                           else
-                               show_info(q, _L("The 3mf is not from QIDI Tech, load geometry data only."), _L("Load 3mf"));
-                       }
-                       for (ModelObject *model_object : model.objects) {
-                           model_object->config.reset();
-                           // Is there any modifier or advanced config data?
-                           for (ModelVolume *model_volume : model_object->volumes) model_volume->config.reset();
-                       }
-                    }
+                    // else if (load_config && (file_version.maj() != app_version.maj())) {
+                    //    // version mismatch, only load geometries
+                    //    load_config = false;
+                    //    if (!load_model) {
+                    //        // only load config case, return directly
+                    //        show_info(q, _L("The Config can not be loaded."), _L("Load 3mf"));
+                    //        q->skip_thumbnail_invalid = false;
+                    //        return empty_result;
+                    //    }
+                    //    load_old_project = true;
+                    //    // select view to 3D
+                    //    q->select_view_3D("3D");
+                    //    // select plate 0 as default
+                    //    q->select_plate(0);
+                    //    if (load_type != LoadType::LoadGeometry) {
+                    //        if (en_3mf_file_type == En3mfType::From_QDS)
+                    //            show_info(q, _L("Due to the lower version of QIDI Studio, this 3mf file cannot be fully loaded. Please update QIDI Studio to the latest version"), _L("Load 3mf"));
+                    //        else
+                    //            show_info(q, _L("The 3mf is not from QIDI Tech, load geometry data only."), _L("Load 3mf"));
+                    //    }
+                    //    for (ModelObject *model_object : model.objects) {
+                    //        model_object->config.reset();
+                    //        // Is there any modifier or advanced config data?
+                    //        for (ModelVolume *model_volume : model_object->volumes) model_volume->config.reset();
+                    //    }
+                    // }
                     //y54
                 // // else if (load_config && (file_version > app_version)) {
                     //     Semver cloud_ver;
@@ -12704,7 +12704,7 @@ void Plater::_calib_pa_line(const Calib_Params& params)
     tab_print->load_config(new_config);
     tab_printer->load_config(new_config);
     GizmoObjectManipulation& giz_obj_manip = p->view3D->get_canvas3d()->get_gizmos_manager().get_object_manipulation();
-    giz_obj_manip.set_uniform_scaling(true);
+    giz_obj_manip.set_uniform_scaling(false);
     giz_obj_manip.on_change("position", 0, plate_center.x() - 50);
     giz_obj_manip.set_uniform_scaling(false);
     giz_obj_manip.on_change("size", 0, 25);
@@ -12941,7 +12941,7 @@ void Plater::_calib_pa_pattern(const Calib_Params &params)
     tab_printer->load_config(new_config);
 
     GizmoObjectManipulation& giz_obj_manip = p->view3D->get_canvas3d()->get_gizmos_manager().get_object_manipulation();
-    giz_obj_manip.set_uniform_scaling(true);
+    giz_obj_manip.set_uniform_scaling(false);
     giz_obj_manip.on_change("position", 0, plate_center.x() - 31);
     giz_obj_manip.set_uniform_scaling(false);
     giz_obj_manip.on_change("size", 0, 25);

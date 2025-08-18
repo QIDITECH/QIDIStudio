@@ -3286,6 +3286,7 @@ GetBoxInfoDialog::GetBoxInfoDialog(Plater* plater)
         m_comboBox_printer->SetValue("");
         m_comboBox_printer->Clear();
         m_printer_ip.clear();
+        m_printer_api_key.clear();  //y70
         PresetBundle& preset_bundle = *wxGetApp().preset_bundle;
         PhysicalPrinterCollection& ph_printers = preset_bundle.physical_printers;
         std::string preset_typename = NormalizeVendor(preset_bundle.printers.get_edited_preset().get_printer_type(&preset_bundle));
@@ -3296,6 +3297,8 @@ GetBoxInfoDialog::GetBoxInfoDialog(Plater* plater)
                 if (preset_typename.find(NormalizeVendor(printer_preset)) != std::string::npos) {
                     m_comboBox_printer->Append(from_u8(printer_name));
                     m_printer_ip.push_back((it->config.opt_string("print_host")));
+                    //y70
+                    m_printer_api_key.push_back((it->config.opt_string("printhost_apikey")));
                 }
             }
             m_comboBox_printer->SetSelection(0);
@@ -3399,18 +3402,24 @@ void GetBoxInfoDialog::synchronization(wxCommandEvent &event)
     int selected_idx = m_comboBox_printer->GetSelection();
     std::string printer_ip = m_printer_ip[selected_idx];
 
+    //y70
+    std::string api_key = "";
+    if(!m_printer_api_key.empty())
+        api_key = m_printer_api_key[selected_idx];
+
     QIDINetwork qidi;
     wxString msg = "";
-    bool has_box = qidi.get_box_state(msg, printer_ip);
+    bool has_box = qidi.get_box_state(msg, printer_ip, api_key);    //y70
     if (!has_box) {
         WarningDialog(this, _L("This Printer has not connect the box, please check.")).ShowModal();
     }
     else {
+        //y70
         //Get Box_info
         GUI::Box_info filament_info;
-        filament_info = qidi.get_box_info(msg, printer_ip);
+        filament_info = qidi.get_box_info(msg, printer_ip, api_key);
         m_plater->current_box_info = filament_info;
-        qidi.get_color_filament_str(msg, filament_info, printer_ip);
+        qidi.get_color_filament_str(msg, filament_info, printer_ip, api_key);
         generate_filament_id(filament_info);
         update_filament_info(filament_info);
         wxGetApp().plater()->sidebar().box_list_printer_ip = printer_ip;

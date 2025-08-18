@@ -2924,15 +2924,14 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
         activate_air_filtration |= m_config.activate_air_filtration.get_at(extruder.id());
     activate_air_filtration &= m_config.support_air_filtration.getBool();
 
-    //w36
-    /*if (activate_air_filtration) {
+    if (activate_air_filtration) {
         int complete_print_exhaust_fan_speed = 0;
         for (const auto& extruder : m_writer.extruders())
             if (m_config.activate_air_filtration.get_at(extruder.id()))
                 complete_print_exhaust_fan_speed = std::max(complete_print_exhaust_fan_speed, m_config.complete_print_exhaust_fan_speed.get_at(extruder.id()));
         file.write(m_writer.set_exhaust_fan(complete_print_exhaust_fan_speed, true));
-    }*/
-    file.write(m_writer.set_exhaust_fan(0, true));
+    }
+
     //w25
     file.write(DoExport::update_print_stats_and_format_filament_stats(
         // Const inputs

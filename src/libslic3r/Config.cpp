@@ -60,9 +60,10 @@ std::string escape_string_cstyle(const std::string &str)
         } else if (c == '\n') {
             (*outptr ++) = '\\';
             (*outptr ++) = 'n';
-        } else if (c == '\\') {
-            (*outptr ++) = '\\';
-            (*outptr ++) = '\\';
+        //y70
+        } else if (c == '\\' || c == '"') {
+            (*outptr++) = '\\';
+            (*outptr++) = c;
         } else
             (*outptr ++) = c;
     }
@@ -950,36 +951,44 @@ int ConfigBase::load_from_json(const std::string &file, ConfigSubstitutionContex
                         }
                     }
 
-                    char single_sep = ',';
-                    char array_sep = '#';  // currenty not used
-                    bool escape_string_type = false;
-                    if (optdef) {
-                        switch (optdef->type)
-                        {
-                        case coStrings:
-                            escape_string_type = true;
-                            single_sep = ';';
-                            break;
-                        case coPointsGroups:
-                            single_sep = '#';
-                            break;
-                        default:
+                    //y70
+                    bool use_comma = true;
+
+                    if (optdef && optdef->type == coStrings) {
+                        use_comma = false;
+                    }
+                    for (auto iter = it.value().begin(); iter != it.value().end(); iter++) {
+                        if (iter.value().is_string()) {
+                            if (!first) {
+                                if (use_comma)
+                                    value_str += ",";
+                                else
+                                    value_str += ";";
+                            }
+                            else
+                                first = false;
+
+                            if (use_comma)
+                                value_str += iter.value();
+                            else {
+                                value_str += "\"";
+                                value_str += escape_string_cstyle(iter.value());
+                                value_str += "\"";
+                            }
+                        }
+                        else {
+                            //should not happen
+                            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": parse " << file << " error, invalid json array for " << it.key();
+                            valid = false;
                             break;
                         }
-                    }
-
-                    // QDS: we only support 2 depth array
-                    valid = parse_str_arr(it, single_sep, array_sep,escape_string_type, value_str);
-                    if (!valid) {
-                        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": parse " << file << " error, invalid json array for " << it.key();
-                        break;
                     }
                     if (valid)
                         this->set_deserialize(opt_key, value_str, substitution_context);
                 }
                 else {
                     //should not happen
-                    BOOST_LOG_TRIVIAL(error) << __FUNCTION__<< ": parse "<<file<<" error, invalid json type for " << it.key();
+                    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": parse " << file << " error, invalid json type for " << it.key();
                 }
             }
         }

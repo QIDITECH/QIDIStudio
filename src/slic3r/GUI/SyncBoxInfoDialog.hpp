@@ -390,6 +390,7 @@ public:
 
 
     std::vector<std::string> m_printer_ip;
+    std::vector<std::string> m_printer_api_key;
 
 private:
     Plater*             m_plater{ nullptr };

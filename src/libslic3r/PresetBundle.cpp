@@ -501,7 +501,7 @@ void PresetBundle::reset_project_embedded_presets()
             if (!prefered_filament_profile.empty())
                 filament_presets[i] = prefered_filament_profile;
             else
-            filament_presets[i] = this->filaments.first_visible().name;
+                filament_presets[i] = this->filaments.first_visible().name;
         }
     }
 }

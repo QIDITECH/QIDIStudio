@@ -22,6 +22,7 @@ DeviceItem::DeviceItem(wxWindow* parent,  MachineObject* obj)
     obj_->dev_name = obj->dev_name;
     obj_->dev_url = obj->dev_url;
     obj_->dev_ip = obj->dev_ip;
+    obj_->dev_apikey = obj->dev_apikey; //y70
     sync_state();
     Bind(EVT_MULTI_REFRESH, &DeviceItem::on_refresh, this);
 }

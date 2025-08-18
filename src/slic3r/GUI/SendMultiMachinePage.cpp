@@ -1888,7 +1888,8 @@ void SendMultiMachinePage::ThreadWorker() {
             if (m_stopThread)
                 break;
             MachineObject* temp_obj = device.second->get_obj();
-            temp_obj->ams_exist_bits = qidi.get_box_state(msg, temp_obj->dev_url) ? 1 : 0;
+            //y70
+            temp_obj->ams_exist_bits = qidi.get_box_state(msg, temp_obj->dev_url, temp_obj->dev_apikey) ? 1 : 0;
         }
     }
 }

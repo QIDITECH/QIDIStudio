@@ -501,7 +501,7 @@ void PhysicalPrinterDialog::OnOK(wxMouseEvent& event)
     }
     for (auto exit_host : m_exit_host)
     {
-        if (exit_host.find(ip) != std::string::npos)
+        if (exit_host == ip)
         {
             MessageDialog msg_wingow(nullptr, _L("A device with the same host (IP or URL) already exists, please re-enter."), "", wxICON_WARNING | wxOK);
             msg_wingow.ShowModal();

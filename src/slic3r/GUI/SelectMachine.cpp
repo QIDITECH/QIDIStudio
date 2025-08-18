@@ -3601,10 +3601,8 @@ void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
             has_box_machine = true;
     }
 
-    //y68 y69
-    PresetBundle& preset_bundle = *wxGetApp().preset_bundle;
-    std::string machine_preset = preset_bundle.printers.get_edited_preset().get_printer_type(&preset_bundle);
-    if(!machine_preset.empty() && machine_preset != select_machine_type && !selection_name.empty())
+    //y68 //y70
+    if(!preset_typename_normalized.empty() && preset_typename_normalized.find(NormalizeVendor(select_machine_type)) == std::string::npos && !selection_name.empty())
     {
         show_status(PrintDialogStatus::PrintStatusUnsupportedPrinter);
         has_box_machine = false;
