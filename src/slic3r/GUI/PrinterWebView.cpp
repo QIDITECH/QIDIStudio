@@ -421,14 +421,14 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
 
     if (webisNetMode == isNetWeb) {
         for (DeviceButton* button : m_net_buttons) {
-            if (button->getIPLabel().find(m_ip) != std::string::npos) {
+            if (button->getIPLabel() == m_ip) {
                 button->SetIsSelected(true);
                 break;
             }
         }
     } else if (webisNetMode == isLocalWeb) {
         for (DeviceButton* button : m_buttons) {
-            if (button->getIPLabel().find(m_ip) != std::string::npos) {
+            if (button->getIPLabel()== m_ip) {
                 button->SetIsSelected(true);
                 break;
             }
@@ -1023,7 +1023,7 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
 
      for (DeviceButton *button : m_buttons) {
         //y31
-         if ((button->getIPLabel()).find(m_ip) != std::string::npos)
+         if (button->getIPLabel() == m_ip)
              button->SetIsSelected(true);
          else
              button->SetIsSelected(false);
@@ -1050,7 +1050,7 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
     }
 
     for (DeviceButton *button : m_net_buttons) {
-        if (m_ip == (button->getIPLabel()))
+        if (m_ip == button->getIPLabel())
             button->SetIsSelected(true);
         else
             button->SetIsSelected(false);
