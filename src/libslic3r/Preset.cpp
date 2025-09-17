@@ -767,6 +767,21 @@ std::string Preset::get_printer_type(PresetBundle *preset_bundle)
     return "";
 }
 
+std::string Preset::get_printer_name(PresetBundle *preset_bundle)
+{
+    if (preset_bundle) {
+        auto        config = &preset_bundle->printers.get_edited_preset().config;
+        std::string vendor_name;
+        for (auto vendor_profile : preset_bundle->vendors) {
+            for (auto vendor_model : vendor_profile.second.models)
+                if (vendor_model.name == config->opt_string("printer_model")) {
+                    return vendor_model.name;
+                }
+        }
+    }
+    return "";
+}
+
 std::string Preset::get_current_printer_type(PresetBundle *preset_bundle)
 {
     if (preset_bundle) {
@@ -951,6 +966,7 @@ static std::vector<std::string> s_Preset_print_options {
     "filter_out_gap_fill", "mmu_segmented_region_max_width", "mmu_segmented_region_interlocking_depth",
     "small_perimeter_speed", "small_perimeter_threshold", "z_direction_outwall_speed_continuous",
     "vertical_shell_speed","detect_floating_vertical_shell",
+    "vertical_shell_speed","detect_floating_vertical_shell", "enable_wrapping_detection",
      // calib
     "print_flow_ratio",
     //Orca
@@ -963,10 +979,10 @@ static std::vector<std::string> s_Preset_print_options {
     ,"seal"
 };
 
-static std::vector<std::string> s_Preset_filament_options {/*"filament_colour", */ "default_filament_colour", "required_nozzle_HRC", "filament_diameter", "filament_type",
+static std::vector<std::string> s_Preset_filament_options{/*"filament_colour", */ "default_filament_colour", "required_nozzle_HRC", "filament_diameter", "volumetric_speed_coefficients", "filament_type",
                                                           "filament_soluble", "filament_is_support", "filament_printable", "filament_scarf_seam_type", "filament_scarf_height",
                                                           "filament_scarf_gap", "filament_scarf_length",
-    "filament_max_volumetric_speed", "impact_strength_z", "filament_ramming_volumetric_speed",
+    "filament_max_volumetric_speed", "impact_strength_z", "filament_ramming_volumetric_speed", "filament_adaptive_volumetric_speed",
     "filament_flow_ratio", "filament_density", "filament_adhesiveness_category", "filament_cost", "filament_minimal_purge_on_wipe_tower",
     "nozzle_temperature", "nozzle_temperature_initial_layer",
     // QDS
@@ -992,7 +1008,7 @@ static std::vector<std::string> s_Preset_filament_options {/*"filament_colour", 
     "filament_extruder_variant",
     //OrcaSlicer
     "enable_pressure_advance", "pressure_advance", "chamber_temperatures","filament_notes",
-    "filament_long_retractions_when_cut","filament_retraction_distances_when_cut","filament_shrink",
+    "filament_long_retractions_when_cut","filament_retraction_distances_when_cut","filament_shrink", "filament_velocity_adaptation_factor",
     //QDS filament change length while the extruder color
     "filament_change_length","filament_prime_volume","filament_flush_volumetric_speed","filament_flush_temp",
     "long_retractions_when_ec", "retraction_distances_when_ec",
@@ -1015,14 +1031,14 @@ static std::vector<std::string> s_Preset_machine_limits_options {
 static std::vector<std::string> s_Preset_printer_options {
     "printer_technology",
     "printable_area", "extruder_printable_area", "bed_exclude_area","bed_custom_texture", "bed_custom_model", "gcode_flavor",
-    "single_extruder_multi_material", "machine_start_gcode", "machine_end_gcode","printing_by_object_gcode","before_layer_change_gcode", "layer_change_gcode", "time_lapse_gcode", "change_filament_gcode",
+    "single_extruder_multi_material", "machine_start_gcode", "machine_end_gcode","printing_by_object_gcode","before_layer_change_gcode", "layer_change_gcode", "time_lapse_gcode", "wrapping_detection_gcode", "change_filament_gcode",
     "printer_model", "printer_variant", "printer_extruder_id", "printer_extruder_variant", "extruder_variant_list", "default_nozzle_volume_type",
     "printable_height", "extruder_printable_height", "extruder_clearance_dist_to_rod",  "extruder_clearance_max_radius","extruder_clearance_height_to_lid", "extruder_clearance_height_to_rod",
     "nozzle_height", "master_extruder_id",
     "default_print_profile", "inherits",
     "silent_mode",
     // QDS
-    "scan_first_layer", "machine_load_filament_time", "machine_unload_filament_time", "machine_pause_gcode", "template_custom_gcode",
+    "scan_first_layer", "wrapping_detection_layers", "wrapping_exclude_area", "machine_load_filament_time", "machine_unload_filament_time", "machine_pause_gcode", "template_custom_gcode",
     "nozzle_type","auxiliary_fan", "nozzle_volume","upward_compatible_machine", "z_hop_types","support_chamber_temp_control","support_air_filtration","printer_structure","thumbnail_size",
     //w12
     "thumbnails_formats",
@@ -2603,6 +2619,7 @@ bool PresetCollection::delete_preset(const std::string& name)
     }
     //QDS: add lock logic for sync preset in background
     lock();
+    set_printer_hold_alias(it->alias, *it, true);
     it = m_presets.erase(it);
     if (std::distance(m_presets.begin(), it) < m_idx_selected)
         --m_idx_selected;
@@ -2761,7 +2778,7 @@ size_t PresetCollection::first_visible_idx() const
     size_t first_visible = -1;
     size_t idx = m_default_suppressed ? m_num_default_presets : 0;
     for (; idx < m_presets.size(); ++ idx)
-        if (m_presets[idx].is_visible) {
+        if (m_presets[idx].is_visible && m_presets[idx].get_printer_id() == "QDT") {
             if (first_visible == -1)
                 first_visible = idx;
             if (m_type != Preset::TYPE_FILAMENT)
@@ -2773,8 +2790,12 @@ size_t PresetCollection::first_visible_idx() const
                 }
             }
         }
-    if (first_visible == -1)
-        first_visible = 0;
+    if (first_visible == -1) {
+        if (m_presets.size() > 1 && m_default_suppressed)
+            first_visible = m_presets.size() == m_num_default_presets ? 0 : m_num_default_presets;
+        else
+            first_visible = 0;
+    }
     return first_visible;
 }
 
@@ -2907,7 +2928,7 @@ inline t_config_option_keys deep_diff(const ConfigBase &config_this, const Confi
         if (this_opt != nullptr && other_opt != nullptr && *this_opt != *other_opt)
         {
             //QDS: add bed_exclude_area
-            if (opt_key == "printable_area" || opt_key == "bed_exclude_area" || opt_key == "compatible_prints" || opt_key == "compatible_printers"|| opt_key == "thumbnail_size") {
+            if (opt_key == "printable_area" || opt_key == "bed_exclude_area" || opt_key == "compatible_prints" || opt_key == "compatible_printers"|| opt_key == "thumbnail_size" ||  opt_key == "wrapping_exclude_area") {
                 // Scalar variable, or a vector variable, which is independent from number of extruders,
                 // thus the vector is presented to the user as a single input.
                 diff.emplace_back(opt_key);
@@ -3189,22 +3210,43 @@ void PresetCollection::set_custom_preset_alias(Preset &preset)
     }
 }
 
-void PresetCollection::set_printer_hold_alias(const std::string &alias, Preset &preset)
+void PresetCollection::set_printer_hold_alias(const std::string &alias, Preset &preset, bool remove)
 {
     auto compatible_printers = dynamic_cast<ConfigOptionStrings *>(preset.config.option("compatible_printers"));
     if (compatible_printers == nullptr) return;
     for (const std::string &printer_name : compatible_printers->values) {
         auto printer_iter = m_printer_hold_alias.find(printer_name);
+        bool insert_success = false, remove_success = false;
         if (m_printer_hold_alias.end() == printer_iter) {
-            m_printer_hold_alias[printer_name].insert(alias);
-        } else {
-            auto alias_iter = m_printer_hold_alias[printer_name].find(alias);
-            if (m_printer_hold_alias[printer_name].end() == alias_iter) {
+            if (!remove) {
+                insert_success = true;
                 m_printer_hold_alias[printer_name].insert(alias);
+            }
+        } else {
+            auto &printer_filament_alias = m_printer_hold_alias[printer_name];
+            auto  alias_iter             = printer_filament_alias.find(alias);
+            if (printer_filament_alias.end() == alias_iter) {
+                if (!remove) {
+                    insert_success = true;
+                    printer_filament_alias.insert(alias);
+                }
             } else {
-                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " " << printer_name << "already has alias: " << alias << " and the preset name: " << preset.name;
+                if (remove) {
+                    if (preset.inherits() == "") {
+                        remove_success = true;
+                        printer_filament_alias.erase(alias);
+                    }
+                    if (auto alias_iter = m_map_alias_to_profile_name.find(alias); alias_iter != m_map_alias_to_profile_name.end()) {
+                        auto& presets = alias_iter->second;
+                        auto  new_end = std::remove(presets.begin(), presets.end(), preset.name);
+                        presets.erase(new_end, presets.end());
+                        if (presets.empty()) { m_map_alias_to_profile_name.erase(alias); }
+                    }
+                }
             }
         }
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " " << " preset name : " << preset.name << " remove action: " << remove << " insert success: "
+                                << insert_success << " remove success: " << remove_success << " alias: " << alias;
     }
 }
 

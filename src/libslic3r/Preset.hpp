@@ -329,9 +329,11 @@ public:
     // special for upport G and Support W
     std::string get_filament_type(std::string &display_filament_type);
     std::string get_printer_type(PresetBundle *preset_bundle); // get edited preset type
+    std::string get_printer_name(PresetBundle *preset_bundle);
     std::string get_current_printer_type(PresetBundle *preset_bundle); // get current preset type
 
     static void get_extruder_names_and_keysets(Type type, std::string& extruder_id_name, std::string& extruder_variant_name, std::set<std::string>** p_key_set1, std::set<std::string>** p_key_set2);
+    std::string get_printer_id() const { return vendor ? vendor->id : ""; }
 
     bool has_lidar(PresetBundle *preset_bundle);
     bool is_custom_defined();
@@ -578,7 +580,7 @@ public:
     const std::string& 		get_preset_name_by_alias(const std::string& alias) const;
 	const std::string*		get_preset_name_renamed(const std::string &old_name) const;
     bool                    is_alias_exist(const std::string &alias, Preset* preset = nullptr);
-    void                    set_printer_hold_alias(const std::string &alias, Preset &preset);
+    void                    set_printer_hold_alias(const std::string &alias, Preset &preset, bool remove = false);
 
 	// used to update preset_choice from Tab
 	const std::deque<Preset>&	get_presets() const	{ return m_presets; }

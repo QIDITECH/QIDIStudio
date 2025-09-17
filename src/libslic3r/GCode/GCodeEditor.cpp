@@ -294,6 +294,10 @@ std::vector<PerExtruderAdjustments> GCodeEditor::parse_layer_gcode(
         } else if (boost::starts_with(sline, ";_EXTRUDE_END")) {
             line.type = CoolingLine::TYPE_EXTRUDE_END;
             active_speed_modifier = size_t(-1);
+        }
+        // y71
+        else if (boost::starts_with(sline, "TOOL_CHANGE")) {
+            ;
         } else if (boost::starts_with(sline, m_toolchange_prefix)) {
             unsigned int new_extruder = (unsigned int)atoi(sline.c_str() + m_toolchange_prefix.size());
             // Only change extruder in case the number is meaningful. User could provide an out-of-range index through custom gcodes - those shall be ignored.

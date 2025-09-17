@@ -1120,7 +1120,7 @@ static std::vector<Vec2d> get_path_of_change_filament(const Print& print)
                 wipe_tower_z = m_last_wipe_tower_print_z + m_tool_changes[m_layer_idx].front().layer_height;
         }
 
-        if (m_enable_timelapse_print && m_is_first_print) {
+        if ((m_enable_timelapse_print || m_enable_wrapping_detection) && m_is_first_print) {
             gcode += append_tcr(gcodegen, m_tool_changes[m_layer_idx][0], m_tool_changes[m_layer_idx][0].new_tool, wipe_tower_z);
             m_tool_change_idx++;
             m_is_first_print = false;
@@ -1149,7 +1149,7 @@ static std::vector<Vec2d> get_path_of_change_filament(const Print& print)
             ignore_sparse = (m_tool_changes[m_layer_idx].size() == 1 && m_tool_changes[m_layer_idx].front().initial_tool == m_tool_changes[m_layer_idx].front().new_tool);
         }
 
-        if (m_enable_timelapse_print && m_is_first_print) {
+        if ((m_enable_timelapse_print || m_enable_wrapping_detection) && m_is_first_print) {
             return false;
         }
 
@@ -1435,6 +1435,7 @@ namespace DoExport {
         if (ret.size() < MAX_TAGS_COUNT) check(_(L("Before layer change G-code")), config.before_layer_change_gcode.value);
         if (ret.size() < MAX_TAGS_COUNT) check(_(L("Layer change G-code")), config.layer_change_gcode.value);
         if (ret.size() < MAX_TAGS_COUNT) check(_(L("Time lapse G-code")), config.time_lapse_gcode.value);
+        if (ret.size() < MAX_TAGS_COUNT) check(_(L("Time lapse G-code")), config.wrapping_detection_gcode.value);
         if (ret.size() < MAX_TAGS_COUNT) check(_(L("Change filament G-code")), config.change_filament_gcode.value);
         if (ret.size() < MAX_TAGS_COUNT) check(_(L("Printing by object G-code")), config.printing_by_object_gcode.value);
         //if (ret.size() < MAX_TAGS_COUNT) check(_(L("Color Change G-code")), config.color_change_gcode.value);
@@ -1627,15 +1628,14 @@ void GCode::do_export(Print* print, const char* path, GCodeProcessorResult* resu
         m_processor.result().filament_printable_reuslt = FilamentPrintableResult(conflict_filament, bed_type_to_gcode_string(m_config.curr_bed_type));
     }
     m_processor.set_filaments(m_writer.extruders());
-    // check gcode is valid in multi_extruder printabele area
+    // check gcode is valid in machine printabele area and multi_extruder printabele area
     int extruder_size = m_print->config().nozzle_diameter.values.size();
-    if (extruder_size > 1) {
-        std::vector<Polygons> extruder_unprintable_polys = m_print->get_extruder_unprintable_polygons();
-        m_processor.check_multi_extruder_gcode_valid(extruder_unprintable_polys,
-            m_print->get_extruder_printable_height(),
-            m_print->get_filament_maps(),
-            m_print->get_physical_unprintable_filaments(m_print->get_slice_used_filaments(false)));
-    }
+    std::vector<Polygons> extruder_unprintable_polys   = m_print->get_extruder_unprintable_polygons();
+    Pointfs               plate_printable_area         = m_print->config().printable_area.values;
+    Pointfs               wrapping_exclude_area_points = m_print->config().wrapping_exclude_area.values;
+    m_processor.check_multi_extruder_gcode_valid(extruder_size, plate_printable_area, m_print->config().printable_height.value, wrapping_exclude_area_points,
+                                                 extruder_unprintable_polys, m_print->get_extruder_printable_height(),  m_print->get_filament_maps(),
+                                                 m_print->get_physical_unprintable_filaments(m_print->get_slice_used_filaments(false)));
 
     m_processor.finalize(true);
 //    DoExport::update_print_estimated_times_stats(m_processor, print->m_print_statistics);
@@ -2703,7 +2703,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
                     } else {
                         file.write(this->retract());
                     }
-                    file.write(m_writer.travel_to_z(m_max_layer_z));
+                    file.write(m_writer.travel_to_z(m_max_layer_z + m_writer.config.z_hop.get_at(initial_extruder_id)));
                     file.write(this->travel_to(Point(0, 0), erNone, "move to origin position for next object"));
                     m_enable_cooling_markers = true;
                     // Disable motion planner when traveling to first object point.
@@ -2764,7 +2764,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
             // Prusa Multi-Material wipe tower.
             if (has_wipe_tower && !layers_to_print.empty()) {
                 m_wipe_tower.reset(new WipeTowerIntegration(print.config(), print.get_plate_index(), print.get_plate_origin(), *print.wipe_tower_data().priming.get(),
-                                                            print.wipe_tower_data().tool_changes, *print.wipe_tower_data().final_purge.get()));
+                                                            print.wipe_tower_data().tool_changes, *print.wipe_tower_data().final_purge.get(), print.get_slice_used_filaments(false)));
                 m_wipe_tower->set_wipe_tower_depth(print.get_wipe_tower_depth());
                 m_wipe_tower->set_wipe_tower_bbx(print.get_wipe_tower_bbx());
                 m_wipe_tower->set_rib_offset(print.get_rib_offset());
@@ -2985,7 +2985,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
                                    [temp_cfg_flush_multiplier_idx](double inputx) { return inputx * temp_cfg_flush_multiplier_idx; });
                 }
                 print_cfg_temp.option<ConfigOptionFloats>("flush_volumes_matrix")->values = temp_flush_volumes_matrix;
-            } else if (filament_count_tmp == 1) {
+            } else if (filament_count_tmp == 1 || print.calib_params().mode != CalibMode::Calib_None) {
             }// Not applicable to flush matrix situations
             else
             { // flush_volumes_matrix value count error?
@@ -4398,6 +4398,30 @@ GCode::LayerResult GCode::process_layer(
     if (m_wipe_tower)
         m_wipe_tower->set_is_first_print(true);
 
+    auto insert_wrapping_detection_gcode = [this, &print, &print_z, &most_used_extruder]() -> std::string {
+        std::string wrapping_gcode;
+        if (print.config().enable_wrapping_detection && !print.config().wrapping_detection_gcode.value.empty()) {
+            DynamicConfig config;
+            config.set_key_value("layer_num", new ConfigOptionInt(m_layer_index));
+            config.set_key_value("layer_z", new ConfigOptionFloat(print_z));
+            config.set_key_value("max_layer_z", new ConfigOptionFloat(m_max_layer_z));
+            config.set_key_value("most_used_physical_extruder_id", new ConfigOptionInt(m_config.physical_extruder_map.get_at(most_used_extruder)));
+            config.set_key_value("curr_physical_extruder_id", new ConfigOptionInt(m_config.physical_extruder_map.get_at(m_writer.filament()->extruder_id())));
+            wrapping_gcode = this->placeholder_parser_process("wrapping_detection_gcode", print.config().wrapping_detection_gcode.value, m_writer.filament()->id(), &config) +"\n";
+        }
+        m_writer.set_current_position_clear(false);
+
+        double temp_z_after_tool_change;
+        if (GCodeProcessor::get_last_z_from_gcode(wrapping_gcode, temp_z_after_tool_change)) {
+            Vec3d pos = m_writer.get_position();
+            pos(2)    = temp_z_after_tool_change;
+            m_writer.set_position(pos);
+        }
+        return wrapping_gcode;
+    };
+
+    bool has_insert_wrapping_detection_gcode = false;
+
     // Extrude the skirt, brim, support, perimeters, infill ordered by the extruders.
     for (unsigned int extruder_id : layer_tools.extruders)
     {
@@ -4419,6 +4443,12 @@ GCode::LayerResult GCode::process_layer(
                         has_insert_timelapse_gcode = true;
                     }
                 }
+
+                if (print.config().enable_wrapping_detection && !has_insert_wrapping_detection_gcode) {
+                    gcode += this->retract(false, false, auto_lift_type, true);
+                    gcode += insert_wrapping_detection_gcode();
+                    has_insert_wrapping_detection_gcode = true;
+                }
                 gcode += m_wipe_tower->tool_change(*this, extruder_id, extruder_id == layer_tools.extruders.back());
             }
         } else {
@@ -4431,6 +4461,13 @@ GCode::LayerResult GCode::process_layer(
                 gcode += insert_timelapse_gcode();
                 has_insert_timelapse_gcode = true;
             }
+
+            if (print.config().enable_wrapping_detection && !has_insert_wrapping_detection_gcode) {
+                gcode += this->retract(false, false, auto_lift_type, true);
+                gcode += insert_wrapping_detection_gcode();
+                has_insert_wrapping_detection_gcode = true;
+            }
+
             gcode += this->set_extruder(extruder_id, print_z);
         }
 
@@ -4989,7 +5026,7 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
     const double clip_length = m_enable_loop_clipping && !enable_seam_slope ? seam_gap : 0;
      // get paths
     ExtrusionPaths paths;
-    bool set_holes_and_compensation_speed = loop.get_customize_flag() && !loop.has_overhang_paths();
+    bool set_holes_and_compensation_speed = loop.get_customize_flag() == CustomizeFlag::cfCircleCompensation && !loop.has_overhang_paths();
     if (set_holes_and_compensation_speed && m_config.apply_scarf_seam_on_circles.value) {
         enable_seam_slope = true;
     }
@@ -5061,8 +5098,11 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
             //new_loop.target_speed = get_path_speed(new_loop.starts.back());
             //new_loop.slowdown_slope_speed();
             // QDS: smooth speed of discontinuity areas
-            if (m_config.detect_overhang_wall && m_config.smooth_speed_discontinuity_area && loop.is_set_speed_discontinuity_area())
+            if (m_config.detect_overhang_wall && m_config.smooth_speed_discontinuity_area && loop.is_set_speed_discontinuity_area()) {
+                // set smoothing_cof
+                set_smooth_coff(FILAMENT_CONFIG(filament_velocity_adaptation_factor));
                 smooth_speed_discontinuity_area(new_loop.paths);
+            }
             // Then extrude it
             for (const auto &p : new_loop.get_all_paths()) {
                 //w16
@@ -5089,8 +5129,11 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
     if (!enable_seam_slope || slope_has_overhang) {
         //1.9.5
         // QDS: smooth speed of discontinuity areas
-        if (m_config.detect_overhang_wall && m_config.smooth_speed_discontinuity_area && loop.is_set_speed_discontinuity_area())
+        if (m_config.detect_overhang_wall && m_config.smooth_speed_discontinuity_area && loop.is_set_speed_discontinuity_area()){
+            // set smoothing_cof
+            set_smooth_coff(FILAMENT_CONFIG(filament_velocity_adaptation_factor));
             smooth_speed_discontinuity_area(paths);
+        }
 
         for (ExtrusionPaths::iterator path = paths.begin(); path != paths.end(); ++path) {
             //w16
@@ -5409,12 +5452,12 @@ double GCode::mapping_speed(double dist)
 {
     if (dist <= 0)
         return 0;
-    return this->config().smooth_coefficient * pow(dist, 2);
+    return m_smooth_coefficient * pow(dist, 2);
 }
 
 double GCode::get_speed_coor_x(double speed){
 
-    double temp = speed / this->config().smooth_coefficient;
+    double temp = speed / m_smooth_coefficient;
     return sqrt(temp);
 }
 
@@ -5737,7 +5780,7 @@ ExtrusionPaths GCode::set_speed_transition(std::vector<ExtrusionPaths> &paths)
 
 void GCode::smooth_speed_discontinuity_area(ExtrusionPaths &paths) {
 
-    if (paths.size() <= 1 || this->config().smooth_coefficient == 0)
+    if (paths.size() <= 1 || m_smooth_coefficient == 0)
         return;
 
     //step 1 merge same speed path
@@ -5794,6 +5837,28 @@ bool GCode::slowDownByHeight(double& maxSpeed, double& maxAcc, const ExtrusionPa
     maxSpeed = desiredMaxSpeed;
     maxAcc = desiredMaxAcc;
     return do_slowdown_by_height;
+}
+
+double GCode::calc_max_volumetric_speed(const double layer_height, const double line_width, const std::string co_str)
+{
+    std::vector<double> cs;
+    std::stringstream   ss(co_str);
+    std::string         token;
+
+    while (std::getline(ss, token, ' ')) {
+        try {
+            cs.push_back(std::stod(token));
+        } catch (...) {
+            std::cerr << "Transformation failed: " << token << std::endl;
+        }
+    }
+    if (cs.size() != 6 || std::all_of(cs.begin(), cs.end(), [](double v) { return v == 0; })) return std::numeric_limits<double>::max();
+
+    const double x = layer_height;
+    const double y = line_width;
+
+    double res = cs[0] * x * x + cs[1] * y * y + cs[2] * x * y + cs[3] * x + cs[4] * y + cs[5];
+    return res;
 }
 
 std::string GCode::_extrude(const ExtrusionPath &path, std::string description, double speed, bool use_seperate_speed, bool is_first_slope)
@@ -5974,6 +6039,11 @@ std::string GCode::_extrude(const ExtrusionPath &path, std::string description, 
     }
     //QDS: if not set the speed, then use the filament_max_volumetric_speed directly
     double filament_max_volumetric_speed = FILAMENT_CONFIG(filament_max_volumetric_speed);
+    if (FILAMENT_CONFIG(filament_adaptive_volumetric_speed)){
+        double fitted_value = calc_max_volumetric_speed(path.height, path.width, FILAMENT_CONFIG(volumetric_speed_coefficients));
+        filament_max_volumetric_speed = std::min(filament_max_volumetric_speed, fitted_value);
+    }
+
     if( speed == 0 )
     {
         if (_mm3_per_mm>0)
@@ -6277,8 +6347,7 @@ std::string GCode::travel_to(const Point &point, ExtrusionRole role, std::string
     // generate G-code for the travel move
     std::string gcode;
     if (needs_retraction) {
-        if (m_config.reduce_crossing_wall && could_be_wipe_disabled && !m_last_scarf_seam_flag)
-            m_wipe.reset_path();
+        if (m_config.reduce_crossing_wall && could_be_wipe_disabled && !m_last_scarf_seam_flag) m_wipe.reset_path();
 
         Point last_post_before_retract = this->last_pos();
         gcode += this->retract(false, false, lift_type);
@@ -6479,9 +6548,10 @@ bool GCode::needs_retraction(const Polyline &travel, ExtrusionRole role, LiftTyp
                 if (support_island.contains(travel))
                     return false;
     }
+
     //QDS: need retract when long moving to print perimeter to avoid dropping of material
-    if (!is_perimeter(role) && m_config.reduce_infill_retraction && m_layer != nullptr &&
-        m_config.sparse_infill_density.value > 0 && m_retract_when_crossing_perimeters.travel_inside_internal_regions(*m_layer, travel))
+    if (!is_perimeter(role) && m_config.reduce_infill_retraction && m_layer != nullptr && m_config.sparse_infill_density.value > 0 &&
+        m_retract_when_crossing_perimeters.travel_inside_internal_regions_no_wall_crossing(*m_layer, travel))
         // Skip retraction if travel is contained in an internal slice *and*
         // internal infill is enabled (so that stringing is entirely not visible).
         //FIXME any_internal_region_slice_contains() is potentionally very slow, it shall test for the bounding boxes first.

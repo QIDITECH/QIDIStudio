@@ -176,8 +176,6 @@ void AppConfig::set_defaults()
         set_bool("enable_merge_color_by_sync_ams", false);
     if (get("ams_sync_match_full_use_color_dist").empty())
         set_bool("ams_sync_match_full_use_color_dist", false);
-    if (get("enable_sidebar_resizable").empty())
-        set_bool("enable_sidebar_resizable", true);
     if (get("enable_sidebar_floatable").empty())
         set_bool("enable_sidebar_floatable", false);
 
@@ -215,6 +213,8 @@ void AppConfig::set_defaults()
     if (get("enable_multi_machine").empty())
         set_bool("enable_multi_machine", false);
 
+    if (get("enable_record_gcodeviewer_option_item").empty())
+        set_bool("enable_record_gcodeviewer_option_item", false);
     if (get("prefer_to_use_dgpu").empty())
         set_bool("prefer_to_use_dgpu", false);
 
@@ -379,7 +379,19 @@ void AppConfig::set_defaults()
     }
 
     if (get("mouse_wheel").empty()) {
-        set("mouse_wheel", "0");
+        set("mouse_wheel", "0"); }
+
+    // helio options
+    if (get("helio_enable").empty()) {
+        set_bool("helio_enable", false);
+    }
+
+    if (get("helio_api_china").empty()) {
+        set("helio_api_china", "https://api.helioam.cn/graphql");
+    }
+
+    if (get("helio_api_other").empty()) {
+        set("helio_api_other", "https://api.helioadditive.com/graphql");
     }
 
     if (get("max_recent_count").empty()) {
@@ -441,6 +453,10 @@ void AppConfig::set_defaults()
     if (get("print", "bed_leveling").empty()) {
         set_str("print", "bed_leveling", "1");
     }
+    //y71
+    if (get("print", "enable_multi_box").empty()) {
+        set_str("print", "enable_multi_box", "0");
+    }
     if (get("print", "flow_cali").empty()) {
         set_str("print", "flow_cali", "1");
     }
@@ -465,6 +481,13 @@ void AppConfig::set_defaults()
     }
     if (get("play_tpu_printing_video").empty()) {
         set_bool("play_tpu_printing_video", true);
+    }
+    if (get("show_wrapping_detect_dialog").empty()) {
+        set_bool("show_wrapping_detect_dialog", true);
+    }
+
+    if (get("prompt_for_brittle_filaments").empty()){
+        set_bool("prompt_for_brittle_filaments", true);
     }
 
     // 10

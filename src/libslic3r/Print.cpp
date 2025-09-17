@@ -35,6 +35,7 @@
 #include "nlohmann/json.hpp"
 
 #include "GCode/ConflictChecker.hpp"
+#include "ParameterUtils.hpp"
 
 #include <codecvt>
 
@@ -126,6 +127,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
         "filament_colour",
         "default_filament_colour",
         "filament_diameter",
+        "volumetric_speed_coefficients",
         "filament_density",
         "filament_cost",
         "initial_layer_acceleration",
@@ -142,6 +144,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
         "gcode_add_line_number",
         "layer_change_gcode",
         "time_lapse_gcode",
+        "wrapping_detection_gcode",
         "fan_min_speed",
         "fan_max_speed",
         "printable_height",
@@ -205,6 +208,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
         "filament_notes",
         "process_notes",
         "printer_notes",
+        "filament_velocity_adaptation_factor",
         //w13
         "additional_cooling_fan_speed_unseal",
         //w14
@@ -273,6 +277,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
             || opt_key == "nozzle_temperature_initial_layer"
             || opt_key == "filament_minimal_purge_on_wipe_tower"
             || opt_key == "filament_max_volumetric_speed"
+            || opt_key == "filament_adaptive_volumetric_speed"
             || opt_key == "filament_ramming_volumetric_speed"
             || opt_key == "gcode_flavor"
             || opt_key == "single_extruder_multi_material"
@@ -286,6 +291,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
             || opt_key == "hot_plate_temp"
             || opt_key == "textured_plate_temp"
             || opt_key == "enable_prime_tower"
+            || opt_key == "enable_wrapping_detection"
             || opt_key == "prime_tower_enable_framework"
             || opt_key == "prime_tower_width"
             || opt_key == "prime_tower_max_speed"
@@ -924,47 +930,40 @@ static StringObjectException layered_print_cleareance_valid(const Print &print, 
         }
     }
 
-    std::map<const PrintInstance*, Polygon> map_model_object_to_convex_hull;
-    // sequential_print_horizontal_clearance_valid
+    Pointfs wrapping_detection_area = print_config.wrapping_exclude_area.values;
+    Polygon wrapping_poly;
+    for (size_t i = 0; i < wrapping_detection_area.size(); ++i) {
+        auto pt = wrapping_detection_area[i];
+        wrapping_poly.points.emplace_back(scale_(pt.x() + print_origin.x()), scale_(pt.y() + print_origin.y()));
+    }
+
+    std::map<const ModelVolume*, Polygon> map_model_volume_to_convex_hull;
     Polygons convex_hulls_other;
-    for (int k = 0; k < print_instances_ordered.size(); k++)
-    {
-        auto& inst = print_instances_ordered[k];
-        auto it_convex_hull = map_model_object_to_convex_hull.find(inst);
-        // Get convex hull of all printable volumes assigned to this print object.
-        const ModelInstance* model_instance0 = inst->model_instance;
-        if (it_convex_hull == map_model_object_to_convex_hull.end()) {
-            // Calculate the convex hull of a printable object.
-            auto convex_hull0 = inst->print_object->model_object()->convex_hull_2d(
-                Geometry::assemble_transform(Vec3d::Zero(), model_instance0->get_rotation(), model_instance0->get_scaling_factor(), model_instance0->get_mirror()));
+    for (auto& inst : print_instances_ordered) {
+        for (const ModelVolume *v : inst->print_object->model_object()->volumes) {
+            if (!v->is_model_part()) continue;
+            auto it_convex_hull = map_model_volume_to_convex_hull.find(v);
+            if (it_convex_hull == map_model_volume_to_convex_hull.end()) {
+                auto volume_hull = v->get_convex_hull_2d(Geometry::assemble_transform(Vec3d::Zero(), inst->model_instance->get_rotation(),
+                                                                                      inst->model_instance->get_scaling_factor(), inst->model_instance->get_mirror()));
+                volume_hull.translate(inst->shift - inst->print_object->center_offset());
 
-            double z_diff = Geometry::rotation_diff_z(model_instance0->get_rotation(), inst->model_instance->get_rotation());
-            if (std::abs(z_diff) > EPSILON)
-                convex_hull0.rotate(z_diff);
-
-            // instance.shift is a position of a centered object, while model object may not be centered.
-            // Conver the shift from the PrintObject's coordinates into ModelObject's coordinates by removing the centering offset.
-            convex_hull0.translate(inst->shift - inst->print_object->center_offset());
-
-            it_convex_hull = map_model_object_to_convex_hull.emplace_hint(it_convex_hull, inst, convex_hull0);
-        }
-        Polygon& convex_hull = it_convex_hull->second;
-        Polygons convex_hulls_temp;
-        convex_hulls_temp.push_back(convex_hull);
-        /*if (!intersection(convex_hulls_other, convex_hulls_temp).empty()) {
-            if (warning) {
-                warning->string = inst->model_instance->get_object()->name + L(" is too close to others, there may be collisions when printing.") + "\n";
-                warning->object = inst->model_instance->get_object();
+                it_convex_hull = map_model_volume_to_convex_hull.emplace_hint(it_convex_hull, v, volume_hull);
             }
-        }*/
-        if (!intersection(exclude_polys, convex_hull).empty()) {
-            return {inst->model_instance->get_object()->name + L(" is too close to exclusion area, there may be collisions when printing.") + "\n", inst->model_instance->get_object()};
-            /*if (warning) {
-                warning->string = inst->model_instance->get_object()->name + L(" is too close to exclusion area, there may be collisions when printing.") + "\n";
-                warning->object = inst->model_instance->get_object();
-            }*/
+            Polygon &convex_hull = it_convex_hull->second;
+            Polygons convex_hulls_temp;
+            convex_hulls_temp.push_back(convex_hull);
+            if (!intersection(exclude_polys, convex_hull).empty()) {
+                return {inst->model_instance->get_object()->name + L(" is too close to exclusion area, there may be collisions when printing.") + "\n",
+                        inst->model_instance->get_object()};
+            }
+
+            if (print_config.enable_wrapping_detection.value && !intersection(wrapping_poly, convex_hull).empty()) {
+                return {inst->model_instance->get_object()->name + L(" is too close to clumping detection area, there may be collisions when printing.") + "\n",
+                        inst->model_instance->get_object()};
+            }
+            convex_hulls_other.emplace_back(convex_hull);
         }
-        convex_hulls_other.emplace_back(convex_hull);
     }
 
     //QDS: add the wipe tower check logic
@@ -996,7 +995,9 @@ static StringObjectException layered_print_cleareance_valid(const Print &print, 
             convex_hulls_temp.push_back(wipe_tower_convex_hull);
         } else {
             //here, wipe_tower_polygon is not always convex.
-            Polygon wipe_tower_polygon = print.wipe_tower_data().wipe_tower_mesh_data->bottom;
+            Polygon wipe_tower_polygon;
+            if (print.wipe_tower_data().wipe_tower_mesh_data)
+                wipe_tower_polygon = print.wipe_tower_data().wipe_tower_mesh_data->bottom;
             wipe_tower_polygon.translate(Point(scale_(x), scale_(y)));
             convex_hulls_temp.push_back(wipe_tower_polygon);
         }
@@ -1012,7 +1013,9 @@ static StringObjectException layered_print_cleareance_valid(const Print &print, 
         }*/
         return {L("Prime Tower") + L(" is too close to exclusion area, and collisions will be caused.\n")};
     }
-
+    if (print_config.enable_wrapping_detection.value && !intersection({wrapping_poly}, convex_hulls_temp).empty()) {
+        return {L("Prime Tower") + L(" is too close to clumping detection area, and collisions will be caused.\n")};
+    }
     return {};
 }
 
@@ -1083,6 +1086,53 @@ int Print::get_compatible_filament_type(const std::set<int>& filament_types)
 StringObjectException Print::check_multi_filament_valid(const Print& print)
 {
     auto print_config = print.config();
+    if(print_config.print_sequence == PrintSequence::ByObject) {// use ByObject valid under ByObject print sequence
+        std::set<FilamentCompatibilityType> Compatibility_each_obj;
+        bool enable_mix_printing = !print.need_check_multi_filaments_compatibility();
+
+        for (const auto &objectID_t : print.print_object_ids()) {
+            std::set<int> obj_used_extruder_ids;
+            auto                     print_object = print.get_object(objectID_t);// current object
+            if (print_object){
+                auto object_extruders_t = print_object->object_extruders(); // object used extruder
+                for (int extruder : object_extruders_t) {
+                    assert(extruder > 0);
+                    obj_used_extruder_ids.insert(extruder);
+                }
+            }
+
+            if (print_object->has_support_material()) { // extruder used by supports
+                auto num_extruders                 = (unsigned int) print_config.filament_diameter.size();
+                assert(print_object->config().support_filament >= 0);
+                if (print_object->config().support_filament >= 1 && (unsigned int)print_object->config().support_filament < num_extruders + 1)
+                    obj_used_extruder_ids.insert((unsigned int) print_object->config().support_filament - 1);//0-based extruder id
+                assert(print_object->config().support_interface_filament >= 0);
+                if (print_object->config().support_interface_filament >= 1 && (unsigned int)print_object->config().support_interface_filament < num_extruders + 1)
+                    obj_used_extruder_ids.insert((unsigned int) print_object->config().support_interface_filament - 1);
+            }
+            std::vector<std::string> filament_types;
+            filament_types.reserve(obj_used_extruder_ids.size());
+            for (const auto &extruder_idx : obj_used_extruder_ids) filament_types.push_back(print_config.filament_type.get_at(extruder_idx));
+
+            auto                  compatibility       = check_multi_filaments_compatibility(filament_types);// check for each object
+            Compatibility_each_obj.insert(compatibility);
+        }
+        StringObjectException ret;
+        std::string           hypertext = "filament_mix_print";
+        if (Compatibility_each_obj.count(FilamentCompatibilityType::HighLowMixed)){// at least one object has HighLowMixed
+            if (enable_mix_printing) {
+                ret.string     = L("Printing high-temp and low-temp filaments together may cause nozzle clogging or printer damage.");
+                ret.is_warning = true;
+                ret.hypetext   = hypertext;
+            } else
+                ret.string = L("Printing high-temp and low-temp filaments together may cause nozzle clogging or printer damage. If you still want to print, you can enable the option in Preferences.");
+        }else if (Compatibility_each_obj.count(FilamentCompatibilityType::LowMidMixed) || Compatibility_each_obj.count(FilamentCompatibilityType::HighMidMixed)){// at least one object has other Mixed
+            ret.is_warning = true;
+            ret.hypetext   = hypertext;
+            ret.string     = L("Printing different-temp filaments together may cause nozzle clogging or printer damage.");
+        }
+        return ret;
+    }
     std::vector<unsigned int> extruders = print.extruders();
     std::vector<std::string> filament_types;
     filament_types.reserve(extruders.size());
@@ -1122,7 +1172,7 @@ StringObjectException Print::check_multi_filament_valid(const Print& print)
 }
 
 // Precondition: Print::validate() requires the Print::apply() to be called its invocation.
-//QDS: refine seq-print validation logic
+//QDS: refine seq-print validation logic.....FIXME:StringObjectException *warning can only contain one warning, but there might be many warnings, need a vector<StringObjectException>
 StringObjectException Print::validate(StringObjectException *warning, Polygons* collison_polygons, std::vector<std::pair<Polygon, float>>* height_polygons) const
 {
     std::vector<unsigned int> extruders = this->extruders();
@@ -1133,22 +1183,29 @@ StringObjectException Print::validate(StringObjectException *warning, Polygons* 
     if (extruders.empty())
         return { L("No extrusions under current settings.") };
 
-    if (extruders.size() > 1 && m_config.print_sequence != PrintSequence::ByObject) {
+    if (extruders.size() > 1) {
         auto ret = check_multi_filament_valid(*this);
         if (!ret.string.empty())
         {
             ret.type = STRING_EXCEPT_FILAMENTS_DIFFERENT_TEMP;
             if (ret.is_warning && warning != nullptr) {
                 *warning = ret;
-                return {};
-            }
-            return ret;
+                //return {};
+            }else
+                return ret;
         }
     }
 
-    if (m_config.print_sequence == PrintSequence::ByObject) {
+    if (m_config.print_sequence == PrintSequence::ByObject && m_objects.size() > 1) {
         if (m_config.timelapse_type == TimelapseType::tlSmooth)
             return {L("Smooth mode of timelapse is not supported when \"by object\" sequence is enabled.")};
+
+        if (m_config.enable_wrapping_detection) {
+            StringObjectException clumping_detection_setting_err;
+            clumping_detection_setting_err.string = L("Clumping detection is not supported when \"by object\" sequence is enabled.");
+            clumping_detection_setting_err.opt_key = "enable_wrapping_detection";
+            return clumping_detection_setting_err;
+        }
 
         //QDS: refine seq-print validation logic
         auto ret = sequential_print_clearance_valid(*this, collison_polygons, height_polygons);
@@ -1163,6 +1220,17 @@ StringObjectException Print::validate(StringObjectException *warning, Polygons* 
         if (!ret.string.empty()) {
             ret.type = STRING_EXCEPT_OBJECT_COLLISION_IN_LAYER_PRINT;
             return ret;
+        }
+    }
+
+    if (m_config.enable_prime_tower) {
+    } else {
+        if (m_config.enable_wrapping_detection && warning!=nullptr) {
+            StringObjectException warningtemp;
+            warningtemp.string     = L("Prime tower is required for clumping detection; otherwise, there may be flaws on the model.");
+            warningtemp.opt_key    = "enable_prime_tower";
+            warningtemp.is_warning = true;
+            *warning               = warningtemp;
         }
     }
 
@@ -1385,8 +1453,10 @@ StringObjectException Print::validate(StringObjectException *warning, Polygons* 
                     bool has_enforcers = mv->is_support_enforcer() ||
                         (mv->is_model_part() && mv->supported_facets.has_facets(*mv, EnforcerBlockerType::ENFORCER));
                     if (has_enforcers) {
-                        warning->string = L("Support enforcers are used but support is not enabled. Please enable support.");
-                        warning->object = object;
+                        StringObjectException warningtemp;
+                        warningtemp.string = L("Support enforcers are used but support is not enabled. Please enable support.");
+                        warningtemp.object  = object;
+                        *warning            = warningtemp;
                         break;
                     }
                 }
@@ -1750,6 +1820,8 @@ void Print::process(std::unordered_map<std::string, long long>* slice_time, bool
         }
         //if (!object1->config().equals(object2->config()))
         //    return false;
+        if (model_obj1->layer_height_profile.get() != model_obj2->layer_height_profile.get())
+            return false;
         if (model_obj1->config.get() != model_obj2->config.get())
             return false;
         return true;
@@ -2665,6 +2737,9 @@ size_t Print::get_extruder_id(unsigned int filament_id) const
 bool Print::has_wipe_tower() const
 {
     if (m_config.enable_prime_tower.value == true) {
+        if (m_config.enable_wrapping_detection.value && m_config.wrapping_exclude_area.values.size() > 2)
+            return true;
+
         if (enable_timelapse_print())
             return true;
 
@@ -2683,31 +2758,56 @@ const WipeTowerData& Print::wipe_tower_data(size_t filaments_cnt) const
     }
     if (max_height < EPSILON) return m_wipe_tower_data;
 
+    double layer_height                  = 0.08f; // hard code layer height
+    layer_height        = m_objects.front()->config().layer_height.value;
+
+    auto   timelapse_type  = config().option<ConfigOptionEnum<TimelapseType>>("timelapse_type");
+    bool   need_wipe_tower = (timelapse_type ? (timelapse_type->value == TimelapseType::tlSmooth) : false) | m_config.prime_tower_rib_wall.value;
+    double extra_spacing = config().option("prime_tower_infill_gap")->getFloat() / 100.;
+    double rib_width     = config().option("prime_tower_rib_width")->getFloat();
+
+    double filament_change_volume = 0.;
+    {
+        std::vector<double> filament_change_lengths;
+        auto                filament_change_lengths_opt = config().option<ConfigOptionFloats>("filament_change_length");
+        if (filament_change_lengths_opt) filament_change_lengths = filament_change_lengths_opt->values;
+        double              length   = filament_change_lengths.empty() ? 0 : *std::max_element(filament_change_lengths.begin(), filament_change_lengths.end());
+        double              diameter = 1.75;
+        std::vector<double> diameters;
+        auto                filament_diameter_opt = config().option<ConfigOptionFloats>("filament_diameter");
+        if (filament_diameter_opt) diameters = filament_diameter_opt->values;
+        diameter               = diameters.empty() ? diameter : *std::max_element(diameters.begin(), diameters.end());
+        filament_change_volume = length * PI * diameter * diameter / 4.;
+    }
+
+
     if (! is_step_done(psWipeTower) && filaments_cnt !=0) {
         std::vector<double> filament_wipe_volume = m_config.filament_prime_volume.values;
         double wipe_volume = get_max_element(filament_wipe_volume);
-        if (m_config.prime_tower_rib_wall.value) {
-            double layer_height = 0.08f; // hard code layer height
-            layer_height = m_objects.front()->config().layer_height.value;
-            int    filament_depth_count = m_config.nozzle_diameter.values.size() == 2 ? filaments_cnt : filaments_cnt - 1;
-            if (filaments_cnt == 1 && enable_timelapse_print())
-                filament_depth_count = 1;
-            double depth = std::sqrt(wipe_volume * filament_depth_count / layer_height);
+        int filament_depth_count = m_config.nozzle_diameter.values.size() == 2 ? filaments_cnt : filaments_cnt - 1;
+        if (filaments_cnt == 1 && enable_timelapse_print()) filament_depth_count = 1;
+        double volume = wipe_volume * filament_depth_count;
+        if (m_config.nozzle_diameter.values.size() == 2) volume += filament_change_volume * (int) (filaments_cnt / 2);
 
-            float min_wipe_tower_depth = WipeTower::get_limit_depth_by_height(max_height);
-            depth  = std::max((double) min_wipe_tower_depth, depth);
-            const_cast<Print *>(this)->m_wipe_tower_data.depth = depth;
-            const_cast<Print *>(this)->m_wipe_tower_data.brim_width = m_config.prime_tower_brim_width;
+        if (m_config.prime_tower_rib_wall.value) {
+            double depth = std::sqrt(volume / layer_height * extra_spacing);
+            if (need_wipe_tower || filaments_cnt > 1) {
+                float min_wipe_tower_depth = WipeTower::get_limit_depth_by_height(max_height);
+                depth  = std::max((double) min_wipe_tower_depth, depth);
+                depth += rib_width / std::sqrt(2) + config().prime_tower_extra_rib_length.value;
+                const_cast<Print *>(this)->m_wipe_tower_data.depth = depth;
+                const_cast<Print *>(this)->m_wipe_tower_data.brim_width = m_config.prime_tower_brim_width;
+            }
         }
         else {
             // QDS
             double width        = m_config.prime_tower_width;
-            double layer_height = 0.2; // hard code layer height
-            if (filaments_cnt == 1 && enable_timelapse_print()) {
-                const_cast<Print *>(this)->m_wipe_tower_data.depth = wipe_volume / (layer_height * width);
-            } else {
-                const_cast<Print *>(this)->m_wipe_tower_data.depth = wipe_volume * (filaments_cnt - 1) / (layer_height * width);
+            double depth = volume / (layer_height * width) * extra_spacing;
+            if (need_wipe_tower || m_wipe_tower_data.depth > EPSILON) {
+                float min_wipe_tower_depth = WipeTower::get_limit_depth_by_height(max_height);
+                depth = std::max((double) min_wipe_tower_depth, depth);
             }
+            const_cast<Print *>(this)->m_wipe_tower_data.depth = depth;
             const_cast<Print *>(this)->m_wipe_tower_data.brim_width = m_config.prime_tower_brim_width;
         }
         if (m_config.prime_tower_brim_width < 0) const_cast<Print *>(this)->m_wipe_tower_data.brim_width = WipeTower::get_auto_brim_by_height(max_height);
@@ -2777,7 +2877,7 @@ void Print::_make_wipe_tower()
     // Initialize the wipe tower.
     // QDS: in QDT machine, wipe tower is only use to prime extruder. So just use a global wipe volume.
     WipeTower wipe_tower(m_config, m_plate_index, m_origin, m_wipe_tower_data.tool_ordering.first_extruder(),
-        m_wipe_tower_data.tool_ordering.empty() ? 0.f : m_wipe_tower_data.tool_ordering.back().print_z);
+                         m_wipe_tower_data.tool_ordering.empty() ? 0.f : m_wipe_tower_data.tool_ordering.back().print_z, m_wipe_tower_data.tool_ordering.all_extruders());
     wipe_tower.set_has_tpu_filament(this->has_tpu_filament());
     wipe_tower.set_filament_map(this->get_filament_maps());
     // Set the extruder & material properties at the wipe tower object.
@@ -2848,7 +2948,7 @@ void Print::_make_wipe_tower()
             layer_tools.wiping_extrusions().ensure_perimeters_infills_order(*this);
 
             // if enable timelapse, slice all layer
-            if (enable_timelapse_print()) {
+            if (m_config.enable_wrapping_detection || enable_timelapse_print()) {
                 if (layer_tools.wipe_tower_partitions == 0) wipe_tower.set_last_layer_extruder_fill(false);
                 continue;
             }
@@ -4234,10 +4334,12 @@ Polygon PrintInstance::get_convex_hull_2d() {
     Polygon poly = print_object->model_object()->convex_hull_2d(model_instance->get_matrix());
     //y50
     float distance_tolerance = 0.1;
-    while(poly.size() > 200){
+    poly.douglas_peucker(distance_tolerance);
+    while (poly.size() > 200) {
         poly.douglas_peucker(distance_tolerance);
-        distance_tolerance*=2;
+        distance_tolerance *= 2;
     }
+
     return poly;
 }
 

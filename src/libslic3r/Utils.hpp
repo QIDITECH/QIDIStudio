@@ -70,6 +70,8 @@
 #define CLI_GCODE_PATH_CONFLICTS           -101
 #define CLI_GCODE_PATH_IN_UNPRINTABLE_AREA -102
 #define CLI_FILAMENT_UNPRINTABLE_ON_FIRST_LAYER -103
+#define CLI_GCODE_PATH_OUTSIDE             -104
+#define CLI_GCODE_IN_WRAPPING_DETECT_AREA  -105
 
 
 namespace boost { namespace filesystem { class directory_entry; }}
@@ -149,6 +151,7 @@ private:
     inline static size_t start_pos = std::string::npos;
     inline static size_t id_start_pos = std::string::npos;
     inline static size_t name_size = 0;
+    inline static std::string full;
 
     static bool init_usrname_range()
     {
@@ -183,7 +186,7 @@ private:
         if (!env) {
             return false;
         }
-        std::string full(env);
+        full = std::string(env);
         size_t sep_pos = full.find_last_of("\\/");
         if (sep_pos == std::string::npos) {
             return false;
@@ -201,25 +204,37 @@ private:
         return true;
     }
 
+    static inline std::string file_name(const std::string &name) {
+        return boost::filesystem::path(name).filename().string();
+    }
+
     static std::string sanitize_impl(const std::string &raw)
     {
         if (!init_usrname_range()) {
-            return raw;
+            return file_name(raw);
         }
 
-        if (raw.length() < start_pos + name_size) {
-            return raw;
+        if (raw.length() < full.length() || raw.empty()) {
+            return file_name(raw);
         }
 
         std::string sanitized = raw;
+        if (raw[0] != full[0] || raw[full.length() - 1] != full[full.length() - 1]) {
+            if (std::isupper(raw[start_pos]) && std::tolower(raw[start_pos]) == full[start_pos]) {
+                sanitized.replace(start_pos, 12, std::string(12, '*'));
+                return sanitized;
+            }
+            return file_name(raw);
+        }
+
         if (raw[start_pos + name_size] == '\\' || raw[start_pos + name_size] == '/') {
             sanitized.replace(start_pos, name_size, std::string(name_size, '*'));
-        } else if (std::isupper(raw[start_pos])) {
+        } else if (std::isupper(raw[start_pos]) && std::tolower(raw[start_pos]) == full[start_pos]) {
             sanitized.replace(start_pos, 12, std::string(12, '*'));
         } else {
-            return raw;
+            return file_name(raw);
         }
-        
+
         if (id_start_pos != std::string::npos && id_start_pos < sanitized.length() && (sanitized[id_start_pos - 1] == '\\' || sanitized[id_start_pos - 1] == '/') &&
             std::isdigit(sanitized[id_start_pos])) {
             // If the ID part is present, sanitize it as well
@@ -230,25 +245,33 @@ private:
             sanitized.replace(id_start_pos, id_end_pos - id_start_pos, std::string(id_end_pos - id_start_pos, '*'));
         }
 
-        return sanitized;
+        return file_name(sanitized);
     }
 
     static std::string sanitize_impl(std::string &&raw)
     {
         if (!init_usrname_range()) {
-            return raw;
+            return file_name(raw);
         }
 
-        if (raw.length() < start_pos + name_size) {
-            return raw;
+        if (raw.length() < full.length() || raw.empty()) {
+            return std::move(file_name(raw));
+        }
+
+        if (raw[0] != full[0] || raw[full.length() - 1] != full[full.length() - 1]) {
+            if (std::isupper(raw[start_pos]) && std::tolower(raw[start_pos]) == full[start_pos]) {
+                raw.replace(start_pos, 12, std::string(12, '*'));
+                return std::move(file_name(raw));
+            }
+            return std::move(file_name(raw));
         }
 
         if (raw[start_pos + name_size] == '\\' || raw[start_pos + name_size] == '/') {
             raw.replace(start_pos, name_size, std::string(name_size, '*'));
-        } else if (std::isupper(raw[start_pos])) {
+        } else if (std::isupper(raw[start_pos]) && std::tolower(raw[start_pos]) == full[start_pos]) {
             raw.replace(start_pos, 12, std::string(12, '*'));
         } else {
-            return raw;
+            return std::move(file_name(raw));
         }
 
         if (id_start_pos != std::string::npos && id_start_pos < raw.length() && (raw[id_start_pos - 1] == '\\' || raw[id_start_pos - 1] == '/') &&
@@ -261,7 +284,7 @@ private:
             raw.replace(id_start_pos, id_end_pos - id_start_pos, std::string(id_end_pos - id_start_pos, '*'));
         }
 
-        return std::move(raw);
+        return std::move(file_name(raw));
     }
 };
 

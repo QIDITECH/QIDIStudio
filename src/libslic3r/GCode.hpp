@@ -73,7 +73,8 @@ public:
         const Vec3d                                                  plate_origin,
         const std::vector<WipeTower::ToolChangeResult>              &priming,
         const std::vector<std::vector<WipeTower::ToolChangeResult>> &tool_changes,
-        const WipeTower::ToolChangeResult                           &final_purge) :
+        const WipeTower::ToolChangeResult                           &final_purge,
+        const std::vector<unsigned int>                             &slice_used_filaments) :
         m_left(/*float(print_config.wipe_tower_x.value)*/ 0.f),
         m_right(float(/*print_config.wipe_tower_x.value +*/ print_config.prime_tower_width.value)),
         m_wipe_tower_pos(float(print_config.wipe_tower_x.get_at(plate_idx)), float(print_config.wipe_tower_y.get_at(plate_idx))),
@@ -86,6 +87,7 @@ public:
         m_plate_origin(plate_origin),
         m_single_extruder_multi_material(print_config.single_extruder_multi_material),
         m_enable_timelapse_print(print_config.timelapse_type.value == TimelapseType::tlSmooth),
+        m_enable_wrapping_detection(print_config.enable_wrapping_detection && (print_config.wrapping_exclude_area.values.size() > 2) && (slice_used_filaments.size() <= 1)),
         m_is_first_print(true),
         m_print_config(&print_config)
     {
@@ -139,6 +141,7 @@ private:
     Vec3d                                                        m_plate_origin;
     bool                                                         m_single_extruder_multi_material;
     bool                                                         m_enable_timelapse_print;
+    bool                                                         m_enable_wrapping_detection;
     bool                                                         m_is_first_print;
     const PrintConfig *                                          m_print_config;
     float                                                        m_wipe_tower_depth;
@@ -180,6 +183,7 @@ public:
         // QDS
         m_toolchange_count(0),
         m_nominal_z(0.),
+        m_smooth_coefficient(0.),
         //w16
         m_resonance_avoidance(true)
         {}
@@ -230,7 +234,7 @@ public:
     bool is_QDT_Printer();
 
     BoundingBoxf first_layer_projection(const Print& print) const;
-
+    void set_smooth_coff(float filamet_melting) { m_smooth_coefficient = filamet_melting * m_config.smooth_coefficient; }
     // Object and support extrusions of the same PrintObject at the same print_z.
     // public, so that it could be accessed by free helper functions from GCode.cpp
     struct LayerToPrint
@@ -561,6 +565,7 @@ private:
     bool m_enable_label_object;
     std::vector<size_t> m_label_objects_ids;
     std::string _encode_label_ids_to_base64(std::vector<size_t> ids);
+    float               m_smooth_coefficient{0.0f};
 
     // 1 << 0: A1 series cannot supprot traditional timelapse when printing by object (cannot turn on timelapse)
     // 1 << 1: A1 series cannot supprot traditional timelapse with spiral vase mode   (cannot turn on timelapse)
@@ -593,6 +598,7 @@ private:
     int get_bed_temperature(const int extruder_id, const bool is_first_layer, const BedType bed_type) const;
     int get_highest_bed_temperature(const bool is_first_layer,const Print &print) const;
 
+    double      calc_max_volumetric_speed(const double layer_height, const double line_width, const std::string co_str);
     std::string _extrude(const ExtrusionPath &path, std::string description = "", double speed = -1, bool set_holes_and_compensation_speed = false, bool is_first_slope = false);
     ExtrusionPaths set_speed_transition(std::vector<ExtrusionPaths> &paths);
     void split_and_mapping_speed(double other_path_v, double final_v, ExtrusionPaths &this_path, double max_smooth_length, ExtrusionPaths &interpolated_paths, bool split_from_left = true);
