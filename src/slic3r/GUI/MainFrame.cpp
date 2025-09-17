@@ -63,6 +63,8 @@
 #include "DailyTips.hpp"
 #include "FilamentMapDialog.hpp"
 
+#include "DeviceCore/DevManager.h"
+
 #ifdef _WIN32
 #include <dbt.h>
 #include <shlobj.h>
@@ -942,6 +944,8 @@ void MainFrame::update_layout()
 
                 m_plater->update(true);
 
+                m_plater->show_wrapping_detect_dialog_if_necessary();
+
                 if (!preview_only_hint())
                     return;
             }
@@ -961,7 +965,7 @@ void MainFrame::update_layout()
     {
         m_main_sizer->Add(m_plater, 1, wxEXPAND);
         //QDS: add bed exclude area
-        m_plater->set_bed_shape({ { 0.0, 0.0 }, { 200.0, 0.0 }, { 200.0, 200.0 }, { 0.0, 200.0 } }, {}, 0.0, {}, {}, {}, {}, true);
+        m_plater->set_bed_shape({{0.0, 0.0}, {200.0, 0.0}, {200.0, 200.0}, {0.0, 200.0}}, {}, {}, 0.0, {}, {}, {}, {}, true);
         m_plater->get_collapse_toolbar().set_enabled(false);
         m_plater->enable_sidebar(false);
         m_plater->Show();
@@ -1081,7 +1085,7 @@ void MainFrame::update_title()
     return;
 }
 
-void MainFrame::show_calibration_button(bool show)
+void MainFrame::show_calibration_button(bool show, bool is_QDT)
 {
 #ifdef __APPLE__
     bool shown = m_menubar->FindMenu(_L("Calibration")) != wxNOT_FOUND;
@@ -1094,7 +1098,7 @@ void MainFrame::show_calibration_button(bool show)
 #else
     topbar()->ShowCalibrationButton(show);
 #endif
-    show = !show;
+    show = is_QDT;
     auto shown2 = m_tabpanel->FindPage(m_calibration) != wxNOT_FOUND;
     if (shown2 == show)
         ;
@@ -1650,8 +1654,10 @@ bool MainFrame::can_send_gcode() const
     {
     // y
         //auto cfg = wxGetApp().preset_bundle->printers.get_edited_preset().config;
-        //if (const auto *print_host_opt = cfg.option<ConfigOptionString>("print_host"); print_host_opt)
-        //    return !print_host_opt->value.empty();
+
+        // const auto *print_host_opt = cfg.option<ConfigOptionString>("print_host");
+        // if (! print_host_opt) return false;
+        // else return !print_host_opt->value.empty();
     }
     return true;
 }
@@ -1855,10 +1861,29 @@ wxBoxSizer* MainFrame::create_side_tools()
                     }
                 }
 
+                if (printer_model == "Bambu Lab H2S") {
+                    if ((wxGetApp().app_config->get("prompt_for_brittle_filaments") == "true") ) {
+                        auto used_filaments = curr_plate->get_extruders();
+                        std::transform(used_filaments.begin(), used_filaments.end(), used_filaments.begin(), [](auto i) {return i - 1; });
+                        auto full_config = wxGetApp().preset_bundle->full_config();
+                        auto filament_types = full_config.option<ConfigOptionStrings>("filament_type")->values;
+                        if (std::any_of(used_filaments.begin(), used_filaments.end(), [filament_types](int idx) { return filament_types[idx] == "PPA-CF" || filament_types[idx] == "PPS-CF"; })) {
+                            MessageDialog dlg(this, _L("PPS-CF/PPA-CF is brittle and could break in bended PTFE tube above Toolhead. Please refer to Wiki before use. "), _L("Tips"), wxYES_NO);
+                            auto  res = dlg.ShowModal();
+                            if (res == wxID_YES) {
+                                wxLaunchDefaultBrowser("https://e.bambulab.com/t?c=UC64kdlpHxN3Mb15");
+                                slice = false;
+                            }
+                            wxGetApp().app_config->set("prompt_for_brittle_filaments", "false");
+                        }
+                    }
+                }
+
+
                 if (slice) {
                     if (m_slice_select == eSliceAll)
                         wxPostEvent(m_plater, SimpleEvent(EVT_GLTOOLBAR_SLICE_ALL));
-                    else
+                    else if (m_slice_select == eSlicePlate)
                         wxPostEvent(m_plater, SimpleEvent(EVT_GLTOOLBAR_SLICE_PLATE));
                     this->m_tabpanel->SetSelection(tpPreview);
                 }
@@ -1918,6 +1943,7 @@ wxBoxSizer* MainFrame::create_side_tools()
             slice_plate_btn->SetCornerRadius(0);
 
             slice_all_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+                plater()->get_notification_manager()->close_notification_of_type(NotificationType::HelioSlicingError);
                 m_slice_btn->SetLabel(_L("Slice all"));
                 m_slice_select = eSliceAll;
                 m_slice_enable = get_enable_slice_status();
@@ -1928,6 +1954,7 @@ wxBoxSizer* MainFrame::create_side_tools()
                 });
 
             slice_plate_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+                plater()->get_notification_manager()->close_notification_of_type(NotificationType::HelioSlicingError);
                 m_slice_btn->SetLabel(_L("Slice plate"));
                 m_slice_select = eSlicePlate;
                 m_slice_enable = get_enable_slice_status();
@@ -1936,6 +1963,7 @@ wxBoxSizer* MainFrame::create_side_tools()
                 if(m_slice_option_pop_up)
                     m_slice_option_pop_up->Dismiss();
                 });
+
             m_slice_option_pop_up->append_button(slice_all_btn);
             m_slice_option_pop_up->append_button(slice_plate_btn);
             m_slice_option_pop_up->Popup(m_slice_btn);
@@ -2281,12 +2309,6 @@ void MainFrame::update_side_button_style()
     // QDS
     int em = em_unit();
 
-    /*m_slice_btn->SetLayoutStyle(1);
-    m_slice_btn->SetTextLayout(SideButton::EHorizontalOrientation::HO_Center, FromDIP(15));
-    m_slice_btn->SetMinSize(wxSize(-1, FromDIP(24)));
-    m_slice_btn->SetCornerRadius(FromDIP(12));
-    m_slice_btn->SetExtraSize(wxSize(FromDIP(38), FromDIP(10)));
-    m_slice_btn->SetBottomColour(wxColour("#3B4446"));*/
     StateColor m_btn_bg_enable = StateColor(
         std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed), 
         std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
@@ -3650,7 +3672,7 @@ void MainFrame::update_calibration_button_status()
     bool is_multi_extruder = wxGetApp().preset_bundle->get_printer_extruder_count() > 1;
     // Show calibration Menu for QDT printers if Develop Mode is on.
     bool show_calibration = (!isQDT || wxGetApp().app_config->get("developer_mode") == "true") && !is_multi_extruder;
-    wxGetApp().mainframe->show_calibration_button(show_calibration);
+    wxGetApp().mainframe->show_calibration_button(show_calibration, isQDT);
 }
 
 void MainFrame::reslice_now()
@@ -3896,7 +3918,9 @@ void MainFrame::select_tab(wxPanel* panel)
 void MainFrame::jump_to_monitor(std::string dev_id)
 {
     m_tabpanel->SetSelection(tpMonitor);
-    ((MonitorPanel*)m_monitor)->select_machine(dev_id);
+    if (!dev_id.empty()) {
+        ((MonitorPanel*)m_monitor)->select_machine(dev_id);
+    }
 }
 
 void MainFrame::jump_to_multipage()
@@ -4134,8 +4158,9 @@ void MainFrame::open_recent_project(size_t file_id, wxString const & filename)
     }
     if (wxFileExists(filename)) {
         CallAfter([this, filename] {
-            if (wxGetApp().can_load_project())
+            if (wxGetApp().can_load_project()) {
                 m_plater->load_project(filename);
+            }
         });
     }
     else

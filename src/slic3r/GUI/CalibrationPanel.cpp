@@ -267,7 +267,7 @@ bool CalibrationPanel::Show(bool show) {
                 dev->load_last_machine();
                 obj = dev->get_selected_machine();
                 if (obj)
-                    GUI::wxGetApp().sidebar().load_ams_list(obj->dev_id, obj);
+                    GUI::wxGetApp().sidebar().load_ams_list(obj->get_dev_id(), obj);
             }
             else {
                 obj->reset_update_time();

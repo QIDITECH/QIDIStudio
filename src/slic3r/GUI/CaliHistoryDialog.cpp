@@ -8,6 +8,9 @@
 #include "MsgDialog.hpp"
 #include "slic3r/Utils/CalibUtils.hpp"
 
+#include "DeviceCore/DevExtruderSystem.h"
+#include "DeviceCore/DevManager.h"
+
 namespace Slic3r {
 namespace GUI {
 
@@ -15,7 +18,7 @@ namespace GUI {
 #define HISTORY_WINDOW_SIZE                wxSize(FromDIP(700), FromDIP(600))
 #define EDIT_HISTORY_DIALOG_INPUT_SIZE     wxSize(FromDIP(160), FromDIP(24))
 #define NEW_HISTORY_DIALOG_INPUT_SIZE      wxSize(FromDIP(250), FromDIP(24))
-#define HISTORY_WINDOW_ITEMS_COUNT         5
+#define HISTORY_WINDOW_ITEMS_COUNT         6
 
 enum CaliColumnType : int {
     Cali_Name = 0,
@@ -225,7 +228,7 @@ void HistoryWindow::on_device_connected(MachineObject* obj)
     int selection = 1;
     for (int i = 0; i < nozzle_diameter_list.size(); i++) {
         m_comboBox_nozzle_dia->AppendString(wxString::Format("%1.1f mm", nozzle_diameter_list[i]));
-        if (abs(curr_obj->m_extder_data.extders[0].current_nozzle_diameter - nozzle_diameter_list[i]) < 1e-3) {
+        if (abs(curr_obj->GetExtderSystem()->GetNozzleDiameter(0) - nozzle_diameter_list[i]) < 1e-3) {
             selection = i;
         }
     }
@@ -378,7 +381,8 @@ void HistoryWindow::sync_history_data() {
         delete_button->Bind(wxEVT_BUTTON, [this, gbSizer, i, &result](auto& e) {
             for (int j = 0; j < HISTORY_WINDOW_ITEMS_COUNT; j++) {
                 auto item = gbSizer->FindItemAtPosition({ i, j });
-                item->GetWindow()->Hide();
+                if (item)
+                    item->GetWindow()->Hide();
             }
             gbSizer->SetEmptyCellSize({ 0,0 });
             m_history_data_panel->Layout();
@@ -658,7 +662,7 @@ wxArrayString NewCalibrationHistoryDialog::get_all_filaments(const MachineObject
     std::set<std::string> filament_id_set;
     std::set<std::string> printer_names;
     std::ostringstream    stream;
-    stream << std::fixed << std::setprecision(1) << obj->m_extder_data.extders[0].current_nozzle_diameter;
+    stream << std::fixed << std::setprecision(1) << obj->GetExtderSystem()->GetNozzleDiameter(0);
     std::string nozzle_diameter_str = stream.str();
 
     for (auto printer_it = preset_bundle->printers.begin(); printer_it != preset_bundle->printers.end(); printer_it++) {
@@ -672,7 +676,7 @@ wxArrayString NewCalibrationHistoryDialog::get_all_filaments(const MachineObject
             continue;
 
         // use printer_model as printer type
-        if (printer_model_str->value != MachineObject::get_preset_printer_model_name(obj->printer_type))
+        if (printer_model_str->value != DevPrinterConfigUtil::get_printer_display_name(obj->printer_type))
             continue;
 
         if (printer_it->name.find(nozzle_diameter_str) != std::string::npos)
@@ -802,7 +806,7 @@ NewCalibrationHistoryDialog::NewCalibrationHistoryDialog(wxWindow *parent, const
     static std::array<float, 4> nozzle_diameter_list = {0.2f, 0.4f, 0.6f, 0.8f};
     for (int i = 0; i < nozzle_diameter_list.size(); i++) {
         m_comboBox_nozzle_diameter->AppendString(wxString::Format("%1.1f mm", nozzle_diameter_list[i]));
-        if (abs(obj->m_extder_data.extders[0].current_nozzle_diameter - nozzle_diameter_list[i]) < 1e-3) {
+        if (abs(obj->GetExtderSystem()->GetNozzleDiameter(0) - nozzle_diameter_list[i]) < 1e-3) {
             m_comboBox_nozzle_diameter->SetSelection(i);
         }
     }

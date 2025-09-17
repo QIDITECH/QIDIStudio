@@ -77,7 +77,7 @@ public:
 
     void        update(bool printer_change = false);
     void        update_host_type(bool printer_change);
-    void        update_preset_input();
+    bool        update_preset_input();
     void        update_printhost_buttons();
     void        update_printers();
     

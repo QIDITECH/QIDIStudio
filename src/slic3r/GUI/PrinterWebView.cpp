@@ -421,7 +421,12 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
 
     if (webisNetMode == isNetWeb) {
         for (DeviceButton* button : m_net_buttons) {
-            if (button->getIPLabel() == m_ip) {
+            wxString button_ip = button->getIPLabel();
+            if (button_ip.Lower().starts_with("http"))
+                button_ip.Remove(0, 7);
+            if (button_ip.Lower().ends_with("10088"))
+                button_ip.Remove(button_ip.length() - 6);
+            if (button_ip == m_ip) {
                 button->SetIsSelected(true);
                 break;
             }
@@ -1023,7 +1028,12 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
 
      for (DeviceButton *button : m_buttons) {
         //y31
-         if (button->getIPLabel() == m_ip)
+        wxString button_ip = button->getIPLabel();
+         if (button_ip.Lower().starts_with("http"))
+             button_ip.Remove(0, 7);
+        if (button_ip.Lower().ends_with("10088"))
+            button_ip.Remove(button_ip.length() - 6);
+         if (button_ip == m_ip)
              button->SetIsSelected(true);
          else
              button->SetIsSelected(false);
@@ -1050,7 +1060,12 @@ wxBoxSizer *PrinterWebView::init_menu_bar(wxPanel *Panel)
     }
 
     for (DeviceButton *button : m_net_buttons) {
-        if (m_ip == button->getIPLabel())
+        wxString button_ip = button->getIPLabel();
+         if (button_ip.Lower().starts_with("http"))
+             button_ip.Remove(0, 7);
+        if (button_ip.Lower().ends_with("10088"))
+            button_ip.Remove(button_ip.length() - 6);
+        if (m_ip == button_ip)
             button->SetIsSelected(true);
         else
             button->SetIsSelected(false);

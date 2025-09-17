@@ -47,6 +47,7 @@ class Button;
 
 namespace Slic3r {
 class BackgroundSlicingProcess;
+class HelioBackgroundProcess;
 class BuildVolume;
 class Model;
 class ModelObject;
@@ -58,9 +59,10 @@ class SLAPrint;
 //QDS: add partplatelist and SlicingStatusEvent
 class PartPlateList;
 class SlicingStatusEvent;
+class HelioCompletionEvent;
 enum SLAPrintObjectStep : unsigned int;
 enum class ConversionType : int;
-class Ams;
+class DevAms;
 namespace csg {
 enum class BooleanFailReason;
 }
@@ -117,6 +119,7 @@ wxDECLARE_EVENT(EVT_INSTALL_PLUGIN_HINT,        wxCommandEvent);
 wxDECLARE_EVENT(EVT_UPDATE_PLUGINS_WHEN_LAUNCH,        wxCommandEvent);
 wxDECLARE_EVENT(EVT_PREVIEW_ONLY_MODE_HINT,        wxCommandEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_COLOR_MODE_CHANGED,   SimpleEvent);
+wxDECLARE_EVENT(EVT_ENABLE_GCODE_OPTION_ITEM_CHANGED, SimpleEvent);
 wxDECLARE_EVENT(EVT_PRINT_FROM_SDCARD_VIEW,   SimpleEvent);
 wxDECLARE_EVENT(EVT_CREATE_FILAMENT, SimpleEvent);
 wxDECLARE_EVENT(EVT_MODIFY_FILAMENT, SimpleEvent);
@@ -126,6 +129,12 @@ wxDECLARE_EVENT(EVT_NOTICE_CHILDE_SIZE_CHANGED, SimpleEvent);
 wxDECLARE_EVENT(EVT_NOTICE_FULL_SCREEN_CHANGED, IntEvent);
 using ColorEvent = Event<wxColour>;
 wxDECLARE_EVENT(EVT_ADD_CUSTOM_FILAMENT, ColorEvent);
+
+wxDECLARE_EVENT(EVT_HELIO_PROCESSING_COMPLETED, HelioCompletionEvent);
+wxDECLARE_EVENT(EVT_HELIO_PROCESSING_STARTED, SimpleEvent);
+wxDECLARE_EVENT(EVT_HELIO_INPUT_CHAMBER_TEMP, SimpleEvent);
+wxDECLARE_EVENT(EVT_GCODE_VIEWER_CHANGED, SimpleEvent);
+
 const wxString DEFAULT_PROJECT_NAME = "Untitled";
 
 //y59
@@ -377,6 +386,10 @@ public:
     void calib_retraction(const Calib_Params &params);
     void calib_VFA(const Calib_Params &params);
 
+    // for helio slice
+    void update_helio_background_process(std::string& printer_id, std::string& material_id);
+    std::vector<std::string> get_current_filaments_preset_names();
+
     //w29
     std::string move_to(const Vec2d& point, double speed, double retract_length, double retract_speed, double height, double retract_lift);
     std::string move_to(const Vec2d& point, double speed, double retract_length, double retract_speed);
@@ -407,6 +420,7 @@ public:
     const VendorProfile::PrinterModel * get_curr_printer_model();
     std::map<std::string, std::string> get_bed_texture_maps();
     int                                get_right_icon_offset_bed();
+    bool                               get_enable_wrapping_detection();
 
     static wxColour get_next_color_for_filament();
     static wxString get_slice_warning_string(GCodeProcessorResult::SliceWarning& warning);
@@ -420,6 +434,9 @@ public:
     bool load_svg(const wxArrayString &filenames, bool from_toolbar_or_file_menu = false);
     bool load_same_type_files(const wxArrayString &filenames);
     bool load_files(const wxArrayString& filenames);
+    void statistics_burial_data_once(std::string json_str);//Upload to the cloud immediately
+    void statistics_burial_data(std::string file_path);
+    void statistics_burial_data_form_mw();
     const wxString& get_last_loaded_gcode() const { return m_last_loaded_gcode; }
 
     void update(bool conside_update_flag = false, bool force_background_processing_update = false);
@@ -751,6 +768,11 @@ public:
     //QDS: show object info
     void show_object_info();
     void show_assembly_info();
+
+    //QDS Helio slice
+    int  get_helio_process_status() const;
+    void clear_helio_process_status() const;
+
     //QDS
     bool show_publish_dialog(bool show = true);
     //QDS: post process string object exception strings by warning types
@@ -762,6 +784,8 @@ public:
     bool get_machine_sync_status();
 
     void update_machine_sync_status();
+
+    void show_wrapping_detect_dialog_if_necessary();
 
 #if ENABLE_ENVIRONMENT_MAP
     void init_environment_texture();
@@ -795,7 +819,15 @@ public:
     void update_flush_volume_matrix(size_t old_nozzle_size, size_t new_nozzle_size);
     //QDS: add bed exclude area
 	void set_bed_shape() const;
-    void set_bed_shape(const Pointfs& shape, const Pointfs& exclude_area, const double printable_height, std::vector<Pointfs> extruder_areas, std::vector<double> extruder_heights, const std::string& custom_texture, const std::string& custom_model, bool force_as_custom = false) const;
+    void set_bed_shape(const Pointfs       &shape,
+                       const Pointfs       &exclude_area,
+                       const Pointfs       &wrapping_exclude_area,
+                       const double         printable_height,
+                       std::vector<Pointfs> extruder_areas,
+                       std::vector<double>  extruder_heights,
+                       const std::string   &custom_texture,
+                       const std::string   &custom_model,
+                       bool                 force_as_custom = false) const;
 
 	const NotificationManager* get_notification_manager() const;
 	NotificationManager* get_notification_manager();
@@ -1019,7 +1051,7 @@ private:
 std::vector<int> get_min_flush_volumes(const DynamicPrintConfig &full_config, size_t nozzle_id);
 std::string      check_boolean_possible(const std::vector<const ModelVolume *> &volumes, csg::BooleanFailReason& fail_reason);
 
-Preset *get_printer_preset(MachineObject *obj);
+Preset *get_printer_preset(const MachineObject *obj);
 wxArrayString get_all_camera_view_type();
 
 

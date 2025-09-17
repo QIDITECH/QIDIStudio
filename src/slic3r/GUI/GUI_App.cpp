@@ -70,12 +70,15 @@
 #include "GLCanvas3D.hpp"
 #include "EncodedFilament.hpp"
 
+#include "DeviceCore/DevManager.h"
+
 #include "../Utils/PresetUpdater.hpp"
 #include "../Utils/PrintHost.hpp"
 #include "../Utils/Process.hpp"
 #include "../Utils/MacDarkMode.hpp"
 #include "../Utils/Http.hpp"
 #include "../Utils/UndoRedo.hpp"
+#include "../Utils/HelioDragon.hpp"
 #include "slic3r/Config/Snapshot.hpp"
 #include "Preferences.hpp"
 #include "Tab.hpp"
@@ -1078,14 +1081,21 @@ void GUI_App::post_init()
         throw Slic3r::RuntimeError("Calling post_init() while not yet initialized");
 
     if (app_config->get("sync_user_preset") == "true") {
-        // QDS loading user preset
-        // Always async, not such startup step
-        // BOOST_LOG_TRIVIAL(info) << "Loading user presets...";
-        // scrn->SetText(_L("Loading user presets..."));
         if (m_agent) { start_sync_user_preset(); }
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " sync_user_preset: true";
     } else {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " sync_user_preset: false";
+    }
+
+    /*request helio config*/
+    if (app_config->get("helio_enable") == "true") {
+        if (!Slic3r::HelioQuery::get_helio_api_url().empty() && !Slic3r::HelioQuery::get_helio_pat().empty()) {
+            wxGetApp().request_helio_supported_data();
+        }
+
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " sync helio config: true";
+    } else {
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " sync helio config: false";
     }
 
     m_open_method = "double_click";
@@ -1140,7 +1150,7 @@ void GUI_App::post_init()
             }
             catch (...){}
             
-            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", download_url %1%") % download_url;
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", download_url %1%") % PathSanitizer::sanitize(download_url);
 
             if (!download_url.empty()) {
                 m_download_file_url = from_u8(download_url);
@@ -1268,7 +1278,7 @@ void GUI_App::post_init()
     }*/
     
     //QDS: check crash log
-    auto log_dir_path = boost::filesystem::path(data_dir()) / "log";
+    /*auto log_dir_path = boost::filesystem::path(data_dir()) / "log";
     if (boost::filesystem::exists(log_dir_path))
     {
         boost::filesystem::directory_iterator end_iter;
@@ -1298,7 +1308,7 @@ void GUI_App::post_init()
                 }
             }
         }
-    }
+    }*/
 
     if (m_networking_need_update) {
         //updating networking
@@ -1365,8 +1375,6 @@ void GUI_App::post_init()
     CallAfter([this] {
             mainframe->refresh_plugin_tips();
         });
-
-    DeviceManager::load_filaments_blacklist_config();
 
     // remove old log files over LOG_FILES_MAX_NUM
     std::string log_addr = data_dir();
@@ -2072,13 +2080,6 @@ void GUI_App::init_networking_callbacks()
                         MachineObject *obj = dev->get_selected_machine();
                         if (!obj) return;
 
-                        if (obj->nt_try_local_tunnel && obj->connection_type() == "cloud") {
-                            if (obj->is_connected()) {
-                                obj->disconnect();
-                            }
-                            obj->nt_reset_data();
-                        }
-
                         /* resubscribe the cache dev list */
                         if (this->is_enable_multi_machine()) {
 
@@ -2113,8 +2114,8 @@ void GUI_App::init_networking_callbacks()
                     obj->erase_user_access_code();
                     obj->command_get_access_code();
                     if (m_agent)
-                        m_agent->install_device_cert(obj->dev_id, obj->is_lan_mode_printer());
-                    GUI::wxGetApp().sidebar().load_ams_list(obj->dev_id, obj);
+                        m_agent->install_device_cert(obj->get_dev_id(), obj->is_lan_mode_printer());
+                    GUI::wxGetApp().sidebar().load_ams_list(obj->get_dev_id(), obj);
                 }
                 });
             });
@@ -2152,11 +2153,11 @@ void GUI_App::init_networking_callbacks()
                                 obj->command_request_push_all(true);
                                 obj->command_get_version();
                                 event.SetInt(0);
-                                event.SetString(obj->dev_id);
-                                GUI::wxGetApp().sidebar().load_ams_list(obj->dev_id, obj);
+                                event.SetString(obj->get_dev_id());
+                                GUI::wxGetApp().sidebar().load_ams_list(obj->get_dev_id(), obj);
                             } else if (state == ConnectStatus::ConnectStatusFailed) {
-                                m_device_manager->localMachineList.erase(obj->dev_id);
-                                m_device_manager->set_selected_machine("", true);
+                                m_device_manager->erase_local_machine(obj->get_dev_id());
+                                m_device_manager->set_selected_machine("");
                                 wxString text;
                                 if (msg == "5") {
                                     obj->set_access_code("");
@@ -2164,15 +2165,15 @@ void GUI_App::init_networking_callbacks()
                                     text = wxString::Format(_L("Incorrect password"));
                                     wxGetApp().show_dialog(text);
                                 } else {
-                                    text = wxString::Format(_L("Connect %s failed! [SN:%s, code=%s]"), from_u8(obj->dev_name), obj->dev_id, msg);
+                                    text = wxString::Format(_L("Connect %s failed! [SN:%s, code=%s]"), from_u8(obj->get_dev_name()), obj->get_dev_id(), msg);
                                     wxGetApp().show_dialog(text);
                                 }
                                 event.SetInt(-1);
                             } else if (state == ConnectStatus::ConnectStatusLost) {
                                 //obj->set_access_code("");
                                 //obj->erase_user_access_code();
-                                //m_device_manager->localMachineList.erase(obj->dev_id);
-                                m_device_manager->set_selected_machine("", true);
+                                //m_device_manager->localMachineList.erase(obj->get_dev_id());
+                                m_device_manager->set_selected_machine("");
                                 event.SetInt(-1);
                                 BOOST_LOG_TRIVIAL(info) << "set_on_local_connect_fn: state = lost";
                             } else {
@@ -2185,15 +2186,15 @@ void GUI_App::init_networking_callbacks()
                         else {
                             if (state == ConnectStatus::ConnectStatusOk) {
                                 event.SetInt(1);
-                                event.SetString(obj->dev_id);
+                                event.SetString(obj->get_dev_id());
                             }
                             else if(msg == "5") {
                                 event.SetInt(5);
-                                event.SetString(obj->dev_id);
+                                event.SetString(obj->get_dev_id());
                             }
                             else {
                                 event.SetInt(-2);
-                                event.SetString(obj->dev_id);
+                                event.SetString(obj->get_dev_id());
                             }
                         }
                     }
@@ -2217,7 +2218,8 @@ void GUI_App::init_networking_callbacks()
                 if (obj) {
                     auto sel = this->m_device_manager->get_selected_machine();
 
-                    if (sel && sel->dev_id == dev_id) {
+                    if (sel && sel->get_dev_id() == dev_id)
+                    {
                         obj->parse_json("cloud", msg);
                     }
                     else {
@@ -2225,9 +2227,8 @@ void GUI_App::init_networking_callbacks()
                     }
                     
 
-                    if ((sel == obj || sel == nullptr) && obj->is_ams_need_update) {
-                        GUI::wxGetApp().sidebar().load_ams_list(obj->dev_id, obj);
-                        obj->is_ams_need_update = false;
+                    if (sel == obj || sel == nullptr) {
+                        GUI::wxGetApp().sidebar().load_ams_list(obj->get_dev_id(), obj);
                     }
                 }
 
@@ -2269,9 +2270,9 @@ void GUI_App::init_networking_callbacks()
                 MachineObject* obj = m_device_manager->get_my_machine(dev_id);
 
                 if (obj) {
-                    obj->parse_json("lan", msg, DeviceManager::key_field_only);
-                    if (this->m_device_manager->get_selected_machine() == obj && obj->is_ams_need_update) {
-                        GUI::wxGetApp().sidebar().load_ams_list(obj->dev_id, obj);
+                    obj->parse_json("lan", msg);
+                    if (this->m_device_manager->get_selected_machine() == obj) {
+                        GUI::wxGetApp().sidebar().load_ams_list(obj->get_dev_id(), obj);
                     }
                 }
 
@@ -2316,7 +2317,7 @@ bool GUI_App::is_blocking_printing(MachineObject *obj_)
     if (!dev) return true;
     std::string target_model;
     if (obj_ == nullptr) {
-        auto obj_ = dev->get_selected_machine();
+        obj_ = dev->get_selected_machine();
         if (obj_) {
             target_model = obj_->printer_type;
         }
@@ -2324,11 +2325,15 @@ bool GUI_App::is_blocking_printing(MachineObject *obj_)
         target_model = obj_->printer_type;
     }
 
+    if (!obj_)
+    {
+        return false;
+    }
     PresetBundle *preset_bundle = wxGetApp().preset_bundle;
     std::string    source_model  = preset_bundle->printers.get_edited_preset().get_printer_type(preset_bundle);
 
     if (source_model != target_model) {
-        std::vector<std::string>      compatible_machine = dev->get_compatible_machine(target_model);
+        std::vector<std::string>      compatible_machine = obj_->get_compatible_machine();
         vector<std::string>::iterator it                 = find(compatible_machine.begin(), compatible_machine.end(), source_model);
         if (it == compatible_machine.end()) {
             return true;
@@ -2560,10 +2565,10 @@ void GUI_App::on_start_subscribe_again(std::string dev_id)
         MachineObject* obj = dev->get_selected_machine();
         if (!obj) return;
 
-        if ( (dev_id == obj->dev_id) && obj->is_connecting() && obj->subscribe_counter > 0) {
+        if ( (dev_id == obj->get_dev_id()) && obj->is_connecting() && obj->subscribe_counter > 0) {
             obj->subscribe_counter--;
             if(wxGetApp().getAgent()) wxGetApp().getAgent()->set_user_selected_machine(dev_id);
-            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": dev_id=" << QDTCrossTalk::Crosstalk_DevId(obj->dev_id);
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": dev_id=" << QDTCrossTalk::Crosstalk_DevId(obj->get_dev_id());
         }
     });
     start_subscribe_timer->Start(5000, wxTIMER_ONE_SHOT);
@@ -2608,7 +2613,7 @@ void GUI_App::MacPowerCallBack(void* refcon, io_service_t service, natural_t mes
         if (dev_manager)
         {
             MachineObject* obj = dev_manager->get_selected_machine();
-            last_selected_machine = obj ? obj->dev_id : "";
+            last_selected_machine = obj ? obj->get_dev_id() : "";
             BOOST_LOG_TRIVIAL(info) << "MacPowerCallBack save selected machine:" << last_selected_machine;
         }
 
@@ -2618,7 +2623,7 @@ void GUI_App::MacPowerCallBack(void* refcon, io_service_t service, natural_t mes
     {
         if (dev_manager && !last_selected_machine.empty())
         {
-            dev_manager->set_selected_machine(last_selected_machine, true);
+            dev_manager->set_selected_machine(last_selected_machine);
             BOOST_LOG_TRIVIAL(info) << "MacPowerCallBack restore selected machine:" << last_selected_machine;
         }
     };
@@ -2769,7 +2774,7 @@ bool GUI_App::on_init_inner()
 
 #ifdef WIN32
     //QDS set crash log folder
-    CBaseException::set_log_folder(data_dir());
+    //CBaseException::set_log_folder(data_dir());
 #endif
 
     wxGetApp().Bind(wxEVT_QUERY_END_SESSION, [this](auto & e) {
@@ -2805,6 +2810,11 @@ bool GUI_App::on_init_inner()
     BOOST_LOG_TRIVIAL(info) << boost::format("Build Version %1%")%SLIC3R_COMPILE_VERSION;
 #endif
     BOOST_LOG_TRIVIAL(info) << get_system_info();
+
+// initialize label colors and fonts
+    init_label_colours();
+    init_fonts();
+    wxGetApp().Update_dark_mode_flag();
 
 #if defined(__WINDOWS__)
     HMODULE hKernel32 = GetModuleHandleW(L"kernel32.dll");
@@ -2880,11 +2890,6 @@ bool GUI_App::on_init_inner()
 #endif // __WINDOWS__
 
 #endif
-    // initialize label colors and fonts
-    init_label_colours();
-    init_fonts();
-    wxGetApp().Update_dark_mode_flag();
-
 
 #ifdef _MSW_DARK_MODE
     // app_config can be updated in check_older_app_config(), so check if dark_color_mode and sys_menu_enabled was changed
@@ -3397,11 +3402,10 @@ __retry:
                 m_task_manager = new Slic3r::TaskManager(m_agent);
                 m_task_manager->start();
             }
-            m_agent->enable_multi_machine(true);
-            DeviceManager::EnableMultiMachine = true;
+
+            m_device_manager->EnableMultiMachine(true);
         } else {
-            m_agent->enable_multi_machine(false);
-            DeviceManager::EnableMultiMachine = false;
+            m_device_manager->EnableMultiMachine(false);
         }
 
         //QDS set config dir
@@ -4078,6 +4082,41 @@ bool GUI_App::catch_error(std::function<void()> cb,
     return false;
 }
 
+bool GUI_App::is_helio_enable()
+{
+    if (!plater_) return false;
+    auto cfg = plater_->get_partplate_list().get_curr_plate()->config();
+    PrintSequence print_sequence = PrintSequence::ByLayer;
+    if (cfg->has("print_sequence")) {
+        print_sequence = cfg->option<ConfigOptionEnum<PrintSequence>>("print_sequence")->value;
+    }
+    else {
+        print_sequence = wxGetApp().global_print_sequence();
+    }
+
+    if (print_sequence == PrintSequence::ByObject) {
+        return false;
+    }
+
+    return true;
+}
+
+void GUI_App::request_helio_pat(std::function<void(std::string)> func)
+{
+    Slic3r::HelioQuery::request_pat_token(func);
+}
+
+void GUI_App::request_helio_supported_data()
+{
+    std:;string helio_api_url = Slic3r::HelioQuery::get_helio_api_url();
+    std::string helio_api_key = Slic3r::HelioQuery::get_helio_pat();
+
+    if (HelioQuery::global_supported_printers.size() <= 0 || HelioQuery::global_supported_materials.size() <= 0) {
+        Slic3r::HelioQuery::request_all_support_machine(helio_api_url, helio_api_key);
+        Slic3r::HelioQuery::request_all_support_materials(helio_api_url, helio_api_key);
+    }
+}
+
 // static method accepting a wxWindow object as first parameter
 void fatal_error(wxWindow* parent)
 {
@@ -4232,27 +4271,17 @@ wxString GUI_App::transition_tridid(int trid_id) const
         int id_index = trid_id / 4;
         return wxString::Format("%s", maping_dict[id_index]);
     }
-    else {
-        // int id_index = ceil(trid_id / 4);
-        // int id_suffix = trid_id % 4 + 1;
-        //return wxString::Format("%s%d", maping_dict[id_index], id_suffix);
-        int group = trid_id / 4 + 1;
-        char suffix = 'A' + trid_id % 4;
-        return wxString::Format("%d%c", group, suffix);
-    }
-}
-
-wxString GUI_App::transition_tridid(int trid_id, bool is_n3s) const
-{
-    if (is_n3s)
-    {
+    else if (trid_id >= 0x80 && trid_id <= 0x87) { // n3s
         const char base = 'A' + (trid_id - 128);
         wxString prefix("HT-");
         prefix.append(base);
         return prefix;
     }
-
-    return transition_tridid(trid_id);
+    else {
+        int id_index = std::clamp((int)ceil(trid_id / 4), 0, 25);
+        int id_suffix = trid_id % 4 + 1;
+        return wxString::Format("%s%d", maping_dict[id_index], id_suffix);
+    }
 }
 
 //QDS
@@ -4833,8 +4862,10 @@ void GUI_App::request_open_project(std::string project_id)
         return;
     }
 
-    if (project_id == "<new>")
+    if (project_id == "<new>") {
+        plater()->show_wrapping_detect_dialog_if_necessary();
         plater()->new_project();
+    }
     else if (project_id.empty())
         plater()->load_project();
     else if (std::find_if_not(project_id.begin(), project_id.end(),
@@ -5368,7 +5399,7 @@ void GUI_App::process_network_msg(std::string dev_id, std::string msg)
                 return;
             MachineObject* obj = dev->get_selected_machine();
             if (obj)
-                m_agent->install_device_cert(obj->dev_id, obj->is_lan_mode_printer());
+                m_agent->install_device_cert(obj->get_dev_id(), obj->is_lan_mode_printer());
             if (!m_show_error_msgdlg) {
                 MessageDialog msg_dlg(nullptr, _L("Retrieving printer information, please try again later."), "", wxAPPLY | wxOK);
                 m_show_error_msgdlg = true;
@@ -5427,6 +5458,15 @@ void GUI_App::process_network_msg(std::string dev_id, std::string msg)
             m_show_error_msgdlg = true;
             auto modal_result = msg_dlg.ShowModal();
             m_show_error_msgdlg = false;
+        }
+    }
+    else if (msg == "device_cert_installed") {
+        BOOST_LOG_TRIVIAL(info) << "process_network_msg, device_cert_installed";
+        Slic3r::DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+        if (!dev) return;
+        MachineObject* obj = dev->get_my_machine(dev_id);
+        if (obj) {
+            obj->update_device_cert_state(true);
         }
     }
 }
@@ -6362,10 +6402,10 @@ bool GUI_App::show_modal_ip_address_enter_dialog(bool input_sn, wxString title)
 
             BOOST_LOG_TRIVIAL(info) << "User enter IP address is " << format_IP(ip_address.ToStdString());
             if (!ip_address.empty()) {
-                wxGetApp().app_config->set_str("ip_address", obj->dev_id, ip_address.ToStdString());
+                wxGetApp().app_config->set_str("ip_address", obj->get_dev_id(), ip_address.ToStdString());
                 wxGetApp().app_config->save();
 
-                obj->dev_ip = ip_address.ToStdString();
+                obj->set_dev_ip(ip_address.ToStdString());
                 obj->set_user_access_code(access_code.ToStdString());
             }
         }
@@ -7831,7 +7871,7 @@ bool has_filaments(const std::vector<string>& model_filaments) {
     return false;
 }
 
-bool is_support_filament(int extruder_id)
+bool is_support_filament(int extruder_id, bool strict_check)
 {
     auto &filament_presets = Slic3r::GUI::wxGetApp().preset_bundle->filament_presets;
     auto &filaments        = Slic3r::GUI::wxGetApp().preset_bundle->filaments;
@@ -7845,7 +7885,7 @@ bool is_support_filament(int extruder_id)
 
     Slic3r::ConfigOptionBools *support_option = dynamic_cast<Slic3r::ConfigOptionBools *>(filament->config.option("filament_is_support"));
 
-    if (filament_type == "PETG" || filament_type == "PLA") {
+    if(!strict_check &&(filament_type == "PETG" || filament_type == "PLA")) {
         std::vector<string> model_filaments;
         if (filament_type == "PETG")
             model_filaments.emplace_back("PLA");

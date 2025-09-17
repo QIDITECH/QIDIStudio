@@ -89,9 +89,12 @@ public:
     int         auto_bed_leveling{0};
     int         auto_flow_cali{0};
     int         auto_offset_cali{0};
+    //y71
+    int         enable_multi_box{0};
 
     void set_print_config(std::string bed_type, bool bed_leveling, bool flow_cali, bool vabration_cali, bool record_timelapse, bool layer_inspect, bool ext_change_assist,
         int auto_bed_levelingt,
+        int auto_enable_multi_box,
         int auto_flow_calit,
         int auto_offset_calit)
     {
@@ -104,6 +107,7 @@ public:
         task_ext_change_assist = ext_change_assist;
 
         auto_bed_leveling = auto_bed_levelingt;
+        enable_multi_box = auto_enable_multi_box;
         auto_flow_cali = auto_flow_calit;
         auto_offset_cali = auto_offset_calit;
 

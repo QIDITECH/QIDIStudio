@@ -40,8 +40,9 @@ static std::map<int, std::string> error_messages = {
 
 namespace Slic3r {
 namespace GUI {
-//1.9.5
+
 static int SecondsSinceLastInput();
+
 MediaPlayCtrl::MediaPlayCtrl(wxWindow *parent, wxMediaCtrl3 *media_ctrl, const wxPoint &pos, const wxSize &size)
     : wxPanel(parent, wxID_ANY, pos, size)
     , m_media_ctrl(media_ctrl)
@@ -62,7 +63,6 @@ MediaPlayCtrl::MediaPlayCtrl(wxWindow *parent, wxMediaCtrl3 *media_ctrl, const w
     m_media_ctrl->Bind(EVT_MEDIA_CTRL_STAT, [this](auto & e) {
 #if !QDT_RELEASE_TO_PUBLIC
         wxSize size = m_media_ctrl->GetVideoSize();
-        //1.9.7.52
         m_label_stat->SetLabel(e.GetString() + wxString::Format(" VS:%ix%i LD:%i", size.x, size.y, m_load_duration));
 #endif
         wxString str = e.GetString();
@@ -148,18 +148,20 @@ MediaPlayCtrl::~MediaPlayCtrl()
     while (!m_thread.try_join_for(boost::chrono::milliseconds(10))) {
         wxEventLoopBase::GetActive()->Yield();
     }
+
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": " << this;
 }
 
 void MediaPlayCtrl::SetMachineObject(MachineObject* obj)
 {
-    std::string machine = obj ? obj->dev_id : "";
+    std::string machine = obj ? obj->get_dev_id() : "";
     if (obj) {
         m_camera_exists  = obj->has_ipcam;
         m_dev_ver        = obj->get_ota_version();
         m_lan_mode       = obj->is_lan_mode_printer();
         m_lan_proto      = obj->liveview_local;
         m_remote_proto   = obj->get_liveview_remote();
-        m_lan_ip         = obj->dev_ip;
+        m_lan_ip         = obj->get_dev_ip();
         m_lan_passwd     = obj->get_access_code();
         m_device_busy    = obj->is_camera_busy_off();
         m_tutk_state     = obj->tutk_state;
@@ -345,9 +347,8 @@ void MediaPlayCtrl::Play()
     m_disable_lan = false;
     m_failed_code = 0;
     m_last_state  = MEDIASTATE_IDLE;
-    //1.9.5
     m_button_play->SetIcon("media_stop");
-    
+
     if (!m_remote_proto) { // not support tutk
         m_failed_code = -1;
         m_url = "qidi:///local/";
@@ -361,7 +362,12 @@ void MediaPlayCtrl::Play()
     if (agent) {
         std::string protocols[] = {"", "\"tutk\"", "\"agora\"", "\"tutk\",\"agora\""};
         agent->get_camera_url(m_machine + "|" + m_dev_ver + "|" + protocols[m_remote_proto],
-            [this, m = m_machine, v = agent_version, dv = m_dev_ver](std::string url) {
+                [this, m = m_machine, v = agent_version, dv = m_dev_ver, token = std::weak_ptr<int>(m_token)](std::string url) {
+            if (token.expired()) {
+                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": token has been expired";
+                return;
+            }
+
             if (boost::algorithm::starts_with(url, "qidi:///")) {
                 url += "&device=" + into_u8(m);
                 url += "&net_ver=" + v;
@@ -422,7 +428,7 @@ void MediaPlayCtrl::Stop(wxString const &msg, wxString const &msg2)
                 : _L(iter->second.c_str());
             if (m_failed_code == 1) {
                 if (m_last_state == wxMEDIASTATE_PLAYING)
-                    msg2 = _L("The printer has been logged out and cannot connect.");
+                    msg2 = _L("Multi-device/client simultaneous liveview is not supported. Please close the liveview on other devices/clients and try again.");
             }
 #if !QDT_RELEASE_TO_PUBLIC && defined(__WINDOWS__)
             if (m_failed_code < 0)
@@ -645,8 +651,8 @@ void MediaPlayCtrl::ToggleStream()
     });
 }
 
-void MediaPlayCtrl::msw_rescale() { 
-    m_button_play->Rescale(); 
+void MediaPlayCtrl::msw_rescale() {
+    m_button_play->Rescale();
 }
 
 void MediaPlayCtrl::jump_to_play()
@@ -683,12 +689,11 @@ void MediaPlayCtrl::onStateChanged(wxMediaEvent &event)
             m_last_state = state;
             m_failed_code = 0;
             SetStatus(_L("Playing..."), false);
-            //1.9.7.52
             m_print_idle = 0;
             auto now = std::chrono::system_clock::now();
             m_load_duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_play_timer).count();
             m_play_timer    = now + 1min;
-            
+
             // track event
             json j;
             j["stage"] =  std::to_string(m_last_state);
@@ -866,22 +871,25 @@ bool MediaPlayCtrl::start_stream_service(bool *need_install)
             if (!boost::filesystem::exists(file_dll) || boost::filesystem::last_write_time(file_dll) != boost::filesystem::last_write_time(file_dll2))
                 boost::filesystem::copy_file(file_dll2, file_dll, boost::filesystem::copy_option::overwrite_if_exists);
         }
-        boost::process::child process_source(file_source, file_url2.ToStdWstring(), boost::process::start_dir(tools_dir), 
-                                             boost::process::windows::create_no_window, 
+        boost::process::child process_source(file_source, file_url2.ToStdWstring(), boost::process::start_dir(tools_dir),
+                                             boost::process::windows::create_no_window,
                                              boost::process::std_out > intermediate, boost::process::limit_handles);
-        boost::process::child process_ffmpeg(file_ffmpeg, configss, boost::process::windows::create_no_window, 
+        boost::process::child process_ffmpeg(file_ffmpeg, configss, boost::process::windows::create_no_window,
                                              boost::process::std_in < intermediate, boost::process::limit_handles);
 #else
         boost::filesystem::permissions(file_source, boost::filesystem::owner_exe | boost::filesystem::add_perms);
         boost::filesystem::permissions(file_ffmpeg, boost::filesystem::owner_exe | boost::filesystem::add_perms);
-        boost::process::child process_source(file_source, file_url2.data().AsInternal(), boost::process::start_dir(start_dir), 
+        boost::process::child process_source(file_source, file_url2.data().AsInternal(), boost::process::start_dir(start_dir),
                                              boost::process::std_out > intermediate, boost::process::limit_handles);
         boost::process::child process_ffmpeg(file_ffmpeg, configss, boost::process::std_in < intermediate, boost::process::limit_handles);
 #endif
         process_source.detach();
         process_ffmpeg.detach();
     } catch (std::exception &e) {
+#if !QDT_RELEASE_TO_PUBLIC
         BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl failed to start camera stream: " << decode_path(e.what());
+#endif
+
         return false;
     }
     return true;
@@ -923,7 +931,6 @@ bool MediaPlayCtrl::get_stream_url(std::string *url)
     return url == nullptr;
 }
 
-//1.9.5
 static int SecondsSinceLastInput()
 {
 #ifdef _WIN32

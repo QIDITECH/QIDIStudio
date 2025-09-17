@@ -77,6 +77,7 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent) :
     input_sizer->Add(m_valid_label, 0, wxEXPAND | wxLEFT | wxRIGHT, BORDER_W);
     m_config = &wxGetApp().preset_bundle->printers.get_edited_preset().config;
     m_optgroup = new ConfigOptionsGroup(this, _L("Print Host upload"), m_config);
+    check_host_key_valid();
     build_printhost_settings(m_optgroup);
     auto button_sizer = new wxBoxSizer(wxHORIZONTAL);
     StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
@@ -531,6 +532,16 @@ void PhysicalPrinterDialog::on_dpi_changed(const wxRect& suggested_rect)
 
     Fit();
     Refresh();
+}
+
+void PhysicalPrinterDialog::check_host_key_valid()
+{
+    std::vector<std::string> keys = {"print_host", "print_host_webui", "printhost_apikey", "printhost_cafile", "printhost_user", "printhost_password", "printhost_port"};
+    for (auto &key : keys) {
+        auto it = m_config->option<ConfigOptionString>(key);
+        if (!it) m_config->set_key_value(key, new ConfigOptionString(""));
+    }
+    return;
 }
 
 void PhysicalPrinterDialog::OnOK(wxMouseEvent& event)

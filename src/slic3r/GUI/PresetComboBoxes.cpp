@@ -44,6 +44,8 @@
 #include "FilamentPickerDialog.hpp"
 #include "wxExtensions.hpp"
 
+#include "DeviceCore/DevManager.h"
+
 // A workaround for a set of issues related to text fitting into gtk widgets:
 #if defined(__WXGTK20__) || defined(__WXGTK3__)
     #include <glib-2.0/glib-object.h>
@@ -450,7 +452,7 @@ void PresetComboBox::add_connected_printers(std::string selected, bool alias_nam
     }
 
     std::sort(user_machine_list.begin(), user_machine_list.end(), [&](auto &a, auto &b) {
-        if (a.second && b.second) { return a.second->dev_name.compare(b.second->dev_name) < 0; }
+        if (a.second && b.second) { return a.second->get_dev_name().compare(b.second->get_dev_name()) < 0; }
         return false;
     });
 
@@ -466,7 +468,7 @@ void PresetComboBox::add_connected_printers(std::string selected, bool alias_nam
         printer_preset->is_visible = true;
         auto printer_model = printer_preset->config.opt_string("printer_model");
         boost::replace_all(printer_model, "QIDI TECH ", "");
-        auto text = iter->second->dev_name + " (" + printer_model + ")";
+        auto text = iter->second->get_dev_name() + " (" + printer_model + ")";
         int item_id = Append(from_u8(text), wxNullBitmap, &m_first_printer_idx + std::distance(user_machine_list.begin(), iter));
         validate_selection(m_selected_dev_id == iter->first);
     }
@@ -560,13 +562,24 @@ bool PresetComboBox::add_box_filaments(std::string selected, bool alias_name)
         set_label_marker(Append(L("Box filaments"), wxNullBitmap, DD_ITEM_STYLE_SPLIT_ITEM));
         m_first_ams_filament = GetCount();
         auto& filaments = m_collection->get_presets();
+
+        int icon_width = 24;
+        for (auto& entry : m_preset_bundle->filament_ams_list) {
+            auto& tray = entry.second;
+
+            auto name = tray.opt_string("tray_name", 0u);
+            if (name.size() > 3)
+                icon_width = 32;
+        }
+
         for (auto& entry : m_preset_bundle->filament_ams_list) {
             auto& tray = entry.second;
             std::string filament_id = tray.opt_string("filament_id", 0u);
+            auto name = tray.opt_string("tray_name", 0u);
             if (filament_id.empty()) continue;
 
             auto iter = std::find_if(filaments.begin(), filaments.end(),
-                [&filament_id, this](auto& f) { return    f.filament_id == filament_id; });
+                [&filament_id, this](auto& f) { return f.is_compatible && m_collection->get_preset_base(f) == &f && f.filament_id == filament_id; });
             if (iter == filaments.end()) {
                 auto filament_type = tray.opt_string("filament_type", 0u);
                 if (!filament_type.empty()) {
@@ -582,8 +595,7 @@ bool PresetComboBox::add_box_filaments(std::string selected, bool alias_name)
             }
             const_cast<Preset&>(*iter).is_visible = true;
             auto color = tray.opt_string("filament_colour", 0u);
-            auto        name = tray.opt_string("tray_name", 0u);
-            wxBitmap bmp(*get_extruder_color_icon(color, name, 24, 16));
+            wxBitmap bmp(*get_extruder_color_icon(color, name, icon_width, 16));
             auto text = get_preset_name(*iter);
             int item_id = Append(text, bmp.ConvertToImage(), &m_first_ams_filament + entry.first);
             SetFlag(GetCount() - 1, (int) FilamentAMSType::FROM_AMS);
@@ -877,14 +889,6 @@ PlaterPresetComboBox::PlaterPresetComboBox(wxWindow *parent, Preset::Type preset
         clr_picker->SetBackgroundColour(StateColor::darkModeColorFor(*wxWHITE));
         clr_picker->SetToolTip(_L("Click to pick filament color"));
         clr_picker->Bind(wxEVT_BUTTON, [this](wxCommandEvent& e) {
-            m_clrData.SetColour(clr_picker->GetBackgroundColour());
-            m_clrData.SetChooseFull(true);
-            m_clrData.SetChooseAlpha(false);
-
-            std::vector<std::string> colors = wxGetApp().app_config->get_custom_color_from_config();
-            for (int i = 0; i < colors.size(); i++) {
-                 m_clrData.SetCustomColour(i, string_to_wxColor(colors[i]));
-            }
 
             // Check if it's an official filament
             auto fila_type = Preset::remove_suffix_modified(GetValue().ToUTF8().data());
@@ -928,6 +932,9 @@ PlaterPresetComboBox::PlaterPresetComboBox(wxWindow *parent, Preset::Type preset
             } else {
                 show_default_color_picker();
             }
+            wxCommandEvent *evt = new wxCommandEvent(EVT_FILAMENT_COLOR_CHANGED);
+            evt->SetInt(m_filament_idx);
+            wxQueueEvent(wxGetApp().plater(), evt);
         });
     }
     else {
@@ -1354,6 +1361,9 @@ void PlaterPresetComboBox::update()
                     if (is_selected && selected_in_box) {
                         SetFlag(GetCount() - 1, (int) FilamentAMSType::FROM_AMS);
                     }
+                    //y71
+                    if(!selected_in_box)
+                        ShowBadge(selected_in_box);
                 }
             } else {
                 for (std::map<wxString, wxBitmap *>::const_iterator it = presets.begin(); it != presets.end(); ++it) {
@@ -1483,6 +1493,14 @@ FilamentColor PlaterPresetComboBox::get_cur_color_info()
 
 void PlaterPresetComboBox::show_default_color_picker()
 {
+    DynamicPrintConfig* cfg = &wxGetApp().preset_bundle->project_config;
+    auto colors = static_cast<ConfigOptionStrings*>(cfg->option("filament_colour")->clone());
+    wxColour current_clr(colors->values[m_filament_idx]);
+    if (!current_clr.IsOk())
+        current_clr = wxColour(0, 0, 0); // Don't set alfa to transparence
+
+    m_clrData.SetColour(current_clr);
+
     wxColourData data = show_sys_picker_dialog(this, m_clrData);
     if(m_clrData.GetColour() != data.GetColour()) {
         std::vector<std::string> color = {data.GetColour().GetAsString(wxC2S_HTML_SYNTAX).ToStdString()};
@@ -1525,10 +1543,6 @@ void PlaterPresetComboBox::sync_colour_config(const std::vector<std::string> &cl
     update();  // refresh the preset combobox with new config
 
     wxGetApp().plater()->on_config_change(cfg_new);
-
-    wxCommandEvent *evt = new wxCommandEvent(EVT_CALI_TRAY_CHANGED);
-    evt->SetInt(m_filament_idx);
-    wxQueueEvent(wxGetApp().plater(), evt);
 }
 
 

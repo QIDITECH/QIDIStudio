@@ -24,7 +24,9 @@ enum class SLAGizmoEventType : unsigned char;
 //1.0 mean v1.10 qidi version
 //1.1 mean v2.0 v2.1 qidi version(202505)
 //2.0 mean v2.2 qidi version(202507)
-const std::string CUR_FONT_VERSION  = "2.0";
+//2.2 mean v2.2 qidi version(20250815)
+const std::string NEW_FONT_BEGIN_VERSION  = "2.0";
+const std::string CUR_FONT_VERSION = "2.2";
 class GLGizmoText : public GLGizmoBase
 {
 private:
@@ -150,6 +152,9 @@ private:
     // TRN - Title in Undo/Redo stack after move with SVG along emboss axe - From surface
     const std::string move_snapshot_name = "Text move";
     const std::string rotation_snapshot_name = "Text rotate";
+
+    float m_rotate_angle_min_max = 0.f;
+    float m_text_gap_min_max     = 0.f;
 
 public:
     GLGizmoText(GLCanvas3D& parent, unsigned int sprite_id);

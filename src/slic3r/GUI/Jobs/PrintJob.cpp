@@ -9,6 +9,8 @@
 #include "slic3r/GUI/MainFrame.hpp"
 #include "qidi_networking.hpp"
 
+#include "slic3r/GUI/DeviceCore/DevManager.h"
+#include "slic3r/GUI/DeviceCore/DevUtil.h"
 namespace Slic3r {
 namespace GUI {
 
@@ -256,6 +258,8 @@ void PrintJob::process()
     params.auto_flow_cali       = this->auto_flow_cali;
     params.auto_offset_cali     = this->auto_offset_cali;
     params.task_ext_change_assist = this->task_ext_change_assist;
+    //y71
+    params.enable_multi_box     = this->enable_multi_box;
 
     if (m_print_type == "from_sdcard_view") {
         params.dst_file = m_dst_path;
@@ -286,22 +290,20 @@ void PrintJob::process()
             catch (...) {}
         } 
         
-        auto model_name = model_info->metadata_items.find(QDT_DESIGNER_MODEL_TITLE_TAG);
-        if (model_name != model_info->metadata_items.end()) {
-            try {
+         if (m_print_type != "from_sdcard_view") {
+            auto model_name = model_info->metadata_items.find(QDT_DESIGNER_MODEL_TITLE_TAG);
+            if (model_name != model_info->metadata_items.end()) {
+                try {
+                    std::string mall_model_name = model_name->second;
+                    std::replace(mall_model_name.begin(), mall_model_name.end(), ' ', '_');
+                    const char *unusable_symbols = "<>[]:/\\|?*\" ";
+                    for (const char *symbol = unusable_symbols; *symbol != '\0'; ++symbol) { std::replace(mall_model_name.begin(), mall_model_name.end(), *symbol, '_'); }
 
-                std::string mall_model_name = model_name->second;
-                std::replace(mall_model_name.begin(), mall_model_name.end(), ' ', '_');
-                const char* unusable_symbols = "<>[]:/\\|?*\" ";
-                for (const char* symbol = unusable_symbols; *symbol != '\0'; ++symbol) {
-                    std::replace(mall_model_name.begin(), mall_model_name.end(), *symbol, '_');
-                }
-
-                std::regex pattern("_+");
-                params.project_name = std::regex_replace(mall_model_name, pattern, "_");
-                params.project_name = truncate_string(params.project_name, 100);
+                    std::regex pattern("_+");
+                    params.project_name = std::regex_replace(mall_model_name, pattern, "_");
+                    params.project_name = truncate_string(params.project_name, 100);
+                } catch (...) {}
             }
-            catch (...) {}
         }
     }
 
@@ -486,7 +488,7 @@ void PrintJob::process()
             try {
                 job_info_j.parse(job_info);
                 if (job_info_j.contains("job_id")) {
-                    curr_job_id = JsonValParser::get_longlong_val(job_info_j["job_id"]);
+                    curr_job_id = DevJsonValParser::get_longlong_val(job_info_j["job_id"]);
                 }
                 BOOST_LOG_TRIVIAL(trace) << "print_job: curr_obj_id=" << curr_job_id;
 

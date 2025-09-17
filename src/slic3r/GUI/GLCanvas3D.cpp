@@ -40,6 +40,7 @@
 #include "DailyTips.hpp"
 #include "FilamentMapDialog.hpp"
 #include "../Utils/CpuMemory.hpp"
+#include "../Utils/HelioDragon.hpp"
 #if ENABLE_RETINA_GL
 #include "slic3r/Utils/RetinaHelper.hpp"
 #endif
@@ -162,6 +163,12 @@ std::string& get_nozzle_filament_incompatible_text() {
     static std::string nozzle_filament_incompatible_text;
     return nozzle_filament_incompatible_text;
 }
+
+std::string& get_filament_mixture_warning_text(){
+    static std::string filament_mixture_warning_text;
+    return filament_mixture_warning_text;
+}
+
 
 static std::string format_number(float value)
 {
@@ -3201,9 +3208,13 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
 
         const DynamicPrintConfig &dconfig           = wxGetApp().preset_bundle->prints.get_edited_preset().config;
         auto timelapse_type = dconfig.option<ConfigOptionEnum<TimelapseType>>("timelapse_type");
-        bool timelapse_enabled = timelapse_type ? (timelapse_type->value == TimelapseType::tlSmooth) : false;
+        bool need_wipe_tower = timelapse_type ? (timelapse_type->value == TimelapseType::tlSmooth) : false;
 
-        if (wt && (timelapse_enabled || filaments_count > 1) && !wxGetApp().plater()->only_gcode_mode() && !wxGetApp().plater()->is_gcode_3mf()) {
+        if (dconfig.has("enable_wrapping_detection")) {
+            need_wipe_tower |= dynamic_cast<const ConfigOptionBool*>(dconfig.option("enable_wrapping_detection"))->value;
+        }
+
+        if (wt && (need_wipe_tower || filaments_count > 1) && !wxGetApp().plater()->only_gcode_mode() && !wxGetApp().plater()->is_gcode_3mf()) {
             for (int plate_id = 0; plate_id < n_plates; plate_id++) {
                 // If print ByObject and there is only one object in the plate, the wipe tower is allowed to be generated.
                 PartPlate* part_plate = ppl.get_plate(plate_id);
@@ -3224,14 +3235,14 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
 
                 const Print* print = m_process->fff_print();
                 const Print* current_print = part_plate->fff_print();
-                if (!timelapse_enabled && part_plate->get_extruders(true).size() < 2) continue;
+                if (!need_wipe_tower && part_plate->get_extruders(true).size() < 2) continue;
                 if (part_plate->get_objects_on_this_plate().empty()) continue;
 
                 float brim_width = print->wipe_tower_data(filaments_count).brim_width;
                 const DynamicPrintConfig &print_cfg   = wxGetApp().preset_bundle->prints.get_edited_preset().config;
                 double wipe_vol = get_max_element(v);
                 int nozzle_nums = wxGetApp().preset_bundle->get_printer_extruder_count();
-                Vec3d wipe_tower_size = ppl.get_plate(plate_id)->estimate_wipe_tower_size(print_cfg, w, wipe_vol, nozzle_nums);
+                Vec3d wipe_tower_size = ppl.get_plate(plate_id)->estimate_wipe_tower_size(print_cfg, w, wipe_vol, nozzle_nums, 0, false, dynamic_cast<const ConfigOptionBool*>(dconfig.option("enable_wrapping_detection"))->value);
 
                 {
                     const float                 margin     = WIPE_TOWER_MARGIN;
@@ -3366,6 +3377,9 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
             bool filament_nozzle_compatible = cur_plate->check_compatible_of_nozzle_and_filament(full_config_temp, wxGetApp().preset_bundle->filament_presets, get_nozzle_filament_incompatible_text());
             _set_warning_notification(EWarning::NozzleFilamentIncompatible, !filament_nozzle_compatible);
 
+            bool filament_mixture_compatible = cur_plate->check_mixture_filament_compatible(full_config_temp, get_filament_mixture_warning_text());
+            _set_warning_notification(EWarning::MixtureFilamentIncompatible, !filament_mixture_compatible);
+
             bool model_fits = contained_min_one && !m_model->objects.empty() && !partlyOut && object_results.filaments.empty() && tpu_valid && filament_printable;
             post_event(Event<bool>(EVT_GLCANVAS_ENABLE_ACTION_BUTTONS, model_fits));
             ppl.get_curr_plate()->update_slice_ready_status(model_fits);
@@ -3384,6 +3398,7 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
            _set_warning_notification(EWarning::MultiExtruderPrintableError,false);
            _set_warning_notification(EWarning::MultiExtruderHeightOutside,false);
            _set_warning_notification(EWarning::NozzleFilamentIncompatible,false);
+           _set_warning_notification(EWarning::MixtureFilamentIncompatible,false);
 
            post_event(Event<bool>(EVT_GLCANVAS_ENABLE_ACTION_BUTTONS, false));
         }
@@ -3474,8 +3489,8 @@ static void reserve_new_volume_finalize_old_volume(GLVolume& vol_new, GLVolume& 
 //QDS: always load shell at preview
 void GLCanvas3D::load_shells(const Print& print, bool force_previewing)
 {
-    if (m_initialized)
-    {
+    if (m_initialized) {
+        m_gcode_viewer.set_show_horizontal_slider(false);
         m_gcode_viewer.load_shells(print, m_initialized, force_previewing);
         m_gcode_viewer.update_shells_color_by_extruder(m_config);
     }
@@ -5291,6 +5306,10 @@ void GLCanvas3D::on_set_focus(wxFocusEvent& evt)
     m_tooltip_enabled = true;
 }
 
+void GLCanvas3D::on_back_slice_begin() {
+    m_gcode_viewer.reset_curr_plate_thermal_options();
+}
+
 Size GLCanvas3D::get_canvas_size() const
 {
     int w = 0;
@@ -7016,7 +7035,7 @@ bool GLCanvas3D::_update_imgui_select_plate_toolbar()
         return false;
     }
 
-    if (!p_plater->is_gcode_3mf()) { 
+    if (!p_plater->is_gcode_3mf()) {
         p_plater->update_all_plate_thumbnails(true);
     }
 
@@ -8217,8 +8236,6 @@ void GLCanvas3D::_render_imgui_select_plate_toolbar()
     auto canvas_w = float(cnv_size.get_width());
     auto canvas_h = float(cnv_size.get_height());
 
-    bool is_hovered = false;
-
     m_sel_plate_toolbar.set_icon_size(100.0f * f_scale, 100.0f * f_scale);
 
     float button_width = m_sel_plate_toolbar.icon_width;
@@ -8318,7 +8335,7 @@ void GLCanvas3D::_render_imgui_select_plate_toolbar()
             text_clr = ImVec4(68.0f/ 255.0f, 121.0f / 255.0f, 251.0f / 255.0f, 1);
             btn_texture_id = (ImTextureID)(intptr_t)(all_plates_stats_item->image_texture.get_id());
         }
-
+        imgui.disabled_begin(wxGetApp().plater()->get_helio_process_status() == Slic3r::HelioBackgroundProcess::State::STATE_RUNNING);
         if (ImGui::ImageButton2(btn_texture_id, size, {0,0}, {1,1}, frame_padding, bg_col, tint_col, margin)) {
             if (all_plates_stats_item->slice_state != IMToolbarItem::SliceState::SLICE_FAILED) {
                 if (m_process && !m_process->running()) {
@@ -8332,6 +8349,7 @@ void GLCanvas3D::_render_imgui_select_plate_toolbar()
                 }
             }
         }
+        imgui.disabled_end();
         if (!all_plates_stats_item->selected) {
             m_can_show_navigator = true;
         }
@@ -8409,6 +8427,7 @@ void GLCanvas3D::_render_imgui_select_plate_toolbar()
                 ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(.0f, .0f, .0f, .0f));
             }
         }
+        imgui.disabled_begin(wxGetApp().plater()->get_helio_process_status() == Slic3r::HelioBackgroundProcess::State::STATE_RUNNING);
         if(ImGui::Button("##invisible_button", button_size)){
             if (m_process && !m_process->running()) {
                 all_plates_stats_item->selected = false;
@@ -8421,6 +8440,7 @@ void GLCanvas3D::_render_imgui_select_plate_toolbar()
                 wxQueueEvent(wxGetApp().plater(), evt);
             }
         }
+        imgui.disabled_end();
         ImGui::PopStyleColor(4);
         ImGui::PopStyleVar();
 
@@ -8462,7 +8482,11 @@ void GLCanvas3D::_render_imgui_select_plate_toolbar()
     ImGui::PopStyleColor(8);
     ImGui::PopStyleVar(5);
 
-    if (ImGui::IsWindowHovered() || is_hovered) {
+    ImVec2 window_pos  = ImGui::GetWindowPos();
+    ImVec2 window_size = ImGui::GetWindowSize();
+    ImVec2 window_max  = ImVec2(window_pos.x + window_size.x + 25, window_pos.y + window_size.y);
+    ImRect window_rect(window_pos, window_max);
+    if (ImGui::IsWindowHovered() || window_rect.Contains(ImGui::GetMousePos())) {
         m_sel_plate_toolbar.is_display_scrollbar = true;
     } else {
         m_sel_plate_toolbar.is_display_scrollbar = false;
@@ -10909,6 +10933,10 @@ void GLCanvas3D::_set_warning_notification(EWarning warning, bool state)
     }
     case EWarning::NozzleFilamentIncompatible: {
         text = _u8L(get_nozzle_filament_incompatible_text());
+        break;
+    }
+    case EWarning::MixtureFilamentIncompatible: {
+        text = _u8L(get_filament_mixture_warning_text());
         break;
     }
     }

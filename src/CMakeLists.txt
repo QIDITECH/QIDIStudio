@@ -108,7 +108,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/platform/msw/QIDIStudio.rc.in ${CMAKE
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/platform/msw/QIDIStudio.manifest.in ${CMAKE_CURRENT_BINARY_DIR}/QIDIStudio.manifest @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/platform/osx/Info.plist.in ${CMAKE_CURRENT_BINARY_DIR}/Info.plist @ONLY)
 if (WIN32)
-    add_library(QIDIStudio SHARED QIDIStudio.cpp QIDIStudio.hpp BaseException.cpp BaseException.h StackWalker.cpp StackWalker.h)
+    add_library(QIDIStudio SHARED QIDIStudio.cpp QIDIStudio.hpp)
 else ()
     add_executable(QIDIStudio QIDIStudio.cpp QIDIStudio.hpp)
 endif ()

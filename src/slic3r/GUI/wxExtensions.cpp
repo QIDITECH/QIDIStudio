@@ -4,7 +4,6 @@
 #include <cmath>
 
 #include <wx/sizer.h>
-
 #include <boost/algorithm/string/replace.hpp>
 
 /* mac need the macro while including <boost/stacktrace.hpp>*/
@@ -28,6 +27,7 @@
 #include "Widgets/Label.hpp"
 #include "../Utils/WxFontUtils.hpp"
 #include "FilamentBitmapUtils.hpp"
+#include "../Utils/ColorSpaceConvert.hpp"
 #ifndef __linux__
 // msw_menuitem_bitmaps is used for MSW and OSX
 static std::map<int, std::string> msw_menuitem_bitmaps;
@@ -652,14 +652,38 @@ std::vector<std::vector<std::string>> read_color_pack(std::vector<std::string> c
 
 wxColourData show_sys_picker_dialog(wxWindow *parent, const wxColourData &clr_data)
 {
-    wxColourData data;
+    wxColourData data = clr_data;
     data.SetChooseFull(true);
-    data.SetColour(clr_data.GetColour());
+
+    // Load custom colors from config (support both "r,g,b,a" and "#RRGGBB" formats)
+    std::vector<std::string> colors = Slic3r::GUI::wxGetApp().app_config->get_custom_color_from_config();
+    for (int i = 0; i < (int)colors.size(); i++) {
+        wxColour c;
+        if (colors[i].find(',') != std::string::npos)
+            c = string_to_wxColor(colors[i]);
+        else
+            c = wxColour(colors[i]);
+        if (c.IsOk())
+            data.SetCustomColour(i, c);
+    }
+
     wxColourDialog dialog(parent, &data);
     dialog.SetTitle(_L("Please choose the filament colour"));
+
     if (dialog.ShowModal() == wxID_OK) {
         data = dialog.GetColourData();
+
+        // Save custom colors to config (use RGBA string format for consistency)
+        std::vector<std::string> colors;
+        colors.resize(CUSTOM_COLOR_COUNT);
+        for (int i = 0; i < CUSTOM_COLOR_COUNT; i++) {
+            wxColour custom_clr = data.GetCustomColour(i);
+            if (custom_clr.IsOk())
+                colors[i] = color_to_string(custom_clr);
+        }
+        Slic3r::GUI::wxGetApp().app_config->save_custom_color_to_config(colors);
     }
+
     return data;
 }
 
@@ -752,15 +776,19 @@ wxBitmap *get_extruder_color_icon(std::string color, std::string label, int icon
         // there is no neede to scale created solid bitmap
         wxColor clr(color);
         bitmap = bmp_cache.insert(bitmap_key, wxBitmap(icon_width, icon_height));
-#ifndef __WXMSW__
-        wxMemoryDC dc;
-#else
+#ifdef __WXOSX__
+        bitmap->UseAlpha();
+        wxMemoryDC dc(*bitmap);
+#elif defined(__WXMSW__)
         wxClientDC cdc((wxWindow *) Slic3r::GUI::wxGetApp().mainframe);
         wxMemoryDC dc(&cdc);
+        dc.SelectObject(*bitmap);
+#else
+        wxMemoryDC dc;
+        dc.SelectObject(*bitmap);
 #endif
         dc.SetFont(::Label::Body_12);
         Slic3r::GUI::WxFontUtils::get_suitable_font_size(icon_height - 2, dc);
-        dc.SelectObject(*bitmap);
         if (clr.Alpha() == 0) {
             int             size        = icon_height * 2;
             static wxBitmap transparent = *Slic3r::GUI::BitmapCache().load_svg("transparent", size, size);
@@ -1105,6 +1133,8 @@ wxSize ScalableBitmap::GetBmpSize(const wxBitmap &bmp)
 
 int ScalableBitmap::GetBmpWidth() const
 {
+    if (!m_bmp.IsOk())
+        return 0;
 #ifdef __APPLE__
     return m_bmp.GetScaledWidth();
 #else
@@ -1114,6 +1144,8 @@ int ScalableBitmap::GetBmpWidth() const
 
 int ScalableBitmap::GetBmpHeight() const
 {
+    if (!m_bmp.IsOk())
+        return 0;
 #ifdef __APPLE__
     return m_bmp.GetScaledHeight();
 #else

@@ -1,5 +1,8 @@
 #include "HMS.hpp"
+
 #include "DeviceManager.hpp"
+#include "DeviceCore/DevManager.h"
+#include "DeviceCore/DevUtil.h"
 
 #include <boost/log/trivial.hpp>
 
@@ -7,8 +10,7 @@ static const char* HMS_PATH = "hms";
 static const char* HMS_LOCAL_IMG_PATH = "hms/local_image";
 
 // the local HMS info
-static unordered_set<string> package_dev_id_types {"094"};
-//static unordered_set<string> cloud_dev_id_types{"00M", "00W", "03W", "01P", "01S", "030", "039", "094"};
+static unordered_set<string> package_dev_id_types {"094", "239", "093"};
 
 namespace Slic3r {
 namespace GUI {
@@ -34,7 +36,7 @@ int get_hms_info_version(std::string& version)
             try {
                 json j = json::parse(body);
                 if (j.contains("ver")) {
-                    version = JsonValParser::get_longlong_val(j["ver"]);
+                    version = DevJsonValParser::get_longlong_val(j["ver"]);
                 }
             } catch (...) {
                 ;
@@ -88,7 +90,7 @@ int HMSQuery::download_hms_related(const std::string& hms_type, const std::strin
                         return;
                     }
 
-                    const std::string& remote_ver = JsonValParser::get_longlong_val(j["ver"]);
+                    const std::string& remote_ver = DevJsonValParser::get_longlong_val(j["ver"]);
                     if (remote_ver <= local_version)
                     {
                         return;
@@ -201,10 +203,10 @@ int HMSQuery::load_from_local(const std::string& hms_type, const std::string& de
             }
 
             if (j.contains("version")) {
-                load_version = JsonValParser::get_longlong_val(j["version"]);
+                load_version = DevJsonValParser::get_longlong_val(j["version"]);
             }
             else if (j.contains("ver")) {
-                load_version = JsonValParser::get_longlong_val(j["ver"]);
+                load_version = DevJsonValParser::get_longlong_val(j["ver"]);
             }
             else
             {
@@ -311,7 +313,7 @@ string HMSQuery::get_dev_id_type(const MachineObject* obj) const
 {
     if (obj)
     {
-        return obj->dev_id.substr(0, 3);
+        return obj->get_dev_id().substr(0, 3);
     }
 
     return string();
@@ -613,7 +615,14 @@ void HMSQuery::init_hms_info(const std::string& dev_type_id)
 
     /*download from cloud*/
     time_t info_last_update_time = m_cloud_hms_last_update_time[dev_type_id];
-    if (time(nullptr) - info_last_update_time > (60 * 60 * 24))/*do not update in one day to reduce waiting*/
+
+    /* check hms is valid or not */
+    bool retry = false;
+    if(m_hms_info_jsons[dev_type_id].empty() || m_hms_action_jsons[dev_type_id].empty()){
+        retry =time(nullptr) - info_last_update_time > (60 * 1); // retry after 1 minute
+    }
+
+    if (time(nullptr) - info_last_update_time > (60 * 60 * 24) || retry)/*do not update in one day to reduce waiting*/
     {
         download_hms_related(QUERY_HMS_INFO, dev_type_id, &m_hms_info_jsons[dev_type_id]);
         download_hms_related(QUERY_HMS_ACTION, dev_type_id, &m_hms_action_jsons[dev_type_id]);
@@ -638,11 +647,11 @@ std::string get_hms_wiki_url(std::string error_code)
     MachineObject* obj = dev->get_selected_machine();
     if (!obj) return url;
 
-    if (!obj->dev_id.empty()) {
+    if (!obj->get_dev_id().empty()) {
         url = (boost::format("https://%1%/index.php?e=%2%&d=%3%&s=device_hms&lang=%4%")
                        % hms_host
                        % error_code
-                       % obj->dev_id
+                       % obj->get_dev_id()
                        % lang_code).str();
     }
     return url;

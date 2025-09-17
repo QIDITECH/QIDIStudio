@@ -2,6 +2,8 @@
 #define slic3r_TaskManager_hpp_
 
 #include "DeviceManager.hpp"
+#include "slic3r/Utils/NetworkAgent.hpp"
+
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/log/trivial.hpp>
 

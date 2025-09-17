@@ -76,6 +76,8 @@ enum class NotificationType
 	// thread thowing a SlicingError exception.
 	SlicingError,
 	//Gcode conflict generates slicing severe warning
+    HelioSlicingError,
+    // Gcode conflict generates slicing severe warning
     SlicingSeriousWarning,
 	// Slicing warnings, issued by the slicing process.
 	// Slicing warnings are registered for a particular Print milestone or a PrintObject and its milestone.
@@ -223,7 +225,8 @@ public:
     void close_slicing_serious_warning_notification(const std::string &text);
 	// Creates Slicing Error notification with a custom text and no fade out.
     void push_slicing_error_notification(const std::string &text, std::vector<ModelObject const *> objs);
-	// Creates Slicing Warning notification with a custom text and no fade out.
+    void push_helio_error_notification(const std::string &text);
+    // Creates Slicing Warning notification with a custom text and no fade out.
     void push_slicing_warning_notification(const std::string &text, bool gray, ModelObject const *obj, ObjectID oid, int warning_step, int warning_msg_id, NotificationLevel level = NotificationLevel::WarningNotificationLevel);
 	// marks slicing errors as gray
 	void set_all_slicing_errors_gray(bool g);
@@ -278,7 +281,7 @@ public:
 	// slicing progress
 	void init_slicing_progress_notification(std::function<bool()> cancel_callback);
 	void update_slicing_notif_dailytips(bool need_change);
-	void set_slicing_progress_began();
+	void set_slicing_progress_began(bool is_helio = false);
 	// percentage negative = canceled, <0-1) = progress, 1 = completed
 	void set_slicing_progress_percentage(const std::string& text, float percentage);
 	void set_slicing_progress_canceled(const std::string& text);
@@ -296,10 +299,6 @@ public:
 	void progress_indicator_set_progress(int pr);
 	void progress_indicator_set_status_text(const char*); // utf8 char array
 	int  progress_indicator_get_range() const;
-	// Hint (did you know) notification
-	void push_hint_notification(bool open_next);
-	bool is_hint_notification_open();
-	// Forces Hints to reload its content when next hint should be showed
 	void deactivate_loaded_hints();
 	// Adds counter to existing UpdatedItemsInfo notification or opens new one
 	void push_updated_item_info_notification(InfoItemType type);

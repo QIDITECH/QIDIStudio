@@ -1,6 +1,6 @@
 //**********************************************************/
 /* File: uiAmsHumidityPopup.cpp
-*  Description: The popup with Ams Humidity
+*  Description: The popup with DevAms Humidity
 *
 * \n class uiAmsHumidityPopup
 //**********************************************************/
@@ -43,7 +43,7 @@ void uiAmsPercentHumidityDryPopup::Create()
     title->SetFont(Label::Head_18);
 
     title_sizer->AddStretchSpacer();
-    title_sizer->Add(title, 0, wxALIGN_CENTER_HORIZONTAL);
+    title_sizer->Add(title, 0);
     title_sizer->AddStretchSpacer();
 
     // create humidity image

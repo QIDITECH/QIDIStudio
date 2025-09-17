@@ -970,7 +970,12 @@ boost::any ConfigOptionsGroup::get_config_value(const DynamicPrintConfig& config
         {
         case coPercents:
         case coFloats: {
-            if (opt_index < 0 ? config.option(opt_key)->is_nil() : dynamic_cast<ConfigOptionVectorBase const*>(config.option(opt_key))->is_nil(opt_index))
+            const ConfigOptionVectorBase *option = dynamic_cast<const ConfigOptionVectorBase *>(config.option(opt_key));
+            if (!option) {
+                ret = _(L("N/A"));
+                break;
+            }
+            if (opt_index < 0 || opt_index >= option->size() ? config.option(opt_key)->is_nil() : option->is_nil(opt_index))
                 ret = _(L("N/A"));
             else {
                 double val = opt->type == coFloats ?
@@ -978,10 +983,15 @@ boost::any ConfigOptionsGroup::get_config_value(const DynamicPrintConfig& config
                     config.option<ConfigOptionPercentsNullable>(opt_key)->get_at(idx);
                 ret = double_to_string(val);
             }
+            break;
         }
-                     break;
         case coFloatsOrPercents: {
-            if (opt_index < 0 ? config.option(opt_key)->is_nil() : dynamic_cast<ConfigOptionVectorBase const*>(config.option(opt_key))->is_nil(opt_index))
+            const ConfigOptionVectorBase *option = dynamic_cast<const ConfigOptionVectorBase *>(config.option(opt_key));
+            if (!option) {
+                ret = _(L("N/A"));
+                break;
+            }
+            if (opt_index < 0 || opt_index >= option->size() ? config.option(opt_key)->is_nil() : option->is_nil(opt_index))
                 ret = _(L("N/A"));
             else {
                 const auto& value = config.option<ConfigOptionFloatsOrPercentsNullable>(opt_key)->get_at(idx);
@@ -1124,6 +1134,10 @@ boost::any ConfigOptionsGroup::get_config_value(const DynamicPrintConfig& config
             ret = get_thumbnails_string(config.option<ConfigOptionPoints>(opt_key)->values);
         else if (opt_key == "bed_exclude_area")
             ret = get_thumbnails_string(config.option<ConfigOptionPoints>(opt_key)->values);
+        else if (opt_key == "thumbnail_size")
+            ret = get_thumbnails_string(config.option<ConfigOptionPoints>(opt_key)->values);
+        else if (opt_key == "wrapping_exclude_area")
+            ret = get_thumbnails_string(config.option<ConfigOptionPoints>(opt_key)->values);
         //w12
         else
             ret = config.option<ConfigOptionPoints>(opt_key)->get_at(idx);
@@ -1259,6 +1273,10 @@ boost::any ConfigOptionsGroup::get_config_value2(const DynamicPrintConfig& confi
         if (opt_key == "printable_area")
             ret = get_thumbnails_string(config.option<ConfigOptionPoints>(opt_key)->values);
         else if (opt_key == "bed_exclude_area")
+            ret = get_thumbnails_string(config.option<ConfigOptionPoints>(opt_key)->values);
+        else if (opt_key == "thumbnail_size")
+            ret = get_thumbnails_string(config.option<ConfigOptionPoints>(opt_key)->values);
+        else if (opt_key == "wrapping_exclude_area")
             ret = get_thumbnails_string(config.option<ConfigOptionPoints>(opt_key)->values);
         //w12
         else

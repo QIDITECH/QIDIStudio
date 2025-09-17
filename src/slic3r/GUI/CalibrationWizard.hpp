@@ -79,8 +79,6 @@ protected:
 
     /* save steps of calibration pages */
     std::vector<CalibrationWizardPageStep*> m_page_steps;
-
-    SecondaryCheckDialog *go_home_dialog = nullptr;
 };
 
 class PressureAdvanceWizard : public CalibrationWizard {

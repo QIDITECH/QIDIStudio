@@ -51,8 +51,6 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_
 {
     SetFont(wxGetApp().normal_font());
     SetBackgroundColour(*wxWHITE);
-    // y3 modify Dialog
-    empty_flag = printer_name.empty();
 
     Tab *tab = wxGetApp().get_tab(Preset::TYPE_PRINTER);
     m_presets = tab->get_presets();
@@ -83,12 +81,12 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_
 
     m_input_ctrl = new wxTextCtrl(this, wxID_ANY, input_name);
     m_input_ctrl->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#323A3C")));
-    m_valid_label = new wxStaticText(this, wxID_ANY, "");
-    m_valid_label->SetForegroundColour(wxColor(255, 111, 0));
+    // m_valid_label = new wxStaticText(this, wxID_ANY, "");
+    // m_valid_label->SetForegroundColour(wxColor(255, 111, 0));
 
     input_sizer_name->Add(label_top, 0, wxEXPAND | wxTOP, BORDER_W);
     input_sizer_name->Add(m_input_ctrl, 0, wxEXPAND , BORDER_W);
-    input_sizer_name->Add(m_valid_label, 0, wxEXPAND | wxBOTTOM, BORDER_W);
+    // input_sizer_name->Add(m_valid_label, 0, wxEXPAND | wxBOTTOM, BORDER_W);
 
     wxStaticText* pret_combo_text = new wxStaticText(this, wxID_ANY, _L("Choice your physical printer preset") + ":");
     pret_combo_text->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#323A3C")));
@@ -180,7 +178,7 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_
 
 
     Bind(wxEVT_CLOSE_WINDOW, [this](auto& e) {this->EndModal(wxID_NO);});
-    m_input_ctrl->Bind(wxEVT_TEXT, [this](wxCommandEvent &) { update(); });
+    //m_input_ctrl->Bind(wxEVT_TEXT, [this](wxCommandEvent &) { update(); });
     build_printhost_settings(m_optgroup);
 
     topSizer->Add(input_sizer, 0, wxEXPAND | wxLEFT | wxTOP | wxRIGHT, BORDER_W);
@@ -279,7 +277,7 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
     {
         wxTextCtrl* temp = dynamic_cast<wxTextCtrl*>(printhost_field->getWindow());
         if (temp)
-            temp->Bind(wxEVT_TEXT, ([printhost_field, temp](wxEvent& e)
+            temp->Bind(wxEVT_TEXT, ([printhost_field, temp, this](wxEvent& e)
             {
 #ifndef __WXGTK__
                 e.Skip();
@@ -308,7 +306,7 @@ void PhysicalPrinterDialog::update_printhost_buttons()
     }
 }
 
-void PhysicalPrinterDialog::update_preset_input() {
+bool PhysicalPrinterDialog::update_preset_input() {
     m_printer_name = into_u8(m_input_ctrl->GetValue());
 
     m_valid_type = Valid;
@@ -345,14 +343,7 @@ void PhysicalPrinterDialog::update_preset_input() {
         m_valid_type = NoValid;  
     }
 
-    // y3
-    if(empty_flag)
-    {
-        empty_flag = false;
-        m_valid_type = NoValid;
-    }
-
-    else if(m_valid_type == Valid && m_printer_name.empty()) {
+    if(m_valid_type == Valid && m_printer_name.empty()) {
         info_line    = _L("The name is not allowed to be empty.");
         m_valid_type = NoValid;
     }
@@ -377,34 +368,39 @@ void PhysicalPrinterDialog::update_preset_input() {
         m_valid_type = NoValid;
     }
 
-    m_valid_label->SetLabel(info_line);
-    // m_input_area->Refresh();
-    m_input_ctrl->Refresh();
-    m_valid_label->Show(!info_line.IsEmpty());
+    //m_valid_label->SetLabel(info_line);
+    //// m_input_area->Refresh();
+    //m_input_ctrl->Refresh();
+    //m_valid_label->Show(!info_line.IsEmpty());
 
+    //if (m_valid_type == NoValid) {
+    //    if (m_button_ok)
+    //    {
+    //        m_button_ok->Disable();
+    //        m_button_ok->SetBackgroundColor(wxColour(200, 200, 200));
+    //    }
+    //}
+    //else {
+    //    if (m_button_ok)
+    //    {
+    //        m_button_ok->Enable();
+    //        StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
+    //            std::pair<wxColour, int>(AMS_CONTROL_BRAND_COLOUR, StateColor::Normal));
+    //        m_button_ok->SetBackgroundColor(btn_bg_blue);
+    //    }
+    //        
+    //}
     if (m_valid_type == NoValid) {
-        if (m_button_ok)
-        {
-            m_button_ok->Disable();
-            m_button_ok->SetBackgroundColor(wxColour(200, 200, 200));
-        }
+        MessageDialog msg_wingow(nullptr, info_line, "", wxICON_WARNING | wxOK);
+        msg_wingow.ShowModal();
+        return false;
     }
-    else {
-        if (m_button_ok)
-        {
-            m_button_ok->Enable();
-            StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed), std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered),
-                std::pair<wxColour, int>(AMS_CONTROL_BRAND_COLOUR, StateColor::Normal));
-            m_button_ok->SetBackgroundColor(btn_bg_blue);
-        }
-            
-    }
+    return true;
 }
 
 void PhysicalPrinterDialog::update(bool printer_change)
 {
     m_optgroup->reload_config();
-    update_preset_input();
 
     // update_printhost_buttons();
 
@@ -484,6 +480,10 @@ void PhysicalPrinterDialog::on_dpi_changed(const wxRect& suggested_rect)
 
 void PhysicalPrinterDialog::OnOK(wxMouseEvent& event)
 {
+    bool input_result = update_preset_input();
+    if (!input_result)
+        return;
+
     //y25
     std::string now_host = boost::any_cast<std::string>(m_optgroup->get_field("print_host")->get_value());
     if (now_host.empty())

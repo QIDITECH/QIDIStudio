@@ -35,6 +35,7 @@
 #include "Widgets/CheckBox.hpp"
 #include "Widgets/ComboBox.hpp"
 #include "Widgets/ScrolledWindow.hpp"
+#include "Widgets/LinkLabel.hpp"
 #include <wx/hashmap.h>
 #include <wx/webview.h>
 
@@ -184,9 +185,11 @@ public:
         //LOAD_FILAMENT = 26,
         IGNORE_RESUME = 27,
         PROBLEM_SOLVED_RESUME = 28,
-        STOP_BUZZER = 29,
+        TURN_OFF_FIRE_ALARM = 29,
 
         RETRY_PROBLEM_SOLVED = 34,
+        STOP_DRYING = 35,
+        REMOVE_CLOSE_BTN = 39, // special case, do not show close button
 
         ERROR_BUTTON_COUNT
     };
@@ -331,7 +334,7 @@ public:
     int    current_input_index {0};
     std::shared_ptr<SendJob> m_send_job{nullptr};
     std::shared_ptr<QDTStatusBarSend> m_status_bar;
-    boost::bimaps::bimap<std::string, std::string> m_models_map;
+    std::map<std::string, std::string> m_models_map;// display_name -> model_id
 
     void switch_input_panel(int index);
     void on_cancel();
@@ -360,6 +363,50 @@ public:
     //void on_ok(wxMouseEvent &evt);
     void on_dpi_changed(const wxRect &suggested_rect) override;
 };
+
+class HelioStatementDialog : public DPIDialog
+{
+private:
+    Label *m_title{nullptr};
+    Button *m_button_confirm{nullptr};
+    Button *m_button_cancel{nullptr};
+
+
+public:
+    HelioStatementDialog(wxWindow *parent = nullptr);
+    ~HelioStatementDialog(){};
+
+    // void on_ok(wxMouseEvent &evt);
+    void on_dpi_changed(const wxRect &suggested_rect) override;
+};
+
+class HelioInputDialog : public DPIDialog
+{
+private:
+    TextInput *m_input_item{nullptr};
+    Button *m_button_confirm{nullptr};
+    bool m_isAdjusting = false;
+    wxString m_lastValidValue = wxEmptyString;
+
+public:
+    HelioInputDialog(wxWindow *parent = nullptr);
+    ~HelioInputDialog(){};
+
+    // void on_ok(wxMouseEvent &evt);
+    bool   IsValidFloat(const wxString &text);
+    double get_input_data();
+    bool is_number_regex(const wxString &str, double &value);
+    void on_dpi_changed(const wxRect &suggested_rect) override;
+};
+
+class HelioPatNotEnoughDialog : public DPIDialog
+{
+public:
+    HelioPatNotEnoughDialog(wxWindow* parent = nullptr);
+    ~HelioPatNotEnoughDialog();
+    void on_dpi_changed(const wxRect& suggested_rect) override;
+};
+
 
 wxDECLARE_EVENT(EVT_CLOSE_IPADDRESS_DLG, wxCommandEvent);
 wxDECLARE_EVENT(EVT_CHECKBOX_CHANGE, wxCommandEvent);

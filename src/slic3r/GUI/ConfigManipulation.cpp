@@ -129,7 +129,7 @@ void ConfigManipulation::check_filament_max_volumetric_speed(DynamicPrintConfig 
 
     float max_volumetric_speed = config->has("filament_max_volumetric_speed") ? config->opt_float_nullable("filament_max_volumetric_speed", (float) 0.5) : 0.5;
     // QDS: limite the min max_volumetric_speed
-    if (max_volumetric_speed < 0.5) {
+    if (max_volumetric_speed < 0.5 && wxGetApp().initialized()) {
         const wxString     msg_text = _(L("Too small max volumetric speed.\nReset to 0.5"));
         MessageDialog      dialog(nullptr, msg_text, "", wxICON_WARNING | wxOK);
         DynamicPrintConfig new_conf = *config;
@@ -142,6 +142,35 @@ void ConfigManipulation::check_filament_max_volumetric_speed(DynamicPrintConfig 
 
 }
 
+void ConfigManipulation::check_filament_scarf_setting(DynamicPrintConfig *config)
+{
+    bool post_warning = false;
+    float layer_height = wxGetApp().preset_bundle->prints.get_selected_preset().config.opt_float("layer_height");
+    DynamicPrintConfig new_conf = *config;
+    //std::vector<FloatOrPercent> new_data = config->option<ConfigOptionFloatsOrPercents>("filament_scarf_height")->values;
+    for (size_t i = 0; i < config->option<ConfigOptionFloatsOrPercents>("filament_scarf_height")->size(); i++) {
+        double value = config->option<ConfigOptionFloatsOrPercents>("filament_scarf_height")->values[i].get_abs_value(1);
+        bool   reset = false;
+        if (config->option<ConfigOptionFloatsOrPercents>("filament_scarf_height")->values[i].percent) {
+            if (value >= 1)
+                reset = true;
+        } else if (value > layer_height)
+            reset = true;
+        if (reset && wxGetApp().initialized()) {
+            post_warning = true;
+            new_conf.set_key_value("filament_scarf_height", new ConfigOptionFloatsOrPercents{FloatOrPercent(10, true)});
+        }
+
+    }
+    if (post_warning) {
+        const wxString msg_text = _(L("Should not large than 100%.\nReset to defualt"));
+        MessageDialog  dialog(nullptr, msg_text, "", wxICON_WARNING | wxOK);
+        is_msg_dlg_already_exist = true;
+        dialog.ShowModal();
+        apply(config, &new_conf);
+        is_msg_dlg_already_exist = false;
+    }
+}
 void ConfigManipulation::check_chamber_temperature(DynamicPrintConfig* config)
 {
     const static std::map<std::string, int>recommend_temp_map = {
@@ -364,7 +393,8 @@ void ConfigManipulation::update_print_fff_config(DynamicPrintConfig* config, con
             config->opt_enum<EnsureVerticalThicknessLevel>("ensure_vertical_shell_thickness") == EnsureVerticalThicknessLevel::evtEnabled &&
             !config->opt_bool("detect_thin_wall") &&
             config->opt_enum<TimelapseType>("timelapse_type") == TimelapseType::tlTraditional &&
-            !config->opt_bool("z_direction_outwall_speed_continuous")))
+            !config->opt_bool("z_direction_outwall_speed_continuous") &&
+            !config->opt_bool("enable_wrapping_detection")))
     {
         DynamicPrintConfig new_conf = *config;
         auto answer = show_spiral_mode_settings_dialog(is_object_config);
@@ -379,6 +409,7 @@ void ConfigManipulation::update_print_fff_config(DynamicPrintConfig* config, con
             new_conf.set_key_value("detect_thin_wall", new ConfigOptionBool(false));
             new_conf.set_key_value("timelapse_type", new ConfigOptionEnum<TimelapseType>(tlTraditional));
             new_conf.set_key_value("z_direction_outwall_speed_continuous", new ConfigOptionBool(false));
+            new_conf.set_key_value("enable_wrapping_detection", new ConfigOptionBool(false));
             sparse_infill_density = 0;
             timelapse_type = TimelapseType::tlTraditional;
             support = false;
@@ -565,7 +596,12 @@ void ConfigManipulation::update_print_fff_config(DynamicPrintConfig* config, con
         if (opt != nullptr) {
             if (opt->getInt() > filament_cnt) {
                 DynamicPrintConfig new_conf = *config;
-                new_conf.set_key_value(key, new ConfigOptionInt(0));
+                const DynamicPrintConfig *conf_temp = wxGetApp().plater()->config();
+                int new_value = 0;
+                if (conf_temp != nullptr && conf_temp->has(key)) {
+                    new_value = conf_temp->opt_int(key);
+                }
+                new_conf.set_key_value(key, new ConfigOptionInt(new_value));
                 apply(config, &new_conf);
             }
         }
@@ -846,6 +882,10 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig *config, in
     for (auto el : {"seam_slope_type", "seam_slope_start_height", "seam_slope_gap", "seam_slope_min_length"})
         toggle_line(el, override_filament_scarf_seam_settings);
 
+    ConfigOptionPoints *wrapping_exclude_area_opt = wxGetApp().preset_bundle->printers.get_edited_preset().config.option<ConfigOptionPoints>("wrapping_exclude_area");
+    bool support_wrapping_detect = wrapping_exclude_area_opt &&wrapping_exclude_area_opt->values.size() > 3;
+    toggle_line("enable_wrapping_detection", support_wrapping_detect);
+
     //w16
     bool is_resonance_avoidance = config->opt_bool("resonance_avoidance", 0);
     toggle_line("min_resonance_avoidance_speed", is_resonance_avoidance);
@@ -930,7 +970,7 @@ void ConfigManipulation::toggle_print_sla_options(DynamicPrintConfig* config)
 
 int ConfigManipulation::show_spiral_mode_settings_dialog(bool is_object_config)
 {
-    wxString msg_text = _(L("Spiral mode only works when wall loops is 1, support is disabled, top shell layers is 0, sparse infill density is 0, timelapse type is traditional and smoothing wall speed in z direction is false."));
+    wxString msg_text = _(L("Spiral mode only works when wall loops is 1, support is disabled, clumping detection by probing is disabled, top shell layers is 0, sparse infill density is 0, timelapse type is traditional and smoothing wall speed in z direction is false."));
     auto printer_structure_opt = wxGetApp().preset_bundle->printers.get_edited_preset().config.option<ConfigOptionEnum<PrinterStructure>>("printer_structure");
     if (printer_structure_opt && printer_structure_opt->value == PrinterStructure::psI3) {
         msg_text += _(L(" But machines with I3 structure will not generate timelapse videos."));

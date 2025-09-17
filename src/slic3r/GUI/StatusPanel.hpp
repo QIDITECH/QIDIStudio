@@ -33,12 +33,16 @@
 #include "Widgets/FanControl.hpp"
 #include "HMS.hpp"
 #include "PartSkipDialog.hpp"
+#include "DeviceErrorDialog.hpp"
 
 class StepIndicator;
 
 #define COMMAND_TIMEOUT         5
 
 namespace Slic3r {
+    
+class DevExtderSystem;
+
 namespace GUI {
 
 // Previous definitions
@@ -156,10 +160,7 @@ public:
     void msw_rescale();
 
 private:
-    void updateSwitchingLabel(const ExtruderSwitchState &state);
-
-    void updateBy(const ExtderData& ext_data);
-    void updateBtnGroup(const ExtderData &ext_data);
+    void updateBy(const DevExtderSystem* ext_system);
     void showQuitBtn(bool show);
     void showRetryBtn(bool show);
 
@@ -433,6 +434,8 @@ protected:
     wxStaticText *  m_staticText_timelapse;
     SwitchButton *  m_bmToggleBtn_timelapse;
 
+    wxStaticText *m_mqtt_source;
+
     wxStaticBitmap *m_bitmap_camera_img;
     wxStaticBitmap *m_bitmap_recording_img;
     wxStaticBitmap *m_bitmap_timelapse_img;
@@ -620,8 +623,7 @@ protected:
     CalibrationDialog*   calibration_dlg {nullptr};
     AMSMaterialsSetting *m_filament_setting_dlg{nullptr};
 
-    PrintErrorDialog* m_print_error_dlg = nullptr;
-    SecondaryCheckDialog* m_print_error_dlg_no_action = nullptr;
+    DeviceErrorDialog* m_print_error_dlg = nullptr;
     SecondaryCheckDialog* abort_dlg = nullptr;
     SecondaryCheckDialog* con_load_dlg = nullptr;
     MessageDialog *       ctrl_e_hint_dlg             = nullptr;
@@ -677,7 +679,6 @@ protected:
     void on_subtask_pause_resume(wxCommandEvent &event);
     void on_subtask_abort(wxCommandEvent &event);
     void on_print_error_clean(wxCommandEvent &event);
-    void show_error_message(MachineObject *obj, bool is_exist, wxString msg, std::string print_error_str = "", wxString image_url = "", std::vector<int> used_button = std::vector<int>());
     void error_info_reset();
     void show_recenter_dialog();
 
@@ -718,8 +719,6 @@ protected:
     void on_ams_selected(wxCommandEvent &event);
     void on_ams_guide(wxCommandEvent &event);
     void on_ams_retry(wxCommandEvent &event);
-    void on_print_error_done(wxCommandEvent& event);
-    void on_print_error_dlg_btn_clicked(wxCommandEvent& event);
 
     void on_fan_changed(wxCommandEvent& event);
     void on_cham_temp_kill_focus(wxFocusEvent& event);

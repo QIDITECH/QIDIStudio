@@ -97,7 +97,7 @@ namespace QDT {
 #define QIDI_NETWORK_LIBRARY               "qidi_networking"
 #define QIDI_NETWORK_AGENT_NAME            "qidi_network_agent"
 
-#define QIDI_NETWORK_AGENT_VERSION         "02.02.00.55"
+#define QIDI_NETWORK_AGENT_VERSION         "02.02.01.51"
 
 //iot preset type strings
 #define IOT_PRINTER_TYPE_STRING     "printer"
@@ -231,6 +231,7 @@ struct PrintParams {
     std::string     task_bed_type;
     std::string     extra_options;
     int             auto_bed_leveling{ 0 };
+    int             enable_multi_box{0};
     int             auto_flow_cali{ 0 };
     int             auto_offset_cali{ 0 };
     bool            task_ext_change_assist;

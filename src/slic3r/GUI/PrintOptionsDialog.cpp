@@ -5,6 +5,9 @@
 #include "Widgets/SwitchButton.hpp"
 #include "MsgDialog.hpp"
 
+#include "DeviceCore/DevConfig.h"
+#include "DeviceCore/DevExtruderSystem.h"
+
 static const wxColour STATIC_BOX_LINE_COL = wxColour(238, 238, 238);
 static const wxColour STATIC_TEXT_CAPTION_COL = wxColour(100, 100, 100);
 static const wxColour STATIC_TEXT_EXPLAIN_COL = wxColour(100, 100, 100);
@@ -249,15 +252,18 @@ void PrintOptionsDialog::update_options(MachineObject* obj_)
     if (!obj_) return;
 
     if (obj_->is_support_spaghetti_detection || obj_->is_support_purgechutepileup_detection || obj_->is_support_nozzleclumping_detection || obj_->is_support_airprinting_detection) {
+        ai_refine_panel->Show();
         text_ai_detections->Show();
         text_ai_detections_caption->Show();
+        m_line->Show();
     } else {
+        ai_refine_panel->Hide();
         text_ai_detections->Hide();
         text_ai_detections_caption->Hide();
+        m_line->Hide();
     }
 
-
-    if (obj_->is_support_ai_monitoring && !obj_->xcam_disable_ai_detection_display) {
+    if (obj_->GetConfig()->SupportAIMonitor() && !obj_->xcam_disable_ai_detection_display) {
         text_ai_monitoring->Show();
         m_cb_ai_monitoring->Show();
         text_ai_monitoring_caption->Show();
@@ -270,7 +276,7 @@ void PrintOptionsDialog::update_options(MachineObject* obj_)
         text_ai_monitoring_caption->Hide();
         ai_monitoring_level_list->Hide();
         ai_monitoring_bottom_space->Show(false);
-        line1->Hide();
+        //line1->Hide();
     }
 
    //refine printer function options
@@ -290,7 +296,7 @@ void PrintOptionsDialog::update_options(MachineObject* obj_)
         text_spaghetti_detection_caption1->Hide();
         spaghetti_detection_level_list->Hide();
         spaghetti_bottom_space->Show(false);
-        line1->Hide();
+        //line1->Hide();
     }
 
 
@@ -309,7 +315,7 @@ void PrintOptionsDialog::update_options(MachineObject* obj_)
         text_purgechutepileup_detection_caption1->Hide();
         purgechutepileup_detection_level_list->Hide();
         purgechutepileup_bottom_space->Show(false);
-        line1->Hide();
+        //line1->Hide();
     }
 
 
@@ -329,7 +335,7 @@ void PrintOptionsDialog::update_options(MachineObject* obj_)
         text_nozzleclumping_detection_caption1->Hide();
         nozzleclumping_detection_level_list->Hide();
         nozzleclumping_bottom_space->Show(false);
-        line1->Hide();
+        //line1->Hide();
     }
 
     if (obj_->is_support_airprinting_detection) {
@@ -346,7 +352,7 @@ void PrintOptionsDialog::update_options(MachineObject* obj_)
         text_airprinting_detection_caption0->Hide();
         text_airprinting_detection_caption1->Hide();
         airprinting_detection_level_list->Hide();
-        line1->Hide();
+        //line1->Hide();
         airprinting_bottom_space->Show(false);
     }
 
@@ -375,7 +381,7 @@ void PrintOptionsDialog::update_options(MachineObject* obj_)
         //line2->Hide();
     }
 
-    if (obj_->is_support_first_layer_inspect) {
+    if (obj_->GetConfig()->SupportFirstLayerInspect()) {
         text_first_layer->Show();
         m_cb_first_layer->Show();
         //line3->Show();
@@ -526,7 +532,7 @@ void PrintOptionsDialog::UpdateOptionOpenDoorCheck(MachineObject *obj) {
 
 void PrintOptionsDialog::UpdateOptionSavePrintFileToStorage(MachineObject *obj)
 {
-    if (obj && obj->support_save_remote_print_file_to_storage())
+    if (obj && obj->GetConfig()->SupportSaveRemotePrintFileToStorage())
     {
         m_cb_save_remote_print_file_to_storage->SetValue(obj->get_save_remote_print_file_to_storage());
     }
@@ -551,24 +557,28 @@ wxBoxSizer* PrintOptionsDialog::create_settings_group(wxWindow* parent)
     //m_line->SetBackgroundColour(wxColour(166, 169, 170));
     //sizer->Add(m_line, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(0));
 
+    ai_refine_panel             = new wxPanel(parent);
+    wxBoxSizer *ai_refine_sizer = new wxBoxSizer(wxVERTICAL);
+    ai_refine_panel->SetBackgroundColour(*wxWHITE);
+
     // ai detections
     line_sizer = new wxBoxSizer(wxHORIZONTAL);
-    text_ai_detections = new Label(parent, _L("AI Detections"));
+    text_ai_detections = new Label(ai_refine_panel, _L("AI Detections"));
     text_ai_detections->SetFont(Label::Body_14);
     line_sizer->Add(FromDIP(5), 0, 0, 0);
     line_sizer->Add(text_ai_detections, 0, wxLEFT | wxRIGHT | wxDOWN | wxALIGN_CENTER_VERTICAL, FromDIP(2));
-    sizer->Add(0, 0, 0, wxTOP, FromDIP(20));
-    sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
+    ai_refine_sizer->Add(0, 0, 0, wxTOP, FromDIP(20));
+    ai_refine_sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
 
     line_sizer = new wxBoxSizer(wxHORIZONTAL);
-    text_ai_detections_caption = new Label(parent, _L("Printer will send assistant message or pause printing if any of the following problem is detected."));
+    text_ai_detections_caption = new Label(ai_refine_panel, _L("Printer will send assistant message or pause printing if any of the following problem is detected."));
     text_ai_detections_caption->SetFont(Label::Body_12);
     text_ai_detections_caption->SetForegroundColour(STATIC_TEXT_CAPTION_COL);
     text_ai_detections_caption->Wrap(FromDIP(400));
     line_sizer->Add(FromDIP(5), 0, 0, 0);
     line_sizer->Add(text_ai_detections_caption, 0,wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(2));
-    sizer->Add(line_sizer,0,wxEXPAND | wxLEFT | wxRIGHT,FromDIP(18));
-    ai_detections_bottom_space = sizer->Add(0, 0, 0, wxTOP, FromDIP(15));
+    ai_refine_sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
+    ai_detections_bottom_space = ai_refine_sizer->Add(0, 0, 0, wxTOP, FromDIP(15));
 
      // ai monitoring with levels
     line_sizer         = new wxBoxSizer(wxHORIZONTAL);
@@ -604,30 +614,30 @@ wxBoxSizer* PrintOptionsDialog::create_settings_group(wxWindow* parent)
 
     //spaghetti detection  with levels
     line_sizer = new wxBoxSizer(wxHORIZONTAL);
-    m_cb_spaghetti_detection = new CheckBox(parent);
-    text_spaghetti_detection = new Label(parent, _L("Spaghetti Detection"));
+    m_cb_spaghetti_detection = new CheckBox(ai_refine_panel);
+    text_spaghetti_detection = new Label(ai_refine_panel, _L("Spaghetti Detection"));
     text_spaghetti_detection->SetFont(Label::Body_14);
     line_sizer->Add(FromDIP(5), 0, 0, 0);
     line_sizer->Add(m_cb_spaghetti_detection, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(2));
     line_sizer->Add(text_spaghetti_detection, 1, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(2));
-    sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
+    ai_refine_sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
 
     line_sizer = new wxBoxSizer(wxHORIZONTAL);
-    text_spaghetti_detection_caption0 = new Label(parent, _L("Detect spaghetti failure(scattered lose filament)."));
+    text_spaghetti_detection_caption0 = new Label(ai_refine_panel, _L("Detect spaghetti failure(scattered lose filament)."));
     text_spaghetti_detection_caption0->SetFont(Label::Body_12);
     text_spaghetti_detection_caption0->SetForegroundColour(STATIC_TEXT_CAPTION_COL);
     text_spaghetti_detection_caption0->Wrap(-1);
     line_sizer->Add(FromDIP(30), 0, 0, 0);
     line_sizer->Add(text_spaghetti_detection_caption0, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(5));
-    sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
+    ai_refine_sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
 
     line_sizer = new wxBoxSizer(wxHORIZONTAL);
-    text_spaghetti_detection_caption1 = new Label(parent, _L("Pausing Sensitivity:"));
+    text_spaghetti_detection_caption1 = new Label(ai_refine_panel, _L("Pausing Sensitivity:"));
     text_spaghetti_detection_caption1->SetFont(Label::Body_12);
     text_spaghetti_detection_caption1->SetForegroundColour(STATIC_TEXT_CAPTION_COL);
     text_spaghetti_detection_caption1->Wrap(-1);
 
-    spaghetti_detection_level_list = new ComboBox(parent, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(100), -1), 0, NULL, wxCB_READONLY);
+    spaghetti_detection_level_list = new ComboBox(ai_refine_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(100), -1), 0, NULL, wxCB_READONLY);
     for (auto i = AiMonitorSensitivityLevel::LOW; i < LEVELS_NUM; i = (AiMonitorSensitivityLevel) (i + 1)) {
         wxString level_option = sensitivity_level_to_label_string(i);
         spaghetti_detection_level_list->Append(level_option);
@@ -639,39 +649,39 @@ wxBoxSizer* PrintOptionsDialog::create_settings_group(wxWindow* parent)
     line_sizer->Add(FromDIP(30), 0, 0, 0);
     line_sizer->Add(text_spaghetti_detection_caption1, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(5));
     line_sizer->Add( spaghetti_detection_level_list, 0, wxEXPAND|wxALL, FromDIP(5) );
-    sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
+    ai_refine_sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
 
-    line1 = new StaticLine(parent, false);
+   /* line1 = new StaticLine(parent, false);
     line1->SetLineColour(STATIC_BOX_LINE_COL);
-    sizer->Add(line1, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
-    spaghetti_bottom_space = sizer->Add(0, 0, 0, wxTOP, FromDIP(12));
+    sizer->Add(line1, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));*/
+    spaghetti_bottom_space = ai_refine_sizer->Add(0, 0, 0, wxTOP, FromDIP(12));
 
     //purge chute pile-up detection
     line_sizer               = new wxBoxSizer(wxHORIZONTAL);
-    m_cb_purgechutepileup_detection = new CheckBox(parent);
-    text_purgechutepileup_detection = new Label(parent, _L("Purge Chute Pile-Up Detection"));
+    m_cb_purgechutepileup_detection = new CheckBox(ai_refine_panel);
+    text_purgechutepileup_detection = new Label(ai_refine_panel, _L("Purge Chute Pile-Up Detection"));
     text_purgechutepileup_detection->SetFont(Label::Body_14);
     line_sizer->Add(FromDIP(5), 0, 0, 0);
     line_sizer->Add(m_cb_purgechutepileup_detection, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(2));
     line_sizer->Add(text_purgechutepileup_detection, 1, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(2));
-    sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
+    ai_refine_sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
 
     line_sizer                        = new wxBoxSizer(wxHORIZONTAL);
-    text_purgechutepileup_detection_caption0 = new Label(parent, _L("Monitor if the waste is piled up in the purge chute."));
+    text_purgechutepileup_detection_caption0 = new Label(ai_refine_panel, _L("Monitor if the waste is piled up in the purge chute."));
     text_purgechutepileup_detection_caption0->SetFont(Label::Body_12);
     text_purgechutepileup_detection_caption0->SetForegroundColour(STATIC_TEXT_CAPTION_COL);
     text_purgechutepileup_detection_caption0->Wrap(-1);
     line_sizer->Add(FromDIP(30), 0, 0, 0);
     line_sizer->Add(text_purgechutepileup_detection_caption0, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(5));
-    sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
+    ai_refine_sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
 
     line_sizer                        = new wxBoxSizer(wxHORIZONTAL);
-    text_purgechutepileup_detection_caption1 = new Label(parent, _L("Pausing Sensitivity:"));
+    text_purgechutepileup_detection_caption1 = new Label(ai_refine_panel, _L("Pausing Sensitivity:"));
     text_purgechutepileup_detection_caption1->SetFont(Label::Body_12);
     text_purgechutepileup_detection_caption1->SetForegroundColour(STATIC_TEXT_CAPTION_COL);
     text_purgechutepileup_detection_caption1->Wrap(-1);
 
-    purgechutepileup_detection_level_list = new ComboBox(parent, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(100), -1), 0, NULL, wxCB_READONLY);
+    purgechutepileup_detection_level_list = new ComboBox(ai_refine_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(100), -1), 0, NULL, wxCB_READONLY);
     for (auto i = AiMonitorSensitivityLevel::LOW; i < LEVELS_NUM; i = (AiMonitorSensitivityLevel) (i + 1)) {
         wxString level_option = sensitivity_level_to_label_string(i);
         purgechutepileup_detection_level_list->Append(level_option);
@@ -681,37 +691,38 @@ wxBoxSizer* PrintOptionsDialog::create_settings_group(wxWindow* parent)
     line_sizer->Add(FromDIP(30), 0, 0, 0);
     line_sizer->Add(text_purgechutepileup_detection_caption1, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(5));
     line_sizer->Add(purgechutepileup_detection_level_list, 0, wxEXPAND | wxALL, FromDIP(5));
-    sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
-    purgechutepileup_bottom_space = sizer->Add(0, 0, 0, wxTOP, FromDIP(12));
+    ai_refine_sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
+    purgechutepileup_bottom_space = ai_refine_sizer->Add(0, 0, 0, wxTOP, FromDIP(12));
 
 
     //nozzle clumping detection
     line_sizer                      = new wxBoxSizer(wxHORIZONTAL);
-    m_cb_nozzleclumping_detection   = new CheckBox(parent);
-    text_nozzleclumping_detection   = new Label(parent, _L("Nozzle Clumping Detection"));
+    m_cb_nozzleclumping_detection = new CheckBox(ai_refine_panel);
+    text_nozzleclumping_detection = new Label(ai_refine_panel, _L("Nozzle Clumping Detection"));
     text_nozzleclumping_detection->SetFont(Label::Body_14);
     line_sizer->Add(FromDIP(5), 0, 0, 0);
     line_sizer->Add(m_cb_nozzleclumping_detection, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(2));
     line_sizer->Add(text_nozzleclumping_detection, 1, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(2));
    /* sizer->Add(0, 0, 0, wxTOP, FromDIP(10));*/
-    sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
+    ai_refine_sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
 
     line_sizer                               = new wxBoxSizer(wxHORIZONTAL);
-    text_nozzleclumping_detection_caption0 = new Label(parent, _L("Check if the nozzle is clumping by filaments or other foreign objects."));
+    text_nozzleclumping_detection_caption0 = new Label(ai_refine_panel, _L("Check if the nozzle is clumping by filaments or other foreign objects."));
     text_nozzleclumping_detection_caption0->SetFont(Label::Body_12);
     text_nozzleclumping_detection_caption0->SetForegroundColour(STATIC_TEXT_CAPTION_COL);
     text_nozzleclumping_detection_caption0->Wrap(-1);
     line_sizer->Add(FromDIP(30), 0, 0, 0);
     line_sizer->Add(text_nozzleclumping_detection_caption0, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(5));
-    sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
+    ai_refine_sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
+
 
     line_sizer                             = new wxBoxSizer(wxHORIZONTAL);
-    text_nozzleclumping_detection_caption1 = new Label(parent, _L("Pausing Sensitivity:"));
+    text_nozzleclumping_detection_caption1 = new Label(ai_refine_panel, _L("Pausing Sensitivity:"));
     text_nozzleclumping_detection_caption1->SetFont(Label::Body_12);
     text_nozzleclumping_detection_caption1->SetForegroundColour(STATIC_TEXT_CAPTION_COL);
     text_nozzleclumping_detection_caption1->Wrap(-1);
 
-    nozzleclumping_detection_level_list = new ComboBox(parent, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(100), -1), 0, NULL, wxCB_READONLY);
+    nozzleclumping_detection_level_list = new ComboBox(ai_refine_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(100), -1), 0, NULL, wxCB_READONLY);
     for (auto i = AiMonitorSensitivityLevel::LOW; i < LEVELS_NUM; i = (AiMonitorSensitivityLevel) (i + 1)) {
         wxString level_option = sensitivity_level_to_label_string(i);
         nozzleclumping_detection_level_list->Append(level_option);
@@ -721,37 +732,37 @@ wxBoxSizer* PrintOptionsDialog::create_settings_group(wxWindow* parent)
     line_sizer->Add(FromDIP(30), 0, 0, 0);
     line_sizer->Add(text_nozzleclumping_detection_caption1, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(5));
     line_sizer->Add(nozzleclumping_detection_level_list, 0, wxEXPAND | wxALL, FromDIP(5));
-    sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
-    nozzleclumping_bottom_space = sizer->Add(0, 0, 0, wxTOP, FromDIP(12));
+    ai_refine_sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
+    nozzleclumping_bottom_space = ai_refine_sizer->Add(0, 0, 0, wxTOP, FromDIP(12));
 
 
     //air printing detection
     line_sizer                      = new wxBoxSizer(wxHORIZONTAL);
-    m_cb_airprinting_detection      = new CheckBox(parent);
-    text_airprinting_detection      = new Label(parent, _L("Air Printing Detection"));
+    m_cb_airprinting_detection = new CheckBox(ai_refine_panel);
+    text_airprinting_detection = new Label(ai_refine_panel, _L("Air Printing Detection"));
     text_airprinting_detection->SetFont(Label::Body_14);
     line_sizer->Add(FromDIP(5), 0, 0, 0);
     line_sizer->Add(m_cb_airprinting_detection, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(2));
     line_sizer->Add(text_airprinting_detection, 1, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(2));
    /* sizer->Add(0, 0, 0, wxTOP, FromDIP(12));*/
-    sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
+    ai_refine_sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
 
     line_sizer                               = new wxBoxSizer(wxHORIZONTAL);
-    text_airprinting_detection_caption0 = new Label(parent, _L("Detects air printing caused by nozzle clogging or filament grinding."));
+    text_airprinting_detection_caption0 = new Label(ai_refine_panel, _L("Detects air printing caused by nozzle clogging or filament grinding."));
     text_airprinting_detection_caption0->SetFont(Label::Body_12);
     text_airprinting_detection_caption0->SetForegroundColour(STATIC_TEXT_CAPTION_COL);
     text_airprinting_detection_caption0->Wrap(-1);
     line_sizer->Add(FromDIP(30), 0, 0, 0);
     line_sizer->Add(text_airprinting_detection_caption0, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(5));
-    sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
+    ai_refine_sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
 
     line_sizer                               = new wxBoxSizer(wxHORIZONTAL);
-    text_airprinting_detection_caption1 = new Label(parent, _L("Pausing Sensitivity:"));
+    text_airprinting_detection_caption1 = new Label(ai_refine_panel, _L("Pausing Sensitivity:"));
     text_airprinting_detection_caption1->SetFont(Label::Body_12);
     text_airprinting_detection_caption1->SetForegroundColour(STATIC_TEXT_CAPTION_COL);
     text_airprinting_detection_caption1->Wrap(-1);
 
-    airprinting_detection_level_list = new ComboBox(parent, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(100), -1), 0, NULL, wxCB_READONLY);
+    airprinting_detection_level_list = new ComboBox(ai_refine_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(100), -1), 0, NULL, wxCB_READONLY);
     for (auto i = AiMonitorSensitivityLevel::LOW; i < LEVELS_NUM; i = (AiMonitorSensitivityLevel) (i + 1)) {
         wxString level_option = sensitivity_level_to_label_string(i);
         airprinting_detection_level_list->Append(level_option);
@@ -761,12 +772,17 @@ wxBoxSizer* PrintOptionsDialog::create_settings_group(wxWindow* parent)
     line_sizer->Add(FromDIP(30), 0, 0, 0);
     line_sizer->Add(text_airprinting_detection_caption1, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(5));
     line_sizer->Add(airprinting_detection_level_list, 0, wxEXPAND | wxALL, FromDIP(5));
-    sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
-    airprinting_bottom_space = sizer->Add(0, 0, 0, wxTOP, FromDIP(12));
+    ai_refine_sizer->Add(line_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
+    airprinting_bottom_space = ai_refine_sizer->Add(0, 0, 0, wxTOP, FromDIP(12));
 
-    //m_line = new wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(-1, FromDIP(1)), wxTAB_TRAVERSAL);
-    //m_line->SetBackgroundColour(wxColour(166, 169, 170));
-    //sizer->Add(m_line, 0, wxEXPAND | wxALL, FromDIP(20));
+      ai_refine_panel->SetSizer(ai_refine_sizer);
+    sizer->Add(ai_refine_panel, 0, wxEXPAND | wxRIGHT, FromDIP(18));
+
+    //    sizer->Add(line1, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(18));
+
+    m_line = new wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(FromDIP(400), FromDIP(1)));
+    m_line->SetBackgroundColour(wxColour("#A6A9AA"));
+    sizer->Add(m_line, 0, wxLEFT | wxBOTTOM, FromDIP(20));
 
     // detection of build plate position
     line_sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -831,7 +847,7 @@ wxBoxSizer* PrintOptionsDialog::create_settings_group(wxWindow* parent)
     line_sizer->Add(FromDIP(5), 0, 0, 0);
 
     line4 = new StaticLine(parent, false);
-    line4->SetLineColour(wxColour(255,255,255));
+    line4->SetLineColour(wxColour("#FFFFFF"));
     sizer->Add(line4, 0, wxEXPAND | wxLEFT | wxRIGHT, FromDIP(20));
     line4->Hide();
     sizer->Add(0, 0, 0, wxTOP, FromDIP(15));
@@ -839,7 +855,7 @@ wxBoxSizer* PrintOptionsDialog::create_settings_group(wxWindow* parent)
     //Open Door Detection
     line_sizer         = new wxBoxSizer(wxHORIZONTAL);
     m_cb_open_door     = new CheckBox(parent);
-    text_open_door     = new Label(parent, _L("Open Door Dectection"));
+    text_open_door     = new Label(parent, _L("Open Door Detection"));
     text_open_door->SetFont(Label::Body_14);
     open_door_switch_board = new SwitchBoard(parent, _L("Notification"), _L("Pause printing"), wxSize(FromDIP(200), FromDIP(26)));
     open_door_switch_board->Disable();
@@ -1068,7 +1084,7 @@ PrinterPartsDialog::PrinterPartsDialog(wxWindow* parent)
 
     /*single nozzle*/
     auto single_line = new wxPanel(single_panel, wxID_ANY, wxDefaultPosition, wxSize(-1, 1), wxTAB_TRAVERSAL);
-    single_line->SetBackgroundColour(wxColour(166, 169, 170));
+    single_line->SetBackgroundColour(wxColour("#A6A9AA"));
 
     //nozzle type
     wxBoxSizer* line_sizer_nozzle_type = new wxBoxSizer(wxHORIZONTAL);
@@ -1124,7 +1140,7 @@ PrinterPartsDialog::PrinterPartsDialog(wxWindow* parent)
 
     m_wiki_link = new Label(single_panel, _L("View wiki"));
     m_wiki_link->SetFont(Label::Body_13);
-    m_wiki_link->SetForegroundColour(wxColour(0, 174, 66));
+    m_wiki_link->SetForegroundColour(wxColour("#4479FB"));
     m_wiki_link->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) { SetCursor(wxCURSOR_HAND); });
     m_wiki_link->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) { SetCursor(wxCURSOR_ARROW); });
     m_wiki_link->Bind(wxEVT_LEFT_DOWN, &PrinterPartsDialog::OnWikiClicked, this);
@@ -1149,7 +1165,7 @@ PrinterPartsDialog::PrinterPartsDialog(wxWindow* parent)
 
     /*multiple nozzle*/
     auto multi_line = new wxPanel(multiple_panel, wxID_ANY, wxDefaultPosition, wxSize(-1, 1), wxTAB_TRAVERSAL);
-    multi_line->SetBackgroundColour(wxColour(166, 169, 170));
+    multi_line->SetBackgroundColour(wxColour("#A6A9AA"));
 
     /*left*/
     auto leftTitle = new Label(multiple_panel, _L("Left Nozzle"));
@@ -1225,7 +1241,7 @@ PrinterPartsDialog::PrinterPartsDialog(wxWindow* parent)
 
     multiple_wiki_link = new Label(multiple_panel, _L("View wiki"));
     multiple_wiki_link->SetFont(Label::Body_13);
-    multiple_wiki_link->SetForegroundColour(wxColour(68, 121, 251));
+    multiple_wiki_link->SetForegroundColour(wxColour("#4479FB"));
     multiple_wiki_link->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) { SetCursor(wxCURSOR_HAND); });
     multiple_wiki_link->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) { SetCursor(wxCURSOR_ARROW); });
     multiple_wiki_link->Bind(wxEVT_LEFT_DOWN, &PrinterPartsDialog::OnWikiClicked, this);
@@ -1273,14 +1289,14 @@ bool PrinterPartsDialog::Show(bool show)
 
         /*disable editing*/
         EnableEditing(false);
-        assert(DeviceManager::get_printer_can_set_nozzle(obj->printer_type) == false);/*editing is not supported*/
+        assert(DevPrinterConfigUtil::get_printer_can_set_nozzle(obj->printer_type) == false);/*editing is not supported*/
 
-        if (obj->m_extder_data.extders.size() <= 1) {
+        if (obj->GetExtderSystem()->GetTotalExtderSize() <= 1) {
             single_panel->Show();
             multiple_panel->Hide();
 
-            auto type     = obj->m_extder_data.extders[MAIN_NOZZLE_ID].current_nozzle_type;
-            auto diameter = obj->m_extder_data.extders[MAIN_NOZZLE_ID].current_nozzle_diameter;
+            auto type     = obj->GetExtderSystem()->GetNozzleType(MAIN_EXTRUDER_ID);
+            auto diameter = obj->GetExtderSystem()->GetNozzleDiameter(MAIN_EXTRUDER_ID);
             nozzle_type_checkbox->SetValue(GetString(type));
             nozzle_diameter_checkbox->SetValue(GetString(diameter));
 
@@ -1289,7 +1305,7 @@ bool PrinterPartsDialog::Show(bool show)
             nozzle_flow_type_checkbox->Show(obj->is_nozzle_flow_type_supported());
             if (obj->is_nozzle_flow_type_supported())
             {
-                auto flow_type = obj->m_extder_data.extders[MAIN_NOZZLE_ID].current_nozzle_flow_type;
+                auto flow_type = obj->GetExtderSystem()->GetNozzleFlowType(MAIN_EXTRUDER_ID);
                 nozzle_flow_type_checkbox->SetValue(GetString(flow_type));
             }
         } else {
@@ -1297,17 +1313,17 @@ bool PrinterPartsDialog::Show(bool show)
             multiple_panel->Show();
 
             //left
-            auto type      = obj->m_extder_data.extders[DEPUTY_NOZZLE_ID].current_nozzle_type;
-            auto diameter  = obj->m_extder_data.extders[DEPUTY_NOZZLE_ID].current_nozzle_diameter;
-            auto flow_type = obj->m_extder_data.extders[DEPUTY_NOZZLE_ID].current_nozzle_flow_type;
+            auto type      = obj->GetExtderSystem()->GetNozzleType(DEPUTY_EXTRUDER_ID);
+            auto diameter  = obj->GetExtderSystem()->GetNozzleDiameter(DEPUTY_EXTRUDER_ID);
+            auto flow_type = obj->GetExtderSystem()->GetNozzleFlowType(DEPUTY_EXTRUDER_ID);
             multiple_left_nozzle_type_checkbox->SetValue(GetString(type));
             multiple_left_nozzle_diameter_checkbox->SetValue(GetString(diameter));
             multiple_left_nozzle_flow_checkbox->SetValue(GetString(flow_type));
 
             //right
-            type      = obj->m_extder_data.extders[MAIN_NOZZLE_ID].current_nozzle_type;
-            diameter  = obj->m_extder_data.extders[MAIN_NOZZLE_ID].current_nozzle_diameter;
-            flow_type = obj->m_extder_data.extders[MAIN_NOZZLE_ID].current_nozzle_flow_type;
+            type      = obj->GetExtderSystem()->GetNozzleType(MAIN_EXTRUDER_ID);
+            diameter  = obj->GetExtderSystem()->GetNozzleDiameter(MAIN_EXTRUDER_ID);
+            flow_type = obj->GetExtderSystem()->GetNozzleFlowType(MAIN_EXTRUDER_ID);
             multiple_right_nozzle_type_checkbox->SetValue(GetString(type));
             multiple_right_nozzle_diameter_checkbox->SetValue(GetString(diameter));
             multiple_right_nozzle_flow_checkbox->SetValue(GetString(flow_type));

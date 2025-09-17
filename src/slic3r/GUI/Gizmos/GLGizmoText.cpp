@@ -1187,7 +1187,8 @@ void GLGizmoText::draw_model_type(int caption_width)
         ObjectList *        obj_list = app.obj_list();
         wxDataViewItemArray sel      = obj_list->reorder_volumes_and_get_selection(obj_list->get_selected_obj_idx(),
                                                                               [volume = text_volume](const ModelVolume *vol) { return vol == volume; });
-        if (!sel.IsEmpty()) obj_list->select_item(sel.front());
+        if (!sel.IsEmpty())
+            obj_list->select_item(sel.front());
 
         // NOTE: on linux, function reorder_volumes_and_get_selection call GLCanvas3D::reload_scene(refresh_immediately = false)
         // which discard m_volume pointer and set it to nullptr also selection is cleared so gizmo is automaticaly closed
@@ -1282,8 +1283,20 @@ void GLGizmoText::draw_rotation(int caption_size, int slider_width, int drag_lef
     ImGui::PushItemWidth(1.5 * slider_icon_width);
     bool set_rotate_angle_flag = false;
     if (ImGui::QDTDragFloat("##angle_input", &m_rotate_angle, 0.05f, -180.f, 180.f, "%.2f")) {
-        set_rotate_angle_flag = true;
-        update_style_angle(text_volume, angle_degree, m_rotate_angle);
+        bool need_deal = false;
+        if (abs(m_rotate_angle - 180.f) < 0.01f || abs(m_rotate_angle + 180) < 0.01f) {
+            if (abs(m_rotate_angle - m_rotate_angle_min_max) > 0.01f) {
+                m_rotate_angle_min_max = m_rotate_angle;
+                need_deal              = true;
+            }
+        } else {
+            need_deal              = true;
+            m_rotate_angle_min_max = 0.f;
+        }
+        if (need_deal) {
+            set_rotate_angle_flag = true;
+            update_style_angle(text_volume, angle_degree, m_rotate_angle);
+        }
     }
 
     bool is_stop_sliding = m_imgui->get_last_slider_status().deactivated_after_edit;
@@ -1294,6 +1307,7 @@ void GLGizmoText::draw_rotation(int caption_size, int slider_width, int drag_lef
             const Selection &selection = m_parent.get_selection();
             const GLVolume * gl_volume = get_selected_gl_volume(selection);
             m_text_tran_in_object.set_from_transform(gl_volume->get_volume_transformation().get_matrix()); // on_stop_dragging//rotate//set m_text_tran_in_object
+            update_trafo_matrices();
             volume_transformation_changed();
         }
     }
@@ -1478,12 +1492,13 @@ bool GLGizmoText::on_shortcut_key() {
                     instance_bb                  = mo->instance_bounding_box(instance_index);
                     // Vec3d volume_size            = volume->mesh().bounding_box().size();
                     // Translate the new modifier to be pickable: move to the left front corner of the instance's bounding box, lift to print bed.
-                    Vec3d offset_tr(0, -instance_bb.size().y() / 2.f  - 2.f, -instance_bb.size().z() / 2.f); // lay on bed
+                    Vec3d       offset_tr(0, -instance_bb.size().y() / 2.f - 2.f, -instance_bb.size().z() / 2.f + 0.015f); // lay on bed// 0.015f is from SAFE_SURFACE_OFFSET
                     auto  mo_tran = mo->instances[instance_index]->get_transformation();
+                    Transform3d inv_tr      = mo_tran.get_matrix_no_offset().inverse();
 
                     m_text_tran_in_object.reset();
-                    m_text_tran_in_object.set_offset(offset_tr);
-                    m_text_position_in_world = mo_tran.get_matrix() * offset_tr;
+                    m_text_tran_in_object.set_offset(inv_tr * offset_tr);
+                    m_text_position_in_world = (mo_tran * m_text_tran_in_object).get_offset();
                     m_text_normal_in_world   = Vec3f::UnitZ();
                     m_need_update_text       = true;
                     m_volume_idx             = -1;
@@ -1561,8 +1576,14 @@ void GLGizmoText::load_init_text(bool first_open_text)
                 if (m_last_text_mv == model_volume && !m_is_serializing) {
                     return;
                 }
+                if (m_last_text_mv != model_volume) {
+                    first_open_text = true;
+                }
                 m_last_text_mv = model_volume;
                 m_is_direct_create_text = is_only_text_case();
+                if (first_open_text) {
+                    m_c->update(get_requirements());
+                }
                 if (!m_is_serializing && plater && first_open_text && !is_old_text_info(model_volume->get_text_info())) {
                     plater->take_snapshot("enter Text");
                 }
@@ -1670,14 +1691,14 @@ void GLGizmoText::load_init_text(bool first_open_text)
                     Vec3f closest_normal;
                     Vec3f closest_pt;
                     float min_dist     = 1e6;
-                    Vec3f local_center = m_text_tran_in_object.get_offset().cast<float>(); //(m_text_tran_in_object.get_matrix() * box.center()).cast<float>();
+                    Vec3f local_center = m_text_tran_in_world.get_offset().cast<float>(); //(m_text_tran_in_object.get_matrix() * box.center()).cast<float>();
                     for (int i = 0; i < mo->volumes.size(); i++) {
                         auto mv = mo->volumes[i];
                         if (mv == model_volume || !filter_model_volume(mv)) {
                             continue;
                         }
                         TriangleMesh text_attach_mesh(mv->mesh());
-                        text_attach_mesh.transform(mv->get_matrix());
+                        text_attach_mesh.transform(m_model_object_in_world_tran.get_matrix() * mv->get_matrix());
                         MeshRaycaster temp_ray_caster(text_attach_mesh);
                         Vec3f         temp_normal;
                         Vec3f         temp_closest_pt = temp_ray_caster.get_closest_point(local_center, &temp_normal);
@@ -1696,13 +1717,16 @@ void GLGizmoText::load_init_text(bool first_open_text)
                         if (m_trafo_matrices.empty()) {
                             update_trafo_matrices();
                         }
+                        Geometry::Transformation temp__tran(m_trafo_matrices[m_rr.mesh_id]);
+                        m_rr.normal     = temp__tran.get_matrix_no_offset().cast<float>().inverse() * closest_normal;
+                        m_rr.hit        = temp__tran.get_matrix().cast<float>().inverse() * closest_pt;
                         auto         mv = mo->volumes[m_rr.mesh_id];
                         TriangleMesh text_attach_mesh(mv->mesh());
                         text_attach_mesh.transform(mv->get_matrix());
                         MeshRaycaster temp_ray_caster(text_attach_mesh);
 
-                        m_fix_text_position_in_world = m_model_object_in_world_tran.get_matrix() * closest_pt.cast<double>();
-                        m_fix_text_normal_in_world   = (mi->get_transformation().get_matrix_no_offset().cast<float>() * closest_normal).normalized();
+                        m_fix_text_position_in_world =  closest_pt.cast<double>();
+                        m_fix_text_normal_in_world   =  closest_normal;
                         if (is_old_text_info(text_info)) {
                             int   face_id;
                             Vec3f direction = m_text_tran_in_world.get_matrix().linear().col(2).cast<float>();
@@ -1952,6 +1976,7 @@ void GLGizmoText::on_stop_dragging()
     m_need_update_tran = true;//dragging
     if (m_hover_id == m_move_cube_id) {
         m_parent.do_move("");//replace by wxGetApp() .plater()->take_snapshot("Modify Text"); in EmbossJob.cpp
+        update_trafo_matrices();
         m_need_update_text = true;
     } else {
         m_rotate_gizmo.stop_dragging();
@@ -2297,8 +2322,21 @@ void GLGizmoText::on_render_input_window(float x, float y, float bottom_limit)
 
     ImGui::SameLine(drag_left_width);
     ImGui::PushItemWidth(1.5 * slider_icon_width);
-    if (ImGui::QDTDragFloat("##text_gap_input", &m_text_gap, 0.05f, -10.f, 100.f, "%.2f"))
-        m_need_update_text = true;
+    if (ImGui::QDTDragFloat("##text_gap_input", &m_text_gap, 0.05f, -10.f, 100.f, "%.2f")) {
+        bool need_deal = false;
+        if (abs(m_text_gap_min_max - 100.f) < 0.01f || abs(m_text_gap_min_max + 10) < 0.01f) {
+            if (abs(m_text_gap - m_text_gap_min_max) > 0.01f) {
+                m_text_gap_min_max = m_text_gap;
+                need_deal          = true;
+            }
+        } else {
+            need_deal              = true;
+            m_text_gap_min_max = 0.f;
+        }
+        if (need_deal) {
+            m_need_update_text = true;
+        }
+    }
 
     draw_rotation(caption_size, slider_width, drag_left_width, slider_icon_width);
 #if QDT_RELEASE_TO_PUBLIC
@@ -2333,6 +2371,10 @@ void GLGizmoText::on_render_input_window(float x, float y, float bottom_limit)
     }
     if (m_show_text_normal_reset_tip) {
         m_imgui->warning_text(_L("Warning:text normal has been reset."));
+    }
+    if (m_font_version == NEW_FONT_BEGIN_VERSION) {
+        m_imgui->warning_text_wrapped(_L("Warning:current text spacing is not very reasonable. If you continue editing, a more reasonable text spacing will be generated.")
+                                          ,full_width);
     }
    /* if (m_show_warning_regenerated && m_font_version != CUR_FONT_VERSION) {
         m_imgui->warning_text_wrapped(_L("Warning:Because current text does indeed use surround algorithm,if continue to edit, text has to regenerated according to new location."),
@@ -2888,26 +2930,14 @@ void GLGizmoText::reset_text_info()
 void GLGizmoText::update_text_pos_normal() {
     if (m_rr.mesh_id < 0) { return; }
     if (m_rr.normal.norm() < 0.1) { return; }
-    const Selection &selection = m_parent.get_selection();
-    auto mo                    = selection.get_model()->objects[m_object_idx];
-    if (mo == nullptr) {
-        BOOST_LOG_TRIVIAL(info) << boost::format("Text: selected object is null");
-        return;
-    }
-    const ModelInstance *mi        = mo->instances[selection.get_instance_idx()];
-
-    std::vector<Geometry::Transformation> w_matrices;
-    std::vector<Geometry::Transformation> mv_trans;
-    for (ModelVolume *mv : mo->volumes) {
-         w_matrices.emplace_back(Geometry::Transformation(mi->get_transformation().get_matrix() * mv->get_matrix()));
-         mv_trans.emplace_back(Geometry::Transformation(mv->get_matrix()));
-    }
+    if (m_rr.mesh_id >= m_trafo_matrices.size()) { return; }
 #ifdef DEBUG_TEXT_VALUE
     m_rr.hit    = Vec3f(-0.58, -1.70, -12.8);
     m_rr.normal = Vec3f(0,0,-1);//just rotate cube
 #endif
-    m_text_position_in_world  = w_matrices[m_rr.mesh_id].get_matrix() * m_rr.hit.cast<double>();
-    m_text_normal_in_world    = (w_matrices[m_rr.mesh_id].get_matrix_no_offset().cast<float>() * m_rr.normal).normalized();
+    Geometry::Transformation cur_tran(m_trafo_matrices[m_rr.mesh_id]);
+    m_text_position_in_world = cur_tran.get_matrix() * m_rr.hit.cast<double>();
+    m_text_normal_in_world   = (cur_tran.get_matrix_no_offset().cast<float>() * m_rr.normal).normalized();
 }
 
 bool GLGizmoText::filter_model_volume(ModelVolume *mv) {
@@ -3103,7 +3133,7 @@ bool GLGizmoText::update_raycast_cache(const Vec2d &mouse_position, const Camera
     if (m_rr.mouse_position == mouse_position) {
         return false;
     }
-
+    if (m_object_idx < 0) { return false; }
     Vec3f  normal                       = Vec3f::Zero();
     Vec3f  hit                          = Vec3f::Zero();
     size_t facet                        = 0;
@@ -3112,10 +3142,15 @@ bool GLGizmoText::update_raycast_cache(const Vec2d &mouse_position, const Camera
     double closest_hit_squared_distance = std::numeric_limits<double>::max();
     int    closest_hit_mesh_id          = -1;
 
+    const Selection &selection = m_parent.get_selection();
+    auto             mo        = selection.get_model()->objects[m_object_idx];
     // Cast a ray on all meshes, pick the closest hit and save it for the respective mesh
     for (int mesh_id = 0; mesh_id < int(trafo_matrices.size()); ++mesh_id) {
         if (exclude_last && mesh_id == int(trafo_matrices.size()) - 1)
             continue;
+        if (!filter_model_volume(mo->volumes[mesh_id])) {
+            continue;
+        }
         if (mesh_id < m_c->raycaster()->raycasters().size()&& m_c->raycaster()->raycasters()[mesh_id]->unproject_on_mesh(mouse_position, trafo_matrices[mesh_id], camera, hit, normal,
                                                                                   m_c->object_clipper()->get_clipping_plane(),
                                                                        &facet)) {
@@ -3429,7 +3464,7 @@ void init_face_names(CurFacenames &face_names)
     if (hash == 0) hash = 1;
     // check if it is same as last time
     if (face_names.hash == hash) {
-        if (face_names.faces_names.size() == 0) {//FIX by bbs
+        if (face_names.faces_names.size() == 0) {//FIX by qds
             face_names.faces_names.clear();
             face_names.faces_names.reserve(face_names.faces.size());
             for (size_t i = 0; i < face_names.faces.size(); i++) {
@@ -3739,9 +3774,9 @@ EmbossShape &TextDataBase::create_shape()
     };
     bool support_backup_fonts = GUI::wxGetApp().app_config->get_bool("support_backup_fonts");
     if (support_backup_fonts) {
-        text2vshapes(shape, m_font_file, text_w, fp, was_canceled, ft_fn);
+        text2vshapes(shape, m_font_file, text_w, fp, shape.scale, was_canceled, ft_fn);
     } else {
-        text2vshapes(shape, m_font_file, text_w, fp, was_canceled);
+        text2vshapes(shape, m_font_file, text_w, fp, shape.scale, was_canceled);
     }
     return shape;
 }

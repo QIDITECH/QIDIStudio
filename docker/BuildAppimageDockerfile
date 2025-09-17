@@ -1,0 +1,19 @@
+ARG VERSION="studio_dep_22"
+FROM ${VERSION}:1.0 AS builder
+
+COPY ./ /QIDIStudio
+
+WORKDIR /QIDIStudio
+
+RUN mkdir -p /QIDIStudio/deps/build
+
+RUN mv /destdir /QIDIStudio/deps/build/
+
+RUN ./BuildLinux.sh -s
+
+ENV container=podman
+RUN ./BuildLinux.sh -i
+
+FROM scratch AS export-stage
+
+COPY --from=builder /QIDIStudio/build/QIDIStudio_ubu64.AppImage /
