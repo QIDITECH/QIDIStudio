@@ -26,7 +26,7 @@
 		<div id="LoginBtn" class="TextS1" style="font-weight: 700;"><span class="trans" tid="t26">login</span>/<span class="trans" tid="t27">register</span></div>
 	</div>
 		
-	<div id="Login2">
+	<div id="Login2" tabindex="0">
 		<div>
 			<img id="UserAvatarIcon" src="img/left_home_account.svg" onerror="this.onerror=null;this.src='img/left_home_account.svg';" />
 		</div>
@@ -58,6 +58,10 @@
 
 	<div id="BtnArea">
 		<div class="TopContainer">
+			<div menu="search" class="BtnItem BtnItemSelected" style="visibility: hidden; height: 0;" onClick="GotoMenu('search')">
+				<div class="BtnIcon "><img class="LeftIcon" src="img/left_library.svg" /></div>
+				<div class="BtnText trans" >Search</div>
+			</div>
 			<div menu="home" class="BtnItem BtnItemSelected" onClick="GotoMenu('home')">
 				<div class="BtnIcon "><img class="LeftIcon" src="img/left_library.svg" /></div>
 				<div class="BtnText trans" tid="t114">Library</div>

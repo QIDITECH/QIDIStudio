@@ -11,7 +11,7 @@
     "printer_settings_id": "Qidi",
     "bed_exclude_area": ["25x245","25x240","115x240","115x245","25x245","25x245","25x245","25x245","208x245","208x240","245x240","245x245"],
     "change_filament_gcode": "G1 E{retraction_distances_when_cut[previous_extruder]} F[old_filament_e_feedrate]",
-    "default_filament_profile": ["QIDI PLA Rapido@Qidi Q1 Pro 0.4 nozzle"],
+    "default_filament_profile": ["QIDI PLA Rapido @Qidi Q1 Pro 0.4 nozzle"],
     "extruder_clearance_height_to_lid": "120",
     "extruder_clearance_height_to_rod": "40",
     "extruder_clearance_max_radius": "70",

@@ -25,7 +25,14 @@
         "High Flow":{
             "0.4":[
                 "QIDI PLA-CF",
-                "QIDI PETG-CF"
+                "QIDI PETG-CF",
+                "QIDI ASA-CF",
+                "QIDI PAHT-CF",
+                "QIDI PET-CF",
+                "QIDI PA6-CF",
+                "QIDI PA6-GF",
+                "QIDI PPA-CF",
+                "QIDI PPS-CF"
             ],
             "0.6":[],
             "0.8":[]

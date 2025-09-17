@@ -1,0 +1,11 @@
+{
+    "type": "filament",
+	"filament_id": "GFG99",
+    "setting_id": "GFSG99",
+    "name": "QIDI PETG Translucent @Qidi X-Plus 3 0.8 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PETG Translucent@X3",
+    "nozzle_temperature": ["240"],
+	"compatible_printers": ["X-Plus 3 0.8 nozzle"]
+}

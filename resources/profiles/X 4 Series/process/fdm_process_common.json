@@ -160,6 +160,7 @@
     "xy_hole_compensation": "0",
     "z_direction_outwall_speed_continuous": "0",
     "enable_circle_compensation": "0",
+    "enable_wrapping_detection": "0",
     "circle_compensation_manual_offset": "0",
     "infill_shift_step": "0.4",
     "prime_tower_enable_framework": "0",
@@ -167,5 +168,7 @@
     "prime_tower_lift_height": "-1",
     "prime_tower_max_speed": "90",
     "prime_tower_flat_ironing":"0",
+    "wrapping_detection_gcode": "",
+    "wrapping_exclude_area": [],
     "compatible_printers": []
 }

@@ -1,0 +1,13 @@
+{
+    "type": "filament",
+	"filament_id": "GFG99",
+    "setting_id": "GFSG99",
+    "name": "QIDI PETG Translucent @Qidi X-Smart 3 0.4 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PETG Translucent@X3",
+    "additional_cooling_fan_speed_unseal": ["0"],
+    "additional_cooling_fan_speed": ["0"],
+    "pressure_advance": ["0.048"],
+	"compatible_printers": ["X-Smart 3 0.4 nozzle"]
+}

@@ -33,6 +33,46 @@ msgstr ""
 msgid "The filament model is unknown. A random filament preset will be used."
 msgstr ""
 
+msgid "right"
+msgstr ""
+
+msgid "left"
+msgstr ""
+
+msgid "right extruder"
+msgstr ""
+
+msgid "left extruder"
+msgstr ""
+
+msgid "extruder"
+msgstr ""
+
+msgid "TPU is not supported by AMS."
+msgstr "AMS nepodporuje TPU."
+
+msgid "Damp PVA will become flexible and get stuck inside AMS,please take care to dry it before use."
+msgstr "Vlhké PVA se stane pružné a může se zaseknout uvnitř AMS, prosím, pečlivě je usušte před použitím."
+
+msgid "Damp PVA is flexible and may get stuck in extruder. Dry it before use."
+msgstr ""
+
+msgid "The rough surface of PLA Glow can accelerate wear on the AMS system, particularly on the internal components of the AMS Lite."
+msgstr ""
+
+msgid "CF/GF filaments are hard and brittle, It's easy to break or get stuck in AMS, please use with caution."
+msgstr "Filamenty CF/GF jsou tvrdé a křehké, snadno se mohou zlomit nebo zaseknout v AMS, používejte je s opatrností."
+
+msgid "PPS-CF is brittle and could break in bended PTFE tube above Toolhead."
+msgstr ""
+
+msgid "PPA-CF is brittle and could break in bended PTFE tube above Toolhead."
+msgstr ""
+
+#, c-format, boost-format
+msgid "%s is not supported by %s extruder."
+msgstr ""
+
 msgid "Current AMS humidity"
 msgstr ""
 
@@ -1033,6 +1073,9 @@ msgid "Warning:text normal is error."
 msgstr ""
 
 msgid "Warning:text normal has been reset."
+msgstr ""
+
+msgid "Warning:current text spacing is not very reasonable. If you continue editing, a more reasonable text spacing will be generated."
 msgstr ""
 
 msgid "Warning:old matrix has at least two parameters: mirroring, scaling, and rotation. If you continue editing, it may not be correct. Please dragging text or cancel using current pose, save and reedit again."
@@ -2245,18 +2288,6 @@ msgstr "Vícebarevný tisk"
 msgid "Line Type"
 msgstr "Typ Linky"
 
-msgid "More"
-msgstr "Více"
-
-msgid "Open Preferences."
-msgstr "Otevřít Nastavení."
-
-msgid "Open next tip."
-msgstr "Otevřít další tip."
-
-msgid "Open Documentation in web browser."
-msgstr "Otevřít dokumentaci ve webovém prohlížeči."
-
 msgid "Color"
 msgstr "Barva"
 
@@ -2413,24 +2444,6 @@ msgstr ""
 msgid "Init"
 msgstr ""
 
-msgid "Hotend"
-msgstr ""
-
-msgid "Parts"
-msgstr "Part"
-
-msgid "Aux"
-msgstr "Aux"
-
-msgid "Nozzle1"
-msgstr ""
-
-msgid "MC Board"
-msgstr ""
-
-msgid "Heat"
-msgstr ""
-
 msgid "Chamber"
 msgstr ""
 
@@ -2457,7 +2470,32 @@ msgid "Cooling mode is suitable for printing PLA/PETG/TPU materials."
 msgstr ""
 
 msgctxt "air_duct"
-msgid "Right"
+msgid "Right(Aux)"
+msgstr ""
+
+msgctxt "air_duct"
+msgid "Right(Filter)"
+msgstr ""
+
+msgid "Hotend"
+msgstr ""
+
+msgid "Parts"
+msgstr "Part"
+
+msgid "Aux"
+msgstr "Aux"
+
+msgid "Nozzle1"
+msgstr ""
+
+msgid "MC Board"
+msgstr ""
+
+msgid "Heat"
+msgstr ""
+
+msgid "Fan"
 msgstr ""
 
 msgid "Idling..."
@@ -3283,6 +3321,11 @@ msgstr ""
 "Příliš malá maximální objemová rychlost.\n"
 "Obnovit na 0,5"
 
+msgid ""
+"Should not large than 100%.\n"
+"Reset to defualt"
+msgstr ""
+
 #, c-format, boost-format
 msgid "Current chamber temperature is higher than the material's safe temperature,it may result in material softening and clogging.The maximum safe temperature for the material is %d"
 msgstr ""
@@ -3394,7 +3437,7 @@ msgid ""
 "Reset to 50%% of skin depth"
 msgstr ""
 
-msgid "Spiral mode only works when wall loops is 1, support is disabled, top shell layers is 0, sparse infill density is 0, timelapse type is traditional and smoothing wall speed in z direction is false."
+msgid "Spiral mode only works when wall loops is 1, support is disabled, clumping detection by probing is disabled, top shell layers is 0, sparse infill density is 0, timelapse type is traditional and smoothing wall speed in z direction is false."
 msgstr ""
 
 msgid " But machines with I3 structure will not generate timelapse videos."
@@ -3580,27 +3623,14 @@ msgstr ""
 msgid "Cutting Module Offset Calibration"
 msgstr ""
 
-msgid "left"
+msgid "Measuring Surface"
 msgstr ""
 
-msgid "right"
-msgstr ""
-
-#, c-format, boost-format
-msgid "%s is not supported by %s extruder."
+msgid "Thermal Preconditioning for first layer optimization"
 msgstr ""
 
 msgid "Unknown"
 msgstr "Neznámý"
-
-msgid "Fatal"
-msgstr "Fatální"
-
-msgid "Serious"
-msgstr "Vážně"
-
-msgid "Common"
-msgstr "Běžný"
 
 msgid "Update successful."
 msgstr "Aktualizace úspěšná."
@@ -3664,22 +3694,73 @@ msgstr ""
 msgid "Calibration error"
 msgstr "Chyba kalibrace"
 
-msgid "TPU is not supported by AMS."
-msgstr "AMS nepodporuje TPU."
-
-msgid "Damp PVA will become flexible and get stuck inside AMS,please take care to dry it before use."
-msgstr "Vlhké PVA se stane pružné a může se zaseknout uvnitř AMS, prosím, pečlivě je usušte před použitím."
-
-msgid "The rough surface of PLA Glow can accelerate wear on the AMS system, particularly on the internal components of the AMS Lite."
+msgid "Resume Printing"
 msgstr ""
 
-msgid "CF/GF filaments are hard and brittle, It's easy to break or get stuck in AMS, please use with caution."
-msgstr "Filamenty CF/GF jsou tvrdé a křehké, snadno se mohou zlomit nebo zaseknout v AMS, používejte je s opatrností."
-
-msgid "PPS-CF is brittle and could break in bended PTFE tube above Toolhead."
+msgid "Resume (defects acceptable)"
 msgstr ""
 
-msgid "PPA-CF is brittle and could break in bended PTFE tube above Toolhead."
+msgid "Resume (problem solved)"
+msgstr ""
+
+msgid "Stop Printing"
+msgstr ""
+
+msgid "Check Assistant"
+msgstr ""
+
+msgid "Filament Extruded, Continue"
+msgstr ""
+
+msgid "Not Extruded Yet, Retry"
+msgstr ""
+
+msgid "Finished, Continue"
+msgstr ""
+
+msgid "Load Filament"
+msgstr "Zavézt Filament"
+
+msgid "Filament Loaded, Resume"
+msgstr ""
+
+msgid "View Liveview"
+msgstr ""
+
+msgid "No Reminder Next Time"
+msgstr ""
+
+msgid "Ignore. Don't Remind Next Time"
+msgstr ""
+
+msgid "Ignore this and Resume"
+msgstr ""
+
+msgid "Problem Solved and Resume"
+msgstr ""
+
+msgid "Got it, Turn off the Fire Alarm."
+msgstr ""
+
+msgid "Retry (problem solved)"
+msgstr ""
+
+msgid "Stop Drying"
+msgstr ""
+
+msgid "Cancle"
+msgstr ""
+
+msgid "Done"
+msgstr "Hotovo"
+
+msgid "Retry"
+msgstr "Zkusit znovu"
+
+msgid "Resume"
+msgstr "Pokračovat"
+
+msgid "Unknown error."
 msgstr ""
 
 msgid "default"
@@ -3735,6 +3816,15 @@ msgstr "Šířka Extruze"
 msgid "Fan Speed"
 msgstr "Rychlost ventilátoru"
 
+msgid "Thermal Index (min)"
+msgstr ""
+
+msgid "Thermal Index (max)"
+msgstr ""
+
+msgid "Thermal Index (mean)"
+msgstr ""
+
 msgid "Flow"
 msgstr "Průtok"
 
@@ -3764,6 +3854,18 @@ msgstr "Rychlost ventilátoru: "
 
 msgid "Temperature: "
 msgstr "Teplota: "
+
+msgid "Thermal Index"
+msgstr ""
+
+msgid "Min: "
+msgstr ""
+
+msgid "Max: "
+msgstr ""
+
+msgid "Mean: "
+msgstr ""
 
 msgid "Loading G-codes"
 msgstr "Načítání G-kódů"
@@ -3864,6 +3966,9 @@ msgstr "z"
 msgid "Slicing Result"
 msgstr ""
 
+msgid "Helio Simulation"
+msgstr ""
+
 msgid "Color Scheme"
 msgstr "Barevné schéma"
 
@@ -3890,9 +3995,6 @@ msgstr "Teplota (°C)"
 
 msgid "Volumetric flow rate (mm³/s)"
 msgstr "Objemový průtok (mm³/s)"
-
-msgid "Layer Time (s)"
-msgstr "Čas vrstvy (s)"
 
 msgid "Travel"
 msgstr "Rychloposun"
@@ -4407,6 +4509,12 @@ msgid ""
 "This is your first time printing tpu filaments with the H2D machine.\n"
 "Would you like to watch a quick tutorial video?"
 msgstr ""
+
+msgid "PPS-CF/PPA-CF is brittle and could break in bended PTFE tube above Toolhead. Please refer to Wiki before use. "
+msgstr ""
+
+msgid "Tips"
+msgstr "Tipy"
 
 msgid "Slice all"
 msgstr "Slicuj Vše"
@@ -4924,7 +5032,7 @@ msgstr ""
 msgid "Please check the network and try again, You can restart or update the printer if the issue persists."
 msgstr ""
 
-msgid "The printer has been logged out and cannot connect."
+msgid "Multi-device/client simultaneous liveview is not supported. Please close the liveview on other devices/clients and try again."
 msgstr ""
 
 msgid "Video Stopped."
@@ -5037,11 +5145,6 @@ msgstr ""
 msgid "Browsing file in storage is not supported in current firmware. Please update the printer firmware."
 msgstr ""
 
-msgid ""
-"Please check if the storage is inserted into the printer.\n"
-"If it still cannot be read, you can try formatting the storage."
-msgstr ""
-
 msgid "LAN Connection Failed (Failed to view sdcard)"
 msgstr ""
 
@@ -5090,9 +5193,6 @@ msgstr ""
 msgid "Download waiting..."
 msgstr "Čekání na stahování..."
 
-msgid "Retry"
-msgstr "Zkusit znovu"
-
 msgid "Play"
 msgstr "Přehrát"
 
@@ -5105,9 +5205,6 @@ msgstr "Stahování dokončeno"
 #, c-format, boost-format
 msgid "Downloading %d%%..."
 msgstr "Stahování %d%%..."
-
-msgid "Fan"
-msgstr ""
 
 msgid "Air Condition"
 msgstr ""
@@ -5126,6 +5223,11 @@ msgstr ""
 
 msgid "Not supported on the current printer version."
 msgstr "Není podporováno ve stávající verzi tiskárny."
+
+msgid ""
+"Please check if the storage is inserted into the printer.\n"
+"If it still cannot be read, you can try formatting the storage."
+msgstr ""
 
 msgid "The firmware version of the printer is too low. Please update the firmware and try again."
 msgstr ""
@@ -5263,9 +5365,6 @@ msgstr "Průběh tisku"
 msgid "Parts Skip"
 msgstr ""
 
-msgid "Resume"
-msgstr "Pokračovat"
-
 msgid "Stop"
 msgstr "Zastavit"
 
@@ -5345,9 +5444,6 @@ msgstr "Zrušit tisk"
 msgid "Are you sure you want to stop this print?"
 msgstr ""
 
-msgid "Unknown error."
-msgstr ""
-
 msgid "The printer is busy on other print job"
 msgstr "Tiskárna je zaneprázdněna jinou tiskovou úlohou"
 
@@ -5418,7 +5514,7 @@ msgstr "Sport"
 msgid "Ludicrous"
 msgstr "Směšné"
 
-msgid "Turning off the lights during the task will cause the failure of AI monitoring, like spaghetti dectection. Please choose carefully."
+msgid "Turning off the lights during the task will cause the failure of AI monitoring, like spaghetti detection. Please choose carefully."
 msgstr ""
 
 msgid "Keep it On"
@@ -5685,6 +5781,9 @@ msgstr "Software má novou verzi."
 msgid "Goto download page."
 msgstr "Přejít na stránku stahování."
 
+msgid "More"
+msgstr "Více"
+
 msgid "Open Folder."
 msgstr "Otevřít složku."
 
@@ -5858,7 +5957,7 @@ msgstr "Kontrola první vrstvy"
 msgid "Auto-recovery from step loss"
 msgstr "Automatické obnovení po ztrátě kroku"
 
-msgid "Open Door Dectection"
+msgid "Open Door Detection"
 msgstr ""
 
 msgid "Notification"
@@ -5932,6 +6031,10 @@ msgstr "Nastavení tiskárny"
 
 #, c-format, boost-format
 msgid "The %s nozzle can not print %s."
+msgstr ""
+
+#, boost-format
+msgid "Mixing %1% with %2% in printing is not recommended.\n"
 msgstr ""
 
 msgid " nozzle"
@@ -6088,8 +6191,10 @@ msgstr "Odpojení proběhlo úspěšné. Zařízení %s(%s) lze nyní bezpečně
 msgid "Ejecting of device %s(%s) has failed."
 msgstr "Vysunutí zařízení  %s(%s) se nezdařilo."
 
-msgid "Previous unsaved project detected, do you want to restore it?"
-msgstr "Byly zjištěny dříve neuložené položky. Chcete je obnovit?"
+msgid ""
+"It seems that you have projects that were not closed properly. Would you like to restore your last unsaved project?\n"
+"If you have a currently opened project and click \"Restore\", the current project will be closed."
+msgstr ""
 
 msgid "Restore"
 msgstr "Obnovit"
@@ -6303,6 +6408,33 @@ msgstr "Slicování Zrušeno"
 msgid "Slicing Plate %d"
 msgstr "Podložka na slicování %d"
 
+msgid "Invalid printer preset. Unable to slice with Helio."
+msgstr ""
+
+msgid "The current printer preset cannot be sliced using Helio."
+msgstr ""
+
+msgid "Helio does not support using a number of materials greater than 1."
+msgstr ""
+
+#, c-format, boost-format
+msgid "Helio does not support materials %s"
+msgstr ""
+
+msgid ""
+"No valid Helio-PAT detected. Helio simulation & optimization cannot proceed. \n"
+"Please request a new Helio-PAT."
+msgstr ""
+
+msgid "Execution Blocked"
+msgstr ""
+
+msgid "Regenerate PAT"
+msgstr ""
+
+msgid "Failed to obtain Helio PAT, Click Refresh to obtain it again."
+msgstr ""
+
 msgid "Please resolve the slicing errors and publish again."
 msgstr "Vyřešte prosím chyby slicování a publikujte znovu."
 
@@ -6351,9 +6483,6 @@ msgstr ""
 
 msgid "Switch now"
 msgstr ""
-
-msgid "Tips"
-msgstr "Tipy"
 
 msgid "Load project"
 msgstr "Načíst projekt"
@@ -6518,11 +6647,11 @@ msgid "Custom supports,seam_facets and color painting were removed before repair
 msgstr ""
 
 #, c-format, boost-format
-msgid "Printer not connected. Please go to the device page to connect an %s printer before syncing."
+msgid "Printer not connected. Please go to the device page to connect %s before syncing."
 msgstr ""
 
 #, c-format, boost-format
-msgid "The currently connected printer on the device page is not an %s. Please switch to an %s before syncing."
+msgid "The currently connected printer on the device page is not %s. Please switch to %s before syncing."
 msgstr ""
 
 msgid "There are no filaments on the printer. Please load the filaments on the printer first."
@@ -6594,6 +6723,12 @@ msgstr ""
 #, c-format, boost-format
 msgid "Plate% d: %s is not suggested to be used to print filament %s(%s). If you still want to do this printing, please set this filament's bed temperature to non zero."
 msgstr "Plate% d: %s se nedoporučuje používat k tisku filamentu %s(%s). Pokud Přesto chcete tento tisk provést, nastavte prosím teplotu podložky tohoto filamentu ne na nulovou."
+
+msgid "Parameter recommendation"
+msgstr ""
+
+msgid "In the process preset, under \"Others-Advanced\", check \"Enable clumping detection by probing\". This feature generates a small wipe tower and performs probing detection to identify clumping issues early in the print and stop printing, preventing print failures or printer damage.\n"
+msgstr ""
 
 msgid "Currently, the object configuration form cannot be used with a multiple-extruder printer."
 msgstr ""
@@ -6780,6 +6915,12 @@ msgstr ""
 msgid "Perform gamma correction on color after importing the obj model."
 msgstr ""
 
+msgid "Remember last used color scheme"
+msgstr ""
+
+msgid "When enabled, the last used color scheme (e.g., Line Type, Speed) will be automatically applied on next startup."
+msgstr ""
+
 msgid "Improve rendering performance by lod"
 msgstr ""
 
@@ -6847,6 +6988,27 @@ msgid "Show online staff-picked models on the home page"
 msgstr "Zobrazit online modely vybrané týmem na úvodní stránce"
 
 msgid "Show history on the home page"
+msgstr ""
+
+msgid "Helio Options"
+msgstr ""
+
+msgid "Enable Helio"
+msgstr ""
+
+msgid "Helio-PAT"
+msgstr ""
+
+msgid "About Helio"
+msgstr ""
+
+msgid "Helio Privacy Policy"
+msgstr ""
+
+msgid "Reminder During Slicing"
+msgstr ""
+
+msgid "Automatic mode"
 msgstr ""
 
 msgid "Maximum recent projects"
@@ -7351,16 +7513,7 @@ msgstr ""
 msgid "nozzle"
 msgstr ""
 
-msgid "extruder"
-msgstr ""
-
 msgid "both extruders"
-msgstr ""
-
-msgid "right extruder"
-msgstr ""
-
-msgid "left extruder"
 msgstr ""
 
 msgid "Tips: If you changed your nozzle of your printer lately, Please go to 'Device -> Printer parts' to change your nozzle setting."
@@ -7643,7 +7796,13 @@ msgstr "Kliknutím obnovíte všechna nastavení na poslední uloženou předvol
 msgid "Prime tower is required for smooth timeplase. There may be flaws on the model without prime tower. Are you sure you want to disable prime tower?"
 msgstr "Pro hladký průběh časové roviny je vyžadována čistící věž. Mohou být chyby na model bez čistící věže. Opravdu chcete hlavní věž deaktivovat?"
 
+msgid "Prime tower is required for clumping detection. There may be flaws on the model without prime tower. Are you sure you want to disable prime tower?"
+msgstr ""
+
 msgid "Enabling both precise Z height and the prime tower may cause the size of prime tower to increase. Do you still want to enable?"
+msgstr ""
+
+msgid "Prime tower is required for clumping detection. There may be flaws on the model without prime tower. Do you still want to enable clumping detection?"
 msgstr ""
 
 msgid "Prime tower is required for smooth timelapse. There may be flaws on the model without prime tower. Do you want to enable prime tower?"
@@ -7938,6 +8097,9 @@ msgid "Layer change G-code"
 msgstr "G-kód Změna vrstvy"
 
 msgid "Time lapse G-code"
+msgstr ""
+
+msgid "Clumping Detection G-code"
 msgstr ""
 
 msgid "Change filament G-code"
@@ -8726,61 +8888,7 @@ msgstr "Nová verze QIDI Studio"
 msgid "Skip this Version"
 msgstr ""
 
-msgid "Done"
-msgstr "Hotovo"
-
 msgid "resume"
-msgstr ""
-
-msgid "Resume Printing"
-msgstr ""
-
-msgid "Resume (defects acceptable)"
-msgstr ""
-
-msgid "Resume (problem solved)"
-msgstr ""
-
-msgid "Stop Printing"
-msgstr ""
-
-msgid "Check Assistant"
-msgstr ""
-
-msgid "Filament Extruded, Continue"
-msgstr ""
-
-msgid "Not Extruded Yet, Retry"
-msgstr ""
-
-msgid "Finished, Continue"
-msgstr ""
-
-msgid "Load Filament"
-msgstr "Zavézt Filament"
-
-msgid "Filament Loaded, Resume"
-msgstr ""
-
-msgid "View Liveview"
-msgstr ""
-
-msgid "No Reminder Next Time"
-msgstr ""
-
-msgid "Ignore. Don't Remind Next Time"
-msgstr ""
-
-msgid "Ignore this and Resume"
-msgstr ""
-
-msgid "Problem Solved and Resume"
-msgstr ""
-
-msgid "Stop Buzzer"
-msgstr ""
-
-msgid "Retry (problem solved)"
 msgstr ""
 
 msgid "Confirm and Update Nozzle"
@@ -8854,6 +8962,63 @@ msgstr ""
 msgid "reconnect"
 msgstr ""
 
+msgid "Terms of Service"
+msgstr ""
+
+msgid "You are about to enable a third-party software service feature from Helio Additive! Before confirming the use of this feature, please carefully read the following statements."
+msgstr ""
+
+msgid "Unless otherwise specified, QIDI Tech only provides support for the software features officially provided. The slicing evaluation and slicing optimization features based on Helio Additive's cloud service in this software will be developed, operated, provided, and maintained by Helio Additive. Helio Additive is responsible for the effectiveness and availability of this service. The optimization feature of this service may modify the default print commands, posing a risk of printer damage. These features will collect necessary user information and data to achieve relevant service functions. Subscriptions and payments may be involved. Please visit Helio Additive and refer to the Helio Additive Privacy Agreement and the Helio Additive User Agreement for detailed information."
+msgstr ""
+
+msgid "Meanwhile, you understand that this product is provided to you \"as is\" based on Helio Additive's services, and QIDI makes no express or implied warranties of any kind, nor can it control the service effects. To the fullest extent permitted by applicable law, QIDI or its licensors/affiliates do not provide any express or implied representations or warranties, including but not limited to warranties regarding merchantability, satisfactory quality, fitness for a particular purpose, accuracy, confidentiality, and non-infringement of third-party rights. Due to the nature of network services, QIDI cannot guarantee that the service will be available at all times, and QIDI reserves the right to terminate the service based on relevant circumstances."
+msgstr ""
+
+msgid "You agree not to use this product and its related updates to engage in the following activities:"
+msgstr ""
+
+msgid "1.Copy or use any part of this product outside the authorized scope of Helio Additive and QIDI."
+msgstr ""
+
+msgid "2.Attempt to disrupt, bypass, alter, invalidate, or evade any Digital Rights Management system related to and/or an integral part of this product."
+msgstr ""
+
+msgid "3.Using this software and services for any improper or illegal activities."
+msgstr ""
+
+msgid "https://www.helioadditive.com/"
+msgstr ""
+
+msgid "Privacy Policy of Helio Additive"
+msgstr ""
+
+msgid "Terms of Use of Helio Additive"
+msgstr ""
+
+msgid "When you confirm to enable this feature, it means that you have confirmed and agreed to the above statements."
+msgstr ""
+
+msgid "Agree"
+msgstr ""
+
+msgid "Helio Additive"
+msgstr ""
+
+msgid "Chamber temperature"
+msgstr "Teplota v komoře"
+
+msgid "Note: Please set the above temperature according to the actual situation. The more accurate the data is, the more precise the analysis results will be."
+msgstr ""
+
+msgid "How to use Helio"
+msgstr ""
+
+msgid "Failed to obtain Helio PAT. The number of issued PATs has reached the upper limit. Please pay attention to the information on the Helio official website. Click Refresh to get it again once it is available."
+msgstr ""
+
+msgid "Click for more details"
+msgstr ""
+
 msgid "Air Pump"
 msgstr ""
 
@@ -8864,6 +9029,9 @@ msgid "Laser 40W"
 msgstr ""
 
 msgid "Cutting Module"
+msgstr ""
+
+msgid "Auto Fire Extinguishing System"
 msgstr ""
 
 msgid "Model:"
@@ -9159,6 +9327,9 @@ msgstr "%1% je příliš vysoké a budou způsobeny kolize."
 msgid " is too close to exclusion area, there may be collisions when printing."
 msgstr " je příliš blízko oblasti vyloučení, při tisku může docházet ke kolizím."
 
+msgid " is too close to clumping detection area, there may be collisions when printing."
+msgstr ""
+
 msgid "Prime Tower"
 msgstr "Čistící Věž"
 
@@ -9168,10 +9339,16 @@ msgstr " je příliš blízko ostatním a může dojít ke kolizím.\n"
 msgid " is too close to exclusion area, and collisions will be caused.\n"
 msgstr " je příliš blízko oblasti vyloučení a dojde ke kolizi.\n"
 
+msgid " is too close to clumping detection area, and collisions will be caused.\n"
+msgstr ""
+
 msgid "Printing high-temp and low-temp filaments together may cause nozzle clogging or printer damage."
 msgstr ""
 
 msgid "Printing high-temp and low-temp filaments together may cause nozzle clogging or printer damage. If you still want to print, you can enable the option in Preferences."
+msgstr ""
+
+msgid "Printing different-temp filaments together may cause nozzle clogging or printer damage."
 msgstr ""
 
 msgid "Printing high-temp and mid-temp filaments together may cause nozzle clogging or printer damage."
@@ -9185,6 +9362,12 @@ msgstr "Žádné extruze pod aktuálním nastavením."
 
 msgid "Smooth mode of timelapse is not supported when \"by object\" sequence is enabled."
 msgstr "Plynulý režim časosběru není podporován, když \"podle objektu\" sekvence je povoleno."
+
+msgid "Clumping detection is not supported when \"by object\" sequence is enabled."
+msgstr ""
+
+msgid "Prime tower is required for clumping detection; otherwise, there may be flaws on the model."
+msgstr ""
 
 msgid "Please select \"By object\" print sequence to print multiple objects in spiral vase mode."
 msgstr "Vyberte prosím \"Podle objektu\" tiskovou sekvenci pro tisk více objektů v režimu spirálové vázy."
@@ -9532,7 +9715,7 @@ msgid "mm/s"
 msgstr "mm/s"
 
 #, c-format, boost-format
-msgid "Speed of 100% overhang wall which has 0 overlap with the lower layer."
+msgid "Speed of 100%% overhang wall which has 0 overlap with the lower layer."
 msgstr ""
 
 msgid "Slow down by height"
@@ -9792,7 +9975,7 @@ msgstr ""
 msgid "This setting will affect the speed of perimeters having radius <= small perimeter threshold(usually holes). If expressed as percentage (for example: 80%) it will be calculated onthe outer wall speed setting above. Set to zero for auto."
 msgstr ""
 
-msgid "Small perimter threshold"
+msgid "Small perimeter threshold"
 msgstr ""
 
 msgid "This sets the threshold for small perimeter length. Default threshold is 0mm"
@@ -10005,6 +10188,15 @@ msgstr ""
 msgid "Filament diameter is used to calculate extrusion in gcode, so it's important and should be accurate"
 msgstr "Průměr filamentu se používá k výpočtu vytlačování v gcode, takže je důležitý a měl by být přesný"
 
+msgid "Adaptive volumetric speed"
+msgstr ""
+
+msgid "When enabled, the extrusion flow is limited by the smaller of the fitted value (calculated from line width and layer height) and the user-defined maximum flow. When disabled, only the user-defined maximum flow is applied."
+msgstr ""
+
+msgid "Max volumetric speed multinomial coefficients"
+msgstr ""
+
 msgid "Shrinkage"
 msgstr ""
 
@@ -10012,6 +10204,12 @@ msgstr ""
 msgid ""
 "Enter the shrinkage percentage that the filament will get after cooling (94% if you measure 94mm instead of 100mm). The part will be scaled in xy to compensate. Only the filament used for the perimeter is taken into account.\n"
 "Be sure to allow enough space between objects, as this compensation is done after the checks."
+msgstr ""
+
+msgid "Velocity Adaptation Factor"
+msgstr ""
+
+msgid "This parameter reflects the speed at which a material transitions from one state to another. It, along with the smooth coefficient, determines the final length of the transition zone. A larger value: requires a shorter transition zone. A smaller value: requires a longer transition zone to avoid flow instability."
 msgstr ""
 
 msgid "Adhesiveness Category"
@@ -10342,6 +10540,21 @@ msgstr "Skenovat první vrstvu"
 msgid "Enable this to enable the camera on printer to check the quality of first layer"
 msgstr "Povolením této možnosti umožníte Kameře na tiskárně kontrolovat kvalitu první vrstvy"
 
+msgid "Enable clumping detection"
+msgstr ""
+
+msgid "Clumping detection layers"
+msgstr ""
+
+msgid "Clumping detection layers."
+msgstr ""
+
+msgid "Probing exclude area of clumping"
+msgstr ""
+
+msgid "Probing exclude area of clumping."
+msgstr ""
+
 msgid "Thumbnail size"
 msgstr ""
 
@@ -10605,6 +10818,9 @@ msgstr ""
 
 msgid "This gcode part is inserted at every layer change after lift z"
 msgstr "Tato část gcode je vložena při každé změně vrstvy po zvednutí z"
+
+msgid "Clumping detection G-code"
+msgstr ""
 
 msgid "Supports silent mode"
 msgstr "Podporuje tichý režim"
@@ -11345,9 +11561,6 @@ msgstr ""
 
 msgid "This setting specifies the count of support walls in the range of [-1,2]. -1 means auto, and 0 means allowing infill-only mode where support is thick enough."
 msgstr ""
-
-msgid "Chamber temperature"
-msgstr "Teplota v komoře"
 
 msgid "Higher chamber temperature can help suppress or reduce warping and potentially lead to higher interlayer bonding strength for high temperature materials like ABS, ASA, PC, PA and so on.At the same time, the air filtration of ABS and ASA will get worse.While for PLA, PETG, TPU, PVA and other low temperature materials,the actual chamber temperature should not be high to avoid cloggings, so 0 which stands for turning off is highly recommended"
 msgstr ""
@@ -12975,9 +13188,6 @@ msgstr ""
 msgid "The start, end or step is not valid value."
 msgstr ""
 
-msgid "Automatic calibration only supports cases where the left and right nozzle diameters are identical."
-msgstr ""
-
 msgid "The number of printer extruders and the printer selected for calibration does not match."
 msgstr ""
 
@@ -12996,6 +13206,9 @@ msgstr ""
 msgid ""
 "The currently selected nozzle type of %s extruder does not match the actual printer nozzle type.\n"
 "Please click the Sync button above and restart the calibration."
+msgstr ""
+
+msgid "Automatic calibration only supports cases where the left and right nozzle diameters are identical."
 msgstr ""
 
 msgid "Unable to calibrate: maybe because the set calibration value range is too large, or the step is too small"
@@ -13288,6 +13501,42 @@ msgid "Strength profile for 0.8mm nozzle, prioritizing strength."
 msgstr ""
 
 msgid "Standard profile for 0.8mm nozzle, prioritizing speed."
+msgstr ""
+
+msgid "Helio: Process Started"
+msgstr ""
+
+msgid "Helio API endpoint is empty, please check the configuration."
+msgstr ""
+
+msgid "Personal assecc token is empty, please fill in the correct token."
+msgstr ""
+
+msgid "Helio: Presigned URL Created"
+msgstr ""
+
+msgid "Helio: file succesfully uploaded"
+msgstr ""
+
+msgid "Helio: file upload failed"
+msgstr ""
+
+msgid "Please make sure you have the corrent API key set in preferences."
+msgstr ""
+
+msgid "Helio: GCode created successfully"
+msgstr ""
+
+msgid "Helio: simulation successfully created"
+msgstr ""
+
+msgid "Helio: simulation working"
+msgstr ""
+
+msgid "Helio: simulation failed"
+msgstr ""
+
+msgid "Helio: GCode downloaded successfully"
 msgstr ""
 
 msgid "No AMS"
@@ -13779,6 +14028,30 @@ msgid ""
 "Avoid warping\n"
 "Did you know that when printing materials that are prone to warping such as ABS, appropriately increasing the heatbed temperature can reduce the probability of warping."
 msgstr ""
+
+#~ msgid "Open Preferences."
+#~ msgstr "Otevřít Nastavení."
+
+#~ msgid "Open next tip."
+#~ msgstr "Otevřít další tip."
+
+#~ msgid "Open Documentation in web browser."
+#~ msgstr "Otevřít dokumentaci ve webovém prohlížeči."
+
+#~ msgid "Fatal"
+#~ msgstr "Fatální"
+
+#~ msgid "Serious"
+#~ msgstr "Vážně"
+
+#~ msgid "Common"
+#~ msgstr "Běžný"
+
+#~ msgid "Layer Time (s)"
+#~ msgstr "Čas vrstvy (s)"
+
+#~ msgid "Previous unsaved project detected, do you want to restore it?"
+#~ msgstr "Byly zjištěny dříve neuložené položky. Chcete je obnovit?"
 
 #~ msgid "Paused due to filament runout"
 #~ msgstr "Pozastaveno kvůli docházejícího filamentu"
@@ -15470,3 +15743,12 @@ msgstr "Doporučený teplotní rozsah boxu pro toto vlákno. 0 znamená žádné
 
 msgid "Set the temperature of the box during printing, set to 0 (representing off)."
 msgstr "Nastavte teplotu boxu během tisku. Nastavte na 0 (vypnuto)."
+
+msgid "Enable Box"
+msgstr "Povolit Box"
+
+msgid "Activate the multi-color box for multi-color printing with multiple filaments."
+msgstr "Aktivujte Multi-Color Box pro vícebarevný tisk s více filamenty."
+
+msgid "The machine is not synchronized with the box, so the box cannot be activated."
+msgstr "Stroj není synchronizován s boxem, proto nelze box aktivovat."

@@ -1,0 +1,11 @@
+{
+    "type": "filament",
+	"filament_id": "GFL99",
+    "setting_id": "GFSL99",
+    "name": "QIDI PLA Matte Basic @Qidi X-Max 3 0.8 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PLA Matte Basic@X3",
+    "pressure_advance": ["0.008"],
+	"compatible_printers": ["X-Max 3 0.8 nozzle"]
+}

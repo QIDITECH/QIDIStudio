@@ -9,7 +9,6 @@
     "filament_adhesiveness_category": ["100"],
     "filament_type": ["PLA"],
     "additional_cooling_fan_speed": ["100"],
-    "additional_cooling_fan_speed_unseal": ["100"],
     "filament_density": ["1.2"],
     "filament_flow_ratio": ["0.98"],
     "filament_max_volumetric_speed": ["11"],

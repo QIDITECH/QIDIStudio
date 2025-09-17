@@ -2104,6 +2104,346 @@
         {
             "name": "QIDI TPU-Aero @Qidi X-Smart 3 0.6 nozzle",
             "sub_path": "filament/QIDI TPU-Aero @Qidi X-Smart 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Basic@X3",
+            "sub_path": "filament/QIDI PLA Basic.json"
+        },
+        {
+            "name": "QIDI PLA Basic @Qidi X-Max 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PLA Basic @Qidi X-Max 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Basic @Qidi X-Plus 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PLA Basic @Qidi X-Plus 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Basic @Qidi X-Smart 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PLA Basic @Qidi X-Smart 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Basic @Qidi X-Max 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PLA Basic @Qidi X-Max 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Basic @Qidi X-Plus 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PLA Basic @Qidi X-Plus 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Basic @Qidi X-Smart 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PLA Basic @Qidi X-Smart 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Basic @Qidi X-Max 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PLA Basic @Qidi X-Max 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Basic @Qidi X-Plus 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PLA Basic @Qidi X-Plus 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Basic @Qidi X-Smart 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PLA Basic @Qidi X-Smart 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Basic @Qidi X-Max 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PLA Basic @Qidi X-Max 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Basic @Qidi X-Plus 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PLA Basic @Qidi X-Plus 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Basic @Qidi X-Smart 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PLA Basic @Qidi X-Smart 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Matte Basic@X3",
+            "sub_path": "filament/QIDI PLA Matte Basic.json"
+        },
+        {
+            "name": "QIDI PLA Matte Basic @Qidi X-Max 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PLA Matte Basic @Qidi X-Max 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Matte Basic @Qidi X-Plus 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PLA Matte Basic @Qidi X-Plus 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Matte Basic @Qidi X-Smart 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PLA Matte Basic @Qidi X-Smart 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Matte Basic @Qidi X-Max 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PLA Matte Basic @Qidi X-Max 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Matte Basic @Qidi X-Plus 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PLA Matte Basic @Qidi X-Plus 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Matte Basic @Qidi X-Smart 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PLA Matte Basic @Qidi X-Smart 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Matte Basic @Qidi X-Max 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PLA Matte Basic @Qidi X-Max 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Matte Basic @Qidi X-Plus 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PLA Matte Basic @Qidi X-Plus 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Matte Basic @Qidi X-Smart 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PLA Matte Basic @Qidi X-Smart 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Matte Basic @Qidi X-Max 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PLA Matte Basic @Qidi X-Max 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Matte Basic @Qidi X-Plus 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PLA Matte Basic @Qidi X-Plus 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PLA Matte Basic @Qidi X-Smart 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PLA Matte Basic @Qidi X-Smart 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Rapido@X3",
+            "sub_path": "filament/QIDI PETG Rapido.json"
+        },
+        {
+            "name": "QIDI PETG Rapido @Qidi X-Max 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PETG Rapido @Qidi X-Max 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Rapido @Qidi X-Plus 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PETG Rapido @Qidi X-Plus 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Rapido @Qidi X-Smart 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PETG Rapido @Qidi X-Smart 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Rapido @Qidi X-Max 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PETG Rapido @Qidi X-Max 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Rapido @Qidi X-Plus 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PETG Rapido @Qidi X-Plus 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Rapido @Qidi X-Smart 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PETG Rapido @Qidi X-Smart 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Rapido @Qidi X-Max 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PETG Rapido @Qidi X-Max 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Rapido @Qidi X-Plus 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PETG Rapido @Qidi X-Plus 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Rapido @Qidi X-Smart 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PETG Rapido @Qidi X-Smart 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Rapido @Qidi X-Max 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PETG Rapido @Qidi X-Max 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Rapido @Qidi X-Plus 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PETG Rapido @Qidi X-Plus 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Rapido @Qidi X-Smart 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PETG Rapido @Qidi X-Smart 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Basic@X3",
+            "sub_path": "filament/QIDI PETG Basic.json"
+        },
+        {
+            "name": "QIDI PETG Basic @Qidi X-Max 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PETG Basic @Qidi X-Max 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Basic @Qidi X-Plus 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PETG Basic @Qidi X-Plus 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Basic @Qidi X-Smart 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PETG Basic @Qidi X-Smart 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Basic @Qidi X-Max 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PETG Basic @Qidi X-Max 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Basic @Qidi X-Plus 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PETG Basic @Qidi X-Plus 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Basic @Qidi X-Smart 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PETG Basic @Qidi X-Smart 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Basic @Qidi X-Max 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PETG Basic @Qidi X-Max 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Basic @Qidi X-Plus 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PETG Basic @Qidi X-Plus 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Basic @Qidi X-Smart 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PETG Basic @Qidi X-Smart 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Basic @Qidi X-Max 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PETG Basic @Qidi X-Max 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Basic @Qidi X-Plus 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PETG Basic @Qidi X-Plus 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Basic @Qidi X-Smart 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PETG Basic @Qidi X-Smart 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Translucent@X3",
+            "sub_path": "filament/QIDI PETG Translucent.json"
+        },
+        {
+            "name": "QIDI PETG Translucent @Qidi X-Max 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PETG Translucent @Qidi X-Max 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Translucent @Qidi X-Plus 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PETG Translucent @Qidi X-Plus 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Translucent @Qidi X-Smart 3 0.2 nozzle",
+            "sub_path": "filament/QIDI PETG Translucent @Qidi X-Smart 3 0.2 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Translucent @Qidi X-Max 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PETG Translucent @Qidi X-Max 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Translucent @Qidi X-Plus 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PETG Translucent @Qidi X-Plus 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Translucent @Qidi X-Smart 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PETG Translucent @Qidi X-Smart 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Translucent @Qidi X-Max 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PETG Translucent @Qidi X-Max 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Translucent @Qidi X-Plus 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PETG Translucent @Qidi X-Plus 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Translucent @Qidi X-Smart 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PETG Translucent @Qidi X-Smart 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Translucent @Qidi X-Max 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PETG Translucent @Qidi X-Max 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Translucent @Qidi X-Plus 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PETG Translucent @Qidi X-Plus 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG Translucent @Qidi X-Smart 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PETG Translucent @Qidi X-Smart 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-CF@X3",
+            "sub_path": "filament/QIDI PETG-CF.json"
+        },
+        {
+            "name": "QIDI PETG-CF @Qidi X-Max 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PETG-CF @Qidi X-Max 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-CF @Qidi X-Plus 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PETG-CF @Qidi X-Plus 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-CF @Qidi X-Smart 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PETG-CF @Qidi X-Smart 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-CF @Qidi X-Max 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PETG-CF @Qidi X-Max 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-CF @Qidi X-Plus 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PETG-CF @Qidi X-Plus 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-CF @Qidi X-Smart 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PETG-CF @Qidi X-Smart 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-CF @Qidi X-Max 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PETG-CF @Qidi X-Max 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-CF @Qidi X-Plus 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PETG-CF @Qidi X-Plus 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-CF @Qidi X-Smart 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PETG-CF @Qidi X-Smart 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-GF@X3",
+            "sub_path": "filament/QIDI PETG-GF.json"
+        },
+        {
+            "name": "QIDI PETG-GF @Qidi X-Max 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PETG-GF @Qidi X-Max 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-GF @Qidi X-Plus 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PETG-GF @Qidi X-Plus 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-GF @Qidi X-Smart 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PETG-GF @Qidi X-Smart 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-GF @Qidi X-Max 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PETG-GF @Qidi X-Max 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-GF @Qidi X-Plus 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PETG-GF @Qidi X-Plus 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-GF @Qidi X-Smart 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PETG-GF @Qidi X-Smart 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-GF @Qidi X-Max 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PETG-GF @Qidi X-Max 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-GF @Qidi X-Plus 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PETG-GF @Qidi X-Plus 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PETG-GF @Qidi X-Smart 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PETG-GF @Qidi X-Smart 3 0.8 nozzle.json"
         }
     ],
     "machine_list": [

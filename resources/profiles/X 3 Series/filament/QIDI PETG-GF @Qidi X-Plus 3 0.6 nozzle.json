@@ -1,0 +1,10 @@
+{
+    "type": "filament",
+	"filament_id": "GFG99",
+    "setting_id": "GFSG99",
+    "name": "QIDI PETG-GF @Qidi X-Plus 3 0.6 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PETG-GF@X3",
+	"compatible_printers": ["X-Plus 3 0.6 nozzle"]
+}
