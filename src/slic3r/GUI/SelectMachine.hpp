@@ -346,7 +346,9 @@ private:
     Machine_info                           select_machine;
 
     //w42
+#if QDT_RELEASE_TO_PUBLIC
     Box_info                                machine_filament_info;
+#endif
 
     bool has_box_machine = false;
 

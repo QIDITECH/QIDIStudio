@@ -3432,6 +3432,7 @@ void GetBoxInfoDialog::synchronization(wxCommandEvent &event)
 #endif
 }
 
+#if QDT_RELEASE_TO_PUBLIC
 void GetBoxInfoDialog::generate_filament_id(GUI::Box_info& machine_filament_info)
 {
     std::string filament_id = "QD";
@@ -3468,6 +3469,7 @@ void GetBoxInfoDialog::update_filament_info(GUI::Box_info& machine_filament_info
     std::string preset_name_box = wxGetApp().get_tab(Preset::TYPE_PRINTER)->get_presets()->get_edited_preset().name;
     m_plater->box_msg.box_list_preset_name = preset_name_box;
 }
+#endif
  
 void GetBoxInfoDialog::cancel(wxCommandEvent &event)
 {

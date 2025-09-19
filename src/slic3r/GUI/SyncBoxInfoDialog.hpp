@@ -385,9 +385,10 @@ public:
     void on_dpi_changed(const wxRect& suggested_rect) override;
     void init_printer_combox();
     std::string NormalizeVendor(const std::string& str);
+#if QDT_RELEASE_TO_PUBLIC
     void generate_filament_id(GUI::Box_info& machine_filament_info);
     void update_filament_info(GUI::Box_info& machine_filament_info);
-
+#endif
 
     std::vector<std::string> m_printer_ip;
     std::vector<std::string> m_printer_api_key;
