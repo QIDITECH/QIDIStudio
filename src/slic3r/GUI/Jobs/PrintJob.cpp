@@ -296,7 +296,7 @@ void PrintJob::process()
                 try {
                     std::string mall_model_name = model_name->second;
                     std::replace(mall_model_name.begin(), mall_model_name.end(), ' ', '_');
-                    const char *unusable_symbols = "<>[]:/\\|?*\" ";
+                    const char *unusable_symbols = " #;\'<>:/\\|?*\"";
                     for (const char *symbol = unusable_symbols; *symbol != '\0'; ++symbol) { std::replace(mall_model_name.begin(), mall_model_name.end(), *symbol, '_'); }
 
                     std::regex pattern("_+");

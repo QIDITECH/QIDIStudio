@@ -930,7 +930,7 @@ void EditDevNameDialog::on_edit_name(wxCommandEvent &e)
     wxString info_line;
     auto     new_dev_name = m_textCtr->GetTextCtrl()->GetValue();
 
-    const char *      unusable_symbols = "<>[]:/\\|?*\"";
+    const char *      unusable_symbols = " #;\'<>:/\\|?*\"";
     const std::string unusable_suffix  = PresetCollection::get_suffix_modified();
 
     for (size_t i = 0; i < std::strlen(unusable_symbols); i++) {

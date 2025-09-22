@@ -329,7 +329,7 @@ void AuFile::on_input_enter(wxCommandEvent &evt)
     auto     m_valid_type  = Valid;
     wxString info_line;
 
-    const char *unusable_symbols = "<>[]:/\\|?*\"";
+    const char *unusable_symbols = " #;\'<>:/\\|?*\"";
 
     const std::string unusable_suffix = PresetCollection::get_suffix_modified(); //"(modified)";
     for (size_t i = 0; i < std::strlen(unusable_symbols); i++) {

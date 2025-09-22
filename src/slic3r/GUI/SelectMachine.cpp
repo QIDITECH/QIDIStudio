@@ -3437,7 +3437,7 @@ void SelectMachineDialog::on_rename_enter()
     auto     m_valid_type = Valid;
     wxString info_line;
 
-    const char* unusable_symbols = "<>[]:/\\|?*\"";
+    const char* unusable_symbols = " #;\'<>:\\|?*\"";
 
     const std::string unusable_suffix = PresetCollection::get_suffix_modified(); //"(modified)";
     for (size_t i = 0; i < std::strlen(unusable_symbols); i++) {
@@ -4508,7 +4508,7 @@ void SelectMachineDialog::set_default()
         m_current_project_name = m_current_project_name.substr(0, m_current_project_name.size() - 6);
 
     //unsupported character filter
-    m_current_project_name = from_u8(filter_characters(m_current_project_name.ToUTF8().data(), "<>[]:/\\|?*\""));
+    m_current_project_name = from_u8(filter_characters(m_current_project_name.ToUTF8().data(), " #;\'<>:\\|?*\""));
 
     m_rename_text->SetLabelText(m_current_project_name);
     m_rename_normal_panel->Layout();

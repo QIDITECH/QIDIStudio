@@ -233,7 +233,7 @@ bool Plater::has_illegal_filename_characters(const wxString& wxs_name)
 
 bool Plater::has_illegal_filename_characters(const std::string& name)
 {
-    const char* illegal_characters = "<>:/\\|?*\"";
+    const char* illegal_characters = " #;\'<>:/\\|?*\"";
     for (size_t i = 0; i < std::strlen(illegal_characters); i++)
         if (name.find_first_of(illegal_characters[i]) != std::string::npos)
             return true;
@@ -248,7 +248,7 @@ bool Plater::has_illegal_filename_characters(const std::string& name)
 
 void Plater::show_illegal_characters_warning(wxWindow* parent)
 {
-    show_error(parent, _L("Invalid name, the following characters are not allowed:") + " <>:/\\|?*\"" +_L("(Including its escape characters)"));
+    show_error(parent, _L("Invalid name, the following characters are not allowed:") + " #;\'<>:/\\|?*\"" +_L("(Including its escape characters)"));
 }
 
 void Plater::mark_plate_toolbar_image_dirty()
@@ -5960,6 +5960,9 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                 DynamicPrintConfig config;
                 Semver             file_version;
                 En3mfType          en_3mf_file_type = En3mfType::From_QDS;
+                //y71
+                std::string old_preset_name = wxGetApp().preset_bundle->printers.get_edited_preset().name;
+
                 {
                     DynamicPrintConfig config_loaded;
 
@@ -6220,6 +6223,15 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                     }
                 }
 
+                //y71
+                bool has_different_settings_to_system = config.option("different_settings_to_system") ? true : false;
+                std::string qdt_diff_settings;
+                std::vector<std::string> qdt_different_keys;
+                if(has_different_settings_to_system){
+                    std::string qdt_diff_settings = config.option<ConfigOptionStrings>("different_settings_to_system", true)->values[0];
+                    Slic3r::unescape_strings_cstyle(qdt_diff_settings, qdt_different_keys);
+                }
+
                 if (load_config) {
                     if (!config.empty()) {
                         Preset::normalize(config);
@@ -6467,6 +6479,30 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                     }
                     if (!silence) wxGetApp().app_config->update_config_dir(path.parent_path().string());
                 }
+
+                //y71
+                std::vector<std::string> qdt_nozzle_sizes = { "0.2 nozzle", "0.4 nozzle", "0.6 nozzle", "0.8 nozzle" };
+                std::string current_preset_name = wxGetApp().preset_bundle->printers.get_edited_preset().name;
+                std::string old_preset_nozzle_size, new_preset_nozzle_size;
+                for (std::string qdt_nozzle : qdt_nozzle_sizes) {
+                    if (old_preset_name.find(qdt_nozzle) != std::string::npos)
+                        old_preset_nozzle_size = qdt_nozzle;
+                    if (current_preset_name.find(qdt_nozzle) != std::string::npos)
+                        new_preset_nozzle_size = qdt_nozzle;
+                }
+
+                if (old_preset_nozzle_size != new_preset_nozzle_size) {
+                    size_t nozzle_pos = old_preset_name.find(old_preset_nozzle_size);
+                    size_t nozzle_len = old_preset_nozzle_size.size();
+                    old_preset_name.replace(nozzle_pos, nozzle_len, new_preset_nozzle_size);
+                }
+                if (en_3mf_file_type != En3mfType::From_QDS) {
+                    if(has_different_settings_to_system)
+                        wxGetApp().get_tab(Preset::TYPE_PRINT)->cache_config_diff(qdt_different_keys);
+                    wxGetApp().get_tab(Preset::TYPE_PRINTER)->select_preset(old_preset_name);
+                    q->on_config_change(wxGetApp().preset_bundle->full_config());
+                }
+
             } else {
                 // QDS: add plate data related logic
                 PlateDataPtrs plate_data;
@@ -10619,8 +10655,8 @@ wxString Plater::priv::get_export_gcode_filename(const wxString& extension, bool
     std::string plate_name = partplate_list.get_curr_plate()->get_plate_name();
 
     // remove unsupported characters in filename
-    curr_project_name = from_u8(filter_characters(curr_project_name.ToUTF8().data(), "<>[]:/\\|?*\""));
-    plate_name = filter_characters(plate_name, "<>[]:/\\|?*\"");
+    curr_project_name = from_u8(filter_characters(curr_project_name.ToUTF8().data(), " #;\'<>:/\\|?*\""));
+    plate_name = filter_characters(plate_name, " #;\'<>:/\\|?*\"");
 
     if (!plate_name.empty())
         plate_index_str = (boost::format("_%1%") % plate_name).str();
@@ -15427,7 +15463,7 @@ void Plater::export_gcode(bool prefer_removable)
             output_path = into_path(dlg.GetPath());
             while (has_illegal_filename_characters(output_path.filename().string())) {
                 show_error(this, _L("The provided file name is not valid.") + "\n" +
-                    _L("The following characters are not allowed by a FAT file system:") + " <>:/\\|?*\"");
+                    _L("The following characters are not allowed by a FAT file system:") + " #;\'<>:/\\|?*\"");
                 dlg.SetFilename(from_path(output_path.filename()));
                 if (dlg.ShowModal() == wxID_OK)
                     output_path = into_path(dlg.GetPath());

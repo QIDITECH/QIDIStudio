@@ -132,7 +132,7 @@ void SendToPrinterDialog::on_rename_enter()
     wxString info_line;
 
     //y51
-    const char* unusable_symbols = "<>[]:\\|?*\"";
+    const char* unusable_symbols = " #;\'<>:\\|?*\"";
 
     const std::string unusable_suffix = PresetCollection::get_suffix_modified(); //"(modified)";
     for (size_t i = 0; i < std::strlen(unusable_symbols); i++) {
@@ -2151,7 +2151,7 @@ void SendToPrinterDialog::set_default()
 
     //unsupported character filter
     //y51
-    m_current_project_name = from_u8(filter_characters(m_current_project_name.ToUTF8().data(), "<>[]:\\|?*\""));
+    m_current_project_name = from_u8(filter_characters(m_current_project_name.ToUTF8().data(), " #;\'<>:\\|?*\""));
 
     m_rename_text->SetLabelText(m_current_project_name);
     m_rename_normal_panel->Layout();

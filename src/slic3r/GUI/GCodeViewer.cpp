@@ -736,9 +736,10 @@ void GCodeViewer::SequentialView::GCodeWindow::render(float top, float bottom, f
                 }
             }
 
-            boost::trim(command);
-            boost::trim(parameters);
-            boost::trim(comment);
+            //y71
+            // boost::trim(command);
+            // boost::trim(parameters);
+            // boost::trim(comment);
             ret.push_back({ command, parameters, comment });
         }
         return ret;
