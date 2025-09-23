@@ -34,8 +34,8 @@
     "nozzle_diameter": ["0.4"],
     "nozzle_volume": ["125"],
     "printable_area": ["0x0","270x0","270x270","0x270"],
-    "printable_height": "260",
-    "retract_lift_below": ["259"],
+    "printable_height": "256",
+    "retract_lift_below": ["255"],
     "support_box_temp_control": "1",
     "thumbnail_size": ["50x50"]
 }
