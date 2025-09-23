@@ -5,6 +5,7 @@
 #include "CalibrationPanel.hpp"
 #include "I18N.hpp"
 #include "Tab.hpp"
+#include "DeviceCore/DevManager.h"
 
 namespace Slic3r { namespace GUI {
 
