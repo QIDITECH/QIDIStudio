@@ -233,7 +233,7 @@ bool Plater::has_illegal_filename_characters(const wxString& wxs_name)
 
 bool Plater::has_illegal_filename_characters(const std::string& name)
 {
-    const char* illegal_characters = " #;\'<>:/\\|?*\"";
+    const char* illegal_characters = "#\'<>:\\|?*\"";
     for (size_t i = 0; i < std::strlen(illegal_characters); i++)
         if (name.find_first_of(illegal_characters[i]) != std::string::npos)
             return true;
@@ -248,7 +248,7 @@ bool Plater::has_illegal_filename_characters(const std::string& name)
 
 void Plater::show_illegal_characters_warning(wxWindow* parent)
 {
-    show_error(parent, _L("Invalid name, the following characters are not allowed:") + " #;\'<>:/\\|?*\"" +_L("(Including its escape characters)"));
+    show_error(parent, _L("Invalid name, the following characters are not allowed:") + "#\'<>:\\|?*\"" +_L("(Including its escape characters)"));
 }
 
 void Plater::mark_plate_toolbar_image_dirty()
@@ -10655,8 +10655,8 @@ wxString Plater::priv::get_export_gcode_filename(const wxString& extension, bool
     std::string plate_name = partplate_list.get_curr_plate()->get_plate_name();
 
     // remove unsupported characters in filename
-    curr_project_name = from_u8(filter_characters(curr_project_name.ToUTF8().data(), " #;\'<>:/\\|?*\""));
-    plate_name = filter_characters(plate_name, " #;\'<>:/\\|?*\"");
+    curr_project_name = from_u8(filter_characters(curr_project_name.ToUTF8().data(), "#\'<>:\\|?*\""));
+    plate_name = filter_characters(plate_name, "#\'<>:\\|?*\"");
 
     if (!plate_name.empty())
         plate_index_str = (boost::format("_%1%") % plate_name).str();
@@ -15423,11 +15423,30 @@ void Plater::export_gcode(bool prefer_removable)
         unsigned int state = this->p->update_restart_background_process(false, false);
         if (state & priv::UPDATE_BACKGROUND_PROCESS_INVALID)
             return;
-        // //y56
-        // if (wxGetApp().preset_bundle->prints.get_edited_preset().config.opt_string("filename_format") == "{input_filename_base}.gcode")
-        //     default_output_file = fs::path(into_u8(p->get_export_gcode_filename("", true, p->partplate_list.get_curr_plate_index() == PLATE_ALL_IDX ? true : false)));
-        // else
-        default_output_file = fs::path(this->p->background_process.output_filepath_for_project(""));
+        //y56 y71
+        if (wxGetApp().preset_bundle->prints.get_edited_preset().config.opt_string("filename_format") == "{input_filename_base}.gcode")
+            default_output_file = fs::path(into_u8(p->get_export_gcode_filename("", true, p->partplate_list.get_curr_plate_index() == PLATE_ALL_IDX ? true : false)));
+        else
+            default_output_file = fs::path(this->p->background_process.output_filepath_for_project(""));
+        wxString file_name = default_output_file.wstring();
+        if (file_name.find(_L("Untitled")) != wxString::npos) {
+            PartPlate* part_plate = get_partplate_list().get_plate(p->partplate_list.get_curr_plate_index());
+            if (part_plate) {
+                if (std::vector<ModelObject*> objects = part_plate->get_objects_on_this_plate(); objects.size() > 0) {
+                    file_name = from_u8(objects[0]->name);
+                }
+                file_name = from_u8(get_pure_file_name(into_u8(file_name)));
+                if (file_name.size() > 80) {
+                    file_name = file_name.substr(0, 80) + "...";
+                }
+                if (p->partplate_list.get_plate_count() > 1) {
+                    std::string plate_index_str = (boost::format("_plate_%1%") % std::to_string(p->partplate_list.get_curr_plate_index() + 1)).str();
+                    file_name += wxString::FromUTF8(plate_index_str);
+                }
+            }
+        }
+        default_output_file = boost::filesystem::path(file_name);
+        
 
     } catch (const Slic3r::PlaceholderParserError &ex) {
         // Show the error with monospaced font.
@@ -15463,7 +15482,7 @@ void Plater::export_gcode(bool prefer_removable)
             output_path = into_path(dlg.GetPath());
             while (has_illegal_filename_characters(output_path.filename().string())) {
                 show_error(this, _L("The provided file name is not valid.") + "\n" +
-                    _L("The following characters are not allowed by a FAT file system:") + " #;\'<>:/\\|?*\"");
+                    _L("The following characters are not allowed by a FAT file system:") + "#\'<>:\\|?*\"");
                 dlg.SetFilename(from_path(output_path.filename()));
                 if (dlg.ShowModal() == wxID_OK)
                     output_path = into_path(dlg.GetPath());
@@ -15529,9 +15548,36 @@ void Plater::export_gcode_3mf(bool export_all)
     default_output_file = into_path(get_export_gcode_filename(".gcode.3mf", false, export_all));
     if (default_output_file.empty()) {
         try {
-
+            //y71
+            wxString filename = "";
+            if (wxGetApp().preset_bundle->prints.get_edited_preset().config.opt_string("filename_format") == "{input_filename_base}.gcode") {
+                filename = get_export_gcode_filename("", true, export_all ? true : false);
+            }
+            else {
+                filename = get_output_filename();
+            }
+            if (filename.find(_L("Untitled")) != wxString::npos && !export_all) {
+                PartPlate* part_plate = get_partplate_list().get_plate(p->partplate_list.get_curr_plate_index());
+                if (part_plate) {
+                    if (std::vector<ModelObject*> objects = part_plate->get_objects_on_this_plate(); objects.size() > 0) {
+                        filename = from_u8(objects[0]->name);
+                    }
+                }
+                filename = from_u8(get_pure_file_name(into_u8(filename)));
+                if (filename.size() > 80) {
+                    filename = filename.substr(0, 80) + "...";
+                }
+                if (p->partplate_list.get_plate_count() > 1) {
+                    std::string plate_index_str = (boost::format("_plate_%1%") % std::to_string(p->partplate_list.get_curr_plate_index() + 1)).str();
+                    filename += wxString::FromUTF8(plate_index_str);
+                }
+            }
             start_dir = appconfig.get_last_output_dir("", false);
-            wxString filename = get_export_gcode_filename(".gcode.3mf", true, export_all);
+
+            if (has_illegal_filename_characters(filename)) {
+                filename = from_u8(filter_characters(filename.ToUTF8().data(), "#\'<>:\\|?*\""));
+            }
+
             std::string full_filename = start_dir + "/" + filename.utf8_string();
             default_output_file = boost::filesystem::path(full_filename);
         } catch(...) {

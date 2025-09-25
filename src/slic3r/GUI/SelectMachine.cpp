@@ -4482,24 +4482,23 @@ void SelectMachineDialog::set_default()
     }
 
     fs::path filename_path(filename.c_str());
-    //y52
+    //y52 y71
     wxString file_name = from_u8(filename_path.filename().string());
     if (file_name.find(_L("Untitled")) != wxString::npos) {
         PartPlate* part_plate = m_plater->get_partplate_list().get_plate(m_print_plate_idx);
         if (part_plate) {
             if (std::vector<ModelObject*> objects = part_plate->get_objects_on_this_plate(); objects.size() > 0) {
                 file_name = from_u8(objects[0]->name);
-                for (int i = 1; i < objects.size(); i++) {
-                    file_name += " + " + from_u8(objects[i]->name);
-                }
             }
-            //if (file_name.size() > 100) {
-                //file_name = file_name.substr(0, 97) + "...";
-            //}
+            file_name = from_u8(get_pure_file_name(into_u8(file_name)));
+            if (file_name.size() > 80) {
+                file_name = file_name.substr(0, 80) + "...";
+            }
+            if (m_plater->get_partplate_list().get_plate_count() > 1) {
+                std::string plate_index_str = (boost::format("_plate_%1%") % std::to_string(m_print_plate_idx + 1)).str();
+                file_name += wxString::FromUTF8(plate_index_str);
+            }
         }
-    }
-    if (file_name.size() > 80) {
-        file_name = file_name.substr(0, 80) + "...";
     }
 
     m_current_project_name = file_name;
@@ -4508,7 +4507,7 @@ void SelectMachineDialog::set_default()
         m_current_project_name = m_current_project_name.substr(0, m_current_project_name.size() - 6);
 
     //unsupported character filter
-    m_current_project_name = from_u8(filter_characters(m_current_project_name.ToUTF8().data(), " #;\'<>:\\|?*\""));
+    m_current_project_name = from_u8(filter_characters(m_current_project_name.ToUTF8().data(), "#\'<>:\\|?*\""));
 
     m_rename_text->SetLabelText(m_current_project_name);
     m_rename_normal_panel->Layout();

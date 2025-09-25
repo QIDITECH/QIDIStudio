@@ -2523,7 +2523,7 @@ void SyncBoxInfoDialog::set_default(bool hide_some)
     m_current_project_name = wxString::FromUTF8(file_name);
 
     // unsupported character filter
-    m_current_project_name = from_u8(filter_characters(m_current_project_name.ToUTF8().data(), " #;\'<>:/\\|?*\""));
+    m_current_project_name = from_u8(filter_characters(m_current_project_name.ToUTF8().data(), "#\'<>:\\|?*\""));
 
     // clear combobox
     m_list.clear();
