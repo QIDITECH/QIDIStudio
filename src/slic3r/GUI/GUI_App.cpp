@@ -4287,15 +4287,18 @@ wxString GUI_App::transition_tridid(int trid_id) const
 //QDS
 void GUI_App::request_login(bool show_user_info)
 {
+#if QDT_RELEASE_TO_PUBLIC
     ShowUserLogin();
 
     if (show_user_info) {
         get_login_info();
     }
+#endif
 }
 
 void GUI_App::get_login_info()
 {
+#if QDT_RELEASE_TO_PUBLIC
     // if (m_agent) {
     //     if (m_agent->is_user_login()) {
     //         std::string login_cmd = m_agent->build_login_cmd();
@@ -4368,13 +4371,16 @@ void GUI_App::get_login_info()
         GUI::wxGetApp().run_script_left(strJS);
         m_qidi_login = false;
     }
+#endif
 }
 
 bool GUI_App::is_user_login()
 {
+#if QDT_RELEASE_TO_PUBLIC
     if (m_agent) {
         return m_agent->is_user_login();
     }
+#endif
     return false;
 }
 
@@ -4382,6 +4388,7 @@ bool GUI_App::is_user_login()
 bool GUI_App::check_login()
 {
     bool result = false;
+#if QDT_RELEASE_TO_PUBLIC
     if (m_agent) {
         result = m_agent->is_user_login();
     }
@@ -4389,6 +4396,7 @@ bool GUI_App::check_login()
     if (!result) {
         ShowUserLogin();
     }
+#endif
     return result;
 }
 
@@ -5150,10 +5158,13 @@ void GUI_App::check_update(bool show_tips, int by_user)
 //B y41
 void GUI_App::check_new_version(bool show_tips, int by_user)
 {
+#if QDT_RELEASE_TO_PUBLIC
     QIDINetwork qidi;
     qidi.check_new_version(show_tips, by_user);
+#endif
 }
 
+#if QDT_RELEASE_TO_PUBLIC
 void GUI_App::update_versioninfo(QIDIVersion version)
 {
     version_info.url = version.url;
@@ -5161,7 +5172,7 @@ void GUI_App::update_versioninfo(QIDIVersion version)
     version_info.description = version.description;
     version_info.force_upgrade = version.force_upgrade;
 }
-
+#endif
 
 //QDS pop up a dialog and download files
 void GUI_App::request_new_version(int by_user)

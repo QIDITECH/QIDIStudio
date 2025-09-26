@@ -73,7 +73,7 @@
 #include <slic3r/GUI/CreatePresetsDialog.hpp>
 
 //y
-#ifdef QDT_RELEASE_TO_PUBLIC
+#if QDT_RELEASE_TO_PUBLIC
 #include "../QIDI/QIDINetwork.hpp"
 #endif
 
