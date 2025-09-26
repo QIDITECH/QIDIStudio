@@ -1089,14 +1089,18 @@ void MainFrame::show_calibration_button(bool show, bool is_QDT)
 {
 #ifdef __APPLE__
     bool shown = m_menubar->FindMenu(_L("Calibration")) != wxNOT_FOUND;
-    if (shown == show)
-        ;
-    else if (show)
-        m_menubar->Insert(3, m_calib_menu, wxString::Format("&%s", _L("Calibration")));
-    else
+
+    //y71
+    // if (shown == show)
+    //     ;
+    // else if (show)
+    //     m_menubar->Insert(3, m_calib_menu, wxString::Format("&%s", _L("Calibration")));
+    // else
+    if(shown)
         m_menubar->Remove(3);
 #else
-    topbar()->ShowCalibrationButton(show);
+    //y71
+    topbar()->ShowCalibrationButton(false);
 #endif
     show = is_QDT;
     auto shown2 = m_tabpanel->FindPage(m_calibration) != wxNOT_FOUND;
@@ -3671,6 +3675,9 @@ void MainFrame::update_calibration_button_status()
     bool isQDT = printer_preset.is_qdt_vendor_preset(wxGetApp().preset_bundle);
     bool is_multi_extruder = wxGetApp().preset_bundle->get_printer_extruder_count() > 1;
     // Show calibration Menu for QDT printers if Develop Mode is on.
+    //y71
+    isQDT = true;
+    
     bool show_calibration = (!isQDT || wxGetApp().app_config->get("developer_mode") == "true") && !is_multi_extruder;
     wxGetApp().mainframe->show_calibration_button(show_calibration, isQDT);
 }

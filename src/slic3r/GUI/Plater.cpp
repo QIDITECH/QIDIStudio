@@ -15445,7 +15445,7 @@ void Plater::export_gcode(bool prefer_removable)
                 }
             }
         }
-        default_output_file = boost::filesystem::path(file_name);
+        default_output_file = boost::filesystem::path(into_u8(file_name));
         
 
     } catch (const Slic3r::PlaceholderParserError &ex) {
