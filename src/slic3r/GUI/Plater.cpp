@@ -6350,6 +6350,29 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
 
                             preset_bundle->load_config_model(filename.string(), std::move(config), file_version);
 
+                            //y71
+                            std::vector<std::string> qdt_nozzle_sizes = { "0.2 nozzle", "0.4 nozzle", "0.6 nozzle", "0.8 nozzle" };
+                            std::string current_preset_name = wxGetApp().preset_bundle->printers.get_edited_preset().name;
+                            std::string old_preset_nozzle_size, new_preset_nozzle_size;
+                            for (std::string qdt_nozzle : qdt_nozzle_sizes) {
+                                if (old_preset_name.find(qdt_nozzle) != std::string::npos)
+                                    old_preset_nozzle_size = qdt_nozzle;
+                                if (current_preset_name.find(qdt_nozzle) != std::string::npos)
+                                    new_preset_nozzle_size = qdt_nozzle;
+                            }
+
+                            if (old_preset_nozzle_size != new_preset_nozzle_size) {
+                                size_t nozzle_pos = old_preset_name.find(old_preset_nozzle_size);
+                                size_t nozzle_len = old_preset_nozzle_size.size();
+                                old_preset_name.replace(nozzle_pos, nozzle_len, new_preset_nozzle_size);
+                            }
+                            if (en_3mf_file_type != En3mfType::From_QDS) {
+                                if(has_different_settings_to_system)
+                                    wxGetApp().get_tab(Preset::TYPE_PRINT)->cache_config_diff(qdt_different_keys);
+                                wxGetApp().get_tab(Preset::TYPE_PRINTER)->select_preset(old_preset_name);
+                                q->on_config_change(wxGetApp().preset_bundle->full_config());
+                            }
+
                             ConfigOption* bed_type_opt = preset_bundle->project_config.option("curr_bed_type");
                             if (bed_type_opt != nullptr) {
                                 BedType bed_type = (BedType)bed_type_opt->getInt();
@@ -6479,30 +6502,6 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                     }
                     if (!silence) wxGetApp().app_config->update_config_dir(path.parent_path().string());
                 }
-
-                //y71
-                std::vector<std::string> qdt_nozzle_sizes = { "0.2 nozzle", "0.4 nozzle", "0.6 nozzle", "0.8 nozzle" };
-                std::string current_preset_name = wxGetApp().preset_bundle->printers.get_edited_preset().name;
-                std::string old_preset_nozzle_size, new_preset_nozzle_size;
-                for (std::string qdt_nozzle : qdt_nozzle_sizes) {
-                    if (old_preset_name.find(qdt_nozzle) != std::string::npos)
-                        old_preset_nozzle_size = qdt_nozzle;
-                    if (current_preset_name.find(qdt_nozzle) != std::string::npos)
-                        new_preset_nozzle_size = qdt_nozzle;
-                }
-
-                if (old_preset_nozzle_size != new_preset_nozzle_size) {
-                    size_t nozzle_pos = old_preset_name.find(old_preset_nozzle_size);
-                    size_t nozzle_len = old_preset_nozzle_size.size();
-                    old_preset_name.replace(nozzle_pos, nozzle_len, new_preset_nozzle_size);
-                }
-                if (en_3mf_file_type != En3mfType::From_QDS) {
-                    if(has_different_settings_to_system)
-                        wxGetApp().get_tab(Preset::TYPE_PRINT)->cache_config_diff(qdt_different_keys);
-                    wxGetApp().get_tab(Preset::TYPE_PRINTER)->select_preset(old_preset_name);
-                    q->on_config_change(wxGetApp().preset_bundle->full_config());
-                }
-
             } else {
                 // QDS: add plate data related logic
                 PlateDataPtrs plate_data;

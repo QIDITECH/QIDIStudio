@@ -97,7 +97,7 @@ namespace QDT {
 #define QIDI_NETWORK_LIBRARY               "qidi_networking"
 #define QIDI_NETWORK_AGENT_NAME            "qidi_network_agent"
 
-#define QIDI_NETWORK_AGENT_VERSION         "02.02.01.51"
+#define QIDI_NETWORK_AGENT_VERSION         "02.02.01.62"
 
 //iot preset type strings
 #define IOT_PRINTER_TYPE_STRING     "printer"
