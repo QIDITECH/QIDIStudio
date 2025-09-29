@@ -39,7 +39,9 @@
 #include <wx/tokenzr.h>
 
 //B64
+#if QDT_RELEASE_TO_PUBLIC
 #include "../QIDI/QIDINetwork.hpp"
+#endif
 #include <boost/thread.hpp>
 #include "./Widgets/SwitchButton.hpp"
 #include "./Widgets/DeviceButton.hpp"
