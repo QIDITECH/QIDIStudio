@@ -25,7 +25,9 @@
 
 #include <sstream>
 #include <slic3r/GUI/Widgets/WebView.hpp>
+#if QDT_RELEASE_TO_PUBLIC
 #include "../QIDI/QIDINetwork.hpp"
+#endif
 #include <nlohmann/json.hpp>
 
 
