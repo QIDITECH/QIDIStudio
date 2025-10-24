@@ -131,8 +131,8 @@ wxBoxSizer *TipsDialog::create_item_checkbox(wxString title, wxWindow *parent, w
 Button *TipsDialog::add_button(wxWindowID btn_id, const wxString &label, bool set_focus /*= false*/)
 {
     Button* btn = new Button(this, label, "", 0, 0, btn_id);
-    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
-                            std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
+    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Pressed),
+                            std::pair<wxColour, int>(wxColour(116, 168, 255), StateColor::Hovered),
                             std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
 
     StateColor btn_bd_blue(std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
@@ -607,6 +607,7 @@ void ParamsPanel::OnToggled(wxCommandEvent& event)
     }
 
     Slic3r::GUI::wxGetApp().save_mode(mode_id);
+    event.Skip();
 }
 
 // This is special, DO NOT call it from outer except from Tab

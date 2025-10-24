@@ -480,8 +480,13 @@ wxBitmap create_scaled_bitmap(  const std::string& bmp_name_in,
             s_bmps_not_found.emplace(bmp_name);
         }
 
-        // Neither SVG nor PNG has been found, raise error
-        throw Slic3r::RuntimeError("Could not load bitmap: " + bmp_name);
+        //y73
+        bmp_name = "printer_placeholder";
+        bmp = cache.load_png(bmp_name, width, height, grayscale, resize ? win->FromDIP(10) * 0.1f : 0.f);
+        if (bmp == nullptr) {
+            // Neither SVG nor PNG has been found, raise error
+            throw Slic3r::RuntimeError("Could not load bitmap: " + bmp_name);
+        }
     }
 
     return *bmp;

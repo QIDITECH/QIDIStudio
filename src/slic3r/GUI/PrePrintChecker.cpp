@@ -8,13 +8,16 @@ namespace Slic3r { namespace GUI {
 
 std::string PrePrintChecker::get_print_status_info(PrintDialogStatus status)
 {
-    switch (status) {
+    switch (status)
+    {
     case PrintStatusInit: return "PrintStatusInit";
     case PrintStatusNoUserLogin: return "PrintStatusNoUserLogin";
     case PrintStatusInvalidPrinter: return "PrintStatusInvalidPrinter";
     case PrintStatusConnectingServer: return "PrintStatusConnectingServer";
     case PrintStatusReadingTimeout: return "PrintStatusReadingTimeout";
     case PrintStatusReading: return "PrintStatusReading";
+    case PrintStatusConnecting: return "PrintStatusConnecting";
+    case PrintStatusReconnecting: return "PrintStatusReconnecting";
     case PrintStatusInUpgrading: return "PrintStatusInUpgrading";
     case PrintStatusModeNotFDM: return "PrintStatusModeNotFDM";
     case PrintStatusInSystemPrinting: return "PrintStatusInSystemPrinting";
@@ -33,26 +36,31 @@ std::string PrePrintChecker::get_print_status_info(PrintDialogStatus status)
     case PrintStatusNotSupportedPrintAll: return "PrintStatusNotSupportedPrintAll";
     case PrintStatusBlankPlate: return "PrintStatusBlankPlate";
     case PrintStatusUnsupportedPrinter: return "PrintStatusUnsupportedPrinter";
-    case PrintStatusInvalidMapping: return "PrintStatusInvalidMapping";
+    case PrintStatusColorQuantityExceed: return "PrintStatusColorQuantityExceed";
     // Handle filament errors
     case PrintStatusAmsOnSettingup: return "PrintStatusAmsOnSettingup";
     case PrintStatusAmsMappingInvalid: return "PrintStatusAmsMappingInvalid";
     case PrintStatusAmsMappingU0Invalid: return "PrintStatusAmsMappingU0Invalid";
     case PrintStatusAmsMappingMixInvalid: return "PrintStatusAmsMappingMixInvalid";
     case PrintStatusTPUUnsupportAutoCali: return "PrintStatusTPUUnsupportAutoCali";
-    // Handle warnings
+    case PrintStatusHasFilamentInBlackListError: return "PrintStatusHasFilamentInBlackListError";
     case PrintStatusTimelapseNoSdcard: return "PrintStatusTimelapseNoSdcard";
     case PrintStatusTimelapseWarning: return "PrintStatusTimelapseWarning";
     case PrintStatusMixAmsAndVtSlotWarning: return "PrintStatusMixAmsAndVtSlotWarning";
-    // Handle success statuses
+    case PrintStatusWarningKvalueNotUsed: return "PrintStatusWarningKvalueNotUsed";
+    case PrintStatusHasFilamentInBlackListWarning: return "PrintStatusHasFilamentInBlackListWarning";
+    case PrintStatusFilamentWarningHighChamberTemp: return "PrintStatusFilamentWarningHighChamberTemp";
+    case PrintStatusFilamentWarningHighChamberTempCloseDoor: return "PrintStatusFilamentWarningHighChamberTempCloseDoor";
+    case PrintStatusFilamentWarningHighChamberTempSoft: return "PrintStatusFilamentWarningHighChamberTempSoft";
+    case PrintStatusFilamentWarningUnknownHighChamberTempSoft: return "PrintStatusFilamentWarningUnknownHighChamberTempSoft";
     case PrintStatusReadingFinished: return "PrintStatusReadingFinished";
     case PrintStatusSendingCanceled: return "PrintStatusSendingCanceled";
     case PrintStatusAmsMappingSuccess: return "PrintStatusAmsMappingSuccess";
+    case PrintStatusReadyToGo: return "PrintStatusReadyToGo";
     case PrintStatusNotOnTheSameLAN: return "PrintStatusNotOnTheSameLAN";
     case PrintStatusNotSupportedSendToSDCard: return "PrintStatusNotSupportedSendToSDCard";
     case PrintStatusPublicInitFailed: return "PrintStatusPublicInitFailed";
     case PrintStatusPublicUploadFiled: return "PrintStatusPublicUploadFiled";
-    case PrintStatusReadyToGo: return "PrintStatusReadyToGo";
     default: return "Unknown status";
     }
 }
@@ -68,8 +76,9 @@ wxString PrePrintChecker::get_pre_state_msg(PrintDialogStatus status)
     case PrintStatusInUpgrading: return _L("Cannot send the print job when the printer is updating firmware");
     case PrintStatusInSystemPrinting: return _L("The printer is executing instructions. Please restart printing after it ends");
     case PrintStatusInPrinting: return _L("The printer is busy on other print job");
-    case PrintStatusAmsOnSettingup: return _L("Box is setting up. Please try again later.");
-    case PrintStatusAmsMappingMixInvalid: return _L("Please do not mix-use the Ext with BOX");
+    case PrintStatusAmsOnSettingup: return _L("AMS is setting up. Please try again later.");
+    case PrintStatusAmsMappingInvalid: return _L("Not all filaments used in slicing are mapped to the printer. Please check the mapping of filaments.");
+    case PrintStatusAmsMappingMixInvalid: return _L("Please do not mix-use the Ext with AMS");
     case PrintStatusNozzleDataInvalid: return _L("Invalid nozzle information, please refresh or manually set nozzle information.");
     case PrintStatusLanModeNoSdcard: return _L("Storage needs to be inserted before printing via LAN.");
     case PrintStatusLanModeSDcardNotAvailable: return _L("Storage is not available or is in read-only mode.");
@@ -78,12 +87,11 @@ wxString PrePrintChecker::get_pre_state_msg(PrintDialogStatus status)
     case PrintStatusNeedConsistencyUpgrading: return _L("Cannot send the print job to a printer whose firmware is required to get updated.");
     case PrintStatusBlankPlate: return _L("Cannot send the print job for empty plate");
     case PrintStatusTimelapseNoSdcard: return _L("Storage needs to be inserted to record timelapse.");
-    case PrintStatusMixAmsAndVtSlotWarning: return _L("You have selected both external and Box filaments for an extruder. You will need to manually switch the external filament during printing.");
+    case PrintStatusMixAmsAndVtSlotWarning: return _L("You have selected both external and AMS filaments for an extruder. You will need to manually switch the external filament during printing.");
     case PrintStatusTPUUnsupportAutoCali: return _L("TPU 90A/TPU 85A is too soft and does not support automatic Flow Dynamics calibration.");
     case PrintStatusWarningKvalueNotUsed: return _L("Set dynamic flow calibration to 'OFF' to enable custom dynamic flow value.");
     case PrintStatusNotSupportedPrintAll: return _L("This printer does not support printing all plates");
-    case PrintStatusWarningTpuRightColdPulling: return _L("Please cold pull before printing TPU to avoid clogging. You may use cold pull maintenance on the printer.");
-    case PrintStatusFilamentWarningHighChamberTempCloseDoor: return _L("High chamber temperature is required. Please close the door.");
+    case PrintStatusColorQuantityExceed: return _L("The current firmware supports a maximum of 16 materials. You can either reduce the number of materials to 16 or fewer on the Preparation Page, or try updating the firmware. If you are still restricted after the update, please wait for subsequent firmware support.");
     }
     return wxEmptyString;
 }
@@ -234,6 +242,7 @@ bool PrinterMsgPanel::UpdateInfos(const std::vector<prePrintInfo>& infos)
 
     return true;
 }
+
 
 }
 };

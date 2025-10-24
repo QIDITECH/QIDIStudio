@@ -41,6 +41,7 @@ enum CalibrationFilamentMode {
 enum CalibrationMethod {
     CALI_METHOD_MANUAL = 0,
     CALI_METHOD_AUTO,
+    CALI_METHOD_NEW_AUTO,
     CALI_METHOD_NONE,
 };
 

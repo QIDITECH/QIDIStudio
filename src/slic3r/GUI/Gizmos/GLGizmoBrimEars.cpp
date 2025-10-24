@@ -483,8 +483,10 @@ void GLGizmoBrimEars::delete_selected_points()
 {
     Plater::TakeSnapshot snapshot(wxGetApp().plater(), "Delete brim ear");
 
-    for (unsigned int idx = 0; idx < m_editing_cache.size(); ++idx) {
-        if (m_editing_cache[idx].selected) { m_editing_cache.erase(m_editing_cache.begin() + (idx--)); }
+    for (int idx = m_editing_cache.size() - 1; idx >= 0; idx--) {
+        if (m_editing_cache[idx].selected ) {
+            m_editing_cache.erase(m_editing_cache.begin() + idx);
+        }
     }
 
     select_point(NoPoints);

@@ -60,8 +60,8 @@ static StateColor btn_bg_gray(std::pair<wxColour, int>(wxColour(194, 194, 194), 
 
 //y
 static  StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Disabled),
-							std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
-							std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
+							std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Pressed),
+							std::pair<wxColour, int>(wxColour(116, 168, 255), StateColor::Hovered),
 							std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
 
 PartSkipDialog::PartSkipDialog(wxWindow *parent) : DPIDialog(parent, wxID_ANY, _L("Skip Objects"), wxDefaultPosition, wxDefaultSize, wxCAPTION | wxCLOSE_BOX)
@@ -996,8 +996,8 @@ PartSkipConfirmDialog::PartSkipConfirmDialog(wxWindow *parent) : DPIDialog(paren
 
     //y
     StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Disabled),
-							std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
-							std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
+							std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Pressed),
+							std::pair<wxColour, int>(wxColour(116, 168, 255), StateColor::Hovered),
 							std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
 
     m_apply_button = new Button(this, _L("Continue"));

@@ -147,6 +147,7 @@ enum class NotificationType
 	QDTSeqPrintInfo,
 	//QDT: plugin install hint
 	QDTPluginInstallHint,
+    QDTFlushingVolumeZero,
 	QDTPluginUpdateAvailable,
 	QDTPreviewOnlyMode,
     QDTPrinterConfigUpdateAvailable,
@@ -249,6 +250,9 @@ public:
 	// Closes error or warning of the same text
 	void close_plater_error_notification(const std::string& text);
 	void close_plater_warning_notification(const std::string& text);
+	//The flushing volume matrix has zero values in its off-diagonal elements
+    void push_flushing_volume_error_notification(NotificationType type, NotificationLevel level, const std::string &text, const std::string &hypertext = "", std::function<bool(wxEvtHandler *)> callback  = std::function<bool(wxEvtHandler *)>());
+    void close_flushing_volume_error_notification(NotificationType type, NotificationLevel level);
 	// GCode exceeds the printing range of the extruder
     void push_slicing_customize_error_notification(NotificationType type, NotificationLevel level, const std::string &text, const std::string &hypertext = "", std::function<bool(wxEvtHandler*)> callback = std::function<bool(wxEvtHandler*)>());
     void close_slicing_customize_error_notification(NotificationType type, NotificationLevel level);
@@ -283,7 +287,7 @@ public:
 	void update_slicing_notif_dailytips(bool need_change);
 	void set_slicing_progress_began(bool is_helio = false);
 	// percentage negative = canceled, <0-1) = progress, 1 = completed
-	void set_slicing_progress_percentage(const std::string& text, float percentage);
+	void set_slicing_progress_percentage(const std::string& text, float percentage, bool is_helio = false);
 	void set_slicing_progress_canceled(const std::string& text);
 	// hides slicing progress notification imidietly
 	void set_slicing_progress_hidden();
@@ -952,7 +956,7 @@ private:
 			_u8L("The number of user presets cached in the cloud has exceeded the upper limit, newly created user presets can only be used locally."), 
 			_u8L("Wiki"),
                          [](wxEvtHandler* evnthndlr) {
-				wxLaunchDefaultBrowser("https://wiki.qiditech.com/en/software/qidi-studio/3rd-party-printer-profile#cloud-user-presets-limit");
+				wxLaunchDefaultBrowser("https://wiki.qidi3d.com/zh/software/qidi-studio/print-settings/create_cuspre");
 				return false;
              }},
 

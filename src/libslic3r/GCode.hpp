@@ -323,6 +323,7 @@ private:
         size_t      gcode_store_pos = 0;
         //store each layer_time
         float       layer_time = 0;
+        bool   not_set_additional_fan { false };
         LayerResult() = default;
         LayerResult(const std::string& gcode_, const size_t layer_id_, const bool spiral_vase_enable_, const bool cooling_buffer_flush_, const size_t gcode_store_pos_ = static_cast<size_t>(-1)) :
             gcode(gcode_), layer_id(layer_id_), spiral_vase_enable(spiral_vase_enable_), cooling_buffer_flush(cooling_buffer_flush_), gcode_store_pos(gcode_store_pos_){}
@@ -334,7 +335,8 @@ private:
             spiral_vase_enable = other.spiral_vase_enable;
             cooling_buffer_flush = other.cooling_buffer_flush;
             gcode_store_pos = other.gcode_store_pos;
-            layer_time = other.layer_time;
+            layer_time     = other.layer_time;
+            not_set_additional_fan = other.not_set_additional_fan;
         }
 
         LayerResult& operator=(LayerResult&& other) noexcept {
@@ -344,7 +346,8 @@ private:
                 spiral_vase_enable = other.spiral_vase_enable;
                 cooling_buffer_flush = other.cooling_buffer_flush;
                 gcode_store_pos = other.gcode_store_pos;
-                layer_time = other.layer_time;
+                layer_time      = other.layer_time;
+                not_set_additional_fan = other.not_set_additional_fan;
             }
             return *this;
         }
@@ -588,6 +591,7 @@ private:
     coordf_t m_nominal_z;
     bool m_need_change_layer_lift_z = false;
     int m_start_gcode_filament = -1;
+    std::string m_filament_instances_code;
 
     //w16
     bool m_resonance_avoidance = true;

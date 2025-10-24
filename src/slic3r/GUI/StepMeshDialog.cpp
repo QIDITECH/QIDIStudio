@@ -126,7 +126,7 @@ StepMeshDialog::StepMeshDialog(wxWindow* parent, Slic3r::Step& file, double line
     tips->SetForegroundColour(StateColor::darkModeColorFor(wxColour(68, 121, 251)));
     tips->SetFont(font);
     tips->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e) {
-        wxLaunchDefaultBrowser("https://wiki.qiditech.com/en/software/qidi-studio/step");
+        wxLaunchDefaultBrowser("https://wiki.qidi3d.com/en/software/qidi-studio/expand/step");
     });
     info->Wrap(FromDIP(400));
     tips_sizer->Add(info, 0, wxALIGN_LEFT);

@@ -10,6 +10,7 @@
 #include "MainFrame.hpp"
 #include "WebViewDialog.hpp"
 #include "PartPlate.hpp"
+#include "ReleaseNote.hpp"
 
 #include <boost/log/trivial.hpp>
 
@@ -275,9 +276,6 @@ void QDTTopbar::Init(wxFrame* parent)
     m_model_store_item = this->AddTool(ID_MODEL_STORE, "", model_store_bitmap);
     this->AddSpacer(12);
     */
-
-    //this->AddSeparator();
-    this->AddSpacer(FromDIP(4));
 
     wxBitmap iconize_bitmap = create_scaled_bitmap("topbar_min", nullptr, TOPBAR_ICON_SIZE);
     wxAuiToolBarItem* iconize_btn = this->AddTool(wxID_ICONIZE_FRAME, "", iconize_bitmap);

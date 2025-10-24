@@ -120,7 +120,7 @@ using Slic3r::QDTStatusBarSend;
 }
 
 wxDECLARE_EVENT(EVT_SHOW_ERROR_INFO_SEND, wxCommandEvent);
-
+wxDECLARE_EVENT(EVT_SHOW_ERROR_FAIL_SEND, wxCommandEvent);
 } // namespace Slic3r
 
 #endif // QDTSTATUSBAR_HPP

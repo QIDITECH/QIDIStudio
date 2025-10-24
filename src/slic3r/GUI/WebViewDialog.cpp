@@ -55,12 +55,14 @@ WebViewPanel::WebViewPanel(wxWindow *parent)
 
     wxString UrlLeft  = wxString::Format("file://%s/web/homepage3/left.html", from_u8(resources_dir()));
     wxString UrlRight = wxString::Format("file://%s/web/homepage3/home.html", from_u8(resources_dir()));
+    wxString UrlWiki   = wxString::Format("file://%s/web/homepage3/wiki.html", from_u8(resources_dir()));
 
     wxString strlang = GetStudioLanguage();
     if (strlang != "")
     {
         UrlLeft = wxString::Format("file://%s/web/homepage3/left.html?lang=%s", from_u8(resources_dir()), strlang);
         UrlRight = wxString::Format("file://%s/web/homepage3/home.html?lang=%s", from_u8(resources_dir()), strlang);
+        UrlWiki = wxString::Format("file://%s/web/homepage3/wiki.html?lang=%s", from_u8(resources_dir()), strlang);
     }
 
     topsizer = new wxBoxSizer(wxVERTICAL);
@@ -157,11 +159,21 @@ WebViewPanel::WebViewPanel(wxWindow *parent)
     SetMakerlabUrl("");
     m_MakerLabFirst = false;
 
+    // Wiki webview
+    m_browserWiki = WebView::CreateWebView(this, UrlWiki);
+    if (m_browserWiki == nullptr) {
+        wxLogError("Could not init  m_browserWiki");
+        return;
+    }
+    m_browserWiki->Hide();
+    m_WikiFirst = false;
+
     m_home_web->Add(m_browserLeft, 0, wxEXPAND | wxALL, 0);
     m_home_web->Add(m_browser, 1, wxEXPAND | wxALL, 0);
     m_home_web->Add(m_browserMW, 1, wxEXPAND | wxALL, 0);
     m_home_web->Add(m_browserPH, 1, wxEXPAND | wxALL, 0);
     m_home_web->Add(m_browserML, 1, wxEXPAND | wxALL, 0);
+    m_home_web->Add(m_browserWiki, 1, wxEXPAND | wxALL, 0);
 
     topsizer->Add(m_home_web,1, wxEXPAND | wxALL, 0);
 
@@ -705,6 +717,51 @@ void WebViewPanel::SendDesignStaffpick(bool on)
     m_has_pending_staff_pick = false;
 }
 
+void WebViewPanel::get_wiki_search_result(std::string keyword)
+{
+    if (keyword.empty()) {
+        return;
+    }
+
+    std::string url = "https://wiki.qidi3d.com/graphql";
+    Slic3r::Http http = Slic3r::Http::post(url);
+
+    auto esc = [](std::string s) {
+        std::string o; o.reserve(s.size());
+        for (char c : s) {
+            switch (c) {
+            case '\\': o += "\\\\"; break;
+            case '\"': o += "\\\""; break;
+            case '\n': o += "\\n";  break;
+            case '\r': o += "\\r";  break;
+            case '\t': o += "\\t";  break;
+            default:   o += c;      break;
+            }
+        }
+        return o;
+    };
+
+    std::string json_body = (boost::format(
+    R"JSON({"operationName":null,"variables":{"query":"%1%"},"extensions":{},"query":"query ($query: String!) { pages { search(query: $query) { results { id title description path locale } totalHits } } }"})JSON"
+) % esc(keyword)).str();
+
+    http.header("Content-Type", "application/json");
+    http.set_post_body(json_body);
+    http.on_complete([this](std::string body, unsigned status) {
+        CallAfter([this, body]() {
+            json j = json::parse(body);
+            if (j.contains("data")) {
+                auto body2 = from_u8(body);
+                body2.insert(1, "\"command\": \"search_wiki_get\", ");
+                WebView::RunScript(m_browserWiki, wxString::Format("HandleStudio(%s)", body2));
+                return;
+            }
+        });
+    }).on_error([this](std::string body, std::string error, unsigned int status) {
+            BOOST_LOG_TRIVIAL(error) << "get wiki search result error" << body;
+    }).perform();
+}
+
 void WebViewPanel::SendMakerlabList(  )
 {
     try {
@@ -1175,14 +1232,14 @@ void WebViewPanel::ShowUserPrintTask(bool bShow, bool bForce)
         if (m_contentname == "printhistory") SwitchLeftMenu("home");
 
         //refresh url
-        auto host = wxGetApp().get_model_http_url(wxGetApp().app_config->get_country_code());
+        // auto host = wxGetApp().get_model_http_url(wxGetApp().app_config->get_country_code());
 
-        wxString language_code = wxString::FromUTF8(GetStudioLanguage()).BeforeFirst('_');
+        // wxString language_code = wxString::FromUTF8(GetStudioLanguage()).BeforeFirst('_');
 
-        wxString mw_OffUrl = (boost::format("%1%%2%/studio/print-history?from=qidistudio") % host % language_code.mb_str()).str();
-        wxString Finalurl  = wxString::Format("%sapi/sign-out?to=%s", host, UrlEncode("about:blank"));
+        // wxString mw_OffUrl = (boost::format("%1%%2%/studio/print-history?from=qidistudio") % host % language_code.mb_str()).str();
+        // wxString Finalurl  = wxString::Format("%sapi/sign-out?to=%s", host, UrlEncode("about:blank"));
 
-        m_browserPH->LoadURL(Finalurl);
+        // m_browserPH->LoadURL(Finalurl);
         SetPrintHistoryTaskID(0);
         m_TaskInfo = "";
 
@@ -1772,6 +1829,7 @@ void WebViewPanel::SwitchWebContent(std::string modelname, int refresh)
             SetWebviewShow("online", false);
             SetWebviewShow("right", false);
             SetWebviewShow("printhistory", false);
+            SetWebviewShow("wiki", false);
 
         // conf save
         wxGetApp().app_config->set_str("homepage", "makerlab_clicked", "1");
@@ -1790,7 +1848,7 @@ void WebViewPanel::SwitchWebContent(std::string modelname, int refresh)
         } else {
             if (m_online_LastUrl != "") {
                 m_browserMW->LoadURL(m_online_LastUrl);
-
+                BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": LoadURL " << m_online_LastUrl.ToStdString();
                 m_online_LastUrl = "";
             } else {
                 std::string TmpNowUrl = m_browserMW->GetCurrentURL().ToStdString();
@@ -1813,7 +1871,7 @@ void WebViewPanel::SwitchWebContent(std::string modelname, int refresh)
         SetWebviewShow("makerlab", false);
         SetWebviewShow("right", false);
         SetWebviewShow("printhistory", false);
-
+        SetWebviewShow("wiki", false);
         // conf save
         wxGetApp().app_config->set_str("homepage", "online_clicked", "1");
         wxGetApp().app_config->save();
@@ -1855,8 +1913,25 @@ void WebViewPanel::SwitchWebContent(std::string modelname, int refresh)
         SetWebviewShow("right", false);
         SetWebviewShow("printhistory", true);
         SetWebviewShow("makerlab", false);
+        SetWebviewShow("wiki", false);
 
-    } else if (modelname.compare("home") == 0 || modelname.compare("recent") == 0 || modelname.compare("manual") == 0) {
+    } else if (modelname.compare("manual") == 0){
+        auto host = wxGetApp().get_model_http_url(wxGetApp().app_config->get_country_code());
+
+        wxString language_code = wxString::FromUTF8(GetStudioLanguage()).BeforeFirst('_');
+
+        // wxString wikiUrl = (boost::format("%1%%2%/studio/wiki?from=qidistudio") % host % language_code.mb_str()).str();
+
+        // if (m_browserWiki != nullptr)
+        //     m_browserWiki->LoadURL(wikiUrl);
+
+        SetWebviewShow("wiki", true);
+        SetWebviewShow("online", false);
+        SetWebviewShow("right", false);
+        SetWebviewShow("printhistory", false);
+        SetWebviewShow("makerlab", false);
+
+    } else if (modelname.compare("home") == 0 || modelname.compare("recent") == 0 ) {
         if (!m_browser) return;
 
         json m_Res           = json::object();
@@ -1873,6 +1948,7 @@ void WebViewPanel::SwitchWebContent(std::string modelname, int refresh)
         SetWebviewShow("printhistory", false);
         SetWebviewShow("right", true);
         SetWebviewShow("makerlab", false);
+        SetWebviewShow("wiki", false);
     }
 
     GetSizer()->Layout();
@@ -1963,6 +2039,8 @@ void WebViewPanel::SetWebviewShow(wxString name, bool show)
         TmpWeb = m_browserPH;
     else if (name == "makerlab")
         TmpWeb = m_browserML;
+    else if (name == "wiki")
+        TmpWeb = m_browserWiki;
     
     if (TmpWeb != nullptr)
     {

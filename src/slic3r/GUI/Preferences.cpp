@@ -16,7 +16,6 @@
 #include <map>
 #include "Gizmos/GLGizmoBase.hpp"
 #include "OpenGLManager.hpp"
-#include "../Utils/HelioDragon.hpp"
 #ifdef __WINDOWS__
 #ifdef _MSW_DARK_MODE
 #include "dark_mode.hpp"
@@ -338,32 +337,6 @@ wxBoxSizer *PreferencesDialog::create_item_region_combobox(wxString title, wxWin
             }
         } else {
             config->set("region", region.ToStdString());
-        }
-
-        /*request helio data*/
-        if (config->get("helio_enable") == "true") {
-            std::string helio_api_key = Slic3r::HelioQuery::get_helio_pat();
-            if (helio_api_key.empty()) {
-                wxGetApp().request_helio_pat([this](std::string pat) {
-                    CallAfter([=]() {
-                        if (pat != "not_enough" && pat != "error") {
-                            Slic3r::HelioQuery::set_helio_pat(pat);
-                            helio_input_pat->SetLabel(Slic3r::HelioQuery::get_helio_pat());
-                            if (!Slic3r::HelioQuery::get_helio_pat().empty()) { helio_pat_refresh->Hide(); }
-                            else { helio_pat_refresh->Show(); }
-
-
-                            if (!Slic3r::HelioQuery::get_helio_api_url().empty() && !Slic3r::HelioQuery::get_helio_pat().empty()) {
-                                wxGetApp().request_helio_supported_data();
-                            }
-                        }
-                    });
-                 });
-            }
-            helio_input_pat->SetLabel(Slic3r::HelioQuery::get_helio_pat());
-            if (!Slic3r::HelioQuery::get_helio_pat().empty()) { helio_pat_refresh->Hide(); }
-            else { helio_pat_refresh->Show(); }
-
         }
         wxGetApp().update_publish_status();
         //e.Skip();
@@ -894,52 +867,6 @@ wxBoxSizer *PreferencesDialog::create_item_checkbox(wxString title, wxWindow *pa
             wxPostEvent(wxGetApp().plater(), evt);
         }
 
-        if (param == "helio_enable") {
-            if (checkbox->GetValue()) {
-                HelioStatementDialog dlg;
-                auto        res = dlg.ShowModal();
-
-                if (res == wxID_OK) {
-                    std::string helio_api_key = Slic3r::HelioQuery::get_helio_pat();
-                    if (helio_api_key.empty()) {
-                        wxGetApp().request_helio_pat([this](std::string pat) {
-                            CallAfter([=]() {
-                                if (pat == "not_enough") {
-                                    HelioPatNotEnoughDialog dlg;
-                                    dlg.ShowModal();
-                                }
-                                else if (pat == "error") {
-                                    MessageDialog dlg(nullptr, _L("Failed to obtain Helio PAT, Click Refresh to obtain it again."), wxString("Helio Additive"), wxYES | wxICON_WARNING);
-                                    dlg.ShowModal();
-                                }
-                                else {
-                                    Slic3r::HelioQuery::set_helio_pat(pat);
-                                    helio_input_pat->SetLabel(Slic3r::HelioQuery::get_helio_pat());
-                                    if (!Slic3r::HelioQuery::get_helio_pat().empty()) { helio_pat_refresh->Hide(); }
-                                    else { helio_pat_refresh->Show(); }
-                                    if (!Slic3r::HelioQuery::get_helio_api_url().empty() && !Slic3r::HelioQuery::get_helio_pat().empty()) {
-                                        wxGetApp().request_helio_supported_data();
-                                    }
-                                }
-                            });
-                        });
-                    }
-                }
-                else {
-                    wxGetApp().app_config->set_bool("helio_enable", false);
-                    checkbox->SetValue(false);
-                }
-            }
-
-            if (GUI::wxGetApp().app_config->get("helio_enable") == "true") { helio_pat_panel->Show(); }
-            else { helio_pat_panel->Hide(); }
-
-            helio_fun_panel->Layout();
-            helio_fun_panel->Fit();
-            m_scrolledWindow->Layout();
-            m_scrolledWindow->FitInside();
-        }
-
         if (param == "enable_high_low_temp_mixed_printing") {
             if (checkbox->GetValue()) {
                 const wxString warning_title = _L("Bed Temperature Difference Warning");
@@ -949,15 +876,15 @@ wxBoxSizer *PreferencesDialog::create_item_checkbox(wxString title, wxWindow *pa
                         "• Nozzle damage\n"
                         "• Layer adhesion issues\n\n"
                         "Continue with enabling this feature?");
-                std::function<void(const wxString&)> link_callback = [](const wxString&) {
-                            const std::string lang_code = wxGetApp().app_config->get("language");
-                            const wxString region = (lang_code.find("zh") != std::string::npos) ? L"zh" : L"en";
-                            const wxString wiki_url = wxString::Format(
-                                L"https://wiki.qiditech.com/%s/filament-acc/filament/h2d-filament-config-limit",
-                                region
-                            );
-                            wxGetApp().open_browser_with_warning_dialog(wiki_url);
-                            };
+                // std::function<void(const wxString&)> link_callback = [](const wxString&) {
+                //             const std::string lang_code = wxGetApp().app_config->get("language");
+                //             const wxString region = (lang_code.find("zh") != std::string::npos) ? L"zh" : L"en";
+                //             const wxString wiki_url = wxString::Format(
+                //                 L"https://wiki.qiditech.com/%s/filament-acc/filament/h2d-filament-config-limit",
+                //                 region
+                //             );
+                //             wxGetApp().open_browser_with_warning_dialog(wiki_url);
+                //             };
 
                 MessageDialog msg_dialog(
                     nullptr,
@@ -965,8 +892,7 @@ wxBoxSizer *PreferencesDialog::create_item_checkbox(wxString title, wxWindow *pa
                     warning_title,
                     wxICON_WARNING | wxYES_NO | wxCANCEL | wxYES_DEFAULT | wxCENTRE,
                     wxEmptyString,
-                    _L("Click Wiki for help."),
-                    link_callback
+                    _L("Click Wiki for help.")
                 );
 
                 if (msg_dialog.ShowModal() != wxID_YES) {
@@ -1320,6 +1246,12 @@ wxWindow* PreferencesDialog::create_general_page()
         p_ogl_manager->set_toolbar_rendering_style(idx);
     });
 
+#ifdef QDT_ENABLE_ADVANCED_GCODE_VIEWER
+    auto  enable_advanced_gcode_viewer = create_item_checkbox(_L("Enable advanced gcode viewer"), page,
+        _L("Enable advanced gcode viewer."), 50,
+        "enable_advanced_gcode_viewer");
+#endif
+
     float range_min = 1.0, range_max = 2.5;
     auto item_grabber_size_settings = create_item_range_input(_L("Grabber scale"), page,
                                                               _L("Set grabber size for move,rotate,scale tool.") + _L("Value range") + ":[" + std::to_string(range_min) + "," +
@@ -1353,124 +1285,6 @@ wxWindow* PreferencesDialog::create_general_page()
     // auto item_backup = create_item_switch(_L("Backup switch"), page, _L("Backup switch"), "units");
     //auto item_modelmall = create_item_checkbox(_L("Show online staff-picked models on the home page"), page, _L("Show online staff-picked models on the home page"), 50, "staff_pick_switch");
     // auto item_show_history = create_item_checkbox(_L("Show history on the home page"), page, _L("Show history on the home page"), 50, "show_print_history");
-
-// y71 Helio
-    // // helio options
-    // helio_fun_panel = new wxPanel(page);
-    // helio_fun_panel->SetBackgroundColour(wxColour(248, 248, 248));
-    // helio_fun_panel->SetMinSize(wxSize(FromDIP(568), -1));
-    // //helio_fun_panel->SetMaxSize(wxSize(FromDIP(568), -1));
-    // wxBoxSizer *sizer_helio_fun = new wxBoxSizer(wxVERTICAL);
-    // wxBoxSizer *sizer_helio_fun_link = new wxBoxSizer(wxHORIZONTAL);
-    // wxBoxSizer *sizer_helio_title = new wxBoxSizer(wxHORIZONTAL);
-    // wxBoxSizer *sizer_helio_pat = new wxBoxSizer(wxHORIZONTAL);
-
-    // auto helio_icon_helio = new wxStaticBitmap(helio_fun_panel, wxID_ANY, create_scaled_bitmap("helio_icon_dark", helio_fun_panel, 16), wxDefaultPosition, wxSize(FromDIP(16), FromDIP(16)), 0);
-
-    // auto helio_title_slice = create_item_title(_L("Helio Options"), helio_fun_panel, _L("Helio Options"));
-    // auto helio_item_switch_slice = create_item_checkbox(_L("Enable Helio"), helio_fun_panel, _L("Enable Helio"), 50, "helio_enable");
-    // auto helio_split_line = new wxPanel(helio_fun_panel, wxID_ANY, wxDefaultPosition, wxSize(-1, 1), wxTAB_TRAVERSAL);
-    // helio_split_line->SetMaxSize(wxSize(-1, 1));
-    // helio_split_line->SetBackgroundColour(DESIGN_GRAY400_COLOR);
-
-    // helio_pat_panel = new wxPanel(helio_fun_panel);
-    // helio_pat_panel->SetBackgroundColour(helio_fun_panel->GetBackgroundColour());
-    // auto helio_title_pat = new Label(helio_pat_panel, _L("Helio-PAT"));
-    // helio_input_pat = new ::TextInput(helio_pat_panel, wxEmptyString, wxEmptyString, wxEmptyString, wxDefaultPosition, DESIGN_INPUT_SIZE, wxTE_PROCESS_ENTER|wxTE_RIGHT);
-    // helio_input_pat->SetFont(Label::Body_13);
-    // helio_input_pat->SetMinSize(wxSize(FromDIP(410), FromDIP(22)));
-    // helio_input_pat->SetMaxSize(wxSize(FromDIP(410), FromDIP(22)));
-    // helio_input_pat->Disable();
-    // helio_input_pat->SetLabel(Slic3r::HelioQuery::get_helio_pat());
-
-    // helio_pat_refresh = new wxStaticBitmap(helio_pat_panel, wxID_ANY, create_scaled_bitmap("ams_refresh_selected", helio_fun_panel, 20), wxDefaultPosition, wxSize(FromDIP(20), FromDIP(20)), 0);
-    // helio_pat_refresh->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) { SetCursor(wxCURSOR_HAND); });
-    // helio_pat_refresh->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) { SetCursor(wxCURSOR_ARROW); });
-    // helio_pat_refresh->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {
-    //     std::string helio_api_key = Slic3r::HelioQuery::get_helio_pat();
-    //     if (!helio_api_key.empty()) {
-    //         return;
-    //     }
-    //     wxGetApp().request_helio_pat([this](std::string pat) {
-    //         CallAfter([=]() {
-    //             if (pat == "not_enough") {
-    //                 HelioPatNotEnoughDialog dlg;
-    //                 dlg.ShowModal();
-    //             }
-    //             else if (pat == "error") {
-    //                 MessageDialog dlg(nullptr, _L("Failed to obtain Helio PAT, Click Refresh to obtain it again."), wxString("Helio Additive"), wxYES | wxICON_WARNING);
-    //                 dlg.ShowModal();
-    //             }
-    //             else {
-    //                 Slic3r::HelioQuery::set_helio_pat(pat);
-    //                 helio_input_pat->SetLabel(Slic3r::HelioQuery::get_helio_pat());
-    //                 if (!Slic3r::HelioQuery::get_helio_pat().empty()) { helio_pat_refresh->Hide(); }
-    //                 else { helio_pat_refresh->Show(); }
-
-
-    //                 if (!Slic3r::HelioQuery::get_helio_api_url().empty() && !Slic3r::HelioQuery::get_helio_pat().empty()) {
-    //                     wxGetApp().request_helio_supported_data();
-    //                 }
-    //             }
-    //         });
-    //     });
-    // });
-
-    // if (!Slic3r::HelioQuery::get_helio_pat().empty()) { helio_pat_refresh->Hide(); }
-    // else { helio_pat_refresh->Show(); }
-
-    // sizer_helio_pat->Add(0, 0, 0, wxLEFT, FromDIP(50));
-    // sizer_helio_pat->Add(helio_title_pat, 0, wxALIGN_CENTER, 0);
-    // sizer_helio_pat->Add(0, 0, 0, wxLEFT, FromDIP(10));
-    // sizer_helio_pat->Add(helio_input_pat, 0, wxALIGN_CENTER, 0);
-    // sizer_helio_pat->Add(0, 0, 0, wxLEFT, FromDIP(4));
-    // sizer_helio_pat->Add(helio_pat_refresh, 0, wxALIGN_CENTER, 0);
-    // helio_pat_panel->SetSizer(sizer_helio_pat);
-
-    // if (GUI::wxGetApp().app_config->get("helio_enable") == "true") { helio_pat_panel->Show(); }
-    // else { helio_pat_panel->Hide(); }
-
-    // auto helio_about_link = new LinkLabel(helio_fun_panel, _L("About Helio"), "https://www.helioadditive.com/");
-    // LinkLabel* helio_privacy_link = nullptr;
-
-    // if (GUI::wxGetApp().app_config->get("region") == "China") {
-    //     helio_privacy_link = new LinkLabel(helio_fun_panel, _L("Helio Privacy Policy"), "https://www.helioadditive.com/zh-cn/policies/privacy");
-    // } else {
-    //     helio_privacy_link = new LinkLabel(helio_fun_panel, _L("Helio Privacy Policy"), "https://www.helioadditive.com/en-us/policies/privacy");
-    // }
-
-    // helio_about_link->getLabel()->SetFont(::Label::Body_13);
-    // helio_privacy_link->getLabel()->SetFont(::Label::Body_13);
-
-    // helio_about_link->SeLinkLabelFColour(wxColour(0, 119, 250));
-    // helio_privacy_link->SeLinkLabelFColour(wxColour(0, 119, 250));
-
-    // helio_about_link->SeLinkLabelBColour(wxColour(248, 248, 248));
-    // helio_privacy_link->SeLinkLabelBColour(wxColour(248, 248, 248));
-    //     ;
-    // sizer_helio_fun_link->Add(helio_about_link, 0, wxLEFT, FromDIP(50));
-    // sizer_helio_fun_link->Add(helio_privacy_link, 0, wxLEFT, FromDIP(35));
-
-    // helio_about_link->Bind(wxEVT_ENTER_WINDOW, [this](auto &e) { SetCursor(wxCURSOR_HAND); });
-    // helio_about_link->Bind(wxEVT_LEAVE_WINDOW, [this](auto &e) { SetCursor(wxCURSOR_ARROW); });
-    // helio_privacy_link->Bind(wxEVT_ENTER_WINDOW, [this](auto &e) { SetCursor(wxCURSOR_HAND); });
-    // helio_privacy_link->Bind(wxEVT_LEAVE_WINDOW, [this](auto &e) { SetCursor(wxCURSOR_ARROW); });
-
-    // sizer_helio_title->Add(0, 0, 0, wxLEFT, FromDIP(5));
-    // sizer_helio_title->Add(helio_icon_helio, 0, wxALIGN_CENTER, FromDIP(0));
-    // sizer_helio_title->Add(0, 0, 0, wxLEFT, FromDIP(3));
-    // sizer_helio_title->Add(helio_title_slice, 0, wxALIGN_CENTER, FromDIP(0));
-    // sizer_helio_title->Add(helio_split_line, 1, wxALIGN_CENTER, 0);
-
-    // sizer_helio_fun->Add(0, 0, 0, wxTOP, FromDIP(9));
-    // sizer_helio_fun->Add(sizer_helio_title, 0, wxEXPAND, FromDIP(0));
-    // sizer_helio_fun->Add(helio_item_switch_slice, 0, wxTOP, FromDIP(5));
-    // sizer_helio_fun->Add(helio_pat_panel, 0, wxTOP, FromDIP(7));
-    // sizer_helio_fun->Add(sizer_helio_fun_link, 0, wxTOP, FromDIP(7));
-    // sizer_helio_fun->Add(0, 0, 0, wxTOP, FromDIP(9));
-    // helio_fun_panel->SetSizer(sizer_helio_fun);
-    // helio_fun_panel->Layout();
-    // helio_fun_panel->Fit();
 
     std::vector<wxString>  air_temp_timing_list = {_L("Reminder During Slicing"), _L("Automatic mode")};
     std::vector<std::string> air_temp_timing_value_list = {"slicing", "auto"};
@@ -1516,6 +1330,12 @@ wxWindow* PreferencesDialog::create_general_page()
     hyperlink->SetFont(Label::Head_13);
     item_priv_policy->Add(hyperlink, 0, wxALIGN_CENTER, 0);*/
 
+#ifdef _WIN32
+    auto item_webview_auto_fill = create_item_checkbox(_L("Auto-fill previously logged-in accounts."), page,
+                                                        _L(""), 50,
+                                                        "webview_auto_fill");
+#endif
+
     auto title_develop_mode = create_item_title(_L("Develop Mode"), page, _L("Develop Mode"));
     auto item_develop_mode  = create_item_checkbox(_L("Develop mode"), page, _L("Develop mode"), 50, "developer_mode");
     // y6
@@ -1544,6 +1364,9 @@ wxWindow* PreferencesDialog::create_general_page()
     sizer_page->Add(item_enable_record_gcodeviewer_option_item, 0, wxTOP, FromDIP(3));
 
     sizer_page->Add(enable_lod_settings, 0, wxTOP, FromDIP(3));
+#ifdef QDT_ENABLE_ADVANCED_GCODE_VIEWER
+    sizer_page->Add(enable_advanced_gcode_viewer, 0, wxTOP, FromDIP(3));
+#endif
     sizer_page->Add(item_toolbar_style, 0, wxTOP, FromDIP(3));    
     sizer_page->Add(item_grabber_size_settings, 0, wxTOP, FromDIP(3));
     sizer_page->Add(title_presets, 0, wxTOP | wxEXPAND, FromDIP(20));
@@ -1574,11 +1397,6 @@ wxWindow* PreferencesDialog::create_general_page()
 
 
     sizer_page->Add(0, 0, 0, wxTOP, FromDIP(20));
-    //y71
-    //sizer_page->Add(helio_fun_panel, 0, wxEXPAND, 0);
-
-    //sizer_page->Add(helio_item_switch_slice, 0, wxTOP, FromDIP(3));
-
     sizer_page->Add(title_project, 0, wxTOP| wxEXPAND, FromDIP(20));
     sizer_page->Add(item_max_recent_count, 0, wxTOP, FromDIP(3));
     sizer_page->Add(item_save_choise, 0, wxTOP, FromDIP(3));
@@ -1606,7 +1424,9 @@ wxWindow* PreferencesDialog::create_general_page()
 //ZY2
     //sizer_page->Add(title_user_experience, 0, wxTOP | wxEXPAND, FromDIP(20));
     //sizer_page->Add(item_priv_policy, 0, wxTOP, FromDIP(3));
-
+#ifdef _WIN32
+    sizer_page->Add(item_webview_auto_fill, 0, wxTOP, FromDIP(3));
+#endif
     sizer_page->Add(title_develop_mode, 0, wxTOP | wxEXPAND, FromDIP(20));
     sizer_page->Add(item_develop_mode, 0, wxTOP, FromDIP(3));
     // y6

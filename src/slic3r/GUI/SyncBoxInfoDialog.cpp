@@ -320,7 +320,9 @@ void SyncBoxInfoDialog::update_plate_combox()
 {
     if (m_combobox_plate) {
         m_combobox_plate->Clear();
-        for (size_t i = 0; i < m_plate_number_choices_str.size(); i++) { m_combobox_plate->Append(m_plate_number_choices_str[i]); }
+        for (size_t i = 0; i < m_plate_number_choices_str.size(); i++) {
+            m_combobox_plate->Append(m_plate_number_choices_str[i]);
+        }
         auto iter = std::find(m_plate_choices.begin(), m_plate_choices.end(), m_specify_plate_idx);
         if (iter != m_plate_choices.end()) {
             auto index = iter - m_plate_choices.begin();
@@ -528,7 +530,7 @@ void SyncBoxInfoDialog::add_two_image_control()
     m_choose_plate_sizer->Add(chose_combox_title, 0, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL | wxEXPAND | wxTOP, FromDIP(6));
     m_choose_plate_sizer->AddSpacer(FromDIP(10));
 
-    m_combobox_plate = new ComboBox(m_two_thumbnail_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(50), -1), 0, NULL, wxCB_READONLY);
+    m_combobox_plate = new ComboBox(m_two_thumbnail_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(FromDIP(60), -1), 0, NULL, wxCB_READONLY);
 
     m_combobox_plate->Bind(wxEVT_COMBOBOX, [this](auto &e) {
         if (e.GetSelection() < m_plate_choices.size()) {
@@ -916,6 +918,7 @@ SyncBoxInfoDialog::SyncBoxInfoDialog(wxWindow *parentm, SyncInfo& info) :
             auto flag = wxGetApp().app_config->get_bool("enable_append_color_by_sync_ams");
             wxGetApp().app_config->set_bool("enable_append_color_by_sync_ams",!flag);
             m_append_color_checkbox->SetValue(!flag);
+            e.Skip();
         });
         m_append_color_checkbox->Hide();
         m_append_color_sizer->Add(m_append_color_checkbox, 0, wxALIGN_LEFT | wxTOP, FromDIP(4));
@@ -936,6 +939,7 @@ SyncBoxInfoDialog::SyncBoxInfoDialog(wxWindow *parentm, SyncInfo& info) :
             auto flag = wxGetApp().app_config->get_bool("enable_merge_color_by_sync_ams");
             wxGetApp().app_config->set_bool("enable_merge_color_by_sync_ams",!flag);
             m_merge_color_checkbox->SetValue(!flag);
+            e.Skip();
         });
         m_merge_color_checkbox->Hide();
         m_merge_color_sizer->Add(m_merge_color_checkbox, 0, wxALIGN_LEFT | wxTOP, FromDIP(2));
@@ -978,8 +982,8 @@ SyncBoxInfoDialog::SyncBoxInfoDialog(wxWindow *parentm, SyncInfo& info) :
         /* m_checkbox = new wxCheckBox(this, wxID_ANY, _L("Don't show again"), wxDefaultPosition, wxDefaultSize, 0);
          bSizer_button->Add(m_checkbox, 0, wxALIGN_LEFT);*/
         bSizer_button->AddStretchSpacer(1);
-        StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
-                                std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
+        StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Pressed),
+                                std::pair<wxColour, int>(wxColour(116, 168, 255), StateColor::Hovered),
                                 std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
         m_button_ok = new Button(m_show_page,  _L("Synchronize now"));
         m_button_ok->SetBackgroundColor(btn_bg_blue);
@@ -1483,7 +1487,7 @@ void SyncBoxInfoDialog::auto_supply_with_ext(std::vector<DevAmsTray> slots)
             if (slot.id.empty()) continue;
             m_ams_mapping_result[i].ams_id  = slot.id;
             m_ams_mapping_result[i].color   = slot.color;
-            m_ams_mapping_result[i].type    = slot.type;
+            m_ams_mapping_result[i].type    = slot.m_fila_type;
             m_ams_mapping_result[i].colors  = slot.cols;
             m_ams_mapping_result[i].tray_id = atoi(slot.id.c_str());
             m_ams_mapping_result[i].slot_id = "0";
@@ -1974,7 +1978,7 @@ void SyncBoxInfoDialog::Enable_Auto_Refill(bool enable)
 {
     if (!m_ams_backup_tip) { return; }
     if (enable) {
-        m_ams_backup_tip->SetForegroundColour(wxColour("#00AE42"));
+        m_ams_backup_tip->SetForegroundColour(wxColour("#4479fb"));
     } else {
         m_ams_backup_tip->SetForegroundColour(wxColour(0x90, 0x90, 0x90));
     }
@@ -2351,19 +2355,6 @@ void SyncBoxInfoDialog::update_show_status()
         }
     }
 
-    if (!m_mapping_popup.m_supporting_mix_print && nozzle_nums == 1) {
-        bool useAms = false;
-        bool useExt = false;
-        for (auto iter = m_ams_mapping_result.begin(); iter != m_ams_mapping_result.end(); iter++) {
-            if (iter->tray_id != VIRTUAL_TRAY_MAIN_ID) { useAms = true; }
-            if (iter->tray_id == VIRTUAL_TRAY_MAIN_ID) { useExt = true; }
-            if (useAms && useExt) {
-                show_status(PrintDialogStatus::PrintStatusAmsMappingMixInvalid);
-                return;
-            }
-        }
-    }
-
     // check ams and vt_slot mix use status
     {
         struct ExtruderStatus
@@ -2488,6 +2479,7 @@ void SyncBoxInfoDialog::on_dpi_changed(const wxRect &suggested_rect)
     m_button_cancel->SetCornerRadius(FromDIP(12));
     m_merge_color_checkbox->Rescale();
     m_append_color_checkbox->Rescale();
+    m_combobox_plate->Rescale();
     Fit();
     Refresh();
 }
@@ -3385,8 +3377,8 @@ GetBoxInfoDialog::GetBoxInfoDialog(Plater* plater)
 
     wxBoxSizer* m_sizer_btn = new wxBoxSizer(wxHORIZONTAL);
     btn_bg_enable = StateColor(
-            std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
-            std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
+            std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Pressed),
+            std::pair<wxColour, int>(wxColour(116, 168, 255), StateColor::Hovered),
             std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
 
     m_button_sync = new Button(this, _L("Sync"));
@@ -3518,7 +3510,7 @@ void GetBoxInfoDialog::update_filament_info(GUI::Box_info& machine_filament_info
     m_plater->box_msg.box_list_preset_name = preset_name_box;
 }
 #endif
- 
+
 void GetBoxInfoDialog::cancel(wxCommandEvent &event)
 {
     this->EndModal(wxID_CANCEL);

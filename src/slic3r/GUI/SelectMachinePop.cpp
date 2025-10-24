@@ -597,7 +597,7 @@ void SelectMachinePopup::update_other_devices()
     m_placeholder_panel = new wxWindow(m_scrolledWindow, wxID_ANY, wxDefaultPosition, wxSize(-1,FromDIP(26)));
     wxBoxSizer* placeholder_sizer = new wxBoxSizer(wxVERTICAL);
 
-    m_hyperlink = new wxHyperlinkCtrl(m_placeholder_panel, wxID_ANY, _L("Can't find my devices?"), wxT("https://wiki.qiditech.com/en/software/qidi-studio/failed-to-connect-printer"), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
+    m_hyperlink = new wxHyperlinkCtrl(m_placeholder_panel, wxID_ANY, _L("Can't find my devices?"), wxT("https://wiki.qidi3d.com/en/software/qidi-studio/troubleshooting/connect-send-problem"), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE);
     placeholder_sizer->Add(m_hyperlink, 0, wxALIGN_CENTER | wxALL, 5);
 
 
@@ -859,7 +859,7 @@ void SelectMachinePopup::OnLeftUp(wxMouseEvent &event)
         //hyper link
         auto h_rect = m_hyperlink->ClientToScreen(wxPoint(0, 0));
         if (mouse_pos.x > h_rect.x && mouse_pos.y > h_rect.y && mouse_pos.x < (h_rect.x + m_hyperlink->GetSize().x) && mouse_pos.y < (h_rect.y + m_hyperlink->GetSize().y)) {
-          wxLaunchDefaultBrowser(wxT("https://wiki.qiditech.com/en/software/qidi-studio/failed-to-connect-printer"));
+          wxLaunchDefaultBrowser(wxT("https://wiki.qidi3d.com/en/software/qidi-studio/troubleshooting/connect-send-problem"));
         }
     }
 }
@@ -889,7 +889,7 @@ EditDevNameDialog::EditDevNameDialog(Plater *plater /*= nullptr*/)
 
 
     m_button_confirm = new Button(this, _L("Confirm"));
-    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed), std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
+    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Pressed), std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     m_button_confirm->SetBackgroundColor(btn_bg_blue);
     m_button_confirm->SetBorderColor(wxColour(68, 121, 251));
     m_button_confirm->SetTextColor(wxColour(255, 255, 255));

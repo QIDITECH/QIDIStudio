@@ -56,7 +56,7 @@ void AMSMaterialsSetting::create()
     m_sizer_button->Add(0, 0, 1, wxEXPAND, 0);
 
     m_button_confirm = new Button(this, _L("Confirm"));
-    m_btn_bg_blue   = StateColor(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed), std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
+    m_btn_bg_blue   = StateColor(std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Pressed), std::pair<wxColour, int>(wxColour(116, 168, 255), StateColor::Hovered),
                             std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     m_button_confirm->SetBackgroundColor(m_btn_bg_blue);
     m_button_confirm->SetBorderColor(wxColour(68, 121, 251));
@@ -313,14 +313,14 @@ void AMSMaterialsSetting::create_panel_kn(wxWindow* parent)
     wxString    region   = "en";
     if (language.find("zh") == 0)
         region = "zh";
-    wxString link_url = wxString::Format("https://wiki.qiditech.com/%s/software/qidi-studio/calibration_pa", region);
-    m_wiki_ctrl = new wxHyperlinkCtrl(parent, wxID_ANY, "Wiki", link_url);
-    m_wiki_ctrl->SetNormalColour(*wxBLUE);
-    m_wiki_ctrl->SetHoverColour(wxColour(0, 0, 200));
-    m_wiki_ctrl->SetVisitedColour(*wxBLUE);
-    m_wiki_ctrl->SetFont(Label::Head_14);
+    //wxString link_url = wxString::Format("https://wiki.qiditech.com/%s/software/qidi-studio/calibration_pa", region);
+    //m_wiki_ctrl = new wxHyperlinkCtrl(parent, wxID_ANY, "Wiki", link_url);
+    // m_wiki_ctrl->SetNormalColour(*wxBLUE);
+    // m_wiki_ctrl->SetHoverColour(wxColour(0, 0, 200));
+    // m_wiki_ctrl->SetVisitedColour(*wxBLUE);
+    // m_wiki_ctrl->SetFont(Label::Head_14);
     cali_title_sizer->Add(m_ratio_text, 0, wxALIGN_CENTER_VERTICAL);
-    cali_title_sizer->Add(m_wiki_ctrl, 0, wxALIGN_CENTER_VERTICAL);
+    //cali_title_sizer->Add(m_wiki_ctrl, 0, wxALIGN_CENTER_VERTICAL);
 
     wxBoxSizer *m_sizer_cali_resutl = new wxBoxSizer(wxHORIZONTAL);
     // pa profile
@@ -1376,6 +1376,7 @@ ColorPicker::ColorPicker(wxWindow* parent, wxWindowID id, const wxPoint& pos /*=
 
     m_bitmap_border = create_scaled_bitmap("color_picker_border", nullptr, 25);
     m_bitmap_border_dark = create_scaled_bitmap("color_picker_border_dark", nullptr, 25);
+    m_bitmap_transparent_def = ScalableBitmap(this, "transparent_color_picker", 25);
     m_bitmap_transparent = create_scaled_bitmap("transparent_color_picker", nullptr, 25);
 }
 
@@ -1385,7 +1386,7 @@ void ColorPicker::msw_rescale()
 {
     m_bitmap_border = create_scaled_bitmap("color_picker_border", nullptr, 25);
     m_bitmap_border_dark = create_scaled_bitmap("color_picker_border_dark", nullptr, 25);
-    m_bitmap_transparent = create_scaled_bitmap("transparent_color_picker", nullptr, 25);
+    m_bitmap_transparent_def.msw_rescale();
 
     Refresh();
 }
@@ -1440,15 +1441,15 @@ void ColorPicker::doRender(wxDC& dc)
     if (m_selected) radius -= FromDIP(1);
 
     if (alpha == 0) {
-        wxSize bmp_size = m_bitmap_transparent.GetSize();
+        wxSize bmp_size = m_bitmap_transparent_def.GetBmpSize();
         int center_x = (size.x - bmp_size.x) / 2;
         int center_y = (size.y - bmp_size.y) / 2;
-        dc.DrawBitmap(m_bitmap_transparent, center_x, center_y);
+        dc.DrawBitmap(m_bitmap_transparent_def.bmp(), center_x, center_y);
     }
     else if (alpha != 254 && alpha != 255) {
         if (transparent_changed) {
             std::string rgb = (m_colour.GetAsString(wxC2S_HTML_SYNTAX)).ToStdString();
-            if (rgb.size() == 8) {
+            if (rgb.size() == 9) {
                 //delete alpha value
                 rgb = rgb.substr(0, rgb.size() - 2);
             }
@@ -1459,12 +1460,11 @@ void ColorPicker::doRender(wxDC& dc)
             replace.push_back(fill_replace);
             m_bitmap_transparent = ScalableBitmap(this, "transparent_color_picker", 25, false, false, true, replace).bmp();
             transparent_changed = false;
-
+        }
             wxSize bmp_size = m_bitmap_transparent.GetSize();
             int center_x = (size.x - bmp_size.x) / 2;
             int center_y = (size.y - bmp_size.y) / 2;
             dc.DrawBitmap(m_bitmap_transparent, center_x, center_y);
-        }
     }
     else {
         dc.SetPen(wxPen(m_colour));

@@ -12,7 +12,7 @@ namespace Slic3r { namespace GUI {
 #define SELECT_MACHINE_GREY400 wxColour(206, 206, 206)
 #define SELECT_MACHINE_BRAND wxColour(68, 121, 251)
 #define SELECT_MACHINE_REMIND wxColour(255,111,0)
-#define SELECT_MACHINE_LIGHT_GREEN wxColour(10, 255, 255)   // y96
+#define SELECT_MACHINE_LIGHT_GREEN wxColour(0,66,255)   // y96
 
 //w29
 #define CALI_MODE_COUNT  3

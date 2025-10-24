@@ -417,6 +417,12 @@ public:
     SideButton* m_print_btn{ nullptr };
     SideButton* m_print_option_btn{ nullptr };
 
+    wxWindowID expand_program_id = wxNewId();
+    wxWindowID expand_helio_id = wxNewId();
+
+    wxStaticBitmap* split_line_icon{nullptr};
+    ExpandButtonHolder* expand_program_holder{nullptr};
+
     SidePopup*  m_slice_option_pop_up{ nullptr };
 
     FilamentGroupPopup* m_filament_group_popup{ nullptr };
@@ -453,7 +459,6 @@ wxDECLARE_EVENT(EVT_USER_LOGIN_HANDLE, wxCommandEvent);
 wxDECLARE_EVENT(EVT_CHECK_PRIVACY_VER, wxCommandEvent);
 wxDECLARE_EVENT(EVT_CHECK_PRIVACY_SHOW, wxCommandEvent);
 wxDECLARE_EVENT(EVT_SHOW_IP_DIALOG, wxCommandEvent);
-wxDECLARE_EVENT(EVT_SET_SELECTED_MACHINE, wxCommandEvent);
 wxDECLARE_EVENT(EVT_UPDATE_MACHINE_LIST, wxCommandEvent);
 wxDECLARE_EVENT(EVT_UPDATE_PRESET_CB, SimpleEvent);
 

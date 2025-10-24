@@ -712,11 +712,11 @@ bool objparse(std::istream &stream, ObjData &data)
     	BOOST_LOG_TRIVIAL(error) << "ObjParser: Out of memory";
     	return false;
     }
-    
+
     return true;
 }
 
-template<typename T> 
+template<typename T>
 bool savevector(FILE *pFile, const std::vector<T> &v)
 {
 	size_t cnt = v.size();
@@ -753,7 +753,7 @@ bool savevectornameidx(FILE *pFile, const std::vector<T> &v)
 	return true;
 }
 
-template<typename T> 
+template<typename T>
 bool loadvector(FILE *pFile, std::vector<T> &v)
 {
 	v.clear();
@@ -812,8 +812,10 @@ bool loadvectornameidx(FILE *pFile, std::vector<T> &v)
 bool objbinsave(const char *path, const ObjData &data)
 {
 	FILE *pFile = boost::nowide::fopen(path, "wb");
-	if (pFile == 0)
-		return false;
+    if (pFile == 0) {
+        ::fclose(pFile);
+        return false;
+    }
 
 	size_t version = 1;
 	::fwrite(&version, 1, sizeof(version), pFile);
@@ -841,11 +843,14 @@ bool objbinload(const char *path, ObjData &data)
 		return false;
 
 	data.version = 0;
-	if (::fread(&data.version, sizeof(data.version), 1, pFile) != 1)
-		return false;
-	if (data.version != 1)
-		return false;
-
+    if (::fread(&data.version, sizeof(data.version), 1, pFile) != 1) {
+        ::fclose(pFile);
+        return false;
+    }
+    if (data.version != 1) {
+        ::fclose(pFile);
+        return false;
+    }
 	bool result =
 		loadvector(pFile, data.coordinates)			&&
 		loadvector(pFile, data.textureCoordinates)	&&
@@ -888,7 +893,7 @@ extern bool objequal(const ObjData &data1, const ObjData &data2)
 	//FIXME ignore version number
 	// version;
 
-	return 
+	return
 		vectorequal(data1.coordinates,			data2.coordinates)			&&
 		vectorequal(data1.textureCoordinates,	data2.textureCoordinates)	&&
 		vectorequal(data1.normals,				data2.normals)				&&

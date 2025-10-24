@@ -87,7 +87,6 @@ wxDEFINE_EVENT(EVT_USER_LOGIN_HANDLE, wxCommandEvent);
 wxDEFINE_EVENT(EVT_CHECK_PRIVACY_VER, wxCommandEvent);
 wxDEFINE_EVENT(EVT_CHECK_PRIVACY_SHOW, wxCommandEvent);
 wxDEFINE_EVENT(EVT_SHOW_IP_DIALOG, wxCommandEvent);
-wxDEFINE_EVENT(EVT_SET_SELECTED_MACHINE, wxCommandEvent);
 wxDEFINE_EVENT(EVT_UPDATE_MACHINE_LIST, wxCommandEvent);
 wxDEFINE_EVENT(EVT_UPDATE_PRESET_CB, SimpleEvent);
 
@@ -1128,6 +1127,9 @@ void MainFrame::show_option(bool show)
             m_print_btn->Hide();
             m_slice_option_btn->Hide();
             m_print_option_btn->Hide();
+            //y73
+            // split_line_icon->Hide();
+            // expand_program_holder->Hide();
             Layout();
         }
     } else {
@@ -1136,6 +1138,9 @@ void MainFrame::show_option(bool show)
             m_print_btn->Show();
             m_slice_option_btn->Show();
             m_print_option_btn->Show();
+            //y73
+            // split_line_icon->Show();
+            // expand_program_holder->Show();
             Layout();
         }
     }
@@ -1238,6 +1243,9 @@ void MainFrame::init_tabpanel()
                 m_param_panel->OnActivate();
             }
             else if (sel == tpPreview) {
+                m_plater->reset_check_status();
+                if (!m_plater->check_ams_status(m_slice_select == eSliceAll))
+                    return;
                 wxPostEvent(m_plater, SimpleEvent(EVT_GLVIEWTOOLBAR_PREVIEW));
                 m_param_panel->OnActivate();
             }
@@ -1746,6 +1754,36 @@ wxBoxSizer* MainFrame::create_side_tools()
     int em = em_unit();
     wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
 
+    //y73
+    // /*helio*/
+    // split_line_icon = new wxStaticBitmap(this, wxID_ANY, create_scaled_bitmap("topbar_line", this, 22), wxDefaultPosition, wxSize(FromDIP(3), FromDIP(22)), 0);
+    // expand_program_holder = new ExpandButtonHolder(this);
+    // expand_program_holder->addExpandButton(expand_helio_id, "helio_icon");
+    // expand_program_holder->addExpandButton(expand_program_id, "expand_program");
+    // expand_program_holder->Bind(wxEXPAND_LEFT_DOWN, [=](const wxCommandEvent& e) {
+
+    //     if (e.GetInt() == expand_helio_id) {
+    //         BOOST_LOG_TRIVIAL(info) << "Helio button clicked";
+    //         Plater* plater = wxGetApp().plater();
+    //         wxCommandEvent evt(EVT_HELIO_INPUT_DLG);
+    //         evt.SetEventObject(plater);
+    //         wxPostEvent(plater, evt);
+    //     }
+
+    //     if (e.GetInt() == expand_program_id) {
+    //         ExpandCenterDialog dlg;
+    //         dlg.ShowModal();
+    //     }
+    //     });
+
+    // if (wxGetApp().app_config->get("helio_enable") == "true") {
+    //     expand_program_holder->ShowExpandButton(expand_helio_id, true);
+    // }
+    // else {
+    //     expand_program_holder->ShowExpandButton(expand_helio_id, false);
+    // }
+
+    /*slice*/
     m_slice_select = eSlicePlate;
     m_print_select = ePrintPlate;
 
@@ -1770,10 +1808,16 @@ wxBoxSizer* MainFrame::create_side_tools()
     update_side_button_style();
     m_slice_option_btn->Enable();
     m_print_option_btn->Enable();
-    sizer->Add(FromDIP(15), 0, 0, 0, 0);
+    //y73
+    // sizer->Add( 0, 0, 1, wxEXPAND, 0);
+    // sizer->Add(expand_program_holder, 0, wxALIGN_CENTER, 0);
+    // sizer->Add(FromDIP(4), 0, 0, 0, 0);
+    // sizer->Add(split_line_icon, 0, wxALIGN_CENTER, 0);
+    sizer->Add(FromDIP(10), 0, 0, 0, 0);
     sizer->Add(slice_panel);
     sizer->Add(FromDIP(15), 0, 0, 0, 0);
     sizer->Add(print_panel);
+    sizer->Add(FromDIP(4), 0, 0, 0, 0);
     sizer->Add(FromDIP(19), 0, 0, 0, 0);
 
     sizer->Layout();
@@ -1818,9 +1862,6 @@ wxBoxSizer* MainFrame::create_side_tools()
 
     m_slice_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event)
         {
-            m_plater->reset_check_status();
-            if (!m_plater->check_ams_status(m_slice_select == eSliceAll))
-                return;
 
             //this->m_plater->select_view_3D("Preview");
             m_plater->exit_gizmo();
@@ -1875,7 +1916,7 @@ wxBoxSizer* MainFrame::create_side_tools()
                             MessageDialog dlg(this, _L("PPS-CF/PPA-CF is brittle and could break in bended PTFE tube above Toolhead. Please refer to Wiki before use. "), _L("Tips"), wxYES_NO);
                             auto  res = dlg.ShowModal();
                             if (res == wxID_YES) {
-                                wxLaunchDefaultBrowser("https://e.bambulab.com/t?c=UC64kdlpHxN3Mb15");
+                                wxLaunchDefaultBrowser("https://e.qidi3d.com/t?c=UC64kdlpHxN3Mb15");
                                 slice = false;
                             }
                             wxGetApp().app_config->set("prompt_for_brittle_filaments", "false");
@@ -2314,8 +2355,8 @@ void MainFrame::update_side_button_style()
     int em = em_unit();
 
     StateColor m_btn_bg_enable = StateColor(
-        std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed), 
-        std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
+        std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Pressed), 
+        std::pair<wxColour, int>(wxColour(116, 168, 255), StateColor::Hovered),
         std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal)    // y96
     );
 
@@ -2375,7 +2416,16 @@ void MainFrame::update_slice_print_status(SlicePrintEventType event, bool can_sl
     m_slice_enable = enable_slice;
     m_print_enable = enable_print;
 
+    //y73
+    // /*for healio*/
+    // if (expand_program_holder) {
+    //     expand_program_holder->updateExpandButtonBitmap(expand_helio_id, m_print_enable?"helio_icon":"helio_icon_disable");
+    //     expand_program_holder->EnableExpandButton(expand_helio_id, m_print_enable);
+    // }
+
+
     if (!old_slice_status && enable_slice)
+        m_plater->stop_helio_process();
         m_plater->reset_check_status();
 }
 
@@ -2404,6 +2454,8 @@ void MainFrame::on_dpi_changed(const wxRect& suggested_rect)
     m_print_btn->Rescale();
     m_slice_option_btn->Rescale();
     m_print_option_btn->Rescale();
+    //y73
+    // expand_program_holder->msw_rescale();
 
     // update Plater
     wxGetApp().plater()->msw_rescale();
@@ -3384,7 +3436,7 @@ void MainFrame::init_menubar_as_editor()
                     NetworkAgent *agent   = GUI::wxGetApp().getAgent();
                     if (agent) agent->track_event("third_cali", js.dump());
                 } catch (...) {}
-                wxLaunchDefaultBrowser("https://wiki.qidi3d.com/en/qidi-studio/Calibration", wxBROWSER_NEW_WINDOW);
+                //wxLaunchDefaultBrowser("https://wiki.qidi3d.com/en/qidi-studio/Calibration", wxBROWSER_NEW_WINDOW);
             }, "", nullptr,
             [this]() {return m_plater->is_view3D_shown();; }, this);
 
@@ -3514,7 +3566,7 @@ void MainFrame::init_menubar_as_editor()
                 NetworkAgent *agent = GUI::wxGetApp().getAgent();
                 if (agent) agent->track_event("third_cali", js.dump());
             } catch (...) {}
-            wxLaunchDefaultBrowser("https://wiki.qidi3d.com/en/qidi-studio/Calibration", wxBROWSER_NEW_WINDOW);
+            //wxLaunchDefaultBrowser("https://wiki.qidi3d.com/en/qidi-studio/Calibration", wxBROWSER_NEW_WINDOW);
         }, "", nullptr,
         [this]() {
             return m_plater->is_view3D_shown();
@@ -3678,7 +3730,7 @@ void MainFrame::update_calibration_button_status()
     //y71
     isQDT = true;
     
-    bool show_calibration = (!isQDT || wxGetApp().app_config->get("developer_mode") == "true") && !is_multi_extruder;
+    bool show_calibration = (!isQDT || wxGetApp().app_config->get("developer_mode") == "true");
     wxGetApp().mainframe->show_calibration_button(show_calibration, isQDT);
 }
 

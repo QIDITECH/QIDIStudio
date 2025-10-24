@@ -67,6 +67,7 @@ public:
 	//B
 	static const ColorRGB ORCA()        { return {68.0f/ 255.0f, 121.f / 255.0f, 251.0f / 255}; }
 	static const ColorRGB WARNING()     { return {241.0f / 255, 117.f / 255.0f, 78.0f / 255}; }
+	static const ColorRGB ERROR_COLOR() { return {208.0f / 255.0f, 27.0f / 255.0f, 27.0f / 255.0f}; }
 
 	static const ColorRGB X()           { return { 0.75f, 0.0f, 0.0f }; }
 	static const ColorRGB Y()           { return { 0.0f, 0.75f, 0.0f }; }

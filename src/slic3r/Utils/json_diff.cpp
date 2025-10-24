@@ -89,26 +89,33 @@ bool json_diff::load_compatible_settings(std::string const &type, std::string co
         printer_version = version2;
     }
     settings_base.clear();
-    std::string config_file = Slic3r::data_dir() + "/printers/" + printer_type + ".json";
+    std::string config_file = Slic3r::resources_dir() + "/printers/" + printer_type + ".json";
     boost::nowide::ifstream json_file(config_file.c_str());
     try {
         json versions;
         if (json_file.is_open()) {
             json_file >> versions;
             for (auto iter = versions.begin(); iter != versions.end(); ++iter) {
-                if (iter.key() > printer_version)
+                if (iter.key() > printer_version) {
                     break;
+                }
+
                 merge_objects(*iter, settings_base);
             }
-            if (!full_message.empty())
+            if (!full_message.empty()) {
                 diff2all_base_reset(full_message);
+            }
+
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": "<< type << " " << version << ", merged " << versions.dump(1);
             return true;
         } else {
-            //BOOST_LOG_TRIVIAL(error) << "load_compatible_settings failed, file = " << config_file;
+            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": " << type << " " << version << ", failed open file";
         }
     } catch (...) {
-        //BOOST_LOG_TRIVIAL(error) << "load_compatible_settings failed, file = " << config_file;
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": " << type << " " << version << ", unknown exception";
     }
+
+
     return false;
 }
 
@@ -194,9 +201,9 @@ int json_diff::restore_append_objects(json const &in, json &out)
     for (auto& el: in.items()) {
 
         if (!out.contains(el.key()) ) {
-            // BOOST_LOG_TRIVIAL(trace) << "json_c append new " << el.key()
-            //             << " type: "  << el.value().type_name()
-            //             << " value: " << el.value();
+            //BOOST_LOG_TRIVIAL(trace) << "json_c append new " << el.key()
+            //            << " type: "  << el.value().type_name()
+            //            << " value: " << el.value();
             out[el.key()] = el.value();
             continue;
         }
@@ -205,9 +212,9 @@ int json_diff::restore_append_objects(json const &in, json &out)
             int recur_ret =
                      restore_append_objects(el.value(), out[el.key()]);
             if (recur_ret != 0) {
-                // BOOST_LOG_TRIVIAL(trace) << "json_c append obj failed"
-                //                  << " key: " << el.key()
-                //                  << " value: " << el.value();
+                //BOOST_LOG_TRIVIAL(trace) << "json_c append obj failed"
+                //                 << " key: " << el.key()
+                //                 << " value: " << el.value();
                 return recur_ret;
             }
         }
@@ -258,10 +265,10 @@ void json_diff::compare_print(json &a, json &b)
                         << " type: "  << e.value().type_name();
         }
         if (e.value() != b[e.key()]) {
-            // BOOST_LOG_TRIVIAL(trace) << "json_c compare not equal: key: " << e.key()
-            //                      << " value: " << e.value();
-            // BOOST_LOG_TRIVIAL(trace) << "json_c compare vs value "
-            //                      << " vs value: " << b[e.key()];
+            //BOOST_LOG_TRIVIAL(trace) << "json_c compare not equal: key: " << e.key()
+            //                     << " value: " << e.value();
+            //BOOST_LOG_TRIVIAL(trace) << "json_c compare vs value "
+            //                     << " vs value: " << b[e.key()];
 
         }
     }

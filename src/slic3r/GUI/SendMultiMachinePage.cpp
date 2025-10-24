@@ -318,6 +318,9 @@ SendMultiMachinePage::SendMultiMachinePage(Plater* plater)
 
 SendMultiMachinePage::~SendMultiMachinePage()
 {
+    //y73
+    StopThread();
+
 	// TODO
     m_radio_group.DeleteContents(true);
 
@@ -1464,7 +1467,7 @@ wxPanel* SendMultiMachinePage::create_page()
 
     // add send button
     // y96
-    btn_bg_enable = StateColor(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed), std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
+    btn_bg_enable = StateColor(std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Pressed), std::pair<wxColour, int>(wxColour(116, 168, 255), StateColor::Hovered),
         std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
 
     m_button_send = new Button(main_page, _L("Send"));

@@ -552,8 +552,8 @@ wxBoxSizer* FilamentPickerDialog::CreateButtonPanel()
     // standard button color style
     //y
     StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Disabled),
-							std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
-							std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
+							std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Pressed),
+							std::pair<wxColour, int>(wxColour(116, 168, 255), StateColor::Hovered),
 							std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
 
     StateColor btn_bd_green(
@@ -747,8 +747,8 @@ void FilamentPickerDialog::OnButtonPaint(wxPaintEvent& event)
         dc.DrawBitmap(bmp, x, y, true);
     }
 
-    // Draw the green border
-    dc.SetPen(wxPen(wxColour("#00AE42"), 2));  // Green pen, 2px thick
+    // Draw the blue border
+    dc.SetPen(wxPen(wxColour("#4479fb"), 2));  // Blue pen, 2px thick
     dc.SetBrush(*wxTRANSPARENT_BRUSH);
     dc.DrawRectangle(1, 1, COLOR_BTN_SIZE.GetWidth() - 1, COLOR_BTN_SIZE.GetHeight() - 1);
 }

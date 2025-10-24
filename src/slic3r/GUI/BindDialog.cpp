@@ -42,8 +42,8 @@ wxString get_fail_reason(int code)
         return _L("Failed to post ticket to server");
 
     else if (code == QIDI_NETWORK_ERR_BIND_PARSE_LOGIN_REPORT_FAILED)
-        return _L("Failed to parse login report reason"); 
-    
+        return _L("Failed to parse login report reason");
+
     else if (code == QIDI_NETWORK_ERR_BIND_ECODE_LOGIN_REPORT_FAILED)
         return _L("Failed to parse login report reason");
 
@@ -109,8 +109,8 @@ PingCodeBindDialog::PingCodeBindDialog(Plater* plater /*= nullptr*/)
     m_link_show_ping_code_wiki->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) {SetCursor(wxCURSOR_ARROW); });
 
     m_link_show_ping_code_wiki->Bind(wxEVT_LEFT_DOWN, [this](auto& e) {
-        m_ping_code_wiki = "https://wiki.qidi3d.com/en/qidi-studio/manual/pin-code";
-        wxLaunchDefaultBrowser(m_ping_code_wiki);
+        // m_ping_code_wiki = "https://wiki.qidi3d.com/en/qidi-studio/manual/pin-code";
+        // wxLaunchDefaultBrowser(m_ping_code_wiki);
     });
 
     m_text_input_title = new wxStaticText(request_bind_panel, wxID_ANY, _L("Pin Code"));
@@ -139,8 +139,8 @@ PingCodeBindDialog::PingCodeBindDialog(Plater* plater /*= nullptr*/)
     m_button_bind = new Button(request_bind_panel, _L("Confirm"));
 
     StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Disabled),
-        std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
-        std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
+        std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Pressed),
+        std::pair<wxColour, int>(wxColour(116, 168, 255), StateColor::Hovered),
         std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     m_button_bind->SetBackgroundColor(btn_bg_blue);
     m_button_bind->SetBorderColor(*wxWHITE);
@@ -430,7 +430,7 @@ PingCodeBindDialog::~PingCodeBindDialog() {
 
 
      m_link_show_error = new wxStaticText(this, wxID_ANY, _L("Check the reason"));
-     m_link_show_error->SetForegroundColour(wxColour(0x6b6b6b));
+     m_link_show_error->SetForegroundColour(wxColour("#6b6b6b"));
      m_link_show_error->SetFont(::Label::Head_13);
 
      m_bitmap_show_error_close = create_scaled_bitmap("link_more_error_close",nullptr, 7);
@@ -679,8 +679,8 @@ PingCodeBindDialog::~PingCodeBindDialog() {
      m_button_bind = new Button(button_panel, _L("Confirm"));
 
      StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(206, 206, 206), StateColor::Disabled),
-         std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
-         std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
+         std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Pressed),
+         std::pair<wxColour, int>(wxColour(116, 168, 255), StateColor::Hovered),
          std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
      m_button_bind->SetBackgroundColor(btn_bg_blue);
      m_button_bind->SetBorderColor(*wxWHITE);
@@ -916,8 +916,12 @@ void BindMachineDialog::on_show(wxShowEvent &event)
     if (event.IsShown()) {
         auto img = m_machine_info->get_printer_thumbnail_img_str();
         if (wxGetApp().dark_mode()) { img += "_dark"; }
-        auto bitmap = create_scaled_bitmap(img, this, FromDIP(80));
-        m_printer_img->SetBitmap(bitmap);
+        try {
+            auto bitmap = create_scaled_bitmap(img, this, FromDIP(80));
+            m_printer_img->SetBitmap(bitmap);
+        }
+        catch (...){}
+
         m_printer_img->Refresh();
         m_printer_img->Show();
 
@@ -967,7 +971,7 @@ UnBindMachineDialog::UnBindMachineDialog(Plater *plater /*= nullptr*/)
      SetBackgroundColour(*wxWHITE);
      wxBoxSizer *m_sizer_main = new wxBoxSizer(wxVERTICAL);
      auto m_line_top = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(-1, 1), wxTAB_TRAVERSAL);
-     m_line_top->SetBackgroundColour(wxColour(166, 169, 170));
+     m_line_top->SetBackgroundColour(wxColour("#A6A9AA"));
      m_sizer_main->Add(m_line_top, 0, wxEXPAND, 0);
      m_sizer_main->Add(0, 0, 0, wxTOP, FromDIP(38));
 
@@ -1034,7 +1038,7 @@ UnBindMachineDialog::UnBindMachineDialog(Plater *plater /*= nullptr*/)
 
      m_sizer_button->Add(0, 0, 1, wxEXPAND, 5);
      m_button_unbind = new Button(this, _L("Confirm"));
-     StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Hovered),
+     StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Hovered),
                              std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
      m_button_unbind->SetBackgroundColor(btn_bg_blue);
      m_button_unbind->SetBorderColor(wxColour(68, 121, 251));
@@ -1136,8 +1140,11 @@ void UnBindMachineDialog::on_show(wxShowEvent &event)
     if (event.IsShown()) {
         auto img = m_machine_info->get_printer_thumbnail_img_str();
         if (wxGetApp().dark_mode()) { img += "_dark"; }
-        auto bitmap = create_scaled_bitmap(img, this, FromDIP(80));
-        m_printer_img->SetBitmap(bitmap);
+        try {
+            auto bitmap = create_scaled_bitmap(img, this, FromDIP(80));
+            m_printer_img->SetBitmap(bitmap);
+        } catch (...) {}
+
         m_printer_img->Refresh();
         m_printer_img->Show();
 

@@ -471,6 +471,8 @@ bool OctoPrint::send_command_to_printer(wxString& msg, wxString commond) const
    auto url = make_url("printer/gcode/script");
     bool successful = false;
    Http http = Http::post(std::move(url));
+   //y72
+   set_auth(http);
    http.header("Content-Type", "application/json")
        .set_post_body(json_body)
        .timeout_connect(4)
@@ -495,10 +497,12 @@ bool OctoPrint::send_timelapse_status(wxString& msg, std::string ip, bool status
 {
    const char* name = get_name();
    std::string status_str = status ? "true" : "false";
-   std::string url = (boost::format("http://%1%:7125/machine/timelapse/settings?enabled=%2%") % ip % status_str).str();
+   std::string url = (boost::format("http://%1%/machine/timelapse/settings?enabled=%2%") % ip % status_str).str();
    bool successful = false;
    std::string json_body = "{}";
    Http http = Http::post(std::move(url));
+   //y72
+   set_auth(http);
    http.header("Content-Type", "application/json")
        .set_post_body(json_body)
        .timeout_connect(4)

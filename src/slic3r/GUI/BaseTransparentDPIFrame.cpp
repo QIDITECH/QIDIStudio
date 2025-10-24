@@ -66,8 +66,8 @@ BaseTransparentDPIFrame::BaseTransparentDPIFrame(
      bSizer_button->Add(m_checkbox, 0, wxALIGN_LEFT);*/
     bSizer_button->AddStretchSpacer(1);
     //y59
-    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(40, 90, 220), StateColor::Pressed),
-                            std::pair<wxColour, int>(wxColour(100, 150, 255), StateColor::Hovered),
+    StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Pressed),
+                            std::pair<wxColour, int>(wxColour(116, 168, 255), StateColor::Hovered),
                             std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
     StateColor btn_bg_white(std::pair<wxColour, int>(wxColour(23, 25, 22), StateColor::Pressed), std::pair<wxColour, int>(wxColour(43, 45, 42), StateColor::Hovered),
                             std::pair<wxColour, int>(wxColour(23, 25, 22), StateColor::Normal));

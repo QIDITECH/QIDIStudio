@@ -217,7 +217,6 @@ public:
     void auto_supply_with_ext(std::vector<DevAmsTray> slots);
     bool is_nozzle_type_match(DevExtderSystem data, wxString &error_message) const;
     int  convert_filament_map_nozzle_id_to_task_nozzle_id(int nozzle_id);
-
     PrintFromType            get_print_type() { return m_print_type; };
     wxString                 format_text(wxString &m_msg);
     PrintDialogStatus        get_status() { return m_print_status; }
@@ -389,6 +388,7 @@ public:
     void generate_filament_id(GUI::Box_info& machine_filament_info);
     void update_filament_info(GUI::Box_info& machine_filament_info);
 #endif
+
 
     std::vector<std::string> m_printer_ip;
     std::vector<std::string> m_printer_api_key;

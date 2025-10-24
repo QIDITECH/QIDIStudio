@@ -336,7 +336,8 @@ void MediaFilePanel::UpdateByObj(MachineObject* obj)
                 status == PrinterFileSystem::ListReady) {
                 json j;
                 j["code"] = err;
-                j["dev_id"] = m_machine;
+                //j["dev_id"] = m_machine;
+                j["dev_id"] = "";
                 j["dev_ip"] = "";
                 NetworkAgent* agent = wxGetApp().getAgent();
                 if (status == PrinterFileSystem::Failed && err != 0) {
@@ -367,7 +368,8 @@ void MediaFilePanel::UpdateByObj(MachineObject* obj)
             if (result > 1 || result == 0) {
                 json j;
                 j["code"] = result;
-                j["dev_id"] = m_machine;
+                //j["dev_id"] = m_machine;
+                j["dev_id"] = "";
                 j["dev_ip"] = "";
                 if (result > 1) {
                     // download failed
