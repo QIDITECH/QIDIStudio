@@ -17608,3 +17608,18 @@ msgstr "Activeer de multicolor box voor meerkleurenprinten met meerdere filament
 
 msgid "The machine is not synchronized with the box, so the box cannot be activated."
 msgstr "De machine is niet gesynchroniseerd met de box, daarom kan de box niet geactiveerd worden."
+
+msgid "Box Setting.."
+msgstr "Boxinstelling.."
+
+msgid "Set automatic leveling.."
+msgstr "Automatisch nivelleren instellen.."
+
+msgid "Set timelapse.."
+msgstr "Timelapse instellen.."
+
+msgid "Failed to set the bed leveling..."
+msgstr "Nivellering bed mislukt..."
+
+msgid "Failed to set the timelapse..."
+msgstr "Timelapse instellen mislukt..."
