@@ -8,5 +8,5 @@
     "bed_model": "Q2_bed.stl",
     "bed_texture": "Q2_bed.svg",
     "hotend_model": "X-Series_gen3_hotend.stl",
-	"default_materials": "Generic ABS @Qidi Q2 0.4 nozzle;Generic PLA @Qidi Q2 0.4 nozzle;QIDI ABS Odorless @Qidi Q2 0.4 nozzle;QIDI ABS Rapido @Qidi Q2 0.4 nozzle;QIDI PLA Rapido @Qidi Q2 0.4 nozzle;QIDI PLA Rapido Matte @Qidi Q2 0.4 nozzle;QIDI PLA-CF @Qidi Q2 0.4 nozzle;Generic PLA Silk @Qidi Q2 0.4 nozzle;QIDI PLA Rapido Silk @Qidi Q2 0.4 nozzle"
+	"default_materials": "Generic ABS @Qidi Q2 0.4 nozzle;Generic PLA @Qidi Q2 0.4 nozzle;QIDI ABS Odorless @Qidi Q2 0.4 nozzle;QIDI ABS Rapido @Qidi Q2 0.4 nozzle;QIDI PLA Rapido @Qidi Q2 0.4 nozzle;QIDI PLA Rapido Matte @Qidi Q2 0.4 nozzle;QIDI PLA-CF @Qidi Q2 0.4 nozzle;Generic PLA Silk @Qidi Q2 0.4 nozzle;QIDI PLA Rapido Silk @Qidi Q2 0.4 nozzle;QIDI ASA @Qidi Q2 0.4 nozzle;QIDI PETG Basic @Qidi Q2 0.4 nozzle;QIDI PETG Rapido @Qidi Q2 0.4 nozzle;QIDI PETG Tough @Qidi Q2 0.4 nozzle;QIDI PETG Translucent @Qidi Q2 0.4 nozzle;QIDI PLA Basic @Qidi Q2 0.4 nozzle;QIDI PLA Matte Basic @Qidi Q2 0.4 nozzle;Generic PETG @Qidi Q2 0.4 nozzle"
 }

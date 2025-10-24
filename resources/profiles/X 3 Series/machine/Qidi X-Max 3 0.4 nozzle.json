@@ -19,5 +19,6 @@
     "retract_lift_below": ["314"],
     "extruder_clearance_height_to_lid": "118",
     "extruder_clearance_height_to_rod": "30",
-    "extruder_clearance_max_radius": "70"
+    "extruder_clearance_max_radius": "70",
+    "fan_direction": "right"
 }
