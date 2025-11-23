@@ -4375,8 +4375,8 @@ bool GUI_App::is_user_login()
     if (m_agent) {
         return m_agent->is_user_login();
     }
+#endif	
     return false;
-#endif
 }
 
 
