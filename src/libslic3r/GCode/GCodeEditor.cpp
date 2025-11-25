@@ -295,7 +295,7 @@ std::vector<PerExtruderAdjustments> GCodeEditor::parse_layer_gcode(  const      
             active_speed_modifier = size_t(-1);
         }
         // y71
-        else if (boost::starts_with(sline, "TOOL_CHANGE")) {
+        else if (boost::starts_with(sline, "TOOL_CHANGE_START")) {
             ;
         }
         //y72

@@ -7972,6 +7972,8 @@ void PlateData::parse_filament_info(GCodeProcessorResult *result)
                     stream << "\"/>\n";
                 }
 
+                //y74
+                int print_id = 0;
                 for (auto it = plate_data->objects_and_instances.begin(); it != plate_data->objects_and_instances.end(); it++)
                 {
                         int obj_id = it->first;
@@ -8003,9 +8005,24 @@ void PlateData::parse_filament_info(GCodeProcessorResult *result)
                             identify_id = inst->id().id;
                         bool skipped = std::find(plate_data->skipped_objects.begin(), plate_data->skipped_objects.end(), identify_id) !=
                                        plate_data->skipped_objects.end();
-                        stream << "    <" << OBJECT_TAG << " " << IDENTIFYID_ATTR << "=\"" << std::to_string(identify_id) << "\" " << NAME_ATTR << "=\"" << xml_escape(obj->name)
+
+                        auto obj_name = obj->name;
+                        // replace space in obj_name with '-'
+                        //y74
+                        std::replace(obj_name.begin(), obj_name.end(), ' ', '_');
+                        std::replace(obj_name.begin(), obj_name.end(), '#', '_');
+                        std::replace(obj_name.begin(), obj_name.end(), '*', '_');
+                        std::replace(obj_name.begin(), obj_name.end(), ':', '_');
+                        std::replace(obj_name.begin(), obj_name.end(), ';', '_');
+                        std::replace(obj_name.begin(), obj_name.end(), '\'', '_');
+
+                        obj_name = (boost::format("%1%_id_%2%_copy_%3%") % obj_name % print_id % inst_id).str();
+
+                        stream << "    <" << OBJECT_TAG << " " << IDENTIFYID_ATTR << "=\"" << std::to_string(identify_id) << "\" " << NAME_ATTR << "=\"" << xml_escape(obj_name)
                                << "\" " << SKIPPED_ATTR << "=\"" << (skipped ? "true" : "false")
                                << "\" />\n";
+
+                        print_id++;
                 }
 
                 for (auto it = plate_data->slice_filaments_info.begin(); it != plate_data->slice_filaments_info.end(); it++)

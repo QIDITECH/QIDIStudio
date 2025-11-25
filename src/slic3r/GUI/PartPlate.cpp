@@ -3931,6 +3931,12 @@ void PartPlateList::set_default_wipe_tower_pos_for_plate(int plate_idx, bool ini
         }
     }
 
+	//y74
+	if( x < plate_bbox_x_max_local_coord * 0.8)
+		x = plate_bbox_x_max_local_coord * 0.8;
+	if ( y < plate_bbox_y_max_local_coord * 0.8)
+		y = plate_bbox_y_max_local_coord * 0.8;
+
     ConfigOptionFloat wt_x_opt(x);
     ConfigOptionFloat wt_y_opt(y);
 

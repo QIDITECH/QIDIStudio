@@ -15760,6 +15760,20 @@ void Plater::export_gcode(bool prefer_removable)
         );
         if (dlg.ShowModal() == wxID_OK) {
             output_path = into_path(dlg.GetPath());
+            delete_file_name_redundant_suffix(output_path, L".gcode");
+            if (boost::iends_with(output_path.string(), ".gcode")) {
+                std::wstring temp_path = output_path.wstring();
+                temp_path              = temp_path.substr(0, temp_path.size() - 6);
+                output_path            = temp_path + L".gcode";
+            }
+            else if (boost::iends_with(output_path.string(), ".gcode.gcode")) {//for mac
+                std::wstring temp_path = output_path.wstring();
+                temp_path              = temp_path.substr(0, temp_path.size() - 16);
+                output_path            = temp_path + L".gcode";
+            }
+            else if (!boost::iends_with(output_path.string(), ".gcode")) {
+                output_path = output_path.replace_extension(".gcode");
+            }
             while (has_illegal_filename_characters(output_path.filename().string())) {
                 show_error(this, _L("The provided file name is not valid.") + "\n" +
                     _L("The following characters are not allowed by a FAT file system:") + "#\'<>:\\|?*\"");
