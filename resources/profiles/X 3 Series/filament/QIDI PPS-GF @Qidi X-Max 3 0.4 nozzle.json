@@ -1,0 +1,10 @@
+{
+    "type": "filament",
+    "filament_id": "GFN98",
+    "setting_id": "GFSN99",
+    "name": "QIDI PPS-GF @Qidi X-Max 3 0.4 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PPS-GF@X3",
+	"compatible_printers": ["X-Max 3 0.4 nozzle"]
+}
