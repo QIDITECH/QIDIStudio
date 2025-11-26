@@ -6455,6 +6455,11 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                                 old_preset_name.replace(nozzle_pos, nozzle_len, new_preset_nozzle_size);
                             }
                             if (en_3mf_file_type != En3mfType::From_QDS) {
+                                //y74
+                                qdt_different_keys.erase(
+                                    std::remove(qdt_different_keys.begin(), qdt_different_keys.end(), ""),
+                                    qdt_different_keys.end()
+                                );
                                 if(has_different_settings_to_system)
                                     wxGetApp().get_tab(Preset::TYPE_PRINT)->cache_config_diff(qdt_different_keys);
                                 wxGetApp().get_tab(Preset::TYPE_PRINTER)->select_preset(old_preset_name);
