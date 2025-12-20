@@ -356,10 +356,11 @@ public:
     virtual void append(const ConfigOption *rhs) = 0;
     virtual void set(const ConfigOption* rhs, size_t start, size_t len) = 0;
     virtual void set_with_restore(const ConfigOptionVectorBase* rhs, std::vector<int>& restore_index, int stride) = 0;
-    virtual void set_with_restore_2(const std::string key, const ConfigOptionVectorBase* rhs, std::vector<int>& restore_index, int start, int len) = 0;
+    virtual void set_with_restore_2(const std::string key, const ConfigOptionVectorBase* rhs, std::vector<int>& restore_index, int start, int len, bool skip_error = false) = 0;
     virtual void set_only_diff(const ConfigOptionVectorBase* rhs, std::vector<int>& diff_index, int stride) = 0;
     virtual void set_to_index(const ConfigOptionVectorBase* rhs, std::vector<int>& dest_index, int stride) = 0;
     virtual void set_with_nil(const ConfigOptionVectorBase* rhs, const ConfigOptionVectorBase* inherits, int stride) = 0;
+    virtual void set_with_default(const ConfigOptionVectorBase* inherits) = 0;
     // Resize the vector of values, copy the newly added values from opt_default if provided.
     virtual void resize(size_t n, const ConfigOption *opt_default = nullptr) = 0;
     // Clear the values vector.
@@ -515,7 +516,7 @@ public:
     //restore_index: which index in this vector need to be restored
     //start: which index in this vector need to be replaced
     //count: how many items in this vector need to be replaced
-    virtual void set_with_restore_2(const std::string key, const ConfigOptionVectorBase* rhs, std::vector<int>& restore_index, int start, int len) override
+    virtual void set_with_restore_2(const std::string key, const ConfigOptionVectorBase* rhs, std::vector<int>& restore_index, int start, int len, bool skip_error = false) override
     {
         if (rhs->type() == this->type()) {
             //backup original ones
@@ -536,11 +537,17 @@ public:
             }
 
             // Assign the new value from the rhs vector.
-            auto other = static_cast<const ConfigOptionVector<T>*>(rhs);
+            auto other = const_cast<ConfigOptionVector<T>*>(static_cast<const ConfigOptionVector<T>*>(rhs));
 
             if (other->values.size() != (restore_index.size())) {
-                std::string error_message = "ConfigOptionVector::set_with_restore_2(): Assigning from an vector with invalid restore_index size: key="+key;
-                throw ConfigurationError(error_message);
+                if (skip_error) {
+                    T default_v = other->values.front();
+                    other->values.resize(restore_index.size(), default_v);
+                }
+                else {
+                    std::string error_message = "ConfigOptionVector::set_with_restore_2(): Assigning from an vector with invalid restore_index size: key="+key;
+                    throw ConfigurationError(error_message);
+                }
             }
 
             for (size_t i = 0; i < restore_index.size(); i++) {
@@ -597,7 +604,7 @@ public:
             for (size_t i = 0; i < dest_index.size(); i++) {
                 for (size_t j = 0; j < stride; j++)
                 {
-                    if (!other->is_nil(dest_index[i]))
+                    if (dest_index[i] < other->values.size() && !other->is_nil(dest_index[i]))
                         this->values[i * stride +j] = other->values[dest_index[i] * stride +j];
                 }
             }
@@ -641,6 +648,28 @@ public:
         }
         else
             throw ConfigurationError("ConfigOptionVector::set_with_nil(): Assigning an incompatible type");
+    }
+
+    //set a item related with extruder variants when load user config, set the missed value of some extruder to default ones from inherits
+    //this item has missed value with old user config
+    //inherits: item from inherit config
+    virtual void set_with_default(const ConfigOptionVectorBase* inherits) override
+    {
+        if (inherits->type() == this->type()) {
+            auto inherits_opt = static_cast<const ConfigOptionVector<T>*>(inherits);
+
+            if (inherits->size() <= this->size())
+                return;
+            size_t delta = inherits->size() - this->size();
+            this->values.resize(inherits->size(), this->values.front());
+
+            for (size_t i = 0; i < delta; i++) {
+                size_t index = inherits->size() - delta + i;
+                this->values[index] = inherits_opt->values[index];
+            }
+        }
+        else
+            throw ConfigurationError("ConfigOptionVector::set_with_default(): Assigning an incompatible type");
     }
 
     const T& get_at(size_t i) const
@@ -734,6 +763,7 @@ public:
     }
     // Apply an override option, possibly a nullable one.
     // assume lhs is not nullable even it is nullable
+    //default_index are 0 based
     bool apply_override(const ConfigOption *rhs, std::vector<int>& default_index) override {
         //if (this->nullable())
         //	throw ConfigurationError("Cannot override a nullable ConfigOption.");
@@ -769,8 +799,8 @@ public:
                 this->values[i] = rhs_vec->values[i];
                 modified        = true;
             } else {
-                if ((i < default_index.size()) && (default_index[i] - 1 < default_value.size()))
-                    this->values[i] = default_value[default_index[i] - 1];
+                if ((i < default_index.size()) && (default_index[i]  < default_value.size()))
+                    this->values[i] = default_value[default_index[i]];
                 else
                     this->values[i] = default_value[0];
             }
