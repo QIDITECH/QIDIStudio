@@ -1,45 +1,50 @@
-var cardData = [
-  {
-    "title": "Q2",
-    "img": "img/printer_q2.png",
-    "link": "Q2"
-  },
-  {
-    "title": "X-Plus 4",
-    "img": "img/printer_xplus4.png",
-    "link": "X-Plus4"
-  },
-  {
-    "title": "Q1 Pro",
-    "img": "img/printer_q1pro.png",
-    "link": "Q1-Pro"
-  },
-  {
-    "title": "X-Max 3",
-    "img": "img/printer_xmax3.png",
-    "link": "X-Max3"
-  },
-  {
-    "title": "X-Plus 3",
-    "img": "img/printer_xplus3.png",
-    "link": "X-Plus3"
-  },
-  {
-    "title": "X-Smart 3",
-    "img": "img/printer_xsmart3.png",
-    "link": "X-Smart3"
-  },
-  {
-    "title": "QIDI Studio",
-    "img": "img/QIDIStudio.png",
-    "link": "software/qidi-studio"
-  },
-];
+var cardData = {
+  "code":"000000",
+  "msg":"operation.successful",
+  "traceId":"71ce01ec38ce414692a88a2fd44e7330.18616.17631185286483121",
+  "data":[
+    {
+      "id":"Q2",
+      "printerType":"Q2",
+      "img":"img/printer_q2.png"
+    },
+    {
+      "id":"X-Plus4",
+      "printerType":"X-Plus 4",
+      "img":"img/printer_xplus4.png"
+    },
+    {
+      "id":"Q1-Pro",
+      "printerType":"Q1 Pro",
+      "img":"img/printer_q1pro.png"
+    },
+    {
+      "id":"X-Max3",
+      "printerType":"X-Max 3",
+      "img":"img/printer_xmax3.png"
+    },
+    {
+      "id": "X-Plus3",
+      "printerType":"X-Plus 3",
+      "img":"img/printer_xplus3.png"
+    },
+    {
+      "id":"X-Smart3",
+      "printerType":"X-Smart 3",
+      "img":"img/printer_xsmart3.png"
+    },
+    {
+      "id":"software/qidi-studio",
+      "printerType":"QIDI Studio",
+      "img":"img/QIDIStudio.png"
+    }
+  ]
+};
 
 // var youtubeData = [
 //   {
 //     "id": "8TQCRVS72Us",
-//     "title": "Intro: Overview of Bambu Studio"
+//     "title": "Intro: Overview of QIDI Studio"
 //   },
 //   {
 //     "id": "AdHUVQiVeDI",
@@ -214,9 +219,9 @@ var topicData = [
     "zhcn-title": "打印设置",
     "children": [
       // {
-      //   "title": "Special Slicing Mode in Bambu Studio",
-      //   "zhcn-title": "Bambu Studio 特殊切片模式",
-      //   "link": "software/bambu-studio/special-slicing-modes"
+      //   "title": "Special Slicing Mode in QIDI Studio",
+      //   "zhcn-title": "QIDI Studio 特殊切片模式",
+      //   "link": "software/qidi-studio/special-slicing-modes"
       // },
       {
         "title": "How to Create Custom Preset",
@@ -229,7 +234,7 @@ var topicData = [
         "link": "software/qidi-studio/print-settings/seam"
       },
       {
-        "title": "Support settings in Bambu Studio",
+        "title": "Support settings in QIDI Studio",
         "zhcn-title": "支撑耗材与支撑功能的介绍",
         "link": "software/qidi-studio/print-settings/support"
       },
@@ -247,12 +252,12 @@ var topicData = [
       // {
       //   "title": "Flow Rate Calibration",
       //   "zhcn-title": "流量比例",
-      //   "link": "software/bambu-studio/calibration_flow_rate"
+      //   "link": "software/qidi-studio/calibration_flow_rate"
       // },
       // {
       //   "title": "Flow Dynamics Calibration",
       //   "zhcn-title": "动态流量校准",
-      //   "link": "software/bambu-studio/calibration_pa"
+      //   "link": "software/qidi-studio/calibration_pa"
       // }
       {
         "title": "Calibration",
@@ -291,7 +296,7 @@ var video_prev;
 var video_next;
 
 function OnInit() {
-  createCardHTML();
+  getAcademyData();
   createVideoHTML();
   if (IsChinese())
     $("#tutorial_block").hide();
@@ -375,11 +380,24 @@ function updateSearchResult(result) {
 
 //--------------- Academy Cards -------------------
 
-function createCardHTML() {
-  for (let i = 0; i < cardData.length; i++) {
-    let html = `<div class="card" data-idx="${i}" onclick="openAcademyUrl('${cardData[i].link}')">
-                  <img class="cardImg" src="${cardData[i].img}" />
-                  <div class="cardTitle">${cardData[i].title}</div>
+function getAcademyData() {
+  var tSend={};
+	tSend['sequence_id']=Math.round(new Date() / 1000);
+	tSend['command']="get_academy_list";
+  tSend['data']={};
+  if(IsChinese()) {
+    tSend['data']['region'] = "mainland";
+  }else {
+    tSend['data']['region'] = "oversea";
+  }
+	SendWXMessage( JSON.stringify(tSend) );
+}
+
+function createCardHTML(data) {
+  for (let i = 0; i < data.length; i++) {
+    let html = `<div class="card" data-idx="${i}" onclick="openAcademyUrl('${data[i].id}')">
+                  <img class="cardImg" src="${get_image_url(data[i].printerType)}" />
+                  <div class="cardTitle TextS1">${data[i].printerType}</div>
                 </div>`;
     $('#academy_Card_Content').append(html)
   }
@@ -418,7 +436,7 @@ function scrollByStep(dir) {
   $('#academy_content').stop(true, false).animate({ scrollLeft: target }, 260, 'swing', updateButtons);
 }
 
-function openAcademyUrl(path)
+function openAcademyUrl(id)
 {
   let open_url = "";
   if (IsChinese()){
@@ -427,7 +445,7 @@ function openAcademyUrl(path)
     let strLang=langStringTransfer();
     open_url = "https://wiki.qidi3d.com/en/";
   }
-  open_url += path;
+  open_url += id;
   OpenUrlInLocalBrowser(open_url);
 }
 
@@ -496,7 +514,7 @@ function createTopicHTML() {
       title = topicData[i].title;
     }
     let html = `<div class="topicCard">
-          <div class="topicTitle">${title}</div>
+          <div class="topicTitle TextS1">${title}</div>
           <ul>`
     for (let j=0; j < topicData[i].children.length; j++) {
       let child_title;
@@ -578,13 +596,46 @@ function langStringTransfer()
   }
 }
 
+function get_image_url(printer_type) {
+  // const normalized = (printer_type || '')
+  //   .toLowerCase()
+  //   .replace(/[^a-z0-9]/g, '');
+
+  // const mappings = [
+  //   { keywords: ['Q2'], src: 'img/printer_q2.png' },
+  //   { keywords: ['X-Plus 4'], src: 'img/printer_xplus4.png' },
+  //   { keywords: ['Q1 Pro'], src: 'img/printer_q1pro.png' },
+  //   { keywords: ['X-Max 3'], src: 'img/printer_xmax3.png' },
+  //   { keywords: ['X-Plus 3'], src: 'img/printer_xplus3.png' },
+  //   { keywords: ['QIDI Studio'], src: 'img/QIDIStudio.png' },
+  // ];
+
+  // for (const item of mappings) {
+  //   if (item.keywords.some(keyword => normalized.includes(keyword))) {
+  //     return item.src;
+  //   }
+  // }
+  // return 'img/printer_q2.png';
+
+  if (!printer_type) return 'img/printer_q2.png';
+  
+  const found = cardData.data.find(item => 
+    item.printerType.toLowerCase() === printer_type.toLowerCase() ||
+    item.id.toLowerCase() === printer_type.toLowerCase()
+  );
+  
+  return found ? found.img : 'img/printer_q2.png';
+}
+
 function HandleStudio( pVal )
 {
   let strCmd = pVal['command'];
   if(strCmd=='search_wiki_get')
 	{
 		updateSearchResult(pVal['data']);
-	}
+	}else if(strCmd=='academy_list_get') {
+    createCardHTML(cardData['data']);
+  }
 }
 
 //---------------Global-----------------
