@@ -1,6 +1,6 @@
 {
     "name": "X-4-Series",
-    "version": "02.03.01.70",
+    "version": "02.04.00.71",
     "force_update": "0",
     "description": "X-4-Series configurations",
     "machine_model_list": [     
@@ -501,19 +501,19 @@
             "sub_path": "filament/Generic TPU 95A.json"
         },
         {
-            "name": "QIDI PC-ABS-FR@X4",
+            "name": "QIDI PC/ABS-FR@X4",
             "sub_path": "filament/QIDI PC-ABS-FR.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi X-Plus 4 0.4 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi X-Plus 4 0.4 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi X-Plus 4 0.4 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi X-Plus 4 0.6 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi X-Plus 4 0.6 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi X-Plus 4 0.6 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi X-Plus 4 0.8 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi X-Plus 4 0.8 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi X-Plus 4 0.8 nozzle.json"
         },
         {
@@ -1237,7 +1237,7 @@
             "sub_path": "filament/Generic TPU 95A @X-Max 4.json"
         },
         {
-            "name": "QIDI PC-ABS-FR@X-Max 4-Series",
+            "name": "QIDI PC/ABS-FR@X-Max 4-Series",
             "sub_path": "filament/QIDI PC-ABS-FR @X-Max 4.json"
         },
         {
@@ -1437,15 +1437,15 @@
             "sub_path": "filament/QIDI PAHT-CF @Qidi X-Max 4 0.8 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi X-Max 4 0.4 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi X-Max 4 0.4 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi X-Max 4 0.4 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi X-Max 4 0.6 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi X-Max 4 0.6 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi X-Max 4 0.6 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi X-Max 4 0.8 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi X-Max 4 0.8 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi X-Max 4 0.8 nozzle.json"
         },
         {

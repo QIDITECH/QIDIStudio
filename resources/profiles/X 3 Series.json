@@ -1,6 +1,6 @@
 {
     "name": "X-3-Series",
-    "version": "02.03.01.70",
+    "version": "02.04.00.71",
     "force_update": "0",
     "description": "X-3-Series configurations",
     "machine_model_list": [
@@ -909,43 +909,43 @@
             "sub_path": "filament/QIDI TPU 95A-HF.json"
         },
         {
-            "name": "QIDI PC-ABS-FR@X3",
+            "name": "QIDI PC/ABS-FR@X3",
             "sub_path": "filament/QIDI PC-ABS-FR.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi X-Max 3 0.4 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi X-Max 3 0.4 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi X-Max 3 0.4 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi X-Plus 3 0.4 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi X-Plus 3 0.4 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi X-Plus 3 0.4 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi X-Smart 3 0.4 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi X-Smart 3 0.4 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi X-Smart 3 0.4 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi X-Max 3 0.6 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi X-Max 3 0.6 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi X-Max 3 0.6 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi X-Plus 3 0.6 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi X-Plus 3 0.6 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi X-Plus 3 0.6 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi X-Smart 3 0.6 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi X-Smart 3 0.6 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi X-Smart 3 0.6 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi X-Max 3 0.8 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi X-Max 3 0.8 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi X-Max 3 0.8 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi X-Plus 3 0.8 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi X-Plus 3 0.8 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi X-Plus 3 0.8 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi X-Smart 3 0.8 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi X-Smart 3 0.8 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi X-Smart 3 0.8 nozzle.json"
         },
         {

@@ -3,9 +3,9 @@
     "filament_id": "GFB99",
     "setting_id": "GFSA04",
     "instantiation": "true",
-    "filament_settings_id": ["QIDI PC-ABS-FR @Qidi Q1 Pro 0.6 nozzle"],
-    "inherits": "QIDI PC-ABS-FR@Q-Series",
-    "name": "QIDI PC-ABS-FR @Qidi Q1 Pro 0.6 nozzle",
+    "filament_settings_id": ["QIDI PC/ABS-FR @Qidi Q1 Pro 0.6 nozzle"],
+    "inherits": "QIDI PC/ABS-FR@Q-Series",
+    "name": "QIDI PC/ABS-FR @Qidi Q1 Pro 0.6 nozzle",
     "during_print_exhaust_fan_speed": ["0"],
     "pressure_advance": ["0.028"],
     "compatible_printers": ["Q1 Pro 0.6 nozzle"]

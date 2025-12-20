@@ -2,7 +2,7 @@
     "type": "filament",
     "filament_id": "GFB99",
     "setting_id": "GFSA04",
-    "name": "QIDI PC-ABS-FR@X3",
+    "name": "QIDI PC/ABS-FR@X3",
     "from": "system",
     "instantiation": "false",
     "inherits": "fdm_filament_common",

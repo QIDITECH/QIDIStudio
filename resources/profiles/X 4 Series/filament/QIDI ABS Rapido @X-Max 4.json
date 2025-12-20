@@ -23,10 +23,10 @@
     "nozzle_temperature": ["260"],
     "overhang_fan_speed": ["80"],
     "overhang_fan_threshold": ["25%"],
-    "pressure_advance": ["0.035"],
-    "slow_down_layer_time": ["4"],
+    "pressure_advance": ["0.026"],
+    "slow_down_layer_time": ["10"],
     "temperature_vitrification": ["100"],
-    "textured_plate_temp_initial_layer" : ["90"],
-    "textured_plate_temp" : ["90"],
+    "textured_plate_temp_initial_layer" : ["85"],
+    "textured_plate_temp" : ["85"],
     "compatible_printers": []
 }

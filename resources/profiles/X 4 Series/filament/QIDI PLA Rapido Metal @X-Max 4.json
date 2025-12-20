@@ -8,6 +8,7 @@
     "inherits": "fdm_filament_common",
     "filament_type": ["PLA"],
     "additional_cooling_fan_speed": ["100"],
+    "fan_cooling_layer_time": ["100"],
     "filament_adhesiveness_category": ["100"],
     "filament_density": ["1.20"],
     "impact_strength_z":["16.8"],
@@ -19,5 +20,7 @@
     "supertack_plate_temp_initial_layer": ["45"],
     "supertack_plate_temp": ["45"],
     "temperature_vitrification": ["45"],
+    "textured_plate_temp_initial_layer" : ["55"],
+    "textured_plate_temp" : ["55"],
     "compatible_printers": []
 }

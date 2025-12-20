@@ -9,6 +9,7 @@
     "additional_cooling_fan_speed": ["100"],
     "cool_plate_temp_initial_layer": ["45"],
     "cool_plate_temp": ["45"],
+    "fan_cooling_layer_time": ["100"],
     "filament_adhesiveness_category": ["100"],
     "filament_density": ["1.2"],
     "filament_max_volumetric_speed": ["14"],
@@ -22,5 +23,7 @@
     "supertack_plate_temp_initial_layer": ["45"],
     "supertack_plate_temp": ["45"],
     "temperature_vitrification": ["45"],
+    "textured_plate_temp_initial_layer" : ["55"],
+    "textured_plate_temp" : ["55"],
     "compatible_printers": []
 }

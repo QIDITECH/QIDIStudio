@@ -1,6 +1,6 @@
 {
     "name": "Q Series",
-    "version": "02.03.01.70",
+    "version": "02.04.00.71",
     "force_update": "0",
     "description": "Q Series configurations",
     "machine_model_list": [
@@ -501,7 +501,7 @@
             "sub_path": "filament/Generic TPU 95A.json"
         },
         {
-            "name": "QIDI PC-ABS-FR@Q-Series",
+            "name": "QIDI PC/ABS-FR@Q-Series",
             "sub_path": "filament/QIDI PC-ABS-FR.json"
         },
         {
@@ -701,15 +701,15 @@
             "sub_path": "filament/QIDI PAHT-CF @Qidi Q1 Pro 0.8 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi Q1 Pro 0.4 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi Q1 Pro 0.4 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi Q1 Pro 0.4 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi Q1 Pro 0.6 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi Q1 Pro 0.6 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi Q1 Pro 0.6 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi Q1 Pro 0.8 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi Q1 Pro 0.8 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi Q1 Pro 0.8 nozzle.json"
         },
         {
@@ -1378,7 +1378,7 @@
             "sub_path": "filament/Generic TPU 95A @Q2.json"
         },
         {
-            "name": "QIDI PC-ABS-FR@Q2-Series",
+            "name": "QIDI PC/ABS-FR@Q2-Series",
             "sub_path": "filament/QIDI PC-ABS-FR @Q2.json"
         },
         {
@@ -1578,15 +1578,15 @@
             "sub_path": "filament/QIDI PAHT-CF @Qidi Q2 0.8 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi Q2 0.4 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi Q2 0.4 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi Q2 0.4 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi Q2 0.6 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi Q2 0.6 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi Q2 0.6 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi Q2 0.8 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi Q2 0.8 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi Q2 0.8 nozzle.json"
         },
         {
@@ -2294,7 +2294,7 @@
             "sub_path": "filament/Generic TPU 95A @Q2C.json"
         },
         {
-            "name": "QIDI PC-ABS-FR@Q2C-Series",
+            "name": "QIDI PC/ABS-FR@Q2C-Series",
             "sub_path": "filament/QIDI PC-ABS-FR @Q2C.json"
         },
         {
@@ -2494,15 +2494,15 @@
             "sub_path": "filament/QIDI PAHT-CF @Qidi Q2C 0.8 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi Q2C 0.4 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi Q2C 0.4 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi Q2C 0.4 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi Q2C 0.6 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi Q2C 0.6 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi Q2C 0.6 nozzle.json"
         },
         {
-            "name": "QIDI PC-ABS-FR @Qidi Q2C 0.8 nozzle",
+            "name": "QIDI PC/ABS-FR @Qidi Q2C 0.8 nozzle",
             "sub_path": "filament/QIDI PC-ABS-FR @Qidi Q2C 0.8 nozzle.json"
         },
         {

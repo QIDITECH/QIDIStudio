@@ -25,8 +25,8 @@
     "pressure_advance": ["0.048"],
     "slow_down_layer_time": ["6"],
     "temperature_vitrification": ["70"],
-    "textured_plate_temp_initial_layer" : ["80"],
-    "textured_plate_temp" : ["80"],
+    "textured_plate_temp_initial_layer" : ["70"],
+    "textured_plate_temp" : ["70"],
     "supertack_plate_temp_initial_layer": ["70"],
     "supertack_plate_temp": ["70"],
     "compatible_printers": []

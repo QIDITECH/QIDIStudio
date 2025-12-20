@@ -20,7 +20,7 @@
     "filament_retract_when_changing_layer": ["0"],
     "filament_retraction_length": ["0.01"],
     "filament_retraction_minimum_travel": ["0"],
-    "filament_type": ["ASA-Aero"],
+    "filament_type": ["ASA-AERO"],
     "filament_wipe": ["0"],
     "filament_z_hop": ["0"],
     "impact_strength_z":["3.4"],

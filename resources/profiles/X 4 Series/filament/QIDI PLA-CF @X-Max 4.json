@@ -7,6 +7,7 @@
     "instantiation": "false",
     "inherits": "fdm_filament_common",
     "additional_cooling_fan_speed": ["0"],
+    "fan_cooling_layer_time": ["100"],
     "filament_adhesiveness_category": ["100"],
     "filament_density": ["1.25"],
     "filament_flow_ratio": ["0.93"],
@@ -23,5 +24,7 @@
     "supertack_plate_temp_initial_layer": ["50"],
     "supertack_plate_temp": ["50"],
     "temperature_vitrification": ["45"],
+    "textured_plate_temp_initial_layer" : ["55"],
+    "textured_plate_temp" : ["55"],
     "compatible_printers": []
 }
