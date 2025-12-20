@@ -97,7 +97,7 @@ namespace QDT {
 #define QIDI_NETWORK_LIBRARY               "qidi_networking"
 #define QIDI_NETWORK_AGENT_NAME            "qidi_network_agent"
 
-#define QIDI_NETWORK_AGENT_VERSION         "02.03.00.62"
+#define QIDI_NETWORK_AGENT_VERSION         "02.04.00.58"
 
 //iot preset type strings
 #define IOT_PRINTER_TYPE_STRING     "printer"
@@ -235,6 +235,7 @@ struct PrintParams {
     int             enable_multi_box{0};
     int             auto_flow_cali{ 0 };
     int             auto_offset_cali{ 0 };
+    int             extruder_cali_manual_mode{ -1 };
     bool            task_ext_change_assist;
     bool            try_emmc_print;
 };

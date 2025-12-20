@@ -1087,7 +1087,7 @@ void GUI_App::post_init()
     } else {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " sync_user_preset: false";
     }
-    
+
     wxGetApp().report_consent_common(app_config->get("firstguide", "privacyuse") == "true"? true : false, "studio_improvement_policy_enable", "StudioImprovementPolicy");
 
     /*request helio config*/
@@ -2059,6 +2059,14 @@ void GUI_App::init_networking_callbacks()
                 });
                 return;
             }
+            if (return_code < 0) { //#define MQTTASYNC_SUCCESS 0
+                GUI::wxGetApp().CallAfter([this] {
+                    BOOST_LOG_TRIVIAL(trace) << "static: server connection failed";
+                    MessageDialog msg_dlg(nullptr, _L("Failed to connect to the cloud device server. Please check your network and firewall."), "", wxAPPLY | wxOK);
+                    if (msg_dlg.ShowModal() == wxOK) { return; }
+                });
+                return;
+            }
             GUI::wxGetApp().CallAfter([this] {
                 if (is_closing())
                     return;
@@ -2068,7 +2076,6 @@ void GUI_App::init_networking_callbacks()
                         auto evt = new wxCommandEvent(EVT_UPDATE_MACHINE_LIST);
                         wxQueueEvent(this, evt);
                     }
-                    m_agent->set_user_selected_machine(m_agent->get_user_selected_machine());
                     //subscribe device
                     if (m_agent->is_user_login()) {
 
@@ -2076,8 +2083,7 @@ void GUI_App::init_networking_callbacks()
                         DeviceManager* dev = this->getDeviceManager();
                         if (!dev) return;
 
-                        MachineObject *obj = dev->get_selected_machine();
-                        if (!obj) return;
+                        m_load_last_machine.TryLoadFromMqttCB(m_agent, dev);
 
                         /* resubscribe the cache dev list */
                         if (this->is_enable_multi_machine()) {
@@ -2177,8 +2183,6 @@ void GUI_App::init_networking_callbacks()
                                 event.SetInt(-1);
                                 BOOST_LOG_TRIVIAL(info) << "set_on_local_connect_fn: state = " << state;
                             }
-
-                            obj->set_lan_mode_connection_state(false);
                         }
                         else {
                             if (state == ConnectStatus::ConnectStatusOk) {
@@ -2936,7 +2940,7 @@ bool GUI_App::on_init_inner()
         const bool cancel_glmultidraw = app_config->get_bool("cancel_glmultidraw");
         p_ogl_manager->set_cancle_glmultidraw(cancel_glmultidraw);
 
-        const bool b_advanced_gcode_viewer_enabled = app_config->get_bool("enable_advanced_gcode_viewer");
+        const bool b_advanced_gcode_viewer_enabled = app_config->get_bool("enable_advanced_gcode_viewer_");
         p_ogl_manager->set_advanced_gcode_viewer_enabled(b_advanced_gcode_viewer_enabled);
     }
 
@@ -3104,6 +3108,8 @@ bool GUI_App::on_init_inner()
     on_init_network();
 
     if (m_agent && m_agent->is_user_login()) {
+        m_load_last_machine.is_list_ok = false;
+        m_load_last_machine.is_mqtt_ok = false;
         enable_user_preset_folder(true);
     } else {
         enable_user_preset_folder(false);
@@ -4273,9 +4279,13 @@ wxString GUI_App::transition_tridid(int trid_id) const
         return prefix;
     }
     else {
-        int id_index = std::clamp((int)ceil(trid_id / 4), 0, 25);
-        int id_suffix = trid_id % 4 + 1;
-        return wxString::Format("%s%d", maping_dict[id_index], id_suffix);
+        //y75
+        // int id_index = std::clamp((int)ceil(trid_id / 4), 0, 25);
+        // int id_suffix = trid_id % 4 + 1;
+        // return wxString::Format("%s%d", maping_dict[id_index], id_suffix);
+        int group = trid_id / 4 + 1;
+        char suffix = 'A' + trid_id % 4;
+        return wxString::Format("%d%c", group, suffix);
     }
 }
 
@@ -4634,6 +4644,15 @@ std::string GUI_App::handle_web_request(std::string cmd)
                     boost::optional<std::string> keyword = data_node.get_optional<std::string>("keyword");
                     if (mainframe->m_webview) {
                         mainframe->m_webview->get_wiki_search_result(keyword.value());
+                    }
+                }
+            }
+            else if (command_str.compare("get_academy_list") == 0){
+                if (mainframe && root.get_child_optional("data") != boost::none) {
+                    pt::ptree data_node = root.get_child("data");
+                    boost::optional<std::string> region = data_node.get_optional<std::string>("region");
+                    if (mainframe->m_webview) {
+                        mainframe->m_webview->get_academy_list(region.value()=="oversea" ? true : false);
                     }
                 }
             }
@@ -5057,6 +5076,9 @@ void GUI_App::on_user_login_handle(wxCommandEvent &evt)
 
     boost::thread update_thread = boost::thread([this, dev] {
         dev->update_user_machine_list_info();
+        CallAfter([this, dev]() {
+            m_load_last_machine.TryLoadFromHttpCB(m_agent, dev);
+        });
     });
 
     if (online_login) {
@@ -8017,6 +8039,13 @@ bool is_support_filament(int extruder_id, bool strict_check)
     if (support_option == nullptr) return false;
     return support_option->get_at(0);
 };
+
+void TryLoadLastMachine::InnerLoad(NetworkAgent *agent, DeviceManager *dev)
+{
+    if (is_mqtt_ok && is_list_ok) {
+        if ((dev->get_selected_machine() == nullptr) && (dev->get_user_machinelist().size() > 0)) dev->set_selected_machine(agent->get_user_selected_machine());
+    }
+}
 
 } // GUI
 } //Slic3r

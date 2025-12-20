@@ -233,6 +233,13 @@ namespace Slic3r
         }
         BOOST_LOG_TRIVIAL(info) << "ams_mapping_distance:" << line;// Print the collected filaments
 
+//y75
+        auto toLower = [](std::string s) -> std::string {
+            std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
+            return s;
+            };
+//y75
+
         //y71
         for (int i = 0; i < filaments.size(); i++)
         {
@@ -267,7 +274,8 @@ namespace Slic3r
                 wxColour c = wxColour(filaments[i].color);
                 wxColour tray_c = DevAmsTray::decode_color(box_filament_infos[j].color);
                 val.distance = GUI::calc_color_distance(c, tray_c);
-                if (filaments[i].type != box_filament_infos[j].type) {
+                //y75
+                if (toLower(filaments[i].type) != toLower(box_filament_infos[j].type)) {
                     val.distance = 999999;
                     val.is_type_match = false;
                 } else {

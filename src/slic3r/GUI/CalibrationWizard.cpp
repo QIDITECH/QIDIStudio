@@ -8,6 +8,10 @@
 #include "CaliHistoryDialog.hpp"
 #include "CalibUtils.hpp"
 #include "QDTUtil.hpp"
+
+#include "DeviceCore/DevInfo.h"
+#include "DeviceCore/DevManager.h"
+
 //w29
 #include "MainFrame.hpp"
 

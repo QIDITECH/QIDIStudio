@@ -258,7 +258,6 @@ void GLCanvas3D::LayersEditing::set_enabled(bool enabled)
 }
 
 float GLCanvas3D::LayersEditing::s_overlay_window_width;
-
 void GLCanvas3D::LayersEditing::show_tooltip_information(const GLCanvas3D& canvas, std::map<wxString, wxString> captions_texts, float x, float y)
 {
     ImTextureID normal_id = canvas.get_gizmos_manager().get_icon_texture_id(GLGizmosManager::MENU_ICON_NAME::IC_TOOLBAR_TOOLTIP);
@@ -1204,6 +1203,7 @@ void GLCanvas3D::SequentialPrintClearance::reset()
 wxDEFINE_EVENT(EVT_GLCANVAS_SCHEDULE_BACKGROUND_PROCESS, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_OBJECT_SELECT, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_PLATE_NAME_CHANGE, SimpleEvent);
+wxDEFINE_EVENT(EVT_GLCANVAS_MOVE_PLATE, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_PLATE_SELECT, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_RIGHT_CLICK, RBtnEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_PLATE_RIGHT_CLICK, RBtnPlateEvent);
@@ -1571,8 +1571,30 @@ void GLCanvas3D::update_gcode_sequential_view_current(unsigned int first, unsign
     t_gcode_viewer.update_sequential_view_current(first, last);
 }
 
-unsigned int GLCanvas3D::get_volumes_count() const
-{
+bool GLCanvas3D::is_in_same_model_object(const std::vector<int> volume_ids) {
+    if (volume_ids.size() >= 2) {
+        auto gl_volume        = m_selection.get_volume(volume_ids[0]);
+        if (gl_volume) {
+            std::set<int> object_sets;
+            object_sets.insert(gl_volume->object_idx());
+            for (int i = 1; i < volume_ids.size(); i++) {
+                auto temp_volume = m_selection.get_volume(volume_ids[i]);
+                if (temp_volume) {
+                    auto temp_object_idx = temp_volume->object_idx();
+                    if (object_sets.find(temp_object_idx) == object_sets.end()) { return false; }
+                } else {
+                    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "check code";
+                }
+            }
+            if (object_sets.size() == 1) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+unsigned int GLCanvas3D::get_volumes_count() const {
     return (unsigned int)m_volumes.volumes.size();
 }
 
@@ -3305,6 +3327,10 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
                 float a = dynamic_cast<const ConfigOptionFloat*>(proj_cfg.option("wipe_tower_rotation_angle"))->value;
                 // QDS
                 std::vector<double> v = dynamic_cast<const ConfigOptionFloats*>(m_config->option("filament_prime_volume"))->values;
+                if (proj_cfg.option<ConfigOptionEnum<PrimeVolumeMode>>("prime_volume_mode")->value == pvmSaving) {
+                    for (auto& val : v)
+                        val = 15.f;
+                }
                 Vec3d plate_origin = ppl.get_plate(plate_id)->get_origin();
 
                 const Print* print = m_process->fff_print();
@@ -3988,14 +4014,9 @@ void GLCanvas3D::on_char(wxKeyEvent& evt)
         //    break;
         //}
 
-        // QDS: use keypad to change extruder
-        case '1': {
-            if (!m_timer_set_color.IsRunning()) {
-                m_timer_set_color.StartOnce(500);
-                break;
-            }
-        }
-        case '0':   //Color logic for material 10
+        // BBS: use keypad to change extruder
+        case '0'://Color logic for material 10
+        case '1':
         case '2':
         case '3':
         case '4':
@@ -4004,12 +4025,14 @@ void GLCanvas3D::on_char(wxKeyEvent& evt)
         case '7':
         case '8':
         case '9': {
-            if (m_timer_set_color.IsRunning()) {
-                if (keyCode < '7')  keyCode += 10;
-                m_timer_set_color.Stop();
+            int digit = keyCode - '0';
+            if (m_color_input_value < 0 || !m_timer_set_color.IsRunning()) {
+                m_color_input_value = digit;
+            } else {
+                m_color_input_value = m_color_input_value * 10 + digit;
             }
-            if (m_gizmos.get_current_type() != GLGizmosManager::MmuSegmentation)
-                obj_list->set_extruder_for_selected_items(keyCode - '0');
+            if (m_timer_set_color.IsRunning()) m_timer_set_color.Stop();
+            m_timer_set_color.StartOnce(500);
             break;
         }
 
@@ -4605,8 +4628,8 @@ void GLCanvas3D::on_render_timer(wxTimerEvent& evt)
 void GLCanvas3D::on_set_color_timer(wxTimerEvent& evt)
 {
     auto obj_list = wxGetApp().obj_list();
-    if (m_gizmos.get_current_type() != GLGizmosManager::MmuSegmentation)
-        obj_list->set_extruder_for_selected_items(1);
+    if (m_gizmos.get_current_type() != GLGizmosManager::MmuSegmentation && m_color_input_value > 0) { obj_list->set_extruder_for_selected_items(m_color_input_value); }
+    m_color_input_value = -1;
     m_timer_set_color.Stop();
 }
 
@@ -4975,34 +4998,64 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
                 // Don't deselect a volume if layer editing is enabled or any gizmo is active. We want the object to stay selected
                 // during the scene manipulation.
 
-                if (m_picking_enabled && (!any_gizmo_active || !evt.CmdDown()) && (!m_hover_volume_idxs.empty())) {
+                if (m_picking_enabled && (m_gizmos.is_allow_multi_select_parts_or_objects() || !evt.CmdDown()) && (!m_hover_volume_idxs.empty())) {
                     if (evt.LeftDown() && !m_hover_volume_idxs.empty()) {
                         int volume_idx = get_first_hover_volume_idx();
                         bool already_selected = m_selection.contains_volume(volume_idx);
                         bool ctrl_down = evt.CmdDown();
                         bool alt_down  = evt.AltDown();
                         Selection::IndicesList curr_idxs = m_selection.get_volume_idxs();
-
                         if (already_selected && ctrl_down)
                             m_selection.remove(volume_idx);
-                        else if (alt_down) {
-                            Selection::EMode mode = Selection::Volume;
-                            if (already_selected) {
-                                std::vector<unsigned int> volume_idxs;
-                                for (auto idx : curr_idxs) { volume_idxs.emplace_back(idx); }
-                                m_selection.remove_volumes(mode, volume_idxs);
+                        else if (alt_down) {//support  select multi parts
+                            if (m_selection.is_single_full_object()) {
+                                m_selection.clear();
+                                curr_idxs.clear();
                             }
-                            std::vector<unsigned int> add_volume_idxs;
-                            add_volume_idxs.emplace_back(volume_idx);
-                            m_selection.add_volumes(mode, add_volume_idxs, true);
+                            Selection::EMode mode = Selection::Volume;
+                            std::vector<int> volume_idxs;
+                            for (auto idx : curr_idxs) {
+                                volume_idxs.emplace_back(idx);
+                            }
+                            if (already_selected) {
+                                if (!is_in_same_model_object(volume_idxs)) {
+                                    m_selection.clear();
+                                    m_selection.add_volumes(mode, {(unsigned int) volume_idx}, false);
+                                } else {
+                                    m_selection.remove_volumes(mode, {(unsigned int) volume_idx});
+                                }
+                            } else {
+                                volume_idxs.emplace_back(volume_idx);
+                                if (!is_in_same_model_object(volume_idxs)) {
+                                    m_selection.clear();
+                                }
+                                m_selection.add_volumes(mode, {(unsigned int) volume_idx}, false);
+                            }
                         }
                         else {
-                            m_selection.add(volume_idx, !ctrl_down, true);
-                            m_mouse.drag.move_requires_threshold = !already_selected;
-                            if (already_selected)
-                                m_mouse.set_move_start_threshold_position_2D_as_invalid();
-                            else
-                                m_mouse.drag.move_start_threshold_position_2D = pos;
+                            bool change_another_part = false;
+                            auto cur_selection_mode = m_selection.get_mode();
+                            if (cur_selection_mode == Selection::Volume && !alt_down && !already_selected && curr_idxs.size() > 0) {
+                                std::vector<int> volume_idxs;
+                                for (auto idx : curr_idxs) { volume_idxs.emplace_back(idx); }
+                                auto temp_gl_volume        = m_selection.get_volume(volume_idx);
+                                auto new_select_object_idx = temp_gl_volume->object_idx();
+                                auto first_gl_volume       = m_selection.get_volume(volume_idxs[0]);
+                                if (first_gl_volume->object_idx() == new_select_object_idx) {
+                                    Selection::EMode mode = Selection::Volume;
+                                    m_selection.clear();
+                                    m_selection.add_volumes(mode, {(unsigned int) volume_idx}, false);
+                                    change_another_part = true;
+                                }
+                            }
+                            if (!change_another_part) {
+                                m_selection.add(volume_idx, !ctrl_down, true);
+                                m_mouse.drag.move_requires_threshold = !already_selected;
+                                if (already_selected)
+                                    m_mouse.set_move_start_threshold_position_2D_as_invalid();
+                                else
+                                    m_mouse.drag.move_start_threshold_position_2D = pos;
+                            }
                         }
 
                         // propagate event through callback
@@ -5450,7 +5503,7 @@ void GLCanvas3D::set_tooltip(const std::string& tooltip)
         m_tooltip.set_text(tooltip);
 }
 
-void GLCanvas3D::do_move(const std::string &snapshot_type)
+void GLCanvas3D::do_move(const std::string &snapshot_type,bool force_volume_move)
 {
     if (m_model == nullptr)
         return;
@@ -5480,21 +5533,21 @@ void GLCanvas3D::do_move(const std::string &snapshot_type)
             // Move instances/volumes
             ModelObject* model_object = m_model->objects[object_idx];
             if (model_object != nullptr) {
-                if (selection_mode == Selection::Instance) {
+                if (force_volume_move || selection_mode == Selection::Volume) {
+                    auto cur_mv = model_object->volumes[volume_idx];
+                    if (cur_mv->get_offset() != v->get_volume_offset()) {
+                        cur_mv->set_transformation(v->get_volume_transformation());
+                        // QDS: backup
+                        Slic3r::save_object_mesh(*model_object);
+                    }
+                }
+                else if (selection_mode == Selection::Instance) {
                     if (m_canvas_type == GLCanvas3D::ECanvasType::CanvasAssembleView) {
                         if ((model_object->instances[instance_idx]->get_assemble_offset() - v->get_instance_offset()).norm() > 1e-2) {
                             model_object->instances[instance_idx]->set_assemble_offset(v->get_instance_offset());
                         }
                     } else {
                         model_object->instances[instance_idx]->set_offset(v->get_instance_offset());
-                    }
-                }
-                else if (selection_mode == Selection::Volume) {
-                    auto cur_mv = model_object->volumes[volume_idx];
-                    if (cur_mv->get_offset() != v->get_volume_offset()) {
-                        cur_mv->set_transformation(v->get_volume_transformation());
-                        // QDS: backup
-                        Slic3r::save_object_mesh(*model_object);
                     }
                 }
 
@@ -7413,8 +7466,9 @@ void GLCanvas3D::_picking_pass()
                 wxGetApp().plater()->get_partplate_list().reset_hover_id();
                 if (0 <= volume_id && volume_id < (int)m_volumes.volumes.size()) {
                     // do not add the volume id if any gizmo is active and CTRL is pressed
-                    if (m_gizmos.get_current_type() == GLGizmosManager::EType::Undefined || !wxGetKeyState(WXK_CONTROL))
+                    if (m_gizmos.is_allow_multi_select_parts_or_objects() || !wxGetKeyState(WXK_CONTROL)) {
                         hover_volume_idxs->emplace_back(volume_id);
+                    }
                     const_cast<GLGizmosManager*>(&m_gizmos)->set_hover_id(-1);
                 }
                 else
@@ -7612,7 +7666,6 @@ void GLCanvas3D::_render_bed(bool bottom, bool show_axes)
 #if ENABLE_RETINA_GL
     scale_factor = m_retina_helper->get_scale_factor();
 #endif // ENABLE_RETINA_GL
-
     //bool show_texture = true;
     //QDS set axes mode
     const auto& p_main_toolbar = get_main_toolbar();
@@ -7955,6 +8008,7 @@ void GLCanvas3D::_check_and_update_toolbar_icon_scale()
     if (p_main_toolbar) {
         p_main_toolbar->set_scale(sc);
     }
+
     collapse_toolbar.set_scale(sc);
     size *= m_retina_helper->get_scale_factor();
 
@@ -10649,9 +10703,9 @@ void GLCanvas3D::_render_thumbnail_internal(ThumbnailData& thumbnail_data, const
         plate_build_volume      = plate->get_build_volume();
 
         for (GLVolume* vol : volumes.volumes) {
-            if (!vol->is_modifier  
-                && !vol->is_wipe_tower  
-                && (!thumbnail_params.parts_only || vol->composite_id.volume_id >= 0) 
+            if (!vol->is_modifier
+                && !vol->is_wipe_tower
+                && (!thumbnail_params.parts_only || vol->composite_id.volume_id >= 0)
                 && (vol->partly_inside || is_volume_in_plate_boundingbox(*vol, plate_idx, plate_build_volume))) {
                     visible_volumes.emplace_back(vol);
             }
@@ -11215,7 +11269,7 @@ bool GLCanvas3D::is_flushing_matrix_error() {
     const std::vector<double> &config_multiplier = (project_config.option<ConfigOptionFloats>("flush_multiplier"))->values;
 
     for (auto multiplier : config_multiplier) {
-        if (multiplier == 0) return true;
+        if (multiplier == 0 && config_matrix.size() >= config_multiplier.size() * 4) return true;
     }
 
     int  matrix_len = config_matrix.size() / config_multiplier.size();

@@ -228,7 +228,8 @@ orientation::OrientMesh OrientJob::get_orient_mesh(ModelInstance* instance)
         om.overhang_angle = full_config.opt_int("support_threshold_angle");
     }
 
-    if (full_config.has("fan_direction") && full_config.has("auxiliary_fan"))
+    //y75
+    if (full_config.has("fan_direction") && full_config.has("auxiliary_fan") && full_config.option<ConfigOptionBool>("seal")->value)
     {
         int fan_config_idx = full_config.option<ConfigOptionEnum<FanDirection>>("fan_direction")->value;
         FanDirection config_dir = static_cast<FanDirection>(fan_config_idx);

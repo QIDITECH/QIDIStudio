@@ -274,6 +274,7 @@ void PrintJob::process()
     params.auto_bed_leveling    = this->auto_bed_leveling;
     params.auto_flow_cali       = this->auto_flow_cali;
     params.auto_offset_cali     = this->auto_offset_cali;
+    params.extruder_cali_manual_mode = this->extruder_cali_manual_mode;
     params.task_ext_change_assist = this->task_ext_change_assist;
     params.try_emmc_print         = this->could_emmc_print;
     //y71
@@ -306,15 +307,15 @@ void PrintJob::process()
                 params.preset_name = profile_name->second;
             }
             catch (...) {}
-        } 
-        
+        }
+
          if (m_print_type != "from_sdcard_view") {
             auto model_name = model_info->metadata_items.find(QDT_DESIGNER_MODEL_TITLE_TAG);
             if (model_name != model_info->metadata_items.end()) {
                 try {
                     std::string mall_model_name = model_name->second;
                     std::replace(mall_model_name.begin(), mall_model_name.end(), ' ', '_');
-                    const char *unusable_symbols = "#\'<>:\\|?*\"";
+                    const char *unusable_symbols = "<>[]:/\\|?*\" ";
                     for (const char *symbol = unusable_symbols; *symbol != '\0'; ++symbol) { std::replace(mall_model_name.begin(), mall_model_name.end(), *symbol, '_'); }
 
                     std::regex pattern("_+");

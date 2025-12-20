@@ -1,7 +1,7 @@
 //**********************************************************/
 /* File: uiDeviceUpdateVersion.cpp
 *  Description: The panel with firmware info
-* 
+*
 * \n class uiDeviceUpdateVersion
 //**********************************************************/
 
@@ -80,7 +80,6 @@ void uiDeviceUpdateVersion::CreateWidgets()
     serial_text->SetFont(font);
     version_text->SetFont(font);
     model_text->SetFont(font);
-
     // The grid sizer
     wxFlexGridSizer* grid_sizer = new wxFlexGridSizer(0, 2, 0, 0);
     //grid_sizer->AddGrowableCol(1);
@@ -105,7 +104,6 @@ void uiDeviceUpdateVersion::CreateWidgets()
 
     // Updating
     wxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
-    main_sizer->AddSpacer(FromDIP(40));
     main_sizer->Add(grid_sizer, 0, wxALIGN_LEFT, FromDIP(5));
 
     SetSizer(main_sizer);

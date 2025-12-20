@@ -7,6 +7,7 @@
 #include "DevUtil.h"
 
 #include <map>
+#include <optional>
 #include <memory>
 #include <wx/string.h>
 #include <wx/colour.h>
@@ -169,6 +170,12 @@ public:
     // extruder
     int  GetExtruderIdByAmsId(const std::string& ams_id) const;
 
+    // nozzle
+    std::string GetNozzleFlowStringByAmsId(const std::string& ams_id) const;
+
+    // filament backup
+    bool CanShowFilamentBackup() const;
+
     /* AMS settings*/
     DevAmsSystemSetting& GetAmsSystemSetting() { return m_ams_system_setting; }
     std::optional<bool>  IsDetectOnInsertEnabled() const { return m_ams_system_setting.IsDetectOnInsertEnabled(); };
@@ -181,7 +188,7 @@ public:
 public:
     // ctrls
     int  CtrlAmsReset() const;
-    
+
 public:
     static bool IsQDT_Filament(std::string tag_uid);
 

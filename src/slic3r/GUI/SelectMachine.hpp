@@ -164,6 +164,7 @@ public:
 public:
     void        setValue(std::string value);
     std::string getValue() const { return selected_key; }
+    void        restoreValue() { setValue(m_old_selected_key); } // see EVT_SWITCH_PRINT_OPTION
     void        update_options(std::vector<POItem> ops) {
         if (m_ops != ops)
         {
@@ -202,6 +203,7 @@ private:
     ScalableBitmap m_selected_disabled_bk_dark;
     std::vector<POItem> m_ops;
     std::string selected_key;
+    std::string m_old_selected_key;// for restoreValue on EVT_SWITCH_PRINT_OPTION
     std::string m_param;
 
     bool m_enable = true;
@@ -215,6 +217,7 @@ private:
     Label              *m_printoption_title{nullptr};
     ScalableButton     *m_printoption_tips{ nullptr };
     PrintOptionItem    *m_printoption_item{nullptr};
+    wxString           m_full_title;
 
 public:
     PrintOption(wxWindow *parent, wxString title, wxString tips, std::vector<POItem> ops, std::string param = "");
@@ -224,6 +227,7 @@ public:
     void        enable(bool en);
 
     void        setValue(std::string value);
+    void        restoreValue();
     std::string getValue();
     int         getValueInt();
 
@@ -231,7 +235,9 @@ public:
 
     bool        contain_opt(const std::string& opt_str) const;
     void        update_options(std::vector<POItem> ops, const wxString &tips);
-    void        update_tooltip(const wxString &tips);
+    void        update_tooltip(const wxString &tips);// icon tips
+    void        update_title_display();
+    void        update_tooltip_options_area(const wxString& opt_tips);// options area tips
 
     void  msw_rescale();
 
@@ -328,6 +334,7 @@ private:
     std::vector<MachineObject*>         m_list;
     std::vector<FilamentInfo>           m_filaments;
     std::vector<FilamentInfo>           m_ams_mapping_result;
+    std::unordered_map<int, int>        m_nozzle_mapping_result;
     std::vector<int>                    m_filaments_map;
     std::shared_ptr<QDTStatusBarPrint>  m_status_bar;
 
@@ -369,7 +376,10 @@ protected:
     wxPanel *                           m_options_other {nullptr};
     wxGridSizer*                        m_sizer_options{nullptr};
     wxBoxSizer*                         m_sizer_thumbnail{ nullptr };
-
+    wxPanel*                            m_pa_value_panel{nullptr};
+    Label*                              m_pa_value_message{nullptr};
+    SwitchButton*                       m_pa_value_switch{nullptr};
+    ScalableButton*                     m_pa_value_tips{nullptr};
     wxBoxSizer*                         m_basicl_sizer{ nullptr };
     wxBoxSizer*                         rename_sizer_v{ nullptr };
     wxBoxSizer*                         rename_sizer_h{ nullptr };
@@ -479,14 +489,22 @@ public:
     void finish_mode();
 	void sync_ams_mapping_result(std::vector<FilamentInfo>& result);
     void prepare(int print_plate_idx);
-    void show_status(PrintDialogStatus status, std::vector<wxString> params = std::vector<wxString>(), wxString wiki_url = wxEmptyString);
+    void show_status(PrintDialogStatus status,
+                     std::vector<wxString> params = std::vector<wxString>(),
+                     wxString wiki_url = wxEmptyString,
+                     prePrintInfoStyle style = prePrintInfoStyle::Default);
     void sys_color_changed();
     void reset_timeout();
     void update_user_printer();
     void reset_ams_material();
     void update_show_status(MachineObject* obj_ = nullptr);
 
+    bool CheckErrorRackStatus(MachineObject* obj_);//return true if no errors
+    bool CheckErrorExtruderNozzleWithSlicing(MachineObject* obj_);//return true if no errors
+    bool CheckErrorSyncNozzleMappingResult(MachineObject* obj);// return true if no errors
+
     void UpdateStatusCheckWarning_ExtensionTool(MachineObject* obj_);
+    void CheckWarningRackStatus(MachineObject* obj_);
 
     void update_ams_check(MachineObject* obj);
     void update_filament_change_count();
@@ -528,7 +546,7 @@ public:
     bool can_support_pa_auto_cali();
     bool is_same_printer_model();
     bool is_blocking_printing(MachineObject* obj_);
-    bool is_nozzle_hrc_matched(const DevExtder* extruder, std::string& filament_type) const;
+    bool is_nozzle_hrc_matched(const NozzleType& nozzle_type, std::string& filament_type) const;
     bool check_sdcard_for_timelpase(MachineObject* obj);
     bool is_timeout();
     int  update_print_required_data(Slic3r::DynamicPrintConfig config, Slic3r::Model model, Slic3r::PlateDataPtrs plate_data_list, std::string file_name, std::string file_path);
@@ -540,12 +558,14 @@ public:
     bool build_nozzles_info(std::string& nozzles_info);
     bool can_hybrid_mapping(DevExtderSystem data);
     void auto_supply_with_ext(std::vector<DevAmsTray> slots);
-    bool is_nozzle_type_match(DevExtderSystem data, wxString& error_message) const;
     int  convert_filament_map_nozzle_id_to_task_nozzle_id(int nozzle_id);
 
     PrintFromType get_print_type() {return m_print_type;};
     wxString    format_steel_name(NozzleType type);
     PrintDialogStatus  get_status() { return m_print_status; }
+
+    Plater* get_plater() const { return m_plater; }
+    MachineObject* get_current_machine() const;
 
     // y16
     std::string NormalizeVendor(const std::string& str);
@@ -558,6 +578,9 @@ public:
 private:
     void EnableEditing(bool enable);
 
+    /* update ams backup*/
+    void update_ams_backup(MachineObject* obj_);
+
     /* update scroll area size*/
     void update_scroll_area_size();
 
@@ -569,6 +592,14 @@ private:
     void load_option_vals(MachineObject* obj);
     void save_option_vals();
     void save_option_vals(MachineObject *obj);
+
+    // events
+    void on_flow_pa_caliation_option_changed(wxCommandEvent& event);
+    void on_nozzle_offset_option_changed(wxCommandEvent& event);
+    void on_pa_value_switch_changed(wxCommandEvent &event);
+
+    // get mapping nozzle display string
+    wxString get_mapped_nozzle_str(int fila_id);
 
     // enbale or disable external change assist
     bool is_enable_external_change_assist(std::vector<FilamentInfo>& ams_mapping_result);
@@ -619,6 +650,30 @@ private:
     std::set<std::string> qidi_printers;
 };
 
+class NozzleStatePanel : public wxPanel
+{
+public:
+    NozzleStatePanel(wxWindow* parent);
+
+public:
+    void UpdateInfoBy(Plater* plater, MachineObject* obj);
+    void Rescale() {};
+
+private:
+    void UpdateInfo(const ExtruderNozzleInfos& slicing_nozzle_infos,
+                    const ExtruderNozzleInfos& machine_nozzle_infos);
+    void UpdateGui();
+    void UpdateLabelColour();
+
+private:
+    ExtruderNozzleInfos m_slicing_nozzles;
+    ExtruderNozzleInfos m_installed_nozzles;
+
+    wxSizer* m_sizer;
+
+    // key(extruder_id) -> { key1(nozzle type info), val1(label)}
+    std::unordered_map<int, std::unordered_map<NozzleDef, Label*>> m_slicing_labels;
+};
 
 
 wxDECLARE_EVENT(EVT_SWITCH_PRINT_OPTION, wxCommandEvent);

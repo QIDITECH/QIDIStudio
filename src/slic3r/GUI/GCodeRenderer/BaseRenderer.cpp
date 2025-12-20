@@ -1600,8 +1600,8 @@ namespace Slic3r
                 else
                     btn_name = ImGui::FoldButtonIcon + boost::nowide::widen(std::string(""));
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.0f, 0.68f, 0.26f, 1.00f));
-                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.0f, 0.68f, 0.26f, 0.78f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.27f, 0.47f, 0.98f, 1.00f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.27f, 0.47f, 0.98f, 0.78f));
                 ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
                 float button_width = ImGui::CalcTextSize(into_u8(btn_name).c_str()).x;
                 ImGui::SetCursorPosY(8.f);
@@ -2117,7 +2117,7 @@ namespace Slic3r
                     ImGui::SameLine();
                     imgui.text(_u8L("Filament change times") + ":");
                     ImGui::SameLine();
-                    ::sprintf(buf, "%d", m_print_statistics.total_filament_changes);
+                    ::sprintf(buf, "%d", m_print_statistics.total_filament_changes + m_print_statistics.total_extruder_changes + m_print_statistics.total_nozzle_changes);
                     imgui.text(buf);
                     //QDS display cost
                     ImGui::Dummy({ window_padding, window_padding });
@@ -3533,12 +3533,7 @@ namespace Slic3r
                     ImGui::PushItemWidth(item_size);
                     imgui.text(buf);
                     // helio
-                    if (view_type != EViewType::ThermalIndexMin && view_type != EViewType::ThermalIndexMax && view_type != EViewType::ThermalIndexMean) {
-                        sprintf(buf, "%s%.0f", speed.c_str(), m_curr_move.feedrate);
-                        ImGui::PushItemWidth(item_size);
-                        imgui.text(buf);
-                    }
-                    else {
+                    if (view_type == EViewType::ThermalIndexMin || view_type == EViewType::ThermalIndexMax || view_type == EViewType::ThermalIndexMean) {
                         sprintf(buf, "%s", thermal_index.c_str());
                         ImGui::PushItemWidth(item_size);
                         imgui.text(buf);
@@ -3703,7 +3698,7 @@ namespace Slic3r
                         break;
                     }
                     case EType::Logarithmic: {
-                        global_t = (value > _min && _min > 0.0f && step != 0.0f) ? std::max(0.0f, value - _min) / step : 0.0f;
+                        global_t = (value > _min  && step != 0.0f) ? std::max(0.0f, value - _min) / step : 0.0f;
                         break;
                     }
                     }
