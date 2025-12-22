@@ -505,6 +505,8 @@ void MachineObject::reload_printer_settings()
 MachineObject::MachineObject(std::string name)
     :dev_name(name)
 {
+    m_dev_info = DevInfo::Create(this);
+    m_dev_info->SetDevId("");
 }
 
 // y40
@@ -518,6 +520,8 @@ MachineObject::MachineObject(std::string name, std::string url, std::string ip, 
     slice_info(nullptr),
     m_is_online(false)
 {
+    m_dev_info = DevInfo::Create(this);
+    m_dev_info->SetDevId("");
 }
 
 MachineObject::MachineObject(DeviceManager* manager, NetworkAgent* agent, std::string name, std::string id, std::string ip)
@@ -779,7 +783,9 @@ std::string MachineObject::get_lifecycle_type_str()
 
 bool MachineObject::is_in_upgrading() const
 {
-    return m_upgrade->IsUpgrading();
+    //y75
+    //return m_upgrade->IsUpgrading();
+    return false;
 }
 
 std::string MachineObject::get_ota_version()
