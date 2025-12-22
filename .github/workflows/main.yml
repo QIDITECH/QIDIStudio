@@ -45,7 +45,7 @@ jobs:
           brew update
           export HOMEBREW_NO_INSTALL_FROM_API=1
           sed -i '' -e 's/disable!/#disable!/' /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/i/icu4c@74.rb
-          curl https://github.com/Homebrew/homebrew-core/raw/aba405a30fa1a608a12adeb56bea8e1c5975a42d/Formula/b/boost@1.76.rb > /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/b/boost@1.76.rb
+          curl https://raw.githubusercontent.com/Homebrew/homebrew-core/734c935a464c0c3a26845fb805b6b12fd5f248ba/Formula/b/boost%401.76.rb > /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/b/boost@1.76.rb
           echo !!!!!!!!!!!!!!!
           cat /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/b/boost@1.76.rb
           echo !!!!!!!!!!!!!!!          
