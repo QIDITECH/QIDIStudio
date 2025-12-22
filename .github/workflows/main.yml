@@ -46,6 +46,9 @@ jobs:
           export HOMEBREW_NO_INSTALL_FROM_API=1
           sed -i '' -e 's/disable!/#disable!/' /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/i/icu4c@74.rb
           curl https://github.com/Homebrew/homebrew-core/raw/aba405a30fa1a608a12adeb56bea8e1c5975a42d/Formula/b/boost@1.76.rb > /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/b/boost@1.76.rb
+          echo !!!!!!!!!!!!!!!
+          cat /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/b/boost@1.76.rb
+          echo !!!!!!!!!!!!!!!          
           sed -i '' -e 's#https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.tar.bz2#https://archives.boost.io/release/1.76.0/source/boost_1_76_0.tar.bz2#' /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/b/boost@1.76.rb
           brew install \
           icu4c@74 \
