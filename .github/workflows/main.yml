@@ -53,8 +53,8 @@ jobs:
           zlib
           curl https://github.com/Homebrew/homebrew-core/raw/72f14902bf77c8aa5bc416378312b194c1106d25/Formula/i/icu4c@74.rb > icu4c.rb
           curl https://github.com/Homebrew/homebrew-core/raw/aba405a30fa1a608a12adeb56bea8e1c5975a42d/Formula/b/boost@1.76.rb > boost.rb
-          HOMEBREW_DEVELOPER=true brew install --formulae icu4c.rb
-          HOMEBREW_DEVELOPER=true brew install --formulae boost.rb
+          HOMEBREW_DEVELOPER=true brew install --formulae ./icu4c.rb
+          HOMEBREW_DEVELOPER=true brew install --formulae ./boost.rb
           
     - name: Setup PkgConfig
       if: startsWith(matrix.os, 'windows-')
