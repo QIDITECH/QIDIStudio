@@ -100,10 +100,10 @@ private:
     std::shared_ptr<int> m_token = std::make_shared<int>(1);
 
     /* properties */
-    std::string dev_name;
-    std::string dev_ip;
-    std::string access_code;
-    std::string user_access_code;
+    std::string dev_name = "";
+    std::string dev_ip = "";
+    std::string access_code = "";
+    std::string user_access_code = "";
     std::shared_ptr<DevInfo>  m_dev_info;
 
     // type, time stamp, delay
