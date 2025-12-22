@@ -22,7 +22,7 @@ index c4d99906..4d9b47ba 100644
      void set_error(const std::error_code &ec, const std::string &msg) {set_error(ec, msg.c_str());};
  
 +    int error_sink() const {return _pipe_sink;}
-     std::vector<int> get_used_handles() const 
+     std::vector<int> get_used_handles() const
      {
          if (_pipe_sink == -1)
 @@ -398,6 +399,7 @@ child executor<Sequence>::invoke(boost::mpl::false_, boost::mpl::false_)
