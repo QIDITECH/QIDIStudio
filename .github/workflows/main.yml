@@ -53,6 +53,7 @@ jobs:
           zlib
           curl https://github.com/Homebrew/homebrew-core/raw/72f14902bf77c8aa5bc416378312b194c1106d25/Formula/i/icu4c@74.rb > icu4c@74.rb
           curl https://github.com/Homebrew/homebrew-core/raw/aba405a30fa1a608a12adeb56bea8e1c5975a42d/Formula/b/boost@1.76.rb > boost@1.76.rb
+          sed -i '' -e 's#https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.tar.bz2#https://archives.boost.io/release/1.76.0/source/boost_1_76_0.tar.bz2#' ./boost@1.76.rb
           HOMEBREW_DEVELOPER=true brew install --formulae ./icu4c@74.rb
           HOMEBREW_DEVELOPER=true brew install --formulae ./boost@1.76.rb
           
