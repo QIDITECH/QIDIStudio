@@ -59,8 +59,6 @@ jobs:
           tbb \
           texinfo \
           zlib
-
-          HOMEBREW_DEVELOPER=true brew install --formulae ./boost@1.76.rb
           
     - name: Setup PkgConfig
       if: startsWith(matrix.os, 'windows-')
