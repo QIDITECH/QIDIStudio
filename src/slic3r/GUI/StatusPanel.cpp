@@ -1453,7 +1453,7 @@ wxBoxSizer *StatusBasePanel::create_task_list_group(wxWindow *parent)
         m_panel_task_title->SetBackgroundColour(STATUS_TITLE_BG);
         bSizer_task_title = new wxBoxSizer(wxHORIZONTAL);
         {
-            m_staticText_task = new Label(m_panel_task_title, _L("任务列表"));
+            m_staticText_task = new Label(m_panel_task_title, _L("Task Lists"));
             m_staticText_task->Wrap(-1);
             m_staticText_task->SetForegroundColour(PAGE_TITLE_FONT_COL);
             
@@ -1487,19 +1487,19 @@ wxBoxSizer *StatusBasePanel::create_task_list_group(wxWindow *parent)
 
         wxBoxSizer* header_sizer = new wxBoxSizer(wxHORIZONTAL);
         {
-            wxStaticText* header_name = new wxStaticText(header_panel, wxID_ANY, _L("名称"),
+            wxStaticText* header_name = new wxStaticText(header_panel, wxID_ANY, _L("File Name"),
                                                         wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_END);
             header_name->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
             header_name->SetForegroundColour(wxColour(0x66, 0x66, 0x66));
             header_sizer->Add(header_name, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, FromDIP(15));
 
-            wxStaticText* header_weight = new wxStaticText(header_panel, wxID_ANY, _L("耗材重量"),
+            wxStaticText* header_weight = new wxStaticText(header_panel, wxID_ANY, _L("Filament Weight"),
                                                             wxDefaultPosition, wxSize(FromDIP(80), -1), wxALIGN_RIGHT);
             header_weight->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
             header_weight->SetForegroundColour(wxColour(0x66, 0x66, 0x66));
             header_sizer->Add(header_weight, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(15));
             
-            wxStaticText* header_time = new wxStaticText(header_panel, wxID_ANY, _L("预计时间"),
+            wxStaticText* header_time = new wxStaticText(header_panel, wxID_ANY, _L("Print Time"),
                                                         wxDefaultPosition, wxSize(FromDIP(80), -1), wxALIGN_RIGHT);
             header_time->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
             header_time->SetForegroundColour(wxColour(0x66, 0x66, 0x66));
