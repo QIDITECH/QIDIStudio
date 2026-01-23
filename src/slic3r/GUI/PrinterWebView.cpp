@@ -489,8 +489,8 @@ void PrinterWebView::SetLoginStatus(bool status) {
         }).detach();
 #endif
     } 
-#if QDT_RELEASE_TO_PUBLIC
     else {
+#if QDT_RELEASE_TO_PUBLIC
         std::vector<NetDevice> devices;
         wxGetApp().set_devices(devices);
         if (!wxGetApp().is_link_connect())

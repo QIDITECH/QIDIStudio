@@ -2748,7 +2748,7 @@ void SelectMachineDialog::load_option_vals(MachineObject *obj)
         m_checkbox_list["enable_multi_box"]->update_tooltip(wxEmptyString);
         bool useExt = _HasExt(m_ams_mapping_result);
         //y75
-        if (useExt && !m_ams_mapping_result.empty()) {
+        if (useExt) {
             m_checkbox_list["enable_multi_box"]->setValue("off");
         } else {
             m_checkbox_list["enable_multi_box"]->setValue("on");
