@@ -307,7 +307,7 @@ void MonitorPanel::on_select_printer(wxCommandEvent& event)
         obj_->reset_pa_cali_history_result();
         obj_->reset_pa_cali_result();
         Sidebar &sidebar = GUI::wxGetApp().sidebar();
-        sidebar.update_sync_status(obj_);
+        //sidebar.update_sync_status(obj_);
         sidebar.set_need_auto_sync_after_connect_printer(sidebar.need_auto_sync_extruder_list_after_connect_priner(obj_));
     }
 

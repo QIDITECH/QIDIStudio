@@ -92,7 +92,8 @@ public:
 
     wxTimer * m_LoginUpdateTimer{nullptr};
     void OnFreshLoginStatus(wxTimerEvent &event);
-
+    //cj_1
+    void onLoginHandle(const wxWebViewEvent& evt);
 public:
     void ResetWholePage();
 
@@ -187,7 +188,7 @@ private:
     wxButton *  m_button_forward;
     wxButton *  m_button_stop;
     wxButton *  m_button_reload;
-    wxTextCtrl *m_url;
+    wxTextCtrl* m_url{ nullptr };
     wxButton *  m_button_tools;
 
     wxMenu* m_tools_menu;

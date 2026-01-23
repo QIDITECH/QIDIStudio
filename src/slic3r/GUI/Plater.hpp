@@ -36,6 +36,8 @@
 #include "../QIDI/QIDINetwork.hpp"
 #endif
 
+#include "QDSDeviceManager.hpp"
+
 #define FILAMENT_SYSTEM_COLORS_NUM      16
 
 class wxButton;
@@ -91,7 +93,7 @@ struct Camera;
 class GLToolbar;
 class PlaterPresetComboBox;
 class PartPlateList;
-class SyncNozzleAndAmsDialog;
+class SyncNozzleAndBoxDialog;
 class FinishSyncAmsDialog;
 class Bed3D;
 class FinishSyncBoxDialog;
@@ -158,7 +160,7 @@ class Sidebar : public wxPanel
     Button *         btn_sync{nullptr};
     ScalableButton *  ams_btn{nullptr};
     bool                                    m_last_slice_state = false;
-    SyncNozzleAndAmsDialog*                 m_sna_dialog{nullptr};
+    SyncNozzleAndBoxDialog*                 m_sna_dialog{nullptr};  //y76
     FinishSyncAmsDialog*                    m_fna_dialog{nullptr};
     std::vector<BedType>                    m_cur_combox_bed_types;
     std::string                             m_cur_image_bed_type;
@@ -222,7 +224,7 @@ public:
     void sync_ams_list(bool is_from_big_sync_btn = false);
     bool sync_extruder_list();
     bool need_auto_sync_extruder_list_after_connect_priner(const MachineObject* obj);
-    void update_sync_status(const MachineObject* obj);
+    void update_sync_status(std::shared_ptr<QDSDevice> obj);    //y76
     int get_sidebar_pos_right_x();
     void on_size(SimpleEvent &e);
     void on_full_screen(IntEvent &);
@@ -241,7 +243,7 @@ public:
     std::vector<int> box_slot_id;
     std::string box_list_preset_name;
     std::string box_list_printer_ip;
-    void sync_box_list();
+    void sync_box_list(bool is_from_big_sync_btn = false);  //y76
     void load_box_list();
     std::map<int, DynamicPrintConfig> build_filament_box_list(std::vector<std::string> id, std::vector<std::string> color, std::vector<int> slot_state, std::vector<int> slot_id, std::vector<std::string> type);
 
@@ -648,7 +650,7 @@ public:
         EMPTY_FILAMENT
     };
     void pop_warning_and_go_to_device_page(wxString printer_name, PrinterWarningType type, const wxString &title);
-    bool check_printer_initialized(MachineObject *obj, bool only_warning = false,bool popup_warning = true);
+    bool check_printer_initialized(std::shared_ptr<QDSDevice> obj, bool only_warning = false,bool popup_warning = true);    //y76
     bool is_same_printer_for_connected_and_selected(bool popup_warning = true);
     bool is_printer_configed_by_QDT();
     // QDS
@@ -1093,6 +1095,9 @@ std::vector<int> get_min_flush_volumes(const DynamicPrintConfig &full_config, si
 std::string      check_boolean_possible(const std::vector<const ModelVolume *> &volumes, csg::BooleanFailReason& fail_reason);
 
 Preset *get_printer_preset(const MachineObject *obj);
+//y76
+Preset *get_printer_preset(std::shared_ptr<QDSDevice> obj);
+
 wxArrayString get_all_camera_view_type();
 
 

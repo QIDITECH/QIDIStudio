@@ -46,6 +46,7 @@
 #include "Notebook.hpp"
 #include "BitmapCache.hpp"
 #include "BindDialog.hpp"
+#include "PrinterWebView.hpp"
 
 // definitions
 #define S_RACK_NOZZLE_OFFSET_CALI_WARNING _L(\
@@ -361,7 +362,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater)
     switch_button_panel->SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#FFFFFF")));
     m_switch_button = new SwitchButton(switch_button_panel);
     m_switch_button->SetMaxSize(wxSize(100, 100));
-    m_switch_button->SetLabels(_L("Local"), _L("Link"));
+    m_switch_button->SetLabels(_L("Local"), _L("Net"));
     m_switch_button->SetValue(m_isNetMode);
     m_switch_button->Bind(wxEVT_TOGGLEBUTTON, [this](wxCommandEvent& evt) {
         bool is_checked = evt.GetInt();
@@ -640,6 +641,12 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater)
         _L("Activate the multi-color box for multi-color printing with multiple filaments."),
         ops_no_auto, "enable_multi_box");
 
+//y76
+    auto option_enable_air_condition = new PrintOption(
+            m_options_other, _L("Enable Air Condition"),
+            _L("Turn on the air conditioner for better cooling effect."),
+            ops_no_auto, "enable_air_condition");
+
     auto option_flow_dynamics_cali =
         new PrintOption(m_options_other, _L("Flow Dynamics Calibration"),
                         _L("This process determines the dynamic flow values to improve overall print quality.\n*Automatic mode: Skip if the filament was calibrated recently."),
@@ -696,12 +703,14 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater)
     m_sizer_options->Add(option_timelapse, 0, wxEXPAND);
     m_sizer_options->Add(option_auto_bed_level, 0, wxEXPAND);
     m_sizer_options->Add(option_enable_multi_box, 0, wxEXPAND);
+    m_sizer_options->Add(option_enable_air_condition, 0, wxEXPAND);
     m_sizer_options->Add(option_flow_dynamics_cali, 0, wxEXPAND);
     m_sizer_options->Add(option_nozzle_offset_cali_cali, 0, wxEXPAND);
 
     m_checkbox_list_order.push_back(option_timelapse);
     m_checkbox_list_order.push_back(option_auto_bed_level);
     m_checkbox_list_order.push_back(option_enable_multi_box);
+    m_checkbox_list_order.push_back(option_enable_air_condition);
     m_checkbox_list_order.push_back(option_flow_dynamics_cali);
     m_checkbox_list_order.push_back(option_nozzle_offset_cali_cali);
 
@@ -716,6 +725,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater)
     m_checkbox_list["timelapse"]     = option_timelapse;
     m_checkbox_list["bed_leveling"]  = option_auto_bed_level;
     m_checkbox_list["enable_multi_box"]  = option_enable_multi_box;
+    m_checkbox_list["enable_air_condition"] = option_enable_air_condition;
     m_checkbox_list["flow_cali"]     = option_flow_dynamics_cali;
     m_checkbox_list["nozzle_offset_cali"] = option_nozzle_offset_cali_cali;
     for (auto print_opt : m_checkbox_list_order) {
@@ -724,6 +734,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater)
 
     option_auto_bed_level->Hide();
     option_enable_multi_box->Hide();
+    option_enable_air_condition->Hide();
     option_flow_dynamics_cali->Hide();
     option_nozzle_offset_cali_cali->Hide();
     //y59
@@ -1864,6 +1875,11 @@ void SelectMachineDialog::show_status(PrintDialogStatus status, std::vector<wxSt
         msg = _L("Failed to set the timelapse...");
         Enable_Refresh_Button(true);
         Enable_Send_Button(false);
+//y76
+    } else if(status == PrintDialogStatus::AirConditionSettingFailed){
+        msg = _L("Failed to set the air condition...");
+        Enable_Refresh_Button(true);
+        Enable_Send_Button(true);
     }
 
     /*enter perpare mode*/
@@ -2444,6 +2460,22 @@ void SelectMachineDialog::start_to_send(PrintHostJob upload_job) {
                 show_status(PrintDialogStatus::TimelapseSettingFailed);
                 return;
             }
+//y76
+        } else if(item.second->getParam() == "enable_air_condition" && select_machine.enable_air_condition){
+            bool open_air_condition;
+            wxString msg = _L("Set air condition..");
+            m_status_bar->update_status(msg, m_is_canceled, 10, true);
+            if(item.second->getValue() == "on"){
+                command = "SAVE_VARIABLE VARIABLE=enable_polar_cooler VALUE=1";
+            }
+            else {
+                command = "SAVE_VARIABLE VARIABLE=enable_polar_cooler VALUE=0";
+            }
+            success &= upload_job.printhost->send_command_to_printer(check_status_msg, command);
+            if(!success){
+                show_status(PrintDialogStatus::AirConditionSettingFailed);
+                return;
+            }
         }
     }
 
@@ -2483,18 +2515,6 @@ void SelectMachineDialog::start_to_send(PrintHostJob upload_job) {
                 wxString msg = wxString::Format(_L("Successfully sent. Will automatically jump to the device page in %s s."), std::to_string(i));
                 m_status_bar->update_status(msg, m_is_canceled, 100, true);
                 std::this_thread::sleep_for(std::chrono::seconds(1));
-            }
-            if (m_isNetMode) {
-                wxGetApp().mainframe->m_printer_view->FormatNetUrl(machine_link_url, machine_ip, machine_is_special);
-                wxGetApp().mainframe->m_printer_view->SetToggleBar(m_isNetMode);
-                wxGetApp().app_config->set("machine_list_net", "1");
-                wxGetApp().mainframe->m_printer_view->ShowNetPrinterButton();
-            }
-            else {
-                wxGetApp().mainframe->m_printer_view->FormatUrl(machine_url);
-                wxGetApp().mainframe->m_printer_view->SetToggleBar(m_isNetMode);
-                wxGetApp().app_config->set("machine_list_net", "0");
-                wxGetApp().mainframe->m_printer_view->ShowLocalPrinterButton();
             }
             wxGetApp().mainframe->select_tab(size_t(3));
         }
@@ -2616,6 +2636,7 @@ void SelectMachineDialog::update_option_opts(MachineObject *obj)
         std::string type = preset_config.opt_string("printer_model");
         if (NormalizeVendor(type).find(NormalizeVendor(select_machine.type)) != std::string::npos) {
             select_machine.timelapse = preset_config.opt_bool("is_support_timelapse");
+            select_machine.enable_air_condition = preset_config.opt_bool("is_support_air_condition");
             break;
         }
     }
@@ -2635,6 +2656,12 @@ void SelectMachineDialog::update_option_opts(MachineObject *obj)
         m_checkbox_list["timelapse"]->update_options(ops_no_auto, _L("This enables timelapse mode. It will take a picture every 5 seconds during printing.\n*Automatic mode: Skip if timelapse is not supported."));
     }
     
+//y76
+    if(select_machine.enable_air_condition){
+        m_checkbox_list["enable_air_condition"]->Show();
+        m_checkbox_list["enable_air_condition"]->update_options(ops_no_auto, _L("Turn on the air conditioner for better cooling effect."));
+    }
+
     // if (!obj)
     // {
     //     for (auto opt : m_checkbox_list) { opt.second->Hide(); }
@@ -2715,7 +2742,7 @@ void SelectMachineDialog::load_option_vals(MachineObject *obj)
         }
     }
 
-    //y71
+    //y71 y76
     if(has_box_machine){
         m_checkbox_list["enable_multi_box"]->enable(true);
         m_checkbox_list["enable_multi_box"]->update_tooltip(wxEmptyString);
@@ -2723,13 +2750,21 @@ void SelectMachineDialog::load_option_vals(MachineObject *obj)
         //y75
         if (useExt && !m_ams_mapping_result.empty()) {
             m_checkbox_list["enable_multi_box"]->setValue("off");
-            save_option_vals();
+        } else {
+            m_checkbox_list["enable_multi_box"]->setValue("on");
         }
     } else {
         m_checkbox_list["enable_multi_box"]->enable(false);
         m_checkbox_list["enable_multi_box"]->update_tooltip(_L("The machine is not synchronized with the box, so the box cannot be activated."));
     }
 
+//y76
+    auto sel_obj = wxGetApp().qdsdevmanager->getSelectedDevice();
+    if(sel_obj && sel_obj->m_polar_cooler){
+        m_checkbox_list["enable_air_condition"]->enable(true);
+    } else {
+        m_checkbox_list["enable_air_condition"]->enable(false);
+    }
 
     ///*STUDIO-9197*/
     //wxString error_messgae;
@@ -2969,7 +3004,8 @@ void SelectMachineDialog::on_send_print()
         m_checkbox_list["enable_multi_box"]->getValueInt(),
         m_checkbox_list["flow_cali"]->getValueInt(),
         m_checkbox_list["nozzle_offset_cali"]->getValueInt(),
-         (m_pa_value_switch->GetValue() ? 0 : 1)
+        (m_pa_value_switch->GetValue() ? 0 : 1),
+        m_checkbox_list["enable_air_condition"]->getValueInt()
     );
 
     if (obj_->HasAms()) {
@@ -3557,7 +3593,7 @@ void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
                 else {
                     select_machine = machine;
                     select_machine_type = machine.type;
-                    select_printer_ip = machine.url;
+                    select_printer_ip = machine.ip;
                     if (preset_typename_normalized.find(NormalizeVendor(machine.type)) != std::string::npos)
                     {
                         Enable_Refresh_Button(true);
@@ -3583,7 +3619,7 @@ void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
                 else {
                     select_machine = machine;
                     select_machine_type = machine.type;
-                    select_printer_ip = machine.url;
+                    select_printer_ip = machine.ip;
                     if (preset_typename_normalized.find(NormalizeVendor(machine.type)) != std::string::npos)
                     {
                         Enable_Refresh_Button(true);

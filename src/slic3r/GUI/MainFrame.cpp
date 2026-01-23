@@ -1,4 +1,6 @@
 #include "MainFrame.hpp"
+#include "PrinterWebView.hpp"
+
 #include "GLToolbar.hpp"
 #include <wx/panel.h>
 #include <wx/notebook.h>
@@ -76,9 +78,9 @@
 #if QDT_RELEASE_TO_PUBLIC
 #include "../QIDI/QIDINetwork.hpp"
 #endif
-
 namespace Slic3r {
 namespace GUI {
+
 
 wxDEFINE_EVENT(EVT_SELECT_TAB, wxCommandEvent);
 wxDEFINE_EVENT(EVT_HTTP_ERROR, wxCommandEvent);
@@ -574,8 +576,8 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
 
         m_plater->reset();
         
-        //y
-        m_printer_view->StopStatusThread();
+        //y74
+        m_printer_view->m_device_manager->stopAllConnection();
 
         this->shutdown();
         // propagate event
@@ -721,28 +723,30 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
     wxGetApp().persist_window_geometry(this, true);
     wxGetApp().persist_window_geometry(&m_settings_dialog, true);
 
-    //53
+    //y76
     Bind(wxEVT_ICONIZE, [this](wxIconizeEvent& event) {
-        if (event.IsIconized()) {
-            wxString url;
-            if (m_printer_view->GetNetMode()) {
-                url = wxString::Format("file://%s/web/qidi/link_missing_connection.html", from_u8(resources_dir()));
+        if(is_webview){
+            if (event.IsIconized()) {
+                wxString url;
+                if (m_printer_view->GetNetMode()) {
+                    url = wxString::Format("file://%s/web/qidi/link_missing_connection.html", from_u8(resources_dir()));
+                }
+                else {
+                    url = wxString::Format("file://%s/web/qidi/missing_connection.html", from_u8(resources_dir()));
+                }
+                m_printer_view->load_disconnect_url(url);
             }
             else {
-                url = wxString::Format("file://%s/web/qidi/missing_connection.html", from_u8(resources_dir()));
-            }
-            m_printer_view->load_disconnect_url(url);
-        }
-        else {
-            if (!printer_view_ip.empty() && new_sel == tpMonitor) {
+                if (!printer_view_ip.empty() && new_sel == tpMonitor) {
                 if (is_net_url)
-                    m_printer_view->load_net_url(printer_view_url, printer_view_ip);
-                else
-                    m_printer_view->load_url(printer_view_url);
+                        m_printer_view->load_net_url(printer_view_url, printer_view_ip);
+                    else
+                        m_printer_view->load_url(printer_view_url);
+                }
+                m_printer_view->Layout();
             }
-            m_printer_view->Layout();
         }
-        });
+    });
 }
 
 #ifdef __WIN32__
@@ -1156,6 +1160,8 @@ void MainFrame::init_tabpanel()
         int old_sel = e.GetOldSelection();
         //y53
         new_sel = e.GetSelection();
+        //y76
+        int tab_panel = m_tabpanel->GetSelection();
 
         if (old_sel != wxNOT_FOUND &&
             new_sel != old_sel &&
@@ -1206,8 +1212,8 @@ void MainFrame::init_tabpanel()
             // }
         }
         else if (new_sel == tpMonitor && wxGetApp().preset_bundle != nullptr) {
-            //y53
-            if(!printer_view_ip.empty()){
+            //y53 y76
+            if(!printer_view_ip.empty() && is_webview){
                 if (is_net_url)
                     m_printer_view->load_net_url(printer_view_url, printer_view_ip);
                 else
@@ -1221,16 +1227,20 @@ void MainFrame::init_tabpanel()
             m_calibration->m_filament_choice->update();
             m_calibration->m_print_choice->update();
         }
-        //y53
-        if (new_sel != tpMonitor){
-            wxString url;
-            if (m_printer_view->GetNetMode()) {
-                url = wxString::Format("file://%s/web/qidi/link_missing_connection.html", from_u8(resources_dir()));
+        //y53 //y76
+        if (new_sel != tpMonitor && tab_panel != tpMonitor){
+            if(is_webview){
+                wxString url;
+                if (m_printer_view->GetNetMode()) {
+                    url = wxString::Format("file://%s/web/qidi/link_missing_connection.html", from_u8(resources_dir()));
+                }
+                else {
+                    url = wxString::Format("file://%s/web/qidi/missing_connection.html", from_u8(resources_dir()));
+                }
+                m_printer_view->load_disconnect_url(url);
             }
-            else {
-                url = wxString::Format("file://%s/web/qidi/missing_connection.html", from_u8(resources_dir()));
-            }
-            m_printer_view->load_disconnect_url(url);
+            else
+                m_printer_view->pauseCamera();
         }
     });
 
@@ -1239,12 +1249,6 @@ void MainFrame::init_tabpanel()
 #else
     m_tabpanel->Bind(wxEVT_NOTEBOOK_PAGE_CHANGED, [this](wxBookCtrlEvent& e) {
 #endif
-        if (e.GetEventObject() != m_tabpanel){
-            return;// The event maybe from child TabPanel
-        }
-
-        // y5
-        m_printer_view->SetPauseThread(true);
         //QDS
         wxWindow* panel = m_tabpanel->GetCurrentPage();
         int sel = m_tabpanel->GetSelection();
@@ -1268,12 +1272,7 @@ void MainFrame::init_tabpanel()
             if (agent)
                 agent->track_update_property("select_device_page", std::to_string(++select_device_page_count));
         }
-        // y3
-        else if(sel == 3)
-        {   
-            // y5
-            m_printer_view->SetPauseThread(false);
-        }
+
         
 #ifndef __APPLE__
         if (sel == tp3DEditor) {
@@ -1334,6 +1333,9 @@ void MainFrame::init_tabpanel()
     // y5
     // m_monitor->Show(false);
 
+    //y76
+    wxGetApp().qdsdevmanager = new QDSDeviceManager();
+
     m_printer_view = new PrinterWebView(m_tabpanel);
     // y3
     // y5
@@ -1386,8 +1388,8 @@ void MainFrame::init_tabpanel()
 
 // OrcaSlicer
 void MainFrame::show_device(bool bQDTPrinter) {
-  if (m_tabpanel->GetPage(tpMonitor) != m_monitor &&
-      m_tabpanel->GetPage(tpMonitor) != m_printer_view) {
+  if (m_tabpanel->GetPage(tpMonitor) != m_monitor
+      && m_tabpanel->GetPage(tpMonitor) != m_printer_view) {
     BOOST_LOG_TRIVIAL(error) << "Failed to find device tab";
     return;
   }

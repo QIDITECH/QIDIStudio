@@ -501,6 +501,12 @@ private:
     wxString        m_group_index;
 };
 
+
+struct BackupGroupData 
+{
+    wxString material;
+    std::map<std::string, wxColour>group_info;
+};
 class AmsReplaceMaterialDialog : public DPIDialog
 {
 public:
@@ -508,6 +514,7 @@ public:
     ~AmsReplaceMaterialDialog() {};
 
 public:
+    void        update_data(std::vector<BackupGroupData>backupGroupDatas);
     void        update_machine_obj(MachineObject* obj);
     void        paintEvent(wxPaintEvent& evt);
     void        on_dpi_changed(const wxRect& suggested_rect) override;

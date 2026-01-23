@@ -25,7 +25,8 @@
 #include "DeviceCore/DevManager.h"
 #include "DeviceCore/DevStorage.h"
 #include "slic3r/Utils/FileTransferUtils.hpp"
-
+#include "PrinterWebView.hpp"
+#include "OctoPrint.hpp"
 namespace Slic3r {
 namespace GUI {
 
@@ -314,7 +315,7 @@ SendToPrinterDialog::SendToPrinterDialog(Plater *plater)
     switch_button_panel->SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#FFFFFF")));
     m_switch_button = new SwitchButton(switch_button_panel);
     m_switch_button->SetMaxSize(wxSize(100, 100));
-    m_switch_button->SetLabels(_L("Local"), _L("Link"));
+    m_switch_button->SetLabels(_L("Local"), _L("Net"));
     m_switch_button->SetValue(m_isNetMode);
     m_switch_button->Bind(wxEVT_TOGGLEBUTTON, [this](wxCommandEvent& evt) {
         bool is_checked = evt.GetInt();
@@ -1283,18 +1284,6 @@ void SendToPrinterDialog::start_to_send(PrintHostJob upload_job) {
             }
             wxString msg = _L("Switch to device tab...");
             m_status_bar->update_status(msg, m_is_canceled, 100, true);
-            if (m_isNetMode) {
-                wxGetApp().mainframe->m_printer_view->FormatNetUrl(machine_link_url, machine_ip, machine_is_special);
-                wxGetApp().mainframe->m_printer_view->SetToggleBar(m_isNetMode);
-                wxGetApp().app_config->set("machine_list_net", "1");
-                wxGetApp().mainframe->m_printer_view->ShowNetPrinterButton();
-            }
-            else {
-                wxGetApp().mainframe->m_printer_view->FormatUrl(machine_url);
-                wxGetApp().mainframe->m_printer_view->SetToggleBar(m_isNetMode);
-                wxGetApp().app_config->set("machine_list_net", "0");
-                wxGetApp().mainframe->m_printer_view->ShowLocalPrinterButton();
-            }
             wxGetApp().mainframe->select_tab(size_t(3));
         }
         else{

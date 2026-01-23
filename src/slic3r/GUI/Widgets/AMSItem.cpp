@@ -3132,10 +3132,7 @@ void AmsItem::create(wxWindow *parent)
             m_can_count++;
         }
         it = m_info.cans.begin();
-        //auto        road_panel = new wxWindow(this, wxID_ANY);
-        //auto        road_panel = new wxPanel(this, wxID_ANY);
-        //road_panel->SetSize(AMS_CAN_ROAD_SIZE);
-        //road_panel->SetMinSize(AMS_CAN_ROAD_SIZE);
+        
         if (m_ams_model == AMSModel::GENERIC_AMS || m_ams_model == AMSModel::N3F_AMS || m_ams_model == AMSModel::N3S_AMS){
             m_humidity = new AMSHumidity(this, wxID_ANY, m_info);
             sizer_item->Add(m_humidity, 0, wxALIGN_CENTER_HORIZONTAL, 0);
@@ -3147,8 +3144,8 @@ void AmsItem::create(wxWindow *parent)
             }
         }
         m_panel_road = new AMSRoadUpPart(this, wxID_ANY, m_info, m_ams_model);
-
         sizer_item->Add(sizer_can, 0, wxALIGN_CENTER_HORIZONTAL, 0);
+
         //sizer_item->Add(m_panel_road, 0, wxALIGN_CENTER_HORIZONTAL, 0);
         sizer_item->Add(m_panel_road, 1, wxEXPAND);
 
@@ -3194,6 +3191,7 @@ void AmsItem::AddCan(Caninfo caninfo, int canindex, int maxcan, wxBoxSizer* size
     if (m_ams_model != AMSModel::EXT_AMS)
     {
         m_panel_refresh = new AMSrefresh(amscan, m_info.ams_id, m_can_count, caninfo);
+
         m_can_refresh_list[caninfo.can_id] = m_panel_refresh;
     }
     else if (m_ams_model == AMSModel::EXT_AMS){
@@ -3242,7 +3240,8 @@ void AmsItem::AddCan(Caninfo caninfo, int canindex, int maxcan, wxBoxSizer* size
     //auto m_panel_road = new AMSRoad(amscan, wxID_ANY, caninfo, canindex, maxcan, wxDefaultPosition, AMS_CAN_ROAD_SIZE);
 
     if (m_ams_model != AMSModel::AMS_LITE && m_ams_model != AMSModel::EXT_AMS) {
-        m_sizer_ams->Add(0, 0, 0, wxALIGN_CENTER_HORIZONTAL, 0);
+		m_sizer_ams->Add(0, 0, 0, wxALIGN_CENTER_HORIZONTAL, 0);
+
         m_sizer_ams->Add(m_panel_refresh, 0, wxALIGN_CENTER_HORIZONTAL | wxDOWN, FromDIP(4));
         m_sizer_ams->Add(m_panel_lib, 0, wxALIGN_CENTER_HORIZONTAL, 0);
     }
@@ -3250,6 +3249,7 @@ void AmsItem::AddCan(Caninfo caninfo, int canindex, int maxcan, wxBoxSizer* size
     {
         if (m_ams_model == AMSModel::EXT_AMS){
             m_sizer_ams->Add(0, 0, 0, wxALIGN_CENTER_HORIZONTAL, 0);
+
             //m_sizer_ams->Add(m_panel_text, 0, wxALIGN_CENTER_HORIZONTAL | wxTOP, 4);
             m_sizer_ams->Add(m_ext_text, 0, wxALIGN_CENTER_HORIZONTAL | wxDOWN, FromDIP(4));
             m_sizer_ams->Add(m_panel_lib, 0, wxALIGN_CENTER_HORIZONTAL, 0);

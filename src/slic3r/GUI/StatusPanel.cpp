@@ -22,6 +22,9 @@
 #include <wx/mstream.h>
 #include <wx/sstream.h>
 #include <wx/zstream.h>
+#include <wx/regex.h>
+#include <wx/wx.h>
+#include <wx/mediactrl.h>
 
 #include "DeviceCore/DevAxis.h"
 #include "DeviceCore/DevBed.h"
@@ -46,11 +49,33 @@
 #include "SafetyOptionsDialog.hpp"
 
 #include "ThermalPreconditioningDialog.hpp"
-
+#include <tuple>
 namespace Slic3r { namespace GUI {
 
 #define TEMP_THRESHOLD_VAL 2
 #define TEMP_THRESHOLD_ALLOW_E_CTRL 170.0f
+
+//cj1
+    wxDEFINE_EVENT(EVTSET_EXTRUESION, wxCommandEvent);
+    wxDEFINE_EVENT(EVTSET_BACK, wxCommandEvent);
+    wxDEFINE_EVENT(EVTSET_COOLER_SWITCH, wxCommandEvent);
+    wxDEFINE_EVENT(EVTSET_COOLER_ENABLE, wxCommandEvent);
+    wxDEFINE_EVENT(EVTSET_LEVELING_ENABLE, wxCommandEvent);
+    wxDEFINE_EVENT(EVTSET_AMS_ENABLE, wxCommandEvent);
+    wxDEFINE_EVENT(EVTSET_CASE_LIGHT, wxCommandEvent);
+    wxDEFINE_EVENT(EVTSET_BEEPER_SWITHC, wxCommandEvent);
+    wxDEFINE_EVENT(EVTSET_EXTRUDER_TEMPERATURE, wxCommandEvent);
+    wxDEFINE_EVENT(EVTSET_HEATERBED_TEMPERATURE, wxCommandEvent);
+    wxDEFINE_EVENT(EVTSET_CHAMBER_TEMPERATURE, wxCommandEvent);
+    wxDEFINE_EVENT(EVTSET_RETURN_SAFEHOME, wxCommandEvent);
+    wxDEFINE_EVENT(EVTSET_X_AXIS, wxCommandEvent);
+    wxDEFINE_EVENT(EVTSET_Y_AXIS, wxCommandEvent);
+    wxDEFINE_EVENT(EVTSET_Z_AXIS, wxCommandEvent);
+	wxDEFINE_EVENT(EVTSET_PRINT_CONTROL, wxCommandEvent);
+	wxDEFINE_EVENT(EVTSET_FILAMENT_TYPE, wxCommandEvent);
+	wxDEFINE_EVENT(EVTSET_FILAMENT_VENDOR, wxCommandEvent);
+    wxDEFINE_EVENT(EVTSET_FILAMENT_LOAD, wxCommandEvent); ///set/filament/load
+    wxDEFINE_EVENT(EVTSET_FILAMENT_UNLOAD, wxCommandEvent); ///set/filament/unload
 
 /* const strings */
 static const wxString NA_STR         = _L("N/A");
@@ -493,6 +518,8 @@ void PrintingTaskPanel::create_panel(wxWindow *parent)
 {
     wxBoxSizer *sizer                 = new wxBoxSizer(wxVERTICAL);
     wxBoxSizer *bSizer_printing_title = new wxBoxSizer(wxHORIZONTAL);
+    //cj1
+    init_bitmaps();
 
     m_panel_printing_title = new wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(-1, PAGE_TITLE_HEIGHT), wxTAB_TRAVERSAL);
     m_panel_printing_title->SetBackgroundColour(STATUS_TITLE_BG);
@@ -513,8 +540,11 @@ void PrintingTaskPanel::create_panel(wxWindow *parent)
     m_bitmap_thumbnail->SetMaxSize(TASK_THUMBNAIL_SIZE);
     m_bitmap_thumbnail->SetMinSize(TASK_THUMBNAIL_SIZE);
 
-    wxBoxSizer *bSizer_subtask_info  = new wxBoxSizer(wxVERTICAL);
-    wxBoxSizer *bSizer_task_name     = new wxBoxSizer(wxVERTICAL);
+//cj1
+    //m_bitmap_thumbnail->SetBitmap();
+
+    wxBoxSizer *bSizer_subtask_info = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer *bSizer_task_name = new wxBoxSizer(wxVERTICAL);
     wxBoxSizer *bSizer_task_name_hor = new wxBoxSizer(wxHORIZONTAL);
     wxPanel    *task_name_panel      = new wxPanel(parent);
 
@@ -536,6 +566,8 @@ void PrintingTaskPanel::create_panel(wxWindow *parent)
     m_staticText_consumption_of_time->Wrap(-1);
 
     m_bitmap_static_use_weight = new wxStaticBitmap(task_name_panel, wxID_ANY, m_bitmap_use_weight.bmp(), wxDefaultPosition, wxSize(FromDIP(16), FromDIP(16)));
+    //cj1
+    m_bitmap_static_use_weight->Hide();
 
     m_staticText_consumption_of_weight = new wxStaticText(task_name_panel, wxID_ANY, "0g", wxDefaultPosition, wxDefaultSize, 0);
     m_staticText_consumption_of_weight->SetFont(::Label::Body_12);
@@ -945,7 +977,8 @@ void PrintingTaskPanel::create_panel(wxWindow *parent)
 
     if (m_type == CALIBRATION) {
         m_panel_printing_title->Hide();
-        m_bitmap_thumbnail->Hide();
+        //cj1
+        //m_bitmap_thumbnail->Hide();
         task_name_panel->Hide();
         m_staticText_profile_value->Hide();
     }
@@ -1221,13 +1254,15 @@ void PrintingTaskPanel::show_priting_use_info(bool show, wxString time /*= wxEmp
 {
     if (show) {
         if (!m_staticText_consumption_of_time->IsShown()) {
-            m_bitmap_static_use_time->Show();
-            m_staticText_consumption_of_time->Show();
+        //cj1
+            //m_bitmap_static_use_time->Show();
+            //m_staticText_consumption_of_time->Show();
         }
 
         if (!m_staticText_consumption_of_weight->IsShown()) {
-            m_bitmap_static_use_weight->Show();
-            m_staticText_consumption_of_weight->Show();
+        //cj1
+            //m_bitmap_static_use_weight->Show();
+            //m_staticText_consumption_of_weight->Show();
         }
 
         m_staticText_consumption_of_time->SetLabelText(time);
@@ -1352,6 +1387,9 @@ StatusBasePanel::StatusBasePanel(wxWindow *parent, wxWindowID id, const wxPoint 
 
     bSizer_status_below->Add(m_panel_separator_middle, 0, wxEXPAND | wxALL, 0);
 
+//y76
+    wxBoxSizer *bSizer_right_vertical = new wxBoxSizer(wxVERTICAL);
+
     m_machine_ctrl_panel = new wxPanel(this);
     m_machine_ctrl_panel->SetBackgroundColour(*wxWHITE);
     m_machine_ctrl_panel->SetDoubleBuffered(true);
@@ -1360,7 +1398,20 @@ StatusBasePanel::StatusBasePanel(wxWindow *parent, wxWindowID id, const wxPoint 
     m_machine_ctrl_panel->Layout();
     m_machine_control->Fit(m_machine_ctrl_panel);
 
-    bSizer_status_below->Add(m_machine_ctrl_panel, 0, wxALL, 0);
+//y76
+    bSizer_right_vertical->Add(m_machine_ctrl_panel, 0, wxEXPAND | wxALL, 0);
+    // //y76
+    // m_task_list_panel = new wxPanel(this);
+    // m_task_list_panel->SetBackgroundColour(*wxWHITE);
+    // m_task_list_panel->SetDoubleBuffered(true);
+    // auto task_list_group = create_task_list_group(m_task_list_panel);
+    // m_task_list_panel->SetSizer(task_list_group);
+    // m_task_list_panel->Layout();
+    // task_list_group->Fit(m_task_list_panel);
+
+    // bSizer_right_vertical->Add(m_task_list_panel, 1, wxEXPAND | wxTOP, FromDIP(10));
+    bSizer_status_below->Add(bSizer_right_vertical, 0, wxALL, 0);
+//y76
 
     m_panel_separator_right = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(PAGE_SPACING, -1), wxTAB_TRAVERSAL);
     m_panel_separator_right->SetBackgroundColour(STATUS_PANEL_BG);
@@ -1376,6 +1427,213 @@ StatusBasePanel::StatusBasePanel(wxWindow *parent, wxWindowID id, const wxPoint 
     this->SetSizerAndFit(bSizer_status);
     this->Layout();
 }
+
+//y76
+wxBoxSizer *StatusBasePanel::create_task_list_group(wxWindow *parent)
+{
+    auto sizer = new wxBoxSizer(wxVERTICAL);
+    
+    StaticBox* task_panel = new StaticBox(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+    StateColor box_colour(std::pair<wxColour, int>(*wxWHITE, StateColor::Normal));
+    StateColor box_border_colour(std::pair<wxColour, int>(STATUS_PANEL_BG, StateColor::Normal));
+
+    task_panel->SetBackgroundColor(box_colour);
+    task_panel->SetBorderColor(box_border_colour);
+    task_panel->SetCornerRadius(5);
+    task_panel->SetMinSize(wxSize(FromDIP(586), -1));
+    task_panel->SetMaxSize(wxSize(FromDIP(586), -1));
+
+    wxBoxSizer* bSizer_task_title;
+    wxBoxSizer* bSizer_task_content;
+    wxBoxSizer* file_list_sizer;
+
+    wxBoxSizer* content_sizer = new wxBoxSizer(wxVERTICAL);
+    {
+        m_panel_task_title = new wxPanel(task_panel, wxID_ANY, wxDefaultPosition, wxSize(-1, FromDIP(50)), wxTAB_TRAVERSAL);
+        m_panel_task_title->SetBackgroundColour(STATUS_TITLE_BG);
+        bSizer_task_title = new wxBoxSizer(wxHORIZONTAL);
+        {
+            m_staticText_task = new Label(m_panel_task_title, _L("任务列表"));
+            m_staticText_task->Wrap(-1);
+            m_staticText_task->SetForegroundColour(PAGE_TITLE_FONT_COL);
+            
+            bSizer_task_title->Add(m_staticText_task, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, PAGE_TITLE_LEFT_MARGIN);
+            //bSizer_task_title->AddStretchSpacer(1);
+            
+            // m_refresh_btn = new wxButton(m_panel_task_title, wxID_ANY, _L("刷新"),
+            //                                       wxDefaultPosition, wxSize(FromDIP(60), FromDIP(25)));
+            // m_refresh_btn->SetBackgroundColour(wxColour(0x1E, 0x90, 0xFF));  // DodgerBlue
+            // m_refresh_btn->SetForegroundColour(*wxWHITE);
+            // m_refresh_btn->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
+            
+            // bSizer_task_title->Add(m_refresh_btn, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(10));
+        }
+        m_panel_task_title->SetSizer(bSizer_task_title);
+        m_panel_task_title->Layout();
+        
+        content_sizer->Add(m_panel_task_title, 0, wxEXPAND);
+        
+        m_scroll_files = new wxScrolledWindow(task_panel, wxID_ANY, 
+                                                             wxDefaultPosition, wxSize(-1, FromDIP(300)), 
+                                                             wxVSCROLL | wxBORDER_NONE);
+        m_scroll_files->SetScrollRate(0, FromDIP(5));
+        m_scroll_files->SetBackgroundColour(*wxWHITE);
+        m_scroll_files->SetDoubleBuffered(true);
+        
+        m_file_list_sizer = new wxBoxSizer(wxVERTICAL);
+        wxPanel* header_panel = new wxPanel(m_scroll_files, wxID_ANY);
+        header_panel->SetBackgroundColour(STATUS_TITLE_BG);
+        header_panel->SetMinSize(wxSize(-1, FromDIP(35)));
+
+        wxBoxSizer* header_sizer = new wxBoxSizer(wxHORIZONTAL);
+        {
+            wxStaticText* header_name = new wxStaticText(header_panel, wxID_ANY, _L("名称"),
+                                                        wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_END);
+            header_name->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
+            header_name->SetForegroundColour(wxColour(0x66, 0x66, 0x66));
+            header_sizer->Add(header_name, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, FromDIP(15));
+
+            wxStaticText* header_weight = new wxStaticText(header_panel, wxID_ANY, _L("耗材重量"),
+                                                            wxDefaultPosition, wxSize(FromDIP(80), -1), wxALIGN_RIGHT);
+            header_weight->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
+            header_weight->SetForegroundColour(wxColour(0x66, 0x66, 0x66));
+            header_sizer->Add(header_weight, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(15));
+            
+            wxStaticText* header_time = new wxStaticText(header_panel, wxID_ANY, _L("预计时间"),
+                                                        wxDefaultPosition, wxSize(FromDIP(80), -1), wxALIGN_RIGHT);
+            header_time->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
+            header_time->SetForegroundColour(wxColour(0x66, 0x66, 0x66));
+            header_sizer->Add(header_time, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(15));
+        }
+        header_panel->SetSizer(header_sizer);
+        m_file_list_sizer->Add(header_panel, 0, wxEXPAND);
+        
+        init_empty_task_list();
+        
+        m_scroll_files->SetSizer(m_file_list_sizer);
+        m_scroll_files->FitInside();
+        m_scroll_files->SetScrollbars(0, FromDIP(20), 0, 0);
+        
+        content_sizer->Add(m_scroll_files, 1, wxEXPAND | wxTOP, FromDIP(5));
+    }
+
+    task_panel->SetSizer(content_sizer);
+    sizer->Add(task_panel, 0, wxEXPAND | wxALL, FromDIP(0));
+    
+    return sizer;
+}
+
+void StatusBasePanel::init_empty_task_list()
+{
+    // if (!m_scroll_files || !m_file_list_sizer) return;
+    
+    // while (m_file_list_sizer->GetItemCount() > 1) {
+    //     m_file_list_sizer->Remove(1);
+    // }
+    
+    // wxPanel* empty_item = new wxPanel(m_scroll_files, wxID_ANY);
+    // empty_item->SetBackgroundColour(*wxWHITE);
+    // empty_item->SetMinSize(wxSize(-1, FromDIP(40)));
+    
+    // wxBoxSizer* item_sizer = new wxBoxSizer(wxHORIZONTAL);
+    // {
+    //     wxStaticText* label_name = new wxStaticText(empty_item, wxID_ANY, _L("-"),
+    //                                               wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_END);
+    //     label_name->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
+    //     label_name->SetForegroundColour(wxColour(0x99, 0x99, 0x99));
+    //     item_sizer->Add(label_name, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, FromDIP(15));
+        
+    //     wxStaticText* label_weight = new wxStaticText(empty_item, wxID_ANY, _L("-"),
+    //                                                  wxDefaultPosition, wxSize(FromDIP(80), -1), wxALIGN_RIGHT);
+    //     label_weight->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
+    //     label_weight->SetForegroundColour(wxColour(0x99, 0x99, 0x99));
+    //     item_sizer->Add(label_weight, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(15));
+        
+    //     wxStaticText* label_time = new wxStaticText(empty_item, wxID_ANY, _L("-"),
+    //                                                wxDefaultPosition, wxSize(FromDIP(80), -1), wxALIGN_RIGHT);
+    //     label_time->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
+    //     label_time->SetForegroundColour(wxColour(0x99, 0x99, 0x99));
+    //     item_sizer->Add(label_time, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(15));
+    // }
+    // empty_item->SetSizer(item_sizer);
+    // m_file_list_sizer->Add(empty_item, 0, wxEXPAND);
+    
+    // update_task_list_layout();
+}
+
+void StatusBasePanel::clear_task_list()
+{
+    // if (!m_file_list_sizer) return;
+    
+    // while (m_file_list_sizer->GetItemCount() > 1) {
+    //     m_file_list_sizer->Remove(1);
+    // }
+}
+
+void StatusBasePanel::update_task_list(const std::vector<FileInfo>& files)
+{
+
+    // if (!m_scroll_files || !m_file_list_sizer) return;
+    
+    // clear_task_list();
+    
+    // if (files.empty()) {
+    //     init_empty_task_list();
+    //     return;
+    // }
+    
+    // const int left_padding = FromDIP(15);
+    // const int col_spacing = FromDIP(20);
+    
+    // for (size_t i = 0; i < files.size(); ++i) {
+    //     const auto& file = files[i];
+        
+    //     wxPanel* file_item = new wxPanel(m_scroll_files, wxID_ANY);
+    //     file_item->SetBackgroundColour(i % 2 == 0 ? *wxWHITE : wxColour(0xFA, 0xFA, 0xFA));
+    //     file_item->SetMinSize(wxSize(-1, FromDIP(40)));
+        
+    //     wxBoxSizer* item_sizer = new wxBoxSizer(wxHORIZONTAL);
+    //     {
+    //         wxStaticText* label_name = new wxStaticText(file_item, wxID_ANY, file.name,
+    //                                                   wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_END);
+    //         label_name->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
+    //         label_name->SetForegroundColour(wxColour(0x26, 0x26, 0x26));
+    //         label_name->SetToolTip(file.name);
+    //         item_sizer->Add(label_name, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, left_padding);
+            
+    //         wxStaticText* label_weight = new wxStaticText(file_item, wxID_ANY, file.weight);
+    //         label_weight->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
+    //         label_weight->SetForegroundColour(wxColour(0x26, 0x26, 0x26));
+    //         item_sizer->Add(label_weight, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT, col_spacing);
+            
+    //         wxStaticText* label_time = new wxStaticText(file_item, wxID_ANY, file.time);
+    //         label_time->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
+    //         label_time->SetForegroundColour(wxColour(0x26, 0x26, 0x26));
+    //         item_sizer->Add(label_time, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT, col_spacing);
+    //     }
+    //     file_item->SetSizer(item_sizer);
+    //     m_file_list_sizer->Add(file_item, 0, wxEXPAND);
+    // }
+    
+    // update_task_list_layout();
+}
+
+void StatusBasePanel::update_task_list_layout()
+{
+    // if (m_scroll_files && m_file_list_sizer) {
+    //     m_scroll_files->FitInside();
+    //     m_scroll_files->SetScrollbars(0, FromDIP(20), 0, 0);
+        
+    //     if (m_scroll_files->GetSizer()) {
+    //         m_scroll_files->GetSizer()->Layout();
+    //     }
+        
+    //     if (m_task_list_panel) {
+    //         m_task_list_panel->Layout();
+    //     }
+    // }
+}
+//y76
 
 StatusBasePanel::~StatusBasePanel() { delete m_media_play_ctrl; }
 
@@ -1474,6 +1732,8 @@ wxBoxSizer *StatusBasePanel::create_monitoring_page()
     m_bitmap_recording_img->SetToolTip(_L("Video"));
     m_bitmap_vcamera_img->SetToolTip(_L("Go Live"));
     m_setting_button->SetToolTip(_L("Camera Setting"));
+    //cj
+    m_setting_button->Hide();
 
     bSizer_monitoring_title->Add(m_bitmap_sdcard_img, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
     bSizer_monitoring_title->Add(m_bitmap_timelapse_img, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
@@ -1491,12 +1751,25 @@ wxBoxSizer *StatusBasePanel::create_monitoring_page()
     //    media_ctrl_panel              = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
     //    media_ctrl_panel->SetBackgroundColour(*wxBLACK);
     //    wxBoxSizer *bSizer_monitoring = new wxBoxSizer(wxVERTICAL);
-    m_media_ctrl = new wxMediaCtrl3(this);
-    m_media_ctrl->SetMinSize(wxSize(PAGE_MIN_WIDTH, FromDIP(288)));
 
-    m_media_play_ctrl = new MediaPlayCtrl(this, m_media_ctrl, wxDefaultPosition, wxSize(-1, FromDIP(40)));
+    //y76
+    // m_media_ctrl = new wxMediaCtrl3(this);
+    // m_media_ctrl->SetMinSize(wxSize(PAGE_MIN_WIDTH, FromDIP(288)));
 
-    sizer->Add(m_media_ctrl, 1, wxEXPAND | wxALL, 0);
+    VideoPanel* test_panel = new VideoPanel(this);
+	m_media_play_ctrl = new MediaPlayCtrl(this, test_panel, wxDefaultPosition, wxSize(-1, FromDIP(40)));
+	
+    // test_panel->SetStreamUrl("http://192.168.110.17/webcam/?action=snapshot");
+    // test_panel->Play();
+// 	if (!m_media_ctrl->Create(this, wxID_ANY))  // Windows 推荐使用 WMP10
+// 	{
+// 		wxLogError("无法创建媒体控件！");
+// 	}
+// 
+//     m_media_ctrl->Load(wxURI("http://2k2m4y94k1bwd4d3mf86.aliyun.qidi3dprinter.com:7680/webcam"));
+// 	
+
+	sizer->Add(test_panel, 1, wxEXPAND | wxALL, 0);
     sizer->Add(m_media_play_ctrl, 0, wxEXPAND | wxALL, 0);
     //    media_ctrl_panel->SetSizer(bSizer_monitoring);
     //    media_ctrl_panel->Layout();
@@ -1517,10 +1790,11 @@ wxBoxSizer *StatusBasePanel::create_machine_control_page(wxWindow *parent)
     m_staticText_control->Wrap(-1);
     // m_staticText_control->SetFont(PAGE_TITLE_FONT);
     m_staticText_control->SetForegroundColour(PAGE_TITLE_FONT_COL);
-    // y96
-    StateColor btn_bg_blue(std::pair<wxColour, int>(AMS_CONTROL_DISABLE_COLOUR, StateColor::Disabled), std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed),
-        std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered), std::pair<wxColour, int>(AMS_CONTROL_BRAND_COLOUR, StateColor::Normal));
-    StateColor btn_bd_blue(std::pair<wxColour, int>(AMS_CONTROL_WHITE_COLOUR, StateColor::Disabled), std::pair<wxColour, int>(AMS_CONTROL_BRAND_COLOUR, StateColor::Enabled));
+
+    //y76
+	StateColor btn_bg_blue(std::pair<wxColour, int>(AMS_CONTROL_DISABLE_COLOUR, StateColor::Disabled), std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed),
+		std::pair<wxColour, int>(wxColour(129, 150, 255), StateColor::Hovered), std::pair<wxColour, int>(AMS_CONTROL_BRAND_COLOUR, StateColor::Normal));
+	StateColor btn_bd_blue(std::pair<wxColour, int>(AMS_CONTROL_WHITE_COLOUR, StateColor::Disabled), std::pair<wxColour, int>(AMS_CONTROL_BRAND_COLOUR, StateColor::Enabled));
 
     m_parts_btn = new Button(m_panel_control_title, _L("Printer Parts"));
     m_parts_btn->SetBackgroundColor(btn_bg_blue);
@@ -1538,7 +1812,7 @@ wxBoxSizer *StatusBasePanel::create_machine_control_page(wxWindow *parent)
 
     m_safety_btn = new Button(m_panel_control_title, _L("Safety Options"));
     m_safety_btn->SetBackgroundColor(btn_bg_blue);
-    m_safety_btn->SetBorderColor(btn_bg_blue);
+    m_safety_btn->SetBorderColor(btn_bd_blue);
     m_safety_btn->SetTextColor(wxColour("#FFFFFE"));
     m_safety_btn->SetSize(wxSize(FromDIP(128), FromDIP(26)));
     m_safety_btn->SetMinSize(wxSize(-1, FromDIP(26)));
@@ -1550,7 +1824,7 @@ wxBoxSizer *StatusBasePanel::create_machine_control_page(wxWindow *parent)
     m_calibration_btn->SetSize(wxSize(FromDIP(128), FromDIP(26)));
     m_calibration_btn->SetMinSize(wxSize(-1, FromDIP(26)));
     m_calibration_btn->EnableTooltipEvenDisabled();
-
+    m_calibration_btn->Hide();
     m_options_btn->Hide();
     m_safety_btn->Hide();
 
@@ -1737,7 +2011,7 @@ wxBoxSizer *StatusBasePanel::create_misc_control(wxWindow *parent)
     m_switch_speed->SetFont(Label::Head_13);
     m_switch_speed->SetTextColor(StateColor(std::make_pair(DISCONNECT_TEXT_COL, (int) StateColor::Disabled), std::make_pair(NORMAL_TEXT_COL, (int) StateColor::Normal)));
     m_switch_speed->SetValue(false);
-
+    m_switch_speed->Hide();
     line_sizer->Add(m_switch_speed, 1, wxALIGN_CENTER | wxALL, 0);
 
     auto line = new StaticLine(parent, true);
@@ -1779,7 +2053,7 @@ wxBoxSizer *StatusBasePanel::create_misc_control(wxWindow *parent)
     m_switch_fan->UseTextFan();
     m_switch_fan->SetTextColor(StateColor(std::make_pair(DISCONNECT_TEXT_COL, (int) StateColor::Disabled), std::make_pair(NORMAL_FAN_TEXT_COL, (int) StateColor::Normal)));
 
-    m_switch_fan->Bind(wxEVT_ENTER_WINDOW, [this](auto &e) { m_fan_panel->SetBackgroundColor(wxColour(0, 174, 66)); });
+    m_switch_fan->Bind(wxEVT_ENTER_WINDOW, [this](auto &e) { m_fan_panel->SetBackgroundColor(wxColour(68, 121, 251)); });
 
     m_switch_fan->Bind(wxEVT_LEAVE_WINDOW, [this, parent](auto &e) { m_fan_panel->SetBackgroundColor(parent->GetBackgroundColour()); });
 
@@ -1929,7 +2203,7 @@ wxBoxSizer *StatusBasePanel::create_extruder_control(wxWindow *parent)
 
     m_nozzle_btn_panel = new SwitchBoard(panel, _L("Left"), _L("Right"), wxSize(FromDIP(126), FromDIP(26)));
     m_nozzle_btn_panel->SetAutoDisableWhenSwitch();
-
+    m_nozzle_btn_panel->Hide();
     m_bpButton_e_10 = new Button(panel, "", "monitor_extruder_up", 0, FromDIP(22));
     m_bpButton_e_10->SetBorderWidth(2);
     m_bpButton_e_10->SetBackgroundColor(e_ctrl_bg);
@@ -1938,7 +2212,9 @@ wxBoxSizer *StatusBasePanel::create_extruder_control(wxWindow *parent)
 
     m_extruder_book = new wxSimplebook(panel, wxID_ANY, wxDefaultPosition, wxSize(FromDIP(45), FromDIP(112)), 0);
 
-    m_extruder_book->InsertPage(0, new wxPanel(panel), "");
+    //cj_1
+    auto extruder_img = new ExtruderImage(m_extruder_book, wxID_ANY, 1);
+    m_extruder_book->InsertPage(0, extruder_img , "");
     for (int nozzle_num = 1; nozzle_num <= 2; nozzle_num++) {
         auto extruder_img = new ExtruderImage(m_extruder_book, wxID_ANY, nozzle_num);
         m_extruder_book->InsertPage(nozzle_num, extruder_img, "");
@@ -1954,7 +2230,7 @@ wxBoxSizer *StatusBasePanel::create_extruder_control(wxWindow *parent)
 
     m_extruder_switching_status = new ExtruderSwithingStatus(panel);
     m_extruder_switching_status->SetForegroundColour(TEXT_LIGHT_FONT_COL);
-
+    m_extruder_switching_status->Hide();
     m_extruder_label = new ::Label(panel, _L("Extruder"));
     m_extruder_label->SetFont(::Label::Body_13);
     m_extruder_label->SetForegroundColour(TEXT_LIGHT_FONT_COL);
@@ -2213,7 +2489,30 @@ void StatusBasePanel::on_ams_rack_switch(wxCommandEvent &e)
     e.Skip();
 }
 
-void StatusPanel::update_camera_state(MachineObject *obj)
+//cj_1
+void StatusBasePanel::update_temp_data(std::string nozzle, std::string bed, std::string chamber)
+{
+	m_tempCtrl_nozzle->SetLabel(wxString(nozzle));
+	m_tempCtrl_bed->SetLabel(wxString(bed));
+	m_tempCtrl_chamber->SetLabel(wxString(chamber));
+
+    
+    //m_tempCtrl_nozzle->setValue
+}
+
+void StatusBasePanel::update_temp_target(std::string nozzle, std::string bed, std::string chamber)
+{
+    m_tempCtrl_nozzle->SetTagTemp(wxString(nozzle));
+	m_tempCtrl_bed->SetTagTemp(wxString(bed)); 
+	m_tempCtrl_chamber->SetTagTemp(wxString(chamber));
+}
+
+//y76
+void StatusBasePanel::update_light_status(bool on){
+    m_switch_lamp->SetValue(on);
+}
+
+void StatusPanel::update_camera_state(MachineObject* obj)
 {
     if (!obj) return;
 
@@ -2407,15 +2706,54 @@ StatusPanel::StatusPanel(wxWindow *parent, wxWindowID id, const wxPoint &pos, co
     Bind(EVT_AMS_RETRY, &StatusPanel::on_ams_retry, this);
     Bind(EVT_FAN_CHANGED, &StatusPanel::on_fan_changed, this);
     Bind(EVT_SECONDARY_CHECK_RESUME, &StatusPanel::on_subtask_pause_resume, this);
-    Bind(EVT_SECONDARY_CHECK_RETRY, [this](auto &e) {
-        if (m_ams_control) { m_ams_control->on_retry(); }
-    });
+    Bind(EVT_SECONDARY_CHECK_RETRY, [this](auto &e) { if (m_ams_control) { m_ams_control->on_retry(); }});
+    Bind(EVT_SELECTED_TYPE, &StatusPanel::on_selected_type, this);
+    //cj_1
+    Bind(EVT_SET_COLOR, [this](wxCommandEvent& e) {
+        
+        e.SetInt(curSelectSlotIndex);
+        int colorIndex = QDSFilamentConfig::getInstance().getColorIndex(e.GetString().ToStdString());
+        e.SetString(std::to_string(colorIndex));
+        e.Skip();
+        });
+    //cj_1
+	Bind(EVT_SET_TYPE, [this](wxCommandEvent& e) {
+        wxString vendorAndType = e.GetString();
+		size_t spacePos = vendorAndType.find(' ');
+		wxString type = "";
+		wxString vendor = "";
+		if (spacePos != wxString::npos) {
+            vendor = vendorAndType.substr(0, spacePos);
+            type = vendorAndType.substr(spacePos + 1);
+		}
+
+		wxCommandEvent eventType(EVTSET_FILAMENT_TYPE);
+        eventType.SetInt(curSelectSlotIndex);
+        int typeIndex = QDSFilamentConfig::getInstance().getTypeNameIndex(type.ToStdString());
+        eventType.SetString(std::to_string(typeIndex));
+		wxPostEvent(GetParent(), eventType);
+
+
+
+		wxCommandEvent eventVendor(EVTSET_FILAMENT_VENDOR);
+        eventVendor.SetInt(curSelectSlotIndex);
+        int vendorIndex = QDSFilamentConfig::getInstance().getVendorIndex(vendor.ToStdString());
+        eventVendor.SetString(std::to_string(vendorIndex));
+		wxPostEvent(GetParent(), eventVendor);
+	});
+
+    //cj_1
+    //Bind()
 
     m_switch_speed->Connect(wxEVT_LEFT_DOWN, wxCommandEventHandler(StatusPanel::on_switch_speed), NULL, this);
     m_calibration_btn->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(StatusPanel::on_start_calibration), NULL, this);
     m_options_btn->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(StatusPanel::on_show_print_options), NULL, this);
     m_safety_btn->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(StatusPanel::on_show_safety_options), NULL, this);
     m_parts_btn->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(StatusPanel::on_show_parts_options), NULL, this);
+
+//cj_1
+	m_ams_control->EnableLoadFilamentBtn(false, "", "", "");
+	m_ams_control->EnableUnLoadFilamentBtn(false, "", "", "");
 }
 
 StatusPanel::~StatusPanel()
@@ -2470,6 +2808,151 @@ StatusPanel::~StatusPanel()
     if (sdcard_hint_dlg != nullptr) delete sdcard_hint_dlg;
 
     if (m_score_data != nullptr) { delete m_score_data; }
+}
+
+//cj_1
+void StatusPanel::update_progress(std::string fileName, std::string layer, std::string totalTime, std::string weight, float remainingTime, float progress)
+{
+    //return;
+    if (m_project_task_panel == nullptr) {
+        return;
+    }
+    if (fileName != "") {
+        m_project_task_panel->update_subtask_name(fileName);
+    }
+    else {
+		m_project_task_panel->update_subtask_name("N/A");
+    }
+    
+    m_project_task_panel->update_layers_num(true,layer);
+    if (remainingTime - 0.0 > 0.00001) {
+        m_project_task_panel->update_left_time(remainingTime);
+    }
+    else {
+        m_project_task_panel->update_left_time("N/A");
+    }
+    if (progress - 0.0 > 0.00001) {
+        m_project_task_panel->update_progress_percent(wxString::Format(wxT("%d"), (int)(progress * 100)), "%");
+    }
+    else {
+        m_project_task_panel->update_progress_percent("N/A", "");
+    }
+	m_project_task_panel->update_stage_value("", (int)(progress * 100));
+    m_project_task_panel->show_priting_use_info(true, totalTime,weight);
+    m_project_task_panel->Layout();
+    
+}
+
+//cj_1
+void StatusPanel::update_camera_url(std::string url)
+{
+    m_media_play_ctrl->setUrl(wxString(url));
+}
+
+// cj_1
+void StatusPanel::update_print_status(std::string status)
+{
+    // printing   paused  standby
+    if (status == "standby") {
+        m_project_task_panel->enable_pause_resume_button(false, "resume_disable");
+        m_project_task_panel->enable_abort_button(false);
+    }
+    if (status == "printing") {
+        m_project_task_panel->enable_pause_resume_button(true, "pause");
+		m_project_task_panel->enable_abort_button(true);
+
+    }
+	if (status == "paused") {
+		m_project_task_panel->enable_pause_resume_button(true, "resume");
+		m_project_task_panel->enable_abort_button(true);
+	}
+
+}
+
+//cj_1
+void StatusPanel::update_thumbnail(std::string url)
+{
+    if (m_request_url == wxString(url)) {
+        return;
+    }
+
+	m_request_url = wxString(url);
+    if (!m_request_url.IsEmpty()) {
+        wxImage                               img;
+        std::map<wxString, wxImage>::iterator it = img_list.find(m_request_url);
+        if (it != img_list.end()) {
+            img = it->second;
+            wxImage resize_img = img.Scale(m_project_task_panel->get_bitmap_thumbnail()->GetSize().x, m_project_task_panel->get_bitmap_thumbnail()->GetSize().y);
+            m_project_task_panel->set_thumbnail_img(resize_img, "");
+        }
+        else {
+            web_request = wxWebSession::GetDefault().CreateRequest(this, m_request_url);
+            web_request.Start();
+            m_start_loading_thumbnail = false;
+        }
+    }
+    else {
+        m_project_task_panel->reset_printing_value();
+    }
+}
+
+//cj_1
+void StatusPanel::update_boxs(std::vector<AMSinfo> boxS, std::vector<AMSinfo> ext_info)
+{
+    //m_ams
+    m_boxS = boxS;
+    m_ext_info = ext_info;
+    int total_ext_count = 1; // 例：单喷头
+    std::string dev_id = "device-1234";
+    std::string series_name = "QIDI-X";
+    std::string printer_type = "X-Max 4";   // 显示外挂料的打印机图片
+    m_ams_control->SetAmsModel(AMSModel::N3S_AMS, AMSModel::EXT_AMS);
+    m_ams_control->SetData(boxS, ext_info, total_ext_count, dev_id, series_name, printer_type);
+    m_ams_control->Hide();
+    m_ams_control->Show();
+    m_ams_control_box->Hide();
+    m_ams_control_box->Show();
+    m_ams_control->Layout();
+    m_ams_control_box->Layout();
+    m_ams_control_box->Update();
+    m_ams_control_box->Fit();
+    Layout();
+}
+
+//cj_1
+void StatusPanel::update_cur_slot(int curSlotSyncIndex)
+{
+    m_curSlotSync = curSlotSyncIndex;
+}
+
+//cj_1
+void StatusPanel::set_filament_config(std::vector<QDSDevice::Filament>config)
+{
+    if (m_isInitConfig) {
+        return;
+    }
+    m_filamentConfig = config;
+}
+
+// cj_1
+void StatusPanel::pause_camera()
+{
+    m_media_play_ctrl->stopMonitor();
+}
+
+//cj_1
+void StatusPanel::update_AMSSettingData(bool autoRead, bool initDetect, bool autoReload)
+{
+    m_auto_read_rfid = autoRead;
+    m_init_detect = initDetect;
+    m_auto_reload_detect = autoReload;
+    
+}
+
+// cj_1
+void StatusPanel::update_fan_speed(AIR_FUN id, int speed)
+{
+    m_fan_speeds[id] = speed;
 }
 
 void StatusPanel::init_scaled_buttons()
@@ -2584,6 +3067,12 @@ void StatusPanel::on_subtask_partskip(wxCommandEvent &event)
 
 void StatusPanel::on_subtask_pause_resume(wxCommandEvent &event)
 {
+    //cj_1
+    int type = 0;
+    if (m_project_task_panel->get_pause_resume_button()->GetToolTipText() == _L("Resume")) {
+        type = 1;
+    }
+    postEventValueAndEnable(EVTSET_PRINT_CONTROL, type, "type");
     if (obj) {
         if (obj->can_resume()) {
             BOOST_LOG_TRIVIAL(info) << "monitor: resume current print task dev_id =" << QDTCrossTalk::Crosstalk_DevId(obj->get_dev_id());
@@ -2600,7 +3089,11 @@ void StatusPanel::on_subtask_abort(wxCommandEvent &event)
     if (abort_dlg == nullptr) {
         abort_dlg = new SecondaryCheckDialog(this->GetParent(), wxID_ANY, _L("Cancel print"));
         abort_dlg->Bind(EVT_SECONDARY_CHECK_CONFIRM, [this](wxCommandEvent &e) {
-            if (obj) {
+            //cj_1
+            postEventValueAndEnable(EVTSET_PRINT_CONTROL, 2, "type");
+            
+
+            if (obj) { 
                 BOOST_LOG_TRIVIAL(info) << "monitor: stop current print task dev_id =" << QDTCrossTalk::Crosstalk_DevId(obj->get_dev_id());
                 obj->command_task_abort();
             }
@@ -2638,14 +3131,16 @@ void StatusPanel::on_webrequest_state(wxWebRequestEvent &evt)
     BOOST_LOG_TRIVIAL(trace) << "monitor: monitor_panel web request state = " << evt.GetState();
     switch (evt.GetState()) {
     case wxWebRequest::State_Completed: {
-        if (m_current_print_mode != PrintingTaskType::CALIBRATION || (m_calib_mode == CalibMode::Calib_Flow_Rate && m_calib_method == CalibrationMethod::CALI_METHOD_MANUAL)) {
+    //cj_1
+        //if (m_current_print_mode != PrintingTaskType::CALIBRATION ||(m_calib_mode == CalibMode::Calib_Flow_Rate && m_calib_method == CalibrationMethod::CALI_METHOD_MANUAL)) {
             wxImage img(*evt.GetResponse().GetStream());
             img_list.insert(std::make_pair(m_request_url, img));
             wxImage resize_img = img.Scale(m_project_task_panel->get_bitmap_thumbnail()->GetSize().x, m_project_task_panel->get_bitmap_thumbnail()->GetSize().y,
                                            wxIMAGE_QUALITY_HIGH);
             m_project_task_panel->set_thumbnail_img(resize_img, "");
-            m_project_task_panel->set_brightness_value(get_brightness_value(resize_img));
-        }
+            //cj_1
+            //m_project_task_panel->set_brightness_value(get_brightness_value(resize_img));
+        //}
         if (obj) {
             m_project_task_panel->set_plate_index(obj->m_plate_index);
         } else {
@@ -2737,7 +3232,9 @@ void StatusPanel::update(MachineObject *obj)
     /*STUDIO-12573*/
     if (!obj->GetInfo()->IsFdmMode()) { m_switch_lamp->Enable(false); }
 
-    update_temp_ctrl(obj);
+//y76
+    //update_temp_ctrl(obj);
+
     update_misc_ctrl(obj);
 
     update_ams(obj);
@@ -2818,6 +3315,7 @@ void StatusPanel::show_recenter_dialog()
 {
     RecenterDialog dlg(this);
     if (dlg.ShowModal() == wxID_OK) {
+        postEventValueAndEnable(EVTSET_RETURN_SAFEHOME, 1, "value");
         if (obj) { obj->GetAxis()->Ctrl_GoHome(); }
     }
 }
@@ -2913,26 +3411,29 @@ void StatusPanel::show_printing_status(bool ctrl_area, bool temp_area)
     }
 }
 
-void StatusPanel::update_temp_ctrl(MachineObject *obj)
+//y76
+void StatusPanel::update_temp_ctrl(std::shared_ptr<QDSDevice> obj)
 {
     if (!obj) return;
+    // std::cout << "statusPanel" << std::endl; 
+    // DevBed* bed = obj->GetBed();
+    int bed_cur_temp = std::stoi(obj->m_bed_temperature);
+    int bed_target_temp = std::stoi(obj->m_target_bed);
+    // m_tempCtrl_bed->SetCurrTemp((int) bed_cur_temp);
 
-    DevBed *bed             = obj->GetBed();
-    int     bed_cur_temp    = bed->GetBedTemp();
-    int     bed_target_temp = bed->GetBedTempTarget();
-    m_tempCtrl_bed->SetCurrTemp((int) bed_cur_temp);
+    // auto limit = obj->get_bed_temperature_limit();
+    // if (obj->bed_temp_range.size() > 1) {
+    //     limit = obj->bed_temp_range[1];
+    // }
+    // m_tempCtrl_bed->SetMaxTemp(limit);
 
-    auto limit = obj->get_bed_temperature_limit();
-    if (obj->bed_temp_range.size() > 1) { limit = obj->bed_temp_range[1]; }
-    m_tempCtrl_bed->SetMaxTemp(limit);
+    // if (obj->nozzle_temp_range.size() >= 2) {
+    //     m_tempCtrl_nozzle->SetMinTemp(obj->nozzle_temp_range[0]);
+    //     m_tempCtrl_nozzle->SetMaxTemp(obj->nozzle_temp_range[1]);
 
-    if (obj->nozzle_temp_range.size() >= 2) {
-        m_tempCtrl_nozzle->SetMinTemp(obj->nozzle_temp_range[0]);
-        m_tempCtrl_nozzle->SetMaxTemp(obj->nozzle_temp_range[1]);
-
-        m_tempCtrl_nozzle_deputy->SetMinTemp(obj->nozzle_temp_range[0]);
-        m_tempCtrl_nozzle_deputy->SetMaxTemp(obj->nozzle_temp_range[1]);
-    }
+    //     m_tempCtrl_nozzle_deputy->SetMinTemp(obj->nozzle_temp_range[0]);
+    //     m_tempCtrl_nozzle_deputy->SetMaxTemp(obj->nozzle_temp_range[1]);
+    // }
 
     // update temprature if not input temp target
     if (m_temp_bed_timeout > 0) {
@@ -2947,108 +3448,157 @@ void StatusPanel::update_temp_ctrl(MachineObject *obj)
         m_tempCtrl_bed->SetIconNormal();
     }
 
-    bool to_update_layout = false;
-    int  nozzle_num       = obj->GetExtderSystem()->GetTotalExtderCount();
-    if (nozzle_num == 1) {
-        m_tempCtrl_nozzle->SetCurrTemp(obj->GetExtderSystem()->GetNozzleTempCurrent(MAIN_EXTRUDER_ID));
-        m_tempCtrl_nozzle->SetCurrType(TEMP_OF_NORMAL_TYPE);
+    // bool to_update_layout = false;
+    // int nozzle_num = obj->GetExtderSystem()->GetTotalExtderCount();
+    // if (nozzle_num == 1)
+    // {
+    //     m_tempCtrl_nozzle->SetCurrTemp(obj->GetExtderSystem()->GetNozzleTempCurrent(MAIN_EXTRUDER_ID));
+    //     m_tempCtrl_nozzle->SetCurrType(TEMP_OF_NORMAL_TYPE);
 
-        m_tempCtrl_nozzle_deputy->SetCurrType(TEMP_OF_NORMAL_TYPE);
-        m_tempCtrl_nozzle_deputy->SetLabel(TEMP_BLANK_STR);
-        m_tempCtrl_nozzle_deputy->Hide();
+    //     m_tempCtrl_nozzle_deputy->SetCurrType(TEMP_OF_NORMAL_TYPE);
+    //     m_tempCtrl_nozzle_deputy->SetLabel(TEMP_BLANK_STR);
+    //     m_tempCtrl_nozzle_deputy->Hide();
 
-        if (m_tempCtrl_nozzle->GetMinSize() != TEMP_CTRL_MIN_SIZE_ALIGN_ONE_ICON) {
-            to_update_layout = true;
-            m_tempCtrl_nozzle->SetMinSize(TEMP_CTRL_MIN_SIZE_ALIGN_ONE_ICON);
-        }
-    } else if (nozzle_num == 2) {
-        m_tempCtrl_nozzle->SetCurrType(TEMP_OF_MAIN_NOZZLE_TYPE);
-        m_tempCtrl_nozzle->SetCurrTemp(obj->GetExtderSystem()->GetNozzleTempCurrent(MAIN_EXTRUDER_ID));
-        m_tempCtrl_nozzle->Show();
+    //     if (m_tempCtrl_nozzle->GetMinSize() != TEMP_CTRL_MIN_SIZE_ALIGN_ONE_ICON)
+    //     {
+    //         to_update_layout = true;
+    //         m_tempCtrl_nozzle->SetMinSize(TEMP_CTRL_MIN_SIZE_ALIGN_ONE_ICON);
+    //     }
+    // }
+    // else if (nozzle_num == 2)
+    // {
+    //     m_tempCtrl_nozzle->SetCurrType(TEMP_OF_MAIN_NOZZLE_TYPE);
+    //     m_tempCtrl_nozzle->SetCurrTemp(obj->GetExtderSystem()->GetNozzleTempCurrent(MAIN_EXTRUDER_ID));
+    //     m_tempCtrl_nozzle->Show();
 
-        m_tempCtrl_nozzle_deputy->SetCurrType(TEMP_OF_DEPUTY_NOZZLE_TYPE);
-        m_tempCtrl_nozzle_deputy->SetCurrTemp(obj->GetExtderSystem()->GetNozzleTempCurrent(DEPUTY_EXTRUDER_ID));
-        m_tempCtrl_nozzle_deputy->Show();
+    //     m_tempCtrl_nozzle_deputy->SetCurrType(TEMP_OF_DEPUTY_NOZZLE_TYPE);
+    //     m_tempCtrl_nozzle_deputy->SetCurrTemp(obj->GetExtderSystem()->GetNozzleTempCurrent(DEPUTY_EXTRUDER_ID));
+    //     m_tempCtrl_nozzle_deputy->Show();
 
-        if (m_tempCtrl_nozzle->GetMinSize() != TEMP_CTRL_MIN_SIZE_ALIGN_TWO_ICON) {
-            to_update_layout = true;
-            m_tempCtrl_nozzle->SetMinSize(TEMP_CTRL_MIN_SIZE_ALIGN_TWO_ICON);
-        }
+    //     if (m_tempCtrl_nozzle->GetMinSize() != TEMP_CTRL_MIN_SIZE_ALIGN_TWO_ICON)
+    //     {
+    //         to_update_layout = true;
+    //         m_tempCtrl_nozzle->SetMinSize(TEMP_CTRL_MIN_SIZE_ALIGN_TWO_ICON);
+    //     }
+    // }
+
+    // if (m_temp_nozzle_timeout > 0) {
+    //     m_temp_nozzle_timeout--;
+    // } else {
+    //     if (!nozzle_temp_input) {
+    //         auto main_extder = obj->GetExtderSystem()->GetExtderById(MAIN_EXTRUDER_ID);
+    //         if (main_extder)
+    //         {
+    //             m_tempCtrl_nozzle->SetTagTemp(main_extder->GetTargetTemp());
+    //             m_tempCtrl_nozzle->SetCurrTemp((int)main_extder->GetCurrentTemp());
+    //             if (main_extder->GetTargetTemp() - main_extder->GetCurrentTemp() > TEMP_THRESHOLD_VAL)
+    //             {
+    //                 m_tempCtrl_nozzle->SetIconActive();
+    //             }
+    //             else
+    //             {
+    //                 m_tempCtrl_nozzle->SetIconNormal();
+    //             }
+    //         }
+    //     }
+    // }
+
+    int nozzle_cur_temp = std::stoi(obj->m_extruder_temperature);
+    int nozzle_target_temp = std::stoi(obj->m_target_extruder);
+    if ((nozzle_target_temp - nozzle_cur_temp) > TEMP_THRESHOLD_VAL)
+    {
+        m_tempCtrl_nozzle->SetIconActive();
+    }
+    else
+    {
+        m_tempCtrl_nozzle->SetIconNormal();
     }
 
-    if (m_temp_nozzle_timeout > 0) {
-        m_temp_nozzle_timeout--;
-    } else {
-        if (!nozzle_temp_input) {
-            auto main_extder = obj->GetExtderSystem()->GetExtderById(MAIN_EXTRUDER_ID);
-            if (main_extder) {
-                m_tempCtrl_nozzle->SetTagTemp(main_extder->GetTargetTemp());
-                m_tempCtrl_nozzle->SetCurrTemp((int) main_extder->GetCurrentTemp());
-                if (main_extder->GetTargetTemp() - main_extder->GetCurrentTemp() > TEMP_THRESHOLD_VAL) {
-                    m_tempCtrl_nozzle->SetIconActive();
-                } else {
-                    m_tempCtrl_nozzle->SetIconNormal();
-                }
-            }
-        }
-    }
+    // if (m_temp_nozzle_deputy_timeout > 0) {
+    //     m_temp_nozzle_deputy_timeout--;
+    // }
+    // else {
+    //     if (!nozzle_temp_input && nozzle_num >= 2) {
+    //         auto deputy_extder = obj->GetExtderSystem()->GetExtderById(DEPUTY_EXTRUDER_ID);
+    //         if (deputy_extder)
+    //         {
+    //             m_tempCtrl_nozzle_deputy->SetTagTemp(deputy_extder->GetTargetTemp());
+    //             m_tempCtrl_nozzle_deputy->SetCurrTemp((int)deputy_extder->GetCurrentTemp());
+    //             if (deputy_extder->GetTargetTemp() - deputy_extder->GetCurrentTemp() > TEMP_THRESHOLD_VAL)
+    //             {
+    //                 m_tempCtrl_nozzle_deputy->SetIconActive();
+    //             }
+    //             else
+    //             {
+    //                 m_tempCtrl_nozzle_deputy->SetIconNormal();
+    //             }
+    //         }
+    //     }
+    // }
 
-    if (m_temp_nozzle_deputy_timeout > 0) {
-        m_temp_nozzle_deputy_timeout--;
-    } else {
-        if (!nozzle_temp_input && nozzle_num >= 2) {
-            auto deputy_extder = obj->GetExtderSystem()->GetExtderById(DEPUTY_EXTRUDER_ID);
-            if (deputy_extder) {
-                m_tempCtrl_nozzle_deputy->SetTagTemp(deputy_extder->GetTargetTemp());
-                m_tempCtrl_nozzle_deputy->SetCurrTemp((int) deputy_extder->GetCurrentTemp());
-                if (deputy_extder->GetTargetTemp() - deputy_extder->GetCurrentTemp() > TEMP_THRESHOLD_VAL) {
-                    m_tempCtrl_nozzle_deputy->SetIconActive();
-                } else {
-                    m_tempCtrl_nozzle_deputy->SetIconNormal();
-                }
-            }
-        }
-    }
+    // // support current temp for chamber
+    // if (obj->get_printer_series() == PrinterSeries::SERIES_X1)
+    // {
+    //     m_tempCtrl_chamber->SetCurrTemp(obj->chamber_temp);
+    // }
+    // else
+    // {
+    //     m_tempCtrl_chamber->SetCurrTemp(TEMP_BLANK_STR);
+    // }
 
-    // support current temp for chamber
-    const auto &chamber = obj->GetChamber();
-    if (chamber->SupportChamberTempDisplay()) {
-        m_tempCtrl_chamber->SetCurrTemp(chamber->GetChamberTemp());
-    } else {
-        m_tempCtrl_chamber->SetCurrTemp(TEMP_BLANK_STR);
-    }
+    // // support edit chamber temp
+    // DevConfig* config = obj->GetConfig();
+    // if (config->SupportChamberEdit())
+    // {
+    //     m_tempCtrl_chamber->SetReadOnly(false);
+    //     m_tempCtrl_chamber->Enable();
+    //     m_tempCtrl_chamber->SetMinTemp(config->GetChamberTempEditMin());
+    //     m_tempCtrl_chamber->SetMaxTemp(config->GetChamberTempEditMax());
+    //     m_tempCtrl_chamber->AddTemp(0); // zero is default temp
+    //     wxCursor cursor(wxCURSOR_IBEAM);
+    //     m_tempCtrl_chamber->GetTextCtrl()->SetCursor(cursor);
 
-    // support edit chamber temp
-    if (chamber->SupportChamberEdit()) {
-        m_tempCtrl_chamber->SetReadOnly(false);
-        m_tempCtrl_chamber->Enable();
-        m_tempCtrl_chamber->SetMinTemp(chamber->GetChamberTempEditMin());
-        m_tempCtrl_chamber->SetMaxTemp(chamber->GetChamberTempEditMax());
-        m_tempCtrl_chamber->AddTemp(0); // zero is default temp
-        wxCursor cursor(wxCURSOR_IBEAM);
-        m_tempCtrl_chamber->GetTextCtrl()->SetCursor(cursor);
+    //     if (m_temp_chamber_timeout > 0)
+    //     {
+    //         m_temp_chamber_timeout--;
+    //     }
+    //     else
+    //     {
+    //         /*update temprature if not input temp target*/
+    //         if (!cham_temp_input) { m_tempCtrl_chamber->SetTagTemp(obj->chamber_temp_target); }
+    //     }
+    // }
+    // else
+    // {
+    //     m_tempCtrl_chamber->SetReadOnly(true);
+    //     m_tempCtrl_chamber->SetTagTemp(TEMP_BLANK_STR);
 
-        if (m_temp_chamber_timeout > 0) {
-            m_temp_chamber_timeout--;
-        } else {
-            /*update temprature if not input temp target*/
-            if (!cham_temp_input) { m_tempCtrl_chamber->SetTagTemp(chamber->GetChamberTempTarget()); }
-        }
-    } else {
-        m_tempCtrl_chamber->SetReadOnly(true);
-        m_tempCtrl_chamber->SetTagTemp(TEMP_BLANK_STR);
+    //     wxCursor cursor(wxCURSOR_ARROW);
+    //     m_tempCtrl_chamber->GetTextCtrl()->SetCursor(cursor);
+    // }
 
-        wxCursor cursor(wxCURSOR_ARROW);
-        m_tempCtrl_chamber->GetTextCtrl()->SetCursor(cursor);
-    }
+    // if ((obj->chamber_temp_target - obj->chamber_temp) >= TEMP_THRESHOLD_VAL) {
+    //     m_tempCtrl_chamber->SetIconActive();
+    // }
+    // else {
+    //     m_tempCtrl_chamber->SetIconNormal();
+    // }
 
-    if ((chamber->GetChamberTempTarget() - chamber->GetChamberTemp()) >= TEMP_THRESHOLD_VAL) {
+    int chamber_cur_temp = std::stoi(obj->m_chamber_temperature);
+    int chamber_target_temp = std::stoi(obj->m_target_chamber);
+    if ((chamber_target_temp - chamber_cur_temp) > TEMP_THRESHOLD_VAL)
+    {
         m_tempCtrl_chamber->SetIconActive();
-    } else {
+    }
+    else
+    {
         m_tempCtrl_chamber->SetIconNormal();
     }
 
-    if (to_update_layout) { this->Layout(); }
+    // if (to_update_layout)
+    // {
+    //     this->Layout();
+    // }
 }
 
 void StatusPanel::update_misc_ctrl(MachineObject *obj)
@@ -3797,6 +4347,23 @@ void StatusPanel::reset_printing_values()
 
 void StatusPanel::on_axis_ctrl_xy(wxCommandEvent &event)
 {
+    if (m_homed_axes == "") {
+        show_recenter_dialog();
+        return;
+    }
+    // cj_1 
+    //check is at home
+
+	if (event.GetInt() == 0) { postEventValueAndEnable(EVTSET_Y_AXIS, 10,"value"); }
+	else if (event.GetInt() == 1) { postEventValueAndEnable(EVTSET_X_AXIS, -10, "value"); }
+	else if (event.GetInt() == 2) { postEventValueAndEnable(EVTSET_Y_AXIS, -10, "value"); }
+	else if (event.GetInt() == 3) { postEventValueAndEnable(EVTSET_X_AXIS, 10, "value"); }
+	else if (event.GetInt() == 4) { postEventValueAndEnable(EVTSET_Y_AXIS, 1, "value"); }
+	else if (event.GetInt() == 5) { postEventValueAndEnable(EVTSET_X_AXIS, -1, "value"); }
+	else if (event.GetInt() == 6) { postEventValueAndEnable(EVTSET_Y_AXIS, -1, "value"); }
+	else if (event.GetInt() == 7) { postEventValueAndEnable(EVTSET_X_AXIS, 1, "value"); }
+    else if (event.GetInt() == 8) { postEventValueAndEnable(EVTSET_RETURN_SAFEHOME, 1, "value"); }
+
     if (!obj) return;
 
     // check is at home
@@ -3858,6 +4425,8 @@ bool StatusPanel::check_axis_z_at_home(MachineObject *obj)
 
 void StatusPanel::on_axis_ctrl_z_up_10(wxCommandEvent &event)
 {
+//cj_1
+    postEventValueAndEnable(EVTSET_Z_AXIS, -10, "value");
     if (obj) {
         obj->GetAxis()->Ctrl_Axis("Z", 1.0, -10.0f, 900);
         if (!check_axis_z_at_home(obj)) return;
@@ -3866,6 +4435,8 @@ void StatusPanel::on_axis_ctrl_z_up_10(wxCommandEvent &event)
 
 void StatusPanel::on_axis_ctrl_z_up_1(wxCommandEvent &event)
 {
+//cj_1
+    postEventValueAndEnable(EVTSET_Z_AXIS, -1, "value");
     if (obj) {
         obj->GetAxis()->Ctrl_Axis("Z", 1.0, -1.0f, 900);
         if (!check_axis_z_at_home(obj)) return;
@@ -3874,6 +4445,8 @@ void StatusPanel::on_axis_ctrl_z_up_1(wxCommandEvent &event)
 
 void StatusPanel::on_axis_ctrl_z_down_1(wxCommandEvent &event)
 {
+//cj_1
+    postEventValueAndEnable(EVTSET_Z_AXIS, 1, "value");
     if (obj) {
         obj->GetAxis()->Ctrl_Axis("Z", 1.0, 1.0f, 900);
         if (!check_axis_z_at_home(obj)) return;
@@ -3882,6 +4455,8 @@ void StatusPanel::on_axis_ctrl_z_down_1(wxCommandEvent &event)
 
 void StatusPanel::on_axis_ctrl_z_down_10(wxCommandEvent &event)
 {
+//cj_1
+    postEventValueAndEnable(EVTSET_Z_AXIS, 10, "value");
     if (obj) {
         obj->GetAxis()->Ctrl_Axis("Z", 1.0, 10.0f, 900);
         if (!check_axis_z_at_home(obj)) return;
@@ -3907,6 +4482,12 @@ void StatusPanel::axis_ctrl_e_hint(bool up_down)
 
 void StatusPanel::on_axis_ctrl_e_up_10(wxCommandEvent& event)
 {
+    //cj_1
+    if (!judgeAxis())
+    {
+        return;
+    }
+    postEventValueAndEnable(EVTSET_BACK, 10, "value");
     if (obj) {
         auto ext = obj->GetExtderSystem()->GetCurrentExtder();
         if (ext && ext->GetCurrentTemp() >= TEMP_THRESHOLD_ALLOW_E_CTRL) {
@@ -3923,6 +4504,13 @@ void StatusPanel::on_axis_ctrl_e_up_10(wxCommandEvent& event)
 
 void StatusPanel::on_axis_ctrl_e_down_10(wxCommandEvent& event)
 {
+    //cj_1
+	if (!judgeAxis())
+	{
+		return;
+	}
+	postEventValueAndEnable(EVTSET_EXTRUESION, 10, "value");
+
     if (obj) {
         auto ext = obj->GetExtderSystem()->GetCurrentExtder();
         if (ext && ext->GetCurrentTemp() >= TEMP_THRESHOLD_ALLOW_E_CTRL)
@@ -3940,9 +4528,18 @@ void StatusPanel::on_axis_ctrl_e_down_10(wxCommandEvent& event)
 
 void StatusPanel::on_set_bed_temp()
 {
-    if (!obj) { return; }
-
+//cj_1
     wxString str = m_tempCtrl_bed->GetTextCtrl()->GetValue();
+    long temp = 0;
+    str.ToLong(&temp);
+	wxCommandEvent event(EVTSET_HEATERBED_TEMPERATURE);
+	event.SetInt(temp);
+	event.SetString("value");
+	wxPostEvent(this, event);
+        
+
+    if (!obj) {return;}
+
     try {
         long bed_temp;
         if (str.ToLong(&bed_temp) && obj) {
@@ -3966,7 +4563,16 @@ void StatusPanel::on_set_bed_temp()
 
 void StatusPanel::on_set_nozzle_temp(int nozzle_id)
 {
-    if (!obj) { return; }
+//cj_1
+	wxString str = m_tempCtrl_nozzle->GetTextCtrl()->GetValue();
+	long temp = 0;
+	str.ToLong(&temp);
+	wxCommandEvent event(EVTSET_EXTRUDER_TEMPERATURE);
+	event.SetInt(temp);
+	event.SetString("value");
+	wxPostEvent(this, event);
+
+    if (!obj) {return;}
 
     try {
         long nozzle_temp;
@@ -4019,7 +4625,17 @@ void StatusPanel::on_set_nozzle_temp(int nozzle_id)
 
 void StatusPanel::on_set_chamber_temp()
 {
-    if (!obj) { return; }
+//cj_1
+	wxString str1 = m_tempCtrl_chamber->GetTextCtrl()->GetValue();
+	long temp = 0;
+	str1.ToLong(&temp);
+	wxCommandEvent event(EVTSET_CHAMBER_TEMPERATURE);
+	event.SetInt(temp);
+	event.SetString("value");
+	wxPostEvent(this, event);
+
+
+    if (!obj) {return;}
 
     wxString str = m_tempCtrl_chamber->GetTextCtrl()->GetValue();
     try {
@@ -4065,6 +4681,12 @@ void StatusPanel::on_set_chamber_temp()
 
 void StatusPanel::on_ams_load(SimpleEvent &event)
 {
+    //cj_1
+    wxCommandEvent e;
+    e.SetEventType(EVTSET_FILAMENT_LOAD);
+    e.SetInt(curSelectSlotIndex);
+    wxPostEvent(this, e);
+
     BOOST_LOG_TRIVIAL(info) << "on_ams_load";
     on_ams_load_curr();
 }
@@ -4200,6 +4822,13 @@ void StatusPanel::on_ams_switch(SimpleEvent &event)
 
 void StatusPanel::on_ams_unload(SimpleEvent &event)
 {
+
+	//cj_1
+	wxCommandEvent e;
+	e.SetEventType(EVTSET_FILAMENT_UNLOAD);
+	e.SetInt(curSelectSlotIndex);
+	wxPostEvent(this, e);
+
     if (obj) {
         std::string curr_ams_id = m_ams_control->GetCurentAms();
         std::string curr_can_id = m_ams_control->GetCurrentCan(curr_ams_id);
@@ -4218,21 +4847,65 @@ void StatusPanel::on_ams_unload(SimpleEvent &event)
 
 void StatusPanel::on_ams_filament_backup(SimpleEvent &event)
 {
-    if (obj) {
-        AmsReplaceMaterialDialog *m_replace_material_popup = new AmsReplaceMaterialDialog(this);
-        m_replace_material_popup->update_machine_obj(obj);
+//cj_1
+    //if (obj) {
+        AmsReplaceMaterialDialog* m_replace_material_popup = new AmsReplaceMaterialDialog(this);
+       
+        //cj_1
+        std::map<
+            std::tuple<int, std::string , std::string>,
+            std::vector<std::string>
+        >colorGroups;
+        char goupPre = 'A';
+        for (AMSinfo box : m_boxS) {
+            int goupNo = 1;
+            for (Caninfo can : box.cans) {
+                //GetAsString(wxC2S_HTML_SYNTAX)
+                if (can.material_state != AMSCanType::AMS_CAN_TYPE_NONE) {
+
+                    std::tuple<int, std::string, std::string > key{ can.ctype,
+                        can.material_name.ToStdString(),
+                        can.material_colour.GetAsString(wxC2S_HTML_SYNTAX).ToStdString() };
+					colorGroups[key].push_back(std::string(1,goupPre) + std::to_string(goupNo));
+                }
+                ++goupNo;
+            }
+            ++goupPre;
+        }
+
+        std::vector<BackupGroupData>groupDatas;
+		for (auto it = colorGroups.begin(); it != colorGroups.end(); ++it) {
+            if (it->second.size() < 2) {
+                continue;
+            }
+            BackupGroupData groupData;
+            groupData.material = std::get<1>(it->first);
+            for (std::string name : it->second) {
+                groupData.group_info[name] = wxColour(std::get<2>(it->first));
+            }
+            groupDatas.push_back(groupData);
+		}
+
+        m_replace_material_popup->update_data(groupDatas);
         m_replace_material_popup->ShowModal();
-    }
+    //}
 }
 
 void StatusPanel::on_ams_setting_click(SimpleEvent &event)
 {
-    if (obj) {
-        if (!m_ams_setting_dlg) { m_ams_setting_dlg = new AMSSetting((wxWindow *) this, wxID_ANY); }
+    //cj_1
+    //if (obj) {
+        if (!m_ams_setting_dlg) {
+            m_ams_setting_dlg = new AMSSetting((wxWindow*)this, wxID_ANY);
+        }
 
-        m_ams_setting_dlg->UpdateByObj(obj);
+        //m_ams_setting_dlg->UpdateByObj(obj);
+        m_ams_setting_dlg->update_insert_material_read_mode(m_auto_read_rfid,"");
+        m_ams_setting_dlg->update_starting_read_mode(m_init_detect);
+        m_ams_setting_dlg->update_switch_filament(m_auto_reload_detect);
+        m_ams_setting_dlg->update_ams_img(nullptr);
         m_ams_setting_dlg->Show();
-    }
+    //}
 }
 
 void StatusPanel::on_filament_extrusion_cali(wxCommandEvent &event)
@@ -4355,6 +5028,58 @@ void StatusPanel::on_ext_spool_edit(wxCommandEvent &event)
     auto drect              = wxDisplay(GetParent()).GetGeometry().GetHeight() - FromDIP(50);
     current_position_y = current_position_y + m_filament_setting_dlg->GetSize().GetHeight() > drect ? drect - m_filament_setting_dlg->GetSize().GetHeight() : current_position_y;
 
+    //cj_1
+    long canInfoIndex = -1;
+    event.GetString().ToLong(&canInfoIndex);
+    if (canInfoIndex>=0 && canInfoIndex<=16) {
+        curSelectSlotIndex = canInfoIndex;
+        Caninfo can;
+        if (canInfoIndex == 16) {
+            can = m_ext_info[0].cans[0];
+        }
+        else {
+
+            int amsIndex = canInfoIndex / 4;
+            int canIndexInAms = canInfoIndex % 4;
+            can  = m_boxS[amsIndex].cans[canIndexInAms];
+        }
+        
+        m_filament_setting_dlg->Move(wxPoint(current_position_x, current_position_y));
+		m_filament_setting_dlg->set_color(can.material_colour);
+
+        //cj_1
+        wxArrayString filamentNames; {
+			for (auto filament : m_filamentConfig) {
+				if (filament.name.empty())continue;
+				filamentNames.Add("QIDI " + filament.name);
+			}
+            for (auto filament : m_filamentConfig) {
+                if (filament.name.empty())continue;
+                filamentNames.Add("Generic " + filament.name);
+            }
+        }
+        m_filament_setting_dlg->setComboBoxData(filamentNames);
+		
+        for (auto filament : m_filamentConfig) {
+            if (filament.name == can.material_name) {
+                m_filament_setting_dlg->setMinMaxTemp(std::to_string(filament.minTemp), std::to_string(filament.maxTemp));
+            }
+        }
+        wxString curComboBoxValue = "";
+        if (can.ctype == 0) {
+            curComboBoxValue = "Generic " + can.material_name;
+        }
+        else {
+			curComboBoxValue = "QIDI " + can.material_name;
+
+        }
+        m_filament_setting_dlg->setComboBoxValue(curComboBoxValue);
+
+        m_filament_setting_dlg->Show(true);
+        m_filament_setting_dlg->ShowModal();
+    }
+    
+ 
     if (obj) {
         m_filament_setting_dlg->obj = obj;
 
@@ -4406,6 +5131,9 @@ void StatusPanel::on_ext_spool_edit(wxCommandEvent &event)
 
 void StatusPanel::on_ams_refresh_rfid(wxCommandEvent &event)
 {
+//cj_1
+    event.Skip();
+
     if (obj) {
         // std::string curr_ams_id = m_ams_control->GetCurentAms();
         if (event.GetInt() < 0 || event.GetInt() > VIRTUAL_TRAY_MAIN_ID) { return; }
@@ -4460,6 +5188,40 @@ void StatusPanel::on_ams_refresh_rfid(wxCommandEvent &event)
 
 void StatusPanel::on_ams_selected(wxCommandEvent &event)
 {
+//cj_1
+    std::string slotId = event.GetString().ToStdString();
+	long canInfoIndex = -1;
+	event.GetString().ToLong(&canInfoIndex); 
+    if (canInfoIndex >= 0 && canInfoIndex <= 16) {
+        curSelectSlotIndex = canInfoIndex;
+		Caninfo can;
+		if (canInfoIndex == 16) {
+			can = m_ext_info[0].cans[0];
+		}
+		else {
+
+			int amsIndex = canInfoIndex / 4;
+			int canIndexInAms = canInfoIndex % 4;
+			can = m_boxS[amsIndex].cans[canIndexInAms];
+		}
+        if (can.material_state == AMSCanType::AMS_CAN_TYPE_EMPTY) {
+			m_ams_control->EnableLoadFilamentBtn(false, "", "", "");
+			m_ams_control->EnableUnLoadFilamentBtn(false, "", "", "");
+            return;
+        }
+
+        if (m_curSlotSync == canInfoIndex) {
+            m_ams_control->EnableLoadFilamentBtn(false, "", "", "");
+            m_ams_control->EnableUnLoadFilamentBtn(true, "", "", "");
+        }
+        else {
+            m_ams_control->EnableLoadFilamentBtn(true, "", "", "");
+            m_ams_control->EnableUnLoadFilamentBtn(false, "", "", "");
+        }
+    }
+    return;
+//cj_1
+
     if (obj) {
         std::string curr_ams_id          = m_ams_control->GetCurentAms();
         std::string curr_selected_ams_id = std::to_string(event.GetInt());
@@ -4588,8 +5350,10 @@ void StatusPanel::on_switch_speed(wxCommandEvent &event)
     }
     step->SelectItem(selected_item);
 
-    if (!obj->is_in_printing()) {
-        step->Bind(wxEVT_LEFT_DOWN, [](auto &e) { return; });
+//cj_1
+    if (obj!=nullptr && !obj->is_in_printing()) {
+        step->Bind(wxEVT_LEFT_DOWN, [](auto& e) {
+            return; });
     }
 
     step->Bind(EVT_STEP_CHANGED, [this](auto &e) {
@@ -4630,34 +5394,113 @@ void StatusPanel::on_printing_fan_switch(wxCommandEvent &event)
 
 void StatusPanel::on_nozzle_fan_switch(wxCommandEvent &event)
 {
-    if (m_fan_control_popup) {
-        m_fan_control_popup->Destroy();
-        m_fan_control_popup = nullptr;
+//cj_1
+    {
+        if (m_fan_control_popup) {
+            m_fan_control_popup->Destroy();
+            m_fan_control_popup = nullptr;
+        }
+        AirDuctData fanData;
+        AirMode airmode; {
+            airmode.id = 0;
+            airmode.ctrl.push_back(1);
+            airmode.ctrl.push_back(2);
+            airmode.ctrl.push_back(3);
+            airmode.ctrl.push_back(4);
+            airmode.off.push_back(6);
+        }
+        for (int i = 1; i < 7; ++i) {
+            if (i == 4 || i == 5) {
+                continue;
+            }
+			AirParts partData; {
+				partData.id = i;
+			}
+            fanData.parts.push_back(partData);
+        }
+        
+		fanData.modes[0] = airmode;
+        fanData.m_sub_mode = 0;
+        m_fan_control_popup = new FanControlPopupNew(this, obj, fanData);
+        auto pos = m_switch_fan->GetScreenPosition();
+        pos.y = pos.y + m_switch_fan->GetSize().y;
+
+        int display_idx = wxDisplay::GetFromWindow(this);
+        auto display = wxDisplay(display_idx).GetClientArea();
+
+
+        wxSize screenSize = wxSize(display.GetWidth(), display.GetHeight());
+        wxSize fan_popup_size = m_fan_control_popup->GetSize();
+
+        pos.x -= FromDIP(150);
+        pos.y -= FromDIP(20);
+        if (screenSize.y - fan_popup_size.y < FromDIP(300)) {
+            pos.y = (screenSize.y - fan_popup_size.y) / 2;
+        }
+
+        m_fan_control_popup->SetPosition(pos);
+        m_fan_control_popup->ShowModal();
+
+        return;
     }
 
-    if (!obj) { return; }
-    if (obj->GetFan()->GetAirDuctData().modes.empty()) { obj->GetFan()->converse_to_duct(true, obj->GetFan()->GetSupportAuxFanData(), obj->GetFan()->GetSupportChamberFan()); }
+		for (auto it : m_fan_speeds) {
+			m_fan_control_popup->update_fan_data(it.first, it.second);
+		}
 
-    m_fan_control_popup = new FanControlPopupNew(this, obj, obj->GetFan()->GetAirDuctData());
+        auto pos = m_switch_fan->GetScreenPosition();
+        pos.y = pos.y + m_switch_fan->GetSize().y;
 
-    auto pos = m_switch_fan->GetScreenPosition();
-    pos.y    = pos.y + m_switch_fan->GetSize().y;
+        int display_idx = wxDisplay::GetFromWindow(this);
+        auto display = wxDisplay(display_idx).GetClientArea();
 
-    int  display_idx = wxDisplay::GetFromWindow(this);
-    auto display     = wxDisplay(display_idx).GetClientArea();
 
-    wxSize screenSize     = wxSize(display.GetWidth(), display.GetHeight());
-    wxSize fan_popup_size = m_fan_control_popup->GetSize();
+        wxSize screenSize = wxSize(display.GetWidth(), display.GetHeight());
+        wxSize fan_popup_size = m_fan_control_popup->GetSize();
 
-    pos.x -= FromDIP(150);
-    pos.y -= FromDIP(20);
-    if (screenSize.y - fan_popup_size.y < FromDIP(300)) { pos.y = (screenSize.y - fan_popup_size.y) / 2; }
+        pos.x -= FromDIP(150);
+        pos.y -= FromDIP(20);
+        if (screenSize.y - fan_popup_size.y < FromDIP(300)) {
+            pos.y = (screenSize.y - fan_popup_size.y) / 2;
+        }
 
-    m_fan_control_popup->SetPosition(pos);
-    m_fan_control_popup->ShowModal();
+        m_fan_control_popup->SetPosition(pos);
+        m_fan_control_popup->ShowModal();
+
+        return;
+//cj_1
+
+    //y76
+    //if (!obj) { return; }
+    //if (obj->GetFan()->GetAirDuctData().modes.empty()) { obj->GetFan()->converse_to_duct(true, obj->GetFan()->GetSupportAuxFanData(), obj->GetFan()->GetSupportChamberFan()); }
+
+    //m_fan_control_popup = new FanControlPopupNew(this, obj, obj->GetFan()->GetAirDuctData());
+
+    //auto pos = m_switch_fan->GetScreenPosition();
+    //pos.y    = pos.y + m_switch_fan->GetSize().y;
+
+    //int  display_idx = wxDisplay::GetFromWindow(this);
+    //auto display     = wxDisplay(display_idx).GetClientArea();
+
+    //wxSize screenSize     = wxSize(display.GetWidth(), display.GetHeight());
+    //wxSize fan_popup_size = m_fan_control_popup->GetSize();
+
+    //pos.x -= FromDIP(150);
+    //pos.y -= FromDIP(20);
+    //if (screenSize.y - fan_popup_size.y < FromDIP(300)) { pos.y = (screenSize.y - fan_popup_size.y) / 2; }
+
+    //m_fan_control_popup->SetPosition(pos);
+    //m_fan_control_popup->ShowModal();
 }
 void StatusPanel::on_lamp_switch(wxCommandEvent &event)
 {
+//cj_1
+	bool value1 = m_switch_lamp->GetValue();
+	wxCommandEvent event1(EVTSET_CASE_LIGHT);
+    event1.SetInt(value1);
+    event1.SetString("enable");
+	wxPostEvent(this, event1);
+
     if (!obj) return;
 
     bool value = m_switch_lamp->GetValue();
@@ -4801,6 +5644,30 @@ void StatusPanel::update_printer_parts_options(MachineObject *obj_)
     }
 }
 
+//cj_1
+void StatusPanel::postEventValueAndEnable(wxEventType eventType, int value, std::string valueType)
+{
+	wxCommandEvent event(eventType);
+    event.SetInt(value);
+    event.SetString(valueType);
+	wxPostEvent(this, event);
+}
+
+// cj_1
+bool StatusPanel::judgeAxis()
+{
+    long nozzleTemp = 0;
+    m_tempCtrl_nozzle->GetLabel().ToLong(&nozzleTemp);
+
+    if (nozzleTemp < 170) {
+		MessageDialog msg_dlg(nullptr, _L("Please heat the nozzle to above 170 degree before loading or unloading filament."),
+			wxEmptyString,   wxOK);
+        msg_dlg.ShowModal();
+        return false;
+    }
+    return true;
+}
+
 void StatusPanel::on_start_calibration(wxCommandEvent &event)
 {
     if (obj) {
@@ -4815,6 +5682,25 @@ void StatusPanel::on_start_calibration(wxCommandEvent &event)
             calibration_dlg->ShowModal();
         }
     }
+}
+
+//cj_1
+void StatusPanel::on_selected_type(wxCommandEvent& event)
+{
+    wxString typeNameAddVendor = event.GetString();
+    wxString typeName = "";
+    if (typeNameAddVendor.find(" ") != std::string::npos) {
+        typeName = typeNameAddVendor.substr(typeNameAddVendor.find(" ") + 1);
+    }
+    
+    if (typeName.IsEmpty()) {
+        return;
+    }
+	for (auto filament : m_filamentConfig) {
+		if (filament.name == typeName) {
+			m_filament_setting_dlg->setMinMaxTemp(std::to_string(filament.minTemp), std::to_string(filament.maxTemp));
+		}
+	}
 }
 
 bool StatusPanel::is_stage_list_info_changed(MachineObject *obj)
@@ -4851,11 +5737,18 @@ void StatusPanel::set_default()
     m_bitmap_timelapse_img->Hide();
     m_bitmap_recording_img->Hide();
     m_bitmap_vcamera_img->Hide();
-    m_setting_button->Show();
+
+    //y76
+    m_setting_button->Hide();
+    //m_setting_button->Show();
+
+
     m_tempCtrl_chamber->Show();
-    m_options_btn->Show();
-    m_safety_btn->Show();
-    m_parts_btn->Show();
+
+//cj_1
+    m_options_btn->Hide();
+    m_safety_btn->Hide();
+    m_parts_btn->Hide();
 
     if (m_panel_control_title) {
         m_panel_control_title->Layout();

@@ -116,6 +116,13 @@ public:
     void set_ctype(int ctype);
 
     void on_picker_color(wxCommandEvent& color);
+
+    //cj_1
+    void setComboBoxData(wxArrayString data);
+    void setMinMaxTemp(wxString minTemp, wxString maxTmep);
+
+    //cj_1
+    void setComboBoxValue(wxString curValue);
     MachineObject* obj{ nullptr };
     int            ams_id { 0 };        /* 0 ~ 3 */
     int            slot_id { 0 };        /* 0 ~ 3 */
@@ -208,6 +215,9 @@ protected:
 };
 
 wxDECLARE_EVENT(EVT_SELECTED_COLOR, wxCommandEvent);
+wxDECLARE_EVENT(EVT_SELECTED_TYPE, wxCommandEvent);
+wxDECLARE_EVENT(EVT_SET_COLOR, wxCommandEvent);
+wxDECLARE_EVENT(EVT_SET_TYPE, wxCommandEvent);
 
 }} // namespace Slic3r::GUI
 

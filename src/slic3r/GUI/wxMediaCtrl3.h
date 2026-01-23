@@ -10,6 +10,9 @@
 
 #include "wx/uri.h"
 #include "wx/mediactrl.h"
+#include <curl/curl.h>
+#include <condition_variable>
+#include <thread>
 
 wxDECLARE_EVENT(EVT_MEDIA_CTRL_STAT, wxCommandEvent);
 
@@ -90,5 +93,67 @@ private:
 };
 
 #endif
+
+//y76
+class VideoPanel : public wxPanel
+{
+public:
+    VideoPanel(wxWindow* parent, 
+               wxWindowID id = wxID_ANY,
+               const wxPoint& pos = wxDefaultPosition,
+               const wxSize& size = wxSize(640, 480));
+    
+    virtual ~VideoPanel();
+
+    void Load(const std::string& url);
+    void Play();
+    void Stop();
+    void SetIdleImage(wxString const &image);
+    
+    wxMediaState GetState();
+    int GetLastError();
+    wxSize GetVideoSize();
+    
+    wxSize DoGetBestSize() const override;
+    
+protected:
+    void OnPaint(wxPaintEvent& event);
+    void OnEraseBackground(wxEraseEvent& event);
+    void OnSize(wxSizeEvent& event);
+    
+    void paintEvent(wxPaintEvent& evt);
+    
+    static void adjust_frame_size(wxSize& frame, const wxSize& video, const wxSize& window);
+    
+private:
+    void PlayThread();
+    void NotifyStopped();
+    
+    static size_t WriteMemoryCallback(void* contents, size_t size, size_t nmemb, void* userp);
+    
+private:
+    std::shared_ptr<std::string> m_url;
+    wxMediaState m_state = wxMEDIASTATE_STOPPED;
+    int m_error = 0;
+    
+    wxString m_idle_image;
+    wxImage m_frame;
+    wxSize m_video_size = wxDefaultSize;
+    wxSize m_frame_size = wxDefaultSize;
+    
+    uint64_t m_last_PTS = 0;
+    std::chrono::steady_clock::time_point m_last_PTS_expected;
+    std::chrono::steady_clock::time_point m_last_PTS_practical;
+    
+    std::mutex m_mutex;
+    std::condition_variable m_cond;
+    std::thread m_thread;
+    
+    CURL* m_curl = nullptr;
+    std::atomic<bool> m_exit_flag{false};
+    
+    wxDECLARE_EVENT_TABLE();
+};
+//y76
 
 #endif /* wxMediaCtrl3_h */

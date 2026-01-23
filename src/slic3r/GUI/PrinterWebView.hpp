@@ -42,11 +42,18 @@
 #if QDT_RELEASE_TO_PUBLIC
 #include "../QIDI/QIDINetwork.hpp"
 #endif
+
 #include <boost/thread.hpp>
+
+
+#include <atomic>
 #include "./Widgets/SwitchButton.hpp"
 #include "./Widgets/DeviceButton.hpp"
 
 #include "OctoPrint.hpp"
+
+#include "StatusPanel.hpp"
+#include "QDSDeviceManager.hpp"
 
 namespace Slic3r {
 namespace GUI {
@@ -59,14 +66,12 @@ enum WebState
     isNetWeb
 };
 
-
 class PrinterWebView : public wxPanel {
 public:
     PrinterWebView(wxWindow *parent);
     virtual ~PrinterWebView();
 
     wxBoxSizer *init_menu_bar(wxPanel *Panel);
-    wxBoxSizer *init_login_bar(wxPanel *Panel);
     void        init_scroll_window(wxPanel *Panel);
     void        CreatThread();
     void load_url(wxString& url);
@@ -74,13 +79,11 @@ public:
     void UpdateState();
     void OnClose(wxCloseEvent& evt);
 
-    void        OnZoomButtonClick(wxCommandEvent &event);
     void        OnRefreshButtonClick(wxCommandEvent &event);
     void OnAddButtonClick(wxCommandEvent &event);
     void OnDeleteButtonClick(wxCommandEvent &event);
     void OnEditButtonClick(wxCommandEvent &event);
 
-    void        OnLoginButtonClick(wxCommandEvent &event);
     void RunScript(const wxString &javascript);
     //void OnScriptMessageReceived(wxWebViewEvent &event);
     void OnScriptMessage(wxWebViewEvent &evt);
@@ -88,6 +91,12 @@ public:
     void OnScroll(wxScrollWinEvent &event);
     void OnScrollup(wxScrollWinEvent &event);
     void OnScrolldown(wxScrollWinEvent &event);
+
+    void onStatusPanelTask(wxCommandEvent& event);
+    //cj_1
+    void onSetBoxTask(wxCommandEvent& event);
+    //cj_1
+    void onRefreshRfid(wxCommandEvent& event);
     //void SendRecentList(int images);
     void SetButtons(std::vector<DeviceButton *> buttons);
     void  AddButton(const wxString &                           device_name,
@@ -102,23 +111,12 @@ public:
     void ShowNetPrinterButton();
     void ShowLocalPrinterButton();
 #if QDT_RELEASE_TO_PUBLIC
-    void AddNetButton(const Device device);
+    void AddNetButton(const NetDevice device);
 #endif
 
     void DeleteNetButton();
     void                        RefreshButton();
     void SetUpdateHandler(const std::function<void(wxCommandEvent &)> &handler) { m_handlerl = handler; }
-    void StopStatusThread()
-    {
-        m_stopThread = true;
-        //y36
-        OctoPrint::SetStop(true);
-        if (m_statusThread.joinable()) {
-            m_statusThread.join();
-        }
-        OctoPrint::SetStop(false);
-    };
-    void SetPauseThread(bool status) { m_pauseThread = status; };
     void SetPresetChanged(bool status);
     void SetLoginStatus(bool status);
     std::string NormalizeVendor(const std::string& str);
@@ -135,16 +133,43 @@ public:
     void load_disconnect_url(wxString& url);
     void FormatNetUrl(std::string link_url, std::string local_ip, bool isSpecialMachine);
     void FormatUrl(std::string link_url);
-    void SetToggleBar(bool is_net_mode);
+
+    //y74
+    QDSDeviceManager* m_device_manager;
+
+    void onSSEMessageHandle(const std::string& event, const std::string& data);
+
+    //y76
+    void pauseCamera();
+
+private:
+    // cj_1
+	void HideDeviceButtons(std::vector<DeviceButton*>& buttons);
+	void HideAllDeviceButtons();
+
+    // cj_1
+	void cancelAllDevButtonSelect();
+
+    // cj_1
+    void clearStatusPanelData();
+
+    void ShowDeviceButtons(std::vector<DeviceButton*>& buttons, bool isShow = true);
+
+
+	void updateDeviceButton(const std::string& device_id, std::string new_status);
+	void updateDeviceParameter(const std::string& device_id);
+    void updateDeviceConnectType(const std::string& device_id, const std::string& device_ip);
+	void InitDeviceManager();
+	void initEventToTaskPath();
+	void bindTaskHandle();
+    void init_select_machine();
 
 private:
     wxBoxSizer *leftallsizer;
 
     wxBoxSizer *                          devicesizer;
     wxBoxSizer *                          allsizer;
-    bool        m_isSimpleMode = false;
     bool                                  m_isNetMode    = false;
-    wxButton *arrow_button;
 
     int height = 0; 
     wxString  m_web;
@@ -155,13 +180,12 @@ private:
     wxScrolledWindow *          leftScrolledWindow;
     wxPanel *         leftPanel;
 
-
+    StatusPanel* t_status_page;
     std::vector<DeviceButton *>           m_buttons;
     std::vector<DeviceButton *>           m_net_buttons;
+
+
     std::string                           m_select_type;
-    std::thread                           m_statusThread;
-    std::atomic<bool>                     m_stopThread{false};
-    std::atomic<bool>                     m_pauseThread{true};
 
     wxWebView* m_browser;
     long m_zoomFactor;
@@ -170,17 +194,29 @@ private:
     DeviceButton *                        delete_button;
     DeviceButton *                        edit_button;
     DeviceButton *                        refresh_button;
-    DeviceButton *                        login_button;
     bool                                  m_isloginin;
-    DeviceSwitchButton*                        toggleBar;
     wxStaticBitmap *                      staticBitmap;
 
     std::map<std::string, DynamicPrintConfig> m_machine;
-    std::string select_machine_name;
+    std::string select_machine_name{ "" };
+    //std::string m_teststr;
+    std::string m_cur_deviceId{ "" };
     WebState webisNetMode = isDisconnect;
     std::set<std::string> m_exit_host;
-    std::string m_user_head_name;   //y33
     bool m_isfluidd_1;             //y35
+
+    //y74
+    wxSimplebook* m_status_book;
+    std::mutex m_ui_map_mutex;
+    std::unordered_map<std::string, DeviceButton*> m_device_id_to_button;
+
+	std::map<wxEventType, std::string> m_eventToTaskPath;
+    std::map<wxEventType, std::string> m_boxEventToTaskPath;
+    std::map<wxEventType, std::string> m_localEventToTaskPath;
+    std::string m_userInfo;
+
+    std::vector<NetDevice> m_net_devices;
+
 };
 
 // y13

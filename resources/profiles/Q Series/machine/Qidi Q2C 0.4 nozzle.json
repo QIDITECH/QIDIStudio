@@ -17,6 +17,7 @@
     "extruder_clearance_height_to_lid": "120",
     "extruder_clearance_height_to_rod": "40",
     "extruder_clearance_max_radius": "70",
+    "is_support_air_condition" : "1",
     "is_support_3mf" : "1",
     "is_support_multi_box": "1",
     "layer_change_gcode": "SET_PRINT_STATS_INFO CURRENT_LAYER={layer_num + 1}",

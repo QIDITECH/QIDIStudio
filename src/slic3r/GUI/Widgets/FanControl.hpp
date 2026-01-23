@@ -176,6 +176,9 @@ public:
     void on_mode_change(wxMouseEvent& event);
 
     void msw_rescale();
+
+    //cj_1
+    void post_fan_speed_changed(int m_partId, const wxCommandEvent& oldEvent);
 };
 
 wxDECLARE_EVENT(EVT_FANCTRL_SWITCH, wxCommandEvent);
@@ -250,7 +253,6 @@ private:
     void  UpdatePartSubMode();
           
     void  update_fan_data(const AirDuctData& data);
-    void  update_fan_data(AIR_FUN id, int speed);
 
     void  on_mode_changed(const wxMouseEvent& event);
     void  on_fan_changed(const wxCommandEvent& event);
@@ -263,7 +265,10 @@ private:
     void  command_control_air_duct(int mode_id, int submode = -1);
 
 public:
+    //cj_1
+    void  update_fan_data(AIR_FUN id, int speed);
     void  update_fan_data(MachineObject *obj);
+    
     void  msw_rescale();
 };
 
@@ -272,6 +277,11 @@ wxDECLARE_EVENT(EVT_FAN_SWITCH_OFF, wxCommandEvent);
 wxDECLARE_EVENT(EVT_FAN_ADD, wxCommandEvent);
 wxDECLARE_EVENT(EVT_FAN_DEC, wxCommandEvent);
 wxDECLARE_EVENT(EVT_FAN_CHANGED, wxCommandEvent);
+
+//cj_1
+wxDECLARE_EVENT(EVTSET_COOLLINGFAN_SPEED, wxCommandEvent);
+wxDECLARE_EVENT(EVTSET_CHAMBERFAN_SPEED, wxCommandEvent);
+wxDECLARE_EVENT(EVTSET_AUXILIARYFAN_SPEED, wxCommandEvent); 
 
 }} // namespace Slic3r::GUI
 

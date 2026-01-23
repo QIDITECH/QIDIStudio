@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Generator: Adobe Illustrator 25.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
-<svg version="1.1" id="图层_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-	 width="24px" height="24px" viewBox="0 0 24 24" enable-background="new 0 0 24 24" xml:space="preserve">
-<path fill="#ADADAF" d="M11,11V5h2v6h6v2h-6v6h-2v-6H5v-2H11z"/>
+<svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M17.6283 12.2218H4.35589C3.97272 12.2218 3.66406 11.6765 3.66406 10.9996C3.66406 10.3226 3.97272 9.77734 4.35589 9.77734H17.6389C18.0221 9.77734 18.3307 10.3226 18.3307 10.9996C18.3307 11.6765 18.0114 12.2218 17.6283 12.2218Z" fill="white"/>
+<path d="M11.0035 18.3327C10.3265 18.3327 9.78125 18.0238 9.78125 17.6404V4.35834C9.78125 3.9749 10.3265 3.66602 11.0035 3.66602C11.6804 3.66602 12.2257 3.9749 12.2257 4.35834V17.651C12.2257 18.0238 11.6804 18.3327 11.0035 18.3327Z" fill="white"/>
 </svg>

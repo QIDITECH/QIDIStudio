@@ -279,6 +279,7 @@ void PrintJob::process()
     params.try_emmc_print         = this->could_emmc_print;
     //y71
     params.enable_multi_box     = this->enable_multi_box;
+    params.enable_air_condition = this->enable_air_condition;
 
     if (m_print_type == "from_sdcard_view") {
         params.dst_file = m_dst_path;

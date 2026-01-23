@@ -31,18 +31,25 @@
 
 // QDS
 #include "QDTTopbar.hpp"
-#include "PrinterWebView.hpp"
+//#include "PrinterWebView.hpp"
 #include "calib_dlg.hpp"
 #include "MultiMachinePage.hpp"
 
 //y
 #include "Filament_web.hpp"
 
+ #include <wx/tokenzr.h>
+
+     #include "OctoPrint.hpp"
+
+
 #define ENABEL_PRINT_ALL 0
 
 class Notebook;
 class wxBookCtrlBase;
 class wxProgressDialog;
+
+class NoteBook;
 
 namespace Slic3r {
 
@@ -54,6 +61,9 @@ class PrintHostQueueDialog;
 class Plater;
 class MainFrame;
 class ParamsDialog;
+class PrinterWebView;
+
+
 
 enum QuickSlice
 {
@@ -395,7 +405,7 @@ public:
     //w
     FilamentPanel*        m_filament{nullptr};
     WebViewPanel*         m_webview { nullptr };
-    PrinterWebView*       m_printer_view{nullptr};
+    PrinterWebView*       m_printer_view;
     wxLogWindow*          m_log_window { nullptr };
     // QDS
     //wxBookCtrlBase*       m_tabpanel { nullptr };
@@ -436,10 +446,11 @@ public:
 
     int select_device_page_count{ 0 };
 
-    //y53
+    //y76
     wxString printer_view_url = "";
     wxString printer_view_ip = "";
     bool is_net_url = false;
+    bool is_webview = false;
     int new_sel;
 
 #ifdef __APPLE__

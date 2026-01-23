@@ -24,7 +24,10 @@
 class AnimaIcon;
 class ComboBox;
 namespace Slic3r { namespace GUI {
-
+    //cj_1
+	wxDECLARE_EVENT(EVTSET_INSERT_READ, wxCommandEvent); ///ams/insert/filament/read/enable
+	wxDECLARE_EVENT(EVTSET_BOOT_READ, wxCommandEvent); ///ams/boot/read/enable
+	wxDECLARE_EVENT(EVTSET_AUTO_FILAMENT, wxCommandEvent); ///ams/auto/filament/enable
 class AMSSettingTypePanel;    
 class AMSSetting : public DPIDialog
 {
@@ -35,9 +38,6 @@ public:
 public:
     void UpdateByObj(MachineObject* obj);
 
-protected:
-    void create();
-
     void update_ams_img(MachineObject* obj);
     void update_starting_read_mode(bool selected);
     void update_remain_mode(bool selected);
@@ -45,6 +45,9 @@ protected:
     void update_insert_material_read_mode(MachineObject* obj);
     void update_insert_material_read_mode(bool selected, std::string version);
     void update_air_printing_detection(MachineObject* obj);
+protected:
+    void create();
+
 
     void update_firmware_switching_status();
 

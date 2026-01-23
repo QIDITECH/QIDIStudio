@@ -181,6 +181,7 @@ enum PrintDialogStatus : unsigned int {
     //y68
     QDTBoxErrorBegin,
     BoxhasSomeProblem,
+    AirConditionSettingFailed,
     PrintStatusNeedUpgradingBox,
     PrinterNotConnectBox,
     QDTBoxErrorEnd,

@@ -3217,7 +3217,8 @@ SyncNozzleAndBoxDialog::~SyncNozzleAndBoxDialog() {}
 
 void SyncNozzleAndBoxDialog::deal_ok() {
     on_hide();
-    wxGetApp().plater()->sidebar().sync_ams_list(true);
+    //y76
+    wxGetApp().plater()->sidebar().sync_box_list(true);
 }
 
 void SyncNozzleAndBoxDialog::deal_cancel()
@@ -3297,7 +3298,7 @@ GetBoxInfoDialog::GetBoxInfoDialog(Plater* plater)
     switch_button_panel->SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#FFFFFF")));
     m_switch_button = new SwitchButton(switch_button_panel);
     m_switch_button->SetMaxSize(wxSize(100, 100));
-    m_switch_button->SetLabels(_L("Local"), _L("Link"));
+    m_switch_button->SetLabels(_L("Local"), _L("Net"));
     m_switch_button->SetValue(m_isNetMode);
     m_switch_button->Bind(wxEVT_TOGGLEBUTTON, [this](wxCommandEvent& evt) {
         bool is_checked = evt.GetInt();

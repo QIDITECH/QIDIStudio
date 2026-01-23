@@ -224,6 +224,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
         ,"box_temperature"
         //y60
         ,"is_support_3mf"
+        , "is_support_mqtt"
     };
 
     static std::unordered_set<std::string> steps_ignore;

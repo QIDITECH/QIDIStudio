@@ -222,6 +222,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/MainFrame.hpp
     GUI/QDTTopbar.cpp
     GUI/QDTTopbar.hpp
+    GUI/QDSDeviceManager.cpp
+    GUI/QDSDeviceManager.hpp
     GUI/BedShapeDialog.cpp
     GUI/BedShapeDialog.hpp
     GUI/Plater.cpp
@@ -663,6 +665,7 @@ if (APPLE)
             GUI/wxMediaCtrl2.mm
             GUI/wxMediaCtrl2.h
             GUI/wxMediaCtrl3.h
+            GUI/wxMediaCtrl3.cpp
         )
     FIND_LIBRARY(DISKARBITRATION_LIBRARY DiskArbitration)
 else ()
@@ -684,6 +687,9 @@ endif ()
 
 add_library(libslic3r_gui STATIC ${SLIC3R_GUI_SOURCES})
 target_include_directories(libslic3r_gui PRIVATE Utils)
+
+#set(WEBSOCKETPP_INSTALL_DIR ${CMAKE_PREFIX_PATH})
+#target_include_directories(libslic3r_gui ${CMAKE_PREFIX_PATH}/include)
 
 if (WIN32)
     target_include_directories(libslic3r_gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../deps/WebView2/include)

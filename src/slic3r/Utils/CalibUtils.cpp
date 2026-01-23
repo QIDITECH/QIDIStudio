@@ -358,13 +358,14 @@ static bool is_same_nozzle_type(const DynamicPrintConfig &full_config, const Mac
 
 static bool check_nozzle_diameter_and_type(const DynamicPrintConfig &full_config, wxString& error_msg)
 {
-    DeviceManager *dev = Slic3r::GUI::wxGetApp().getDeviceManager();
-    if (!dev) {
-        error_msg = _L("Need select printer");
-        return false;
-    }
+    //y76
+    //DeviceManager *dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+    //if (!dev) {
+    //    error_msg = _L("Need select printer");
+    //    return false;
+    //}
 
-    MachineObject *obj = dev->get_selected_machine();
+    auto obj = wxGetApp().qdsdevmanager->getSelectedDevice();
     if (obj == nullptr) {
         error_msg = _L("Need select printer");
         return false;
@@ -373,15 +374,15 @@ static bool check_nozzle_diameter_and_type(const DynamicPrintConfig &full_config
     if (!Slic3r::GUI::wxGetApp().plater()->check_printer_initialized(obj))
         return false;
 
-    // P1P/S
-    if (obj->GetExtderSystem()->GetNozzleType(0) == NozzleType::ntUndefine)
-        return true;
+    //// P1P/S
+    //if (obj->GetExtderSystem()->GetNozzleType(0) == NozzleType::ntUndefine)
+    //    return true;
 
-    // if (!is_same_nozzle_diameters(full_config, obj, error_msg))
-    //     return false;
+    //// if (!is_same_nozzle_diameters(full_config, obj, error_msg))
+    ////     return false;
 
-    if (!is_same_nozzle_type(full_config, obj, error_msg))
-        return false;
+    //if (!is_same_nozzle_type(full_config, obj, error_msg))
+    //    return false;
 
     return true;
 }
@@ -2067,8 +2068,7 @@ void CalibUtils::send_to_print(const CalibInfo &calib_info, wxString &error_mess
 
     print_job->has_sdcard = obj_->GetStorage()->get_sdcard_state() == DevStorage::HAS_SDCARD_NORMAL;
     print_job->could_emmc_print = obj_->is_support_print_with_emmc;
-    //y
-    print_job->set_print_config(MachineBedTypeString[bed_type], true, false, false, false, true, false, 0, 0, 0, 0, 0);
+    print_job->set_print_config(MachineBedTypeString[bed_type], true, false, false, false, true, false, 0, 0, 0, 0, 0, 0);
     print_job->set_print_job_finished_event(wxGetApp().plater()->get_send_calibration_finished_event(), print_job->m_project_name);
 
     {  // after send: record the print job
@@ -2199,8 +2199,7 @@ void CalibUtils::send_to_print(const std::vector<CalibInfo> &calib_infos, wxStri
 
     print_job->has_sdcard = obj_->GetStorage()->get_sdcard_state() == DevStorage::HAS_SDCARD_NORMAL;
     print_job->could_emmc_print = obj_->is_support_print_with_emmc;
-    //y
-    print_job->set_print_config(MachineBedTypeString[bed_type], true, true, false, false, true, false, 0, 0, 1, 0, 0);
+    print_job->set_print_config(MachineBedTypeString[bed_type], true, true, false, false, true, false, 0, 1, 0, 0, 0, 0);
     print_job->set_print_job_finished_event(wxGetApp().plater()->get_send_calibration_finished_event(), print_job->m_project_name);
 
     { // after send: record the print job

@@ -20,6 +20,8 @@
 #include <wx/toolbar.h>
 #include <wx/textdlg.h>
 #include <wx/url.h>
+#include <wx/webview.h>
+#include <wx/wx.h>
 
 #include <slic3r/GUI/Widgets/WebView.hpp>
 
@@ -40,6 +42,7 @@ namespace GUI {
 
 WebViewPanel::WebViewPanel(wxWindow *parent)
         : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize)
+        , m_contentname("home")
  {
     m_Region = wxGetApp().app_config->get_country_code();
     m_loginstatus = -1;
@@ -355,12 +358,18 @@ wxString WebViewPanel::MakeDisconnectUrl(std::string MenuName)
 
 void WebViewPanel::load_url(wxString& url)
 {
+    m_browser->Unbind(wxEVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED, &WebViewPanel::onLoginHandle, this, m_browser->GetId());
     this->Show();
     this->Raise();
-    m_url->SetLabelText(url);
+    if (m_url != nullptr) {
 
-    if (wxGetApp().get_mode() == comDevelop)
-        wxLogMessage(m_url->GetValue());
+        m_url->SetLabelText(url);
+        if (wxGetApp().get_mode() == comDevelop)
+            wxLogMessage(m_url->GetValue());
+    }
+    if (m_browser->GetCurrentURL().Contains("home.html") && url.Contains("home.html")) {
+        return;
+    }
     m_browser->LoadURL(url);
     m_browser->SetFocus();
     UpdateState();
@@ -582,6 +591,45 @@ void WebViewPanel::OnFreshLoginStatus(wxTimerEvent &event)
 
         if (m_TaskInfo != "" && m_browser) ShowUserPrintTask(false);
     }
+}
+
+void WebViewPanel::onLoginHandle(const wxWebViewEvent& evt)
+{
+    int index = 3;
+    try {
+        json j = json::parse(evt.GetString());
+        std::cout << "---" << j << std::endl;
+        index = j["index"].get<int>();
+    }
+    catch (...) {
+
+    }
+
+	switch (index)
+	{
+	case 1:
+	{
+		wxGetApp().app_config->set("login_method", "Maker");
+	}
+	break;
+	case 2:
+	{
+        wxGetApp().app_config->set("login_method", "Link");
+
+	}
+	break;
+	default:
+        wxString UrlRight = wxString::Format("file://%s/web/homepage3/home.html", from_u8(resources_dir()));
+        load_url(UrlRight);
+		return;
+		break;
+	}
+    CallAfter([this] {
+        wxGetApp().request_login(true);
+		wxString UrlRight = wxString::Format("file://%s/web/homepage3/home.html", from_u8(resources_dir()));
+        load_url(UrlRight);
+        m_browser->Unbind(wxEVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED, &WebViewPanel::onLoginHandle, this, m_browser->GetId());
+    });
 }
 
 void WebViewPanel::SendRecentList(int images)
@@ -1392,9 +1440,9 @@ void WebViewPanel::OnNavigationComplete(wxWebViewEvent& evt)
         m_online_last_url = TmpNowUrl;
     }
 
-    if (m_browser != nullptr && evt.GetId() == m_browser->GetId())
-    {
-        SwitchWebContent("home");
+    if (m_browser != nullptr && evt.GetId() == m_browser->GetId()) 
+    { 
+        SwitchWebContent(m_contentname);
         if (wxGetApp().app_config->get("staff_pick_switch") == "true")
             SendDesignStaffpick(true);
         else
@@ -1829,8 +1877,9 @@ void WebViewPanel::SetPrintHistoryTaskID(int TaskID)
 
 void WebViewPanel::SwitchWebContent(std::string modelname, int refresh)
 {
-    m_contentname = modelname;
-
+    if (modelname != "login") {
+        m_contentname = modelname;
+    }
     CheckMenuNewTag();
 
     wxString strlang = GetStudioLanguage();
@@ -1968,7 +2017,6 @@ void WebViewPanel::SwitchWebContent(std::string modelname, int refresh)
 
     } else if (modelname.compare("home") == 0 || modelname.compare("recent") == 0 ) {
         if (!m_browser) return;
-
         json m_Res           = json::object();
         m_Res["command"]     = "homepage_leftmenu_clicked";
         m_Res["sequence_id"] = "10001";
@@ -1984,6 +2032,21 @@ void WebViewPanel::SwitchWebContent(std::string modelname, int refresh)
         SetWebviewShow("right", true);
         SetWebviewShow("makerlab", false);
         SetWebviewShow("wiki", false);
+    }
+    //cj_1
+    else if (modelname.compare("login") == 0) {
+        if (!m_browser) return;
+        if (m_browser->GetCurrentURL().Contains("login.html")) {
+            return;
+        }
+        wxString htmlUrl = wxString::Format("file:///%s/web/homepage3/login.html", from_u8(resources_dir()));
+        
+        m_browser->LoadURL(htmlUrl);
+        
+		m_browser->Bind(wxEVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED,&WebViewPanel::onLoginHandle,this,m_browser->GetId());
+
+        
+		
     }
 
     GetSizer()->Layout();

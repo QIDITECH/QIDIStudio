@@ -38,7 +38,8 @@ namespace GUI {
 class MediaPlayCtrl : public wxPanel
 {
 public:
-    MediaPlayCtrl(wxWindow *parent, wxMediaCtrl3 *media_ctrl, const wxPoint &pos = wxDefaultPosition, const wxSize &size = wxDefaultSize);
+//y76
+    MediaPlayCtrl(wxWindow *parent, VideoPanel *media_ctrl, const wxPoint &pos = wxDefaultPosition, const wxSize &size = wxDefaultSize);
 
     ~MediaPlayCtrl();
 
@@ -51,6 +52,10 @@ public:
     void msw_rescale();
 
     void jump_to_play();
+
+    void setUrl(wxString url) { m_url = url; };
+    //cj_1
+    void stopMonitor();
 
 protected:
     void onStateChanged(wxMediaEvent & event);
@@ -76,7 +81,7 @@ private:
 
 private:
     static constexpr wxMediaState MEDIASTATE_IDLE = (wxMediaState) 3;
-    //B
+    // B
     // static constexpr wxMediaState MEDIASTATE_INITIALIZING = (wxMediaState) 4;
     // static constexpr wxMediaState MEDIASTATE_LOADING = (wxMediaState) 5;
     // static constexpr wxMediaState MEDIASTATE_BUFFERING = (wxMediaState) 6;
@@ -84,8 +89,10 @@ private:
     // token
     std::shared_ptr<int> m_token = std::make_shared<int>(0);
 
-    wxMediaCtrl3 * m_media_ctrl;
-    wxMediaState m_last_state = MEDIASTATE_IDLE;
+    //y76
+    VideoPanel * m_media_ctrl;
+    wxMediaState m_last_state = wxMEDIASTATE_STOPPED;  
+
     std::string m_machine;
     int m_lan_proto = 0;
     std::string m_lan_ip;

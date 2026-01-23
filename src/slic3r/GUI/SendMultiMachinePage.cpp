@@ -1411,7 +1411,7 @@ wxPanel* SendMultiMachinePage::create_page()
 
     m_switch_button = new SwitchButton(m_table_head_panel);
     m_switch_button->SetMaxSize(wxSize(100, 100));
-    m_switch_button->SetLabels(_L("Local"), _L("Link"));
+    m_switch_button->SetLabels(_L("Local"), _L("Net"));
     m_switch_button->SetValue(m_isNetMode);
     m_switch_button->Bind(wxEVT_TOGGLEBUTTON, [this](wxCommandEvent& evt) {
         bool is_checked = evt.GetInt();

@@ -463,6 +463,12 @@ void AppConfig::set_defaults()
     if (get("print", "enable_multi_box").empty()) {
         set_str("print", "enable_multi_box", "0");
     }
+
+//y76
+    if (get("print", "enable_air_condition").empty()){
+        set_str("print", "enable_air_condition", "0");
+    }
+
     if (get("print", "flow_cali").empty()) {
         set_str("print", "flow_cali", "1");
     }
@@ -512,6 +518,16 @@ void AppConfig::set_defaults()
 
     if(get("switch to device tab after upload").empty())
         set_bool("switch to device tab after upload", false);
+
+//y76
+    if(get("last_selected_machine").empty())
+        set("last_selected_machine", "");
+
+    if(get("last_sel_machine_is_net").empty())
+        set_bool("last_sel_machine_is_net", false);
+
+    if(get("is_support_mqtt").empty())
+        set_bool("is_support_mqtt", false);
 
     // Remove legacy window positions/sizes
     erase("app", "main_frame_maximized");

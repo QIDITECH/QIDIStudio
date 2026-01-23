@@ -163,6 +163,14 @@ public:
                    std::string          dev_id,
                    bool                 is_reset = true,
                    bool                 test     = false);
+    // cj_1 New API to inject AMS data directly (decoupled from MachineObject/DeviceManager)
+    void SetData(const std::vector<AMSinfo>& ams_info,
+                 const std::vector<AMSinfo>& ext_info,
+                 int total_ext_count,
+                 const std::string& dev_id,
+                 const std::string& series_name = std::string(),
+                 const std::string& printer_type = std::string(),
+                 bool is_reset = true);
     std::vector<AMSinfo> GenerateSimulateData();
 
     void AddAms(AMSinfo info, AMSPanelPos pos = AMSPanelPos::LEFT_PANEL);

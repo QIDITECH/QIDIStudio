@@ -15,7 +15,10 @@
 #include "slic3r/GUI/Widgets/ComboBox.hpp"
 
 namespace Slic3r { namespace GUI {
-
+    //cj_1
+    wxDEFINE_EVENT(EVTSET_INSERT_READ, wxCommandEvent); ///ams/insert/filament/read/enable
+    wxDEFINE_EVENT(EVTSET_BOOT_READ, wxCommandEvent); ///ams/boot/read/enable
+    wxDEFINE_EVENT(EVTSET_AUTO_FILAMENT, wxCommandEvent); ///ams/auto/filament/enable
 AMSSetting::AMSSetting(wxWindow *parent, wxWindowID id, const wxPoint &pos, const wxSize &size, long style)
     : DPIDialog(parent, id, wxEmptyString, pos, size, style)
 {
@@ -77,7 +80,7 @@ void AMSSetting::create()
     m_tip_Insert_material_line1->SetForegroundColour(AMS_SETTING_GREY700);
     m_tip_Insert_material_line1->SetSize(wxSize(AMS_SETTING_BODY_WIDTH, -1));
     m_tip_Insert_material_line1->Wrap(AMS_SETTING_BODY_WIDTH);
-    m_tip_Insert_material_line1->Hide();
+    //m_tip_Insert_material_line1->Hide();
     m_sizer_Insert_material_tip_inline->Add(m_tip_Insert_material_line1, 0, wxEXPAND, 0);
 
     // tip line2
@@ -148,11 +151,13 @@ void AMSSetting::create()
     // checkbox area 3
     wxBoxSizer* m_sizer_remain = new wxBoxSizer(wxHORIZONTAL);
     m_checkbox_remain = new ::CheckBox(m_panel_body);
+    m_checkbox_remain->Hide();
     m_checkbox_remain->Bind(wxEVT_TOGGLEBUTTON, &AMSSetting::on_remain, this);
     m_sizer_remain->Add(m_checkbox_remain, 0, wxALIGN_CENTER_VERTICAL);
     m_sizer_remain->Add(0, 0, 0, wxLEFT, 12);
     m_title_remain = new wxStaticText(m_panel_body, wxID_ANY, _L("Update remaining capacity"), wxDefaultPosition, wxDefaultSize, 0);
     m_title_remain->SetFont(::Label::Head_13);
+    m_title_remain->Hide();
     m_title_remain->SetForegroundColour(AMS_SETTING_GREY800);
     m_title_remain->Wrap(AMS_SETTING_BODY_WIDTH);
     m_sizer_remain->Add(m_title_remain, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_LEFT, 0);
@@ -166,6 +171,7 @@ void AMSSetting::create()
     m_sizer_remain_inline = new wxBoxSizer(wxVERTICAL);
 
     m_tip_remain_line1 = new Label(m_panel_body, _L("BOX will attempt to estimate the remaining capacity of the QIDI Tech filaments."));
+    m_tip_remain_line1->Hide();
     m_tip_remain_line1->SetFont(::Label::Body_13);
     m_tip_remain_line1->SetForegroundColour(AMS_SETTING_GREY700);
     m_tip_remain_line1->SetSize(wxSize(AMS_SETTING_BODY_WIDTH, -1));
@@ -376,6 +382,23 @@ void AMSSetting::update_insert_material_read_mode(MachineObject* obj)
 
 void AMSSetting::update_insert_material_read_mode(bool selected, std::string version)
 {
+    //cj_1
+	m_panel_Insert_material->Show();
+	m_checkbox_Insert_material_auto_read->SetValue(selected);
+	m_checkbox_Insert_material_auto_read->Show();
+	m_title_Insert_material_auto_read->Show();
+	if (selected) {
+		m_tip_Insert_material_line1->Show();
+		m_tip_Insert_material_line2->Show();
+		m_tip_Insert_material_line3->Hide();
+	}
+	else {
+		m_tip_Insert_material_line1->Hide();
+		m_tip_Insert_material_line2->Hide();
+		m_tip_Insert_material_line3->Show();
+	}
+    return;
+
     if (!version.empty() && version >= AMS_F1_SUPPORT_INSERTION_UPDATE_DEFAULT) {
         m_checkbox_Insert_material_auto_read->SetValue(true);
         m_checkbox_Insert_material_auto_read->Hide();
@@ -409,11 +432,17 @@ void AMSSetting::update_insert_material_read_mode(bool selected, std::string ver
 
 void AMSSetting::update_ams_img(MachineObject* obj_)
 {
+    std::string ams_icon_str1 = DevPrinterConfigUtil::get_printer_ams_img("X-MAX 4");
+	if (ams_icon_str1 != m_ams_img_name) {
+		m_am_img->SetBitmap(create_scaled_bitmap(ams_icon_str1, nullptr, 126));
+		m_am_img->Refresh();
+	}
     if (!obj_) {
         return;
     }
 
-    std::string ams_icon_str = DevPrinterConfigUtil::get_printer_ams_img(obj_->printer_type);
+	std::string ams_icon_str = DevPrinterConfigUtil::get_printer_ams_img(obj_->printer_type);
+	
     if (auto ams_switch = obj_->GetFilaSystem()->GetAmsFirmwareSwitch().lock();
         ams_switch->GetCurrentFirmwareIdxSel() == 1) {
         ams_icon_str = "ams_icon";// A series support AMS
@@ -448,9 +477,10 @@ void AMSSetting::update_starting_read_mode(bool selected)
 void AMSSetting::update_remain_mode(bool selected)
 {
     if (m_obj->is_support_update_remain) {
-        m_checkbox_remain->Show();
-        m_title_remain->Show();
-        m_tip_remain_line1->Show();
+        //cj_1
+        //m_checkbox_remain->Show();
+        //m_title_remain->Show();
+        //m_tip_remain_line1->Show();
         Layout();
     }
     else {
@@ -464,17 +494,18 @@ void AMSSetting::update_remain_mode(bool selected)
 
 void AMSSetting::update_switch_filament(bool selected)
 {
-    if (m_obj->is_support_filament_backup) {
-        m_checkbox_switch_filament->Show();
-        m_title_switch_filament->Show();
-        m_tip_switch_filament_line1->Show();
-        Layout();
-    } else {
-        m_checkbox_switch_filament->Hide();
-        m_title_switch_filament->Hide();
-        m_tip_switch_filament_line1->Hide();
-        Layout();
-    }
+    //cj_1
+//     if (m_obj->is_support_filament_backup) {
+//         m_checkbox_switch_filament->Show();
+//         m_title_switch_filament->Show();
+//         m_tip_switch_filament_line1->Show();
+//         Layout();
+//     } else {
+//         m_checkbox_switch_filament->Hide();
+//         m_title_switch_filament->Hide();
+//         m_tip_switch_filament_line1->Hide();
+//         Layout();
+//     }
     m_checkbox_switch_filament->SetValue(selected);
 }
 
@@ -500,6 +531,13 @@ void AMSSetting::update_air_printing_detection(MachineObject* obj)
 
 void AMSSetting::on_insert_material_read(wxCommandEvent &event)
 {
+    event.Skip();
+	wxCommandEvent e(EVTSET_INSERT_READ);
+	e.SetInt(m_checkbox_Insert_material_auto_read->GetValue());
+	e.SetString("enable");
+	wxPostEvent(GetParent(), e);
+    return;
+
     // send command
     if (m_checkbox_Insert_material_auto_read->GetValue()) {
         // checked
@@ -529,6 +567,13 @@ void AMSSetting::on_insert_material_read(wxCommandEvent &event)
 
 void AMSSetting::on_starting_read(wxCommandEvent &event)
 {
+
+    event.Skip();
+	wxCommandEvent e(EVTSET_BOOT_READ);
+	e.SetInt(m_checkbox_starting_auto_read->GetValue());
+	e.SetString("enable");
+	wxPostEvent(GetParent(), e);
+    return;
     if (m_checkbox_starting_auto_read->GetValue()) {
         // checked
         m_tip_starting_line1->Show();
@@ -564,6 +609,13 @@ void AMSSetting::on_remain(wxCommandEvent& event)
 
 void AMSSetting::on_switch_filament(wxCommandEvent& event)
 {
+    event.Skip();
+	wxCommandEvent e(EVTSET_AUTO_FILAMENT);
+	e.SetInt(m_checkbox_switch_filament->GetValue());
+	e.SetString("enable");
+	wxPostEvent(GetParent(), e);
+	return;
+
     bool switch_filament = m_checkbox_switch_filament->GetValue();
     m_obj->command_ams_switch_filament(switch_filament);
     event.Skip();

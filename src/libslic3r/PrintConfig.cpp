@@ -2865,6 +2865,11 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBool(false));
 
+//y76
+    def = this->add("is_support_mqtt", coBool);
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(false));
+
     //QDS
     // def = this->add("spaghetti_detector", coBool);
     // def->label = L("Enable spaghetti detector");
@@ -3851,6 +3856,11 @@ void PrintConfigDef::init_fff_params()
 
     //y65
     def = this->add("is_support_multi_box", coBool);
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(false));
+
+//y76
+    def = this->add("is_support_air_condition", coBool);
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBool(false));
 

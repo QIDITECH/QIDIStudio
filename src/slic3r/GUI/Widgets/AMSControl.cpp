@@ -30,11 +30,34 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     , m_percent_humidity_dry_popup(new uiAmsPercentHumidityDryPopup(this))
     , m_ams_introduce_popup(AmsIntroducePopup(this))
 {
-    Slic3r::DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
-    if (dev) {
-        MachineObject *obj = dev->get_selected_machine();
-        parse_object(obj);
-    }
+    // NOTE: Previously this constructor queried DeviceManager and parsed MachineObject
+    // to populate `m_ams_info`. To decouple AMSControl from DeviceManager/MachineObject
+    // we no longer perform that automatic query here. Callers should inject data via
+    // `SetData(...)` (added) after constructing the control.
+    
+    // cj_1
+	StateColor btn_bg_blue(std::pair<wxColour, int>(AMS_CONTROL_DISABLE_COLOUR, StateColor::Disabled),
+		std::pair<wxColour, int>(wxColour(54, 97, 201), StateColor::Pressed),
+		std::pair<wxColour, int>(wxColour(78, 133, 255), StateColor::Hovered),
+		std::pair<wxColour, int>(AMS_CONTROL_BRAND_COLOUR, StateColor::Normal));
+
+	StateColor btn_bg_white(std::pair<wxColour, int>(AMS_CONTROL_DISABLE_COLOUR, StateColor::Disabled),
+		std::pair<wxColour, int>(AMS_CONTROL_DISABLE_COLOUR, StateColor::Pressed),
+		std::pair<wxColour, int>(AMS_CONTROL_DEF_BLOCK_BK_COLOUR, StateColor::Hovered),
+		std::pair<wxColour, int>(AMS_CONTROL_WHITE_COLOUR, StateColor::Normal));
+
+	StateColor btn_bd_blue(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Disabled),
+		std::pair<wxColour, int>(AMS_CONTROL_BRAND_COLOUR, StateColor::Enabled));
+
+	StateColor btn_bd_white(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Disabled),
+		std::pair<wxColour, int>(wxColour(38, 46, 48), StateColor::Enabled));
+
+	StateColor btn_text_blue(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Disabled),
+		std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Enabled));
+
+	StateColor btn_text_white(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Disabled),
+		std::pair<wxColour, int>(wxColour(38, 46, 48), StateColor::Enabled));
+
 
     SetBackgroundColour(*wxWHITE);
     // normal mode
@@ -46,41 +69,34 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     m_amswin->SetMinSize(wxSize(FromDIP(578), -1));
 
 
-    m_sizer_ams_items = new wxBoxSizer(wxHORIZONTAL);
+    m_sizer_ams_items = new wxBoxSizer(wxHORIZONTAL); {
 
-    /*right items*/
-    m_panel_prv_left = new wxScrolledWindow(m_amswin, wxID_ANY);
-    m_panel_prv_left->SetScrollRate(10, 0);
-    m_panel_prv_left->SetSize(AMS_ITEMS_PANEL_SIZE);
-    m_panel_prv_left->SetMinSize(AMS_ITEMS_PANEL_SIZE);
-    //m_panel_prv_left->SetBackgroundColour(0x4169E1);
-    m_panel_prv_left->SetBackgroundColour(AMS_CONTROL_DEF_BLOCK_BK_COLOUR);
-    m_sizer_prv_left = new wxBoxSizer(wxHORIZONTAL);
-    m_panel_prv_left->SetSizer(m_sizer_prv_left);
-    m_panel_prv_left->Layout();
-    //m_sizer_items_left->Fit(m_panel_prv_left);
+        /*right items*/
+        m_panel_prv_left = new wxScrolledWindow(m_amswin, wxID_ANY);
+        m_panel_prv_left->SetScrollRate(10, 0);
+        m_panel_prv_left->SetSize(AMS_ITEMS_PANEL_SIZE);
+        m_panel_prv_left->SetMinSize(AMS_ITEMS_PANEL_SIZE);
 
-    /*right items*/
-    m_panel_prv_right = new wxScrolledWindow(m_amswin, wxID_ANY);
-    m_panel_prv_right->SetScrollRate(10, 0);
-    m_panel_prv_right->SetSize(AMS_ITEMS_PANEL_SIZE);
-    m_panel_prv_right->SetMinSize(AMS_ITEMS_PANEL_SIZE);
-    //m_panel_prv_right->SetBackgroundColour(0x4169E1);
-    m_panel_prv_right->SetBackgroundColour(AMS_CONTROL_DEF_BLOCK_BK_COLOUR);
-    m_sizer_prv_right = new wxBoxSizer(wxHORIZONTAL);
-    m_panel_prv_right->SetSizer(m_sizer_prv_right);
-    m_panel_prv_right->Layout();
-    //m_sizer_items_right->Fit(m_panel_prv_right);
+		m_panel_prv_left->SetBackgroundColour(AMS_CONTROL_DEF_BLOCK_BK_COLOUR); //AMS_EXTRUDER_DEF_COLOUR
+        m_sizer_prv_left = new wxBoxSizer(wxHORIZONTAL);
+        m_panel_prv_left->SetSizer(m_sizer_prv_left);
+        m_panel_prv_left->Layout();
 
-    /*m_sizer_ams_items->Add(m_panel_prv_left, 0, wxALIGN_CENTER|wxLEFT|wxRIGHT, FromDIP(5));
-    m_sizer_ams_items->Add(m_panel_prv_right, 0, wxALIGN_CENTER|wxLEFT|wxRIGHT, FromDIP(5));*/
+        m_panel_prv_right = new wxScrolledWindow(m_amswin, wxID_ANY);
+        m_panel_prv_right->SetScrollRate(10, 0);
+        m_panel_prv_right->SetSize(AMS_ITEMS_PANEL_SIZE);
+        m_panel_prv_right->SetMinSize(AMS_ITEMS_PANEL_SIZE);
+        //m_panel_prv_right->SetBackgroundColour(0x4169E1);
+		m_panel_prv_right->SetBackgroundColour(AMS_CONTROL_DEF_BLOCK_BK_COLOUR);
+        m_sizer_prv_right = new wxBoxSizer(wxHORIZONTAL);
+        m_panel_prv_right->SetSizer(m_sizer_prv_right);
+        m_panel_prv_right->Layout();
+        //m_sizer_items_right->Fit(m_panel_prv_right);
+    }
+    
     m_sizer_ams_items->Add(m_panel_prv_left, 0, wxLEFT | wxRIGHT, FromDIP(5));
     m_sizer_ams_items->Add(m_panel_prv_right, 0, wxLEFT | wxRIGHT, FromDIP(5));
-
-    //m_panel_prv_right->Hide();
-
-    //m_sizer_ams_body = new wxBoxSizer(wxHORIZONTAL);
-
+    
     m_sizer_ams_body = new wxBoxSizer(wxHORIZONTAL);
 
     //ams area
@@ -92,7 +108,7 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     m_simplebook_ams_left->SetBackgroundColour(AMS_CONTROL_DEF_BLOCK_BK_COLOUR);
     //m_sizer_ams_area_left->Add(m_simplebook_ams_left, 0, wxLEFT | wxRIGHT, FromDIP(5));
     m_sizer_ams_area_left->Add(m_simplebook_ams_left, 0, wxALIGN_CENTER, 0);
-
+    
     m_simplebook_ams_right = new wxSimplebook(m_amswin, wxID_ANY, wxDefaultPosition, AMS_CANS_WINDOW_SIZE, 0);
     m_simplebook_ams_right->SetBackgroundColour(AMS_CONTROL_DEF_BLOCK_BK_COLOUR);
     //m_sizer_ams_area_right->Add(m_simplebook_ams_right, 0, wxLEFT | wxRIGHT, FromDIP(5));
@@ -107,7 +123,6 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     // ams mode
     //
     m_simplebook_ams_right->SetBackgroundColour(AMS_CONTROL_DEF_BLOCK_BK_COLOUR);
-
 
     m_sizer_ams_area_left->Layout();
     m_sizer_ams_area_right->Layout();
@@ -133,28 +148,6 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     m_panel_option_right->SetMinSize(wxSize(FromDIP(180), -1));
     m_panel_option_right->SetMaxSize(wxSize(FromDIP(180), -1));
 
-    StateColor btn_bg_blue(std::pair<wxColour, int>(AMS_CONTROL_DISABLE_COLOUR, StateColor::Disabled),
-        std::pair<wxColour, int>(wxColour(54, 97, 201), StateColor::Pressed),
-        std::pair<wxColour, int>(wxColour(78, 133, 255), StateColor::Hovered),
-        std::pair<wxColour, int>(AMS_CONTROL_BRAND_COLOUR, StateColor::Normal));
-
-    StateColor btn_bg_white(std::pair<wxColour, int>(AMS_CONTROL_DISABLE_COLOUR, StateColor::Disabled),
-        std::pair<wxColour, int>(AMS_CONTROL_DISABLE_COLOUR, StateColor::Pressed),
-        std::pair<wxColour, int>(AMS_CONTROL_DEF_BLOCK_BK_COLOUR, StateColor::Hovered),
-        std::pair<wxColour, int>(AMS_CONTROL_WHITE_COLOUR, StateColor::Normal));
-
-    StateColor btn_bd_blue(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Disabled),
-        std::pair<wxColour, int>(AMS_CONTROL_BRAND_COLOUR, StateColor::Enabled));
-
-    StateColor btn_bd_white(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Disabled),
-        std::pair<wxColour, int>(wxColour(38, 46, 48), StateColor::Enabled));
-
-    StateColor btn_text_blue(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Disabled),
-        std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Enabled));
-
-    StateColor btn_text_white(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Disabled),
-        std::pair<wxColour, int>(wxColour(38, 46, 48), StateColor::Enabled));
-
 
     /*option left*/
     m_button_auto_refill = new Button(m_panel_option_left, _L("Auto-refill"));
@@ -170,6 +163,7 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     m_button_ams_setting_press = ScalableBitmap(this, "ams_setting_press", 24);
 
     m_button_ams_setting = new wxStaticBitmap(m_panel_option_left, wxID_ANY, m_button_ams_setting_normal.bmp(), wxDefaultPosition, wxSize(FromDIP(24), FromDIP(24)));
+    
     m_sizer_option_left->Add(m_button_auto_refill, 0, wxALIGN_CENTER, 0);
     m_sizer_option_left->Add(0, 0, 0, wxLEFT, FromDIP(20));
     m_sizer_option_left->Add(m_button_ams_setting, 0, wxALIGN_CENTER, 0);
@@ -180,8 +174,9 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     m_sizer_option_mid->Add( m_extruder, 0, wxALIGN_CENTER, 0 );
 
 
-    /*option right*/
-    m_button_extruder_feed = new Button(m_panel_option_right, _L("Load"));
+    /*option right*/ // cj_1
+    m_button_extruder_feed = new Button(m_panel_option_right, _L("Load"));{
+   
     m_button_extruder_feed->SetFont(Label::Body_13);
     m_button_extruder_feed->SetBackgroundColor(btn_bg_blue);
     m_button_extruder_feed->SetBorderColor(btn_bd_blue);
@@ -189,7 +184,7 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     m_button_extruder_feed->SetMinSize(wxSize(FromDIP(80),FromDIP(34)));
     m_button_extruder_feed->SetMaxSize(wxSize(FromDIP(80),FromDIP(34)));
     m_button_extruder_feed->EnableTooltipEvenDisabled();
-
+    
 
     if (wxGetApp().app_config->get("language") == "de_DE") m_button_extruder_feed->SetFont(Label::Body_9);
     if (wxGetApp().app_config->get("language") == "fr_FR") m_button_extruder_feed->SetFont(Label::Body_9);
@@ -201,29 +196,28 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     if (wxGetApp().app_config->get("language") == "cs_CZ") m_button_extruder_feed->SetFont(Label::Body_9);
     if (wxGetApp().app_config->get("language") == "uk_UA") m_button_extruder_feed->SetFont(Label::Body_9);
     if (wxGetApp().app_config->get("language") == "pt_BR") m_button_extruder_feed->SetLabel("Load");
+    }
+    m_button_extruder_back = new Button(m_panel_option_right, _L("Unload")); {
+        m_button_extruder_back->SetBackgroundColor(btn_bg_white);
+        m_button_extruder_back->SetBorderColor(btn_bd_white);
+        m_button_extruder_back->SetTextColor(btn_text_white);
+        m_button_extruder_back->SetFont(Label::Body_13);
+        m_button_extruder_back->SetMinSize(wxSize(FromDIP(80), FromDIP(34)));
+        m_button_extruder_back->SetMaxSize(wxSize(FromDIP(80), FromDIP(34)));
+        m_button_extruder_back->EnableTooltipEvenDisabled();
+        
+        if (wxGetApp().app_config->get("language") == "de_DE") m_button_extruder_back->SetFont(Label::Body_9);
+        if (wxGetApp().app_config->get("language") == "fr_FR") m_button_extruder_back->SetFont(Label::Body_9);
+        if (wxGetApp().app_config->get("language") == "ru_RU") m_button_extruder_back->SetLabel("Unload");
+        if (wxGetApp().app_config->get("language") == "nl_NL") m_button_extruder_back->SetFont(Label::Body_9);
+        if (wxGetApp().app_config->get("language") == "hu_HU") m_button_extruder_back->SetFont(Label::Body_9);
+        if (wxGetApp().app_config->get("language") == "ja_JP") m_button_extruder_back->SetFont(Label::Body_9);
+        if (wxGetApp().app_config->get("language") == "sv_SE") m_button_extruder_back->SetFont(Label::Body_9);
+        if (wxGetApp().app_config->get("language") == "cs_CZ") m_button_extruder_back->SetFont(Label::Body_9);
+        if (wxGetApp().app_config->get("language") == "uk_UA") m_button_extruder_back->SetFont(Label::Body_9);
+        if (wxGetApp().app_config->get("language") == "pt_BR") m_button_extruder_back->SetLabel("Unload");
+    }
 
-    m_button_extruder_back = new Button(m_panel_option_right, _L("Unload"));
-    m_button_extruder_back->SetBackgroundColor(btn_bg_white);
-    m_button_extruder_back->SetBorderColor(btn_bd_white);
-    m_button_extruder_back->SetTextColor(btn_text_white);
-    m_button_extruder_back->SetFont(Label::Body_13);
-    m_button_extruder_back->SetMinSize(wxSize(FromDIP(80), FromDIP(34)));
-    m_button_extruder_back->SetMaxSize(wxSize(FromDIP(80), FromDIP(34)));
-    m_button_extruder_back->EnableTooltipEvenDisabled();
-
-    if (wxGetApp().app_config->get("language") == "de_DE") m_button_extruder_back->SetFont(Label::Body_9);
-    if (wxGetApp().app_config->get("language") == "fr_FR") m_button_extruder_back->SetFont(Label::Body_9);
-    if (wxGetApp().app_config->get("language") == "ru_RU") m_button_extruder_back->SetLabel("Unload");
-    if (wxGetApp().app_config->get("language") == "nl_NL") m_button_extruder_back->SetFont(Label::Body_9);
-    if (wxGetApp().app_config->get("language") == "hu_HU") m_button_extruder_back->SetFont(Label::Body_9);
-    if (wxGetApp().app_config->get("language") == "ja_JP") m_button_extruder_back->SetFont(Label::Body_9);
-    if (wxGetApp().app_config->get("language") == "sv_SE") m_button_extruder_back->SetFont(Label::Body_9);
-    if (wxGetApp().app_config->get("language") == "cs_CZ") m_button_extruder_back->SetFont(Label::Body_9);
-    if (wxGetApp().app_config->get("language") == "uk_UA") m_button_extruder_back->SetFont(Label::Body_9);
-    if (wxGetApp().app_config->get("language") == "pt_BR") m_button_extruder_back->SetLabel("Unload");
-
-
-    //m_sizer_option_right->Add(0, 0, 1, wxEXPAND, 0);
     m_sizer_option_right->Add(m_button_extruder_back, 0, wxLEFT, FromDIP(0));
     m_sizer_option_right->Add(m_button_extruder_feed, 0, wxLEFT, FromDIP(20));
 
@@ -256,8 +250,7 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     SetMinSize(m_amswin->GetSize());
 
 
-    AddPage(m_amswin, wxEmptyString, false);
-
+	AddPage(m_amswin, wxEmptyString, false);
 
     m_button_extruder_feed->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AMSControl::on_filament_load), NULL, this);
     m_button_extruder_back->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AMSControl::on_filament_unload), NULL, this);
@@ -306,6 +299,7 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
         delete info;
     });
     Bind(EVT_AMS_ON_SELECTED, &AMSControl::AmsSelectedSwitch, this);
+
 }
 
 void AMSControl::on_retry()
@@ -363,6 +357,10 @@ bool AMSControl::IsAmsInRightPanel(std::string ams_id) {
 }
 
 void AMSControl::AmsSelectedSwitch(wxCommandEvent& event) {
+
+    std::string slotId = event.GetString().ToStdString();
+    event.Skip();
+
     std::string ams_id_selected = std::to_string(event.GetInt());
     if (m_current_ams != ams_id_selected){
         m_current_ams = ams_id_selected;
@@ -565,14 +563,14 @@ void AMSControl::CreateAms()
     std::vector<AMSinfo>::iterator it;
     //Freeze();
     for (it = ams_info.begin(); it != ams_info.end(); it++) {
-        AddAmsPreview(*it, AMSModel::GENERIC_AMS);
+        //AddAmsPreview(*it, AMSModel::GENERIC_AMS);
         AddAms(*it);
         //AddExtraAms(*it);
         m_ams_info.push_back(*it);
     }
     if (m_single_nozzle_no_ams)
     {
-        m_simplebook_ams_left->Hide();
+        //m_simplebook_ams_left->Hide();
     }
     else {
         m_sizer_prv_left->Layout();
@@ -695,6 +693,8 @@ void AMSControl::CreateAmsDoubleNozzle(const std::string &series_name, const std
     if (m_ams_info.size() > 0){
         m_panel_prv_left->Show();
         m_panel_prv_right->Show();
+
+
     }
     else{
         m_panel_prv_left->Hide();
@@ -790,6 +790,7 @@ void AMSControl::CreateAmsSingleNozzle(const std::string &series_name, const std
         if (m_ams_info.size() > 1){
             m_sizer_prv_right->Layout();
             m_panel_prv_right->Show();
+
         }
         m_down_road->UpdateLeft(1, left_init_mode);
         m_down_road->UpdateRight(1, right_init_mode);
@@ -1018,6 +1019,102 @@ void AMSControl::UpdateAms(const std::string   &series_name,
     }
 }
 
+// cj_1
+void AMSControl::SetData(const std::vector<AMSinfo>& ams_info,
+                        const std::vector<AMSinfo>& ext_info,
+                        int total_ext_count,
+                        const std::string& dev_id,
+                        const std::string& series_name,
+                        const std::string& printer_type,
+                        bool is_reset)
+{
+    // Lightweight data injection path that mirrors parts of UpdateAms but
+    // does not require DevExtderSystem or MachineObject. This is intended
+    // to decouple AMSControl from device-level structures: callers should
+    // transform device data to AMSinfo/Caninfo and call SetData.
+    ClearAms();
+    m_ams_info = ams_info;
+    m_ext_info = ext_info;
+    m_total_ext_count = total_ext_count;
+    m_dev_id = dev_id;
+
+    // Rebuild UI when the AMS set changed
+    //ClearAms();
+    if (m_total_ext_count >= 2) {
+        CreateAmsDoubleNozzle(series_name, printer_type);
+    } else {
+        CreateAmsSingleNozzle(series_name, printer_type);
+    }
+
+
+	// update cans
+
+// 	for (auto ams_item : m_ams_item_list) {
+// 		if (ams_item.second == nullptr) {
+// 			continue;
+// 		}
+// 		std::string ams_id = ams_item.second->get_ams_id();
+// 		AmsItem* cans = ams_item.second;
+// 		if (cans->get_ams_id() == std::to_string(VIRTUAL_TRAY_MAIN_ID) || cans->get_ams_id() == std::to_string(VIRTUAL_TRAY_DEPUTY_ID)) {
+// 			for (auto ifo : m_ext_info) {
+// 				if (ifo.ams_id == ams_id) {
+// 					cans->Update(ifo);
+// 					cans->show_sn_value(m_ams_model == AMSModel::AMS_LITE ? false : true);
+// 				}
+// 			}
+// 		}
+// 		else {
+// 			for (auto ifo : m_ams_info) {
+// 				if (ifo.ams_id == ams_id) {
+// 					cans->Update(ifo);
+// 					cans->show_sn_value(m_ams_model == AMSModel::AMS_LITE ? false : true);
+// 				}
+// 			}
+// 		}
+// 	}
+// 
+// 	for (auto ams_prv : m_ams_preview_list) {
+// 		std::string id = ams_prv.second->get_ams_id();
+// 		auto item = m_ams_item_list.find(id);
+// 		if (item != m_ams_item_list.end())
+// 		{
+// 			ams_prv.second->Update(item->second->get_ams_info());
+// 		}
+// 	}
+// 
+// 
+// 	/*update humidity popup*/
+// 	if (m_percent_humidity_dry_popup->IsShown())
+// 	{
+// 		string target_id = m_percent_humidity_dry_popup->get_owner_ams_id();
+// 		for (const auto& the_info : ams_info)
+// 		{
+// 			if (target_id == the_info.ams_id)
+// 			{
+// 				uiAmsHumidityInfo humidity_info;
+// 				humidity_info.ams_id = the_info.ams_id;
+// 				humidity_info.humidity_display_idx = the_info.get_humidity_display_idx();
+// 				humidity_info.humidity_percent = the_info.humidity_raw;
+// 				humidity_info.left_dry_time = the_info.left_dray_time;
+// 				humidity_info.current_temperature = the_info.current_temperature;
+// 				m_percent_humidity_dry_popup->Update(&humidity_info);
+// 				break;
+// 			}
+// 		}
+// 	}
+// 
+// 	/*update ams extruder*/
+// 	if (m_extruder->updateNozzleNum(m_total_ext_count, series_name))
+// 	{
+// 		m_amswin->Layout();
+// 	}
+// 
+
+    SetSize(wxSize(FromDIP(578), -1));
+    SetMinSize(wxSize(FromDIP(578), -1));
+    //Layout();
+}
+
 void AMSControl::AddAmsPreview(AMSinfo info, AMSModel type)
 {
     AMSPreview *ams_prv = nullptr;
@@ -1039,6 +1136,7 @@ void AMSControl::AddAmsPreview(AMSinfo info, AMSModel type)
             e.Skip();
         });
         m_ams_preview_list[info.ams_id] = ams_prv;
+       // ams_prv->Hide();
     }
 }
 
@@ -1595,8 +1693,11 @@ void AMSControl::SetAmsStep(std::string ams_id, std::string canid, AMSPassRoadTy
 
 void AMSControl::on_filament_load(wxCommandEvent &event)
 {
+    post_event(SimpleEvent(EVT_AMS_LOAD));
+    return;
     /*If the filament is unknown, show warning*/
     const auto& filament_id = get_filament_id(m_current_ams, GetCurrentCan(m_current_ams));
+    
     if (filament_id.empty())
     {
         MessageDialog msg_dlg(nullptr, _L("Filament type is unknown which is required to perform this action. Please set target filament's informations."),
@@ -1621,6 +1722,8 @@ void AMSControl::on_extrusion_cali(wxCommandEvent &event)
 
 void AMSControl::on_filament_unload(wxCommandEvent &event)
 {
+	post_event(SimpleEvent(EVT_AMS_UNLOAD));
+    return;
     for (auto i = 0; i < m_ams_info.size(); i++) {
         if (m_ams_info[i].ams_id == m_current_ams) { m_ams_info[i].current_action = AMSAction::AMS_ACTION_UNLOAD; }
     }

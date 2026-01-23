@@ -152,6 +152,7 @@ struct Machine_info {
     bool        bed_leveling = true;
     bool        enable_multi_box = false;
     bool        timelapse = true;
+    bool        enable_air_condition = false;
 };
 
 #define PRINT_OPT_WIDTH  FromDIP(44)

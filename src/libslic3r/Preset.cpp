@@ -1073,6 +1073,8 @@ static std::vector<std::string> s_Preset_printer_options {
     , "is_support_timelapse"
     //y65
     , "is_support_multi_box"
+    , "is_support_mqtt"
+    , "is_support_air_condition"
 };
 
 static std::vector<std::string> s_Preset_sla_print_options {

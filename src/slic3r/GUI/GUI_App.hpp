@@ -43,6 +43,9 @@
 
 #include "slic3r/GUI/WebUserLoginDialog.hpp"
 
+//y76
+#include "QDSDeviceManager.hpp"
+
 //#define QDT_HAS_FIRST_PAGE          1
 #define STUDIO_INACTIVE_TIMEOUT     15*60*1000
 #define LOG_FILES_MAX_NUM           30
@@ -291,10 +294,6 @@ private:
     bool            m_force_colors_update { false };
 //#endif
 
-#if QDT_RELEASE_TO_PUBLIC
-    std::vector<Device> m_devices;
-#endif
-
     std::vector<std::string>     m_mode_palette;
 
     wxFont		    m_small_font;
@@ -397,6 +396,9 @@ public:
     bool     show_3d_navigator() const { return app_config->get_bool("show_3d_navigator"); }
     void     toggle_show_3d_navigator() const { app_config->set_bool("show_3d_navigator", !show_3d_navigator()); }
 
+    // cj_1
+    bool is_link_connect() { return app_config->get("login_method") == "Link"; }
+
     wxString get_inf_dialog_contect () {return m_info_dialog_content;};
 
     std::vector<std::string> split_str(std::string src, std::string separator);
@@ -462,8 +464,9 @@ public:
 
 
 #if QDT_RELEASE_TO_PUBLIC
-    std::vector<Device> get_devices() { return m_devices; };
-    void                set_devices(std::vector<Device> devices) { m_devices = devices; };
+//y76
+    std::vector<NetDevice> get_devices() { return qdsdevmanager->getNetDevices(); };
+    void                set_devices(std::vector<NetDevice> devices) { qdsdevmanager->setNetDevices(devices); };
 #endif
 
 
@@ -492,6 +495,7 @@ public:
     void            ShowUserLogin(bool show = true);
     void SetOnlineLogin(bool status);
     void SetPresentChange(bool status);
+    void setUserName(std::string name);
     void            ShowOnlyFilament();
     //QDS
     void            request_login(bool show_user_info = false);
@@ -678,6 +682,9 @@ public:
     PresetUpdater*  preset_updater{ nullptr };
     MainFrame*      mainframe{ nullptr };
     Plater*         plater_{ nullptr };
+
+    //y76
+    QDSDeviceManager* qdsdevmanager { nullptr };
 
 	PresetUpdater*  get_preset_updater() { return preset_updater; }
 

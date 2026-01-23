@@ -37,6 +37,9 @@
 #include "PartSkipDialog.hpp"
 #include "DeviceErrorDialog.hpp"
 
+//y76
+#include "QDSDeviceManager.hpp"
+
 class StepIndicator;
 
 #define COMMAND_TIMEOUT         5
@@ -46,6 +49,28 @@ namespace Slic3r {
 class DevExtderSystem;
 
 namespace GUI {
+
+//cj_1
+	wxDECLARE_EVENT(EVTSET_EXTRUESION, wxCommandEvent);
+	wxDECLARE_EVENT(EVTSET_BACK, wxCommandEvent);
+	wxDECLARE_EVENT(EVTSET_COOLER_SWITCH, wxCommandEvent);
+	wxDECLARE_EVENT(EVTSET_COOLER_ENABLE, wxCommandEvent);
+	wxDECLARE_EVENT(EVTSET_LEVELING_ENABLE, wxCommandEvent);
+	wxDECLARE_EVENT(EVTSET_AMS_ENABLE, wxCommandEvent);
+	wxDECLARE_EVENT(EVTSET_CASE_LIGHT, wxCommandEvent);
+	wxDECLARE_EVENT(EVTSET_BEEPER_SWITHC, wxCommandEvent);
+	wxDECLARE_EVENT(EVTSET_EXTRUDER_TEMPERATURE, wxCommandEvent);
+	wxDECLARE_EVENT(EVTSET_HEATERBED_TEMPERATURE, wxCommandEvent);
+	wxDECLARE_EVENT(EVTSET_CHAMBER_TEMPERATURE, wxCommandEvent);
+	wxDECLARE_EVENT(EVTSET_RETURN_SAFEHOME, wxCommandEvent);
+	wxDECLARE_EVENT(EVTSET_X_AXIS, wxCommandEvent);
+	wxDECLARE_EVENT(EVTSET_Y_AXIS, wxCommandEvent);
+	wxDECLARE_EVENT(EVTSET_Z_AXIS, wxCommandEvent);
+	wxDECLARE_EVENT(EVTSET_PRINT_CONTROL, wxCommandEvent); //print/control
+	wxDECLARE_EVENT(EVTSET_FILAMENT_TYPE, wxCommandEvent); ///filament/type
+	wxDECLARE_EVENT(EVTSET_FILAMENT_VENDOR, wxCommandEvent); ///filament/vendor
+	wxDECLARE_EVENT(EVTSET_FILAMENT_LOAD, wxCommandEvent); ///set/filament/load
+	wxDECLARE_EVENT(EVTSET_FILAMENT_UNLOAD, wxCommandEvent); ///set/filament/unload
 
 // Previous definitions
 class MessageDialog;
@@ -568,6 +593,14 @@ protected:
     Button *m_button_retry {nullptr};
     StaticBox* m_filament_load_box;
 
+//y76
+    wxPanel* m_task_list_panel = nullptr;
+    wxPanel* m_panel_task_title = nullptr;
+    Label* m_staticText_task = nullptr;
+    wxScrolledWindow* m_scroll_files = nullptr;
+    wxBoxSizer* m_file_list_sizer = nullptr;
+//y76
+
     // Virtual event handlers, override them in your derived class
     virtual void on_subtask_partskip(wxCommandEvent &event) { event.Skip(); }
     virtual void on_subtask_pause_resume(wxCommandEvent &event) { event.Skip(); }
@@ -623,6 +656,21 @@ public:
 
     void jump_to_Rack();
 
+    //cj1
+	void update_temp_data(std::string nozzle, std::string bed, std::string chamber);
+	void update_temp_target(std::string nozzle, std::string bed, std::string chamber);
+    //y76
+    void update_light_status(bool on);
+
+    wxBoxSizer* create_task_list_group(wxWindow *parent);
+    void init_empty_task_list();
+
+    void update_task_list_layout();
+
+    void clear_task_list();
+
+    void update_task_list(const std::vector<FileInfo>& files);
+
 private:
     void on_ams_rack_switch(wxCommandEvent& event);
 };
@@ -630,8 +678,37 @@ private:
 
 class StatusPanel : public StatusBasePanel
 {
+
+//cj_1
+public:
+    void update_progress(std::string fileName, std::string layer,std::string totalTime,std::string weight, float remainingTime, float progress);
+    
+    void update_camera_url(std::string url);
+
+    void update_print_status(std::string status);
+
+    void update_thumbnail(std::string url);
+
+    void update_boxs(std::vector<AMSinfo> boxS, std::vector<AMSinfo> ext_info);
+
+    void update_cur_slot(int curSlotSyncIndex);
+
+    void set_filament_config(std::vector<QDSDevice::Filament>config);
+
+    void pause_camera();
+
+    void update_AMSSettingData(bool autoRead, bool initDetect, bool autoReload);
+
+    void update_fan_speed(AIR_FUN id, int speed);
+
+    void update_temp_ctrl(std::shared_ptr<QDSDevice> obj);
+//cj_1
+    void update_homed_axes(std::string homed_axes) { m_homed_axes = homed_axes; }
 private:
     friend class MonitorPanel;
+    //cj_1
+    std::vector<QDSDevice::Filament>m_filamentConfig;
+    bool m_isInitConfig{ false };
 
 protected:
     std::shared_ptr<SliceInfoPopup> m_slice_info_popup;
@@ -765,6 +842,9 @@ protected:
     /* calibration */
     void on_start_calibration(wxCommandEvent &event);
 
+    //cj_1
+    void on_selected_type(wxCommandEvent& event);
+
 
     /* update apis */
     void update(MachineObject* obj);
@@ -777,7 +857,8 @@ protected:
     void update_partskip_subtask(MachineObject *obj);
     void update_cloud_subtask(MachineObject *obj);
     void update_sdcard_subtask(MachineObject *obj);
-    void update_temp_ctrl(MachineObject *obj);
+    //y76
+    //void update_temp_ctrl(MachineObject *obj);
     void update_misc_ctrl(MachineObject *obj);
     void update_ams(MachineObject* obj);
     void update_filament_loading_panel(MachineObject* obj);
@@ -803,6 +884,12 @@ protected:
     // printer parts options
     void update_printer_parts_options(MachineObject* obj);
 
+
+private:
+    // cj_1
+	void postEventValueAndEnable(wxEventType eventType, int value, std::string valueType);
+    //cj_1
+    bool judgeAxis();
 public:
     void update_error_message();
 
@@ -846,6 +933,22 @@ public:
     void rescale_camera_icons();
     void on_sys_color_changed();
     void msw_rescale();
+
+//cj_1
+private:
+    std::vector<AMSinfo> m_boxS;
+    std::vector<AMSinfo> m_ext_info;
+    int curSelectSlotIndex = 0;
+    int m_curSlotSync = -1;
+	bool m_auto_read_rfid{ false };
+	bool m_init_detect{ false };
+	bool m_auto_reload_detect{ false };
+
+//cj_1
+    std::map< AIR_FUN, int> m_fan_speeds;
+
+    //cj_1
+    std::string m_homed_axes{ "" };
 };
 }
 }

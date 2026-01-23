@@ -1955,7 +1955,7 @@ AmsHumidityTipPopup::AmsHumidityTipPopup(wxWindow* parent)
 
     humidity_level_list = new AmsHumidityLevelList(this);
     curr_humidity_img = new wxStaticBitmap(this, wxID_ANY, create_scaled_bitmap("hum_level1_light", this, 132), wxDefaultPosition, wxSize(FromDIP(132), FromDIP(132)), 0);
-
+    
     m_staticText_note = new Label(this, _L("Please change the desiccant when it is too wet. The indicator may not represent accurately in following cases : when the lid is open or the desiccant pack is changed. it take hours to absorb the moisture, low temperatures also slow down the process."));
     m_staticText_note->SetMinSize(wxSize(FromDIP(680), -1));
     m_staticText_note->SetMaxSize(wxSize(FromDIP(680), -1));
@@ -2382,7 +2382,7 @@ void AmsReplaceMaterialDialog::create()
 
     m_scrollview_groups = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL | wxVSCROLL);
     m_scrollview_groups->SetScrollRate(5, 5);
-    //m_scrollview_groups->SetMinSize(wxSize(400, 400));
+    //m_scrollview_groups->SetMinSize(wxSize(200, 200));
     //m_scrollview_groups->SetMaxSize(wxSize(400, 400));
     m_scrollview_sizer = new wxBoxSizer(wxVERTICAL);
 
@@ -2422,9 +2422,23 @@ void AmsReplaceMaterialDialog::create()
     m_main_sizer->Add(m_button_sizer,0,wxALIGN_CENTER, FromDIP(16));
     m_main_sizer->Add(0,0,0, wxTOP, FromDIP(20));
 
-
     CenterOnParent();
     SetSizer(m_main_sizer);
+    Layout();
+    Fit();
+}
+
+void AmsReplaceMaterialDialog::update_data(std::vector<BackupGroupData>backupGroupDatas)
+{
+    int index = 1;
+    for (BackupGroupData groupData : backupGroupDatas) {
+		m_groups_sizer->Add(create_backup_group(wxString::Format("%s%d", _L("Group"), index),
+            groupData.group_info, groupData.material), 0, wxALL, FromDIP(10));
+        ++index;
+    }
+    m_scrollview_groups->SetMinSize(wxSize(200, 200));
+    m_scrollview_groups->SetMaxSize(wxSize(200, 200));
+
     Layout();
     Fit();
 }
@@ -2467,8 +2481,7 @@ void AmsReplaceMaterialDialog::on_dpi_changed(const wxRect& suggested_rect)
 
 }
 
-static std::unordered_map<int, bool>
-_GetBackupStatus(unsigned int fila_back_group)
+static std::unordered_map<int, bool> _GetBackupStatus(unsigned int fila_back_group)
 {
     std::unordered_map<int, bool> trayid_group;
     for (int i = 0; i < 16; i++)

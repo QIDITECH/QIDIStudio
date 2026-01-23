@@ -94,6 +94,7 @@ public:
     int         extruder_cali_manual_mode = -1;
     //y71
     int         enable_multi_box{0};
+    int         enable_air_condition{0};
 
     //y
     void set_print_config(std::string bed_type, bool bed_leveling, bool flow_cali, bool vabration_cali, bool record_timelapse, bool layer_inspect, bool ext_change_assist,
@@ -101,7 +102,8 @@ public:
         int auto_enable_multi_box,
         int auto_flow_calit,
         int auto_offset_calit,
-        int extruder_calit_manual_mode)
+        int extruder_calit_manual_mode,
+        int auto_enable_air_condition)
     {
         task_bed_type       = bed_type;
         task_bed_leveling   = bed_leveling;
@@ -116,6 +118,9 @@ public:
         auto_flow_cali = auto_flow_calit;
         auto_offset_cali = auto_offset_calit;
         extruder_cali_manual_mode = extruder_calit_manual_mode;
+        //y76
+        enable_air_condition = auto_enable_air_condition;
+
     }
 
     int  status_range() const override

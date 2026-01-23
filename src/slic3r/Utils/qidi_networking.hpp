@@ -236,6 +236,9 @@ struct PrintParams {
     int             auto_flow_cali{ 0 };
     int             auto_offset_cali{ 0 };
     int             extruder_cali_manual_mode{ -1 };
+    //y76
+    int             enable_air_condition{0};
+    
     bool            task_ext_change_assist;
     bool            try_emmc_print;
 };

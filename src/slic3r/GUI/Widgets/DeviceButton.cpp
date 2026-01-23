@@ -27,14 +27,15 @@ END_EVENT_TABLE()
 DeviceButton::DeviceButton(wxString name_text, wxString ip_text, wxString apikey_text) : paddingSize(10, 8), m_name_text(name_text), m_ip_text(ip_text), m_apikey(apikey_text)
 {
     background_color = StateColor(
-        std::make_pair(0x262629, (int) StateColor::Disabled),
-        std::make_pair(0x37EE7C, (int) StateColor::Hovered | StateColor::Checked),
+        std::make_pair(0xF5F5F5, (int) StateColor::Disabled),
+        std::make_pair(0xE6F7FF, (int) StateColor::Hovered | StateColor::Checked),
         std::make_pair(0x4479fb, (int) StateColor::Checked),
-        std::make_pair(*wxLIGHT_GREY, (int) StateColor::Hovered), 
-        std::make_pair(0x262629, (int) StateColor::Normal));
+        std::make_pair(0xF0F0F0, (int) StateColor::Hovered), 
+        std::make_pair(0xFFFFFF, (int) StateColor::Normal));
     text_color       = StateColor(
-        std::make_pair(*wxLIGHT_GREY, (int) StateColor::Disabled), 
-        std::make_pair(*wxBLACK, (int) StateColor::Normal));
+        std::make_pair(0xCCCCCC, (int) StateColor::Disabled), 
+        std::make_pair(0x666666, (int) StateColor::Checked),
+        std::make_pair(0x666666, (int) StateColor::Normal));
 }
 
 //y40
@@ -48,6 +49,9 @@ DeviceButton::DeviceButton(wxWindow *parent,
                              wxString  apikey_text)
     : DeviceButton(name_text,ip_text, apikey_text)
 {
+    //y76
+    style = wxBORDER_NONE;
+    paddingSize = wxSize(8, 5);
     Create(parent, text, icon, style, iconSize);
 }
 
@@ -57,7 +61,8 @@ DeviceButton::DeviceButton(wxWindow* parent,
     long      style)
 {
     // y20
-    paddingSize = wxSize(12, 6);
+    style = wxBORDER_NONE;
+    paddingSize = wxSize(8, 5);
     wxSize iconSize = wxSize(20, 20);
     Create(parent, "", icon, style, iconSize);
 }
@@ -67,7 +72,7 @@ bool DeviceButton::Create(wxWindow *parent, wxString text, wxString icon, long s
     StaticBox::Create(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, style);
     state_handler.attach({&text_color});
     state_handler.update_binds();
-    wxWindow::SetFont(wxFont(15, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+    wxWindow::SetFont(wxFont(10, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, "Microsoft YaHei"));
 
     wxString    device_nameText = text;
     wxWindow::SetLabel(device_nameText);
@@ -162,7 +167,7 @@ void DeviceButton::SetIsSimpleMode(bool isSimpleMode)
     m_isSimpleMode = isSimpleMode;
     if ((this->active_icon.bmp().IsOk())) {
         if (m_isSimpleMode) {
-            SetIconWithSize(this->active_icon.name(), wxSize(30, 30));
+            SetIconWithSize(this->active_icon.name(), wxSize(25, 25));
         } else {
             SetIconWithSize(this->active_icon.name(), wxSize(80, 80));
         }
@@ -176,15 +181,19 @@ void DeviceButton::SetIsSelected(bool isSelected)
 {
     m_isSelected = isSelected;
     if (m_isSelected) {
-        StateColor calc_btn_bg(std::pair<wxColour, int>(wxColour(147, 147, 150), StateColor::Pressed),
-                               std::pair<wxColour, int>(wxColour(100, 100, 105), StateColor::Hovered),
-                               std::pair<wxColour, int>(wxColour(100, 100, 105), StateColor::Normal));
-        SetBackgroundColor(calc_btn_bg);
+        StateColor selected_bg(std::pair<wxColour, int>(wxColour(230, 237, 255), StateColor::Pressed),
+                               std::pair<wxColour, int>(wxColour(230, 237, 255), StateColor::Hovered),
+                               std::pair<wxColour, int>(wxColour(230, 237, 255), StateColor::Normal));
+        SetBackgroundColor(selected_bg);
+
+        text_color.setColorForStates(wxColour(102, 102, 102), (int)StateColor::Checked);
     } else {
-        StateColor calc_btn_bg(std::pair<wxColour, int>(wxColour(118, 118, 121), StateColor::Pressed),
-                               std::pair<wxColour, int>(wxColour(76, 76, 80), StateColor::Hovered),
-                               std::pair<wxColour, int>(wxColour(67, 67, 71), StateColor::Normal));
-        SetBackgroundColor(calc_btn_bg);
+        StateColor normal_bg(std::pair<wxColour, int>(wxColour(230, 237, 255), StateColor::Pressed),
+                             std::pair<wxColour, int>(wxColour(230, 247, 255), StateColor::Hovered),
+                             std::pair<wxColour, int>(wxColour(255, 255, 255), StateColor::Normal));
+        SetBackgroundColor(normal_bg);
+
+        text_color.setColorForStates(wxColour(102, 102, 102), 0);
     }
     Refresh();
 }
@@ -260,34 +269,38 @@ void DeviceButton::render(wxDC &dc)
 
     if (GetLabel() == "") {
         // y20
-        dc.DrawBitmap(icon.bmp(), rcContent.x/2+1, rcContent.y/2-2);
+        dc.DrawBitmap(icon.bmp(), rcContent.x/2, rcContent.y/2-2);
     }
     // y2
     else if (m_ip_text == "" && m_name_text == "") {
-        //dc.DrawBitmap(icon.get_bitmap(), 10, (GetSize().GetHeight() - icon.get_bitmap().GetHeight()) / 2);
         if (m_isSimpleMode) {
-            dc.SetFont(wxFont(10, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+            dc.SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
         } else {
-            dc.SetFont(wxFont(12, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+            dc.SetFont(wxFont(11, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
         }
         dc.SetTextForeground(text_color.colorForStates(states));
         dc.DrawText(GetLabel(), rcContent.x / 2, size.y/2 - dc.GetTextExtent(GetLabel()).y / 2);
     }
     else if (m_isSimpleMode) {
-        dc.SetFont(wxFont(15, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-        dc.SetTextForeground(wxColour(230, 230, 230));
-        dc.DrawText(m_name_text, 10, rcContent.y);
-        int dotRadius = 4;
-        int dotX      = size.x - dotRadius - 10;
-        int dotY      = 10;
+        //y76
+        dc.SetFont(wxFont(10, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, "Microsoft YaHei"));
         if (m_isSelected) {
-            dc.SetBrush(wxBrush(wxColour(68, 121, 251)));
-            dc.SetPen(wxPen(wxColour(68, 121, 251)));
+            dc.SetTextForeground(wxColour(68, 121, 251));
         } else {
-            dc.SetBrush(wxBrush(wxColour(26, 26, 28)));
-            dc.SetPen(wxPen(wxColour(26, 26, 28)));
+            dc.SetTextForeground(wxColour(196, 196, 196));
         }
-        dc.DrawCircle(dotX, dotY, dotRadius);
+        dc.DrawText(m_name_text, 32, rcContent.y);
+        // int dotRadius = 4;
+        // int dotX      = size.x - dotRadius - 10;
+        // int dotY      = 10;
+        // if (m_isSelected) {
+        //     dc.SetBrush(wxBrush(wxColour(33, 150, 243)));
+        //     dc.SetPen(wxPen(wxColour(33, 150, 243)));
+        // } else {
+        //     dc.SetBrush(wxBrush(wxColour(220, 220, 220)));
+        //     dc.SetPen(wxPen(wxColour(220, 220, 220)));
+        // }
+        // dc.DrawCircle(dotX, dotY, dotRadius);
 
     } else {
          dc.DrawBitmap(icon.bmp(), 10, (GetSize().GetHeight() - icon.bmp().GetHeight()) / 2);
@@ -350,7 +363,7 @@ void DeviceButton::messureSize()
     }
     wxSize size = szContent + paddingSize * 2;
     if (m_isSimpleMode && m_ip_text != "")
-        size.x = 180;
+        size.x = 218;
     else if (m_ip_text != "")
         size.x = 290;
     if (minSize.GetHeight() > 0)

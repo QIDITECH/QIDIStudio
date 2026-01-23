@@ -16,6 +16,11 @@ wxDEFINE_EVENT(EVT_FAN_ADD, wxCommandEvent);
 wxDEFINE_EVENT(EVT_FAN_DEC, wxCommandEvent);
 wxDEFINE_EVENT(EVT_FAN_CHANGED, wxCommandEvent);
 
+//cj_1
+wxDEFINE_EVENT(EVTSET_COOLLINGFAN_SPEED, wxCommandEvent);
+wxDEFINE_EVENT(EVTSET_CHAMBERFAN_SPEED, wxCommandEvent);
+wxDEFINE_EVENT(EVTSET_AUXILIARYFAN_SPEED, wxCommandEvent);
+
 constexpr int time_out = 6;
 static bool not_show_fan_speed_warning_dlg = false;
 
@@ -328,7 +333,34 @@ void FanOperate::msw_rescale() {
 }
 
 static void nop_deleter_fan_control(FanControlNew* ){}
-    /*************************************************
+
+//cj_1
+void FanControlNew::post_fan_speed_changed(int m_partId, const wxCommandEvent& oldEvent)
+{
+    wxEventType type;
+    switch (m_partId) {
+    case 1:
+        type = EVTSET_COOLLINGFAN_SPEED;
+        break;
+    case 2:
+        type = EVTSET_AUXILIARYFAN_SPEED;
+        break;
+    case 3:
+        type = EVTSET_CHAMBERFAN_SPEED;
+        break;
+    default:
+        break;
+    }
+
+    wxCommandEvent event(type);
+    event.SetInt(oldEvent.GetInt() * 10);
+    event.SetString("value");
+    
+    wxPostEvent(GetParent()->GetParent(), event);
+    
+}
+
+/*************************************************
 Description:FanControlNew
 **************************************************/
 FanControlNew::FanControlNew(wxWindow *parent, const AirDuctData &fan_data, int mode_id, int part_id, wxWindowID id, const wxPoint &pos, const wxSize &size)
@@ -386,21 +418,33 @@ FanControlNew::FanControlNew(wxWindow *parent, const AirDuctData &fan_data, int 
         m_current_speed = e.GetInt();
         m_switch_button->SetBitmap(m_bitmap_toggle_on->bmp());
         m_switch_fan = true;
+        //cj_1
+		post_fan_speed_changed(m_part_id, e);
+
     });
     m_fan_operate->Bind(EVT_FAN_SWITCH_OFF, [this](const wxCommandEvent &e) {
         m_current_speed = e.GetInt();
         m_switch_button->SetBitmap(m_bitmap_toggle_off->bmp());
         m_switch_fan = false;
+        //cj_1
+		post_fan_speed_changed(m_part_id, e);
+
+
     });
 
     m_fan_operate->Bind(EVT_FAN_ADD, [this](const wxCommandEvent &e) {
         m_current_speed = e.GetInt();
         command_control_fan();
+        //cj_1
+        post_fan_speed_changed(m_part_id, e);
     });
 
     m_fan_operate->Bind(EVT_FAN_DEC, [this](const wxCommandEvent& e) {
         m_current_speed = e.GetInt();
         command_control_fan();
+        //cj_1
+		post_fan_speed_changed(m_part_id, e);
+
     });
 
     m_sizer_control_bottom->Add(m_static_status_name, 0, wxLEFT | wxALIGN_CENTER, FromDIP(30));
@@ -454,6 +498,10 @@ void FanControlNew::command_control_fan()
 {
     if (m_current_speed < 0 || m_current_speed > 10) { return; }
 
+
+    wxCommandEvent event(EVTSET_COOLLINGFAN_SPEED);
+
+    return;
     BOOST_LOG_TRIVIAL(info) << "Functions Need to be supplemented! :FanControlNew::command_control_fan. the speed may change";
     if (m_obj) {
         if (!m_obj->is_enable_np){
@@ -487,11 +535,24 @@ void FanControlNew::on_swith_fan(wxMouseEvent& evt)
     if (m_switch_fan) {
         m_switch_button->SetBitmap(m_bitmap_toggle_off->bmp());
         m_switch_fan = false;
+
+//cj_1
+        wxCommandEvent event;
+        event.SetInt(0);
+        post_fan_speed_changed(m_part_id, event);
+
     }
     else {
         speed = 255;
         m_switch_button->SetBitmap(m_bitmap_toggle_on->bmp());
         m_switch_fan = true;
+
+//cj_1
+		wxCommandEvent event;
+		event.SetInt(10);
+		post_fan_speed_changed(m_part_id, event);
+
+
     }
 
     set_fan_speed(speed);
@@ -716,7 +777,7 @@ void FanControlPopupNew::CreateDuct()
             {
                 auto fan_control = m_fan_control_list[part_id];
                 fan_control->set_fan_speed_percent(part_state / 10);
-            }
+            } 
         }
     }
     else
@@ -726,7 +787,7 @@ void FanControlPopupNew::CreateDuct()
             int cooling_fan_speed = round(m_obj->GetFan()->GetCoolingFanSpeed() / float(25.5));
             int big_fan1_speed = round(m_obj->GetFan()->GetBigFan1Speed() / float(25.5));
             int big_fan2_speed = round(m_obj->GetFan()->GetBigFan2Speed() / float(25.5));
-            update_fan_data(AIR_FUN::FAN_COOLING_0_AIRDOOR, cooling_fan_speed);
+            update_fan_data (AIR_FUN::FAN_COOLING_0_AIRDOOR, cooling_fan_speed);
             update_fan_data(AIR_FUN::FAN_REMOTE_COOLING_0_IDX, big_fan1_speed);
             update_fan_data(AIR_FUN::FAN_CHAMBER_0_IDX, big_fan2_speed);
         }

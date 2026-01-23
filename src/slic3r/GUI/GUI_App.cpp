@@ -111,11 +111,14 @@
 #include "ModelMall.hpp"
 #include "HintNotification.hpp"
 #include "QDTUtil.hpp"
-
+#include "PrinterWebView.hpp"
 //#ifdef WIN32
 //#include "BaseException.h"
 //#endif
 
+#if QDT_RELEASE_TO_PUBLIC
+#include "../QIDI/QIDINetwork.hpp"
+#endif
 
 #ifdef __WXMSW__
 #include <dbt.h>
@@ -3907,8 +3910,8 @@ void GUI_App::recreate_GUI(const wxString &msg_name)
     m_is_recreating_gui = true;
 
     update_http_extra_header();
-    // y19
-    mainframe->m_printer_view->StopStatusThread();
+    // y74
+    mainframe->m_printer_view->m_device_manager->stopAllConnection();
     mainframe->shutdown();
 
     ProgressDialog dlg(msg_name, msg_name, 100, nullptr, wxPD_AUTO_HIDE);
@@ -4016,28 +4019,33 @@ void GUI_App::ShowDownNetPluginDlg(bool post_login)
 
 void GUI_App::ShowUserLogin(bool show)
 {
-    // QDS: User Login Dialog
-    if (show) {
-        try {
-            if (!login_dlg)
-                login_dlg = new ZUserLogin();
-            else {
-                delete login_dlg;
-                login_dlg = new ZUserLogin();
-            }
-            login_dlg->ShowModal();
-        } catch (std::exception &) {
-            ;
-        }
-    } else {
-        if (login_dlg)
-            login_dlg->EndModal(wxID_OK);
-    }
+
+	
+	if (!show) {
+		if (login_dlg) {
+			login_dlg->EndModal(wxID_OK);
+		}
+		return;
+	}
+	// QDS: User Login Dialog
+	try {
+		if (login_dlg != nullptr) {
+			delete login_dlg;
+		}
+		login_dlg = new ZUserLogin();
+		login_dlg->ShowModal();
+	}
+	catch (std::exception&) {
+		;
+	}
+
+    
 }
 
 // 10
 void GUI_App::SetOnlineLogin(bool status)
 {
+    m_qidi_login = status;
     mainframe->m_printer_view->SetLoginStatus(status);
 }
 
@@ -4046,6 +4054,10 @@ void GUI_App::SetPresentChange(bool status)
     mainframe->m_printer_view->SetPresetChanged(status);
 }
 
+void GUI_App::setUserName(std::string name)
+{
+    m_user_name = name;
+}
 
 void GUI_App::ShowOnlyFilament() {
     // QDS:Show NewUser Guide
@@ -4320,16 +4332,20 @@ void GUI_App::get_login_info()
     // y15 // y16
     bool m_isloginin = (wxGetApp().app_config->get("user_token") != "");
     if (m_isloginin) {
-        if(m_user_name.empty())
-        {
-            wxString    msg;
-            QIDINetwork m_qidinetwork;
-            m_user_name = m_qidinetwork.user_info(msg);
-            //y33
-            std::string head_name = wxGetApp().app_config->get("user_head_name");
-            // y21
-            if (m_user_name.empty())
-            {
+        std::string head_name = wxGetApp().app_config->get("user_head_name");
+        if(m_user_name.empty()){
+            bool is_link = app_config->get("login_method") != "Maker";
+            if(is_link){
+                wxString    msg;
+                QIDINetwork m_qidinetwork;
+                m_user_name = m_qidinetwork.user_info(msg);
+            }
+            else{
+                m_user_name = MakerHttpHandle::getInstance().get_maker_user_name();
+            }
+            head_name = wxGetApp().app_config->get("user_head_name");
+            
+            if (m_user_name.empty()){
                 m_user_name = "";
                 wxGetApp().app_config->set("user_token", "");
                 wxString user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
@@ -4337,9 +4353,7 @@ void GUI_App::get_login_info()
                 GUI::wxGetApp().run_script_left(strJS);
                 m_qidi_login = false;
             }
-            else
-            {
-                //y34
+            else{
                 wxString user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
                 if (!wxGetApp().app_config->get("user_head_name").empty()) {
                     user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
@@ -4352,12 +4366,10 @@ void GUI_App::get_login_info()
                 m_qidi_login = true;
             }
         }
-        else
-        {
-            std::string head_name = wxGetApp().app_config->get("user_head_name");
+        else{
             //y34
-            wxString user_head_path;
-            if (!head_name.empty()) {
+            wxString user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
+            if (!wxGetApp().app_config->get("user_head_name").empty()) {
                 user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
                 std::replace(user_head_path.begin(), user_head_path.end(), '\\', '/');
             }
@@ -4513,21 +4525,31 @@ std::string GUI_App::handle_web_request(std::string cmd)
                 //        });
                 //    return "";
                 //}
+                // 
+				if (root.get_child_optional("makerworld_model_id") != boost::none) {
+					boost::optional<std::string> ModelID = root.get_optional<std::string>("makerworld_model_id");
+					if (ModelID.has_value()) {
+						if (mainframe) {
+							if (mainframe->m_webview)
+							{
+								mainframe->m_webview->SetMakerworldModelID(ModelID.value());
+							}
+						}
+					}
+				}
+                // cj_1
+				CallAfter([this] {
+					if (mainframe && mainframe->m_webview)
+					{
+						mainframe->m_webview->SwitchWebContent("login", 1);
+					}
+					}
+				);
 
-                if (root.get_child_optional("makerworld_model_id") != boost::none) {
-                    boost::optional<std::string> ModelID      = root.get_optional<std::string>("makerworld_model_id");
-                    if (ModelID.has_value()) {
-                        if (mainframe) {
-                            if (mainframe->m_webview)
-                            {
-                                mainframe->m_webview->SetMakerworldModelID(ModelID.value());
-                            }
-                        }
-                    }
-                }
+                
 
                 CallAfter([this] {
-                    this->request_login(true);
+                    //this->request_login(true);
                 });
             }
             else if (command_str.compare("homepage_logout") == 0) {
@@ -4680,10 +4702,14 @@ std::string GUI_App::handle_web_request(std::string cmd)
                 if (root.get_child_optional("menu") != boost::none) { 
                     std::string strMenu = root.get_optional<std::string>("menu").value();
                     int         nRefresh = root.get_child_optional("refresh") == boost::none ? 0 : root.get_optional<int>("refresh").value();
-                     
+                    
+                    
+                    
                     CallAfter([this,strMenu, nRefresh] {
                         if (mainframe && mainframe->m_webview) 
                         { 
+ 							wxString UrlRight = wxString::Format("file://%s/web/homepage3/home.html?lang=zh_CN", from_u8(resources_dir()));
+                            mainframe->m_webview->load_url(UrlRight);
                             mainframe->m_webview->SwitchWebContent(strMenu, nRefresh); 
                         }
                     }

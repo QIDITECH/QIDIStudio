@@ -67,11 +67,13 @@ bool TempInput::CheckIsValidVal(bool show_warning)
         if (tempint > max_temp)
         {
             if (show_warning) { Warning(true, WARNING_TOO_HIGH); }
+            text_ctrl->SetValue(wxString::Format("%d", max_temp));
             return false;
         }
         else if (tempint < min_temp)
         {
             if (show_warning) { Warning(true, WARNING_TOO_LOW); }
+			text_ctrl->SetValue(wxString::Format("%d", min_temp));
             return false;
         }
     }
@@ -191,6 +193,11 @@ wxString TempInput::erasePending(wxString &str)
 
 void TempInput::SetTagTemp(int temp)
 {
+    //cj_1 
+    bool isFocused = text_ctrl->HasFocus();
+    if (isFocused) {
+        return;
+    }
     auto tp = wxString::Format("%d", temp);
     if (text_ctrl->GetValue() != tp) {
         text_ctrl->SetValue(tp);
@@ -201,6 +208,11 @@ void TempInput::SetTagTemp(int temp)
 
 void TempInput::SetTagTemp(wxString temp)
 {
+	//cj_1
+	bool isFocused = text_ctrl->HasFocus();
+	if (isFocused) {
+		return;
+	}
     if (text_ctrl->GetValue() != temp) {
         text_ctrl->SetValue(temp);
         messureSize();
