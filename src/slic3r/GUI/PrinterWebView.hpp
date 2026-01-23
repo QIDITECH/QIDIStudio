@@ -215,7 +215,9 @@ private:
     std::map<wxEventType, std::string> m_localEventToTaskPath;
     std::string m_userInfo;
 
+#if QDT_RELEASE_TO_PUBLIC
     std::vector<NetDevice> m_net_devices;
+#endif
 
 };
 

@@ -1,14 +1,18 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>登录指南</title>
+<meta charset="utf-8">
+<script type="text/javascript" src="../include/jquery-2.1.1.min.js"></script>
+<script type="text/javascript" src="../include/globalapi.js"></script>	
+<script type="text/javascript" src="../data/text.js"></script>		
+<title class='trans'>Login Guide</title>
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
             line-height: 1.8;
             color: #FFFFFF;
-            margin: 40px;
+            margin-top: 0px;
+            margin-left : 45px;
             padding: 0;
             background: white;
             min-height: 100vh;
@@ -20,27 +24,28 @@
         }
         
         .content {
-            max-width: 1000px;
+            max-width: 1600px;
             margin: 0;
             width: 100%;
         }
         
         h1 {
-            font-weight: normal;
-            font-size: 55px;
-            margin-bottom: 50px;
+            font-weight: 300;
+            font-size: 79px;
+            margin-bottom: 42px;
+            margin-top: 20px;
             color: #FFFFFF;
             text-align: left;
         }
         
         .intro {
-            margin-bottom: 80px;
+            margin-bottom: 138px;
         }
         
         .intro p {
-            font-size: 20px;
+            font-size: 24px;
             color: #FFFFFF;
-            line-height: 1.8;
+            line-height: 1.43;
             margin: 0;
             padding: 0;
         }
@@ -57,11 +62,12 @@
             color: white;
             border: none;
             padding: 10px 14px 0px;
-            border-radius: 6px;
-            font-size: 20px;
+            border-radius: 8px;
+            font-size: 30px;
             cursor: pointer;
-            min-width: 180px;
-            height: 60px;
+            min-width: 200px;
+            height: 78px;
+            width: 295px;
             letter-spacing: 1px;
         }
         
@@ -69,31 +75,33 @@
             background-color: #4459FB;
             color: white;
             border: none;
-            padding: 14px 14px;
-            border-radius: 6px;
-            font-size: 20px;
+            padding: 16px 14px 10px 18px;
+            border-radius: 8px;
+            font-size: 30px;
             cursor: pointer;
             min-width: 180px;
-            height: 60px;
+            height: 78px;
+            width: 300px;
             letter-spacing: 1px;
+            margin-left : 25px;
         }
         .arrow-icon {
-            margin-left: 10px;
+            margin-left: 13px;
             margin-right: 0px;
             padding: 0px;
-            width: 35px;
-            height: 35px;
+            width: 48px;
+            height: 48px;
             vertical-align: middle;
             display: inline-block;
             padding: 0;
             margin-bottom: 8px;
         }
         .secondary-arrow-icon {
-            margin-left: 40px;
+            margin-left: 60px;
             margin-right: 0px;
             padding: 0px;
-            width: 35px;
-            height: 35px;
+            width: 48px;
+            height: 48px;
             vertical-align: middle;
             display: inline-block;
             padding: 0;
@@ -104,17 +112,22 @@
            background-color: transparent;
            border: 1px solid white;
            color: white;
-           border-radius: 2px;
+           font-size: 18px;
+           height: 30px;
+           width: 105px;
+           border-radius: 5px;
            cursor: pointer;
+           margin-top: 60px;
+           font-weight: 550;
         }
         
         
         .faq-section {
-            margin-top: 20px;
+            margin-top: 40px;
         }
         
         .faq-title {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
             margin-bottom: 0px;
             color: #FFFFFF;
@@ -130,12 +143,22 @@
             font-size: 16px;
             color: #FFFFFF;
         }
-        
-        .faq-answer {
-            font-size: 14px;
+        .faq-question2 {
+            font-weight: 900;
+            margin-bottom: 0px;
+            font-size: 17px;
+            color: #FFFFFF;
+        }
+        .answer {
+            margin-bottom: 15px;
+        }
+        .faq-answer p {
+            font-size: 16px;
             color: #FFFFFF;
             line-height: 1.6;
             margin-bottom: 0px;
+            margin: 0;
+            padding: 0;
         }
         
         .support-section {
@@ -153,11 +176,12 @@
         .support-link {
             color: #007bff;
             text-decoration: none;
-            font-size: 14px;
+            font-size: 16px;
             display: inline-block;
             margin-top: 0px;
             margin-bottom: 0px;
             color: #FFFFFF;
+            text-decoration: underline;
         }
         
         .footer {
@@ -170,14 +194,12 @@
 </head>
 <body>
     <div class="content">
-        <h1>登录指南</h1>
+        <h1 class="trans" tid="t204">Login Guide</h1>
         
-        <div class="intro">
-            <p>通过 QIDI MAKER 或 QIDI LINK 注册并登录账号后，即可将你的 QIDI </p>
-            <p>STUDIO 软件绑定至账户。</p>
-            <p>完成绑定后，QIDI STUDIO 切片软件可通过 QIDI 云服务器、远程控制并管理
-            <p>当前全部已登录该用户账号的打印机，实现远程发送打印任务、状态同步与
-            <p>设备管理。</p>
+        <div class="intro" >
+            <p class="trans" tid="t205">After registering and logging in with QIDI MAKER or QIDI LINK account, you can bind your QIDI STUDIO software to your account.</p>
+            <p class='trans' tid="t206">After the binding is completed, the QIDI STUDIO slicing software can remotely control and manage the pre-printing machine through the QIDI cloud server, enabling the remote sending</p>
+            <p class='trans' tid="t207"> of print jobs, status synchronization, and device management.</p>
         </div>
         
         <div class="button-container">
@@ -192,27 +214,28 @@
         </div>
 
         <div class="detail-button">
-        <button class="more-button" id="more"  >
-            了解更多
+        <button class="more-button trans" id="more"  tid="t208">
+            More
         </button>
         </div>
         <div class = "detail-text" id = "text-detail">
         <div class="faq-section" id="faq">
             <div class="faq-item">
-                <div class="faq-question">QIDI MAKER与QIDI LINK的区别？</div>
-                <div class="faq-answer">QIDI MAKER APP是一个面向用户的一站式3D打印平台，致力于为用户提供便<br>
-                    捷、流畅且愉悦的3D打印体验。目前，QIDI MAKER暂时仅兼容QIDI Max4，<br>
-                    后续将逐步支持更多QIDI 3D打印机型号。</div>
+                <div class="faq-question trans" tid="t209">What is the difference between QIDI MAKER and QIDI LINK ?</div>
+                <div class="faq-answer">
+                    <p class="trans" tid="t210">QIDI MAKER is a comprehensive upgrade of QIDI LINK, which can better adapt to QIDI 3D printers, providing </p>
+                    <p class="trans" tid="t211">more stable and faster connection as well as richer functions and support.</p>
+                    <p class="trans" tid="t212">QIDI MAKER will gradually support more models of QIDI 3D printers.</p>
+                </div>
             </div>
             
             <div class="faq-item">
-                <div class="faq-question">账号无法登录？</div>
-                <div class="faq-answer">如遇到任何问题，请随时联系QIDI官方售后支持：</div>
+                <div class="faq-question2 trans" tid="t213">The account cannot be logged in?</div>
+                <div class="faq-answer trans" tid="t214">If you encounter any problems, please feel free to contact the official after-sales support of QIDI at any time:</div>
             </div>
         </div>
         
         <div class="support-section">
-            <div class="support-title">官方售后支持</div>
             <div>
                 <a href="https://wiki.qidi3d.com/en/AfterSalesContact" target="_blank" class="support-link">
                     https://wiki.qidi3d.com/en/AfterSalesContact
@@ -231,6 +254,7 @@
     }
         }
 window.addEventListener('DOMContentLoaded', function() {
+    TranslatePage();
     document.getElementById('text-detail').hidden = true;
 });
     document.getElementById('more').addEventListener('click', function() {

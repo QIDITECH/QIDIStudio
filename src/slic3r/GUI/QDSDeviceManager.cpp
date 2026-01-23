@@ -143,6 +143,7 @@ void QDSFilamentConfig::init()
 
 void QDSFilamentConfig::initTypeName()
 {
+#if QDT_RELEASE_TO_PUBLIC
 	std::string resultBody = MakerHttpHandle::getInstance().httpGetTask(Environment::TESTENV, m_typeName.path);
 	if (resultBody == "") {
 		return;
@@ -172,10 +173,12 @@ void QDSFilamentConfig::initTypeName()
 	catch (...) {
 
 	}
+#endif
 }
 
 void QDSFilamentConfig::initFilamentData(FilamentData& filamentData)
 {
+#if QDT_RELEASE_TO_PUBLIC
 	std::string resultBody = MakerHttpHandle::getInstance().httpGetTask(Environment::TESTENV, filamentData.path);
 	if (resultBody == "") {
 		return;
@@ -197,7 +200,7 @@ void QDSFilamentConfig::initFilamentData(FilamentData& filamentData)
 	catch (...) {
 
 	}
-	
+#endif
 }
 
 std::string QDSFilamentConfig::getData(FilamentData filamentData, int index)
@@ -1838,6 +1841,7 @@ void QDSDeviceManager::unSelected(){
 }
 
 //y76
+#if QDT_RELEASE_TO_PUBLIC
 void QDSDeviceManager::setNetDevices(std::vector<NetDevice> devices){
     std::lock_guard<std::mutex> lock(manager_mutex_);
     net_devices = devices;
@@ -1847,6 +1851,7 @@ std::vector<NetDevice> QDSDeviceManager::getNetDevices(){
     std::lock_guard<std::mutex> lock(manager_mutex_);
     return net_devices;
 }
+#endif
 
 void QDSDeviceManager::upBoxInfoToBoxMsg(std::shared_ptr<QDSDevice>& device){
     std::vector<int> slot_state(17);

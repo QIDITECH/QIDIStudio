@@ -245,8 +245,10 @@ public:
     void setSelected(const std::string& device_id);
     std::shared_ptr<QDSDevice> getSelectedDevice();
     void unSelected();
+#if QDT_RELEASE_TO_PUBLIC
     void setNetDevices(std::vector<NetDevice> devices);
     std::vector<NetDevice> getNetDevices();
+#endif
     void upBoxInfoToBoxMsg(std::shared_ptr<QDSDevice>& device);
 
 private:
@@ -269,7 +271,10 @@ private:
     std::mutex callback_mutex_;
     std::unordered_map<std::string, std::shared_ptr<QDSDevice>> devices_;
     std::unordered_map<std::string, std::shared_ptr<WebSocketConnect>> connections_;
+
+#if QDT_RELEASE_TO_PUBLIC
     std::vector<NetDevice> net_devices;
+#endif
 
 
     // WebSocket

@@ -332,10 +332,12 @@ void PrinterWebView::init_scroll_window(wxPanel* Panel) {
             devicesizer->Add(label_boxsizer_online);
             devicesizer->AddSpacer(7);
         }
+ #if QDT_RELEASE_TO_PUBLIC
         m_net_devices = wxGetApp().get_devices();
         for (const auto& device : m_net_devices) {
             AddNetButton(device);
         }
+#endif
     }
     //y40
     if (webisNetMode == isNetWeb) {
@@ -475,7 +477,6 @@ void PrinterWebView::SetLoginStatus(bool status) {
                     {
                         s_lastDeviceCount = currentDeviceCount;
                         
-                        // ÔÚÖ÷Ïß³ÌÖÐ¸üÐÂUI
                         GUI::wxGetApp().CallAfter([this]() {
                             this->UpdateState();
                             this->SetPresetChanged(true);
@@ -488,14 +489,14 @@ void PrinterWebView::SetLoginStatus(bool status) {
         }).detach();
 #endif
     } else {
+#if QDT_RELEASE_TO_PUBLIC
         std::vector<NetDevice> devices;
         wxGetApp().set_devices(devices);
-        if (!wxGetApp().is_link_connect())  // ·ÇlinkµÇÂ¼µÄÊ±ºòÍË³öµÇÂ¼ÐèÒª¹Ø±ÕsseÁ¬½Ó
+        if (!wxGetApp().is_link_connect())
         {
-#if QDT_RELEASE_TO_PUBLIC
             MakerHttpHandle::getInstance().closeSSEClient();
-#endif
         }
+#endif
         // y28
         if(webisNetMode == isNetWeb)
             webisNetMode = isDisconnect;
@@ -708,7 +709,7 @@ void PrinterWebView::updateDeviceConnectType(const std::string& device_id, const
         if (machine_button == nullptr) {
             return;
         }
-        // cj_1 ÇÐ»»ºóµÃ°´Å¥ÏÔÊ¾ÑùÊ½¿ØÖÆ
+        // cj_1 ï¿½Ð»ï¿½ï¿½ï¿½Ã°ï¿½Å¥ï¿½ï¿½Ê¾ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½
         cancelAllDevButtonSelect();
         clearStatusPanelData();
         machine_button->SetIsSelected(true);
@@ -1107,7 +1108,9 @@ void PrinterWebView::onStatusPanelTask(wxCommandEvent& event)
             m_device_manager->sendActionCommand(m_cur_deviceId, action_type);
         }
 
-    } else {
+    } 
+#if QDT_RELEASE_TO_PUBLIC
+    else {
         HttpData httpData;
         json bodyJson;
         bodyJson["serialNumber"] = m_cur_deviceId;
@@ -1153,6 +1156,7 @@ void PrinterWebView::onStatusPanelTask(wxCommandEvent& event)
             return;
         }
     }
+#endif
 }
 
 //cj_1
@@ -1186,6 +1190,7 @@ void PrinterWebView::onSetBoxTask(wxCommandEvent& event)
 		return;
 	}
 
+#if QDT_RELEASE_TO_PUBLIC
 	HttpData httpData;
 	json bodyJson;
 	bodyJson["serialNumber"] = m_cur_deviceId;
@@ -1207,7 +1212,7 @@ void PrinterWebView::onSetBoxTask(wxCommandEvent& event)
 		std::cout << "http error" << isSucceed << std::endl;
 		return;
 	}
-
+#endif
 }
 
 void PrinterWebView::onRefreshRfid(wxCommandEvent& event)
@@ -1225,6 +1230,7 @@ void PrinterWebView::onRefreshRfid(wxCommandEvent& event)
 		return;
 	}
 
+#if QDT_RELEASE_TO_PUBLIC
     //RFID_READ SLOT=slot3
 	HttpData httpData;
 	json bodyJson;
@@ -1245,7 +1251,7 @@ void PrinterWebView::onRefreshRfid(wxCommandEvent& event)
 
     auto device = m_device_manager->getDevice(m_cur_deviceId);
     return;
-   
+#endif
 
 
 }
@@ -1458,22 +1464,22 @@ void PrinterWebView::OnScroll(wxScrollWinEvent& event)
  }
 
  std::string extractBetweenMarkers(const std::string& path) {
-	 // ²éÕÒ "/gcodes" µÄÎ»ÖÃ
+	 // ï¿½ï¿½ï¿½ï¿½ "/gcodes" ï¿½ï¿½Î»ï¿½ï¿½
 	 size_t startPos = path.find("/gcodes");
 	 if (startPos == std::string::npos) {
-		 return "";  // Ã»ÕÒµ½ /gcodes
+		 return "";  // Ã»ï¿½Òµï¿½ /gcodes
 	 }
 
-	 // ´Ó /gcodes ºóÃæ¿ªÊ¼£¨¼ÓÉÏ³¤¶È£©
-	 startPos += 7;  // "/gcodes" ³¤¶ÈÊÇ7
+	 // ï¿½ï¿½ /gcodes ï¿½ï¿½ï¿½æ¿ªÊ¼ï¿½ï¿½ï¿½ï¿½ï¿½Ï³ï¿½ï¿½È£ï¿½
+	 startPos += 7;  // "/gcodes" ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½7
 
-	 // ²éÕÒ ".3mf" µÄÎ»ÖÃ
+	 // ï¿½ï¿½ï¿½ï¿½ ".3mf" ï¿½ï¿½Î»ï¿½ï¿½
 	 size_t endPos = path.find(".3mf", startPos);
 	 if (endPos == std::string::npos) {
-		 return "";  // Ã»ÕÒµ½ .3mf
+		 return "";  // Ã»ï¿½Òµï¿½ .3mf
 	 }
 
-	 // ÌáÈ¡ÖÐ¼ä²¿·Ö
+	 // ï¿½ï¿½È¡ï¿½Ð¼ä²¿ï¿½ï¿½
 	 return path.substr(startPos, endPos - startPos);
  }
 
@@ -1510,7 +1516,7 @@ void PrinterWebView::OnScroll(wxScrollWinEvent& event)
              std::string oldPrintFileName = device->m_print_filename;
 			 device->updateByJsonData(status);
 			 device->last_update = std::chrono::steady_clock::now();
-             //cj_1 µ±´òÓ¡ÎÄ¼þÃû¸üÐÂÁË£¬¸üÐÂ´òÓ¡¹Ì¶¨ÐÅÏ¢£¬ÎÄ¼þÍ¼Æ¬£¬´òÓ¡ºÄÊ±£¬ÏûºÄÁ¿¡£
+             //cj_1 ï¿½ï¿½ï¿½ï¿½Ó¡ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë£ï¿½ï¿½ï¿½ï¿½Â´ï¿½Ó¡ï¿½Ì¶ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½Ä¼ï¿½Í¼Æ¬ï¿½ï¿½ï¿½ï¿½Ó¡ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
              if (oldPrintFileName != device->m_print_filename) {
 				 
 				std::string url = device->m_frp_url + "/api/qidiclient/files/list";
@@ -1723,7 +1729,7 @@ void PrinterWebView::bindTaskHandle()
         return;
     }
 
-	// ±éÀú key-value ¶Ô
+	// ï¿½ï¿½ï¿½ï¿½ key-value ï¿½ï¿½
 	for (auto& pair : m_eventToTaskPath) {
         const wxEventTypeTag< wxCommandEvent >eventType = pair.first;
         t_status_page->Bind(eventType, &PrinterWebView::onStatusPanelTask, this);
@@ -1817,15 +1823,15 @@ std::string extractEndNumbers(const std::string& str) {
 	size_t endPos = str.find_last_not_of("0123456789");
 
 	if (endPos == std::string::npos) {
-		// ×Ö·û´®È«ÊÇÊý×Ö
+		// ï¿½Ö·ï¿½ï¿½ï¿½È«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		return str;
 	}
 	else if (endPos == str.length() - 1) {
-		// ×îºóÒ»¸ö×Ö·û²»ÊÇÊý×Ö
+		// ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		return "";
 	}
 	else {
-		// ·µ»ØÄ©Î²µÄÊý×Ö²¿·Ö
+		// ï¿½ï¿½ï¿½ï¿½Ä©Î²ï¿½ï¿½ï¿½ï¿½ï¿½Ö²ï¿½ï¿½ï¿½
 		return str.substr(endPos + 1);
 	}
 }
