@@ -138,13 +138,23 @@ void QDSFilamentConfig::init()
 		initFilamentData(m_vendor);
         initFilamentData(m_filament_type);
     });
+
+#if QDT_RELEASE_TO_PUBLIC
+    std::string region = wxGetApp().app_config->get("region");
+    if (region == "China") {
+        m_env = PRODUCTIONENV;
+    }
+    else {
+        m_env = FOREIGNENV;
+    }
+#endif
 }
 
 
 void QDSFilamentConfig::initTypeName()
 {
 #if QDT_RELEASE_TO_PUBLIC
-	std::string resultBody = MakerHttpHandle::getInstance().httpGetTask(Environment::TESTENV, m_typeName.path);
+	std::string resultBody = MakerHttpHandle::getInstance().httpGetTask(m_env, m_typeName.path);
 	if (resultBody == "") {
 		return;
 	}
@@ -179,7 +189,7 @@ void QDSFilamentConfig::initTypeName()
 void QDSFilamentConfig::initFilamentData(FilamentData& filamentData)
 {
 #if QDT_RELEASE_TO_PUBLIC
-	std::string resultBody = MakerHttpHandle::getInstance().httpGetTask(Environment::TESTENV, filamentData.path);
+	std::string resultBody = MakerHttpHandle::getInstance().httpGetTask(m_env, filamentData.path);
 	if (resultBody == "") {
 		return;
 	}

@@ -488,8 +488,9 @@ void PrinterWebView::SetLoginStatus(bool status) {
             }
         }).detach();
 #endif
-    } else {
+    } 
 #if QDT_RELEASE_TO_PUBLIC
+    else {
         std::vector<NetDevice> devices;
         wxGetApp().set_devices(devices);
         if (!wxGetApp().is_link_connect())
@@ -709,7 +710,7 @@ void PrinterWebView::updateDeviceConnectType(const std::string& device_id, const
         if (machine_button == nullptr) {
             return;
         }
-        // cj_1 �л���ð�ť��ʾ��ʽ����
+        // cj_1
         cancelAllDevButtonSelect();
         clearStatusPanelData();
         machine_button->SetIsSelected(true);
@@ -939,7 +940,7 @@ void PrinterWebView::OnDeleteButtonClick(wxCommandEvent &event)
 					bodyJson["serialNumber"] = m_cur_deviceId;
                     bodyJson["source"] = "QIDIStudio";
 				    httpData.body = bodyJson.dump();
-					httpData.env = TESTENV;
+					httpData.env = m_env;
 					httpData.target = DEVICE;
 					wxEventType curEventType = event.GetEventType();
                     httpData.taskPath = "/unbind";
@@ -1140,7 +1141,7 @@ void PrinterWebView::onStatusPanelTask(wxCommandEvent& event)
         }
 
 
-        httpData.env = TESTENV;
+        httpData.env = m_env;
         httpData.target = PRINTERTYPE;
 
         wxEventType curEventType = event.GetEventType();
@@ -1199,7 +1200,7 @@ void PrinterWebView::onSetBoxTask(wxCommandEvent& event)
     event.GetString().ToLong(&index);
 	bodyJson["idx"] = index;
     httpData.body = bodyJson.dump();
-	httpData.env = TESTENV;
+	httpData.env = m_env;
 	httpData.target = PRINTERTYPE;
 	wxEventType curEventType = event.GetEventType();
 	if (m_boxEventToTaskPath.find(curEventType) != m_boxEventToTaskPath.end()) {
@@ -1237,7 +1238,7 @@ void PrinterWebView::onRefreshRfid(wxCommandEvent& event)
 	bodyJson["serialNumber"] = m_cur_deviceId;
 	bodyJson["slotIndex"] = slotIndex;
     httpData.body = bodyJson.dump();
-	httpData.env = TESTENV;
+	httpData.env = m_env;
 	httpData.target = PRINTERTYPE;
     httpData.taskPath = "/set/filament/rfid";
 	
@@ -1464,22 +1465,19 @@ void PrinterWebView::OnScroll(wxScrollWinEvent& event)
  }
 
  std::string extractBetweenMarkers(const std::string& path) {
-	 // ���� "/gcodes" ��λ��
+
 	 size_t startPos = path.find("/gcodes");
 	 if (startPos == std::string::npos) {
-		 return "";  // û�ҵ� /gcodes
+		 return "";
 	 }
 
-	 // �� /gcodes ���濪ʼ�����ϳ��ȣ�
-	 startPos += 7;  // "/gcodes" ������7
+	 startPos += 7;
 
-	 // ���� ".3mf" ��λ��
 	 size_t endPos = path.find(".3mf", startPos);
 	 if (endPos == std::string::npos) {
-		 return "";  // û�ҵ� .3mf
+		 return "";
 	 }
 
-	 // ��ȡ�м䲿��
 	 return path.substr(startPos, endPos - startPos);
  }
 
@@ -1516,7 +1514,7 @@ void PrinterWebView::OnScroll(wxScrollWinEvent& event)
              std::string oldPrintFileName = device->m_print_filename;
 			 device->updateByJsonData(status);
 			 device->last_update = std::chrono::steady_clock::now();
-             //cj_1 ����ӡ�ļ��������ˣ����´�ӡ�̶���Ϣ���ļ�ͼƬ����ӡ��ʱ����������
+             //cj_1 
              if (oldPrintFileName != device->m_print_filename) {
 				 
 				std::string url = device->m_frp_url + "/api/qidiclient/files/list";
@@ -1721,6 +1719,16 @@ void PrinterWebView::initEventToTaskPath()
 		{EVTSET_CHAMBERFAN_SPEED, "SET_FAN_SPEED FAN=chamber_circulation_fan SPEED=%.2f"}
 
     };
+
+#if QDT_RELEASE_TO_PUBLIC
+    std::string region = wxGetApp().app_config->get("region");
+    if (region == "China") {
+        m_env = PRODUCTIONENV;
+    }
+    else {
+        m_env = FOREIGNENV;
+    }
+#endif
 }
 
 void PrinterWebView::bindTaskHandle()
@@ -1729,7 +1737,6 @@ void PrinterWebView::bindTaskHandle()
         return;
     }
 
-	// ���� key-value ��
 	for (auto& pair : m_eventToTaskPath) {
         const wxEventTypeTag< wxCommandEvent >eventType = pair.first;
         t_status_page->Bind(eventType, &PrinterWebView::onStatusPanelTask, this);
@@ -1823,15 +1830,12 @@ std::string extractEndNumbers(const std::string& str) {
 	size_t endPos = str.find_last_not_of("0123456789");
 
 	if (endPos == std::string::npos) {
-		// �ַ���ȫ������
 		return str;
 	}
 	else if (endPos == str.length() - 1) {
-		// ���һ���ַ���������
 		return "";
 	}
 	else {
-		// ����ĩβ�����ֲ���
 		return str.substr(endPos + 1);
 	}
 }

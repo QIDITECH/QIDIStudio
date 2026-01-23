@@ -69,6 +69,10 @@ private:
     std::string getData(FilamentData filamentData, int index);
     int getIndex(FilamentData filementData, std::string name);
 
+#if QDT_RELEASE_TO_PUBLIC
+    Environment m_env;
+#endif
+
 public:
 	FilamentData m_colorHexCode{ "/backend/v1/setting/filament/color/all","hexCode" };
 	FilamentData m_colorDes{ "/backend/v1/setting/filament/color/all","description" };

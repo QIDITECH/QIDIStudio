@@ -217,6 +217,7 @@ private:
 
 #if QDT_RELEASE_TO_PUBLIC
     std::vector<NetDevice> m_net_devices;
+    Environment m_env;
 #endif
 
 };
