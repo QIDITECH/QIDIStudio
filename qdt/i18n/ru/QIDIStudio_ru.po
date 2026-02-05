@@ -16663,3 +16663,35 @@ msgstr "Не удалось настроить выравнивание стол
 
 msgid "Failed to set the timelapse..."
 msgstr "Не удалось настроить таймлапс..."
+
+msgid "Enable Air Condition"
+msgstr "Включить кондиционер"
+
+msgid "This enables timelapse mode. It will take a picture every 5 seconds during printing.\n"
+"*Automatic mode: Skip if timelapse is not supported."
+msgstr "Включает режим timelapse. Во время печати будет делаться снимок каждые 5 секунд.\n"
+"*Автоматический режим: Пропустить, если timelapse не поддерживается."
+
+msgid "Turn on the air conditioner for better cooling effect."
+msgstr "Включите кондиционер для лучшего эффекта охлаждения."
+
+msgid "BOX Settings"
+msgstr "Настройки BOX"
+
+msgid "The BOX will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds."
+msgstr "BOX автоматически прочитает информацию о филаменте при вставке нового филамента QIDI Tech. Это займет около 20 секунд."
+
+msgid "Note: if a new filament is inserted during  printing, the BOX will not automatically read any information until printing is completed."
+msgstr "Примечание: если новый филамент вставлен во время печати, BOX не будет автоматически считывать информацию до завершения печати."
+
+msgid "The BOX will automatically read the information of inserted filament on start-up. It will take about 1 minute.The reading process will roll filament spools."
+msgstr "При запуске BOX автоматически прочитает информацию о вставленном филаменте. Это займет около 1 минуты. В процессе чтения будут прокручиваться катушки филамента."
+
+msgid "BOX filament backup"
+msgstr "Резерв филамента BOX"
+
+msgid "BOX will continue to another spool with the same properties of filament automatically when current filament runs out"
+msgstr "BOX автоматически переключится на другую катушку с такими же свойствами филамента, когда текущий филамент закончится"
+
+msgid "Synchronize nozzle information and the number of BOX"
+msgstr "Синхронизировать информацию о сопле и количество BOX"

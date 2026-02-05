@@ -40,6 +40,9 @@ msgstr "rechter Extruder"
 msgid "left extruder"
 msgstr "linker Extruder"
 
+msgid "extruder"
+msgstr "Extruder"
+
 msgid "TPU is not supported by AMS."
 msgstr "TPU wird vom AMS nicht unterstützt."
 
@@ -18878,3 +18881,35 @@ msgstr "Bettnivellierung konnte nicht eingestellt werden..."
 
 msgid "Failed to set the timelapse..."
 msgstr "Zeitraffer konnte nicht eingestellt werden..."
+
+msgid "Enable Air Condition"
+msgstr "Klimaanlage einschalten"
+
+msgid "This enables timelapse mode. It will take a picture every 5 seconds during printing.\n"
+"*Automatic mode: Skip if timelapse is not supported."
+msgstr "Dadurch wird der Zeitraffer-Modus aktiviert. Während des Drucks wird alle 5 Sekunden ein Bild aufgenommen.\n"
+"*Automatikmodus: Überspringen, wenn Zeitraffer nicht unterstützt wird."
+
+msgid "Turn on the air conditioner for better cooling effect."
+msgstr "Schalten Sie die Klimaanlage ein, um eine bessere Kühlwirkung zu erzielen."
+
+msgid "BOX Settings"
+msgstr "BOX-Einstellungen"
+
+msgid "The BOX will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds."
+msgstr "Der BOX liest automatisch die Filamentinformationen beim Einlegen eines neuen QIDI Tech-Filaments. Dies dauert etwa 20 Sekunden."
+
+msgid "Note: if a new filament is inserted during  printing, the BOX will not automatically read any information until printing is completed."
+msgstr "Hinweis: Wenn während des Druckens ein neues Filament eingesetzt wird, liest der BOX keine Informationen, bis der Druck abgeschlossen ist."
+
+msgid "The BOX will automatically read the information of inserted filament on start-up. It will take about 1 minute.The reading process will roll filament spools."
+msgstr "Beim Start liest der BOX automatisch die Informationen des eingesetzten Filaments. Das dauert etwa 1 Minute. Während des Lesevorgangs werden Filamentspulen gedreht."
+
+msgid "BOX filament backup"
+msgstr "BOX Filament-Backup"
+
+msgid "BOX will continue to another spool with the same properties of filament automatically when current filament runs out"
+msgstr "Der BOX wechselt automatisch zu einer anderen Spule mit denselben Filamenteigenschaften, wenn das aktuelle Filament aufgebraucht ist"
+
+msgid "Synchronize nozzle information and the number of BOX"
+msgstr "Synchronisiere Düseninformationen und die Anzahl der BOX"

@@ -10566,6 +10566,9 @@ msgstr "Printsnelheid omlaag brengen zodat de laag beter kan koelen"
 msgid "Enable this option to slow printing speed down to make the final layer time not shorter than the layer time threshold in \"Max fan speed threshold\", so that layer can be cooled for a longer time. This can improve the cooling quality for needle and small details"
 msgstr "Schakel deze optie in om de afdruksnelheid te verlagen zodat de uiteindelijke laagtijd niet korter is dan de laagtijddrempel in \"Max. drempel ventilatorsnelheid\" zodat de laag langer kan worden gekoeld. Dit kan de kwaliteit voor fijne details verbeteren"
 
+msgid "Don't slow down outer walls"
+msgstr "Versnel de buitenste wanden niet"
+
 msgid ""
 "If enabled, this setting will ensure external perimeters are not slowed down to meet the minimum layer time. This is particularly helpful in the below scenarios:\n"
 "1. To avoid changes in shine when printing glossy filaments\n"
@@ -18733,9 +18736,6 @@ msgstr "de printer?"
 msgid "Delete Physical Printer"
 msgstr "Verwijder fysieke printer"
 
-msgid "Don't slow down outer walls"
-msgstr "Vertraag de buitenmuren niet."
-
 msgid ""
 "If enabled, this setting will ensure external perimeters are not slowed down to meet the minimum layer time. This is particularly helpful in the below scenarios:\n"
 "\n"
@@ -18908,3 +18908,35 @@ msgstr "Nivellering bed mislukt..."
 
 msgid "Failed to set the timelapse..."
 msgstr "Timelapse instellen mislukt..."
+
+msgid "Enable Air Condition"
+msgstr "Airconditioning inschakelen"
+
+msgid "This enables timelapse mode. It will take a picture every 5 seconds during printing.\n"
+"*Automatic mode: Skip if timelapse is not supported."
+msgstr "Dit schakelt de timelapse-modus in. Er wordt elke 5 seconden een foto gemaakt tijdens het afdrukken.\n"
+"*Automatische modus: Overslaan als timelapse niet wordt ondersteund."
+
+msgid "Turn on the air conditioner for better cooling effect."
+msgstr "Zet de airconditioning aan voor een beter koeleffect."
+
+msgid "BOX Settings"
+msgstr "BOX-instellingen"
+
+msgid "The BOX will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds."
+msgstr "De BOX leest automatisch de filamenteigenschappen bij het plaatsen van een nieuw QIDI Tech-filament. Dit duurt ongeveer 20 seconden."
+
+msgid "Note: if a new filament is inserted during  printing, the BOX will not automatically read any information until printing is completed."
+msgstr "Opmerking: als tijdens het afdrukken een nieuw filament wordt geplaatst, zal de BOX geen informatie automatisch lezen totdat de afdruk is voltooid."
+
+msgid "The BOX will automatically read the information of inserted filament on start-up. It will take about 1 minute.The reading process will roll filament spools."
+msgstr "Bij het opstarten leest de BOX automatisch de informatie van het ingevoerde filament. Het duurt ongeveer 1 minuut. Tijdens het leesproces draaien de filamentspoelen."
+
+msgid "BOX filament backup"
+msgstr "BOX filament-backup"
+
+msgid "BOX will continue to another spool with the same properties of filament automatically when current filament runs out"
+msgstr "De BOX gaat automatisch door naar een andere spoel met dezelfde filamenteigenschappen wanneer het huidige filament op is"
+
+msgid "Synchronize nozzle information and the number of BOX"
+msgstr "Synchroniseer nozzle-informatie en het aantal BOX"

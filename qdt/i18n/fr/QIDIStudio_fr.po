@@ -18844,3 +18844,35 @@ msgstr "Échec du réglage du nivellement du plateau..."
 
 msgid "Failed to set the timelapse..."
 msgstr "Échec du réglage de la prise de vue intervalle..."
+
+msgid "Enable Air Condition"
+msgstr "Activer la climatisation"
+
+msgid "This enables timelapse mode. It will take a picture every 5 seconds during printing.\n"
+"*Automatic mode: Skip if timelapse is not supported."
+msgstr "Active le mode timelapse. Il prendra une photo toutes les 5 secondes pendant l'impression.\n"
+"*Mode automatique : Ignorer si le timelapse n'est pas pris en charge."
+
+msgid "Turn on the air conditioner for better cooling effect."
+msgstr "Allumez la climatisation pour un meilleur effet de refroidissement."
+
+msgid "BOX Settings"
+msgstr "Paramètres du BOX"
+
+msgid "The BOX will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds."
+msgstr "Le BOX lira automatiquement les informations du filament lors de l'insertion d'un nouveau filament QIDI Tech. Cela prend environ 20 secondes."
+
+msgid "Note: if a new filament is inserted during  printing, the BOX will not automatically read any information until printing is completed."
+msgstr "Remarque : si un nouveau filament est inséré pendant l'impression, le BOX ne lira aucune information automatiquement tant que l'impression n'est pas terminée."
+
+msgid "The BOX will automatically read the information of inserted filament on start-up. It will take about 1 minute.The reading process will roll filament spools."
+msgstr "Au démarrage, le BOX lira automatiquement les informations du filament inséré. Cela prendra environ 1 minute. Le processus de lecture fera tourner les bobines de filament."
+
+msgid "BOX filament backup"
+msgstr "Sauvegarde de filament du BOX"
+
+msgid "BOX will continue to another spool with the same properties of filament automatically when current filament runs out"
+msgstr "Le BOX passera automatiquement à une autre bobine ayant les mêmes propriétés de filament lorsque le filament actuel sera épuisé"
+
+msgid "Synchronize nozzle information and the number of BOX"
+msgstr "Synchroniser les informations de buse et le nombre de BOX"

@@ -18748,3 +18748,35 @@ msgstr "Nie udało się ustawić poziomowania stołu..."
 
 msgid "Failed to set the timelapse..."
 msgstr "Nie udało się ustawić poklatkowości..."
+
+msgid "Enable Air Condition"
+msgstr "Włącz klimatyzację"
+
+msgid "This enables timelapse mode. It will take a picture every 5 seconds during printing.\n"
+"*Automatic mode: Skip if timelapse is not supported."
+msgstr "Włącza tryb poklatkowy. Podczas drukowania co 5 sekund wykona zdjęcie.\n"
+"*Tryb automatyczny: Pomiń, jeśli poklatkowość nie jest obsługiwana."
+
+msgid "Turn on the air conditioner for better cooling effect."
+msgstr "Włącz klimatyzację, aby uzyskać lepszy efekt chłodzenia."
+
+msgid "BOX Settings"
+msgstr "Ustawienia BOX"
+
+msgid "The BOX will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds."
+msgstr "BOX automatycznie odczyta informacje o filamencie po włożeniu nowego filamentu QIDI Tech. Zajmuje to około 20 sekund."
+
+msgid "Note: if a new filament is inserted during  printing, the BOX will not automatically read any information until printing is completed."
+msgstr "Uwaga: jeśli nowy filament zostanie włożony podczas drukowania, BOX nie będzie automatycznie odczytywał żadnych informacji do czasu zakończenia drukowania."
+
+msgid "The BOX will automatically read the information of inserted filament on start-up. It will take about 1 minute.The reading process will roll filament spools."
+msgstr "Podczas uruchamiania BOX automatycznie odczyta informacje o włożonym filamencie. Zajmie to około 1 minuty. Proces odczytu będzie obracał szpule z filamentem."
+
+msgid "BOX filament backup"
+msgstr "Kopia zapasowa filamentu BOX"
+
+msgid "BOX will continue to another spool with the same properties of filament automatically when current filament runs out"
+msgstr "BOX automatycznie przełączy się na inną szpulę o tych samych właściwościach filamentu, gdy bieżący filament się skończy"
+
+msgid "Synchronize nozzle information and the number of BOX"
+msgstr "Synchronizuj informacje o dyszy i liczbę BOX"

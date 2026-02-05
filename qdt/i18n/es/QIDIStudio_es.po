@@ -37,6 +37,9 @@ msgstr "izquierda"
 msgid "right extruder"
 msgstr "extrusor derecho"
 
+msgid "left extruder"
+msgstr "extrusor izquierdo"
+
 msgid "extruder"
 msgstr "extrusor"
 
@@ -4254,6 +4257,9 @@ msgstr "Opciones"
 
 msgid "travel"
 msgstr "desplazamiento"
+
+msgid "Extruder"
+msgstr "Extrusor"
 
 msgid "Cost"
 msgstr "Coste"
@@ -18861,3 +18867,35 @@ msgstr "Error al configurar el nivelado de la cama..."
 
 msgid "Failed to set the timelapse..."
 msgstr "Error al configurar el time-lapse..."
+
+msgid "Enable Air Condition"
+msgstr "Activar aire acondicionado"
+
+msgid "This enables timelapse mode. It will take a picture every 5 seconds during printing.\n"
+"*Automatic mode: Skip if timelapse is not supported."
+msgstr "Esto activa el modo time-lapse. Tomará una foto cada 5 segundos durante la impresión.\n"
+"*Modo automático: Omitir si no se soporta time-lapse."
+
+msgid "Turn on the air conditioner for better cooling effect."
+msgstr "Enciende el aire acondicionado para un mejor efecto de refrigeración."
+
+msgid "BOX Settings"
+msgstr "Configuración de BOX"
+
+msgid "The BOX will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds."
+msgstr "El BOX leerá automáticamente la información del filamento al insertar un nuevo filamento QIDI Tech. Esto tarda aproximadamente 20 segundos."
+
+msgid "Note: if a new filament is inserted during  printing, the BOX will not automatically read any information until printing is completed."
+msgstr "Nota: si se inserta un nuevo filamento durante la impresión, el BOX no leerá automáticamente ninguna información hasta que la impresión termine."
+
+msgid "The BOX will automatically read the information of inserted filament on start-up. It will take about 1 minute.The reading process will roll filament spools."
+msgstr "Al iniciar, el BOX leerá automáticamente la información del filamento insertado. Tomará aproximadamente 1 minuto. El proceso de lectura hará girar los carretes de filamento."
+
+msgid "BOX filament backup"
+msgstr "Copia de seguridad de filamento del BOX"
+
+msgid "BOX will continue to another spool with the same properties of filament automatically when current filament runs out"
+msgstr "El BOX continuará con otra bobina con las mismas propiedades de filamento automáticamente cuando el filamento actual se agote"
+
+msgid "Synchronize nozzle information and the number of BOX"
+msgstr "Sincronizar información de boquilla y el número de BOX"

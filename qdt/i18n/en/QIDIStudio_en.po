@@ -13016,6 +13016,9 @@ msgstr "Please enter the name you want to save to printer."
 msgid "The name cannot exceed 40 characters."
 msgstr "The name cannot exceed 40 characters."
 
+msgid "Nozzle ID"
+msgstr ""
+
 msgid "Please find the best line on your plate"
 msgstr "Please find the best line on your plate"
 
@@ -18294,4 +18297,38 @@ msgid "Failed to set the bed leveling..."
 msgstr ""
 
 msgid "Failed to set the timelapse..."
+msgstr ""
+
+msgid "Enable Air Condition"
+msgstr ""
+
+msgid "Cancel"
+msgstr ""
+
+msgid ""
+"This enables timelapse mode. It will take a picture every 5 seconds during printing.\n"
+"*Automatic mode: Skip if timelapse is not supported."
+msgstr ""
+
+msgid "Turn on the air conditioner for better cooling effect."
+msgstr ""
+
+msgid "BOX Settings"
+msgstr ""
+
+msgid "The BOX will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds."
+msgstr ""
+
+msgid "Note: if a new filament is inserted during  printing, the BOX will not automatically read any information until printing is completed."
+msgstr ""
+
+msgid "The BOX will automatically read the information of inserted filament on start-up. It will take about 1 minute.The reading process will roll filament spools."
+msgstr ""
+msgid "BOX filament backup"
+msgstr ""
+
+msgid "BOX will continue to another spool with the same properties of filament automatically when current filament runs out"
+msgstr ""
+
+msgid "Synchronize nozzle information and the number of BOX"
 msgstr ""

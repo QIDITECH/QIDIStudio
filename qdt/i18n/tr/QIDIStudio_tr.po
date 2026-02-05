@@ -17082,3 +17082,35 @@ msgstr "Yatak nivelasyonu ayarlanamadı..."
 
 msgid "Failed to set the timelapse..."
 msgstr "Zaman atlamalı çekim ayarlanamadı..."
+
+msgid "Enable Air Condition"
+msgstr "Klima'yı aç"
+
+msgid "This enables timelapse mode. It will take a picture every 5 seconds during printing.\n"
+"*Automatic mode: Skip if timelapse is not supported."
+msgstr "Bu, timelapse modunu etkinleştirir. Yazdırma sırasında her 5 saniyede bir fotoğraf çekecektir.\n"
+"*Otomatik mod: Timelapse desteklenmiyorsa atla."
+
+msgid "Turn on the air conditioner for better cooling effect."
+msgstr "Daha iyi soğutma etkisi için klimayı açın."
+
+msgid "BOX Settings"
+msgstr "BOX Ayarları"
+
+msgid "The BOX will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds."
+msgstr "Yeni bir QIDI Tech filament yerleştirildiğinde BOX, filament bilgilerini otomatik olarak okuyacaktır. Bu yaklaşık 20 saniye sürer."
+
+msgid "Note: if a new filament is inserted during  printing, the BOX will not automatically read any information until printing is completed."
+msgstr "Not: yazdırma sırasında yeni bir filament yerleştirilirse, BOX yazdırma tamamlanana kadar hiçbir bilgiyi otomatik olarak okumaz."
+
+msgid "The BOX will automatically read the information of inserted filament on start-up. It will take about 1 minute.The reading process will roll filament spools."
+msgstr "Başlangıçta BOX, yerleştirilen filamentin bilgilerini otomatik olarak okuyacaktır. Yaklaşık 1 dakika sürecektir. Okuma işlemi filament makaralarını döndürecektir."
+
+msgid "BOX filament backup"
+msgstr "BOX filament yedekleme"
+
+msgid "BOX will continue to another spool with the same properties of filament automatically when current filament runs out"
+msgstr "Mevcut filament tükendiğinde BOX otomatik olarak aynı özelliklere sahip başka bir makaraya geçecektir"
+
+msgid "Synchronize nozzle information and the number of BOX"
+msgstr "Nozzle bilgilerini ve BOX sayısını senkronize et"

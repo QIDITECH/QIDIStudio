@@ -10,6 +10,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Localazy (https://localazy.com)\n"
 "Plural-Forms: nplurals=2; plural=(n==1) ? 0 : 1;\n"
 "X-Generator: Poedit 3.4.4\n"
 
@@ -18962,3 +18963,35 @@ msgstr "Kunde inte ställa in planering av bädd..."
 
 msgid "Failed to set the timelapse..."
 msgstr "Kunde inte ställa in time-lapse..."
+
+msgid "Enable Air Condition"
+msgstr "Aktivera luftkonditionering"
+
+msgid "This enables timelapse mode. It will take a picture every 5 seconds during printing.\n"
+"*Automatic mode: Skip if timelapse is not supported."
+msgstr "Detta aktiverar timelapse-läget. Det tar en bild var 5:e sekund under utskrift.\n"
+"*Automatiskt läge: Hoppa över om timelapse inte stöds."
+
+msgid "Turn on the air conditioner for better cooling effect."
+msgstr "Sätt på luftkonditioneringen för bättre kylningseffekt."
+
+msgid "BOX Settings"
+msgstr "BOX-inställningar"
+
+msgid "The BOX will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds."
+msgstr "BOX kommer automatiskt läsa filamentinformationen vid insättning av ett nytt QIDI Tech-filament. Detta tar cirka 20 sekunder."
+
+msgid "Note: if a new filament is inserted during  printing, the BOX will not automatically read any information until printing is completed."
+msgstr "Obs: om ett nytt filament sätts in under utskrift kommer BOX inte automatiskt läsa någon information förrän utskriften är klar."
+
+msgid "The BOX will automatically read the information of inserted filament on start-up. It will take about 1 minute.The reading process will roll filament spools."
+msgstr "Vid uppstart läser BOX automatiskt information om det insatta filamentet. Det tar cirka 1 minut. Läsningsprocessen kommer rulla filamentspolar."
+
+msgid "BOX filament backup"
+msgstr "BOX filamentbackup"
+
+msgid "BOX will continue to another spool with the same properties of filament automatically when current filament runs out"
+msgstr "BOX fortsätter automatiskt till en annan spole med samma filamentegenskaper när nuvarande filament tar slut"
+
+msgid "Synchronize nozzle information and the number of BOX"
+msgstr "Synkronisera munstycksinformation och antalet BOX"

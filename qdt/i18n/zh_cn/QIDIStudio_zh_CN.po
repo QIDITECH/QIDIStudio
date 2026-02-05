@@ -22826,3 +22826,35 @@ msgstr "设置平台调平失败..."
 
 msgid "Failed to set the timelapse..."
 msgstr "设置延时摄影失败..."
+
+msgid "Enable Air Condition"
+msgstr "开启空调"
+
+msgid "This enables timelapse mode. It will take a picture every 5 seconds during printing.\n"
+"*Automatic mode: Skip if timelapse is not supported."
+msgstr "这将启用延时摄影模式。在打印过程中，它会每隔 5 秒钟拍摄一张照片。"
+"*自动模式：如果设备不支持延时摄影则跳过。"
+
+msgid "Turn on the air conditioner for better cooling effect."
+msgstr "打开空调以获得更好的降温效果。"
+
+msgid "BOX Settings"
+msgstr "BOX 设置"
+
+msgid "The BOX will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds."
+msgstr "当插入新的 QIDI Tech 丝材时，BOX 会自动读取丝材信息。这大约需要 20 秒。"
+
+msgid "Note: if a new filament is inserted during  printing, the BOX will not automatically read any information until printing is completed."
+msgstr "注意：在打印过程中插入新的灯丝，BOX 在打印完成前不会自动读取任何信息。"
+
+msgid "The BOX will automatically read the information of inserted filament on start-up. It will take about 1 minute.The reading process will roll filament spools."
+msgstr "在启动时，BOX 会自动读取插入的线材信息。这大约需要 1 分钟。读取过程中会转动线材卷轴。"
+
+msgid "BOX filament backup"
+msgstr "BOX自动续料"
+
+msgid "BOX will continue to another spool with the same properties of filament automatically when current filament runs out"
+msgstr "BOX料材丝耗尽后将自动切换到属性完全相同的耗材丝"
+
+msgid "Synchronize nozzle information and the number of BOX"
+msgstr "同步喷嘴信息和箱体数量"

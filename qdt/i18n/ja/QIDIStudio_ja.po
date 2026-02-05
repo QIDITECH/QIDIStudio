@@ -18841,3 +18841,35 @@ msgstr "ベッドレベル調整の設定に失敗しました..."
 
 msgid "Failed to set the timelapse..."
 msgstr "タイムラプスの設定に失敗しました..."
+
+msgid "Enable Air Condition"
+msgstr "エアコンを有効にする"
+
+msgid "This enables timelapse mode. It will take a picture every 5 seconds during printing.\n"
+"*Automatic mode: Skip if timelapse is not supported."
+msgstr "これによりタイムラプスモードが有効になります。印刷中に5秒ごとに写真を撮影します。\n"
+"*自動モード：タイムラプスがサポートされていない場合はスキップします。"
+
+msgid "Turn on the air conditioner for better cooling effect."
+msgstr "より良い冷却効果のためにエアコンを入れてください。"
+
+msgid "BOX Settings"
+msgstr "BOX設定"
+
+msgid "The BOX will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds."
+msgstr "新しい QIDI Tech フィラメントを挿入すると、BOX は自動的にフィラメント情報を読み取ります。これには約20秒かかります。"
+
+msgid "Note: if a new filament is inserted during  printing, the BOX will not automatically read any information until printing is completed."
+msgstr "注意：印刷中に新しいフィラメントが挿入された場合、印刷が完了するまで BOX は情報を自動的に読み取りません。"
+
+msgid "The BOX will automatically read the information of inserted filament on start-up. It will take about 1 minute.The reading process will roll filament spools."
+msgstr "起動時に、BOX は挿入されたフィラメントの情報を自動的に読み取ります。約1分かかります。読み取りプロセス中にフィラメントスプールが回転します。"
+
+msgid "BOX filament backup"
+msgstr "BOX フィラメントバックアップ"
+
+msgid "BOX will continue to another spool with the same properties of filament automatically when current filament runs out"
+msgstr "現在のフィラメントがなくなると、BOX は同じ特性の別のスプールに自動的に切り替わります。"
+
+msgid "Synchronize nozzle information and the number of BOX"
+msgstr "ノズル情報と BOX の数を同期"

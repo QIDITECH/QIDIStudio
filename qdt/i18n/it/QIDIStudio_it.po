@@ -18891,3 +18891,35 @@ msgstr "Impostazione livellamento piatto fallita..."
 
 msgid "Failed to set the timelapse..."
 msgstr "Impostazione timelapse fallita..."
+
+msgid "Enable Air Condition"
+msgstr "Attiva aria condizionata"
+
+msgid "This enables timelapse mode. It will take a picture every 5 seconds during printing.\n"
+"*Automatic mode: Skip if timelapse is not supported."
+msgstr "Abilita la modalità timelapse. Scatta una foto ogni 5 secondi durante la stampa.\n"
+"*Modalità automatica: Saltare se il timelapse non è supportato."
+
+msgid "Turn on the air conditioner for better cooling effect."
+msgstr "Accendi il condizionatore per un migliore effetto di raffreddamento."
+
+msgid "BOX Settings"
+msgstr "Impostazioni BOX"
+
+msgid "The BOX will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds."
+msgstr "Il BOX leggerà automaticamente le informazioni del filamento quando si inserisce un nuovo filamento QIDI Tech. Ciò richiede circa 20 secondi."
+
+msgid "Note: if a new filament is inserted during  printing, the BOX will not automatically read any information until printing is completed."
+msgstr "Nota: se un nuovo filamento viene inserito durante la stampa, il BOX non leggerà automaticamente alcuna informazione fino al completamento della stampa."
+
+msgid "The BOX will automatically read the information of inserted filament on start-up. It will take about 1 minute.The reading process will roll filament spools."
+msgstr "All'avvio, il BOX leggerà automaticamente le informazioni del filamento inserito. Ci vorrà circa 1 minuto. Il processo di lettura farà girare le bobine del filamento."
+
+msgid "BOX filament backup"
+msgstr "Backup del filamento BOX"
+
+msgid "BOX will continue to another spool with the same properties of filament automatically when current filament runs out"
+msgstr "Il BOX passerà automaticamente a un'altra bobina con le stesse proprietà del filamento quando il filamento attuale si esaurirà"
+
+msgid "Synchronize nozzle information and the number of BOX"
+msgstr "Sincronizza le informazioni dell'ugello e il numero di BOX"

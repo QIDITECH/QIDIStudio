@@ -16790,3 +16790,35 @@ msgstr "베드 레벨링 설정 실패..."
 
 msgid "Failed to set the timelapse..."
 msgstr "타임랩스 설정 실패..."
+
+msgid "Enable Air Condition"
+msgstr "에어컨 켜기"
+
+msgid "This enables timelapse mode. It will take a picture every 5 seconds during printing.\n"
+"*Automatic mode: Skip if timelapse is not supported."
+msgstr "타임랩스 모드를 활성화합니다. 인쇄 중에 5초마다 사진을 촬영합니다.\n"
+"*자동 모드: 타임랩스를 지원하지 않으면 건너뜁니다."
+
+msgid "Turn on the air conditioner for better cooling effect."
+msgstr "더 나은 냉각 효과를 위해 에어컨을 켜세요."
+
+msgid "BOX Settings"
+msgstr "BOX 설정"
+
+msgid "The BOX will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds."
+msgstr "새 QIDI Tech 필라멘트를 삽입하면 BOX가 필라멘트 정보를 자동으로 읽습니다. 약 20초가 소요됩니다."
+
+msgid "Note: if a new filament is inserted during  printing, the BOX will not automatically read any information until printing is completed."
+msgstr "참고: 인쇄 중에 새 필라멘트가 삽입되면 인쇄가 완료될 때까지 BOX가 자동으로 정보를 읽지 않습니다."
+
+msgid "The BOX will automatically read the information of inserted filament on start-up. It will take about 1 minute.The reading process will roll filament spools."
+msgstr "시작 시 BOX는 삽입된 필라멘트 정보를 자동으로 읽습니다. 약 1분 정도 소요됩니다. 읽기 과정에서 필라멘트 스풀이 회전합니다."
+
+msgid "BOX filament backup"
+msgstr "BOX 필라멘트 백업"
+
+msgid "BOX will continue to another spool with the same properties of filament automatically when current filament runs out"
+msgstr "현재 필라멘트가 소진되면 BOX는 자동으로 동일한 특성의 다른 스풀로 계속 전환됩니다."
+
+msgid "Synchronize nozzle information and the number of BOX"
+msgstr "노즐 정보 및 BOX 수 동기화"
