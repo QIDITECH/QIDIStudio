@@ -36,7 +36,6 @@
 #include "../QIDI/QIDINetwork.hpp"
 #endif
 
-#include "QDSDeviceManager.hpp"
 
 #define FILAMENT_SYSTEM_COLORS_NUM      16
 
@@ -62,6 +61,7 @@ class SLAPrint;
 class PartPlateList;
 class SlicingStatusEvent;
 class HelioCompletionEvent;
+
 enum SLAPrintObjectStep : unsigned int;
 enum class ConversionType : int;
 class DevAms;
@@ -98,7 +98,8 @@ class FinishSyncAmsDialog;
 class Bed3D;
 class FinishSyncBoxDialog;
 using t_optgroups = std::vector <std::shared_ptr<ConfigOptionsGroup>>;
-
+//cj_2
+class QDSDevice;
 class Plater;
 enum class ActionButtonType : int;
 

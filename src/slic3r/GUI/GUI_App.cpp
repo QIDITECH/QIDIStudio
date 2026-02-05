@@ -112,6 +112,8 @@
 #include "HintNotification.hpp"
 #include "QDTUtil.hpp"
 #include "PrinterWebView.hpp"
+//cj_2
+#include "QDSDeviceManager.hpp"
 //#ifdef WIN32
 //#include "BaseException.h"
 //#endif
@@ -1467,7 +1469,20 @@ void GUI_App::shutdown()
     BOOST_LOG_TRIVIAL(info) << "GUI_App::shutdown exit";
 }
 
+//cj_2
+#if QDT_RELEASE_TO_PUBLIC
+std::vector<Slic3r::GUI::NetDevice> GUI_App::get_devices()
+{
+    return qdsdevmanager->getNetDevices();
+}
 
+
+void GUI_App::set_devices(std::vector<NetDevice> devices)
+{
+    qdsdevmanager->setNetDevices(devices);
+}
+
+#endif
 std::string GUI_App::get_http_url(std::string country_code, std::string path)
 {
     std::string url;
@@ -4045,7 +4060,7 @@ void GUI_App::ShowUserLogin(bool show)
 // 10
 void GUI_App::SetOnlineLogin(bool status)
 {
-    m_qidi_login = status;
+    get_login_info();
     mainframe->m_printer_view->SetLoginStatus(status);
 }
 
@@ -4161,6 +4176,7 @@ static void update_scrolls(wxWindow* window)
 void GUI_App::force_menu_update()
 {
     NppDarkMode::SetSystemMenuForApp(app_config->get("sys_menu_enabled") == "1");
+
 }
 #endif //_MSW_DARK_MODE
 #endif //__WINDOWS__
@@ -4304,7 +4320,7 @@ wxString GUI_App::transition_tridid(int trid_id) const
 //QDS
 void GUI_App::request_login(bool show_user_info)
 {
-#if QDT_RELEASE_TO_PUBLIC
+#if QDT_RELEASE_TO_PUBLIC  
     ShowUserLogin();
 
     if (show_user_info) {
@@ -4329,64 +4345,53 @@ void GUI_App::get_login_info()
     //         GUI::wxGetApp().run_script_left(strJS);
     //     }
     // }
-    // y15 // y16
-    bool m_isloginin = (wxGetApp().app_config->get("user_token") != "");
-    if (m_isloginin) {
-        std::string head_name = wxGetApp().app_config->get("user_head_name");
-        if(m_user_name.empty()){
-            bool is_link = app_config->get("login_method") != "Maker";
-            if(is_link){
-                wxString    msg;
-                QIDINetwork m_qidinetwork;
-                m_user_name = m_qidinetwork.user_info(msg);
-            }
-            else{
-                m_user_name = MakerHttpHandle::getInstance().get_maker_user_name();
-            }
-            head_name = wxGetApp().app_config->get("user_head_name");
-            
-            if (m_user_name.empty()){
-                m_user_name = "";
-                wxGetApp().app_config->set("user_token", "");
-                wxString user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
-                wxString strJS = wxString::Format("SetUserOffline()");
-                GUI::wxGetApp().run_script_left(strJS);
-                m_qidi_login = false;
-            }
-            else{
-                wxString user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
-                if (!wxGetApp().app_config->get("user_head_name").empty()) {
-                    user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
-                    std::replace(user_head_path.begin(), user_head_path.end(), '\\', '/');
-                }
-                else
-                    user_head_path = "";
-                wxString strJS = wxString::Format("SetLoginInfo('%s', '%s');", user_head_path, from_u8(m_user_name));
-                GUI::wxGetApp().run_script_left(strJS);
-                m_qidi_login = true;
-            }
+    //y77
+    bool has_token = (wxGetApp().app_config->get("user_token") != "");
+    if (has_token) {
+        if (m_qidi_login)
+            return;
+       std::string head_name = wxGetApp().app_config->get("user_head_name");
+       bool is_link = app_config->get("login_method") != "Maker";
+       if(is_link){
+           wxString    msg;
+           QIDINetwork m_qidinetwork;
+           m_user_name = m_qidinetwork.user_info(msg);
+       }
+       else{
+           m_user_name = MakerHttpHandle::getInstance().get_maker_user_name();
+       }
+
+       if(!m_user_name.empty()){
+           wxString user_head_path;
+           if (!head_name.empty()) {
+               user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
+               std::replace(user_head_path.begin(), user_head_path.end(), '\\', '/');
+           }
+           else
+               user_head_path = "";
+           wxString strJS = wxString::Format("SetLoginInfo('%s', '%s');", user_head_path, from_u8(m_user_name));
+           GUI::wxGetApp().run_script_left(strJS);
+           m_qidi_login = true;
+       }
+       else if(!is_link) {
+               std::string new_token = MakerHttpHandle::getInstance().refresh_token();
+               wxGetApp().app_config->set("user_token", new_token);
+           }
+        else {
+            wxGetApp().app_config->set("user_token", "");
         }
-        else{
-            //y34
-            wxString user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
-            if (!wxGetApp().app_config->get("user_head_name").empty()) {
-                user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
-                std::replace(user_head_path.begin(), user_head_path.end(), '\\', '/');
-            }
-            else
-                user_head_path = "";
-            wxString strJS = wxString::Format("SetLoginInfo('%s', '%s');", user_head_path, from_u8(m_user_name));
-            GUI::wxGetApp().run_script_left(strJS);
-            m_qidi_login = true;
+
+        if(wxGetApp().app_config->get("user_token") == ""){
+            request_user_logout();
         }
     }
     else 
     {
-        m_user_name = "";
-        wxGetApp().app_config->set("user_token", "");
-        wxString strJS = wxString::Format("SetUserOffline()");
-        GUI::wxGetApp().run_script_left(strJS);
-        m_qidi_login = false;
+       m_user_name = "";
+       wxGetApp().app_config->set("user_token", "");
+       wxString strJS = wxString::Format("SetUserOffline()");
+       GUI::wxGetApp().run_script_left(strJS);
+       m_qidi_login = false;
     }
 #endif
 }

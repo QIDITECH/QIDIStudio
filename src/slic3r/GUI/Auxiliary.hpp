@@ -42,7 +42,8 @@
 #include "wxExtensions.hpp"
 #include "slic3r/GUI/DeviceManager.hpp"
 #include "slic3r/GUI/MonitorBasePanel.h"
-#include "slic3r/GUI/StatusPanel.hpp"
+//cj_2
+//#include "slic3r/GUI/StatusPanel.hpp"
 #include "slic3r/GUI/UpgradePanel.hpp"
 #include "slic3r/GUI/AmsWidgets.hpp"
 #include "Widgets/SideTools.hpp"

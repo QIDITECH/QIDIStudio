@@ -43,7 +43,8 @@
 #include "slic3r/GUI/MsgDialog.hpp"
 #include "slic3r/GUI/DeviceManager.hpp"
 #include "slic3r/GUI/MonitorBasePanel.h"
-#include "slic3r/GUI/StatusPanel.hpp"
+//cj_2
+//#include "slic3r/GUI/StatusPanel.hpp"
 #include "slic3r/GUI/UpgradePanel.hpp"
 #include "slic3r/GUI/HMSPanel.hpp"
 #include "slic3r/GUI/AmsWidgets.hpp"
@@ -53,6 +54,8 @@
 namespace Slic3r {
 namespace GUI {
 
+//cj_2
+class StatusPanel;
 class MediaFilePanel;
 
 class AddMachinePanel : public wxPanel

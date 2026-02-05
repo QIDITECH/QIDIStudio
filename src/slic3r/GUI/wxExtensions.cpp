@@ -476,13 +476,32 @@ wxBitmap create_scaled_bitmap(  const std::string& bmp_name_in,
 
         /*stacktrace is time-consuming, optimize it*/
         if (s_bmps_not_found.count(bmp_name) == 0) {
-            BOOST_LOG_TRIVIAL(error) << "Could not load bitmap: " << boost::stacktrace::stacktrace();
+            //BOOST_LOG_TRIVIAL(error) << "Could not load bitmap: " << boost::stacktrace::stacktrace();
             s_bmps_not_found.emplace(bmp_name);
         }
 
         //y73
         bmp_name = "printer_placeholder";
         bmp = cache.load_png(bmp_name, width, height, grayscale, resize ? win->FromDIP(10) * 0.1f : 0.f);
+        if (bmp == nullptr) {
+            // Neither SVG nor PNG has been found, raise error
+            throw Slic3r::RuntimeError("Could not load bitmap: " + bmp_name);
+        }
+    }
+
+    return *bmp;
+}
+
+//y77
+wxBitmap create_scaled_bitmap_form_path(const std::string& bmp_name_in, const int width, const int height)
+{
+    static Slic3r::GUI::BitmapCache cache;
+
+    std::string bmp_name = bmp_name_in;
+    wxBitmap *bmp = cache.load_svg(bmp_name, width, height);
+    if (bmp == nullptr) {
+        bmp_name = "printer_placeholder";
+        bmp = cache.load_png(bmp_name, width, height);
         if (bmp == nullptr) {
             // Neither SVG nor PNG has been found, raise error
             throw Slic3r::RuntimeError("Could not load bitmap: " + bmp_name);
@@ -552,7 +571,7 @@ wxBitmap create_scaled_bitmap2(const std::string& bmp_name_in, Slic3r::GUI::Bitm
     if (bmp == nullptr) {
         /*stacktrace is time-consuming, optimize it*/
         if (s_bmps_not_found.count(bmp_name) == 0) {
-            BOOST_LOG_TRIVIAL(error) << "Could not load bitmap: " << boost::stacktrace::stacktrace();
+            //BOOST_LOG_TRIVIAL(error) << "Could not load bitmap: " << boost::stacktrace::stacktrace();
             s_bmps_not_found.emplace(bmp_name);
         }
 

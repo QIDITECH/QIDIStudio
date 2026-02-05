@@ -132,6 +132,9 @@
 #include "Widgets/StaticGroup.hpp"
 #include "Widgets/MultiNozzleSync.hpp"
 
+//cj_2
+#include "QDSDeviceManager.hpp"
+
 #include "GUI_ObjectTable.hpp"
 #include "libslic3r/Thread.hpp"
 
@@ -6605,7 +6608,7 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                     Semver app_version = *(Semver::parse(SLIC3R_VERSION));
                     if (en_3mf_file_type == En3mfType::From_Prusa) {
                         // do not reset the model config
-                        //load_config = false;
+                        load_config = false;
                         if(load_type != LoadType::LoadGeometry)
                             show_info(q, _L("The 3mf is not from QIDI Tech, load geometry data only."), _L("Load 3mf"));
                     }

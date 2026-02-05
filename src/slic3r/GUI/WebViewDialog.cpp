@@ -358,7 +358,7 @@ wxString WebViewPanel::MakeDisconnectUrl(std::string MenuName)
 
 void WebViewPanel::load_url(wxString& url)
 {
-    m_browser->Unbind(wxEVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED, &WebViewPanel::onLoginHandle, this, m_browser->GetId());
+    //m_browser->Unbind(wxEVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED, &WebViewPanel::onLoginHandle, this, m_browser->GetId());
     this->Show();
     this->Raise();
     if (m_url != nullptr) {
@@ -598,7 +598,6 @@ void WebViewPanel::onLoginHandle(const wxWebViewEvent& evt)
     int index = 3;
     try {
         json j = json::parse(evt.GetString());
-        std::cout << "---" << j << std::endl;
         index = j["index"].get<int>();
     }
     catch (...) {
@@ -1880,6 +1879,9 @@ void WebViewPanel::SwitchWebContent(std::string modelname, int refresh)
     if (modelname != "login") {
         m_contentname = modelname;
     }
+    else {
+        m_contentname = "home";
+    }
     CheckMenuNewTag();
 
     wxString strlang = GetStudioLanguage();
@@ -2039,13 +2041,14 @@ void WebViewPanel::SwitchWebContent(std::string modelname, int refresh)
         if (m_browser->GetCurrentURL().Contains("login.html")) {
             return;
         }
-        wxString htmlUrl = wxString::Format("file:///%s/web/homepage3/login.html", from_u8(resources_dir()));
-        
-        m_browser->LoadURL(htmlUrl);
-        
-		m_browser->Bind(wxEVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED,&WebViewPanel::onLoginHandle,this,m_browser->GetId());
+		wxString strJS = "GotoMenu(\"home\")";
+		WebView::RunScript(m_browserLeft, strJS);
 
-        
+		wxString htmlUrl = wxString::Format("file:///%s/web/homepage3/login.html", from_u8(resources_dir()));
+
+		m_browser->LoadURL(htmlUrl);
+
+		m_browser->Bind(wxEVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED, &WebViewPanel::onLoginHandle, this, m_browser->GetId());
 		
     }
 

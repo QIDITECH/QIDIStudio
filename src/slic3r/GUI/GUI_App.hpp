@@ -43,9 +43,6 @@
 
 #include "slic3r/GUI/WebUserLoginDialog.hpp"
 
-//y76
-#include "QDSDeviceManager.hpp"
-
 //#define QDT_HAS_FIRST_PAGE          1
 #define STUDIO_INACTIVE_TIMEOUT     15*60*1000
 #define LOG_FILES_MAX_NUM           30
@@ -101,6 +98,8 @@ class ModelMallDialog;
 class PingCodeBindDialog;
 class NetworkErrorDialog;
 class OpenGLManager;
+//cj_2
+class QDSDeviceManager;
 
 enum FileType
 {
@@ -465,8 +464,8 @@ public:
 
 #if QDT_RELEASE_TO_PUBLIC
 //y76
-    std::vector<NetDevice> get_devices() { return qdsdevmanager->getNetDevices(); };
-    void                set_devices(std::vector<NetDevice> devices) { qdsdevmanager->setNetDevices(devices); };
+    std::vector<NetDevice> get_devices();
+    void                set_devices(std::vector<NetDevice> devices);
 #endif
 
 
@@ -504,6 +503,8 @@ public:
     bool            is_user_login();
     // y21
     bool            is_QIDILogin() { return m_qidi_login; };
+    //y77
+    void            set_QIDILogin(bool val) { m_qidi_login = val; };
 
     void            request_user_login(int online_login = 0);
     void            request_user_handle(int online_login = 0);

@@ -128,6 +128,9 @@ protected:
 private:
     void PlayThread();
     void NotifyStopped();
+    void ResetPlaybackState();
+    void UpdateFrameStatistics();
+    void SetErrorAndNotify(int errorCode, const std::string& errorMsg);
     
     static size_t WriteMemoryCallback(void* contents, size_t size, size_t nmemb, void* userp);
     
@@ -136,20 +139,21 @@ private:
     wxMediaState m_state = wxMEDIASTATE_STOPPED;
     int m_error = 0;
     
-    wxString m_idle_image;
+    wxImage m_idle_image;
     wxImage m_frame;
     wxSize m_video_size = wxDefaultSize;
     wxSize m_frame_size = wxDefaultSize;
     
-    uint64_t m_last_PTS = 0;
+    int m_frameCount;
+    std::chrono::steady_clock::time_point m_lastSecondTime;
+
+    uint64_t m_last_PTS;
     std::chrono::steady_clock::time_point m_last_PTS_expected;
     std::chrono::steady_clock::time_point m_last_PTS_practical;
     
     std::mutex m_mutex;
     std::condition_variable m_cond;
     std::thread m_thread;
-    
-    CURL* m_curl = nullptr;
     std::atomic<bool> m_exit_flag{false};
     
     wxDECLARE_EVENT_TABLE();

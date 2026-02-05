@@ -505,6 +505,7 @@ namespace Slic3r
     MachineObject* DeviceManager::get_selected_machine()
     {
         return nullptr;
+
         if (selected_machine.empty()) return nullptr;
 
         MachineObject* obj = get_user_machine(selected_machine);
@@ -807,6 +808,7 @@ namespace Slic3r
     {
         if (MachineObject* obj_ = get_selected_machine()) {
             //GUI::wxGetApp().sidebar().update_sync_status(obj_);
+            
             GUI::wxGetApp().sidebar().load_ams_list(obj_);
         };
     }

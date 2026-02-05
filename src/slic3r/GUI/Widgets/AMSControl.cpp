@@ -1115,6 +1115,24 @@ void AMSControl::SetData(const std::vector<AMSinfo>& ams_info,
     //Layout();
 }
 
+
+//cj_2
+void AMSControl::updateAmsTemp(int id, int temp)
+{
+    if (id >= m_ams_info.size()) {
+        return;
+    }
+    m_ams_info[id].current_temperature = temp;
+}
+
+void AMSControl::updateAmsHumidity(int id, int humidity)
+{
+	if (id >= m_ams_info.size()) {
+		return;
+	}
+    m_ams_info[id].humidity_raw = humidity;
+}
+
 void AMSControl::AddAmsPreview(AMSinfo info, AMSModel type)
 {
     AMSPreview *ams_prv = nullptr;

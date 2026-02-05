@@ -72,7 +72,7 @@ bool DeviceButton::Create(wxWindow *parent, wxString text, wxString icon, long s
     StaticBox::Create(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, style);
     state_handler.attach({&text_color});
     state_handler.update_binds();
-    wxWindow::SetFont(wxFont(10, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, "Microsoft YaHei"));
+    wxWindow::SetFont(wxFont(15, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, "Microsoft YaHei"));
 
     wxString    device_nameText = text;
     wxWindow::SetLabel(device_nameText);
@@ -269,7 +269,7 @@ void DeviceButton::render(wxDC &dc)
 
     if (GetLabel() == "") {
         // y20
-        dc.DrawBitmap(icon.bmp(), rcContent.x/2, rcContent.y/2-2);
+        dc.DrawBitmap(icon.bmp(), rcContent.x/2, rcContent.y/2 - 2);
     }
     // y2
     else if (m_ip_text == "" && m_name_text == "") {
@@ -289,18 +289,15 @@ void DeviceButton::render(wxDC &dc)
         } else {
             dc.SetTextForeground(wxColour(196, 196, 196));
         }
-        dc.DrawText(m_name_text, 32, rcContent.y);
-        // int dotRadius = 4;
-        // int dotX      = size.x - dotRadius - 10;
-        // int dotY      = 10;
-        // if (m_isSelected) {
-        //     dc.SetBrush(wxBrush(wxColour(33, 150, 243)));
-        //     dc.SetPen(wxPen(wxColour(33, 150, 243)));
-        // } else {
-        //     dc.SetBrush(wxBrush(wxColour(220, 220, 220)));
-        //     dc.SetPen(wxPen(wxColour(220, 220, 220)));
-        // }
-        // dc.DrawCircle(dotX, dotY, dotRadius);
+        dc.DrawText(m_name_text, 32, rcContent.y+5);
+        
+        //cj_2
+//         if (m_isSelected) {
+//             dc.SetBrush(wxBrush(wxColour(68, 121, 251)));
+//             dc.SetPen(wxPen(wxColour(68, 121, 251)));
+//             //dc.DrawRectangle(0, 0, 10, 49);
+//             dc.DrawRoundedRectangle(-10, 0, 15, 49, 4.0);
+//         } 
 
     } else {
          dc.DrawBitmap(icon.bmp(), 10, (GetSize().GetHeight() - icon.bmp().GetHeight()) / 2);

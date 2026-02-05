@@ -704,6 +704,11 @@ public:
     void update_temp_ctrl(std::shared_ptr<QDSDevice> obj);
 //cj_1
     void update_homed_axes(std::string homed_axes) { m_homed_axes = homed_axes; }
+//cj_2
+    void update_extruder_filament(bool hasFilament);
+    //cj_2
+	void update_AMS_temp(int amsId, int temp);
+	void update_AMS_humidity(int amsId, int humidity);
 private:
     friend class MonitorPanel;
     //cj_1
@@ -949,6 +954,8 @@ private:
 
     //cj_1
     std::string m_homed_axes{ "" };
+    //cj_2
+    bool m_extruder_filament{ false };
 };
 }
 }

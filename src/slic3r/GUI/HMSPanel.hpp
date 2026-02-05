@@ -6,7 +6,8 @@
 #include <slic3r/GUI/Widgets/Button.hpp>
 #include <slic3r/GUI/DeviceManager.hpp>
 #include <slic3r/GUI/Widgets/ScrolledWindow.hpp>
-#include <slic3r/GUI/StatusPanel.hpp>
+//cj_2
+//#include <slic3r/GUI/StatusPanel.hpp>
 #include <wx/html/htmlwin.h>
 
 #include "DeviceCore/DevHMS.h"

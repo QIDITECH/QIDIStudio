@@ -1791,17 +1791,17 @@ void PlateData::parse_filament_info(GCodeProcessorResult *result)
 
         //QDS: version check
         bool dont_load_config = !m_load_config;
-        //w18
-        /*if (m_qidislicer_generator_version) {
+
+        if (m_qidislicer_generator_version) {
             Semver app_version = *(Semver::parse(SLIC3R_VERSION));
             Semver file_version = *m_qidislicer_generator_version;
-            if (file_version.maj() > app_version.maj())
-                dont_load_config = true;
+            /*if (file_version.maj() > app_version.maj())
+                dont_load_config = true;*/
         }
         else {
             m_qidislicer_generator_version = Semver::parse("0.0.0.0");
             dont_load_config = true;
-        }*/
+        }
 
         // we then loop again the entries to read other files stored in the archive
         for (mz_uint i = 0; i < num_entries; ++i) {
@@ -3847,6 +3847,10 @@ void PlateData::parse_filament_info(GCodeProcessorResult *result)
             // SLIC3R_APP_KEY - SLIC3R_VERSION
             if (boost::starts_with(m_curr_characters, "QIDIStudio-")) {
                 m_is_qdt_3mf = true;
+                m_qidislicer_generator_version = Semver::parse(m_curr_characters.substr(12));
+            }
+            //y77
+            if (boost::starts_with(m_curr_characters, "BambuStudio-")) {
                 m_qidislicer_generator_version = Semver::parse(m_curr_characters.substr(12));
             }
         //TODO: currently use version 0, no need to load&&save this string

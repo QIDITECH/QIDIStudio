@@ -14,6 +14,7 @@ namespace Slic3r
     // clear the array and heap,save the groups in heap to the array
     static void change_memoryed_heaps_to_arrays(MemoryedGroupHeap& heap,const int total_filament_num,const std::vector<unsigned int>& used_filaments, std::vector<std::vector<int>>& arrs)
     {
+
         // switch the label idx
         arrs.clear();
         while (!heap.empty()) {

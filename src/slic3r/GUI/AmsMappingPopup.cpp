@@ -27,7 +27,8 @@
 #include "DeviceCore/DevFilaSystem.h"
 
 #include "DeviceTab/wgtDeviceNozzleSelect.h"
-
+// cj_2
+#include "DeviceCore/DevNozzleRack.h"
 namespace Slic3r { namespace GUI {
 #define MATERIAL_ITEM_SIZE wxSize(FromDIP(65), FromDIP(50))
 #define MATERIAL_REC_WHEEL_SIZE wxSize(FromDIP(17), FromDIP(16))

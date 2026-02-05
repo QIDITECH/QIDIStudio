@@ -1453,14 +1453,14 @@ wxBoxSizer *StatusBasePanel::create_task_list_group(wxWindow *parent)
         m_panel_task_title->SetBackgroundColour(STATUS_TITLE_BG);
         bSizer_task_title = new wxBoxSizer(wxHORIZONTAL);
         {
-            m_staticText_task = new Label(m_panel_task_title, _L("Task Lists"));
+            m_staticText_task = new Label(m_panel_task_title, _L("Task List"));
             m_staticText_task->Wrap(-1);
             m_staticText_task->SetForegroundColour(PAGE_TITLE_FONT_COL);
             
             bSizer_task_title->Add(m_staticText_task, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, PAGE_TITLE_LEFT_MARGIN);
             //bSizer_task_title->AddStretchSpacer(1);
             
-            // m_refresh_btn = new wxButton(m_panel_task_title, wxID_ANY, _L("刷新"),
+            // m_refresh_btn = new wxButton(m_panel_task_title, wxID_ANY, _L("Refresh"),
             //                                       wxDefaultPosition, wxSize(FromDIP(60), FromDIP(25)));
             // m_refresh_btn->SetBackgroundColour(wxColour(0x1E, 0x90, 0xFF));  // DodgerBlue
             // m_refresh_btn->SetForegroundColour(*wxWHITE);
@@ -2215,6 +2215,8 @@ wxBoxSizer *StatusBasePanel::create_extruder_control(wxWindow *parent)
     //cj_1
     auto extruder_img = new ExtruderImage(m_extruder_book, wxID_ANY, 1);
     m_extruder_book->InsertPage(0, extruder_img , "");
+	m_extruderImage.push_back(extruder_img);
+
     for (int nozzle_num = 1; nozzle_num <= 2; nozzle_num++) {
         auto extruder_img = new ExtruderImage(m_extruder_book, wxID_ANY, nozzle_num);
         m_extruder_book->InsertPage(nozzle_num, extruder_img, "");
@@ -2712,8 +2714,6 @@ StatusPanel::StatusPanel(wxWindow *parent, wxWindowID id, const wxPoint &pos, co
     Bind(EVT_SET_COLOR, [this](wxCommandEvent& e) {
         
         e.SetInt(curSelectSlotIndex);
-        int colorIndex = QDSFilamentConfig::getInstance().getColorIndex(e.GetString().ToStdString());
-        e.SetString(std::to_string(colorIndex));
         e.Skip();
         });
     //cj_1
@@ -2729,16 +2729,12 @@ StatusPanel::StatusPanel(wxWindow *parent, wxWindowID id, const wxPoint &pos, co
 
 		wxCommandEvent eventType(EVTSET_FILAMENT_TYPE);
         eventType.SetInt(curSelectSlotIndex);
-        int typeIndex = QDSFilamentConfig::getInstance().getTypeNameIndex(type.ToStdString());
-        eventType.SetString(std::to_string(typeIndex));
+        eventType.SetString(type);
 		wxPostEvent(GetParent(), eventType);
-
-
 
 		wxCommandEvent eventVendor(EVTSET_FILAMENT_VENDOR);
         eventVendor.SetInt(curSelectSlotIndex);
-        int vendorIndex = QDSFilamentConfig::getInstance().getVendorIndex(vendor.ToStdString());
-        eventVendor.SetString(std::to_string(vendorIndex));
+        eventVendor.SetString(vendor);
 		wxPostEvent(GetParent(), eventVendor);
 	});
 
@@ -2818,7 +2814,7 @@ void StatusPanel::update_progress(std::string fileName, std::string layer, std::
         return;
     }
     if (fileName != "") {
-        m_project_task_panel->update_subtask_name(fileName);
+        m_project_task_panel->update_subtask_name(from_u8(fileName));
     }
     else {
 		m_project_task_panel->update_subtask_name("N/A");
@@ -2908,9 +2904,9 @@ void StatusPanel::update_boxs(std::vector<AMSinfo> boxS, std::vector<AMSinfo> ex
     std::string printer_type = "X-Max 4";   // 显示外挂料的打印机图片
     m_ams_control->SetAmsModel(AMSModel::N3S_AMS, AMSModel::EXT_AMS);
     m_ams_control->SetData(boxS, ext_info, total_ext_count, dev_id, series_name, printer_type);
-    m_ams_control->Hide();
+    //m_ams_control->Hide();
     m_ams_control->Show();
-    m_ams_control_box->Hide();
+    //m_ams_control_box->Hide();
     m_ams_control_box->Show();
     m_ams_control->Layout();
     m_ams_control_box->Layout();
@@ -3317,7 +3313,7 @@ void StatusPanel::show_recenter_dialog()
     if (dlg.ShowModal() == wxID_OK) {
         postEventValueAndEnable(EVTSET_RETURN_SAFEHOME, 1, "value");
         if (obj) { obj->GetAxis()->Ctrl_GoHome(); }
-    }
+    } 
 }
 
 void StatusPanel::update_error_message()
@@ -3599,6 +3595,25 @@ void StatusPanel::update_temp_ctrl(std::shared_ptr<QDSDevice> obj)
     // {
     //     this->Layout();
     // }
+}
+
+//cj_2
+void StatusPanel::update_extruder_filament(bool hasFilament)
+{
+    ExtruderState state;
+    state = hasFilament ? ExtruderState::FILLED_LOAD : ExtruderState::EMPTY_LOAD;
+    m_extruderImage[0]->update(state);
+}
+
+void StatusPanel::update_AMS_temp(int amsId, int temp)
+{
+    m_ams_control->updateAmsTemp(amsId, temp);
+}
+
+void StatusPanel::update_AMS_humidity(int amsId, int humidity)
+{
+    m_ams_control->updateAmsHumidity(amsId, humidity);
+
 }
 
 void StatusPanel::update_misc_ctrl(MachineObject *obj)
@@ -4347,6 +4362,11 @@ void StatusPanel::reset_printing_values()
 
 void StatusPanel::on_axis_ctrl_xy(wxCommandEvent &event)
 {
+
+    if (event.GetInt() == 8) { 
+        postEventValueAndEnable(EVTSET_RETURN_SAFEHOME, 1, "value"); 
+        return;
+    }
     if (m_homed_axes == "") {
         show_recenter_dialog();
         return;
@@ -4362,7 +4382,7 @@ void StatusPanel::on_axis_ctrl_xy(wxCommandEvent &event)
 	else if (event.GetInt() == 5) { postEventValueAndEnable(EVTSET_X_AXIS, -1, "value"); }
 	else if (event.GetInt() == 6) { postEventValueAndEnable(EVTSET_Y_AXIS, -1, "value"); }
 	else if (event.GetInt() == 7) { postEventValueAndEnable(EVTSET_X_AXIS, 1, "value"); }
-    else if (event.GetInt() == 8) { postEventValueAndEnable(EVTSET_RETURN_SAFEHOME, 1, "value"); }
+    
 
     if (!obj) return;
 
@@ -4856,17 +4876,17 @@ void StatusPanel::on_ams_filament_backup(SimpleEvent &event)
             std::tuple<int, std::string , std::string>,
             std::vector<std::string>
         >colorGroups;
-        char goupPre = 'A';
+        int goupPre = 1;
         for (AMSinfo box : m_boxS) {
-            int goupNo = 1;
+            char goupNo = 'A';
             for (Caninfo can : box.cans) {
                 //GetAsString(wxC2S_HTML_SYNTAX)
-                if (can.material_state != AMSCanType::AMS_CAN_TYPE_NONE) {
+                if (can.material_state != AMSCanType::AMS_CAN_TYPE_EMPTY) {
 
                     std::tuple<int, std::string, std::string > key{ can.ctype,
                         can.material_name.ToStdString(),
                         can.material_colour.GetAsString(wxC2S_HTML_SYNTAX).ToStdString() };
-					colorGroups[key].push_back(std::string(1,goupPre) + std::to_string(goupNo));
+					colorGroups[key].push_back(  std::to_string(goupPre)+ std::string(1, goupNo));
                 }
                 ++goupNo;
             }
@@ -5197,6 +5217,9 @@ void StatusPanel::on_ams_selected(wxCommandEvent &event)
 		Caninfo can;
 		if (canInfoIndex == 16) {
 			can = m_ext_info[0].cans[0];
+			m_ams_control->EnableLoadFilamentBtn(false, "", "", "");
+			m_ams_control->EnableUnLoadFilamentBtn(false, "", "", "");
+			return;
 		}
 		else {
 
@@ -5422,6 +5445,9 @@ void StatusPanel::on_nozzle_fan_switch(wxCommandEvent &event)
 		fanData.modes[0] = airmode;
         fanData.m_sub_mode = 0;
         m_fan_control_popup = new FanControlPopupNew(this, obj, fanData);
+		for (auto it : m_fan_speeds) {
+			m_fan_control_popup->update_fan_data(it.first, it.second);
+		}
         auto pos = m_switch_fan->GetScreenPosition();
         pos.y = pos.y + m_switch_fan->GetSize().y;
 
@@ -5444,9 +5470,7 @@ void StatusPanel::on_nozzle_fan_switch(wxCommandEvent &event)
         return;
     }
 
-		for (auto it : m_fan_speeds) {
-			m_fan_control_popup->update_fan_data(it.first, it.second);
-		}
+		
 
         auto pos = m_switch_fan->GetScreenPosition();
         pos.y = pos.y + m_switch_fan->GetSize().y;

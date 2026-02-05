@@ -28,7 +28,8 @@
 #include "MediaFilePanel.h"
 #include "Plater.hpp"
 #include "BindDialog.hpp"
-
+//cj_2
+#include <slic3r/GUI/StatusPanel.hpp>
 #include "DeviceCore/DevManager.h"
 
 namespace Slic3r {

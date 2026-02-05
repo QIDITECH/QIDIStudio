@@ -1211,6 +1211,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionBool,                support_multi_bed_types))
     //y60
     ((ConfigOptionBool,                is_support_3mf))
+    //y76
     ((ConfigOptionBool,                is_support_mqtt))
 )
 
@@ -1393,6 +1394,7 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
     ((ConfigOptionBool,               is_support_timelapse))
     //y65
     ((ConfigOptionBool,                is_support_multi_box))
+    //y76
     ((ConfigOptionBool,                is_support_air_condition)))
 
 // This object is mapped to Perl as Slic3r::Config::Full.

@@ -24,7 +24,6 @@ using namespace nlohmann;
 namespace Slic3r {
 namespace GUI{
 
-
 struct FileInfo {
     std::string file_name;
     std::string filament_weight;
@@ -89,6 +88,8 @@ private:
     QDSFilamentConfig(QDSFilamentConfig&&) = delete;
     QDSFilamentConfig& operator=(QDSFilamentConfig&&) = delete;
 
+    std::future<void> m_future;
+
 };
 
 
@@ -143,10 +144,11 @@ public:
 	std::string                  m_target_extruder{ "0" };
 	std::string                  m_target_bed{ "0" };
     std::atomic<bool>            m_case_light{ false };
+    bool                         m_extruder_filament{ false };   // 
 
     std::string                  m_home_axes;
 
-    bool  m_polar_cooler{ false };
+    std::atomic<bool>  m_polar_cooler{ false };
     float m_auxiliary_fan_speed{ 0.0 };
     float m_chamber_fan_speed{ 0.0 };
     float m_cooling_fan_speed{ 0.0 };
@@ -185,6 +187,7 @@ public:
     std::atomic<bool>            is_support_mqtt{ false };
     std::atomic<bool>            is_first_connect{ true };
     std::atomic<bool>            should_stop{ false };
+    std::atomic<bool>            m_is_update_box_temp{ false };
     std::chrono::steady_clock::time_point last_update = std::chrono::steady_clock::now();
 
     std::vector<FileInfo>    file_info {};

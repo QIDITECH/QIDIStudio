@@ -10,6 +10,10 @@
 #include <shellapi.h>
 #endif
 
+//y77
+#include "wxExtensions.hpp"
+
+
 //wxDEFINE_EVENT(EVT_MEDIA_CTRL_STAT, wxCommandEvent);
 #ifdef _WIN32
 BEGIN_EVENT_TABLE(wxMediaCtrl3, wxWindow)
@@ -359,6 +363,9 @@ VideoPanel::VideoPanel(wxWindow* parent,
     : wxPanel(parent, id, pos, size)
     , m_state(wxMEDIASTATE_STOPPED)
     , m_error(0)
+    , m_exit_flag(false)
+    , m_frameCount(0)
+    , m_last_PTS(0)
 {
     SetBackgroundStyle(wxBG_STYLE_PAINT);
     SetDoubleBuffered(true);
@@ -376,7 +383,6 @@ VideoPanel::~VideoPanel()
     {
         std::unique_lock<std::mutex> lk(m_mutex);
         m_url.reset();
-        m_frame = wxImage(m_idle_image);
         m_cond.notify_all();
     }
     
@@ -384,9 +390,6 @@ VideoPanel::~VideoPanel()
         m_thread.join();
     }
     
-    if (m_curl) {
-        curl_easy_cleanup(m_curl);
-    }
     curl_global_cleanup();
 }
 
@@ -402,18 +405,8 @@ void VideoPanel::Load(const std::string& url)
     m_video_size = wxDefaultSize;
     m_error = 0;
 
-    // if (m_state != wxMEDIASTATE_LOADING) {
-    //     m_state = wxMEDIASTATE_LOADING;
-    //     wxMediaEvent event(wxEVT_MEDIA_STATECHANGED);
-    //     event.SetId(GetId());
-    //     event.SetEventObject(this);
-    //     wxPostEvent(this, event);
-    // }
-
     m_url = std::make_shared<std::string>(url);
-    
-    wxLogMessage("VideoPanel: Loaded URL: %s", url);
-    
+
     m_cond.notify_all();
 }
 
@@ -428,6 +421,8 @@ void VideoPanel::Play()
         event.SetId(GetId());
         event.SetEventObject(this);
         wxPostEvent(this, event);
+
+        m_cond.notify_all();
     }
 }
 
@@ -436,10 +431,16 @@ void VideoPanel::Stop()
     std::unique_lock<std::mutex> lk(m_mutex);
     
     m_url.reset();
-    m_frame = wxImage(m_idle_image);
+    m_frame = m_idle_image;
     m_video_size = wxDefaultSize;
     m_frame_size = wxDefaultSize;
-    NotifyStopped();
+    
+    m_state = wxMEDIASTATE_STOPPED;
+    wxMediaEvent event(wxEVT_MEDIA_STATECHANGED);
+    event.SetId(GetId());
+    event.SetEventObject(this);
+    wxPostEvent(this, event);
+
     m_cond.notify_all();
     CallAfter([this] { 
         Refresh(); 
@@ -448,12 +449,12 @@ void VideoPanel::Stop()
 
 void VideoPanel::SetIdleImage(wxString const &image)
 {
-    if (m_idle_image == image)
-        return;
-    m_idle_image = image;
+
     if (m_url == nullptr) {
         std::unique_lock<std::mutex> lk(m_mutex);
-        m_frame = wxImage(m_idle_image);
+        //y77
+        m_idle_image = create_scaled_bitmap_form_path(image.ToStdString(), 1046, 601).ConvertToImage();
+        m_frame = m_idle_image;
 
         if (m_frame.IsOk()) {
             CallAfter([this] { 
@@ -493,6 +494,7 @@ void VideoPanel::OnPaint(wxPaintEvent& event)
 
 void VideoPanel::OnEraseBackground(wxEraseEvent& event)
 {
+
 }
 
 void VideoPanel::OnSize(wxSizeEvent& event)
@@ -550,181 +552,196 @@ void VideoPanel::adjust_frame_size(wxSize& frame, const wxSize& video, const wxS
 void VideoPanel::PlayThread()
 {
     using namespace std::chrono_literals;
-    std::unique_lock<std::mutex> lk(m_mutex);
-    
-    std::shared_ptr<std::string> url;
-    
-    int frameCount = 0;
-    std::chrono::steady_clock::time_point lastSecondTime;
-    
+
+    std::shared_ptr<std::string> currentUrl;
+    CURL* curl = nullptr;
+
     while (!m_exit_flag) {
-        m_cond.wait(lk, [this, &url] {
+        {
+            std::unique_lock<std::mutex> lk(m_mutex);
+            m_cond.wait(lk, [this, &currentUrl] {
             return m_exit_flag ||
-                (!m_url && url) ||
-                (m_url && !url) ||
-                (m_url && url && *m_url != *url);
+                (!m_url && currentUrl) ||
+                (m_url && !currentUrl) ||
+                (m_url && currentUrl && *m_url != *currentUrl);
             });
-        
-        if (m_exit_flag) {
-            break;
+            
+            if (m_exit_flag) {
+                break;
+            }
+
+            currentUrl = m_url;
+
+            if (!currentUrl) {
+                m_frame = m_idle_image;
+                m_state = wxMEDIASTATE_STOPPED;
+                
+                wxMediaEvent stateEvent(wxEVT_MEDIA_STATECHANGED);
+                stateEvent.SetId(GetId());
+                stateEvent.SetEventObject(this);
+                wxPostEvent(this, stateEvent);
+                
+                CallAfter([this] { 
+                    Refresh(); 
+                });
+                
+                continue;
+            }
+            
+            if (currentUrl->empty()) {
+                continue;
+            }
+            
+            ResetPlaybackState();
+            
+            m_state = wxMEDIASTATE_PLAYING;
+            // // 发送状态事件
+            wxMediaEvent stateEvent(wxEVT_MEDIA_STATECHANGED);
+            stateEvent.SetId(GetId());
+            stateEvent.SetEventObject(this);
+            wxPostEvent(this, stateEvent);
         }
 
-        url = m_url;
-        
-        if (!url) {
-            continue;
+        if (curl) {
+            curl_easy_cleanup(curl);
+            curl = nullptr;
         }
-        
-        if (url->empty()) {
-            continue;
-        }
-        
-        frameCount = 0;
-        lastSecondTime = std::chrono::steady_clock::now();
-        
-        m_last_PTS = 0;
-        m_last_PTS_expected = std::chrono::steady_clock::now();
-        m_last_PTS_practical = std::chrono::steady_clock::now();
-        
-        m_state = wxMEDIASTATE_PLAYING;
-         wxMediaEvent stateEvent(wxEVT_MEDIA_STATECHANGED);
-         stateEvent.SetId(GetId());
-         stateEvent.SetEventObject(this);
-         wxPostEvent(this, stateEvent);
-        
-        lk.unlock();
-        
-        CURL* curl = curl_easy_init();
+
+        curl = curl_easy_init();
         if (!curl) {
-            lk.lock();
-            m_error = -1;
-            NotifyStopped();
+            SetErrorAndNotify(-1, "Failed to initialize CURL");
             continue;
         }
         
-        curl_easy_setopt(curl, CURLOPT_URL, url->c_str());
+        curl_easy_setopt(curl, CURLOPT_URL, currentUrl->c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);
         curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3L);
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, "VideoPanel/1.0");
+        curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
         
-        bool shouldCleanup = true;
+        bool shouldContinue = true;
+        int consecutiveErrors = 0;
+        const int maxConsecutiveErrors = 3;
         
-        while (true) {
-            auto now = std::chrono::steady_clock::now();
-            uint64_t currentPTS = std::chrono::duration_cast<std::chrono::microseconds>(
-                now.time_since_epoch()).count();
+        while (shouldContinue) {
+            auto frameStartTime = std::chrono::steady_clock::now();
             
             wxMemoryOutputStream memStream;
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &memStream);
             
             CURLcode res = curl_easy_perform(curl);
             
-            lk.lock();
-            
-            if (m_url != url) {
-                shouldCleanup = false;
-                lk.unlock();
-                break;
+            {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                if (m_exit_flag || m_url != currentUrl) {
+                    shouldContinue = false;
+                    break;
+                }
             }
             
             if (res == CURLE_OK && memStream.GetSize() > 0) {
+                consecutiveErrors = 0;
+                    
                 wxMemoryInputStream imgStream(memStream);
                 wxImage newImage;
                 
-                if (newImage.LoadFile(imgStream, wxBITMAP_TYPE_JPEG)) {
-                    frameCount++;
-                    auto nowStat = std::chrono::steady_clock::now();
-                    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-                        nowStat - lastSecondTime).count();
-                    
-                    if (elapsedTime >= 1000) {
-                        int fps = static_cast<int>(frameCount * 1000 / elapsedTime);
-                        wxLogMessage("VideoPanel: Decode Rate: %d FPS", fps);                    
-                        frameCount = 0;
-                        lastSecondTime = nowStat;
-                    }
-                    
-                    const int minFrameDuration = 100;
-                    
-                    if (m_last_PTS && (currentPTS - m_last_PTS) < 3000000) {
-                        auto next_PTS_expected = m_last_PTS_expected + 
-                            std::chrono::microseconds(currentPTS - m_last_PTS);
-                        
-                        auto next_PTS_practical = m_last_PTS_practical + 
-                            std::chrono::milliseconds(minFrameDuration);
-                        
-                        auto next_PTS = std::max(next_PTS_expected, next_PTS_practical);
-                        
-                        if (nowStat < next_PTS) {
-                            lk.unlock();
-                            std::this_thread::sleep_until(next_PTS);
-                            lk.lock();
-                            
-                            if (m_url != url) {
-                                shouldCleanup = false;
-                                lk.unlock();
-                                break;
-                            }
-                        } else {
-                            next_PTS = nowStat;
-                        }
-                        
-                        m_last_PTS = currentPTS;
-                        m_last_PTS_expected = next_PTS_expected;
-                        m_last_PTS_practical = next_PTS;
-                    } else {
-                        m_last_PTS = currentPTS;
-                        m_last_PTS_expected = nowStat;
-                        m_last_PTS_practical = nowStat;
-                    }
-                    
-                    m_frame = newImage;
 
-                    CallAfter([this] { 
-                        Refresh(); 
-                    });
-                    
+                if (newImage.LoadFile(imgStream, wxBITMAP_TYPE_JPEG)) {
+                    {
+                        std::lock_guard<std::mutex> lock(m_mutex);
+                        if (m_url == currentUrl) {
+                            m_frame = newImage;
+
+                            UpdateFrameStatistics();
+
+                            CallAfter([this] { 
+                                Refresh(); 
+                            });
+                        }
+                    }
                 } else {
-                    m_error = -2;
                     wxLogWarning("VideoPanel: Failed to decode JPEG image");
+                    SetErrorAndNotify(-2, "Image decode failed");
                 }
-            } else if (res != CURLE_OK) {
-                m_error = res;
+            } else {
+                consecutiveErrors++;
+                wxLogWarning("VideoPanel: Network error (attempt %d/%d): %s", 
+                        consecutiveErrors, maxConsecutiveErrors, curl_easy_strerror(res));
                 
-                lk.unlock();
-                std::this_thread::sleep_for(500ms);
-                lk.lock();
-                
-                if (m_url != url) {
-                    shouldCleanup = false;
-                    lk.unlock();
+                if (consecutiveErrors >= maxConsecutiveErrors) {
+                    SetErrorAndNotify(res, "Too many consecutive network errors");
+                    shouldContinue = false;
                     break;
                 }
+                
+                std::this_thread::sleep_for(500ms);
+                
+                {
+                    std::lock_guard<std::mutex> lock(m_mutex);
+                    if (m_exit_flag || m_url != currentUrl) {
+                        shouldContinue = false;
+                        break;
+                    }
+                }
+                
                 continue;
             }
-            
-            lk.unlock();
-            
-            std::this_thread::sleep_for(std::chrono::milliseconds(33)); // ~30FPS
         }
-        
-        curl_easy_cleanup(curl);
-        
-        if (shouldCleanup) {
-            std::unique_lock<std::mutex> lockAfterCleanup(m_mutex);
-            if (m_url == url) {
+        if (shouldContinue) {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            if (m_url == currentUrl) {
                 m_error = 0;
+                m_frame = wxImage();
+                m_video_size = wxDefaultSize;
+                m_frame_size = wxDefaultSize;
+                
+                NotifyStopped();
             }
-            
-            m_frame_size = wxDefaultSize;
-            m_video_size = wxDefaultSize;
-            NotifyStopped();
         }
-        
-        lk = std::unique_lock<std::mutex>(m_mutex);
     }
+
+    if (curl) {
+        curl_easy_cleanup(curl);
+    }
+}
+
+void VideoPanel::ResetPlaybackState()
+{
+    m_frameCount = 0;
+    m_lastSecondTime = std::chrono::steady_clock::now();
+    
+    m_last_PTS = 0;
+    m_last_PTS_expected = std::chrono::steady_clock::now();
+    m_last_PTS_practical = std::chrono::steady_clock::now();
+    
+    m_error = 0;
+}
+
+void VideoPanel::UpdateFrameStatistics()
+{
+    m_frameCount++;
+    auto now = std::chrono::steady_clock::now();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+        now - m_lastSecondTime).count();
+    
+    if (elapsedTime >= 1000) { // 每秒统计一次
+        int fps = static_cast<int>(m_frameCount * 1000 / elapsedTime);
+        wxLogMessage("VideoPanel: Decode Rate: %d FPS", fps);
+        m_frameCount = 0;
+        m_lastSecondTime = now;
+    }
+}
+
+void VideoPanel::SetErrorAndNotify(int errorCode, const std::string& errorMsg)
+{
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_error = errorCode;
+    }
+    NotifyStopped();
+    wxLogError("VideoPanel: %s", errorMsg);
 }
 
 void VideoPanel::NotifyStopped()

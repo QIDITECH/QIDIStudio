@@ -519,7 +519,6 @@ void AppConfig::set_defaults()
     if(get("switch to device tab after upload").empty())
         set_bool("switch to device tab after upload", false);
 
-//y76
     if(get("last_selected_machine").empty())
         set("last_selected_machine", "");
 

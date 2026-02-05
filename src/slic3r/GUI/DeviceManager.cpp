@@ -535,7 +535,7 @@ MachineObject::MachineObject(DeviceManager* manager, NetworkAgent* agent, std::s
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " called for dev_id=" << QDTCrossTalk::Crosstalk_DevId(id) << ", main_thread=" << wxThread::IsMain();
     if (!wxThread::IsMain()) {
         assert(false && "critical warning");
-        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << "called from other thread, callstack: " << boost::stacktrace::stacktrace();
+        //BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << "called from other thread, callstack: " << boost::stacktrace::stacktrace();
     }
 
     m_manager = manager;
@@ -599,7 +599,7 @@ MachineObject::~MachineObject()
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " called for dev_id=" << QDTCrossTalk::Crosstalk_DevId(get_dev_id()) << ", main_thread=" << wxThread::IsMain();
     if (!wxThread::IsMain()) {
         assert(false && "critical warning");
-        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " called from other thread, callstack: " << boost::stacktrace::stacktrace();
+        //BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " called from other thread, callstack: " << boost::stacktrace::stacktrace();
     }
 
     if (subtask_) {

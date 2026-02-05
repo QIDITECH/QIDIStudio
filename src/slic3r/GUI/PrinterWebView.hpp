@@ -52,8 +52,8 @@
 
 #include "OctoPrint.hpp"
 
-#include "StatusPanel.hpp"
-#include "QDSDeviceManager.hpp"
+
+
 
 namespace Slic3r {
 namespace GUI {
@@ -63,13 +63,21 @@ enum WebState
 {
     isDisconnect,
     isLocalWeb,
-    isNetWeb
+	isNetWeb
 };
+//cj_2
+class StatusPanel;
+//cj_2
+class QDSDeviceManager;
 
 class PrinterWebView : public wxPanel {
 public:
     PrinterWebView(wxWindow *parent);
     virtual ~PrinterWebView();
+
+
+
+
 
     wxBoxSizer *init_menu_bar(wxPanel *Panel);
     void        init_scroll_window(wxPanel *Panel);
@@ -130,7 +138,7 @@ public:
     //y53
     wxString GetWebIp(){return m_ip;};
     bool IsNetUrl() {return webisNetMode == isNetWeb;};
-    void load_disconnect_url(wxString& url);
+    void load_disconnect_url();
     void FormatNetUrl(std::string link_url, std::string local_ip, bool isSpecialMachine);
     void FormatUrl(std::string link_url);
 
@@ -194,7 +202,6 @@ private:
     DeviceButton *                        delete_button;
     DeviceButton *                        edit_button;
     DeviceButton *                        refresh_button;
-    bool                                  m_isloginin;
     wxStaticBitmap *                      staticBitmap;
 
     std::map<std::string, DynamicPrintConfig> m_machine;
@@ -218,7 +225,22 @@ private:
 #if QDT_RELEASE_TO_PUBLIC
     std::vector<NetDevice> m_net_devices;
     Environment m_env;
+
 #endif
+    std::atomic<bool> m_isloginin{false};
+    
+
+    //cj_2
+    wxPanel* m_localPanel;
+    DeviceButton* m_localDeviceExpand;
+    wxStaticText* m_localTabel;
+    bool m_localIsExpand{ true };
+
+	wxPanel* m_netPanel;
+    DeviceButton* m_netDeviceExpand;
+    wxStaticText* m_netTable;
+	bool m_netIsExpand{ true };
+
 
 };
 

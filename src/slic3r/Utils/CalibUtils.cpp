@@ -19,6 +19,9 @@
 #include "../GUI/DeviceCore/DevNozzleSystem.h"
 #include "../GUI/DeviceCore/DevNozzleRack.h"
 
+//cj_2
+#include "../GUI/QDSDeviceManager.hpp"
+
 namespace Slic3r {
 namespace GUI {
 const double MIN_PA_K_VALUE = 0.0;

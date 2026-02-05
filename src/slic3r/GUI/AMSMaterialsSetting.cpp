@@ -855,9 +855,9 @@ void AMSMaterialsSetting::setComboBoxValue(wxString curValue)
 
 void AMSMaterialsSetting::on_clr_picker(wxMouseEvent &event)
 {
-    if(!m_is_third)
-        return;
-
+    //if(!m_is_third)
+      ///  return;
+    
 //     return;
 //     if (obj->is_in_printing() || obj->can_resume()) {
 //         if (!obj->is_support_filament_setting_inprinting) {

@@ -27,6 +27,8 @@
 #include "DeviceCore/DevInfo.h"
 #include "DeviceCore/DevStorage.h"
 #include "DeviceCore/DevUpgrade.h"
+//cj_2
+#include "DeviceCore/DevNozzleRack.h"
 
 #include "DeviceCore/DevManager.h"
 #include "DeviceCore/DevMapping.h"
@@ -47,6 +49,8 @@
 #include "BitmapCache.hpp"
 #include "BindDialog.hpp"
 #include "PrinterWebView.hpp"
+//cj_2
+#include "QDSDeviceManager.hpp"
 
 // definitions
 #define S_RACK_NOZZLE_OFFSET_CALI_WARNING _L(\
@@ -2760,7 +2764,8 @@ void SelectMachineDialog::load_option_vals(MachineObject *obj)
 
 //y76
     auto sel_obj = wxGetApp().qdsdevmanager->getSelectedDevice();
-    if(sel_obj && sel_obj->m_polar_cooler){
+    //y77
+    if(sel_obj && sel_obj->m_polar_cooler && select_machine.ip == sel_obj->m_ip){
         m_checkbox_list["enable_air_condition"]->enable(true);
     } else {
         m_checkbox_list["enable_air_condition"]->enable(false);
@@ -3178,7 +3183,8 @@ void SelectMachineDialog::on_set_finish_mapping(wxCommandEvent &evt)
                 //    m->set_ams_info(ams_colour, selection_data_arr[4], ctype, material_cols);
                     // m->set_nozzle_info(get_mapped_nozzle_str(item->id));
                 //}
-                if (f->id == id) {
+                //y77
+                if (f->id == id && f->tray_id != -1) {
                     wxString ams_id;
                     wxColour ams_col;
                     ams_id = wxGetApp().transition_tridid(std::stoi(f->slot_id));
@@ -3389,7 +3395,8 @@ void SelectMachineDialog::update_user_printer()
     event.SetInt(m_switch_button->GetValue());
     m_switch_button->GetEventHandler()->ProcessEvent(event);
 
-    load_option_vals(nullptr);
+    //y77
+    //load_option_vals(nullptr);
 
 #if 0
     Slic3r::DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();

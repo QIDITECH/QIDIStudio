@@ -171,6 +171,11 @@ public:
                  const std::string& series_name = std::string(),
                  const std::string& printer_type = std::string(),
                  bool is_reset = true);
+
+    //cj_2
+    void updateAmsTemp(int id, int temp);
+    void updateAmsHumidity(int id, int humidity);
+
     std::vector<AMSinfo> GenerateSimulateData();
 
     void AddAms(AMSinfo info, AMSPanelPos pos = AMSPanelPos::LEFT_PANEL);

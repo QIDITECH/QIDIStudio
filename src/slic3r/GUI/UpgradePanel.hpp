@@ -6,7 +6,8 @@
 #include "Widgets/ProgressBar.hpp"
 #include <slic3r/GUI/DeviceManager.hpp>
 #include <slic3r/GUI/Widgets/ScrolledWindow.hpp>
-#include <slic3r/GUI/StatusPanel.hpp>
+//cj_2
+//#include <slic3r/GUI/StatusPanel.hpp>
 #include "ReleaseNote.hpp"
 
 namespace Slic3r {

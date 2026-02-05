@@ -3,7 +3,8 @@
 #include "MainFrame.hpp"
 
 #include "DeviceCore/DevManager.h"
-
+//cj_2
+#include "StatusPanel.hpp"
 namespace Slic3r {
 namespace GUI {
 

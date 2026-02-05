@@ -131,14 +131,7 @@ std::string QDSFilamentConfig::getFilamentType(int index){
 
 void QDSFilamentConfig::init()
 {
-    std::async(std::launch::async, [this]() {
-		initFilamentData(m_colorHexCode);
-		initFilamentData(m_colorDes);
-        initTypeName();
-		initFilamentData(m_vendor);
-        initFilamentData(m_filament_type);
-    });
-
+    //y77
 #if QDT_RELEASE_TO_PUBLIC
     std::string region = wxGetApp().app_config->get("region");
     if (region == "China") {
@@ -148,12 +141,21 @@ void QDSFilamentConfig::init()
         m_env = FOREIGNENV;
     }
 #endif
+
+    new std::thread([this]{
+        initFilamentData(m_colorHexCode);
+        initFilamentData(m_colorDes);
+        initTypeName();
+        initFilamentData(m_vendor);
+        initFilamentData(m_filament_type);
+        });
+
+
 }
-
-
 void QDSFilamentConfig::initTypeName()
 {
 #if QDT_RELEASE_TO_PUBLIC
+    std::this_thread::sleep_for(std::chrono::seconds(3));
 	std::string resultBody = MakerHttpHandle::getInstance().httpGetTask(m_env, m_typeName.path);
 	if (resultBody == "") {
 		return;
@@ -328,27 +330,20 @@ void QDSDevice::updateByJsonData(json& status)
 	twoStageParse(status, m_chamber_fan_speed, "fan_generic chamber_circulation_fan", "speed");
 	twoStageParse(status, m_cooling_fan_speed, "fan_generic cooling_fan", "speed");
 	twoStageParse(status, m_home_axes, "toolhead", "homed_axes");
-
-	if (status.contains("output_pin Polar_cooler") && status["output_pin Polar_cooler"].contains("value")) {
-
-		if (m_case_light != bool(status["output_pin Polar_cooler"]["value"].get<float>())) {
-			is_update = true;
-            m_polar_cooler = bool(status["output_pin Polar_cooler"]["value"].get<float>());
-		}
-	}
+	twoStageParse(status, m_extruder_filament, "filament_switch_sensor filament_switch_sensor", "filament_detected");
 
     for (int i = 0; i < 4; ++i) {
         std::string key = "aht20_f heater_box" + std::to_string(i + 1);
 		if (status.contains(key) ) {
             if (status[key].contains("temperature")) {
                 if (m_boxTemperature[i] != int(status[key]["temperature"].get<float>())) {
-                    box_is_update = true;
+                    m_is_update_box_temp = true;
                     m_boxTemperature[i] = int(status[key]["temperature"].get<float>());
                 }
             }
 			if (status[key].contains("humidity")) {
 				if (m_boxHumidity[i] != status[key]["humidity"].get<int>()) {
-                    box_is_update = true;
+                    m_is_update_box_temp = true;
                     m_boxHumidity[i] = status[key]["humidity"].get<int>();
 
 				}
@@ -406,10 +401,10 @@ void QDSDevice::updateBoxDataByJson(const json status)
 
 
 
-    int isExit = getJsonCurStageToInt(saveVariables, "enable_box");
-    if (isExit != -1) {
-        m_boxData[16].hasMaterial = bool(isExit);
-    }
+    //int isExit = getJsonCurStageToInt(saveVariables, "enable_box");
+    //if (isExit != -1) {
+        m_boxData[16].hasMaterial =  true;
+    //}
 	int count = getJsonCurStageToInt(saveVariables, "box_count");
 	if (count != -1) {
 		m_box_count = count;
@@ -1246,7 +1241,7 @@ void QDSDeviceManager::sendSubscribeMessage(const std::string& device_id) {
             // {"gcode_macro UNLOAD_T15", nullptr},
             // {"gcode_macro UNLOAD_FILAMENT", nullptr},
             // {"pause_resume", nullptr},
-            // {"filament_switch_sensor filament_switch_sensor", nullptr},
+             {"filament_switch_sensor filament_switch_sensor", nullptr},
             // {"bed_screws", nullptr},
             // {"tmc2209 extruder", nullptr},
             // {"z_tilt", nullptr},
@@ -1273,7 +1268,7 @@ void QDSDeviceManager::sendSubscribeMessage(const std::string& device_id) {
             {"display_status", nullptr},
             // {"webhooks", nullptr},
             // {"virtual_sdcard", nullptr},
-            // {"toolhead", nullptr},
+            {"toolhead", nullptr},
             {"heater_bed", nullptr},
             {"extruder", nullptr},
             {"heater_generic chamber", nullptr},
@@ -1639,13 +1634,13 @@ void QDSDeviceManager::updateDeviceData(std::shared_ptr<QDSDevice>& device,
 			if (result[key].contains("temperature")) {
 
 				if (device->m_boxTemperature[i] != int(result[key]["temperature"].get<float>())) {
-					device->box_is_update = true;
+					device->m_is_update_box_temp = true;
 					device->m_boxTemperature[i] = int(result[key]["temperature"].get<float>());
 				}
 			}
 			if (result[key].contains("humidity")) {
 				if (device->m_boxHumidity[i] != result[key]["humidity"].get<int>()) {
-					device->box_is_update = true;
+					device->m_is_update_box_temp = true;
 					device->m_boxHumidity[i] = result[key]["humidity"].get<int>();
 
 				}
@@ -1656,7 +1651,8 @@ void QDSDeviceManager::updateDeviceData(std::shared_ptr<QDSDevice>& device,
 	twoStageParse1(result, device->m_auxiliary_fan_speed, "fan_generic auxiliary_cooling_fan", "speed",is_update);
 	twoStageParse1(result, device->m_chamber_fan_speed, "fan_generic chamber_circulation_fan", "speed", is_update);
 	twoStageParse1(result, device->m_cooling_fan_speed, "fan_generic cooling_fan", "speed", is_update);
-
+    twoStageParse1(result, device->m_home_axes, "toolhead", "homed_axes", is_update); 
+    twoStageParse1(result, device->m_extruder_filament, "filament_switch_sensor filament_switch_sensor", "filament_detected",is_update);
     if (result.contains("print_stats")){ 
          if(result["print_stats"].contains("filename")) {
              if (device->m_print_filename != result["print_stats"]["filename"].get<std::string>()) {

@@ -64,6 +64,8 @@
 #include "Widgets/WebView.hpp"
 #include "DailyTips.hpp"
 #include "FilamentMapDialog.hpp"
+//cj_2
+#include "QDSDeviceManager.hpp"
 
 #include "DeviceCore/DevManager.h"
 
@@ -728,13 +730,7 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
         if(is_webview){
             if (event.IsIconized()) {
                 wxString url;
-                if (m_printer_view->GetNetMode()) {
-                    url = wxString::Format("file://%s/web/qidi/link_missing_connection.html", from_u8(resources_dir()));
-                }
-                else {
-                    url = wxString::Format("file://%s/web/qidi/missing_connection.html", from_u8(resources_dir()));
-                }
-                m_printer_view->load_disconnect_url(url);
+                m_printer_view->load_disconnect_url();
             }
             else {
                 if (!printer_view_ip.empty() && new_sel == tpMonitor) {
@@ -1157,11 +1153,15 @@ void MainFrame::init_tabpanel()
     m_settings_dialog.set_tabpanel(m_tabpanel);
 
     m_tabpanel->Bind(wxEVT_NOTEBOOK_PAGE_CHANGING, [this](wxBookCtrlEvent& e) {
+        //y77
+        if (e.GetEventObject() != m_tabpanel) {
+            e.Skip();
+            return;
+        }
+
         int old_sel = e.GetOldSelection();
         //y53
         new_sel = e.GetSelection();
-        //y76
-        int tab_panel = m_tabpanel->GetSelection();
 
         if (old_sel != wxNOT_FOUND &&
             new_sel != old_sel &&
@@ -1227,17 +1227,10 @@ void MainFrame::init_tabpanel()
             m_calibration->m_filament_choice->update();
             m_calibration->m_print_choice->update();
         }
-        //y53 //y76
-        if (new_sel != tpMonitor && tab_panel != tpMonitor){
+        //y53 //y77
+        if (new_sel != tpMonitor){
             if(is_webview){
-                wxString url;
-                if (m_printer_view->GetNetMode()) {
-                    url = wxString::Format("file://%s/web/qidi/link_missing_connection.html", from_u8(resources_dir()));
-                }
-                else {
-                    url = wxString::Format("file://%s/web/qidi/missing_connection.html", from_u8(resources_dir()));
-                }
-                m_printer_view->load_disconnect_url(url);
+                m_printer_view->load_disconnect_url();
             }
             else
                 m_printer_view->pauseCamera();

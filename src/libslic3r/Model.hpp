@@ -761,7 +761,8 @@ enum class ConversionType : int {
 enum class En3mfType : int {
     From_QDS,
     From_Prusa,
-    From_Other
+    From_Other,
+    From_BBS
 };
 
 class FacetsAnnotation final : public ObjectWithTimestamp {

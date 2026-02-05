@@ -126,7 +126,8 @@ namespace Slic3r
             return -1;
 
         std::vector<FilamentInfo> box_filament_infos;
-        for (int i = 0; i < filament_colors.size(); i++) {
+        //y77
+        for (int i = 0; i < filament_colors.size() - 1; i++) {
             if (!filament_colors[i].empty() && slot_id[i] != -1) {
                 FilamentInfo box_fila_info;
                 box_fila_info.color = filament_colors[i].erase(0, 1) + "FF";

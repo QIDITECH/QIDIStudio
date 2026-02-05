@@ -55,7 +55,8 @@ MediaPlayCtrl::MediaPlayCtrl(wxWindow *parent, VideoPanel *media_ctrl, const wxP
     SetLabel("MediaPlayCtrl");
     SetBackgroundColour(*wxWHITE);
     m_media_ctrl->Bind(wxEVT_MEDIA_STATECHANGED, &MediaPlayCtrl::onStateChanged, this);
-    m_media_ctrl->SetIdleImage(from_u8(resources_dir() + "/images/live_stream_default.png"));
+    //y77
+    m_media_ctrl->SetIdleImage("live_stream_default");
 
     m_button_play = new Button(this, "", "media_play", wxBORDER_NONE);
     m_button_play->SetCanFocus(false);
