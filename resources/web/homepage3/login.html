@@ -68,6 +68,7 @@
             height: 60px;
             width: 295px;
             letter-spacing: 1px;
+            margin-right : 25px;
         }
         
         .action-button-secondary {
@@ -82,7 +83,7 @@
             height: 60px;
             width: 300px;
             letter-spacing: 1px;
-            margin-left : 25px;
+            
         }
         .arrow-icon {
             margin-left: 13px;
@@ -226,7 +227,7 @@
         </div>
         
         <div class="button-container">
-            <button class="action-button" onclick="buttonClicked(1)" >
+            <button class="action-button" onclick="buttonClicked(1)" id = "QIDI Login" >
                 <span>QIDI MAKER</span> 
                 <img src="img/arrow-right.png" class = "arrow-icon"/>
             </button>
@@ -296,13 +297,18 @@ window.addEventListener('DOMContentLoaded', function() {
 
     let region = GetQueryString('region');
     if (region === 'Other') {
+        
         document.getElementById('GoogleQR').hidden = false;
         document.getElementById('AppStoreQR').hidden = false;
         document.getElementById('GetappsQR').hidden = false;
         document.getElementById('QIDIMakerFQR').hidden = false;
         document.getElementById('QIDIMakerQR').hidden = true;
     } else {
-        document.getElementById('GoogleQR').hidden = true;
+        document.getElementById('download').hidden = true;
+        document.getElementById('QIDI Login').hidden = true;
+
+
+        document.getElementById('GoogleQR').hidden = false;
         document.getElementById('AppStoreQR').hidden = true;
         document.getElementById('GetappsQR').hidden = true;
         document.getElementById('QIDIMakerFQR').hidden = true;
