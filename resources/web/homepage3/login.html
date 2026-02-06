@@ -138,8 +138,12 @@
            margin-top: 68px;
            font-weight: 550;
         }
-        .qrCode {
+        .qrCode-container {
             margin-top: 55px;
+            gap : 60px;
+        }
+        .QIDIMakerQR, .QIDIMakerFQR, .AppStoreQR, .GoogleQR,  .GetappsQR {
+            margin-right: 35px;
         }
         .faq-section {
             margin-top: 40px;
@@ -241,7 +245,14 @@
             Download
         </button>
         </div>
-        <img src="img/QR_code.png" class="qrCode" id = "qrCode" />
+        <div class = "qrCode-container" id="qrCode-container">
+            <img src="img/GoogleQR.png"  class="GoogleQR" id="GoogleQR"/>
+            <img src="img/AppStoreQR.png" class="AppStoreQR" id="AppStoreQR" />
+            <img src="img/GetappsQR.png"  class="GetappsQR" id="GetappsQR"/>
+            <img src="img/QIDIMakerFQR.png"  class="QIDIMakerFQR" id="QIDIMakerFQR"/>
+            <img src="img/QIDIMakerQR.png" class="QIDIMakerQR" id="QIDIMakerQR" />
+        </div>
+        
         <div class = "detail-text" id = "text-detail">
         <div class="faq-section" id="faq">
             <div class="faq-item">
@@ -279,10 +290,25 @@
         }
 window.addEventListener('DOMContentLoaded', function() {
     TranslatePage();
-    document.getElementById('qrCode').hidden = true;
+    document.getElementById('qrCode-container').hidden = true;
 
     document.getElementById('text-detail').hidden = true;
-    document.getElementById('download').hidden = true;
+
+    let region = GetQueryString('region');
+    if (region === 'Other') {
+        document.getElementById('GoogleQR').hidden = false;
+        document.getElementById('AppStoreQR').hidden = false;
+        document.getElementById('GetappsQR').hidden = false;
+        document.getElementById('QIDIMakerFQR').hidden = false;
+        document.getElementById('QIDIMakerQR').hidden = true;
+    } else {
+        document.getElementById('GoogleQR').hidden = true;
+        document.getElementById('AppStoreQR').hidden = true;
+        document.getElementById('GetappsQR').hidden = true;
+        document.getElementById('QIDIMakerFQR').hidden = true;
+        document.getElementById('QIDIMakerQR').hidden = false;
+    }
+    
 });
     document.getElementById('more').addEventListener('click', function() {
         if (this.dataset.clicked) {
@@ -303,7 +329,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
 
             document.getElementById('text-detail').hidden = false;
-            document.getElementById('qrCode').hidden = true;
+            document.getElementById('qrCode-container').hidden = true;
         }
 
     });
@@ -313,7 +339,7 @@ window.addEventListener('DOMContentLoaded', function() {
             this.style.color = 'white';
             this.style.borderColor  = 'white';
             
-            document.getElementById('qrCode').hidden = true;
+            document.getElementById('qrCode-container').hidden = true;
             delete this.dataset.clicked;
         } else {
             this.style.color = 'blue';
@@ -326,7 +352,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
 
             document.getElementById('text-detail').hidden = true;
-            document.getElementById('qrCode').hidden = false;
+            document.getElementById('qrCode-container').hidden = false;
         }
 
     });

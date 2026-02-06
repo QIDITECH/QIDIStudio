@@ -2044,7 +2044,15 @@ void WebViewPanel::SwitchWebContent(std::string modelname, int refresh)
 		wxString strJS = "GotoMenu(\"home\")";
 		WebView::RunScript(m_browserLeft, strJS);
 
-		wxString htmlUrl = wxString::Format("file:///%s/web/homepage3/login.html", from_u8(resources_dir()));
+        wxString regionStr = "";
+		std::string region = wxGetApp().app_config->get("region");
+		if (region == "China") {
+            regionStr = "CN";
+		}
+		else {
+            regionStr = "Other";
+		}
+		wxString htmlUrl = wxString::Format("file:///%s/web/homepage3/login.html?lang=%s&region=%s", from_u8(resources_dir()), GetStudioLanguage(),regionStr);
 
 		m_browser->LoadURL(htmlUrl);
 
