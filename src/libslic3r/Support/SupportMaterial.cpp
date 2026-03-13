@@ -2610,7 +2610,7 @@ SupportGeneratorLayersPtr PrintObjectSupportMaterial::bottom_contact_layers_and_
     // Last top contact layer visited when collecting the projection of contact areas.
     int       contact_idx = int(top_contacts.size()) - 1;
     for (int layer_id = int(object.total_layer_count()) - 2; layer_id >= 0; -- layer_id) {
-        BOOST_LOG_TRIVIAL(trace) << "Support generator - bottom_contact_layers - layer " << layer_id;
+        // BOOST_LOG_TRIVIAL(trace) << "Support generator - bottom_contact_layers - layer " << layer_id;
         const Layer &layer = *object.get_layer(layer_id);
         // Collect projections of all contact areas above or at the same level as this top surface.
 #ifdef SLIC3R_DEBUG
@@ -2961,8 +2961,8 @@ void PrintObjectSupportMaterial::generate_base_layers(
             // Counting down due to the way idx_lower_or_equal caches indices to avoid repeated binary search over the complete sequence.
             for (int idx_intermediate = int(range.end()) - 1; idx_intermediate >= int(range.begin()); -- idx_intermediate)
             {
-                BOOST_LOG_TRIVIAL(trace) << "Support generator - generate_base_layers - creating layer " << 
-                    idx_intermediate << " of " << intermediate_layers.size();
+                // BOOST_LOG_TRIVIAL(trace) << "Support generator - generate_base_layers - creating layer " << 
+                //    idx_intermediate << " of " << intermediate_layers.size();
                 SupportGeneratorLayer &layer_intermediate = *intermediate_layers[idx_intermediate];
                 // Layers must be sorted by print_z. 
                 assert(idx_intermediate == 0 || layer_intermediate.print_z >= intermediate_layers[idx_intermediate - 1]->print_z);
@@ -3130,7 +3130,7 @@ void PrintObjectSupportMaterial::trim_support_layers_by_object(
             };
             for (size_t idx_layer = range.begin(); idx_layer < range.end(); ++ idx_layer) {
                 SupportGeneratorLayer &support_layer = *nonempty_layers[idx_layer];
-                // BOOST_LOG_TRIVIAL(trace) << "Support generator - trim_support_layers_by_object - trimmming non-empty layer " << idx_layer << " of " << nonempty_layers.size();
+                // // BOOST_LOG_TRIVIAL(trace) << "Support generator - trim_support_layers_by_object - trimmming non-empty layer " << idx_layer << " of " << nonempty_layers.size();
                 assert(! support_layer.polygons.empty() && support_layer.print_z >= m_slicing_params.raft_contact_top_z + EPSILON);
                 // Find the overlapping object layers including the extra above / below gap.
                 coordf_t z_threshold = support_layer.bottom_print_z() - gap_extra_below + EPSILON;

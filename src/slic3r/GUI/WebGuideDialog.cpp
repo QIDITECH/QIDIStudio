@@ -23,6 +23,7 @@
 #include <boost/filesystem.hpp>
 
 #include "MainFrame.hpp"
+#include "UxProgramTermsDialog.hpp"
 #include <boost/dll.hpp>
 #include <slic3r/GUI/Widgets/WebView.hpp>
 #include <slic3r/Utils/Http.hpp>
@@ -199,7 +200,7 @@ GuideFrame::~GuideFrame()
 
 void GuideFrame::load_url(wxString &url)
 {
-    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< " enter, url=" << url.ToStdString();
+    // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< " enter, url=" << url.ToStdString();
     WebView::LoadUrl(m_browser, url);
     m_browser->SetFocus();
     UpdateState();
@@ -370,11 +371,11 @@ void GuideFrame::OnScriptMessage(wxWebViewEvent &evt)
 {
     try {
         wxString strInput = evt.GetString();
-        BOOST_LOG_TRIVIAL(trace) << "GuideFrame::OnScriptMessage;OnRecv:" << strInput.c_str();
+        // BOOST_LOG_TRIVIAL(trace) << "GuideFrame::OnScriptMessage;OnRecv:" << strInput.c_str();
         json     j        = json::parse(strInput);
 
         wxString strCmd = j["command"];
-        BOOST_LOG_TRIVIAL(trace) << "GuideFrame::OnScriptMessage;Command:" << strCmd;
+        // BOOST_LOG_TRIVIAL(trace) << "GuideFrame::OnScriptMessage;Command:" << strCmd;
 
         if (strCmd == "close_page") {
             this->EndModal(wxID_CANCEL);
@@ -412,7 +413,7 @@ void GuideFrame::OnScriptMessage(wxWebViewEvent &evt)
             //wxString strJS = wxString::Format("HandleStudio(%s)", m_Res.dump(-1, ' ', false, json::error_handler_t::ignore));
             wxString strJS = wxString::Format("HandleStudio(%s)", m_Res.dump(-1, ' ', true));
 
-            //BOOST_LOG_TRIVIAL(trace) << "GuideFrame::OnScriptMessage;request_userguide_profile:" << strJS.c_str();
+            //// BOOST_LOG_TRIVIAL(trace) << "GuideFrame::OnScriptMessage;request_userguide_profile:" << strJS.c_str();
             wxGetApp().CallAfter([this,strJS] { RunScript(strJS); });
         }
         else if (strCmd == "request_custom_filaments") {
@@ -518,9 +519,16 @@ void GuideFrame::OnScriptMessage(wxWebViewEvent &evt)
 
             wxLaunchDefaultBrowser(strUrl);
         }
+        else if (strCmd == "show_ux_program_terms")
+        {
+            wxGetApp().CallAfter([this] {
+                UxProgramTermsDialog dlg(this);
+                dlg.ShowModal();
+            });
+        }
     } catch (std::exception &e) {
         // wxMessageBox(e.what(), "json Exception", MB_OK);
-        BOOST_LOG_TRIVIAL(trace) << "GuideFrame::OnScriptMessage;Error:" << e.what();
+        // BOOST_LOG_TRIVIAL(trace) << "GuideFrame::OnScriptMessage;Error:" << e.what();
     }
 
     wxString strAll = m_ProfileJson.dump(-1,' ',false, json::error_handler_t::ignore);
@@ -591,7 +599,7 @@ void GuideFrame::OnError(wxWebViewEvent &evt)
     // Show the info bar with an error
     // m_info->ShowMessage(_L("An error occurred loading ") + evt.GetURL() +
     // "\n" + "'" + category + "'", wxICON_ERROR);
-    BOOST_LOG_TRIVIAL(trace) << "GuideFrame::OnError: An error occurred loading " << evt.GetURL() << category;
+    // BOOST_LOG_TRIVIAL(trace) << "GuideFrame::OnError: An error occurred loading " << evt.GetURL() << category;
 
     UpdateState();
 }
@@ -649,6 +657,7 @@ int GuideFrame::SaveProfile()
         m_MainPtr->app_config->set(std::string(m_SectionName.mb_str()), "privacyuse", false);*/
 
     m_MainPtr->app_config->set("region", m_Region);
+    wxGetApp().update_log_sink_region();
 
     //finish
     //if (m_GuideFinish)
@@ -1546,7 +1555,7 @@ void GuideFrame::GetStardardFilePath(std::string &FilePath) {
 //        std::stringstream buffer;
 //        buffer << t.rdbuf();
 //        sContent=buffer.str();
-//        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << boost::format(", load %1% into buffer")% jPath;
+//        // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << boost::format(", load %1% into buffer")% jPath;
 //    }
 //    catch (std::exception &e)
 //    {

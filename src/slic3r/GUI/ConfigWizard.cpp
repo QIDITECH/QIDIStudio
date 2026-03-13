@@ -99,7 +99,7 @@ bool Bundle::load(fs::path source_path, bool ais_in_resources, bool ais_qdt_bund
         return false;
     } 
 
-    BOOST_LOG_TRIVIAL(trace) << boost::format("Vendor bundle: `%1%`: %2% profiles loaded.") % path_string % presets_loaded;
+    // BOOST_LOG_TRIVIAL(trace) << boost::format("Vendor bundle: `%1%`: %2% profiles loaded.") % path_string % presets_loaded;
     this->vendor_profile = &first_vendor->second;
     return true;
 }

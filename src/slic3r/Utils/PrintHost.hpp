@@ -75,6 +75,9 @@ public:
     static PrintHost *get_print_host_url(std::string url, std::string local_ip);
     static PrintHost* get_print_host(DynamicPrintConfig *config);
 
+    //y78
+    virtual bool send_msg_to_printer(std::string api, std::string msg) const = 0;
+
 protected:
     virtual wxString format_error(const std::string &body, const std::string &error, unsigned status) const;
 };

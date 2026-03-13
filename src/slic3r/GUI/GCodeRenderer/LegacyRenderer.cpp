@@ -2542,9 +2542,9 @@ namespace Slic3r {
                     layers_size += SLIC3R_STDVEC_MEMSIZE(m_layers.get_endpoints(), Layers::Endpoints);
                     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format("paths_size %1%, render_paths_size %2%,layers_size %3%, additional %4%\n")
                         % paths_size % render_paths_size % layers_size % additional;
-                    BOOST_LOG_TRIVIAL(trace) << label
-                        << "(" << format_memsize_MB(additional + paths_size + render_paths_size + layers_size) << ");"
-                        << log_memory_info();
+                    // BOOST_LOG_TRIVIAL(trace) << label
+                        //<< "(" << format_memsize_MB(additional + paths_size + render_paths_size + layers_size) << ");"
+                        //<< log_memory_info();
                 }
             }
             Color LegacyRenderer::option_color(EMoveType move_type) const

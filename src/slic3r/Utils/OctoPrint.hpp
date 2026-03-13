@@ -47,6 +47,9 @@ public:
     bool send_command_to_printer(wxString& curl_msg, wxString commond) const;
     bool send_timelapse_status(wxString& msg, std::string ip, bool status) const;
 
+    //y78
+    bool send_msg_to_printer(std::string api, std::string msg) const;
+
 protected:
     std::string m_show_ip;
     std::string m_host;

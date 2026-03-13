@@ -1,6 +1,7 @@
 #ifndef slic3r_GUI_PRE_PRINT_CHECK_hpp_
 #define slic3r_GUI_PRE_PRINT_CHECK_hpp_
 
+#include <set>
 #include <wx/wx.h>
 #include "Widgets/Label.hpp"
 
@@ -27,6 +28,7 @@ enum class prePrintInfoStyle : int
     BtnNozzleRefresh = 0x002,
     BtnConfirmNotShowAgain = 0x004,
     BtnInstallFanF000 = 0x008,
+    BtnJumpToUpgrade = 0x010,
 };
 
 inline constexpr prePrintInfoStyle operator|(prePrintInfoStyle a, prePrintInfoStyle b) noexcept
@@ -88,6 +90,7 @@ enum PrintDialogStatus : unsigned int {
     PrintStatusConnecting,
     PrintStatusReconnecting,
     PrintStatusInUpgrading,
+    PrintStatusFirmwareNotSupportTpuAtLeft,
     PrintStatusModeNotFDM,
     PrintStatusInSystemPrinting,
     PrintStatusInPrinting,
@@ -96,7 +99,6 @@ enum PrintDialogStatus : unsigned int {
     PrintStatusNozzleRackMaximumInstalled,
     PrintStatusNozzleDataInvalid,
     PrintStatusNozzleDiameterMismatch,
-    PrintStatusNozzleTypeMismatch,
     PrintStatusRefreshingMachineList,
     PrintStatusSending,
     PrintStatusLanModeNoSdcard,
@@ -138,6 +140,7 @@ enum PrintDialogStatus : unsigned int {
     PrintStatusHasUnreliableNozzleWarning,
     PrintStatusRackNozzleNumUnmeetWarning,
     PrintStatusRackNozzleMappingWarning,
+    PrintStatusNozzleHRCMismatch,
     PrintStatusPrinterWarningEnd,
 
     // Warnings for filament
@@ -232,6 +235,7 @@ private:
     // events
     void OnNotShowAgain(const prePrintInfo& info);
     void OnRefreshNozzleBtnClicked(wxMouseEvent& event);
+    void OnUpgradeBtnClicked(wxMouseEvent& event);
 
  private:
     SelectMachineDialog* m_select_dialog = nullptr;

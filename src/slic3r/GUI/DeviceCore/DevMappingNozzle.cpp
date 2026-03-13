@@ -15,6 +15,7 @@
 
 #include "slic3r/GUI/GUI_App.hpp"
 
+#include <boost/lexical_cast.hpp>
 #include <nlohmann/json.hpp>
 using namespace nlohmann;
 
@@ -166,7 +167,7 @@ int MachineObject::ctrl_get_auto_nozzle_mapping(Slic3r::GUI::Plater* plater, con
             }
 
             nozzle_item_jj["nozzle_d"] = s_get_diameter_str(nozzle.second.GetNozzleDiameter());
-            nozzle_item_jj["nozzle_v"] = (nozzle.second.GetNozzleFlowType() == NozzleFlowType::H_FLOW) ? "High Flow" : "Standard";
+            nozzle_item_jj["nozzle_v"] = DevNozzle::ToNozzleFlowString(nozzle.second.GetNozzleFlowType());
             nozzle_item_jj["wear"] = nozzle.second.GetNozzleWear();
             nozzle_item_jj["cate"] = nozzle.second.GetFilamentId();
             nozzle_item_jj["color"] = nozzle.second.GetFilamentColor();
@@ -184,7 +185,7 @@ int MachineObject::ctrl_get_auto_nozzle_mapping(Slic3r::GUI::Plater* plater, con
             }
 
             nozzle_item_jj["nozzle_d"] = s_get_diameter_str(nozzle.second.GetNozzleDiameter());
-            nozzle_item_jj["nozzle_v"] = (nozzle.second.GetNozzleFlowType() == NozzleFlowType::H_FLOW) ? "High Flow" : "Standard";
+            nozzle_item_jj["nozzle_v"] = DevNozzle::ToNozzleFlowString(nozzle.second.GetNozzleFlowType());
             nozzle_item_jj["wear"] = nozzle.second.GetNozzleWear();
             nozzle_item_jj["cate"] = nozzle.second.GetFilamentId();
             nozzle_item_jj["color"] = nozzle.second.GetFilamentColor();

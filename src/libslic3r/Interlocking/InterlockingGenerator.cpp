@@ -1,6 +1,8 @@
 // Copyright (c) 2023 UltiMaker
 // CuraEngine is released under the terms of the AGPLv3 or higher.
 
+#include <tbb/parallel_for.h>
+
 #include "ClipperUtils.hpp"
 #include "InterlockingGenerator.hpp"
 #include "Layer.hpp"
@@ -26,7 +28,7 @@ void InterlockingGenerator::generate_embedding_wall(PrintObject* print_object){
     //params
     const int      interface_depth    = 2;
     const int      boundary_avoidance = 2;
-    constexpr coord_t DEFAULT_BEAM_WIDTH = scaled(0.2); // ÀýÈçÄ¬ÈÏ2mm
+    constexpr coord_t DEFAULT_BEAM_WIDTH = scaled(0.2);
     const coord_t beam_width = DEFAULT_BEAM_WIDTH;
 
     const DilationKernel interface_dilation(GridPoint3(interface_depth, interface_depth, interface_depth), DilationKernel::Type::PRISM);

@@ -216,8 +216,8 @@ void CaliPresetCustomRangePanel::create_panel(wxWindow* parent , bool scale)
                 }
             }
             // input is not a number, invalid.
-            else
-                BOOST_LOG_TRIVIAL(trace) << "The K input string is not a valid number when calibrating. ";
+            //else
+                // BOOST_LOG_TRIVIAL(trace) << "The K input string is not a valid number when calibrating. ";
 
             });
         item_sizer->Add(m_value_inputs[i], 0, wxALL, 0);

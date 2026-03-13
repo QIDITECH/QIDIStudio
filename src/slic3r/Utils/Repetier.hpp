@@ -37,6 +37,8 @@ public:
     
     bool get_groups(wxArrayString &groups) const override;
     bool get_printers(wxArrayString &printers) const override;
+    //y78
+    virtual bool send_msg_to_printer(std::string api, std::string msg) const override {return false;};
 
 protected:
     virtual bool validate_version_text(const boost::optional<std::string> &version_text) const;

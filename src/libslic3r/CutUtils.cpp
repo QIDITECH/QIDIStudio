@@ -321,7 +321,7 @@ const ModelObjectPtrs &Cut::perform_with_plane()
 
     ModelObject *mo = m_model.objects.front();
 
-    BOOST_LOG_TRIVIAL(trace) << "ModelObject::cut - start";
+    // BOOST_LOG_TRIVIAL(trace) << "ModelObject::cut - start";
 
     // Clone the object to duplicate instances, materials etc.
     ModelObject *upper{nullptr};
@@ -409,7 +409,7 @@ const ModelObjectPtrs &Cut::perform_with_plane()
         }
     }
 
-    BOOST_LOG_TRIVIAL(trace) << "ModelObject::cut - end";
+    // BOOST_LOG_TRIVIAL(trace) << "ModelObject::cut - end";
 
     finalize(cut_object_ptrs);
 

@@ -57,6 +57,7 @@
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/Model.hpp"
 #include "libslic3r/I18N.hpp"
+#include "libslic3r/LogSink.hpp"
 #include "libslic3r/PresetBundle.hpp"
 #include "libslic3r/Thread.hpp"
 #include "libslic3r/miniz_extension.hpp"
@@ -118,6 +119,7 @@
 //#include "BaseException.h"
 //#endif
 
+//cj_2
 #if QDT_RELEASE_TO_PUBLIC
 #include "../QIDI/QIDINetwork.hpp"
 #endif
@@ -1896,13 +1898,13 @@ int GUI_App::install_plugin(std::string name, std::string package_name, InstallP
                 if (fs::is_regular_file(it->status())) { ++file_count; }
             }
             for (fs::directory_iterator it(dir_path); it != fs::directory_iterator(); ++it) {
-                BOOST_LOG_TRIVIAL(trace) << " current path:" << PathSanitizer::sanitize(it->path().string());
+                // BOOST_LOG_TRIVIAL(trace) << " current path:" << PathSanitizer::sanitize(it->path().string());
                 if (it->path().string() == backup_folder) {
                     continue;
                 }
                 auto dest_path = backup_folder.string() + "/" + it->path().filename().string();
                 if (fs::is_regular_file(it->status())) {
-                    BOOST_LOG_TRIVIAL(trace) << " copy file:" << PathSanitizer::sanitize(it->path().string()) << "," << it->path().filename();
+                    // BOOST_LOG_TRIVIAL(trace) << " copy file:" << PathSanitizer::sanitize(it->path().string()) << "," << it->path().filename();
                     try {
                         if (pro_fn) { pro_fn(InstallStatusNormal, 50 + file_index / file_count, cancel); }
                         file_index++;
@@ -1914,7 +1916,7 @@ int GUI_App::install_plugin(std::string name, std::string package_name, InstallP
                         BOOST_LOG_TRIVIAL(error) << "Copying to backup failed: " << e.what();
                     }
                 } else {
-                    BOOST_LOG_TRIVIAL(trace) << " copy framework:" << it->path().string() << "," << it->path().filename();
+                    // BOOST_LOG_TRIVIAL(trace) << " copy framework:" << it->path().string() << "," << it->path().filename();
                     copy_framework(it->path().string(), dest_path);
                 }
             }
@@ -2079,16 +2081,20 @@ void GUI_App::init_networking_callbacks()
             }
             if (return_code < 0) { //#define MQTTASYNC_SUCCESS 0
                 GUI::wxGetApp().CallAfter([this] {
-                    BOOST_LOG_TRIVIAL(trace) << "static: server connection failed";
-                    MessageDialog msg_dlg(nullptr, _L("Failed to connect to the cloud device server. Please check your network and firewall."), "", wxAPPLY | wxOK);
-                    if (msg_dlg.ShowModal() == wxOK) { return; }
+                    static bool is_showing = false;
+                    if (is_showing) return;
+                    is_showing = true;
+                    // BOOST_LOG_TRIVIAL(trace) << "static: server connection failed";
+                    MessageDialog msg_dlg(nullptr, _L("Failed to connect to the cloud device server. Please check your network and firewall."), "", wxOK);
+                    msg_dlg.ShowModal();
+                    is_showing = false;
                 });
                 return;
             }
             GUI::wxGetApp().CallAfter([this] {
                 if (is_closing())
                     return;
-                BOOST_LOG_TRIVIAL(trace) << "static: server connected";
+                // BOOST_LOG_TRIVIAL(trace) << "static: server connected";
                 m_agent->set_user_selected_machine(m_agent->get_user_selected_machine());
                     if (this->is_enable_multi_machine()) {
                         auto evt = new wxCommandEvent(EVT_UPDATE_MACHINE_LIST);
@@ -2155,8 +2161,7 @@ void GUI_App::init_networking_callbacks()
             });
         });
 
-        m_agent->set_on_local_connect_fn(
-            [this](int state, std::string dev_id, std::string msg) {
+        m_agent->set_on_local_connect_fn([this](int state, std::string dev_id, std::string msg) {
                 if (is_closing()) {
                     return;
                 }
@@ -2176,6 +2181,8 @@ void GUI_App::init_networking_callbacks()
                                 obj->command_get_version();
                                 event.SetInt(0);
                                 event.SetString(obj->get_dev_id());
+                                obj->record_user_access_dev_ip();// only record access_dev_ip when lan mode
+                                GUI::wxGetApp().app_config->set_str("access_code", obj->get_dev_id(), obj->get_access_code());
                             } else if (state == ConnectStatus::ConnectStatusFailed) {
                                 m_device_manager->erase_local_machine(obj->get_dev_id());
                                 m_device_manager->set_selected_machine("");
@@ -2183,6 +2190,7 @@ void GUI_App::init_networking_callbacks()
                                 if (msg == "5") {
                                     obj->set_access_code("");
                                     obj->erase_user_access_code();
+                                    obj->erase_user_access_dev_ip();
                                     text = wxString::Format(_L("Incorrect password"));
                                     wxGetApp().show_dialog(text);
                                 } else {
@@ -2423,6 +2431,62 @@ void GUI_App::init_download_path()
     }
 }
 
+// see also AppConfig::get_country_code
+static LogEncOptions s_get_log_enc_opts()
+{
+    LogEncOptions enc_options;
+
+#if QDT_RELEASE_TO_PUBLIC
+    std::string region_str;
+    if (wxGetApp().app_config && !wxGetApp().app_config->get("region").empty()) {
+        region_str = wxGetApp().app_config->get("region");
+    };
+
+    const auto& config_path = AppConfig::config_path(AppConfig::EAppMode::Editor);
+    try {
+        if (boost::filesystem::exists(config_path)) {
+            boost::nowide::ifstream json_file(config_path.c_str());
+            if (json_file.is_open()) {
+                nlohmann::json config_jj;
+                json_file >> config_jj;
+                if (config_jj.contains("app")) {
+                    const nlohmann::json& app_jj = config_jj["app"];
+                    region_str = app_jj.contains("region") ? app_jj["region"].get<std::string>() : "";
+                }
+            }
+        }
+    } catch (...) {
+        assert(0 && "get_value_from_config failed");
+    }// there are file errors
+
+    enc_options.enc_type = LogEncOptions::LOG_ENC_AES_256_CBC;
+    if (enc_options.enc_type == LogEncOptions::LOG_ENC_AES_256_CBC) {
+        std::string enc_key_url;
+        std::string enc_key_host_env;
+        if (!region_str.empty()) {
+            if (region_str == "CHN" || region_str == "China" || region_str == "CN") {
+                enc_key_url = wxGetApp().get_http_url("CN", "v1/analysis-st/tag/");
+                enc_key_host_env = "cn";
+            } else {
+                enc_key_url = wxGetApp().get_http_url("US", "v1/analysis-st/tag/");
+                enc_key_host_env = "us";
+            }
+        } else {
+            enc_key_url = "";
+            enc_key_host_env = "dc";
+        }
+
+        enc_options.enc_key_url = enc_key_url;
+        enc_options.enc_key_host_env = enc_key_host_env;
+    }
+
+#else
+    enc_options.enc_type = LogEncOptions::LOG_ENC_NONE;
+#endif
+
+    return enc_options;
+};
+
 void GUI_App::init_app_config()
 {
 	// Profiles for the alpha are stored into the PrusaSlicer-alpha directory to not mix with the current release.
@@ -2466,16 +2530,13 @@ void GUI_App::init_app_config()
     }
 
     // start log here
-    std::time_t       t        = std::time(0);
-    std::tm *         now_time = std::localtime(&t);
-    std::stringstream buf;
-    buf << std::put_time(now_time, "debug_%a_%b_%d_%H_%M_%S_");
-    buf << get_current_pid() << ".log";
-    std::string log_filename = buf.str();
-#if !QDT_RELEASE_TO_PUBLIC
-    set_log_path_and_level(log_filename, 5);
+    const auto& enc_opts = s_get_log_enc_opts();
+    const auto& log_filename = LogSinkUtil::get_log_filaname_format(enc_opts);
+
+#if !QDT_RELEASE_TO_PUBLIC  && defined(__WINDOWS__)
+    set_log_path_and_level(log_filename, 5, enc_opts);
 #else
-    set_log_path_and_level(log_filename, 3);
+    set_log_path_and_level(log_filename, 3, enc_opts);
 #endif
 
     //QDS: remove GCodeViewer as seperate APP logic
@@ -2511,6 +2572,17 @@ void GUI_App::init_app_config()
             app_config->set("associate_step", "true");
         }
 #endif // _WIN32
+    }
+}
+
+void GUI_App::update_log_sink_region()
+{
+    app_config->save();
+
+    const auto& enc_opts = s_get_log_enc_opts();
+    if (enc_opts.enc_type != LogEncOptions::LOG_ENC_NONE) {
+        const auto& log_filename = LogSinkUtil::get_log_filaname_format(enc_opts);
+        update_log_sink(log_filename, enc_opts);
     }
 }
 
@@ -2582,7 +2654,6 @@ void GUI_App::on_start_subscribe_again(std::string dev_id)
 
         if ( (dev_id == obj->get_dev_id()) && obj->is_connecting() && obj->subscribe_counter > 0) {
             obj->subscribe_counter--;
-            if(wxGetApp().getAgent()) wxGetApp().getAgent()->set_user_selected_machine(dev_id);
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": dev_id=" << QDTCrossTalk::Crosstalk_DevId(obj->get_dev_id());
         }
     });
@@ -2629,7 +2700,7 @@ void GUI_App::MacPowerCallBack(void* refcon, io_service_t service, natural_t mes
         {
             MachineObject* obj = dev_manager->get_selected_machine();
             last_selected_machine = obj ? obj->get_dev_id() : "";
-            BOOST_LOG_TRIVIAL(info) << "MacPowerCallBack save selected machine:" << last_selected_machine;
+            BOOST_LOG_TRIVIAL(info) << "MacPowerCallBack save selected machine:" << QDTCrossTalk::Crosstalk_DevId(last_selected_machine);
         }
 
         IOAllowPowerChange(service, (long) messageArgument);
@@ -2639,7 +2710,7 @@ void GUI_App::MacPowerCallBack(void* refcon, io_service_t service, natural_t mes
         if (dev_manager && !last_selected_machine.empty())
         {
             dev_manager->set_selected_machine(last_selected_machine);
-            BOOST_LOG_TRIVIAL(info) << "MacPowerCallBack restore selected machine:" << last_selected_machine;
+            BOOST_LOG_TRIVIAL(info) << "MacPowerCallBack restore selected machine:" << QDTCrossTalk::Crosstalk_DevId(last_selected_machine);
         }
     };
 }
@@ -3447,6 +3518,7 @@ __retry:
             std::string country_code = app_config->get_country_code();
             m_agent->set_country_code(country_code);
             m_agent->start();
+            m_load_last_machine.InnerLoad(m_agent, getDeviceManager());
         }
     }
     else {
@@ -4136,7 +4208,7 @@ void GUI_App::request_helio_pat(std::function<void(std::string)> func)
 
 void GUI_App::request_helio_supported_data()
 {
-    std:;string helio_api_url = Slic3r::HelioQuery::get_helio_api_url();
+    std::string helio_api_url = Slic3r::HelioQuery::get_helio_api_url();
     std::string helio_api_key = Slic3r::HelioQuery::get_helio_pat();
 
     if (HelioQuery::global_supported_printers.size() <= 0 || HelioQuery::global_supported_materials.size() <= 0) {
@@ -4441,7 +4513,11 @@ void GUI_App::request_user_logout()
     // if (m_agent && m_agent->is_user_login()) {
     //    // Update data first before showing dialogs
     //    m_agent->user_logout();
-    //    m_agent->set_user_selected_machine("");
+        // if (auto obj = m_device_manager->get_selected_machine();
+        //     obj && obj->is_cloud_mode_printer()) {
+        //     m_device_manager->record_user_last_machine("");
+        // }
+
     //    /* delete old user settings */
     //    bool     transfer_preset_changes = false;
     //    wxString header = _L("Some presets are modified.") + "\n" +
@@ -4675,11 +4751,9 @@ std::string GUI_App::handle_web_request(std::string cmd)
                 }
             }
             else if (command_str.compare("get_academy_list") == 0){
-                if (mainframe && root.get_child_optional("data") != boost::none) {
-                    pt::ptree data_node = root.get_child("data");
-                    boost::optional<std::string> region = data_node.get_optional<std::string>("region");
+                if (mainframe) {
                     if (mainframe->m_webview) {
-                        mainframe->m_webview->get_academy_list(region.value()=="oversea" ? true : false);
+                        mainframe->m_webview->get_academy_list();
                     }
                 }
             }
@@ -4713,8 +4787,6 @@ std::string GUI_App::handle_web_request(std::string cmd)
                     CallAfter([this,strMenu, nRefresh] {
                         if (mainframe && mainframe->m_webview) 
                         { 
- 							wxString UrlRight = wxString::Format("file://%s/web/homepage3/home.html?lang=zh_CN", from_u8(resources_dir()));
-                            mainframe->m_webview->load_url(UrlRight);
                             mainframe->m_webview->SwitchWebContent(strMenu, nRefresh); 
                         }
                     }
@@ -5069,7 +5141,6 @@ void GUI_App::save_privacy_policy_history(bool agree, std::string source)
         //     j["user_id"] = m_agent->get_user_id();
         m_agent->track_event("privacy_policy", j.dump());
     }
-    BOOST_LOG_TRIVIAL(info) << "privacy_policy: source = " << source << ", value = " << j.dump();
 
     boost::filesystem::path dir = (boost::filesystem::path(Slic3r::data_dir()) / "track").make_preferred();
     std::string dir_str = dir.string();
@@ -5726,7 +5797,7 @@ void GUI_App::sync_preset(Preset* preset)
                     update_time = std::atoll(update_time_str.c_str());
             }
             else {
-                BOOST_LOG_TRIVIAL(trace) << "[sync_preset]init: request_setting_id failed, http code "<<http_code;
+                // BOOST_LOG_TRIVIAL(trace) << "[sync_preset]init: request_setting_id failed, http code "<<http_code;
                 // do not post new preset this time if http code >= 400
                 if (http_code >= 400) {
                     result = 0;
@@ -5756,7 +5827,7 @@ void GUI_App::sync_preset(Preset* preset)
                     update_time = std::atoll(update_time_str.c_str());
             }
             else {
-                BOOST_LOG_TRIVIAL(trace) << "[sync_preset]create: request_setting_id failed, http code "<<http_code;
+                // BOOST_LOG_TRIVIAL(trace) << "[sync_preset]create: request_setting_id failed, http code "<<http_code;
                 // do not post new preset this time if http code >= 400
                 if (http_code >= 400) {
                     result = 0;
@@ -5830,7 +5901,7 @@ void GUI_App::sync_preset(Preset* preset)
         //PresetBundle* preset_bundle = wxGetApp().preset_bundle;
         if (!this->preset_bundle) return;
 
-        BOOST_LOG_TRIVIAL(trace) << "sync_preset: sync operation: " << preset->sync_info << " success! preset = " << preset->name;
+        // BOOST_LOG_TRIVIAL(trace) << "sync_preset: sync operation: " << preset->sync_info << " success! preset = " << preset->name;
         if (preset->type == Preset::Type::TYPE_FILAMENT) {
             preset_bundle->filaments.set_sync_info_and_save(preset->name, setting_id, updated_info, update_time);
         } else if (preset->type == Preset::Type::TYPE_PRINT) {
@@ -5970,7 +6041,7 @@ void GUI_App::start_sync_user_preset(bool with_progress_dlg)
     //                             preset_deleted_from_cloud(del_setting_id);
     //                             it = delete_cache_presets.erase(it);
     //                             m_create_preset_blocked = { false, false, false, false, false, false };
-    //                             BOOST_LOG_TRIVIAL(trace) << "sync_preset: sync operation: delete success! setting id = " << del_setting_id;
+    //                             // BOOST_LOG_TRIVIAL(trace) << "sync_preset: sync operation: delete success! setting id = " << del_setting_id;
     //                         }
     //                         else {
     //                             BOOST_LOG_TRIVIAL(info) << "delete setting = " <<del_setting_id << " failed";
@@ -7107,7 +7178,7 @@ void GUI_App::OSXStoreOpenFiles(const wxArrayString &fileNames)
 void GUI_App::MacOpenURL(const wxString& url)
 {
 #if !QDT_RELEASE_TO_PUBLIC
-    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "get mac url " << url;
+    // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "get mac url " << url;
 #endif
 
     if (!url.empty() && boost::starts_with(url, "qidistudioopen://")) {
@@ -7122,7 +7193,7 @@ void GUI_App::MacOpenURL(const wxString& url)
         std::string download_file_url = url_decode(download_origin_url);
 
 #if !QDT_RELEASE_TO_PUBLIC
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << download_file_url;
+        // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << download_file_url;
 #endif
 
         if (!download_file_url.empty() && (boost::starts_with(download_file_url, "http://") || boost::starts_with(download_file_url, "https://"))) {
@@ -8071,10 +8142,108 @@ bool is_support_filament(int extruder_id, bool strict_check)
     return support_option->get_at(0);
 };
 
-void TryLoadLastMachine::InnerLoad(NetworkAgent *agent, DeviceManager *dev)
+static void sLocalBindFunc(std::string str_ip,
+                           std::string str_access_code,
+                           std::string sn)
 {
-    if (is_mqtt_ok && is_list_ok) {
-        if ((dev->get_selected_machine() == nullptr) && (dev->get_user_machinelist().size() > 0)) dev->set_selected_machine(agent->get_user_selected_machine());
+    detectResult detectData;
+    auto result = wxGetApp().getAgent()->bind_detect(str_ip, "secure", detectData);
+    if (result < 0) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": bind_detect failed code=" << result;
+        wxGetApp().CallAfter([sn]() { wxGetApp().app_config->erase("user_access_dev_ip", sn);});
+        return;
+    }
+
+    if (detectData.connect_type != "farm") {
+        if (detectData.bind_state == "occupied") {
+            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": the device is already occupied";
+            wxGetApp().CallAfter([sn]() { wxGetApp().app_config->erase("user_access_dev_ip", sn);});
+            return;
+        }
+
+        if (detectData.connect_type == "cloud") {
+            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": the device is cloud";
+            wxGetApp().CallAfter([sn]() { wxGetApp().app_config->erase("user_access_dev_ip", sn);});
+            return;
+        }
+    }
+
+    wxGetApp().CallAfter([detectData, str_ip, str_access_code]() {
+        if (DeviceManager* dev = wxGetApp().getDeviceManager()) {
+            auto obj = dev->insert_local_device(detectData.dev_name, detectData.dev_id, str_ip,
+                                                detectData.connect_type, detectData.bind_state, detectData.version,
+                                                str_access_code, detectData.model_id);
+            if (obj) {
+                obj->set_user_access_code(str_access_code);
+                dev->set_selected_machine(obj->get_dev_id());
+            };
+        };
+    });
+};
+
+TryLoadLastMachine::~TryLoadLastMachine()
+{
+    try {
+        if (local_bind_thread.joinable()) {
+            local_bind_thread.join();
+        }
+    } catch (const std::exception& ex) {
+        BOOST_LOG_TRIVIAL(error) << "Local bind thread join failed in destructor: " << ex.what();
+    }
+}
+
+void TryLoadLastMachine::InnerLoad(NetworkAgent* agent, DeviceManager* dev)
+{
+    if (!agent || !dev) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": invalid agent or device manager";
+        return;
+    }
+
+    if (dev->get_selected_machine()) {
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": the machine has been selected";
+        return;
+    }
+
+    const auto& last_select_machine = dev->get_user_last_machine();
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": try to reconnect " << QDTCrossTalk::Crosstalk_DevId(last_select_machine)
+        << ", is_mqtt_ok=" << is_mqtt_ok << ", is_list_ok=" << is_list_ok;
+    if (last_select_machine.empty()) {
+        return;
+    }
+
+    const auto& encoded_dev_ip_str = wxGetApp().app_config->get("user_access_dev_ip", last_select_machine);
+    const auto& dev_ip_str = QDTCrossTalk::Decode_DevIp(encoded_dev_ip_str, wxGetApp().app_config->get("slicer_uuid"));
+    if (!encoded_dev_ip_str.empty() && dev_ip_str.empty()) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": Decode_DevIp failed, the slicer maybe switched";
+        wxGetApp().app_config->erase("user_access_dev_ip", last_select_machine);
+        return;
+    }
+
+    const auto& user_access_code_str = GUI::wxGetApp().app_config->get("user_access_code", last_select_machine);
+    if (!dev_ip_str.empty() && !user_access_code_str.empty()) {
+        if (!dev->get_my_machine(last_select_machine)) {
+            try {
+                if (local_bind_thread.joinable()) {
+                    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": thread is running";
+                    return;
+                }
+
+                auto bind = boost::bind(&sLocalBindFunc, dev_ip_str, user_access_code_str, last_select_machine);
+                local_bind_thread = boost::thread(bind);
+            } catch (const std::exception& ex) {
+                BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": thread exception: " << ex.what();
+            }
+        } else {
+            dev->set_selected_machine(last_select_machine);
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": try select lan machine";
+        }
+    } else {
+        if (is_mqtt_ok && is_list_ok) {
+            dev->set_selected_machine(last_select_machine);
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": try select cloud machine";
+        } else {
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": mqtt or list not ready";
+        }
     }
 }
 

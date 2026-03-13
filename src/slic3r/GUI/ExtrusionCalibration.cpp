@@ -633,7 +633,7 @@ void ExtrusionCalibration::update_combobox_filaments()
     wxArrayString filament_items;
     PresetBundle* preset_bundle = wxGetApp().preset_bundle;
     if (preset_bundle && obj) {
-        BOOST_LOG_TRIVIAL(trace) << "system_preset_bundle filament number=" << preset_bundle->filaments.size();
+        // BOOST_LOG_TRIVIAL(trace) << "system_preset_bundle filament number=" << preset_bundle->filaments.size();
         std::string printer_type = obj->printer_type;
         std::set<std::string> printer_preset_list;
         for (auto printer_it = preset_bundle->printers.begin(); printer_it != preset_bundle->printers.end(); printer_it++) {
@@ -656,7 +656,7 @@ void ExtrusionCalibration::update_combobox_filaments()
                 && printer_nozzle_vals
                 && abs(printer_nozzle_vals->get_at(0) - nozzle_value) < 1e-3) {
                     printer_preset_list.insert(printer_it->name);
-                    BOOST_LOG_TRIVIAL(trace) << "extrusion_cali: printer_model = " << model_id;
+                    // BOOST_LOG_TRIVIAL(trace) << "extrusion_cali: printer_model = " << model_id;
             } else {
                 BOOST_LOG_TRIVIAL(error) << "extrusion_cali: printer_model = " << model_id;
             }

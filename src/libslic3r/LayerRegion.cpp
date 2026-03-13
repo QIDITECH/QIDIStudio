@@ -564,12 +564,12 @@ void LayerRegion::process_external_surfaces(const Layer *lower_layer, const Poly
 
     SurfaceCollection bridges;
     {
-        BOOST_LOG_TRIVIAL(trace) << "Processing external surface, detecting bridges. layer" << this->layer()->print_z;
+        // BOOST_LOG_TRIVIAL(trace) << "Processing external surface, detecting bridges. layer" << this->layer()->print_z;
         const double custom_angle = this->region().config().bridge_angle.value;
         bridges.surfaces = custom_angle > 0 ?
             expand_merge_surfaces(fill_surfaces.surfaces, stBottomBridge, expansion_zones, closing_radius, Geometry::deg2rad(custom_angle)) :
             expand_bridges_detect_orientations(fill_surfaces.surfaces, expansion_zones, closing_radius);
-        BOOST_LOG_TRIVIAL(trace) << "Processing external surface, detecting bridges - done";
+        // BOOST_LOG_TRIVIAL(trace) << "Processing external surface, detecting bridges - done";
 #if 0
         {
             static int iRun = 0;

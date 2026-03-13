@@ -90,6 +90,17 @@ void CalibrationWizard::show_step(CalibrationWizardPageStep* step)
     if (!step)
         return;
 
+    DeviceManager *dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+    if (dev) {
+        MachineObject *obj = dev->get_selected_machine();
+        if (obj && obj->calib_send_status == CalibSendStatus::FAILED) {
+            obj->calib_send_status = CalibSendStatus::IDLE;
+            //back_preset_info(obj, true, false);
+            //step->page->on_reset_page();
+            return;
+        }
+    }
+
     if (m_curr_step) {
         m_curr_step->page->Hide();
     }
@@ -238,9 +249,15 @@ void PressureAdvanceWizard::update(MachineObject* obj)
         return;
 
     if (!m_show_result_dialog) {
-        if (obj->cali_version != -1 && obj->cali_version != cali_version) {
-            cali_version = obj->cali_version;
-            CalibUtils::emit_get_PA_calib_info(obj->nozzle_diameter, "");
+        if (obj->GetCalib()->IsVersionExpired()) {
+            obj->GetCalib()->SyncCalibVersion();
+
+            PACalibExtruderInfo cali_info;
+            cali_info.nozzle_diameter = obj->GetExtderSystem()->GetNozzleDiameter(0);
+            cali_info.use_extruder_id        = false;
+            cali_info.use_nozzle_volume_type = false;
+
+            CalibUtils::emit_get_PA_calib_infos(cali_info);
         }
     }
 }

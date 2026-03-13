@@ -155,8 +155,10 @@ static std::string detect_attached_device()
     else {
         // Enumerates devices
         hid_device_info* devices = hid_enumerate(0, 0);
-        if (devices == nullptr)
-            BOOST_LOG_TRIVIAL(trace) << "detect_attached_device() - no HID device enumerated.";
+        if (devices == nullptr) {
+        // BOOST_LOG_TRIVIAL(trace) << "detect_attached_device() - no HID device enumerated.";
+            ;
+        }
         else {
             // Searches for 1st connected 3Dconnexion device
             struct DeviceData
@@ -247,10 +249,10 @@ static std::string detect_attached_device()
 
             if (vendor_id != 0 && product_id != 0) {
                 ret = format_device_string(static_cast<int>(vendor_id), static_cast<int>(product_id));
-                BOOST_LOG_TRIVIAL(trace) << "Detected device: " << std::hex << vendor_id << std::dec << "::" << std::hex << product_id << std::dec << " " << ret;
+                // BOOST_LOG_TRIVIAL(trace) << "Detected device: " << std::hex << vendor_id << std::dec << "::" << std::hex << product_id << std::dec << " " << ret;
             }
-            else
-                BOOST_LOG_TRIVIAL(trace) << "No 3DConnexion device detected";
+            //else
+                // BOOST_LOG_TRIVIAL(trace) << "No 3DConnexion device detected";
         }
 
         // Finalize the hidapi library
@@ -266,8 +268,8 @@ void Mouse3DController::device_attached(const std::string &device)
 	int vid = 0;
 	int pid = 0;
 	if (sscanf(device.c_str(), "\\\\?\\HID#VID_%x&PID_%x&", &vid, &pid) == 2) {
-//    BOOST_LOG_TRIVIAL(trace) << boost::format("Mouse3DController::device_attached(VID_%04xxPID_%04x)") % vid % pid;
-//    BOOST_LOG_TRIVIAL(trace) << "Mouse3DController::device_attached: " << device;
+//    // BOOST_LOG_TRIVIAL(trace) << boost::format("Mouse3DController::device_attached(VID_%04xxPID_%04x)") % vid % pid;
+//    // BOOST_LOG_TRIVIAL(trace) << "Mouse3DController::device_attached: " << device;
 	    if (std::find(_3DCONNEXION_VENDORS.begin(), _3DCONNEXION_VENDORS.end(), vid) != _3DCONNEXION_VENDORS.end()) {
 			// Signal the worker thread to wake up and enumerate HID devices, if not connected at the moment.
 			// The message may come multiple times per each USB device. For example, some USB wireless dongles register as multiple HID sockets 
@@ -845,12 +847,12 @@ bool Mouse3DController::connect_device()
     // Enumerates devices
     hid_device_info* devices = hid_enumerate(0, 0);
     if (devices == nullptr) {
-        BOOST_LOG_TRIVIAL(trace) << "Mouse3DController::connect_device() - no HID device enumerated.";
+        // BOOST_LOG_TRIVIAL(trace) << "Mouse3DController::connect_device() - no HID device enumerated.";
         return false;
     }
 
 #ifdef _WIN32
-    BOOST_LOG_TRIVIAL(trace) << "Mouse3DController::connect_device() - enumerating HID devices.";
+    // BOOST_LOG_TRIVIAL(trace) << "Mouse3DController::connect_device() - enumerating HID devices.";
 #endif // _WIN32
 
     // Searches for 1st connected 3Dconnexion device

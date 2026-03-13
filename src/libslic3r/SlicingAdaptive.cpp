@@ -174,12 +174,12 @@ float SlicingAdaptive::next_layer_height(const float print_z, float quality_fact
 				// This means, that we need to limit the layer height so that the offending newly visited triangle
 				// is just above of the new layer.
 #ifdef ADAPTIVE_LAYER_HEIGHT_DEBUG
-                BOOST_LOG_TRIVIAL(trace) << "cusp computation, height is reduced from " << height << "to " << z_diff << " due to z-diff";
+                // BOOST_LOG_TRIVIAL(trace) << "cusp computation, height is reduced from " << height << "to " << z_diff << " due to z-diff";
 #endif /* ADAPTIVE_LAYER_HEIGHT_DEBUG */
 				height = z_diff;
 			} else if (reduced_height < height) {
 #ifdef ADAPTIVE_LAYER_HEIGHT_DEBUG
-				BOOST_LOG_TRIVIAL(trace) << "adaptive layer computation: height is reduced from " << height << "to " << reduced_height << " due to higher facet";
+				// BOOST_LOG_TRIVIAL(trace) << "adaptive layer computation: height is reduced from " << height << "to " << reduced_height << " due to higher facet";
 #endif /* ADAPTIVE_LAYER_HEIGHT_DEBUG */
 				height = reduced_height;
 			}
@@ -189,7 +189,7 @@ float SlicingAdaptive::next_layer_height(const float print_z, float quality_fact
 	}
 
 #ifdef ADAPTIVE_LAYER_HEIGHT_DEBUG
-    BOOST_LOG_TRIVIAL(trace) << "adaptive layer computation, layer-bottom at z:" << print_z << ", quality_factor:" << quality_factor << ", resulting layer height:" << height;
+    // BOOST_LOG_TRIVIAL(trace) << "adaptive layer computation, layer-bottom at z:" << print_z << ", quality_factor:" << quality_factor << ", resulting layer height:" << height;
 #endif  /* ADAPTIVE_LAYER_HEIGHT_DEBUG */
 	return height; 
 }

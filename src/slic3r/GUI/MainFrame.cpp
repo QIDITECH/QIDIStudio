@@ -347,7 +347,7 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
     //Bind(wxEVT_MENU, [this](wxCommandEvent&) { m_plater->paste_from_clipboard(); }, wxID_HIGHEST + wxID_PASTE);
     //Bind(wxEVT_MENU, [this](wxCommandEvent&) { m_plater->cut_selection_to_clipboard(); }, wxID_HIGHEST + wxID_CUT);
     Bind(wxEVT_SIZE, [this](wxSizeEvent&) {
-            BOOST_LOG_TRIVIAL(trace) << "mainframe: size changed, is maximized = " << this->IsMaximized();
+            // BOOST_LOG_TRIVIAL(trace) << "mainframe: size changed, is maximized = " << this->IsMaximized();
 #ifndef __APPLE__
             if (this->IsMaximized()) {
                 m_topbar->SetWindowSize();
@@ -1788,6 +1788,11 @@ wxBoxSizer* MainFrame::create_side_tools()
     //     expand_program_holder->ShowExpandButton(expand_helio_id, false);
     // }
 
+    // // Set tooltip for Helio expand button
+    // expand_program_holder->SetExpandButtonRichTooltip(expand_helio_id, "monitor_speed", _L("Unlock faster, more reliable, warp-free prints with Helio Additive."));
+    // // Set tooltip for program expand button (same tooltip as Helio for consistency)
+    // expand_program_holder->SetExpandButtonRichTooltip(expand_program_id, "monitor_speed", _L("Unlock faster, more reliable, warp-free prints with Helio Additive."));
+
     /*slice*/
     m_slice_select = eSlicePlate;
     m_print_select = ePrintPlate;
@@ -3169,7 +3174,7 @@ void MainFrame::init_menubar_as_editor()
             [this](wxCommandEvent&) { m_plater->show_view3D_labels(!m_plater->are_view3D_labels_shown()); m_plater->get_current_canvas3D()->post_event(SimpleEvent(wxEVT_PAINT)); }, this,
             [this]() { return m_plater->is_view3D_shown(); }, [this]() { return m_plater->are_view3D_labels_shown(); }, this);
 
-        append_menu_check_item(viewMenu, wxID_ANY, _L("Show &Overhang"), _L("Show object overhang highlight in 3D scene"),
+        append_menu_check_item(viewMenu, wxID_ANY, _L("Show &Overhang") + "\t" + ctrl + "L", _L("Show object overhang highlight in 3D scene"),
             [this](wxCommandEvent &) {
                 m_plater->show_view3D_overhang(!m_plater->is_view3D_overhang_shown());
                 m_plater->get_current_canvas3D()->post_event(SimpleEvent(wxEVT_PAINT));
@@ -4275,7 +4280,7 @@ void MainFrame::remove_recent_project(size_t file_id, wxString const &filename)
 
 void MainFrame::load_url(wxString url)
 {
-    BOOST_LOG_TRIVIAL(trace) << "load_url";
+    // BOOST_LOG_TRIVIAL(trace) << "load_url";
     auto evt = new wxCommandEvent(EVT_LOAD_URL, this->GetId());
     evt->SetString(url);
     wxQueueEvent(this, evt);
@@ -4283,7 +4288,7 @@ void MainFrame::load_url(wxString url)
 
 void MainFrame::load_printer_url(wxString url)
 {
-    BOOST_LOG_TRIVIAL(trace) << "load_printer_url";
+    // BOOST_LOG_TRIVIAL(trace) << "load_printer_url";
     auto evt = new wxCommandEvent(EVT_LOAD_PRINTER_URL, this->GetId());
     evt->SetString(url);
     wxQueueEvent(this, evt);

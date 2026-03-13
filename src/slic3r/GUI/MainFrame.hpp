@@ -228,24 +228,15 @@ public:
     //QDS GUI refactor
     enum TabPosition
     {
-        //y
-        //tpHome          = 0,
-        //tp3DEditor      = 1,
-        //tpPreview       = 2,
-        //tpMonitor       = 3,
-        //tpMultiDevice   = 4,
-        //tpProject       = 5,
-        //tpCalibration   = 6,
-        //tpAuxiliary     = 7,
-        //toDebugTool     = 8,
-        tpHome = 0,
-        tp3DEditor = 1,
-        tpPreview = 2,
-        tpMonitor = 3,
-        tpProject = 4,
-        tpCalibration = 5,
-        tpMultiDevice = 6,  // none
-        tpFilamentweb = 7,
+        tpHome          = 0,
+        tp3DEditor      = 1,
+        tpPreview       = 2,
+        tpMonitor       = 3,
+        tpMultiDevice   = 4,
+        tpProject       = 5,
+        tpCalibration   = 6,
+        tpAuxiliary     = 7,
+        toDebugTool     = 8,
     };
 
     //QDS: add slice&&print status update logic

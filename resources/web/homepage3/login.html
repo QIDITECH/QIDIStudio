@@ -6,20 +6,49 @@
 <script type="text/javascript" src="../include/globalapi.js"></script>	
 <script type="text/javascript" src="../data/text.js"></script>		
 <title class='trans'>Login Guide</title>
+    <!-- Prefer light color scheme and provide theme color to avoid forced darkening -->
+    <meta name="color-scheme" content="light">
+    <meta name="theme-color" content="#ffffff">
     <style>
+        html, body {
+            height: 100%;
+            margin: 0; /* make sure no browser default margins create edges */
+            background-color: #ffffff !important; /* fallback color for when image isn't visible */
+            /* prefer light color scheme and stop some engines forcing dark theme */
+            color-scheme: light;
+            forced-color-adjust: none;
+        }
+
         body {
             line-height: 1.8;
             color: #FFFFFF;
-            margin-top: 0px;
-            margin-left : 45px;
-            padding: 0;
-            background: white;
+            /* keep the visual left spacing but use padding so background covers full viewport */
+            padding-left: 45px;
+            padding-top: 0;
+            padding-right: 0;
+            padding-bottom: 0;
             min-height: 100vh;
             background-image: url('img/loginBackground.png');
             background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
+            background-position: center center;
+            /* avoid background-attachment: fixed which can produce rendering gaps or extra compositing in some WebViews
+               use scroll so the background always fills the viewport without artifacts */
+            background-attachment: scroll;
             background-repeat: no-repeat;
+            /* ensure page doesn't create horizontal scrollbar which can reveal outer black background */
+            box-sizing: border-box;
+        }
+
+        /* Prevent horizontal overflow that can expose a black edge in dark-mode hosts */
+        html, body {
+            overflow-x: hidden;
+        }
+
+        /* Reduce left padding on small viewports to avoid horizontal scrolling */
+        @media (max-width: 600px) {
+            body {
+                padding-left: 16px;
+            }
         }
         
         .content {
@@ -143,7 +172,7 @@
             margin-top: 55px;
             gap : 60px;
         }
-        .QIDIMakerQR, .QIDIMakerFQR, .AppStoreQR, .GoogleQR,  .GetappsQR {
+        .QIDIMakerQR, .QIDIMakerFQR, .AppStoreQR, .GoogleQR,  .GetappsQR, .MIQR, .HWQR, .AppStoreQR_CN, .QIDIMakerQR_CN {
             margin-right: 35px;
         }
         .faq-section {
@@ -251,7 +280,11 @@
             <img src="img/AppStoreQR.png" class="AppStoreQR" id="AppStoreQR" />
             <img src="img/GetappsQR.png"  class="GetappsQR" id="GetappsQR"/>
             <img src="img/QIDIMakerFQR.png"  class="QIDIMakerFQR" id="QIDIMakerFQR"/>
-            <img src="img/QIDIMakerQR.png" class="QIDIMakerQR" id="QIDIMakerQR" />
+
+            <img src="img/AppStoreQR_CN.png" class="AppStoreQR_CN" id="AppStoreQR_CN" />
+            <img src="img/MIQR.png" class="MIQR" id="MIQR" />
+            <img src="img/HWQR.png" class="HWQR" id="HWQR" />
+            <img src="img/QIDIMakerQR_CN.png" class="QIDIMakerQR_CN" id="QIDIMakerQR_CN" />
         </div>
         
         <div class = "detail-text" id = "text-detail">
@@ -302,17 +335,24 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('AppStoreQR').hidden = false;
         document.getElementById('GetappsQR').hidden = false;
         document.getElementById('QIDIMakerFQR').hidden = false;
-        document.getElementById('QIDIMakerQR').hidden = true;
+
+        document.getElementById('MIQR').hidden = true;
+        document.getElementById('HWQR').hidden = true;
+        document.getElementById('AppStoreQR_CN').hidden = true;
+        document.getElementById('QIDIMakerQR_CN').hidden = true;
     } else {
-        document.getElementById('download').hidden = true;
-        document.getElementById('QIDI Login').hidden = true;
 
-
-        document.getElementById('GoogleQR').hidden = false;
+        document.getElementById('GoogleQR').hidden = true;
         document.getElementById('AppStoreQR').hidden = true;
         document.getElementById('GetappsQR').hidden = true;
         document.getElementById('QIDIMakerFQR').hidden = true;
-        document.getElementById('QIDIMakerQR').hidden = false;
+
+
+        document.getElementById('QIDIMakerQR_CN').hidden = false;
+        document.getElementById('AppStoreQR_CN').hidden = false;
+        document.getElementById('MIQR').hidden = false;
+        document.getElementById('HWQR').hidden = false;
+        
     }
     
 });
@@ -324,8 +364,8 @@ window.addEventListener('DOMContentLoaded', function() {
             document.getElementById('text-detail').hidden = true;
             delete this.dataset.clicked;
         } else {
-            this.style.color = 'blue';
-            this.style.borderColor  = 'blue';
+            this.style.color = '#4459FB';
+            this.style.borderColor  = '#4459FB';
             this.dataset.clicked = 'true';
 
             document.getElementById('download').style.borderColor = 'white';
@@ -348,8 +388,8 @@ window.addEventListener('DOMContentLoaded', function() {
             document.getElementById('qrCode-container').hidden = true;
             delete this.dataset.clicked;
         } else {
-            this.style.color = 'blue';
-            this.style.borderColor  = 'blue';
+            this.style.color = '#4459FB';
+            this.style.borderColor  = '#4459FB';
             this.dataset.clicked = 'true';
 
             document.getElementById('more').style.color = 'white';

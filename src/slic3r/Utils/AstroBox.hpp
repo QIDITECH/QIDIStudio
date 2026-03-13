@@ -33,6 +33,8 @@ public:
     bool can_test() const override { return true; }
     PrintHostPostUploadActions get_post_upload_actions() const override { return PrintHostPostUploadAction::StartPrint; }
     std::string get_host() const override { return host; }
+    //y78
+    virtual bool send_msg_to_printer(std::string api, std::string msg) const override {return false;};
     
 protected:
     bool validate_version_text(const boost::optional<std::string> &version_text) const;

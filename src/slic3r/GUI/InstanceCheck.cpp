@@ -287,7 +287,7 @@ namespace instance_check_internal
 			}
 			dbus_connection_flush(conn);
 
-			BOOST_LOG_TRIVIAL(trace) << "DBus message sent.";
+			// BOOST_LOG_TRIVIAL(trace) << "DBus message sent.";
 
 			// free the message and close the connection
 			dbus_message_unref(msg);
@@ -352,7 +352,7 @@ bool instance_check(int argc, char** argv, bool app_config_single_instance)
 	if (instance_check_internal::get_lock(lock_name + ".lock", data_dir() + "/cache/") && *cla.should_send) {
 #endif
 		instance_check_internal::send_message(cla.cl_string, lock_name);
-		BOOST_LOG_TRIVIAL(error) << "Instance check: Another instance found. This instance will terminate. Lock file of current running instance is located at " << data_dir() <<
+		BOOST_LOG_TRIVIAL(error) << "Instance check: Another instance found. This instance will terminate. Lock file of current running instance is located at " << PathSanitizer::sanitize(data_dir()) <<
 #ifdef _WIN32
 			"\\cache\\"
 #else // mac & linx
@@ -560,7 +560,7 @@ namespace MessageHandlerDBusInternal
 	    dbus_error_init(&err);
 	    dbus_message_get_args(request, &err, DBUS_TYPE_STRING, &text, DBUS_TYPE_INVALID);
 	    if (dbus_error_is_set(&err)) {
-	    	BOOST_LOG_TRIVIAL(trace) << "Dbus method AnotherInstance received with wrong arguments.";
+	    	// BOOST_LOG_TRIVIAL(trace) << "Dbus method AnotherInstance received with wrong arguments.";
 	    	dbus_error_free(&err);
 	        return;
 	    }
@@ -577,7 +577,7 @@ namespace MessageHandlerDBusInternal
 		const char* interface_name = dbus_message_get_interface(message);
 	    const char* member_name    = dbus_message_get_member(message);
 	    std::string our_interface  = "com.QIDITech.QIDIStudio.InstanceCheck.Object" + wxGetApp().get_instance_hash_string();
-	    BOOST_LOG_TRIVIAL(trace) << "DBus message received: interface: " << interface_name << ", member: " << member_name;
+	    // BOOST_LOG_TRIVIAL(trace) << "DBus message received: interface: " << interface_name << ", member: " << member_name;
 	    if (0 == strcmp("org.freedesktop.DBus.Introspectable", interface_name) && 0 == strcmp("Introspect", member_name)) {
 	        respond_to_introspect(connection, message);
 	        return DBUS_HANDLER_RESULT_HANDLED;
@@ -645,7 +645,7 @@ void OtherInstanceMessageHandler::listen()
 		return;
 	}
 
-	BOOST_LOG_TRIVIAL(trace) << "Dbus object "<< object_name <<" registered. Starting listening for messages.";
+	// BOOST_LOG_TRIVIAL(trace) << "Dbus object "<< object_name <<" registered. Starting listening for messages.";
 
 	for (;;) {
 		// Wait for 1 second

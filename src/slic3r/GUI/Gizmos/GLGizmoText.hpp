@@ -23,7 +23,7 @@ namespace GUI {
 enum class SLAGizmoEventType : unsigned char;
 
 const std::string NEW_FONT_BEGIN_VERSION  = "2.0";
-const std::string CUR_FONT_VERSION = "2.3";
+const std::string CUR_FONT_VERSION = "2.5";
 class GLGizmoText : public GLGizmoBase
 {
 private:

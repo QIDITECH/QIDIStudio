@@ -29,6 +29,7 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     , m_Humidity_tip_popup(AmsHumidityTipPopup(this))
     , m_percent_humidity_dry_popup(new uiAmsPercentHumidityDryPopup(this))
     , m_ams_introduce_popup(AmsIntroducePopup(this))
+    , m_ams_dry_ctr_win(new AMSDryCtrWin(this))
 {
     // NOTE: Previously this constructor queried DeviceManager and parsed MachineObject
     // to populate `m_ams_info`. To decouple AMSControl from DeviceManager/MachineObject
@@ -158,9 +159,9 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     m_button_auto_refill->SetMinSize(wxSize(FromDIP(80), FromDIP(34)));
     m_button_auto_refill->SetMaxSize(wxSize(FromDIP(80), FromDIP(34)));
 
-    m_button_ams_setting_normal = ScalableBitmap(this, "ams_setting_normal", 24);
-    m_button_ams_setting_hover = ScalableBitmap(this, "ams_setting_hover", 24);
-    m_button_ams_setting_press = ScalableBitmap(this, "ams_setting_press", 24);
+    m_button_ams_setting_normal = ScalableBitmap(this, "box_setting_normal", 24);
+    m_button_ams_setting_hover = ScalableBitmap(this, "box_setting_hover", 24);
+    m_button_ams_setting_press = ScalableBitmap(this, "box_setting_press", 24);
 
     m_button_ams_setting = new wxStaticBitmap(m_panel_option_left, wxID_ANY, m_button_ams_setting_normal.bmp(), wxDefaultPosition, wxSize(FromDIP(24), FromDIP(24)));
     
@@ -275,6 +276,12 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
         uiAmsHumidityInfo *info    = (uiAmsHumidityInfo *) evt.GetClientData();
         if (info)
         {
+            Slic3r::DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+            MachineObject *obj = nullptr;
+            if (dev) {
+                obj = dev->get_selected_machine();
+            }
+
             if (info->ams_type == AMSModel::GENERIC_AMS)
             {
                 wxPoint img_pos = ClientToScreen(wxPoint(0, 0));
@@ -284,9 +291,14 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
                 int humidity_value = info->humidity_display_idx;
                 if (humidity_value > 0 && humidity_value <= 5) { m_Humidity_tip_popup.set_humidity_level(humidity_value); }
                 m_Humidity_tip_popup.Popup();
-            }
-            else
-            {
+            } else if (obj && obj->is_support_remote_dry && (info->ams_type == AMSModel::N3F_AMS || info->ams_type == AMSModel::N3S_AMS)){
+                m_ams_dry_ctr_win->set_ams_id(info->ams_id);
+
+                wxPoint img_pos = ClientToScreen(wxPoint(0, 0));
+                wxPoint popup_pos(img_pos.x - m_ams_dry_ctr_win->GetSize().GetWidth() + FromDIP(150), img_pos.y - FromDIP(80));
+                m_ams_dry_ctr_win->Move(popup_pos);
+                m_ams_dry_ctr_win->ShowModal();
+            } else {
                 m_percent_humidity_dry_popup->Update(info);
 
                 wxPoint img_pos = ClientToScreen(wxPoint(0, 0));
@@ -307,7 +319,12 @@ void AMSControl::on_retry()
     post_event(wxCommandEvent(EVT_AMS_RETRY));
 }
 
-AMSControl::~AMSControl() {}
+AMSControl::~AMSControl() 
+{
+    if (m_ams_dry_ctr_win) {
+        delete m_ams_dry_ctr_win;
+    }
+}
 
 std::string AMSControl::GetCurentAms() {
     return m_current_ams;
@@ -532,6 +549,10 @@ void AMSControl::msw_rescale()
         m_percent_humidity_dry_popup->msw_rescale();
     }
 
+    if (m_ams_dry_ctr_win) {
+        m_ams_dry_ctr_win->msw_rescale();
+    }
+
     m_Humidity_tip_popup.msw_rescale();
 
     Layout();
@@ -645,7 +666,7 @@ void AMSControl::CreateAmsDoubleNozzle(const std::string &series_name, const std
         }
     }
     if (m_ext_info.size() <= 1) {
-        BOOST_LOG_TRIVIAL(trace) << "vt_slot empty!";
+        // BOOST_LOG_TRIVIAL(trace) << "vt_slot empty!";
         assert(0);
         return;
     }
@@ -769,7 +790,7 @@ void AMSControl::CreateAmsSingleNozzle(const std::string &series_name, const std
 
     // data ext data
     if (m_ext_info.size() <= 0){
-        BOOST_LOG_TRIVIAL(trace) << "vt_slot empty!";
+        // BOOST_LOG_TRIVIAL(trace) << "vt_slot empty!";
         return;
     }
 
@@ -909,6 +930,26 @@ std::vector<AMSinfo> AMSControl::GenerateSimulateData() {
     return ams_info;
 }
 
+void AMSControl::UpdateAmsDryControl(MachineObject* obj)
+{
+    if (!m_ams_dry_ctr_win->IsShown()) {
+        return;
+    }
+
+    if (!obj || !obj->GetFilaSystem()) {
+        m_ams_dry_ctr_win->Close();
+        return;
+    }
+
+    std::weak_ptr<DevFilaSystem> weak_fila_system = obj->GetFilaSystem();
+    
+    if (auto locaked_fila_system = weak_fila_system.lock()) {
+        m_ams_dry_ctr_win->update(locaked_fila_system, obj);
+    } else {
+        m_ams_dry_ctr_win->Close();
+        return;
+    }
+}
 
 void AMSControl::UpdateAms(const std::string   &series_name,
                            const std::string   &printer_type,
@@ -1003,7 +1044,7 @@ void AMSControl::UpdateAms(const std::string   &series_name,
                 uiAmsHumidityInfo humidity_info;
                 humidity_info.ams_id = the_info.ams_id;
                 humidity_info.humidity_display_idx = the_info.get_humidity_display_idx();
-                humidity_info.humidity_percent = the_info.humidity_raw;
+                humidity_info.humidity_percent = the_info.ams_humidity_percent;
                 humidity_info.left_dry_time = the_info.left_dray_time;
                 humidity_info.current_temperature = the_info.current_temperature;
                 m_percent_humidity_dry_popup->Update(&humidity_info);
@@ -1045,71 +1086,6 @@ void AMSControl::SetData(const std::vector<AMSinfo>& ams_info,
     } else {
         CreateAmsSingleNozzle(series_name, printer_type);
     }
-
-
-	// update cans
-
-// 	for (auto ams_item : m_ams_item_list) {
-// 		if (ams_item.second == nullptr) {
-// 			continue;
-// 		}
-// 		std::string ams_id = ams_item.second->get_ams_id();
-// 		AmsItem* cans = ams_item.second;
-// 		if (cans->get_ams_id() == std::to_string(VIRTUAL_TRAY_MAIN_ID) || cans->get_ams_id() == std::to_string(VIRTUAL_TRAY_DEPUTY_ID)) {
-// 			for (auto ifo : m_ext_info) {
-// 				if (ifo.ams_id == ams_id) {
-// 					cans->Update(ifo);
-// 					cans->show_sn_value(m_ams_model == AMSModel::AMS_LITE ? false : true);
-// 				}
-// 			}
-// 		}
-// 		else {
-// 			for (auto ifo : m_ams_info) {
-// 				if (ifo.ams_id == ams_id) {
-// 					cans->Update(ifo);
-// 					cans->show_sn_value(m_ams_model == AMSModel::AMS_LITE ? false : true);
-// 				}
-// 			}
-// 		}
-// 	}
-// 
-// 	for (auto ams_prv : m_ams_preview_list) {
-// 		std::string id = ams_prv.second->get_ams_id();
-// 		auto item = m_ams_item_list.find(id);
-// 		if (item != m_ams_item_list.end())
-// 		{
-// 			ams_prv.second->Update(item->second->get_ams_info());
-// 		}
-// 	}
-// 
-// 
-// 	/*update humidity popup*/
-// 	if (m_percent_humidity_dry_popup->IsShown())
-// 	{
-// 		string target_id = m_percent_humidity_dry_popup->get_owner_ams_id();
-// 		for (const auto& the_info : ams_info)
-// 		{
-// 			if (target_id == the_info.ams_id)
-// 			{
-// 				uiAmsHumidityInfo humidity_info;
-// 				humidity_info.ams_id = the_info.ams_id;
-// 				humidity_info.humidity_display_idx = the_info.get_humidity_display_idx();
-// 				humidity_info.humidity_percent = the_info.humidity_raw;
-// 				humidity_info.left_dry_time = the_info.left_dray_time;
-// 				humidity_info.current_temperature = the_info.current_temperature;
-// 				m_percent_humidity_dry_popup->Update(&humidity_info);
-// 				break;
-// 			}
-// 		}
-// 	}
-// 
-// 	/*update ams extruder*/
-// 	if (m_extruder->updateNozzleNum(m_total_ext_count, series_name))
-// 	{
-// 		m_amswin->Layout();
-// 	}
-// 
-
     SetSize(wxSize(FromDIP(578), -1));
     SetMinSize(wxSize(FromDIP(578), -1));
     //Layout();
@@ -1125,12 +1101,13 @@ void AMSControl::updateAmsTemp(int id, int temp)
     m_ams_info[id].current_temperature = temp;
 }
 
+//cj_2
 void AMSControl::updateAmsHumidity(int id, int humidity)
 {
 	if (id >= m_ams_info.size()) {
 		return;
 	}
-    m_ams_info[id].humidity_raw = humidity;
+    m_ams_info[id].ams_humidity_percent = humidity;
 }
 
 void AMSControl::AddAmsPreview(AMSinfo info, AMSModel type)

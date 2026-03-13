@@ -866,7 +866,7 @@ void MediaPlayCtrl::media_proc()
         if (m_tasks.size() >= 2 && !url.IsEmpty() && url[0] != '<' && m_tasks[1] == "<stop>") {
 
 #if !QDT_RELEASE_TO_PUBLIC
-            BOOST_LOG_TRIVIAL(trace) << "MediaPlayCtrl: busy skip url: " << url;
+            // BOOST_LOG_TRIVIAL(trace) << "MediaPlayCtrl: busy skip url: " << url;
 #endif
             m_tasks.pop_front();
             m_tasks.pop_front();
@@ -935,7 +935,7 @@ bool MediaPlayCtrl::start_stream_service(bool *need_install)
         boost::filesystem::path start_dir(boost::filesystem::path(data_dir()) / "plugins");
 #ifdef __WXMSW__
         auto plugins_dir = boost::nowide::widen(data_dir()) + L"\\plugins\\";
-        for (auto dll : {L"QIDISource.dll", L"live555.dll", L"agora_rtc_sdk.dll", L"libagora-core.dll", L"libagora-ffmpeg.dll", L"libagora-soundtouch.dll"}) {
+        for (auto dll : {L"QIDISource.dll", L"live555.dll", L"agora_rtc_sdk.dll", L"libaosl.dll", L"libagora-ffmpeg.dll", L"libagora-soundtouch.dll"}) {
             auto file_dll  = tools_dir + dll;
             auto file_dll2 = plugins_dir + dll;
             if (!boost::filesystem::exists(file_dll) || boost::filesystem::last_write_time(file_dll) != boost::filesystem::last_write_time(file_dll2))

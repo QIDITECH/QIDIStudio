@@ -650,34 +650,34 @@ static void load_default_gcodes_to_config(DynamicPrintConfig& config, Preset::Ty
     if (type == Preset::TYPE_PRINTER)
     {
         std::string change_filament_gcode = config.option<ConfigOptionString>("change_filament_gcode", true)->value;
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", change_filament_gcode: "<< change_filament_gcode;
+        // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", change_filament_gcode: "<< change_filament_gcode;
 
         ConfigOptionString* layer_change_gcode_opt = config.option<ConfigOptionString>("layer_change_gcode", true);
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", layer_change_gcode: "<<layer_change_gcode_opt->value;
+        // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", layer_change_gcode: "<<layer_change_gcode_opt->value;
 
         ConfigOptionString* machine_end_gcode_opt = config.option<ConfigOptionString>("machine_end_gcode", true);
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", machine_end_gcode: "<<machine_end_gcode_opt->value;
+        // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", machine_end_gcode: "<<machine_end_gcode_opt->value;
 
         ConfigOptionString* machine_pause_gcode_opt = config.option<ConfigOptionString>("machine_pause_gcode", true);
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", machine_pause_gcode: "<<machine_pause_gcode_opt->value;
+        // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", machine_pause_gcode: "<<machine_pause_gcode_opt->value;
 
         ConfigOptionString* machine_start_gcode_opt = config.option<ConfigOptionString>("machine_start_gcode", true);
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", machine_start_gcode: "<<machine_start_gcode_opt->value;
+        // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", machine_start_gcode: "<<machine_start_gcode_opt->value;
 
         ConfigOptionString* template_custom_gcode_opt = config.option<ConfigOptionString>("template_custom_gcode", true);
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", template_custom_gcode: "<<template_custom_gcode_opt->value;
+        // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", template_custom_gcode: "<<template_custom_gcode_opt->value;
 
         ConfigOptionString* printing_by_object_gcode_opt = config.option<ConfigOptionString>("printing_by_object_gcode", true);
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", printing_by_object_gcode: "<<printing_by_object_gcode_opt->value;
+        // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", printing_by_object_gcode: "<<printing_by_object_gcode_opt->value;
 
         ConfigOptionString* before_layer_change_gcode_opt = config.option<ConfigOptionString>("before_layer_change_gcode", true);
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", before_layer_change_gcode: "<<before_layer_change_gcode_opt->value;
+        // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", before_layer_change_gcode: "<<before_layer_change_gcode_opt->value;
 
         ConfigOptionString* timeplase_gcode_opt = config.option<ConfigOptionString>("time_lapse_gcode", true);
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", time_lapse_gcode: "<<timeplase_gcode_opt->value;
+        // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", time_lapse_gcode: "<<timeplase_gcode_opt->value;
 
         ConfigOptionString *wrapping_detection_gcode_opt = config.option<ConfigOptionString>("wrapping_detection_gcode", true);
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ", wrapping_detection_gcode: " << wrapping_detection_gcode_opt->value;
+        // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ", wrapping_detection_gcode: " << wrapping_detection_gcode_opt->value;
     }
     else if (type == Preset::TYPE_FILAMENT)
     {
@@ -687,7 +687,7 @@ static void load_default_gcodes_to_config(DynamicPrintConfig& config, Preset::Ty
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< ", set filament_start_gcodes to empty";
         }
         else {
-            BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", filament_start_gcodes: "<<filament_start_gcodes[0];
+            // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", filament_start_gcodes: "<<filament_start_gcodes[0];
         }
 
         std::vector<std::string>& filament_end_gcodes = config.option<ConfigOptionStrings>("filament_end_gcode", true)->values;
@@ -696,7 +696,7 @@ static void load_default_gcodes_to_config(DynamicPrintConfig& config, Preset::Ty
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< ", set filament_end_gcode to empty";
         }
         else {
-            BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", filament_end_gcode: "<<filament_end_gcodes[0];
+            // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__<< ", filament_end_gcode: "<<filament_end_gcodes[0];
         }
     }
 }
@@ -916,12 +916,17 @@ bool convert_obj_cluster_colors(std::vector<Slic3r::RGBA> & input_colors,
             cluster_colors            = mtl_colors;
             cluster_labels.clear();
             cluster_labels.reserve(input_colors.size());
+            std::set<int> cluster_number_set;
             for (int i = 0; i < input_colors.size(); i++) {
                 bool can_find = false;
                 for (int j = 0; j < cluster_colors.size(); j++) {
                     if (Slic3r::color_is_equal(input_colors[i],cluster_colors[j])) {
                         cluster_labels.emplace_back(j);
                         can_find = true;
+                        if (cluster_number_set.find(j) == cluster_number_set.end()) {
+                            cluster_number_set.insert(j);
+                        }
+                        break;
                     }
                 }
                 if (!can_find) {
@@ -929,6 +934,7 @@ bool convert_obj_cluster_colors(std::vector<Slic3r::RGBA> & input_colors,
                     cluster_labels.emplace_back(0);
                 }
             }
+            cluster_number = cluster_number_set.size();
         } else {
             obj_color_deal_algo(input_colors, cluster_colors, cluster_labels, cluster_number, (int) EnforcerBlockerType::ExtruderMax);
         }
@@ -1107,7 +1113,7 @@ static int construct_assemble_list(std::vector<assemble_plate_info_t> &assemble_
                     convert_obj_cluster_colors(obj_info.vertex_colors, all_colours, max_filament_count, output_filament_ids, first_filament_id);
                     if (output_filament_ids.size() > 0) {
                         unsigned char first_eid = (unsigned char)first_filament_id;
-                        result = Model::obj_import_vertex_color_deal(output_filament_ids, first_eid, & obj_temp_model);
+                        result = Model::obj_import_color_deal(output_filament_ids, first_eid, &obj_temp_model, [](int) { return true; });
                     }
                     skip_filament = true;
                 } else if (obj_info.face_colors.size() > 0 && obj_info.has_uv_png == false) { // mtl file
@@ -1115,7 +1121,7 @@ static int construct_assemble_list(std::vector<assemble_plate_info_t> &assemble_
                                                obj_info.mtl_colors);
                     if (output_filament_ids.size() > 0) {
                         unsigned char first_eid = (unsigned char)first_filament_id;
-                        result = Model::obj_import_face_color_deal(output_filament_ids, first_eid, & obj_temp_model);
+                        result = Model::obj_import_color_deal(output_filament_ids, first_eid, &obj_temp_model, [](int) { return false; });
                     }
                     skip_filament = true;
                 }
@@ -2512,7 +2518,7 @@ int CLI::run(int argc, char **argv)
                 inherits = config.option<ConfigOptionString>("inherits", true)->value;
                 if (!inherits.empty()) {
                     //process the default values for old configs
-                    std::string parent_filament_path = resources_dir() + "/profiles/BBL/filament_full/"+inherits+".json";
+                    std::string parent_filament_path = resources_dir() + "/profiles/QDT/filament_full/"+inherits+".json";
                     if (boost::filesystem::exists(parent_filament_path)) {
                         DynamicPrintConfig  parent_config;
                         std::string config_type, config_name, filament_id, config_from;
@@ -3122,6 +3128,7 @@ int CLI::run(int argc, char **argv)
                                 ConfigOptionVectorBase* opt_vec_dest = static_cast<ConfigOptionVectorBase*>(dest_opt);
 
                                 opt_vec_dest->set_with_restore(opt_vec_src, variant_index, stride);
+                                continue;
                             }
                             else
                                 continue;
@@ -3375,6 +3382,8 @@ int CLI::run(int argc, char **argv)
         }
     }
     else {
+        if (!machine_switch && !current_nozzle_volume_type.empty())
+            new_nozzle_volume_type = current_nozzle_volume_type;
         new_nozzle_volume_type.resize(new_extruder_count, nvtStandard);
         if ((new_extruder_count > 1) || different_extruder) {
             BOOST_LOG_TRIVIAL(error) << boost::format("%1%: nozzle_volume_type not found, when different_extruder or multiple extruder, new_printer_name %2%, extruder_count %3%")%__LINE__ %new_printer_name %new_extruder_count;
@@ -3983,6 +3992,16 @@ int CLI::run(int argc, char **argv)
     FullPrintConfig    fff_print_config;
     //SLAFullPrintConfig sla_print_config;
 
+    /*
+    extruder_nozzle_stat记录每种挤出机、流量下的可用喷嘴数量
+    处理逻辑：
+    1. 若3mf中有参数，则从3mf中读取，否则加载默认参数（可能是个错误值）
+    2. 判断是否切换了机型，若机型切换，则需要重新设置默认值（此时会将默认参数修复）
+    3. 判断是否切换了流量，若流量切换，重新设置对应流量，并复制原先的喷嘴数量
+    */
+    bool has_extruder_nozzle_stats = m_print_config.has("extruder_nozzle_stats");
+    ExtruderNozzleStat nozzle_stats_obj;
+
     // Synchronize the default parameters and the ones received on the command line.
     if (printer_technology == ptFFF) {
         fff_print_config.apply(m_print_config, true);
@@ -4012,6 +4031,21 @@ int CLI::run(int argc, char **argv)
         record_exit_reson(outfile_dir, CLI_INVALID_VALUES_IN_3MF, 0, cli_errors[CLI_INVALID_VALUES_IN_3MF], sliced_info);
         flush_and_exit(CLI_INVALID_VALUES_IN_3MF);
     }
+
+    // 机型变化时要触发model change  => 原来没值或者model发生变化
+    if (!has_extruder_nozzle_stats || machine_switch) {
+        auto max_nozzle_count   = m_print_config.option<ConfigOptionIntsNullable>("extruder_max_nozzle_count", true)->values;
+        std::vector<int> curr_volume_map_value(current_nozzle_volume_type.size());
+        for(size_t idx = 0; idx < current_nozzle_volume_type.size(); ++idx){
+            curr_volume_map_value[idx] = static_cast<int>(current_nozzle_volume_type[idx]);
+        }
+        nozzle_stats_obj.on_printer_model_change_cli(curr_volume_map_value, max_nozzle_count);
+    }
+    else {
+        auto nozzle_stat_str = m_print_config.option<ConfigOptionStrings>("extruder_nozzle_stats")->values;
+        nozzle_stats_obj.set_raw_stat(get_extruder_nozzle_stats(nozzle_stat_str));
+    }
+
 
     ConfigOptionBool* enable_wrapping_detection_option = m_print_config.option<ConfigOptionBool>("enable_wrapping_detection", true);
     BOOST_LOG_TRIVIAL(info) << boost::format("%1%, remove_wrapping_detect %2%, old value %3%")%__LINE__ %remove_wrapping_detect %enable_wrapping_detection_option->value;
@@ -5262,11 +5296,11 @@ int CLI::run(int argc, char **argv)
                     BOOST_LOG_TRIVIAL(info) << "Arrange full params: " << arrange_cfg.to_json();
                     BOOST_LOG_TRIVIAL(info) << boost::format("arrange: items selected before arranging: %1%") % selected.size();
                     for (auto item : selected)
-                        BOOST_LOG_TRIVIAL(trace) << item.name << ", extruder: " << item.extrude_id_filament_types.begin()->first << ", bed: " << item.bed_idx
-                        << ", trans: " << item.translation.transpose();
+                        // BOOST_LOG_TRIVIAL(trace) << item.name << ", extruder: " << item.extrude_id_filament_types.begin()->first << ", bed: " << item.bed_idx
+                        //<< ", trans: " << item.translation.transpose();
                     BOOST_LOG_TRIVIAL(info) << boost::format("arrange: items unselected before arranging: %1%") % unselected.size();
-                    for (auto item : unselected)
-                        BOOST_LOG_TRIVIAL(trace) << item.name << ", bed: " << item.bed_idx << ", trans: " << item.translation.transpose();
+                    //for (auto item : unselected)
+                        // BOOST_LOG_TRIVIAL(trace) << item.name << ", bed: " << item.bed_idx << ", trans: " << item.translation.transpose();
                 }
                 arrange_cfg.progressind = [](unsigned st, std::string str = "") {
                     //boost::nowide::cout << "st=" << st << ", " << str << std::endl;
@@ -5713,9 +5747,9 @@ int CLI::run(int argc, char **argv)
                     BOOST_LOG_TRIVIAL(debug) << "arrange bedpts:" << beds[0].transpose() << ", " << beds[1].transpose() << ", " << beds[2].transpose() << ", " << beds[3].transpose();
                     BOOST_LOG_TRIVIAL(info)<< "Arrange full params: "<< arrange_cfg.to_json();
                     BOOST_LOG_TRIVIAL(info) << boost::format("arrange: items selected before arranging: %1%")%selected.size();
-                    for (auto item : selected) BOOST_LOG_TRIVIAL(trace) << item.name << ", bed: " << item.bed_idx << ", trans: " << item.translation.transpose();
+                    //for (auto item : selected) // BOOST_LOG_TRIVIAL(trace) << item.name << ", bed: " << item.bed_idx << ", trans: " << item.translation.transpose();
                     BOOST_LOG_TRIVIAL(info) << boost::format("arrange: items unselected before arranging: %1%") % unselected.size();
-                    for (auto item : unselected) BOOST_LOG_TRIVIAL(trace) << item.name << ", bed: " << item.bed_idx << ", trans: " << item.translation.transpose();
+                    //for (auto item : unselected)  BOOST_LOG_TRIVIAL(trace) << item.name << ", bed: " << item.bed_idx << ", trans: " << item.translation.transpose();
                 }
                 arrange_cfg.progressind= [](unsigned st, std::string str = "") {
                     //boost::nowide::cout << "st=" << st << ", " << str << std::endl;
@@ -5758,7 +5792,7 @@ int CLI::run(int argc, char **argv)
                             partplate_list.postprocess_bed_index_for_selected(ap);
 
                             bed_idx_max = std::max(ap.bed_idx, bed_idx_max);
-                            BOOST_LOG_TRIVIAL(trace)<< "after arrange: name=" << ap.name << boost::format(",bed_id %1%, trans {%2%,%3%}") % ap.bed_idx % unscale<double>(ap.translation(X)) % unscale<double>(ap.translation(Y)) << "\n";
+                            // BOOST_LOG_TRIVIAL(trace)<< "after arrange: name=" << ap.name << boost::format(",bed_id %1%, trans {%2%,%3%}") % ap.bed_idx % unscale<double>(ap.translation(X)) % unscale<double>(ap.translation(Y)) << "\n";
                         }
                     }
                     for (ArrangePolygon &ap : locked_aps) {
@@ -6547,80 +6581,84 @@ int CLI::run(int argc, char **argv)
                                     }
                                     else
                                         filament_maps = part_plate->get_real_filament_maps(m_print_config);
-                                    if (support_multi_nozzle && (mode == fmmManual || mode == fmmNozzleManual) && (plate_to_slice != 0)) {
-                                        if (mode == FilamentMapMode::fmmNozzleManual) {
-                                            if (!m_extra_config.option<ConfigOptionInts>("filament_volume_map") ||
-                                                !m_extra_config.option<ConfigOptionInts>("filament_nozzle_map") ||
-                                                !m_extra_config.option<ConfigOptionInts>("extruder_nozzle_count") ||
-                                                !m_extra_config.option<ConfigOptionEnumsGeneric>("extruder_nozzle_volume_type") ||
-                                                !m_extra_config.option<ConfigOptionInts>("filament_map")) {
-                                                BOOST_LOG_TRIVIAL(error)
-                                                    << boost::format(
-                                                           "%1%, can not find filament_volume_map/filament_nozzle_map/extruder_nozzle_count/extruder_nozzle_volume_type/filament_map under "
-                                                           "Nozzle Manual mode") %
-                                                           __LINE__;
-                                                record_exit_reson(outfile_dir, CLI_INVALID_PARAMS, index + 1, cli_errors[CLI_INVALID_PARAMS], sliced_info);
-                                                flush_and_exit(CLI_INVALID_PARAMS);
-                                            }
-                                            filament_nozzle_maps = m_extra_config.option<ConfigOptionInts>("filament_nozzle_map")->values;
-                                            filament_volume_maps = m_extra_config.option<ConfigOptionInts>("filament_volume_map")->values;
-                                            part_plate->set_filament_nozzle_maps(filament_nozzle_maps);
-                                            part_plate->set_filament_volume_maps(filament_volume_maps);
-                                        } else if (mode == fmmManual) {
-                                            if (!m_extra_config.option<ConfigOptionInts>("extruder_nozzle_count") ||
-                                                !m_extra_config.option<ConfigOptionEnumsGeneric>("extruder_nozzle_volume_type") ||
-                                                !m_extra_config.option<ConfigOptionInts>("filament_map")) {
-                                                BOOST_LOG_TRIVIAL(error)
-                                                    << boost::format("%1%, can not find extruder_nozzle_volume_type or extruder_nozzle_count or filament_map under Manual mode") % __LINE__;
-                                                record_exit_reson(outfile_dir, CLI_INVALID_PARAMS, index + 1, cli_errors[CLI_INVALID_PARAMS], sliced_info);
-                                                flush_and_exit(CLI_INVALID_PARAMS);
-                                            }
-                                        }
-                                        //assemble extruder_nozzle_stats
-                                        std::vector<std::map<NozzleVolumeType,int>> extruder_nozzle_stats_maps(new_extruder_count, std::map<NozzleVolumeType,int>{});
-                                        std::vector<int> extruder_nozzle_counts = m_extra_config.option<ConfigOptionInts>("extruder_nozzle_count")->values;
-                                        std::vector<int> extruder_nozzle_volume_types = m_extra_config.option<ConfigOptionEnumsGeneric>("extruder_nozzle_volume_type")->values;
-                                        int nozzle_index = 0;
-                                        for(int e_index = 0; e_index < new_extruder_count; e_index++)
-                                        {
-                                            std::map<NozzleVolumeType,int> nozzle_volume_type_maps;
-                                            for (int sub_index = 0; sub_index < extruder_nozzle_counts[e_index]; sub_index++)
-                                            {
-                                                if (nozzle_volume_type_maps.find(NozzleVolumeType(extruder_nozzle_volume_types[nozzle_index])) != nozzle_volume_type_maps.end())
-                                                {
-                                                    nozzle_volume_type_maps[NozzleVolumeType(extruder_nozzle_volume_types[nozzle_index])]++;
-                                                }
-                                                else
-                                                    nozzle_volume_type_maps[NozzleVolumeType(extruder_nozzle_volume_types[nozzle_index])] = 1;
 
-                                                nozzle_index++;
-                                            }
-                                            extruder_nozzle_stats_maps[e_index] = std::move(nozzle_volume_type_maps);
+                                   // 前面已经处理了机型切换时的extruder_nozzle_stats，此处处理可能的流量切换
+                                    for (size_t eid = 0; eid < new_nozzle_volume_type.size(); ++eid) {
+                                        nozzle_stats_obj.on_volume_type_switch(eid, new_nozzle_volume_type[eid]);
+                                    }
+
+                                    if (support_multi_nozzle && (mode == fmmManual || mode == fmmNozzleManual) && (plate_to_slice != 0)) {
+                                        /*
+                                        1. filament_volume_map：提供给分组算法，构造分组结果
+                                        2. filament_nozzle_map ：提供给分组算法，构造分组结果
+                                        2. extrduer_nozzle_count, extruder_nozzle_volume_type : 用来构造 extruder_nozzle_stats
+                                        */
+
+                                        // 完全由输入参数指定分组结果，参数缺失时需要报错
+                                        if (mode == FilamentMapMode::fmmNozzleManual &&
+                                            (!m_extra_config.has("filament_volume_map") || !m_extra_config.has("filament_nozzle_map") ||
+                                             !m_extra_config.has("extruder_nozzle_count") || !m_extra_config.has("extruder_nozzle_volume_type") || !m_extra_config.has("filament_map"))) {
+                                            BOOST_LOG_TRIVIAL(error)
+                                                << boost::format("%1%, can not find "
+                                                                 "filament_volume_map/filament_nozzle_map/extruder_nozzle_count/extruder_nozzle_volume_type/filament_map under "
+                                                                 "Nozzle Manual mode") %
+                                                       __LINE__;
+                                            record_exit_reson(outfile_dir, CLI_INVALID_PARAMS, index + 1, cli_errors[CLI_INVALID_PARAMS], sliced_info);
+                                            flush_and_exit(CLI_INVALID_PARAMS);
                                         }
-                                        m_print_config.option<ConfigOptionStrings>("extruder_nozzle_stats", true)->values = save_extruder_nozzle_stats_to_string(extruder_nozzle_stats_maps);
+
                                         if (mode == fmmManual) {
-                                            //refine the values not passed
-                                            ConfigOptionEnumsGeneric* using_nozzle_volume_type_opt = m_extra_config.option<ConfigOptionEnumsGeneric>("nozzle_volume_type", true);
-                                            using_nozzle_volume_type_opt->values.resize(new_extruder_count, nvtStandard);
-                                            for (int e_index = 0; e_index < new_extruder_count; e_index++)
-                                            {
-                                                std::map<NozzleVolumeType,int>& nozzle_volume_type_maps = extruder_nozzle_stats_maps[e_index];
-                                                if (nozzle_volume_type_maps.size() > 1) {
-                                                    using_nozzle_volume_type_opt->values[e_index] = nvtHybrid;
-                                                    BOOST_LOG_TRIVIAL(info) << boost::format("%1% : extruder %2%, set nozzle_volume_type to hybrid ") % __LINE__ %(e_index+1);
+                                            // 如果没有传递volume_map，根据nozzle_volume_map自行构造
+                                            std::vector<NozzleVolumeType> using_nozzle_volume_type = new_nozzle_volume_type;
+                                            for (int e_index = 0; e_index < new_extruder_count; e_index++) {
+                                                // 若存在多种流量，则设置为hybrid
+                                                if (nozzle_stats_obj.get_raw_stat()[e_index].size() > 1) {
+                                                    using_nozzle_volume_type[e_index] = nvtHybrid;
+                                                    BOOST_LOG_TRIVIAL(info) << boost::format("%1% : extruder %2%, set nozzle_volume_type to hybrid ") % __LINE__ % (e_index + 1);
                                                 }
                                             }
-                                            std::vector<int>& filament_volume_maps = m_extra_config.option<ConfigOptionInts>("filament_volume_map", true)->values;
-                                            std::vector<int>& filament_maps = m_extra_config.option<ConfigOptionInts>("filament_map")->values;
-                                            filament_volume_maps.resize(filament_count, 0);
-                                            for (int f_index = 0; f_index < filament_count; f_index++)
-                                            {
+                                            std::vector<int> &filament_volume_maps = m_extra_config.option<ConfigOptionInts>("filament_volume_map", true)->values;
+                                            std::vector<int> &filament_maps        = m_extra_config.option<ConfigOptionInts>("filament_map")->values;
+                                            // 缺省使用标准流量打印
+                                            filament_volume_maps.resize(filament_count, (int)(nvtStandard));
+                                            for (int f_index = 0; f_index < filament_count; f_index++) {
                                                 int f_extruder_index = filament_maps[f_index] - 1;
-                                                if (using_nozzle_volume_type_opt->values[f_extruder_index] != nvtHybrid) {
-                                                    filament_volume_maps[f_index] = int(using_nozzle_volume_type_opt->values[f_extruder_index]);
-                                                    BOOST_LOG_TRIVIAL(info) << boost::format("%1% : filament %2% extruder %3%, set filament_volume_map to %4% ") % __LINE__ %(f_index+1) %(f_extruder_index+1) % filament_volume_maps[f_index];
+                                                if (using_nozzle_volume_type[f_extruder_index] != nvtHybrid) {
+                                                    filament_volume_maps[f_index] = int(using_nozzle_volume_type[f_extruder_index]);
+                                                    BOOST_LOG_TRIVIAL(info) << boost::format("%1% : filament %2% extruder %3%, set filament_volume_map to %4% ") % __LINE__ %(f_index + 1) % (f_extruder_index + 1) % filament_volume_maps[f_index];
                                                 }
                                             }
+                                        }
+
+                                        if (m_extra_config.has("filament_volume_map")) {
+                                            filament_volume_maps = m_extra_config.option<ConfigOptionInts>("filament_volume_map")->values;
+                                            part_plate->set_filament_volume_maps(filament_volume_maps);
+                                        }
+                                        if (m_extra_config.has("filament_nozzle_map")) {
+                                            filament_nozzle_maps = m_extra_config.option<ConfigOptionInts>("filament_nozzle_map")->values;
+                                            part_plate->set_filament_nozzle_maps(filament_nozzle_maps);
+                                        }
+
+                                        // 手动构造extruder_nozzle_stats，将数据存入stats_obj，后续统一写入config
+                                        if (m_extra_config.has("extruder_nozzle_count") && m_extra_config.has("extruder_nozzle_volume_type")) {
+                                            // assemble extruder_nozzle_stats
+                                            std::vector<std::map<NozzleVolumeType, int>> extruder_nozzle_stats_maps(new_extruder_count, std::map<NozzleVolumeType, int>{});
+                                            std::vector<int> extruder_nozzle_counts = m_extra_config.option<ConfigOptionInts>("extruder_nozzle_count")->values;
+                                            std::vector<int> extruder_nozzle_volume_types = m_extra_config.option<ConfigOptionEnumsGeneric>("extruder_nozzle_volume_type")->values;
+                                            int nozzle_index = 0;
+                                            for (int e_index = 0; e_index < new_extruder_count; e_index++) {
+                                                std::map<NozzleVolumeType, int> nozzle_volume_type_maps;
+                                                for (int sub_index = 0; sub_index < extruder_nozzle_counts[e_index]; sub_index++) {
+                                                    if (nozzle_volume_type_maps.find(NozzleVolumeType(extruder_nozzle_volume_types[nozzle_index])) !=
+                                                        nozzle_volume_type_maps.end()) {
+                                                        nozzle_volume_type_maps[NozzleVolumeType(extruder_nozzle_volume_types[nozzle_index])]++;
+                                                    } else
+                                                        nozzle_volume_type_maps[NozzleVolumeType(extruder_nozzle_volume_types[nozzle_index])] = 1;
+                                                    nozzle_index++;
+                                                }
+                                                extruder_nozzle_stats_maps[e_index] = std::move(nozzle_volume_type_maps);
+                                            }
+                                            nozzle_stats_obj.set_raw_stat(extruder_nozzle_stats_maps);
                                         }
                                     }
                                     else if (!support_multi_nozzle && (mode == fmmNozzleManual)) {
@@ -6629,6 +6667,9 @@ int CLI::run(int argc, char **argv)
                                         record_exit_reson(outfile_dir, CLI_INVALID_PARAMS, index + 1, cli_errors[CLI_INVALID_PARAMS], sliced_info);
                                         flush_and_exit(CLI_INVALID_PARAMS);
                                     }
+
+                                    // 保存参数到 m_print_config
+                                    m_print_config.option<ConfigOptionStrings>("extruder_nozzle_stats", true)->values = save_extruder_nozzle_stats_to_string(nozzle_stats_obj.get_raw_stat());
 
                                     for (int index = 0; index < filament_maps.size(); index++)
                                     {
@@ -6715,9 +6756,11 @@ int CLI::run(int argc, char **argv)
                                         if (filament_type)
                                             temp_types[0]  = types[color_count % types.size()];
 
-                                        temp_config.option<ConfigOptionStrings>("filament_colour", true)->values = temp_colors;
-                                        temp_config.option<ConfigOptionStrings>("filament_type", true)->values = temp_types;
-                                        temp_config.option<ConfigOptionBools>("filament_is_support",true)->values = { 0 };
+                                        temp_config.set_key_value("filament_colour",new ConfigOptionStrings(temp_colors));
+                                        temp_config.set_key_value("filament_type", new ConfigOptionStrings(temp_types));
+                                        temp_config.set_key_value("filament_is_support", new ConfigOptionBools({false}));
+                                        temp_config.set_key_value("tray_name", new ConfigOptionStrings({"A1"}));
+
                                         extruder_filament_info[e_index].push_back(std::move(temp_config));
                                         color_count++;
                                     }
@@ -8216,7 +8259,7 @@ std::string CLI::output_filepath(const ModelObject &object, unsigned int index, 
     if ((pos == std::string::npos) || (pos != ext_pos))
         file_name += ext;
 
-    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": dir = "<< path_dir<<", file_name="<<file_name<< ", pos = "<<pos<<", ext_pos="<<ext_pos;
+    // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": dir = "<< path_dir<<", file_name="<<file_name<< ", pos = "<<pos<<", ext_pos="<<ext_pos;
     if (path_dir.empty()) {
         std::string cmdline_param = m_config.opt_string("outputdir");
         if (! cmdline_param.empty()) {

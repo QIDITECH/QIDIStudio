@@ -315,7 +315,7 @@ void RemovableDriveManager::eject_drive()
 #endif
 		std::string line;
 		while (child.running() && std::getline(istd_err, line)) {
-			BOOST_LOG_TRIVIAL(trace) << line;
+			// BOOST_LOG_TRIVIAL(trace) << line;
 		}
 		// wait for command to finnish (blocks ui thread)
 		std::error_code ec;

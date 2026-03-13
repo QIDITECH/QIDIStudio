@@ -26,6 +26,10 @@
 #include "DeviceCore/DevMapping.h"
 #include "DeviceCore/DevStorage.h"
 
+//cj_2
+#if QDT_RELEASE_TO_PUBLIC
+#include "../QIDI/QIDINetwork.hpp"
+#endif
 using namespace Slic3r;
 using namespace Slic3r::GUI;
 
@@ -3332,7 +3336,7 @@ GetBoxInfoDialog::GetBoxInfoDialog(Plater* plater)
                     if (preset_typename.find(NormalizeVendor(device.machine_type)) != std::string::npos)
                     {
                         m_comboBox_printer->Append(from_u8(device.device_name));
-                        m_printer_ip.push_back(device.url);
+                        m_printer_ip.push_back(device.local_ip);
                     }
                 }
                 m_comboBox_printer->SetSelection(0);
@@ -3439,7 +3443,6 @@ void GetBoxInfoDialog::synchronization(wxCommandEvent &event)
         //Get Box_info
         GUI::Box_info filament_info;
         filament_info = qidi.get_box_info(msg, printer_ip, api_key);
-        m_plater->current_box_info = filament_info;
         qidi.get_color_filament_str(msg, filament_info, printer_ip, api_key);
         generate_filament_id(filament_info);
         update_filament_info(filament_info);

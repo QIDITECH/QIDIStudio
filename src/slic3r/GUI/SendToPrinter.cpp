@@ -597,7 +597,7 @@ SendToPrinterDialog::SendToPrinterDialog(Plater *plater)
     m_rename_text->SetForegroundColour(*wxBLACK);
     m_rename_text->SetFont(::Label::Body_13);
     m_rename_text->SetMaxSize(wxSize(FromDIP(390), -1));
-    m_rename_button = new Button(m_rename_normal_panel, "", "ams_editable", wxBORDER_NONE, FromDIP(10));
+    m_rename_button = new Button(m_rename_normal_panel, "", "box_editable", wxBORDER_NONE, FromDIP(10));
     m_rename_button->SetBackgroundColor(*wxWHITE);
     m_rename_button->SetBackgroundColour(*wxWHITE);
 
@@ -1664,10 +1664,6 @@ void SendToPrinterDialog::update_show_status()
         show_status(PrintDialogStatus::PrintStatusInUpgrading);
         return;
     }
-    else if (obj_->is_system_printing()) {
-        show_status(PrintDialogStatus::PrintStatusInSystemPrinting);
-        return;
-    }
 
     // check sdcard when if lan mode printer
    /* if (obj_->is_lan_mode_printer()) {
@@ -2349,7 +2345,11 @@ void SendToPrinterDialog::CreateMediaAbilityJob()
              }
          });
      });
-     m_filetransfer_mediability_job->start_on(*m_filetransfer_tunnel);
+     if (m_filetransfer_tunnel) {
+        m_filetransfer_mediability_job->start_on(*m_filetransfer_tunnel);
+     } else {
+        BOOST_LOG_TRIVIAL(info) << "CreateMediaAbilityJob:: file transfer tunnel is null";
+     }
 }
 
 void SendToPrinterDialog::CreateUploadFileJob(const std::string &path, const std::string &name)
@@ -2390,7 +2390,11 @@ void SendToPrinterDialog::CreateUploadFileJob(const std::string &path, const std
 
         });
     });
-    m_filetransfer_uploadfile_job->start_on(*m_filetransfer_tunnel);
+    if (m_filetransfer_tunnel) {
+        m_filetransfer_uploadfile_job->start_on(*m_filetransfer_tunnel);
+    } else {
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": file transfer tunnel is null";
+    }
 }
 
 void SendToPrinterDialog::UploadFileProgressCallback(int progress)

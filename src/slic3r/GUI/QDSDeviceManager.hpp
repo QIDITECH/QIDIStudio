@@ -13,87 +13,40 @@
 #include <vector>
 #include <chrono>
 
+//cj_2
 #if QDT_RELEASE_TO_PUBLIC
-#include "../QIDI/QIDINetwork.hpp"
+#include "../QIDI/QIDINetworkTypes.hpp"
 #endif
 
 #include "nlohmann/json.hpp"
+#include "libslic3r/GCode/ThumbnailData.hpp"
 
 using namespace nlohmann;
 
 namespace Slic3r {
 namespace GUI{
 
-struct FileInfo {
-    std::string file_name;
+struct PlateInfo {
+    std::string index;
+    std::vector<std::string> filament_colours {};
+    std::vector<std::string> filament_types {};
     std::string filament_weight;
     std::string print_time;
-    double modified_time;
+    std::vector<std::string> used_extruders {};
     std::string thumb_url;
+    std::string nozzle_diameter;
+    ThumbnailData thumbnailData;
 };
-
-
-// cj_1
-class QDSFilamentConfig 
-{
-private:
-    struct  FilamentData
-    {
-        std::string path;
-        std::string name;
-        std::vector<std::string> data;
-    };
-public:
-	static QDSFilamentConfig& getInstance() {
-		static QDSFilamentConfig instance;
-		return instance;
-	}
-
-    std::string getHexCode(int index);
-    int getColorIndex(std::string hexCode);
-
-	std::string getcolorDes(int index);
-	std::string getTypeName(int index);
-    std::string getFilamentType(int index);
-	int getTypeNameIndex(std::string typeName);
-
-	std::string getVendor(int index);
-	int getVendorIndex(std::string vendor);
-
-private:
-    void init();
-    void initTypeName();
-    void initFilamentData(FilamentData& filamentData);
-
-    std::string getData(FilamentData filamentData, int index);
-    int getIndex(FilamentData filementData, std::string name);
-
-#if QDT_RELEASE_TO_PUBLIC
-    Environment m_env;
-#endif
-
-public:
-	FilamentData m_colorHexCode{ "/backend/v1/setting/filament/color/all","hexCode" };
-	FilamentData m_colorDes{ "/backend/v1/setting/filament/color/all","description" };
-	FilamentData m_typeName{ "/backend/v1/setting/filament/material/all","filamentTypeName" };
-	FilamentData m_vendor{ "/backend/v1/setting/filament/vendor/all","vendor" };
-    FilamentData m_filament_type{ "/backend/v1/setting/filament/vendor/all", "type"};
-
-private:
-    QDSFilamentConfig();
-	~QDSFilamentConfig();
-
-    QDSFilamentConfig(const QDSFilamentConfig&) = delete;
-    QDSFilamentConfig& operator=(const QDSFilamentConfig&) = delete;
-    QDSFilamentConfig(QDSFilamentConfig&&) = delete;
-    QDSFilamentConfig& operator=(QDSFilamentConfig&&) = delete;
-
-    std::future<void> m_future;
-
+struct GCodeFileInfo {
+    std::string extension;
+    std::string file_name;
+    std::string file_path;
+    std::string plate_count;
+    std::vector<PlateInfo> plates {};
+    std::string show_filament_weight;
+    std::string show_print_time;
+    std::string show_thumb_url;
 };
-
-
-
 class QDSDevice{
 public:
     struct Filament {
@@ -115,9 +68,14 @@ public:
 	// cj_1 
 	void updateByJsonData(json& status);
     bool is_online();
-    void updateFilamentConfig();
+    void updateFilamentConfig();    //When "m_frp_url" is updated, update the config file.
 
     void updateBoxDataByJson(const json status);
+    std::vector<float> getNozzleDiameter();
+    void reset_update_status(){
+        box_is_update = true;
+    };
+
 private:
 	void twoStageParseIntToString(const json& status, std::string& target, std::string first, std::string second);
 	void twoStageParseStringToString(const json& status, std::string& target, std::string first, std::string second);
@@ -146,15 +104,19 @@ public:
     std::atomic<bool>            m_case_light{ false };
     bool                         m_extruder_filament{ false };   // 
 
-    std::string                  m_home_axes;
+    std::string                  m_home_axes; 
 
     std::atomic<bool>  m_polar_cooler{ false };
     float m_auxiliary_fan_speed{ 0.0 };
     float m_chamber_fan_speed{ 0.0 };
     float m_cooling_fan_speed{ 0.0 };
 
-	std::string     m_print_total_duration;   // cj_1
-	std::string     m_print_duration;         // cj_1
+    //y78
+    std::vector<float> m_nozzle_diameter { 0.4f };
+
+
+	std::string     m_print_total_duration;
+	std::string     m_print_duration;
 	std::string     m_print_filename;
     std::string     m_print_progress{ "N/A" };
     std::string     m_filament_weight{ "0g" };
@@ -170,7 +132,6 @@ public:
 	std::vector<int> m_boxTemperature;
 	std::vector<int> m_boxHumidity;
     bool box_is_update;
-    bool box_filament_is_update;
     bool m_is_auto_reload{ false };
     std::string m_cur_slot;
     int m_box_count{ 0 };
@@ -179,6 +140,15 @@ public:
     bool m_auto_read_rfid{ false };
     bool m_init_detect{ false };
     bool m_auto_reload_detect{ false };
+
+    //y78
+    std::vector<std::string> m_filament_colors;
+    std::vector<std::string> m_filament_type;
+    std::vector<std::string> m_filament_id;
+    std::vector<int> m_slot_id;
+    std::vector<int> m_slot_state;
+
+    //cj_2 print model data
 
 
     std::atomic<bool>            has_box{false};
@@ -190,12 +160,14 @@ public:
     std::atomic<bool>            m_is_update_box_temp{ false };
     std::chrono::steady_clock::time_point last_update = std::chrono::steady_clock::now();
 
-    std::vector<FileInfo>    file_info {};
+    std::vector<GCodeFileInfo>    file_info {};
+    bool m_fresh_file_info{ false };
 
     bool m_is_init_filamentConfig{ false };
     static bool m_is_init_general;
 	static std::mutex m_general_mtx;
 	std::mutex m_config_mtx;
+    bool is_net_device{ false };
 };
 
 
@@ -246,6 +218,9 @@ public:
     std::string getDeviceTempChamber(const std::string& deviceId);
     bool        getDeviceCaseLight(const std::string& deviceId);
 
+    //cj_2
+    void sendCommand(const std::string& device_id, const std::string& scriptName,const std::string& script, const std::string& method);
+
     void sendCommand(const std::string& device_id, const std::string& script);
     void sendActionCommand(const std::string& device_id, const std::string& action_type);
 
@@ -257,6 +232,8 @@ public:
     std::vector<NetDevice> getNetDevices();
 #endif
     void upBoxInfoToBoxMsg(std::shared_ptr<QDSDevice>& device);
+    void getFileInfo(const std::string& device_id);
+    void resetBoxUpdateStatus(const std::string& device_id);
 
 private:
     using WebSocketClient = websocketpp::client<websocketpp::config::asio_client>;

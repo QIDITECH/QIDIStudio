@@ -51,15 +51,10 @@ bool AMSinfo::parse_ams_info(MachineObject *obj, DevAms *ams, bool remain_flag, 
     if (!ams) return false;
     this->ams_id = ams->GetAmsId();
 
-    if (ams->SupportHumidity()){
-        this->ams_humidity = ams->GetHumidityLevel();
-    }
-    else{
-        this->ams_humidity = -1;
-    }
-
-    this->humidity_raw = ams->GetHumidityPercent();
+    this->ams_humidity = ams->SupportHumidityLevel() ? ams->GetHumidityLevel() : -1;
+    this->ams_humidity_percent = ams->SupportHumidityPercent() ? ams->GetHumidityPercent() : -1;
     this->left_dray_time = ams->GetLeftDryTime();
+    this->m_ams_drying = ams->AmsIsDrying();
     this->current_temperature = ams->GetCurrentTemperature();
     this->ams_type = AMSModel(ams->GetAmsType());
 
@@ -115,7 +110,7 @@ bool AMSinfo::parse_ams_info(MachineObject *obj, DevAms *ams, bool remain_flag, 
                 wxColour(255, 255, 255);
             }
 
-            if (it->second->is_tray_info_ready() && obj->cali_version >= 0) {
+            if (it->second->is_tray_info_ready() && obj->GetCalib()->IsVersionInited()) {
                 CalibUtils::get_pa_k_n_value_by_cali_idx(obj, it->second->cali_idx, info.k, info.n);
             }
             else {
@@ -172,7 +167,7 @@ void AMSinfo::parse_ext_info(MachineObject* obj, DevAmsTray tray) {
         wxColour(255, 255, 255);
     }
     info.material_state = AMSCanType::AMS_CAN_TYPE_VIRTUAL;
-    if (tray.is_tray_info_ready() && obj->cali_version >= 0) {
+    if (tray.is_tray_info_ready() && obj->GetCalib()->IsVersionInited()) {
         CalibUtils::get_pa_k_n_value_by_cali_idx(obj, tray.cali_idx, info.k, info.n);
     }
     else {
@@ -208,19 +203,19 @@ int AMSinfo::get_humidity_display_idx() const
     }
     else if (ams_type == AMSModel::N3F_AMS || ams_type == AMSModel::N3S_AMS)
     {
-        if (humidity_raw < 20)
+        if (ams_humidity_percent < 20)
         {
             return 5;
         }
-        else if (humidity_raw < 40)
+        else if (ams_humidity_percent < 40)
         {
             return 4;
         }
-        else if (humidity_raw < 60)
+        else if (ams_humidity_percent < 60)
         {
             return 3;
         }
-        else if (humidity_raw < 80)
+        else if (ams_humidity_percent < 80)
         {
             return 2;
         }
@@ -341,17 +336,17 @@ void AMSrefresh::create(wxWindow *parent, wxWindowID id, const wxPoint &pos, con
     Bind(wxEVT_LEAVE_WINDOW, &AMSrefresh::OnLeaveWindow, this);
     Bind(wxEVT_LEFT_DOWN, &AMSrefresh::OnClick, this);
 
-    m_bitmap_normal   = ScalableBitmap(this, "ams_refresh_normal", 32);
-    m_bitmap_selected = ScalableBitmap(this, "ams_refresh_selected", 32);
+    m_bitmap_normal   = ScalableBitmap(this, "box_refresh_normal", 32);
+    m_bitmap_selected = ScalableBitmap(this, "box_refresh_selected", 32);
 
-    m_bitmap_ams_rfid_0 = ScalableBitmap(this, "ams_rfid_0", 32);
-    m_bitmap_ams_rfid_1 = ScalableBitmap(this, "ams_rfid_1", 32);
-    m_bitmap_ams_rfid_2 = ScalableBitmap(this, "ams_rfid_2", 32);
-    m_bitmap_ams_rfid_3 = ScalableBitmap(this, "ams_rfid_3", 32);
-    m_bitmap_ams_rfid_4 = ScalableBitmap(this, "ams_rfid_4", 32);
-    m_bitmap_ams_rfid_5 = ScalableBitmap(this, "ams_rfid_5", 32);
-    m_bitmap_ams_rfid_6 = ScalableBitmap(this, "ams_rfid_6", 32);
-    m_bitmap_ams_rfid_7 = ScalableBitmap(this, "ams_rfid_7", 32);
+    m_bitmap_ams_rfid_0 = ScalableBitmap(this, "box_rfid_0", 32);
+    m_bitmap_ams_rfid_1 = ScalableBitmap(this, "box_rfid_1", 32);
+    m_bitmap_ams_rfid_2 = ScalableBitmap(this, "box_rfid_2", 32);
+    m_bitmap_ams_rfid_3 = ScalableBitmap(this, "box_rfid_3", 32);
+    m_bitmap_ams_rfid_4 = ScalableBitmap(this, "box_rfid_4", 32);
+    m_bitmap_ams_rfid_5 = ScalableBitmap(this, "box_rfid_5", 32);
+    m_bitmap_ams_rfid_6 = ScalableBitmap(this, "box_rfid_6", 32);
+    m_bitmap_ams_rfid_7 = ScalableBitmap(this, "box_rfid_7", 32);
 
     m_rfid_bitmap_list.push_back(m_bitmap_ams_rfid_0);
     m_rfid_bitmap_list.push_back(m_bitmap_ams_rfid_1);
@@ -891,25 +886,25 @@ void AMSLib::create(wxWindow *parent, wxWindowID id, const wxPoint &pos, const w
 
     wxBoxSizer *m_sizer_edit = new wxBoxSizer(wxHORIZONTAL);
 
-    m_bitmap_editable       = ScalableBitmap(this, "ams_editable", 14);
-    m_bitmap_editable_light = ScalableBitmap(this, "ams_editable_light", 14);
-    m_bitmap_readonly       = ScalableBitmap(this, "ams_readonly", 14);
-    m_bitmap_readonly_light = ScalableBitmap(this, "ams_readonly_light", 14);
-    m_bitmap_transparent    = ScalableBitmap(this, "transparent_ams_lib", 76);
-    m_bitmap_transparent_def    = ScalableBitmap(this, "transparent_ams_lib", 76);
-    m_bitmap_transparent_lite = ScalableBitmap(this, "transparent_ams_lib", 56);
+    m_bitmap_editable       = ScalableBitmap(this, "box_editable", 14);
+    m_bitmap_editable_light = ScalableBitmap(this, "box_editable_light", 14);
+    m_bitmap_readonly       = ScalableBitmap(this, "box_readonly", 14);
+    m_bitmap_readonly_light = ScalableBitmap(this, "box_readonly_light", 14);
+    m_bitmap_transparent    = ScalableBitmap(this, "transparent_box_lib", 76);
+    m_bitmap_transparent_def    = ScalableBitmap(this, "transparent_box_lib", 76);
+    m_bitmap_transparent_lite = ScalableBitmap(this, "transparent_box_lib", 56);
 
-    m_bitmap_extra_tray_left    = ScalableBitmap(this, "extra_ams_tray_left", 72);
+    m_bitmap_extra_tray_left    = ScalableBitmap(this, "extra_box_tray_left", 72);
     m_bitmap_extra_tray_right    = ScalableBitmap(this, "extra_ams_tray_right", 72);
-    m_bitmap_extra_tray_mid = ScalableBitmap(this, "extra_ams_tray_mid", 72);
+    m_bitmap_extra_tray_mid = ScalableBitmap(this, "extra_box_tray_mid", 72);
 
-    m_bitmap_extra_tray_left_hover = ScalableBitmap(this, "extra_ams_tray_left_hover", 72);
+    m_bitmap_extra_tray_left_hover = ScalableBitmap(this, "extra_box_tray_left_hover", 72);
     m_bitmap_extra_tray_right_hover = ScalableBitmap(this, "extra_ams_tray_right_hover", 72);
-    m_bitmap_extra_tray_mid_hover = ScalableBitmap(this, "extra_ams_tray_mid_hover", 72);
+    m_bitmap_extra_tray_mid_hover = ScalableBitmap(this, "extra_box_tray_mid_hover", 72);
 
-    m_bitmap_extra_tray_left_selected = ScalableBitmap(this, "extra_ams_tray_left_selected", 72);
+    m_bitmap_extra_tray_left_selected = ScalableBitmap(this, "extra_box_tray_left_selected", 72);
     m_bitmap_extra_tray_right_selected = ScalableBitmap(this, "extra_ams_tray_right_selected", 72);
-    m_bitmap_extra_tray_mid_selected = ScalableBitmap(this, "extra_ams_tray_mid_selected", 72);
+    m_bitmap_extra_tray_mid_selected = ScalableBitmap(this, "extra_box_tray_mid_selected", 72);
 
 
     m_sizer_body->Add(0, 0, 1, wxEXPAND, 0);
@@ -962,7 +957,7 @@ void AMSLib::on_left_down(wxMouseEvent &evt)
                         post_event(wxCommandEvent(EVT_AMS_ON_FILAMENT_EDIT));
                     }
                 } else {
-                    BOOST_LOG_TRIVIAL(trace) << "current amslib is not selected";
+                    // BOOST_LOG_TRIVIAL(trace) << "current amslib is not selected";
                 }
             }
         }
@@ -1094,7 +1089,7 @@ void AMSLib::render_generic_text(wxDC &dc)
     if (m_info.material_name.empty()) {
         show_k_value = false;
     }
-    else if (m_info.cali_idx == -1 || (m_obj && (CalibUtils::get_selected_calib_idx(m_obj->pa_calib_tab, m_info.cali_idx) == -1))) {
+    else if (m_info.cali_idx == -1 || (m_obj && (CalibUtils::get_selected_calib_idx(m_obj->GetCalib()->GetPAHistory(), m_info.cali_idx) == -1))) {
         if (m_obj && m_obj->GetConfig() && m_obj->GetConfig()->SupportCalibrationPA_FlowAuto())
             show_k_value = false;
         else
@@ -1434,7 +1429,7 @@ void AMSLib::render_generic_lib(wxDC &dc)
                 replace.push_back(rgb);
                 std::string fill_replace = "fill-opacity=\"" + std::to_string(alpha_f);
                 replace.push_back(fill_replace);
-                m_bitmap_transparent = ScalableBitmap(this, "transparent_ams_lib", 76, false, false, true, replace);
+                m_bitmap_transparent = ScalableBitmap(this, "transparent_box_lib", 76, false, false, true, replace);
                 transparent_changed = false;
 
             }
@@ -1507,7 +1502,7 @@ void AMSLib::render_generic_lib(wxDC &dc)
                 replace.push_back(rgb);
                 std::string fill_replace = "fill-opacity=\"" + std::to_string(alpha_f);
                 replace.push_back(fill_replace);
-                m_bitmap_transparent = ScalableBitmap(this, "transparent_ams_lib", 76, false, false, true, replace);
+                m_bitmap_transparent = ScalableBitmap(this, "transparent_box_lib", 76, false, false, true, replace);
                 transparent_changed = false;
 
             }
@@ -1725,24 +1720,24 @@ void AMSLib::msw_rescale()
     m_bitmap_transparent_def.msw_rescale();
     m_bitmap_transparent_lite.msw_rescale();
 
-    m_bitmap_editable = ScalableBitmap(this, "ams_editable", 14);
-    m_bitmap_editable_light = ScalableBitmap(this, "ams_editable_light", 14);
-    m_bitmap_readonly = ScalableBitmap(this, "ams_readonly", 14);
-    m_bitmap_readonly_light = ScalableBitmap(this, "ams_readonly_light", 14);
-    m_bitmap_transparent = ScalableBitmap(this, "transparent_ams_lib", 76);
-    m_bitmap_transparent_def = ScalableBitmap(this, "transparent_ams_lib", 76);
+    m_bitmap_editable = ScalableBitmap(this, "box_editable", 14);
+    m_bitmap_editable_light = ScalableBitmap(this, "box_editable_light", 14);
+    m_bitmap_readonly = ScalableBitmap(this, "box_readonly", 14);
+    m_bitmap_readonly_light = ScalableBitmap(this, "box_readonly_light", 14);
+    m_bitmap_transparent = ScalableBitmap(this, "transparent_box_lib", 76);
+    m_bitmap_transparent_def = ScalableBitmap(this, "transparent_box_lib", 76);
 
-    m_bitmap_extra_tray_left = ScalableBitmap(this, "extra_ams_tray_left", 72);
+    m_bitmap_extra_tray_left = ScalableBitmap(this, "extra_box_tray_left", 72);
     m_bitmap_extra_tray_right = ScalableBitmap(this, "extra_ams_tray_right", 72);
-    m_bitmap_extra_tray_mid = ScalableBitmap(this, "extra_ams_tray_mid", 72);
+    m_bitmap_extra_tray_mid = ScalableBitmap(this, "extra_box_tray_mid", 72);
 
-    m_bitmap_extra_tray_left_hover = ScalableBitmap(this, "extra_ams_tray_left_hover", 72);
+    m_bitmap_extra_tray_left_hover = ScalableBitmap(this, "extra_box_tray_left_hover", 72);
     m_bitmap_extra_tray_right_hover = ScalableBitmap(this, "extra_ams_tray_right_hover", 72);
-    m_bitmap_extra_tray_mid_hover = ScalableBitmap(this, "extra_ams_tray_mid_hover", 72);
+    m_bitmap_extra_tray_mid_hover = ScalableBitmap(this, "extra_box_tray_mid_hover", 72);
 
-    m_bitmap_extra_tray_left_selected = ScalableBitmap(this, "extra_ams_tray_left_selected", 72);
+    m_bitmap_extra_tray_left_selected = ScalableBitmap(this, "extra_box_tray_left_selected", 72);
     m_bitmap_extra_tray_right_selected = ScalableBitmap(this, "extra_ams_tray_right_selected", 72);
-    m_bitmap_extra_tray_mid_selected = ScalableBitmap(this, "extra_ams_tray_mid_selected", 72);
+    m_bitmap_extra_tray_mid_selected = ScalableBitmap(this, "extra_box_tray_mid_selected", 72);
 
     Layout();
     Refresh();
@@ -2176,7 +2171,7 @@ void AMSRoadUpPart::doRender(wxDC& dc)
         auto temp = m_amsinfo;
         if (m_load_step != AMSPassRoadSTEP::AMS_ROAD_STEP_NONE){
             if (m_amsinfo.cans.size() <= m_load_slot_index || m_load_slot_index < 0){
-                BOOST_LOG_TRIVIAL(trace) << "up road render error";
+                // BOOST_LOG_TRIVIAL(trace) << "up road render error";
                 return;
             }
             x = x_start + m_load_slot_index * width;
@@ -2583,11 +2578,11 @@ void AMSPreview::create(wxWindow *parent, wxWindowID id, const wxPoint &pos, con
     m_ts_bitmap_cube = ScalableBitmap(this, "ts_bitmap_cube", 12);
     m_ts_bitmap_cube_dark = ScalableBitmap(this, "ts_bitmap_cube_dark", 12);
 
-    m_four_slot_bitmap = ScalableBitmap(this, "four_slot_ams_item", 32);
-    m_four_slot_bitmap_dark = ScalableBitmap(this, "four_slot_ams_item_dark", 32);
+    m_four_slot_bitmap = ScalableBitmap(this, "four_slot_box_item", 32);
+    m_four_slot_bitmap_dark = ScalableBitmap(this, "four_slot_box_item_dark", 32);
 
-    m_single_slot_bitmap = ScalableBitmap(this, "single_slot_ams_item", 32);
-    m_single_slot_bitmap_dark = ScalableBitmap(this, "single_slot_ams_item_dark", 32);
+    m_single_slot_bitmap = ScalableBitmap(this, "single_slot_box_item", 32);
+    m_single_slot_bitmap_dark = ScalableBitmap(this, "single_slot_box_item_dark", 32);
 
     SetMinSize(size);
     SetMaxSize(size);
@@ -2887,8 +2882,8 @@ AMSHumidity::AMSHumidity(wxWindow* parent, wxWindowID id, AMSinfo info, const wx
     for (int i = 1; i <= 5; i++) { ams_humidity_no_num_imgs.push_back(ScalableBitmap(this, "hum_level" + std::to_string(i) + "_no_num_light", 16)); }
     for (int i = 1; i <= 5; i++) { ams_humidity_no_num_dark_imgs.push_back(ScalableBitmap(this, "hum_level" + std::to_string(i) + "_no_num_dark", 16)); }
 
-    ams_sun_img = ScalableBitmap(this, "ams_drying", 20);
-    ams_drying_img = ScalableBitmap(this, "ams_is_drying", 20);
+    ams_sun_img = ScalableBitmap(this, "box_drying", 20);
+    ams_drying_img = ScalableBitmap(this, "box_is_drying", 20);
 
     Bind(wxEVT_PAINT, &AMSHumidity::paintEvent, this);
     //wxWindow::SetBackgroundColour(AMS_CONTROL_DEF_HUMIDITY_BK_COLOUR);
@@ -2908,7 +2903,7 @@ AMSHumidity::AMSHumidity(wxWindow* parent, wxWindowID id, AMSinfo info, const wx
                 info->ams_id            = m_amsinfo.ams_id;
                 info->ams_type          = m_amsinfo.ams_type;
                 info->humidity_display_idx = m_amsinfo.get_humidity_display_idx();
-                info->humidity_percent  = m_amsinfo.humidity_raw;
+                info->humidity_percent  = m_amsinfo.ams_humidity_percent;
                 info->left_dry_time     = m_amsinfo.left_dray_time;
                 info->current_temperature = m_amsinfo.current_temperature;
                 show_event.SetClientData(info);
@@ -3009,7 +3004,7 @@ void AMSHumidity::doRender(wxDC& dc)
             dc.DrawBitmap(hum_img.bmp(), pot);
             pot.x = pot.x + hum_img.GetBmpSize().x;
         }
-        else if (m_amsinfo.humidity_raw != -1) /*image with no number + percentage*/
+        else if (m_amsinfo.ams_humidity_percent != -1) /*image with no number + percentage*/
         {
             // hum image
             ScalableBitmap hum_img;
@@ -3024,7 +3019,7 @@ void AMSHumidity::doRender(wxDC& dc)
             pot.x += hum_img.GetBmpSize().x + FromDIP(3);
 
             // percentage
-            wxString hum_percentage(std::to_string(m_amsinfo.humidity_raw));
+            wxString hum_percentage(std::to_string(m_amsinfo.ams_humidity_percent));
             dc.SetPen(wxPen(*wxTRANSPARENT_PEN));
             dc.SetFont(Label::Body_14);
             dc.SetTextForeground(StateColor::darkModeColorFor(AMS_CONTROL_BLACK_COLOUR));
@@ -3057,7 +3052,7 @@ void AMSHumidity::doRender(wxDC& dc)
             // sun image
             dc.SetPen(wxPen(*wxTRANSPARENT_PEN));
             pot.x += ((size.GetWidth() - pot.x) - ams_drying_img.GetBmpWidth()) / 2;// spacing
-            if (m_amsinfo.left_dray_time > 0) {
+            if (m_amsinfo.m_ams_drying) {
                 pot.y = (size.y - ams_drying_img.GetBmpHeight()) / 2;
                 dc.DrawBitmap(ams_drying_img.bmp(), pot);
             } else {
@@ -3737,7 +3732,7 @@ void AmsItem::msw_rescale()
     if (m_ext_text != nullptr) m_ext_text->msw_rescale();
     if (m_ext_image != nullptr) m_ext_image->msw_rescale(); //ext image upon the lib
 
-    m_bitmap_extra_framework = ScalableBitmap(this, "ams_extra_framework_mid_new", 134);
+    m_bitmap_extra_framework = ScalableBitmap(this, "box_extra_framework_mid_new", 134);
 
     Layout();
     Refresh();

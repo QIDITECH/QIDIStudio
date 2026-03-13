@@ -5,7 +5,6 @@
     "instantiation": "false",
     "printer_technology": "FFF",
     "auxiliary_fan": "1",
-    "auto_disable_filter_on_overheat": "0",
     "before_layer_change_gcode": "",
     "change_filament_gcode": "",
     "cooling_filter_enabled": "0",

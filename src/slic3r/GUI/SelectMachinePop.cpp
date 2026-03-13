@@ -380,7 +380,7 @@ SelectMachinePopup::~SelectMachinePopup() { delete m_refresh_timer;}
 
 void SelectMachinePopup::Popup(wxWindow *WXUNUSED(focus))
 {
-    BOOST_LOG_TRIVIAL(trace) << "get_print_info: start";
+    // BOOST_LOG_TRIVIAL(trace) << "get_print_info: start";
     start_ssdp(true);
     if (m_refresh_timer) {
         m_refresh_timer->Stop();
@@ -422,7 +422,7 @@ void SelectMachinePopup::Popup(wxWindow *WXUNUSED(focus))
 
 void SelectMachinePopup::OnDismiss()
 {
-    BOOST_LOG_TRIVIAL(trace) << "get_print_info: dismiss";
+    // BOOST_LOG_TRIVIAL(trace) << "get_print_info: dismiss";
     start_ssdp(false);
     m_dismiss = true;
 
@@ -489,7 +489,7 @@ wxWindow *SelectMachinePopup::create_title_panel(wxString text)
 
 void SelectMachinePopup::on_timer(wxTimerEvent &event)
 {
-    BOOST_LOG_TRIVIAL(trace) << "SelectMachinePopup on_timer";
+    // BOOST_LOG_TRIVIAL(trace) << "SelectMachinePopup on_timer";
     wxGetApp().reset_to_active();
     wxCommandEvent user_event(EVT_UPDATE_USER_MACHINE_LIST);
     user_event.SetEventObject(this);
@@ -502,7 +502,7 @@ void SelectMachinePopup::update_other_devices()
     if (!dev) return;
     m_free_machine_list = dev->get_local_machinelist();
 
-    BOOST_LOG_TRIVIAL(trace) << "SelectMachinePopup update_other_devices start";
+    // BOOST_LOG_TRIVIAL(trace) << "SelectMachinePopup update_other_devices start";
     this->Freeze();
     m_scrolledWindow->Freeze();
     int i = 0;
@@ -618,7 +618,7 @@ void SelectMachinePopup::update_other_devices()
 	Fit();
 	this->Thaw();
     m_other_devices_count = i;
-    BOOST_LOG_TRIVIAL(trace) << "SelectMachinePopup update_other_devices end";
+    // BOOST_LOG_TRIVIAL(trace) << "SelectMachinePopup update_other_devices end";
 }
 
 void SelectMachinePopup::update_user_devices()
@@ -647,7 +647,7 @@ void SelectMachinePopup::update_user_devices()
             return false;
         });
 
-    BOOST_LOG_TRIVIAL(trace) << "SelectMachinePopup update_machine_list start";
+    // BOOST_LOG_TRIVIAL(trace) << "SelectMachinePopup update_machine_list start";
     this->Freeze();
     m_scrolledWindow->Freeze();
     int i = 0;
@@ -698,6 +698,8 @@ void SelectMachinePopup::update_user_devices()
                 if (mobj) {
                     mobj->set_access_code("");
                     mobj->erase_user_access_code();
+                    mobj->erase_user_access_dev_ip();
+                    wxGetApp().app_config->erase("user_access_dev_ip", mobj->get_dev_id());
                 }
 
                 if (GUI::wxGetApp().plater())
@@ -804,7 +806,7 @@ void SelectMachinePopup::update_machine_list(wxCommandEvent &event)
 {
     update_user_devices();
     update_other_devices();
-    BOOST_LOG_TRIVIAL(trace) << "SelectMachinePopup update_machine_list end";
+    // BOOST_LOG_TRIVIAL(trace) << "SelectMachinePopup update_machine_list end";
 }
 
 void SelectMachinePopup::start_ssdp(bool start)

@@ -29,7 +29,7 @@ int json_diff::diff_objects(json const &in, json &out, json const &base)
 
         if (!base.contains(el.key()) ) {
             out[el.key()] = el.value();
-            // BOOST_LOG_TRIVIAL(trace) << "json_c diff new key: " << el.key()
+            // // BOOST_LOG_TRIVIAL(trace) << "json_c diff new key: " << el.key()
             //             << " type: "  << el.value().type_name()
             //             << " value: " << el.value();
 
@@ -38,9 +38,9 @@ int json_diff::diff_objects(json const &in, json &out, json const &base)
 
         if (el.value().type() != base[el.key()].type()) {
             out[el.key()] = el.value();
-            BOOST_LOG_TRIVIAL(trace) << "json_c diff type changed"
-                 << " key: " << el.key() << " value: " << el.value().dump()
-                 << " last value: " << base[el.key()].dump();
+            // BOOST_LOG_TRIVIAL(trace) << "json_c diff type changed"
+                 //<< " key: " << el.key() << " value: " << el.value().dump()
+                 //<< " last value: " << base[el.key()].dump();
             continue;
         }
 
@@ -57,9 +57,9 @@ int json_diff::diff_objects(json const &in, json &out, json const &base)
 
         if (el.value() != base[el.key()]) {
             out[el.key()] = el.value();
-                BOOST_LOG_TRIVIAL(trace) << "json_c diff value changed"
-                 << " key: " << el.key() << " value: " << el.value().dump()
-                 << " last value: " << base[el.key()].dump();
+                // BOOST_LOG_TRIVIAL(trace) << "json_c diff value changed"
+                 //<< " key: " << el.key() << " value: " << el.value().dump()
+                 //<< " last value: " << base[el.key()].dump();
             continue;
         }
     }
@@ -72,7 +72,7 @@ int json_diff::diff_objects(json const &in, json &out, json const &base)
 
 int json_diff::all2diff_base_reset(json const &base)
 {
-    BOOST_LOG_TRIVIAL(trace) << "all2diff_base_reset";
+    // BOOST_LOG_TRIVIAL(trace) << "all2diff_base_reset";
     all2diff_base = base;
     return 0;
 }
@@ -125,13 +125,13 @@ int json_diff::all2diff(json const &in, json &out)
     if (all2diff_base.empty()) {
         all2diff_base = in;
         out = in;
-        BOOST_LOG_TRIVIAL(trace) << "json_c diff base reinit";
+        // BOOST_LOG_TRIVIAL(trace) << "json_c diff base reinit";
         return 0;
     }
 
     ret = diff_objects(in, out, all2diff_base);
     if (ret != 0) {
-        BOOST_LOG_TRIVIAL(trace) << "json_c diff no new info";
+        // BOOST_LOG_TRIVIAL(trace) << "json_c diff no new info";
     }
     all2diff_base = in;
     return 0;
@@ -158,10 +158,10 @@ int json_diff::restore_objects(json const &in, json &out, json const &base)
            use input to restore*/
         if (el.value().type() != in[el.key()].type() ){
             out[el.key()] = in[el.key()];
-            BOOST_LOG_TRIVIAL(trace) << "json_c restore type changed"
-                  << " key: " << el.key() << " value: "
-                  << in[el.key()].dump()
-                  << " last value: " << el.value().dump();
+            // BOOST_LOG_TRIVIAL(trace) << "json_c restore type changed"
+                  //<< " key: " << el.key() << " value: "
+                  //<< in[el.key()].dump()
+                  //<< " last value: " << el.value().dump();
             continue;
         }
 
@@ -201,7 +201,7 @@ int json_diff::restore_append_objects(json const &in, json &out)
     for (auto& el: in.items()) {
 
         if (!out.contains(el.key()) ) {
-            //BOOST_LOG_TRIVIAL(trace) << "json_c append new " << el.key()
+            //// BOOST_LOG_TRIVIAL(trace) << "json_c append new " << el.key()
             //            << " type: "  << el.value().type_name()
             //            << " value: " << el.value();
             out[el.key()] = el.value();
@@ -212,7 +212,7 @@ int json_diff::restore_append_objects(json const &in, json &out)
             int recur_ret =
                      restore_append_objects(el.value(), out[el.key()]);
             if (recur_ret != 0) {
-                //BOOST_LOG_TRIVIAL(trace) << "json_c append obj failed"
+                //// BOOST_LOG_TRIVIAL(trace) << "json_c append obj failed"
                 //                 << " key: " << el.key()
                 //                 << " value: " << el.value();
                 return recur_ret;
@@ -242,12 +242,12 @@ int json_diff::diff2all(json const &in, json &out)
     if (!diff2all_base.empty()) {
         int ret = restore_objects(in, out, diff2all_base);
         if (ret < 0) {
-            BOOST_LOG_TRIVIAL(trace) << "json_c restore failed";
+            // BOOST_LOG_TRIVIAL(trace) << "json_c restore failed";
             decode_error_count++;
             return ret;
         }
     } else {
-        BOOST_LOG_TRIVIAL(trace) << "json_c restore base empty";
+        // BOOST_LOG_TRIVIAL(trace) << "json_c restore base empty";
         decode_error_count++;
         return -1;
     }
@@ -259,19 +259,19 @@ int json_diff::diff2all(json const &in, json &out)
 
 void json_diff::compare_print(json &a, json &b)
 {
-    for (auto& e: a.items()) {
-        if (!b.contains(e.key()) ) {
-            BOOST_LOG_TRIVIAL(trace) << "json_c compare loss " << e.key()
-                        << " type: "  << e.value().type_name();
-        }
-        if (e.value() != b[e.key()]) {
-            //BOOST_LOG_TRIVIAL(trace) << "json_c compare not equal: key: " << e.key()
-            //                     << " value: " << e.value();
-            //BOOST_LOG_TRIVIAL(trace) << "json_c compare vs value "
-            //                     << " vs value: " << b[e.key()];
+    //for (auto& e: a.items()) {
+    //    if (!b.contains(e.key()) ) {
+    //        //// BOOST_LOG_TRIVIAL(trace) << "json_c compare loss " << e.key()
+    //        //            << " type: "  << e.value().type_name();
+    //    }
+    //    if (e.value() != b[e.key()]) {
+    //        //// BOOST_LOG_TRIVIAL(trace) << "json_c compare not equal: key: " << e.key()
+    //        //                     << " value: " << e.value();
+    //        //// BOOST_LOG_TRIVIAL(trace) << "json_c compare vs value "
+    //        //                     << " vs value: " << b[e.key()];
 
-        }
-    }
+    //    }
+    //}
     return;
 }
 
@@ -285,7 +285,7 @@ bool json_diff::is_need_request()
 
 int json_diff::diff2all_base_reset(json &base)
 {
-    BOOST_LOG_TRIVIAL(trace) << "diff2all_base_reset";
+    // BOOST_LOG_TRIVIAL(trace) << "diff2all_base_reset";
     full_message = base;
     if (!settings_base.empty()) {
         merge_objects(settings_base, base);

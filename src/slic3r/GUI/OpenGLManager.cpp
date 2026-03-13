@@ -1121,7 +1121,7 @@ void FrameBuffer::bind()
         {
             return;
         }
-        BOOST_LOG_TRIVIAL(trace) << "Successfully created framebuffer: width = " << m_width << ", heihgt = " << m_height;
+        // BOOST_LOG_TRIVIAL(trace) << "Successfully created framebuffer: width = " << m_width << ", heihgt = " << m_height;
     }
 
     mark_needs_to_resolve();

@@ -17,7 +17,7 @@
 # To build dependencies for either 64 or 32 bit OS, use the respective compiler command line.
 #
 # WARNING: On UNIX platforms wxWidgets hardcode the destdir path into its `wx-conffig` utility,
-# therefore, unfortunatelly, the installation cannot be copied/moved elsewhere without re-installing wxWidgets.
+# therefore, unfortunately, the installation cannot be copied/moved elsewhere without re-installing wxWidgets.
 #
 
 project(QIDIStudio-deps)
@@ -79,7 +79,7 @@ endif ()
 # option(DEP_BUILD_IGL_STATIC "Build IGL as a static library. Might cause link errors and increase binary size." OFF)
 
 message(STATUS "QIDIStudio deps DESTDIR: ${DESTDIR}")
-message(STATUS "QIDIStudio dowload dir for source packages: ${DEP_DOWNLOAD_DIR}")
+message(STATUS "QIDIStudio download dir for source packages: ${DEP_DOWNLOAD_DIR}")
 message(STATUS "QIDIStudio deps debug build: ${DEP_DEBUG}")
 
 find_package(Git REQUIRED)

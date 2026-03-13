@@ -1,7 +1,7 @@
 
 # Building QIDI Studio on MacOS
 
-## Enviroment setup
+## Environment setup
 
 Install Following tools:
 

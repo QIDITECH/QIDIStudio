@@ -748,7 +748,7 @@ void GLGizmoFdmSupports::init_print_instance()
     {
         if (object->model_object()->id() == model_object->id())
         {
-            BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ",found a PrintObject, id is" << model_object->id().id;
+            // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ",found a PrintObject, id is" << model_object->id().id;
             print_object = object;
             break;
         }
@@ -766,7 +766,7 @@ void GLGizmoFdmSupports::init_print_instance()
     {
         if (instance.model_instance->id() == model_instance->id())
         {
-            BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ",found a PrintInstance, id is" << model_instance->id().id;
+            // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ",found a PrintInstance, id is" << model_instance->id().id;
             m_print_instance = instance;
             break;
         }

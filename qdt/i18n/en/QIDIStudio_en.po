@@ -43,8 +43,8 @@ msgstr ""
 msgid "extruder"
 msgstr ""
 
-msgid "TPU is not supported by AMS."
-msgstr "TPU is not supported by AMS."
+msgid "TPU is not supported by BOX."
+msgstr "TPU is not supported by BOX."
 
 msgid "Box does not support 'QIDI PET-CF'."
 msgstr ""
@@ -52,20 +52,33 @@ msgstr ""
 msgid "The current filament doesn't support the E3D high-flow nozzle and can't be used."
 msgstr ""
 
+#, c-format, boost-format
+msgid "When using %s on the right extruder, it can only be used as support material."
+msgstr ""
+
+msgid "The current filament doesn't support the TPU high-flow nozzle and can't be used."
+msgstr ""
+
+msgid "Auto dynamic flow calibration is not supported for TPU filament."
+msgstr ""
+
+msgid "Dynamic flow calibration is not supported for TPU 85A filament."
+msgstr ""
+
+msgid "How to feed TPU filament."
+msgstr ""
+
+msgid "Using non-qidi filament may have printing quality issues."
+msgstr ""
+
 msgid "Please cold pull before printing TPU to avoid clogging. You may use cold pull maintenance on the printer."
 msgstr ""
 
-msgid "Damp PVA will become flexible and get stuck inside AMS,please take care to dry it before use."
-msgstr "Damp PVA will become flexible and get stuck inside the AMS; please take care to dry it well before use."
+msgid "Damp PVA will become flexible and get stuck inside BOX,please take care to dry it before use."
+msgstr "Damp PVA will become flexible and get stuck inside the BOX; please take care to dry it well before use."
 
 msgid "Damp PVA is flexible and may get stuck in extruder. Dry it before use."
 msgstr "Damp PVA is flexible and may get stuck in the extruder. Please dry it before use."
-
-msgid "The rough surface of PLA Glow can accelerate wear on the AMS system, particularly on the internal components of the AMS Lite."
-msgstr ""
-
-msgid "CF/GF filaments are hard and brittle, It's easy to break or get stuck in AMS, please use with caution."
-msgstr "CF/GF filaments are hard and brittle, so they can easily break or get stuck in an AMS; please use with caution."
 
 msgid "PPS-CF is brittle and could break in bended PTFE tube above Toolhead."
 msgstr "PPS-CF is brittle and could break in a bent PTFE tube above the Toolhead."
@@ -73,7 +86,22 @@ msgstr "PPS-CF is brittle and could break in a bent PTFE tube above the Toolhead
 msgid "PPA-CF is brittle and could break in bended PTFE tube above Toolhead."
 msgstr "PPA-CF is brittle and could break in a bent PTFE tube above the Toolhead."
 
+msgid "PLA Glow may wear the BOX first stage feeder. Use an external spool instead."
+msgstr ""
+
 msgid "Default settings may affect print quality. Adjust as needed for best results."
+msgstr ""
+
+#, c-format, boost-format
+msgid "%s has a risk of nozzle clogging when using 0.4mm high-flow nozzles. Use with caution."
+msgstr ""
+
+#, c-format, boost-format
+msgid "%s filaments are hard and brittle and could break in BOX, and there is also a risk of nozzle clogging when using 0.4mm high-flow nozzles. Use with caution."
+msgstr ""
+
+#, c-format, boost-format
+msgid "%s has a risk of nozzle clogging when using 0.4, 0.6, 0.8mm high-flow nozzles. Use with caution."
 msgstr ""
 
 #, c-format, boost-format
@@ -110,8 +138,14 @@ msgstr ""
 msgid "Standard"
 msgstr "Standard"
 
+msgid "TPU High Flow"
+msgstr ""
+
 msgid "Unknown"
 msgstr "Unknown"
+
+msgid "Hybrid"
+msgstr ""
 
 msgid "Hardened Steel"
 msgstr "Hardened Steel"
@@ -134,7 +168,7 @@ msgstr "Verification failed."
 msgid "Update failed."
 msgstr "Update failed."
 
-msgid "Current AMS humidity"
+msgid "Current BOX humidity"
 msgstr ""
 
 msgid "Humidity"
@@ -546,19 +580,28 @@ msgstr ""
 msgid "World coordinates"
 msgstr "World coordinates"
 
+msgid "Align selected"
+msgstr ""
+
 msgid "Translate(Relative)"
 msgstr ""
 
+msgid "Align Object"
+msgstr ""
+
+msgid "Align Plate"
+msgstr ""
+
 msgid "Align top-bottom center"
+msgstr ""
+
+msgid "Holded down Ctrl key continuously and click by left mouse button can select multiple objects, or holded down Alt key continuously and click by left mouse button can select multiple parts"
 msgstr ""
 
 msgid "Align"
 msgstr ""
 
 msgid "Distribute"
-msgstr ""
-
-msgid "Holded down Ctrl key continuously and click by left mouse button can select multiple objects, or holded down Alt key continuously and click by left mouse button can select multiple parts"
 msgstr ""
 
 msgid "Align left"
@@ -1210,7 +1253,7 @@ msgstr "Modifier"
 msgid "Click to change part type into modifier."
 msgstr ""
 
-msgid "Surround projection by char"
+msgid "Surround projection by character"
 msgstr ""
 
 msgid "Not surround"
@@ -1220,9 +1263,6 @@ msgid "Surround surface"
 msgstr ""
 
 msgid "Surround"
-msgstr ""
-
-msgid "Horizonal"
 msgstr ""
 
 msgid "Reset rotation"
@@ -1248,7 +1288,7 @@ msgstr "Input text"
 msgid "Advanced"
 msgstr "Advanced"
 
-msgid "Embeded depth"
+msgid "Embedded depth"
 msgstr ""
 
 msgid "Text Gap"
@@ -1847,7 +1887,7 @@ msgid "Support"
 msgstr "Support"
 
 msgid "Flush options"
-msgstr "Flush options"
+msgstr "Purge options"
 
 msgid "Speed"
 msgstr "Speed"
@@ -2027,23 +2067,23 @@ msgstr "Filament %d"
 msgid "current"
 msgstr "current"
 
-msgid "Scale to build volume"
-msgstr "Scale to build volume"
+msgid "Scale to print volume"
+msgstr ""
 
-msgid "Scale an object to fit the build volume"
-msgstr "Scale an object to fit the build volume"
+msgid "Scale the selected object to fit the print volume"
+msgstr ""
 
 msgid "Flush Options"
-msgstr "Flush Options"
+msgstr "Purge Options"
 
 msgid "Flush into objects' infill"
-msgstr "Flush into objects' infill"
+msgstr "Purge into objects' infill"
 
 msgid "Flush into this object"
-msgstr "Flush into this object"
+msgstr "Purge into this object"
 
 msgid "Flush into objects' support"
-msgstr "Flush into objects' support"
+msgstr "Purge into objects' support"
 
 msgid "Edit in Parameter Table"
 msgstr "Edit in Parameter Table"
@@ -2168,6 +2208,18 @@ msgstr "Auto Rotate"
 msgid "auto rotate current plate"
 msgstr "auto rotate current plate"
 
+msgid "Expand all"
+msgstr ""
+
+msgid "Expand all objects on this plate"
+msgstr ""
+
+msgid "Collapse all"
+msgstr ""
+
+msgid "Collapse all objects on this plate"
+msgstr ""
+
 msgid "Delete Plate"
 msgstr "Delete Plate"
 
@@ -2182,6 +2234,12 @@ msgstr "Clone"
 
 msgid "Simplify Model"
 msgstr "Simplify Model"
+
+msgid "Subdivision mesh"
+msgstr ""
+
+msgid "(Lost color)"
+msgstr ""
 
 msgid "Center"
 msgstr "Center"
@@ -2383,9 +2441,6 @@ msgstr "If the first selected item is an object, the second one should also be a
 msgid "If the first selected item is a part, the second one should be part of the same object."
 msgstr "If the first selected item is a part, the second one should be part of the same object."
 
-msgid "The type of the last solid object part is not to be changed."
-msgstr "The type of the last solid object part is not to be changed."
-
 msgid "Negative Part"
 msgstr "Negative Part"
 
@@ -2400,6 +2455,9 @@ msgstr "Type:"
 
 msgid "Choose part type"
 msgstr "Choose part type"
+
+msgid "The type of the last solid object part is not to be changed."
+msgstr "The type of the last solid object part is not to be changed."
 
 msgid "Enter new name"
 msgstr "Enter new name"
@@ -2419,6 +2477,17 @@ msgstr[1] ""
 
 msgid "Repairing was canceled"
 msgstr "Repairing was canceled"
+
+#, c-format, boost-format
+msgid "\"%s\" will exceed 1 million faces after this subdivision, which may increase slicing time. Do you want to continue?"
+msgstr ""
+
+msgid "QIDIStudio warning"
+msgstr ""
+
+#, c-format, boost-format
+msgid "\"%s\" part's mesh contains errors. Please repair it first."
+msgstr ""
 
 msgid "Additional process preset"
 msgstr "Additional process preset"
@@ -2522,6 +2591,9 @@ msgstr "Custom Template:"
 msgid "Custom G-code:"
 msgstr "Custom G-code:"
 
+msgid "Toggle path view to current layer/all layers"
+msgstr ""
+
 msgid "Custom G-code"
 msgstr "Custom G-code"
 
@@ -2615,8 +2687,8 @@ msgstr "Load"
 msgid "Unload"
 msgstr "Unload"
 
-msgid "Choose an AMS slot then press \"Load\" or \"Unload\" button to automatically load or unload filaments."
-msgstr "Choose an AMS slot then press \"Load\" or \"Unload\" button to automatically load or unload filament."
+msgid "Choose an BOX slot then press \"Load\" or \"Unload\" button to automatically load or unload filaments."
+msgstr "Choose an BOX slot then press \"Load\" or \"Unload\" button to automatically load or unload filament."
 
 msgid "Filament type is unknown which is required to perform this action. Please set target filament's informations."
 msgstr ""
@@ -2679,7 +2751,12 @@ msgstr ""
 msgid "Strong cooling mode is suitable for printing PLA/TPU materials. In this mode, the printouts will be fully cooled."
 msgstr ""
 
-msgid "Cooling mode is suitable for printing PLA/PETG/TPU materials."
+#, c-format, boost-format
+msgid "Cooling mode is suitable for printing %s materials."
+msgstr ""
+
+#, c-format, boost-format
+msgid "Heating mode is suitable for printing %s materials and circulates filters the chamber air."
 msgstr ""
 
 msgctxt "air_duct"
@@ -2692,6 +2769,10 @@ msgstr ""
 
 msgctxt "air_duct"
 msgid "Left(Aux)"
+msgstr ""
+
+msgctxt "air_duct"
+msgid "Chamber"
 msgstr ""
 
 msgid "Hotend"
@@ -3054,8 +3135,8 @@ msgstr "QIDI Studio also referenced some ideas from Cura by Ultimaker."
 msgid "There many parts of the software that come from community contributions, so we're unable to list them one-by-one, and instead, they'll be attributed in the corresponding code comments."
 msgstr "There are many parts of the software that come from community contributions, so we're unable to list them one-by-one, and instead, they'll be attributed in the corresponding code comments."
 
-msgid "AMS Materials Setting"
-msgstr "AMS Materials Setting"
+msgid "BOX Materials Setting"
+msgstr "BOX Materials Setting"
 
 msgid "Confirm"
 msgstr "Confirm"
@@ -3098,14 +3179,20 @@ msgstr "Factor K"
 msgid "Factor N"
 msgstr "Factor N"
 
-msgid "Setting AMS slot information while printing is not supported"
-msgstr "Setting AMS slot information while printing is not supported"
+msgid "Setting BOX slot information while printing is not supported"
+msgstr "Setting BOX slot information while printing is not supported"
 
 msgid "Setting Virtual slot information while printing is not supported"
 msgstr "Setting Virtual slot information while printing is not supported"
 
 msgid "Are you sure you want to clear the filament information?"
 msgstr "Are you sure you want to clear the filament information?"
+
+msgid "TPU needs a different feeding path and loading procedure. Otherwise clogging or jam may happen. Please read the tutorial before using TPU."
+msgstr ""
+
+msgid "Go to Check"
+msgstr ""
 
 msgid "You need to select the material type and color first."
 msgstr "You need to select the material type and color first."
@@ -3118,9 +3205,6 @@ msgstr ""
 msgid "Please input a valid value (K in %.1f~%.1f, N in %.1f~%.1f)"
 msgstr ""
 
-msgid "Standard Flow"
-msgstr ""
-
 msgid "Note: The hotend number on the right extruder is tied to the holder. When the hotend is moved to a new holder, its number will update automatically."
 msgstr ""
 
@@ -3129,8 +3213,8 @@ msgid ""
 "'Device -> Print parts'"
 msgstr ""
 
-msgid "AMS"
-msgstr "AMS"
+msgid "BOX"
+msgstr "BOX"
 
 msgid "Other Color"
 msgstr "Other Color"
@@ -3208,18 +3292,18 @@ msgstr ""
 
 msgid ""
 "Upper half area:  Original\n"
-"Lower half area:  Filament in AMS\n"
+"Lower half area:  Filament in BOX\n"
 "And you can click it to modify"
 msgstr ""
 
 msgid ""
 "Upper half area:  Original\n"
-"Lower half area:  Filament in AMS\n"
+"Lower half area:  Filament in BOX\n"
 "And you cannot click it to modify"
 msgstr ""
 
-msgid "AMS Slots"
-msgstr "AMS Slots"
+msgid "BOX Slots"
+msgstr "BOX Slots"
 
 msgid "Please select from the following filaments"
 msgstr ""
@@ -3230,7 +3314,7 @@ msgstr ""
 msgid "Select filament that installed to the right nozzle"
 msgstr ""
 
-msgid "Left AMS"
+msgid "Left BOX"
 msgstr ""
 
 msgid "External"
@@ -3239,13 +3323,16 @@ msgstr ""
 msgid "Reset current filament mapping"
 msgstr ""
 
-msgid "Right AMS"
+msgid "Right BOX"
 msgstr ""
 
-msgid "Left Nozzle"
+msgid "Tips: To learn about the filaments matching rules, Please refer to Wiki before use->"
 msgstr ""
 
-msgid "Right Nozzle"
+msgid "Please select the filament installed on the left nozzle."
+msgstr ""
+
+msgid "Please select the filament installed on the right nozzle."
 msgstr ""
 
 msgid "Nozzle"
@@ -3265,24 +3352,28 @@ msgid "Printing with the current nozzle may produce an extra %0.2f g of waste."
 msgstr ""
 
 #, c-format, boost-format
-msgid "Note: the filament type(%s) does not match with the filament type(%s) in the slicing file. If you want to use this slot, you can install %s instead of %s and change slot information on the 'Device' page."
+msgid "Tips: the filament type(%s) does not match with the filament type(%s) in the slicing file. If you want to use this slot, you can install %s instead of %s and change slot information on the 'Device' page."
 msgstr ""
 
 #, c-format, boost-format
-msgid "Note: the slot is empty or undefined. If you want to use this slot, you can install %s and change slot information on the 'Device' page."
+msgid "Cannot select: the filament type(%s) does not match with the filament type(%s) in the slicing file. If you want to use this slot, you can install %s instead of %s and change slot information on the 'Device' page."
 msgstr ""
 
-msgid "Note: Only filament-loaded slots can be selected."
-msgstr "Note: Only slots with filament loaded can be selected."
+#, c-format, boost-format
+msgid "Cannot select: the slot is empty or undefined. If you want to use this slot, you can install %s and change slot information on the 'Device' page."
+msgstr ""
 
-msgid "Enable AMS"
-msgstr "Enable AMS"
+msgid "Cannot select: No filament loaded in current slot."
+msgstr ""
 
-msgid "Print with filaments in the AMS"
-msgstr "Print with filaments in the AMS"
+msgid "Enable BOX"
+msgstr "Enable BOX"
 
-msgid "Disable AMS"
-msgstr "Disable AMS"
+msgid "Print with filaments in the BOX"
+msgstr "Print with filaments in the BOX"
+
+msgid "Disable BOX"
+msgstr "Disable BOX"
 
 msgid "Print with the filament mounted on the back of chassis"
 msgstr "Print with the filament mounted on the back of chassis"
@@ -3290,25 +3381,25 @@ msgstr "Print with the filament mounted on the back of chassis"
 msgid "Please change the desiccant when it is too wet. The indicator may not represent accurately in following cases : when the lid is open or the desiccant pack is changed. it take hours to absorb the moisture, low temperatures also slow down the process."
 msgstr "*Please change the desiccant when it is too wet. The indicator may not represent accurately in following cases：when the lid is open or the desiccant pack is changed, it take hours to absorb the moisture; low temperatures also slow down the process. "
 
-msgid "Config which AMS slot should be used for a filament used in the print job"
-msgstr "Configure which AMS slot should be used for a filament used in the print job."
+msgid "Config which BOX slot should be used for a filament used in the print job"
+msgstr "Configure which BOX slot should be used for a filament used in the print job."
 
 msgid "Filament used in this print job"
 msgstr "Filament used in this print job"
 
-msgid "AMS slot used for this filament"
-msgstr "AMS slot used for this filament"
+msgid "BOX slot used for this filament"
+msgstr "BOX slot used for this filament"
 
-msgid "Click to select AMS slot manually"
-msgstr "Click to select AMS slot manually"
+msgid "Click to select BOX slot manually"
+msgstr "Click to select BOX slot manually"
 
-msgid "Do not Enable AMS"
-msgstr "Do not Enable AMS"
+msgid "Do not Enable BOX"
+msgstr "Do not Enable BOX"
 
 msgid "Print using materials mounted on the back of the case"
 msgstr "Print using materials mounted on the back of the case"
 
-msgid "Print with filaments in AMS"
+msgid "Print with filaments in BOX"
 msgstr ""
 
 msgid "Print with filaments mounted on the back of the chassis"
@@ -3338,7 +3429,7 @@ msgstr ""
 msgid "The printer does not currently support auto refill."
 msgstr "The printer does not currently support auto refill."
 
-msgid "AMS filament backup is not enabled, please enable it in the AMS settings."
+msgid "BOX filament backup is not enabled, please enable it in the BOX settings."
 msgstr ""
 
 msgid ""
@@ -3352,41 +3443,32 @@ msgstr "DRY"
 msgid "WET"
 msgstr "WET"
 
-msgid "AMS Settings"
-msgstr "AMS Settings"
+msgid "BOX Settings"
+msgstr "BOX Settings"
 
 msgid "Insertion update"
 msgstr "Insertion update"
 
-msgid "The AMS will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds."
-msgstr "The AMS will automatically read the filament information when inserting a new QIDI Tech filament spool. This takes about 20 seconds."
-
-msgid "Note: if a new filament is inserted during  printing, the AMS will not automatically read any information until printing is completed."
-msgstr "Note: if a new filament is inserted during  printing, the AMS will not automatically read any information until printing is completed."
-
-msgid "When inserting a new filament, the AMS will not automatically read its information, leaving it blank for you to enter manually."
-msgstr "When inserting a new filament, the AMS will not automatically read its information, leaving it blank for you to enter manually."
+msgid "When inserting a new filament, the BOX will not automatically read its information, leaving it blank for you to enter manually."
+msgstr "When inserting a new filament, the BOX will not automatically read its information, leaving it blank for you to enter manually."
 
 msgid "Power on update"
 msgstr "Update on startup"
 
-msgid "The AMS will automatically read the information of inserted filament on start-up. It will take about 1 minute.The reading process will roll filament spools."
-msgstr "The AMS will automatically read the information of inserted filament on start-up. It will take about 1 minute.The reading process will rotate the filament spools."
-
-msgid "The AMS will not automatically read information from inserted filament during startup and will continue to use the information recorded before the last shutdown."
-msgstr "The AMS will not automatically read information from inserted filament during startup and will continue to use the information recorded before the last shutdown."
+msgid "The BOX will not automatically read information from inserted filament during startup and will continue to use the information recorded before the last shutdown."
+msgstr "The BOX will not automatically read information from inserted filament during startup and will continue to use the information recorded before the last shutdown."
 
 msgid "Update remaining capacity"
 msgstr "Update remaining capacity"
 
-msgid "AMS will attempt to estimate the remaining capacity of the QIDI Tech filaments."
+msgid "BOX will attempt to estimate the remaining capacity of the QIDI Tech filaments."
 msgstr ""
 
-msgid "AMS filament backup"
-msgstr "AMS filament backup"
+msgid "BOX filament backup"
+msgstr "BOX filament backup"
 
-msgid "AMS will continue to another spool with the same properties of filament automatically when current filament runs out"
-msgstr "AMS will continue to another spool with the same filament properties automatically when current filament runs out."
+msgid "BOX will continue to another spool with the same properties of filament automatically when current filament runs out"
+msgstr "BOX will continue to another spool with the same filament properties automatically when current filament runs out."
 
 msgid "Air Printing Detection"
 msgstr "Air Printing Detection"
@@ -3400,7 +3482,7 @@ msgstr ""
 msgid "Switching"
 msgstr ""
 
-msgid "The printer is busy and cannot switch AMS type."
+msgid "The printer is busy and cannot switch BOX type."
 msgstr ""
 
 msgid "Please unload all filament before switching."
@@ -3409,10 +3491,16 @@ msgstr ""
 msgid "Box type switching needs firmware update, taking about 30s. Switch now ?"
 msgstr ""
 
-msgid "Arrange AMS Order"
+msgid "Arrange BOX Order"
 msgstr ""
 
-msgid "Box ID will be reset. If you want a specific ID sequence, disconnect all AMS before resetting and connect them in the desired order after resetting."
+msgid "If you want a specific BOX ID sequence, please disconnect all BOX after clicking 'Reset', and then reconnect them in the desired order."
+msgstr ""
+
+msgid "Are you sure to reset the ID sequence of the connected BOX?"
+msgstr ""
+
+msgid "Reset BOX Sequence"
 msgstr ""
 
 msgid "File"
@@ -3631,6 +3719,18 @@ msgstr ""
 "It has been reset to 0.1"
 
 msgid ""
+"Too small support ironing spacing.\n"
+"Reset to 0.1"
+msgstr ""
+
+msgid ""
+"Support ironing will not work with sparse support interface.\n"
+"Do you want to adjust the support interface config to use ironing?\n"
+"Yes: make the support interface solid.\n"
+"No: disable the support ironing."
+msgstr ""
+
+msgid ""
 "Zero initial layer height is invalid.\n"
 "\n"
 "The first layer height will be reset to 0.2."
@@ -3819,7 +3919,7 @@ msgstr "Filament loading"
 msgid "Motor noise cancellation"
 msgstr "Motor noise cancellation"
 
-msgid "Pause (AMS offline)"
+msgid "Pause (BOX offline)"
 msgstr ""
 
 msgid "Pause (low speed of the heatbreak fan)"
@@ -3891,7 +3991,7 @@ msgstr ""
 msgid "Heating chamber"
 msgstr ""
 
-msgid "Cooling heatbed"
+msgid "Adjusting heatbed temperature"
 msgstr ""
 
 msgid "Printing calibration lines"
@@ -3930,13 +4030,16 @@ msgstr ""
 msgid "Waiting for the Chamber temperature to equalize"
 msgstr ""
 
-msgid " Preparing Hotend"
+msgid "Preparing Hotend"
 msgstr ""
 
 msgid "Calibrating the detection position of nozzle clumping"
 msgstr ""
 
 msgid "Purifying the chamber air"
+msgstr ""
+
+msgid "Preparing BOX"
 msgstr ""
 
 msgid "Timelapse is not supported on this printer."
@@ -3959,7 +4062,7 @@ msgid "The chamber temperature is too high, which may cause the filament to soft
 msgstr ""
 
 #, c-format, boost-format
-msgid "AMS temperature is too high, which may cause the filament to soften. Please wait until the AMS temperature drops below %d℃."
+msgid "BOX temperature is too high, which may cause the filament to soften. Please wait until the BOX temperature drops below %d℃."
 msgstr ""
 
 msgid "The current chamber temperature or the target chamber temperature exceeds 45℃.In order to avoid extruder clogging,low temperature filament(PLA/PETG/TPU) is not allowed to be loaded."
@@ -3973,21 +4076,6 @@ msgstr "When you set the chamber temperature below 40℃, the chamber temperatur
 
 msgid "Failed to start printing job"
 msgstr "Failed to start printing job"
-
-msgid "This calibration does not support the currently selected nozzle diameter"
-msgstr "This calibration does not support the currently selected nozzle diameter"
-
-msgid "Current flowrate cali param is invalid"
-msgstr "Current flowrate cali param is invalid"
-
-msgid "Selected diameter and machine diameter do not match"
-msgstr "Selected diameter and machine diameter do not match"
-
-msgid "Failed to generate cali gcode"
-msgstr "Failed to generate cali gcode"
-
-msgid "Calibration error"
-msgstr "Calibration error"
 
 msgid "Resume Printing"
 msgstr "Resume Printing"
@@ -4064,6 +4152,12 @@ msgstr "Resume"
 msgid "Unknown error."
 msgstr ""
 
+msgid "Loading ..."
+msgstr ""
+
+msgid "Network unavailable"
+msgstr ""
+
 msgid "default"
 msgstr "default"
 
@@ -4106,6 +4200,28 @@ msgid "Invalid format. Expected vector format: \"%1%\""
 msgstr "Invalid format. Expected vector format: \"%1%\""
 
 msgid "Clear color"
+msgstr ""
+
+msgid "L"
+msgstr ""
+
+msgid "R"
+msgstr ""
+
+#, c-format, boost-format
+msgid "%s %s:"
+msgstr ""
+
+msgid "Std"
+msgstr ""
+
+msgid "HF"
+msgstr ""
+
+msgid "L:"
+msgstr ""
+
+msgid "R:"
 msgstr ""
 
 msgid "Loading G-codes"
@@ -4154,7 +4270,7 @@ msgid "Display"
 msgstr "Display"
 
 msgid "Flushed"
-msgstr "Flushed"
+msgstr "Purged"
 
 msgid "Tower"
 msgstr "Tower"
@@ -4245,6 +4361,9 @@ msgstr "Total time"
 
 msgid "Filament change times"
 msgstr "Filament change times"
+
+msgid "View Summary"
+msgstr ""
 
 msgid "Color change"
 msgstr "Color change"
@@ -4679,34 +4798,49 @@ msgstr ""
 msgid "PLA and PETG filaments detected in the mixture. Adjust parameters according to the Wiki to ensure print quality."
 msgstr ""
 
+msgid "The prime tower improves multi-color print quality and is recommended."
+msgstr ""
+
 msgid "The prime tower extends beyond the plate boundary."
 msgstr ""
 
 msgid "Partial flushing volume set to 0. Multi-color printing may cause color mixing in models. Please redjust flushing settings."
-msgstr ""
+msgstr "Partial purging volume set to 0. Multi-color printing may cause color mixing in models. Please redjust purging settings."
 
 msgid "Click Wiki for help."
+msgstr ""
+
+msgid "Jump to: Prime tower"
 msgstr ""
 
 msgid "Click here to regroup"
 msgstr ""
 
 msgid "Flushing Volume"
-msgstr ""
+msgstr "Purging Volume"
 
 msgid "Calibration step selection"
 msgstr "Calibration step selection"
 
-msgid "Micro lidar calibration"
-msgstr "Micro lidar calibration"
-
-msgid "Bed leveling"
-msgstr "Bed leveling"
-
-msgid "High-temperature Heatbed Calibration"
+msgid "Micro Lidar Calibration"
 msgstr ""
 
-msgid "Nozzle clumping detection Calibration"
+msgid "Auto Bed Leveling"
+msgstr ""
+
+msgid "Vibration Compensation"
+msgstr ""
+
+msgid "Motor Noise Cancellation"
+msgstr ""
+
+msgid "Nozzle Offset Calibration"
+msgstr ""
+
+msgid "High-temperature Bed Leveling"
+msgstr ""
+
+msgid "Nozzle Clumping Detection Calibration"
 msgstr ""
 
 msgid "Calibration program"
@@ -4809,6 +4943,9 @@ msgstr "No"
 
 msgid "will be closed before creating a new model. Do you want to continue?"
 msgstr "will be closed before creating a new model. Do you want to continue?"
+
+msgid "Unlock faster, more reliable, warp-free prints with Helio Additive."
+msgstr ""
 
 msgid "Slice plate"
 msgstr "Slice plate"
@@ -5689,6 +5826,12 @@ msgstr ""
 msgid "Printing Progress"
 msgstr "Printing Progress"
 
+msgid "Pausing"
+msgstr ""
+
+msgid "Stopping"
+msgstr ""
+
 msgid "Parts Skip"
 msgstr ""
 
@@ -5727,6 +5870,22 @@ msgstr "(The model has already been rated. Your rating will overwrite the previo
 
 msgid "Rate"
 msgstr "Rate"
+
+#, c-format, boost-format
+msgid "%dday%dh%dmin%ds"
+msgstr ""
+
+#, c-format, boost-format
+msgid "%dh%dmin%ds"
+msgstr ""
+
+#, c-format, boost-format
+msgid "%dmin%ds"
+msgstr ""
+
+#, c-format, boost-format
+msgid "%ds"
+msgstr ""
 
 msgid "Finished"
 msgstr "Finished"
@@ -5794,6 +5953,12 @@ msgstr ""
 msgid "The selected slot is empty."
 msgstr ""
 
+msgid "No extruder found for the selected slot."
+msgstr ""
+
+msgid "The selected slot is not loaded in the extruder."
+msgstr ""
+
 msgid "Printer 2D mode does not support 3D calibration"
 msgstr ""
 
@@ -5840,8 +6005,8 @@ msgstr ""
 msgid "If the chamber temperature exceeds 40℃, the system will automatically switch to heating mode. Please confirm whether to switch."
 msgstr ""
 
-msgid "Please select an AMS slot before calibration"
-msgstr "Please select an AMS slot before calibration"
+msgid "Please select an BOX slot before calibration"
+msgstr "Please select an BOX slot before calibration"
 
 msgid "Cannot read filament info: the filament is loaded to the tool head,please unload the filament and try again."
 msgstr "Cannot read filament info: the filament is loaded to the tool head. Please unload the filament and try again."
@@ -6256,6 +6421,21 @@ msgctxt "Layers"
 msgid "Bottom"
 msgstr "Bottom"
 
+msgid "When enabled, the printer will automatically capture photos of printed parts and upload them to the cloud. Would you like to enable this option?"
+msgstr ""
+
+msgid "Confirm Enable Print Status Snapshot"
+msgstr ""
+
+msgid "Unavailable during the task"
+msgstr ""
+
+msgid "Purifies the chamber air as the print finishes, based on the selected mode."
+msgstr ""
+
+msgid "Purifies the chamber air through internal circulation as each print finishes."
+msgstr ""
+
 msgid "Enable detection of build plate position"
 msgstr "Enable detection of build plate position"
 
@@ -6319,6 +6499,12 @@ msgstr ""
 msgid "First Layer Inspection"
 msgstr "First Layer Inspection"
 
+msgid "Purify Air at Print End"
+msgstr ""
+
+msgid "Internal Circulation"
+msgstr ""
+
 msgid "Auto-recovery from step loss"
 msgstr "Auto-recover from step loss"
 
@@ -6328,8 +6514,8 @@ msgstr ""
 msgid "Save the printing files initiated from QIDI Studio, QIDI Handy and MakerWorld on External Storage"
 msgstr ""
 
-msgid "Allow Prompt Sound"
-msgstr "Allow Prompt Sound"
+msgid "Enable notification sounds"
+msgstr ""
 
 msgid "Filament Tangle Detect"
 msgstr "Filament Tangle Detection"
@@ -6340,10 +6526,19 @@ msgstr ""
 msgid "Open Door Detection"
 msgstr ""
 
+msgid "Choose the behavior when the door is opened during tasks."
+msgstr ""
+
 msgid "Notification"
 msgstr ""
 
 msgid "Pause printing"
+msgstr ""
+
+msgid "Print Status Snapshot"
+msgstr ""
+
+msgid "Automatically capture and upload print photos, showing defects during printing and the final result for remote viewing."
 msgstr ""
 
 msgctxt "Nozzle Type"
@@ -6364,10 +6559,19 @@ msgstr ""
 msgid "View wiki"
 msgstr ""
 
+msgid "Left Nozzle"
+msgstr ""
+
+msgid "Right Nozzle"
+msgstr ""
+
 msgid "Brass"
 msgstr "Brass"
 
 msgid "High flow"
+msgstr ""
+
+msgid "TPU High flow"
 msgstr ""
 
 msgid "No wiki link available for this printer."
@@ -6418,6 +6622,9 @@ msgstr ""
 msgid "Unlock current plate"
 msgstr ""
 
+msgid "Lock current plate"
+msgstr ""
+
 msgid "Edit filament grouping"
 msgstr ""
 
@@ -6447,6 +6654,13 @@ msgstr ""
 
 #, boost-format
 msgid "%1% with %2%\n"
+msgstr ""
+
+#, c-format, boost-format
+msgid "The %s nozzle does not support automatic filament switching.\n"
+msgstr ""
+
+msgid "Please change the nozzle type or reassign the filaments and try again."
 msgstr ""
 
 #, boost-format
@@ -6480,13 +6694,13 @@ msgstr "Estimated time"
 msgid "Filament changes"
 msgstr "Filament changes"
 
-msgid "Set the number of AMS installed on the nozzle."
+msgid "Set the number of BOX installed on the nozzle."
 msgstr ""
 
-msgid "AMS(4 slots)"
+msgid "BOX(4 slots)"
 msgstr ""
 
-msgid "AMS(1 slot)"
+msgid "BOX(1 slot)"
 msgstr ""
 
 msgid "Not installed"
@@ -6535,7 +6749,7 @@ msgstr ""
 msgid "Sync info"
 msgstr ""
 
-msgid "Synchronize nozzle information and the number of AMS"
+msgid "Synchronize nozzle information and the number of BOX"
 msgstr ""
 
 msgid "Project Filaments"
@@ -6545,7 +6759,7 @@ msgid "Purge mode"
 msgstr ""
 
 msgid "Flushing volumes"
-msgstr "Flushing volumes"
+msgstr "Purging volumes"
 
 msgid "Add one filament"
 msgstr "Add one filament"
@@ -6553,8 +6767,8 @@ msgstr "Add one filament"
 msgid "Remove last filament"
 msgstr "Remove last filament"
 
-msgid "Synchronize filament list from AMS"
-msgstr "Synchronize filament list from AMS"
+msgid "Synchronize filament list from BOX"
+msgstr "Synchronize filament list from BOX"
 
 msgid "Set filaments to use"
 msgstr "Set filaments to use"
@@ -6569,8 +6783,8 @@ msgstr ""
 msgid "There are no compatible filaments, and sync is not performed."
 msgstr "There are no compatible filaments, and sync is not performed."
 
-msgid "Sync filaments with AMS"
-msgstr "Sync filaments with AMS"
+msgid "Sync filaments with BOX"
+msgstr "Sync filaments with BOX"
 
 msgid ""
 "There are some unknown or uncompatible filaments mapped to generic preset.\n"
@@ -6599,6 +6813,9 @@ msgstr ""
 
 msgid "Restore"
 msgstr "Restore"
+
+msgid "There is a G-code script present in the current 3mf file, please verify the content of the script."
+msgstr ""
 
 msgid "The current hot bed temperature is relatively high. The nozzle may be clogged when printing this filament in a closed enclosure. Please open the front door and/or remove the upper glass."
 msgstr "The current heatbed temperature is relatively high. The nozzle may clog when printing this filament in a closed environment. Please open the front door and/or remove the upper glass."
@@ -6642,6 +6859,9 @@ msgstr ""
 
 msgid "Found following keys unrecognized:\n"
 msgstr "The following unrecognized keys have been found:\n"
+
+msgid "The 3mf is not from QIDI Tech, load geometry data and color data only."
+msgstr ""
 
 msgid "The 3mf is generated by old QIDI Studio, load geometry data only."
 msgstr "The 3mf was generated by an old version of QIDI Studio, loading geometry data only."
@@ -6813,9 +7033,85 @@ msgstr "Invalid data"
 msgid "Slicing Canceled"
 msgstr "Slicing Canceled"
 
+msgid "Great! Now click the Helio button to start optimization."
+msgstr ""
+
 #, c-format, boost-format
 msgid "Slicing Plate %d"
 msgstr "Slicing Plate %d"
+
+msgid "Multiple Filament Materials Detected"
+msgstr ""
+
+msgid "⚠ Multiple Filament Materials Detected"
+msgstr ""
+
+msgid " (unsupported)"
+msgstr ""
+
+msgid "Multicolour simulation currently supports only a single filament material.\n"
+msgstr ""
+
+#, c-format, boost-format
+msgid "You have selected multiple materials: %s"
+msgstr ""
+
+msgid ""
+"\n"
+"\n"
+"Note: Unsupported materials will use the selected reference material for simulation."
+msgstr ""
+
+msgid "True multi-material support will be added in a future update."
+msgstr ""
+
+msgid "Option 1: Proceed using a single filament type"
+msgstr ""
+
+msgid "Select which filament to use for simulation:"
+msgstr ""
+
+msgid "⚠ This is not recommended. Filament formulations vary significantly between manufacturers and materials. Helio cannot guarantee reliable results in this configuration."
+msgstr ""
+
+msgid "Proceed Anyway"
+msgstr ""
+
+msgid "Option 2: Go back and change filament selection"
+msgstr ""
+
+msgid "✓ Recommended"
+msgstr ""
+
+msgid "Change your filament selection to use the same type for all colours, then try again."
+msgstr ""
+
+msgid "See supported materials"
+msgstr ""
+
+msgid "Go Back"
+msgstr ""
+
+msgid "Unsupported Materials Detected"
+msgstr ""
+
+msgid "⚠ Unsupported Materials Detected"
+msgstr ""
+
+msgid "Some of your selected materials are not directly supported by Helio:\n"
+msgstr ""
+
+msgid "Option 1: Proceed with a reference material"
+msgstr ""
+
+msgid "Select a similar material type to use for simulation:"
+msgstr ""
+
+msgid "Note: Using a reference material may result in approximate or erroneous results."
+msgstr ""
+
+msgid "Change your filament selection to use a supported material, then try again."
+msgstr ""
 
 msgid "A Helio simulation or optimization task is in progress."
 msgstr ""
@@ -6823,17 +7119,88 @@ msgstr ""
 msgid "Invalid printer preset. Unable to slice with Helio."
 msgstr ""
 
+#, c-format, boost-format
+msgid ""
+"Helio found a potential printer match using token-based matching:\n"
+"\n"
+"Your printer: %s\n"
+"Matched printer: %s\n"
+"\n"
+"Do you want to use this match, or would you prefer to rename your printer profile?"
+msgstr ""
+
+msgid "Helio Printer Match Confirmation"
+msgstr ""
+
+msgid "Unsupported Printer Detected"
+msgstr ""
+
+msgid "⚠ Unsupported Printer Detected"
+msgstr ""
+
+#, c-format, boost-format
+msgid "You're using %s which is not officially supported by Helio."
+msgstr ""
+
+msgid "Option 1: Proceed with a reference printer"
+msgstr ""
+
+msgid "Select a similar printer to use for simulation:"
+msgstr ""
+
+msgid "Note: Using a reference printer may result in approximate or erroneous results."
+msgstr ""
+
+msgid "Option 2: Go back and change printer selection"
+msgstr ""
+
+msgid "Change your printer selection to use a supported printer, then try again."
+msgstr ""
+
+msgid "See supported printers"
+msgstr ""
+
 msgid "The current printer preset cannot be sliced using Helio."
 msgstr "The current printer preset cannot be used with Helio."
 
-msgid "Helio does not support using a number of materials greater than 1."
-msgstr "Helio simulation does not support using more than 1 material."
+#, c-format, boost-format
+msgid ""
+"Helio found a potential material match using token-based matching:\n"
+"\n"
+"Your material: %s\n"
+"Matched material: %s\n"
+"\n"
+"Do you want to use this match, or would you prefer to rename your material profile?"
+msgstr ""
+
+msgid "Helio Material Match Confirmation"
+msgstr ""
+
+msgid "Unsupported Material Detected"
+msgstr ""
+
+msgid "⚠ Unsupported Material Detected"
+msgstr ""
+
+msgid "Choose a Reference Material"
+msgstr ""
 
 #, c-format, boost-format
 msgid "Helio does not support materials %s"
 msgstr ""
 
-msgid "Helio functions do not support the print sequence of \"ByObject\"."
+msgid ""
+"Warning: Infill combination is currently unsupported by Helio.\n"
+"\n"
+"Proceeding with this setting enabled may return erroneous results.\n"
+"\n"
+"Do you want to continue anyway?"
+msgstr ""
+
+msgid "Helio Warning"
+msgstr ""
+
+msgid "Click the Optimize/Enhance button to start your first optimization."
 msgstr ""
 
 msgid ""
@@ -6879,7 +7246,7 @@ msgstr ""
 "The loaded file contains G-code only, cannot enter the Prepare page"
 
 msgid ""
-"The nozzle type and AMS quantity information has not been synced from the connected printer.\n"
+"The nozzle type and BOX quantity information has not been synced from the connected printer.\n"
 "After syncing, software can optimize printing time and filament usage when slicing.\n"
 "Would you like to sync now ?"
 msgstr ""
@@ -7091,7 +7458,7 @@ msgstr ""
 msgid "Device Page"
 msgstr ""
 
-msgid "Synchronize AMS Filament Information"
+msgid "Synchronize BOX Filament Information"
 msgstr ""
 
 msgid "Invalid number"
@@ -7280,10 +7647,10 @@ msgid "Disabled"
 msgstr ""
 
 msgid "Auto Flush"
-msgstr ""
+msgstr "Auto Purge"
 
 msgid "Auto calculate flush volumes"
-msgstr ""
+msgstr "Auto calculate purge volumes"
 
 msgid "Multi-device Management(Take effect after restarting Studio)."
 msgstr "Multi-device Management(Take effect after restarting Studio)."
@@ -7379,6 +7746,12 @@ msgid "Set grabber size for move,rotate,scale tool."
 msgstr ""
 
 msgid "Value range"
+msgstr ""
+
+msgid "Tooltip offset"
+msgstr ""
+
+msgid "Set tooltip offset for different mouse size."
 msgstr ""
 
 msgid "Presets"
@@ -7480,11 +7853,12 @@ msgstr ""
 msgid "User Experience"
 msgstr "User Experience"
 
-msgid "Join Customer Experience Improvement Program."
-msgstr "Join Customer Experience Improvement Program."
+msgid "Join the User Experience Improvement Program."
+msgstr ""
 
-msgid "What data would be collected?"
-msgstr "What data would be collected?"
+msgctxt "Preferences"
+msgid "Learn more"
+msgstr ""
 
 msgid "Auto-fill previously logged-in accounts."
 msgstr ""
@@ -7495,8 +7869,8 @@ msgstr "Develop Mode"
 msgid "Develop mode"
 msgstr "Develop mode"
 
-msgid "Skip AMS blacklist check"
-msgstr "Skip AMS blacklist check"
+msgid "Skip BOX blacklist check"
+msgstr "Skip BOX blacklist check"
 
 msgid "Home page and daily tips"
 msgstr "Home page and daily tips"
@@ -7603,8 +7977,8 @@ msgstr ""
 msgid "Left filaments"
 msgstr ""
 
-msgid "AMS filaments"
-msgstr "AMS filament"
+msgid "BOX filaments"
+msgstr "BOX filament"
 
 msgid "Right filaments"
 msgstr ""
@@ -7874,7 +8248,7 @@ msgstr ""
 msgid "Your filament grouping method in the sliced file is not optimal."
 msgstr ""
 
-msgid "Auto Bed Leveling"
+msgid "To ensure print quality, the drying temperature will be lowered during printing."
 msgstr ""
 
 msgid ""
@@ -7888,9 +8262,6 @@ msgstr "Flow Dynamics Calibration"
 msgid ""
 "This process determines the dynamic flow values to improve overall print quality.\n"
 "*Automatic mode: Skip if the filament was calibrated recently."
-msgstr ""
-
-msgid "Nozzle Offset Calibration"
 msgstr ""
 
 msgid ""
@@ -7908,11 +8279,11 @@ msgid "Error code"
 msgstr "Error code"
 
 #, c-format, boost-format
-msgid "Filament %s does not match the filament in AMS slot %s. Please update the printer firmware to support AMS slot assignment."
-msgstr "Filament %s does not match the filament in AMS slot %s. Please update the printer firmware to support AMS slot assignment."
+msgid "Filament %s does not match the filament in BOX slot %s. Please update the printer firmware to support BOX slot assignment."
+msgstr "Filament %s does not match the filament in BOX slot %s. Please update the printer firmware to support BOX slot assignment."
 
-msgid "Filament does not match the filament in AMS slot. Please update the printer firmware to support AMS slot assignment."
-msgstr "Filament does not match the filament in AMS slot. Please update the printer firmware to support AMS slot assignment."
+msgid "Filament does not match the filament in BOX slot. Please update the printer firmware to support BOX slot assignment."
+msgstr "Filament does not match the filament in BOX slot. Please update the printer firmware to support BOX slot assignment."
 
 #, c-format, boost-format
 msgid "The selected printer (%s) is incompatible with the print file configuration (%s). Please adjust the printer preset in the prepare page or choose a compatible printer on this page."
@@ -7938,8 +8309,8 @@ msgstr ""
 msgid "The printer type selected when generating G-Code is not consistent with the currently selected printer. It is recommended that you use the same printer type for slicing."
 msgstr "The printer type selected when generating G-Code is not consistent with the currently selected printer. It is recommended that you use the same printer type for slicing."
 
-msgid "There are some unknown filaments in the AMS mappings. Please check whether they are the required filaments. If they are okay, press \"Confirm\" to start printing."
-msgstr "There are some unknown filaments in the AMS mappings. Please check whether they are the required filaments. If they are okay, click \"Confirm\" to start printing."
+msgid "There are some unknown filaments in the BOX mappings. Please check whether they are the required filaments. If they are okay, press \"Confirm\" to start printing."
+msgstr "There are some unknown filaments in the BOX mappings. Please check whether they are the required filaments. If they are okay, click \"Confirm\" to start printing."
 
 msgid "Please check the following:"
 msgstr "Please check the following:"
@@ -7979,7 +8350,7 @@ msgid "both extruders"
 msgstr ""
 
 #, c-format, boost-format
-msgid "[ %s ] requires printing in a high-temperature environment.Please close the door."
+msgid "[ %s ] requires printing in a high-temperature environment. Reminder to close the door if not already closed."
 msgstr ""
 
 #, c-format, boost-format
@@ -7996,7 +8367,7 @@ msgstr ""
 
 msgid ""
 "Upper half area:  Original\n"
-"Middle  area:  Filament in AMS\n"
+"Middle  area:  Filament in BOX\n"
 "Lower half area:  Selected nozzle\n"
 "And you can click it to modify"
 msgstr ""
@@ -8033,10 +8404,6 @@ msgid "The current nozzle diameter (%.1fmm) doesn't match with the slicing file 
 msgstr ""
 
 #, c-format, boost-format
-msgid "The hardness of current material (%s) exceeds the hardness of %s(%s). Please verify the nozzle or material settings and try again."
-msgstr ""
-
-#, c-format, boost-format
 msgid "Failed to send nozzle auto-mapping request to printer { code: %d }. Please try to refresh the printer information. If it still does not recover, you can try to rebind the printer and check the network connection."
 msgstr ""
 
@@ -8053,6 +8420,13 @@ msgstr ""
 
 #, c-format, boost-format
 msgid "The current nozzle mapping may produce an extra %0.2f g of waste."
+msgstr ""
+
+msgid "Your current firmware version cannot start this print job. Please update to the latest version and try again."
+msgstr ""
+
+#, c-format, boost-format
+msgid "The hardness of current material (%s) exceeds the hardness of %s (%s). It may cause nozzle wear, leading to material leakage and unstable flow. Please exercise caution when using it."
 msgstr ""
 
 msgid "Cool"
@@ -8094,14 +8468,14 @@ msgstr "Cannot send the print job when the printer is updating firmware"
 msgid "The printer is executing instructions. Please restart printing after it ends"
 msgstr "The printer is executing instructions. Please restart printing after it ends"
 
-msgid "AMS is setting up. Please try again later."
+msgid "BOX is setting up. Please try again later."
 msgstr ""
 
 msgid "Not all filaments used in slicing are mapped to the printer. Please check the mapping of filaments."
 msgstr ""
 
-msgid "Please do not mix-use the Ext with AMS"
-msgstr "Please avoid using AMS filaments and external spool filament simultaneously."
+msgid "Please do not mix-use the Ext with BOX"
+msgstr "Please avoid using BOX filaments and external spool filament simultaneously."
 
 msgid "Invalid nozzle information, please refresh or manually set nozzle information."
 msgstr ""
@@ -8121,7 +8495,7 @@ msgstr "Cannot send the print job for empty plate"
 msgid "Storage needs to be inserted to record timelapse."
 msgstr ""
 
-msgid "You have selected both external and AMS filaments for an extruder. You will need to manually switch the external filament during printing."
+msgid "You have selected both external and BOX filaments for an extruder. You will need to manually switch the external filament during printing."
 msgstr ""
 
 msgid "TPU 90A/TPU 85A is too soft and does not support automatic Flow Dynamics calibration."
@@ -8136,9 +8510,6 @@ msgstr "This printer does not support printing all plates"
 msgid "The current firmware supports a maximum of 16 materials. You can either reduce the number of materials to 16 or fewer on the Preparation Page, or try updating the firmware. If you are still restricted after the update, please wait for subsequent firmware support."
 msgstr ""
 
-msgid "High chamber temperature is required. Please close the door."
-msgstr ""
-
 msgid "Please check if the required nozzle diameter and flow rate match the current display."
 msgstr ""
 
@@ -8146,6 +8517,9 @@ msgid "Please refer to Wiki before use->"
 msgstr ""
 
 msgid "How to install"
+msgstr ""
+
+msgid "Upgrade"
 msgstr ""
 
 msgid "Current firmware does not support file transfer to internal storage."
@@ -8251,8 +8625,11 @@ msgstr "Binding..."
 msgid "Please confirm on the printer screen"
 msgstr "Please confirm on the printer screen"
 
-msgid "Log in failed. Please check the Pin Code."
-msgstr "Log in failed. Please check the Pin Code."
+msgid ""
+"Login failed. Please check the following items:\n"
+"1. Ensure the Pin code is entered correctly.\n"
+"2. Confirm that the region settings of the printer and QIDI Studio are consistent."
+msgstr ""
 
 msgid "Log in printer"
 msgstr "Log in printer"
@@ -8410,10 +8787,10 @@ msgid "Ignore"
 msgstr "Ignore"
 
 msgid "Experimental feature: Retracting and cutting off the filament at a greater distance during filament changes to minimize flush.Although it can notably reduce flush,  it may also elevate the risk of nozzle clogs or other printing complications."
-msgstr "Experimental feature: Retracting and cutting off the filament at a greater distance during filament changes to minimize flush. Although it can notably reduce flush,  it may also elevate the risk of nozzle clogs or other printing complications."
+msgstr "Experimental feature: Retracting and cutting off the filament at a greater distance during filament changes to minimize purge. Although it can notably reduce purge,  it may also elevate the risk of nozzle clogs or other printing complications."
 
 msgid "Experimental feature: Retracting and cutting off the filament at a greater distance during filament changes to minimize flush.Although it can notably reduce flush, it may also elevate the risk of nozzle clogs or other printing complications.Please use with the latest printer firmware."
-msgstr "Experimental feature: Retracting and cutting off the filament at a greater distance during filament changes to minimize flush. Although it can notably reduce flush, it may also elevate the risk of nozzle clogs or other printing complications. Please use with the latest printer firmware."
+msgstr "Experimental feature: Retracting and cutting off the filament at a greater distance during filament changes to minimize purge. Although it can notably reduce purge, it may also elevate the risk of nozzle clogs or other printing complications. Please use with the latest printer firmware."
 
 msgid ""
 "When recording timelapse without toolhead, it is recommended to add a \"Timelapse Wipe Tower\" \n"
@@ -8475,6 +8852,9 @@ msgstr "Raft"
 
 msgid "Support filament"
 msgstr "Filament for Supports"
+
+msgid "Support ironing"
+msgstr ""
 
 msgid "Tree Support"
 msgstr ""
@@ -9006,6 +9386,9 @@ msgstr ""
 msgid "Obj file Import color"
 msgstr "Obj file Import color"
 
+msgid "Standard 3mf Import color"
+msgstr ""
+
 msgid "Some faces don't have color defined."
 msgstr ""
 
@@ -9036,6 +9419,28 @@ msgstr ""
 msgid "Quick set"
 msgstr ""
 
+msgid "There are color input errors."
+msgstr ""
+
+msgid "Texture import is temporarily unavailable, partial coloring is automatically replaced with the default color."
+msgstr ""
+
+msgid " And "
+msgstr ""
+
+msgid "Note"
+msgstr ""
+
+msgid "The color has been selected, you can choose OK to continue or manually adjust it."
+msgstr ""
+
+msgctxt "ObjImport"
+msgid "Original"
+msgstr ""
+
+msgid "After mapping"
+msgstr ""
+
 msgid "Color match"
 msgstr "Color match"
 
@@ -9051,33 +9456,22 @@ msgstr ""
 msgid "Reset mapped extruders."
 msgstr "Reset mapped extruders."
 
-msgid "Note"
-msgstr ""
-
-msgid ""
-"The color has been selected, you can choose OK \n"
-" to continue or manually adjust it."
-msgstr ""
-
 msgid "—> "
 msgstr ""
 
 msgid ""
-"Synchronizing AMS filaments will discard your modified but unsaved filament presets.\n"
+"Synchronizing BOX filaments will discard your modified but unsaved filament presets.\n"
 "Are you sure you want to continue?"
 msgstr ""
 
-msgctxt "Sync_AMS"
+msgctxt "Sync_BOX"
 msgid "Original"
-msgstr ""
-
-msgid "After mapping"
 msgstr ""
 
 msgid "After overwriting"
 msgstr ""
 
-msgctxt "Sync_AMS"
+msgctxt "Sync_BOX"
 msgid "Plate"
 msgstr ""
 
@@ -9115,13 +9509,10 @@ msgid ""
 "*Automatic mode: Check for calibration before printing; skip if unnecessary."
 msgstr ""
 
-msgid "Use AMS"
-msgstr "Use AMS"
-
 msgid "Tip"
 msgstr ""
 
-msgid "Only synchronize filament type and color, not including AMS slot information."
+msgid "Only synchronize filament type and color, not including BOX slot information."
 msgstr ""
 
 msgid "Replace the project filaments list sequentially based on printer filaments. And unused printer filaments will be automatically added to the end of the list."
@@ -9130,7 +9521,7 @@ msgstr ""
 msgid "Advanced settings"
 msgstr ""
 
-msgid "Add unused AMS filaments to filaments list."
+msgid "Add unused BOX filaments to filaments list."
 msgstr ""
 
 msgid "Automatically merge the same colors in the model after mapping."
@@ -9170,38 +9561,38 @@ msgstr "The selected printer (%s) is incompatible with the chosen printer profil
 msgid "Timelapse is not supported because Print sequence is set to \"By object\"."
 msgstr "Timelapse is not supported because Print sequence is set to \"By object\"."
 
-msgid "You selected external and AMS filament at the same time in an extruder, you will need manually change external filament."
+msgid "You selected external and BOX filament at the same time in an extruder, you will need manually change external filament."
 msgstr ""
 
 msgid "Successfully synchronized nozzle information."
 msgstr ""
 
-msgid "Successfully synchronized nozzle and AMS number information."
+msgid "Successfully synchronized nozzle and BOX number information."
 msgstr ""
 
 msgid "Continue to sync filaments"
 msgstr ""
 
-msgctxt "Sync_Nozzle_AMS"
+msgctxt "Sync_Nozzle_BOX"
 msgid "Cancel"
 msgstr ""
 
 msgid "Successfully synchronized color and type of filament from printer."
 msgstr ""
 
-msgctxt "FinishSyncAms"
+msgctxt "FinishSyncBox"
 msgid "OK"
 msgstr ""
 
 msgid "Studio would re-calculate your flushing volumes everytime the filaments color changed or filaments changed. You could disable the auto-calculate in QIDI Studio > Preferences"
-msgstr "Studio would re-calculate your flushing volumes everytime the filaments color changed or filaments changed. You could disable the auto-calculate in QIDI Studio > Preferences"
+msgstr "Studio would re-calculate your purging volumes everytime the filaments color changed or filaments changed. You could disable the auto-calculate in QIDI Studio > Preferences"
 
 msgid "Flushing volume (mm³) for each filament pair."
-msgstr "Flushing volume (mm³) for each filament pair."
+msgstr "Purging volume (mm³) for each filament pair."
 
 #, c-format, boost-format
 msgid "Suggestion: Flushing Volume in range [%d, %d]"
-msgstr "Suggestion: Flushing Volume in range [%d, %d]"
+msgstr "Suggestion: Purging Volume in range [%d, %d]"
 
 #, c-format, boost-format
 msgid "The multiplier should be in range [%.2f, %.2f]."
@@ -9220,7 +9611,7 @@ msgid "Multiplier"
 msgstr "Multiplier"
 
 msgid "Flushing volumes for filament change"
-msgstr "Flushing volumes for filament change"
+msgstr "Purging volumes for filament change"
 
 msgid "Please choose the filament colour"
 msgstr "Please choose the filament colour"
@@ -9540,43 +9931,52 @@ msgstr "Failed to send. Click 'Retry' to try again. If it still doesn’t work, 
 msgid "reconnect"
 msgstr ""
 
-msgid "Third-party Extension"
+msgid "Welcome to Helio Additive"
 msgstr ""
 
-msgid "Stronger parts, less warping, faster prints - powered by fast physics-based FEM simulation"
+msgid "Know Your Print Will Work — Before You Hit Print"
 msgstr ""
 
-msgid "Uninstall the Helio Additive extension"
+msgid "Physics-based analysis and optimization that makes prints faster, stronger, and far more reliable."
 msgstr ""
 
-msgid "Use Immediately"
-msgstr "Use Now"
-
-msgid "Third-Party Extension"
+msgid "Unlock a world of faster, more reliable printing with Helio's state of the art physics based 3d printing simulation technology."
 msgstr ""
 
-msgid "HELIO ADDITIVE"
+msgid "Fewer Failed Prints"
 msgstr ""
 
-msgid "Helio Additive third - party software service feature has been successfully enabled!"
+msgid "Catch issues before printing and improve first-try success."
 msgstr ""
 
-msgid "Helio-PAT"
+msgid "Faster Prints, Better Quality"
 msgstr ""
 
-msgid "Copy successful!"
+msgid "Automatically tune speed and extrusion without manual tweaking."
 msgstr ""
 
-msgid "Helio Additive"
+msgid "Enable Helio Additive"
 msgstr ""
 
-msgid "Privacy Policy of Helio Additive"
+msgid "Uninstall"
 msgstr ""
 
-msgid "Terms of Use of Helio Additive"
+msgid "After slicing, click the Helio button to analyze your print."
 msgstr ""
 
-msgid "Agree and proceed"
+msgid "Helio Additive does not change your printer's firmware."
+msgstr ""
+
+msgid "Designed to help prints succeed — even if you're new to 3D printing."
+msgstr ""
+
+msgid "Are you sure you want to uninstall Helio Additive? This will disable all Helio features."
+msgstr ""
+
+msgid "Uninstall Helio Additive"
+msgstr ""
+
+msgid "Legal & Activation Terms"
 msgstr ""
 
 msgid "Got it"
@@ -9588,10 +9988,142 @@ msgstr ""
 msgid "Failed to obtain PAT. The quantity limit has been reached, so it cannot be obtained. Click the refresh button to re-obtain PAT."
 msgstr ""
 
-msgid "Simulation"
+msgid "You are activating Helio Additive's advanced simulation services."
 msgstr ""
 
-msgid "Optimization"
+msgid "Software Service Terms && Conditions"
+msgstr ""
+
+msgid "^"
+msgstr ""
+
+msgid "Helio Additive"
+msgstr ""
+
+msgid "Helio Additive Privacy Agreement"
+msgstr ""
+
+msgid "Helio Additive User Agreement"
+msgstr ""
+
+msgid "Unless otherwise specified, QIDI Tech only provides support for the software features officially provided. The slicing evaluation and slicing optimization features based on "
+msgstr ""
+
+msgid "'s cloud service in this software will be developed, operated, provided, and maintained by "
+msgstr ""
+
+msgid ". Helio Additive is responsible for the effectiveness and availability of this service. The optimization feature of this service may modify the default print commands, posing a risk of printer damage. These features will collect necessary user information and data to achieve relevant service functions. Subscriptions and payments may be involved. Please visit "
+msgstr ""
+
+msgid " and refer to the "
+msgstr ""
+
+msgid " and "
+msgstr ""
+
+msgid " for detailed information."
+msgstr ""
+
+msgid "Meanwhile, you understand that this product is provided to you \"as is\" based on "
+msgstr ""
+
+msgid "'s services, and QIDI Tech makes no express or implied warranties of any kind, nor can it control the service effects. To the fullest extent permitted by applicable law, QIDI Tech or its licensors/affiliates do not provide any express or implied representations or warranties, including but not limited to warranties regarding merchantability, satisfactory quality, fitness for a particular purpose, accuracy, confidentiality, and non-infringement of third-party rights. Due to the nature of network services, QIDI Tech cannot guarantee that the service will be available at all times, and QIDI Tech reserves the right to terminate the service based on relevant circumstances. You agree not to use this product and its related updates to engage in the following activities:"
+msgstr ""
+
+msgid "1. Copy or use any part of this product outside the authorized scope of Helio Additive and QIDI Tech;"
+msgstr ""
+
+msgid "2. Attempt to disrupt, bypass, alter, invalidate, or evade any Digital Rights Management system related to and/or an integral part of this product;"
+msgstr ""
+
+msgid "3. Using this software and services for any improper or illegal activities."
+msgstr ""
+
+msgid "When you confirm to enable this feature, it means that you have confirmed and agreed to the above statements."
+msgstr ""
+
+msgid "Special Note && Privacy Policy"
+msgstr ""
+
+msgid "This service is provided and hosted by a third party, Helio Additive. All data collection and processing activities are solely managed by Helio Additive, and QIDI Tech assumes no responsibility in this regard. By clicking \"Agree and Proceed\", you agree to Helio Additive's privacy policy."
+msgstr ""
+
+msgid ""
+"I have read and agree to the terms\n"
+"and policies."
+msgstr ""
+
+msgid "Agree and Proceed"
+msgstr ""
+
+msgid "Activation Successful!"
+msgstr ""
+
+msgid "Helio Additive is now active. You have unlocked free optimizations!"
+msgstr ""
+
+msgid "Applies only when first activated"
+msgstr ""
+
+msgid "Run Your First Optimization"
+msgstr ""
+
+msgid "You're nearly there! Now that Helio is activated, your first optimization run for faster, more reliable printing takes only minutes! (Now referred to as 'Enhance' or 'Enhancement')"
+msgstr ""
+
+msgid ""
+"Add an object to the build plate, select a material and printer that Helio supports, then slice.\n"
+"\n"
+msgstr ""
+
+msgid "Supported printers and materials"
+msgstr ""
+
+msgid "Copy PAT"
+msgstr ""
+
+msgid ""
+"Personal Access Token (PAT)\n"
+"\n"
+"A secure credential that verifies your identity with Helio services. It's automatically used by QIDIStudio for optimizations and simulations.\n"
+"\n"
+"You may need to copy this to:\n"
+"• Integrate Helio with other slicers or tools\n"
+"• Use the Helio API directly\n"
+"• Provide to support when troubleshooting"
+msgstr ""
+
+msgid "Copy successful!"
+msgstr ""
+
+msgid "History"
+msgstr ""
+
+msgid "View and download recent optimizations and simulations"
+msgstr ""
+
+msgid "Terms of Use"
+msgstr ""
+
+msgid "Activation Successful"
+msgstr ""
+
+msgid "Assess"
+msgstr ""
+
+msgid "Formerly referred to as 'Simulate' or 'Simulation'"
+msgstr ""
+
+msgid "See where it will fail"
+msgstr ""
+
+msgid "Enhance"
+msgstr ""
+
+msgid "Formerly referred to as 'Optimize' or 'Optimization'"
+msgstr ""
+
+msgid "Auto-fix with new speeds"
 msgstr ""
 
 msgid "Environment Temperature"
@@ -9600,19 +10132,46 @@ msgstr ""
 msgid "Chamber Temperature"
 msgstr ""
 
-msgid "Note: Adjust the above temperature based on actual conditions. More accurate data ensures more precise analysis results."
+msgid "Refers to the environment temperature of the print (i.e. A-series - room temperature). Changing chamber temperature when running an assessment/simulation allows you to play around with different temperature scenarios."
+msgstr ""
+
+msgid "Optional. More accurate temperatures ensures better results."
 msgstr ""
 
 msgid "Helio's advanced feature for power users: available post purchase on its official website."
 msgstr ""
 
-msgid "Monthly quota remaining: "
+msgid "Account Status"
 msgstr ""
 
-msgid "Add-ons available: "
+msgid "Subscription:"
 msgstr ""
 
-msgid "Optimise Outer Walls"
+msgid "Loading subscription status..."
+msgstr ""
+
+msgid "Monthly quota:"
+msgstr ""
+
+msgid "Add-ons:"
+msgstr ""
+
+msgid "Plans / Upgrades"
+msgstr ""
+
+msgid "Manage Account"
+msgstr ""
+
+msgid "Environment Settings"
+msgstr ""
+
+msgid "Uses the chamber temperature from Filament settings when available; otherwise estimates it from the build plate temperature."
+msgstr ""
+
+msgid "Optimization Settings"
+msgstr ""
+
+msgid "Now referred to as 'Enhance' or 'Enhancement'"
 msgstr ""
 
 msgid "Helio default (recommended)"
@@ -9622,6 +10181,9 @@ msgid "Slicer default"
 msgstr ""
 
 msgid "Limits"
+msgstr ""
+
+msgid "Set your own speed and flow rate limits - or rely on Helio's custom limit settings. With unsupported materials you need to supply your own data or rely on the slicer's built in data."
 msgstr ""
 
 msgid "Min Velocity"
@@ -9639,25 +10201,94 @@ msgstr "Max Volumetric Speed"
 msgid "Last Trace ID: "
 msgstr ""
 
-msgid "Buy Now / Manage Account"
-msgstr ""
-
 msgid "Click for more details"
 msgstr ""
 
-msgid "Start Simulation"
+msgid "Enhancement will only take a few minutes to complete, depending on the size of your object. (A lot of compute is happening in the background) (Formerly referred to as 'Optimize' or 'Optimization')"
 msgstr ""
 
-msgid "Start Optimization"
+msgid "Assessment will only take a few minutes to complete, depending on the size of your object. (A lot of compute is happening in the background) (Formerly referred to as 'Simulate' or 'Simulation')"
 msgstr ""
 
-msgid "Buy add-ons"
+msgid "Start Free Trial"
 msgstr ""
 
-msgid "Layers to Optimize "
+msgid "Activate your free trial to unlock premium enhancements"
+msgstr ""
+
+msgid "Go to our storefront to purchase more enhancements"
+msgstr ""
+
+msgid "Free Trial"
+msgstr ""
+
+msgid "Free Trial Expired"
+msgstr ""
+
+msgid "Your free trial has ended. Explore our plans to continue using premium features."
+msgstr ""
+
+msgid "Start your free trial to unlock premium enhancements and faster, warp-free prints!"
+msgstr ""
+
+msgid "Unlimited*"
+msgstr ""
+
+msgid "*Fair usage terms apply - click to learn more"
+msgstr ""
+
+msgid "Restrict Helio's fixes to only certain layers, or keep them for all layers - the choice is yours! (Layer 1 attached to the bed is typically skipped.)"
+msgstr ""
+
+msgid "Print Priority"
+msgstr ""
+
+msgid "Loading print priority options..."
+msgstr ""
+
+msgid "Fetching material-specific options from Helio API..."
+msgstr ""
+
+msgid "Preserve Surface Finish"
+msgstr ""
+
+msgid "Speed & Strength"
+msgstr ""
+
+msgid ""
+"Speed & Strength: Optimizes outer walls for improved performance.\n"
+"Preserve Surface Finish: Maintains original wall speeds to preserve visual finish.\n"
+"\n"
+"Note: Using fallback options - couldn't fetch material-specific settings from API."
+msgstr ""
+
+msgid "No print priority options available for this material"
+msgstr ""
+
+msgid "This material does not support print priority optimization."
+msgstr ""
+
+msgid "Optimizes outer walls for improved performance."
+msgstr ""
+
+msgid "Maintains original wall speeds to preserve visual finish."
+msgstr ""
+
+msgid "Enhance Surface Gloss"
+msgstr ""
+
+msgid "Optimizes for enhanced surface gloss."
+msgstr ""
+
+msgid ""
+"Failed to load print priority options from Helio API.\n"
+"Using standard optimization method instead (same as before print priority feature)."
 msgstr ""
 
 msgid "Failed to obtain Helio PAT. The number of issued PATs has reached the upper limit. Please pay attention to the information on the Helio official website. Click Refresh to get it again once it is available."
+msgstr ""
+
+msgid "HELIO ADDITIVE"
 msgstr ""
 
 msgid "Print Time Improvement"
@@ -9669,7 +10300,130 @@ msgstr ""
 msgid "Consistency Improvement"
 msgstr ""
 
+msgid "Estimate of improvement in print time before and after enhancement"
+msgstr ""
+
+msgid "Level of Strength & Warping improvement for this part after enhancement - average for the part"
+msgstr ""
+
+msgid "Level of Strength & Warping improvement for this part after enhancement - change in overall consistency"
+msgstr ""
+
 msgid "Your gcode has been improved for the best possible print. To further improve your print please check out our wiki for tips & tricks on what to do next."
+msgstr ""
+
+msgid "Rate the enhancement based on your expectations. 5 stars means awesome! 1 star means it didn't add much value for you."
+msgstr ""
+
+msgid "Save the enhanced gcode locally"
+msgstr ""
+
+msgid "Print Plate"
+msgstr ""
+
+msgid "Print the enhanced part immediately"
+msgstr ""
+
+msgid "View Details"
+msgstr ""
+
+msgid "Verify Print Success Results"
+msgstr ""
+
+msgid "Simulates the thermal process to confirm your part will print without failure."
+msgstr ""
+
+msgid "Now referred to as 'Assess' or 'Assessment'"
+msgstr ""
+
+msgid "Time saved: "
+msgstr ""
+
+msgid "From "
+msgstr ""
+
+msgid "Expected Outcome:"
+msgstr ""
+
+msgid "Analysis:"
+msgstr ""
+
+msgid "Additional observations:"
+msgstr ""
+
+msgid "Fix suggestions"
+msgstr ""
+
+msgid "With Enhance Speed & Quality:"
+msgstr ""
+
+msgid "This is the time that can be saved if you run the Helio Additive Enhance feature. Click the Enhance Speed and Quality button to proceed."
+msgstr ""
+
+msgid "Enhance Speed & Quality"
+msgstr ""
+
+msgid "Applies Helio's optimized speed/flow/fan strategy."
+msgstr ""
+
+msgid "✅ Will Print"
+msgstr ""
+
+msgid "⚠️ May Print with Issues"
+msgstr ""
+
+msgid "❌ Likely to Fail"
+msgstr ""
+
+msgid "Thermal conditions are balanced. The part is printing within safe temperature limits."
+msgstr ""
+
+msgid "Material is cooling too rapidly before the next layer is applied. This can cause weak layer bonding, warping, or cracking."
+msgstr ""
+
+msgid "Heat is building up in small layers faster than it can dissipate. This may cause sagging or loss of detail in fine features."
+msgstr ""
+
+msgid "Ready to print"
+msgstr ""
+
+msgid "Too cold overall — see suggestions"
+msgstr ""
+
+msgid "Too hot overall — see suggestions"
+msgstr ""
+
+msgid "Your part is ready to print! Thermal conditions are within safe limits."
+msgstr ""
+
+msgid "Too cold (overall)"
+msgstr ""
+
+msgid "The part cools too fast between layers on average. Some layers may behave differently—see observations."
+msgstr ""
+
+msgid "Too hot (overall)"
+msgstr ""
+
+msgid "The part stays too warm between layers on average. Some layers may behave differently—see observations."
+msgstr ""
+
+msgid "Suggestions"
+msgstr ""
+
+msgid "Quick fixes (beginner):"
+msgstr ""
+
+msgid "Expert"
+msgstr ""
+
+msgid "Learn more"
+msgstr ""
+
+msgid "Helio Flowchart"
+msgstr ""
+
+msgid "Fixing cold prints"
 msgstr ""
 
 msgid "Air Pump"
@@ -9682,6 +10436,9 @@ msgid "Laser 40W"
 msgstr ""
 
 msgid "Cutting Module"
+msgstr ""
+
+msgid "Rotary Attachment"
 msgstr ""
 
 msgid "Auto Fire Extinguishing System"
@@ -9798,7 +10555,7 @@ msgid "Maybe parts of the object at these height are too thin, or the object has
 msgstr "Parts of the object at these heights may be too thin or the object may have a faulty mesh."
 
 msgid "Flush volumes matrix do not match to the correct size!"
-msgstr ""
+msgstr "Purge volumes matrix do not match to the correct size!"
 
 msgid "No object can be printed. Maybe too small"
 msgstr "No object can be printed. Maybe too small"
@@ -9832,10 +10589,25 @@ msgstr ""
 msgid "Exporting G-code"
 msgstr "Exporting G-code"
 
-msgid "Grouping error: "
+msgid "Grouping error: filament"
 msgstr ""
 
 msgid " can not be placed in the "
+msgstr ""
+
+msgid "Filament Grouping Error: Filament "
+msgstr ""
+
+msgid " is not supported by the "
+msgstr ""
+
+msgid " nozzle. "
+msgstr ""
+
+msgid "Please change the nozzle type or reassign the filament and try again."
+msgstr ""
+
+msgid "No valid nozzle found. Please check nozzle count."
 msgstr ""
 
 msgid "Group error in manual mode. Please check nozzle count or regroup."
@@ -9878,7 +10650,7 @@ msgid "Multiple"
 msgstr "Multiple"
 
 msgid "Flush"
-msgstr ""
+msgstr "Purge"
 
 #, boost-format
 msgid "Failed to calculate line width of %1%. Can not get value of \"%2%\" "
@@ -10002,7 +10774,7 @@ msgid " is too close to others, and collisions may be caused.\n"
 msgstr " is too close to others, and collisions may be caused.\n"
 
 msgid " is too close to exclusion area, and collisions will be caused.\n"
-msgstr " is too close to an exclusion area, and collisions will be caused.\n"
+msgstr " is too close to exclusion area, there may be collisions when printing.\n"
 
 msgid " is too close to clumping detection area, and collisions will be caused.\n"
 msgstr " is too close to probing area of clumping detection, and collisions will be caused.\n"
@@ -10094,6 +10866,9 @@ msgstr "Layer height cannot exceed nozzle diameter"
 #, c-format, boost-format
 msgid "Plate %d: %s does not support filament %s"
 msgstr "Plate %d: %s does not support filament %s"
+
+msgid "Precise outer wall will be ignored unless the order of walls is set to inner/outer"
+msgstr ""
 
 msgid "Generating skirt & brim"
 msgstr "Generating skirt & brim"
@@ -10483,6 +11258,33 @@ msgid ""
 "3. To avoid printing at speeds which cause VFAs (fine artifacts) on the external walls"
 msgstr ""
 
+msgid "Cooling slowdown logic"
+msgstr ""
+
+msgid ""
+"Determines how the printer slows down when minimum layer time isn't reached.\n"
+"\n"
+"'Uniform cooling' slows down all print features equally (current default behavior).\n"
+"\n"
+"'Consistent surface' prioritizes slowing infill and internal perimeters first, preserving external perimeter speed for better surface finish on glossy filaments. This helps reduce VFA (Vertical Fine Artifacts) and maintains consistent surface shine."
+msgstr ""
+
+msgid "Uniform cooling"
+msgstr ""
+
+msgid "Consistent surface"
+msgstr ""
+
+msgid "Perimeter transition distance"
+msgstr ""
+
+msgid ""
+"Distance in millimeters before the end of slowed perimeters where the original print speed is gradually restored. This reduces quality issues when transitioning from slowed features to fast external perimeter printing.\n"
+"\n"
+"Only applies when 'Consistent surface' cooling logic is selected.\n"
+"Recommended value: 5-10mm. Set to 0 to disable."
+msgstr ""
+
 msgid "Normal printing"
 msgstr "Normal printing"
 
@@ -10490,6 +11292,17 @@ msgid "The default acceleration of both normal printing and travel except initia
 msgstr "This is the default acceleration for both normal printing and travel after the first layer."
 
 msgid "The acceleration of travel except initial layer"
+msgstr ""
+
+msgid "Short travel"
+msgstr ""
+
+msgid ""
+"Acceleration used for short travel moves near external perimeters. Short travels are moves shorter than the 'Retraction minimum travel' distance.\n"
+"\n"
+"Lower values (e.g., 250-500 mm/s²) reduce ringing artifacts on sharp corners without significantly impacting print time.\n"
+"\n"
+"Set to 0 to disable (uses normal travel acceleration)."
 msgstr ""
 
 msgid "Initial layer travel"
@@ -10528,13 +11341,13 @@ msgstr "Speed of exhuast fan after printing completes"
 msgid "For the first"
 msgstr ""
 
-msgid "Set special cooling fan for the first certain layers. Cooling fan of the first layer used to be closed to get better build plate adhesion and used for auto cooling function"
-msgstr "Set the additional cooling fan for the first certain layers. The additional cooling fan of the first layer used to be closed to get better build plate adhesion and used for auto cooling function. Simultaneously, the part cooling fan will be set to 0"
+msgid "Set special cooling fan for the first certain layers.The part cooling fan of the first layer used to be closed to get better build plate adhesion and used for auto cooling function"
+msgstr ""
 
 msgid "layers"
 msgstr "layers"
 
-msgid "Special cooling fan speed for the first certain layers"
+msgid "Special auxiliary cooling fan speed, effective only for the first x layers"
 msgstr ""
 
 msgid "Don't support bridges"
@@ -10633,11 +11446,24 @@ msgstr "Archimedean Chords"
 msgid "Octagram Spiral"
 msgstr "Octagram Spiral"
 
+msgid "Top surface density"
+msgstr ""
+
+msgid "Density of top surface infill, 100% means a fully solid filled top layer.Lower values create a textured top surface, at 0%, only the walls are created on the top layer.Intended for aesthetic or functional purposes, not to fix issues such as over-extrusion."
+msgstr ""
+
 msgid "Bottom surface pattern"
 msgstr "Bottom surface pattern"
 
 msgid "Line pattern of bottom surface infill, not bridge infill"
 msgstr "This is the line pattern of bottom surface infill, not including bridge infill."
+
+msgid "Bottom surface density"
+msgstr ""
+
+#, c-format
+msgid "Density of bottom surface infill, 100% means a fully solid filled top layer.Lower values create a textured bottom surface, Intended for aesthetic or functional purposes, not to fix issues such as over-extrusion.WARNING: Lowering this value may negatively affect bed adhesion."
+msgstr ""
 
 msgid "Internal solid infill pattern"
 msgstr "Internal solid infill pattern"
@@ -10799,7 +11625,7 @@ msgid "filament mapping mode"
 msgstr ""
 
 msgid "Auto For Flush"
-msgstr ""
+msgstr "Auto For Purge"
 
 msgid "Auto For Match"
 msgstr ""
@@ -10811,16 +11637,16 @@ msgid "Nozzle Manual"
 msgstr ""
 
 msgid "Flush temperature"
-msgstr ""
+msgstr "Purge temperature"
 
 msgid "temperature when flushing filament. 0 indicates the upper bound of the recommended nozzle temperature range"
-msgstr ""
+msgstr "temperature when purging filament. 0 indicates the upper bound of the recommended nozzle temperature range"
 
 msgid "Flush volumetric speed"
-msgstr ""
+msgstr "Purge volumetric speed"
 
 msgid "Volumetric speed when flushing filament. 0 indicates the max volumetric speed"
-msgstr ""
+msgstr "Volumetric speed when purging filament. 0 indicates the max volumetric speed"
 
 msgid "mm³/s"
 msgstr "mm³/s"
@@ -10999,6 +11825,42 @@ msgstr ""
 msgid "Temperature drop before entering filament tower"
 msgstr ""
 
+msgid "Interface layer pre-extrusion distance"
+msgstr ""
+
+msgid "Pre-extrusion distance for prime tower interface layer (where different materials meet)."
+msgstr ""
+
+msgid "Interface layer pre-extrusion length"
+msgstr ""
+
+msgid "Pre-extrusion length for prime tower interface layer (where different materials meet)."
+msgstr ""
+
+msgid "Tower ironing area"
+msgstr ""
+
+msgid "Ironing area for prime tower interface layer (where different materials meet)."
+msgstr "Ironing area at the prime tower starting point."
+
+msgid "mm²"
+msgstr "mm²"
+
+msgid "Interface layer purge length"
+msgstr ""
+
+msgid "Purge length for prime tower interface layer (where different materials meet)."
+msgstr ""
+
+msgid "Interface layer print temperature"
+msgstr ""
+
+msgid "Print temperature for prime tower interface layer (where different materials meet). If set to -1, use max recommended nozzle temperature."
+msgstr ""
+
+msgid "°C"
+msgstr "°C"
+
 msgid "Softening temperature"
 msgstr "Softening temperature"
 
@@ -11097,6 +11959,9 @@ msgid "Cross Zag"
 msgstr ""
 
 msgid "Locked Zag"
+msgstr ""
+
+msgid "2D Lattice"
 msgstr ""
 
 msgid "Skin infill pattern"
@@ -11223,7 +12088,7 @@ msgid "Precise wall"
 msgstr ""
 
 msgid "Improve shell precision by adjusting outer wall spacing. This also improves layer consistency."
-msgstr ""
+msgstr "Improve shell precision by adjusting outer wall spacing. This also improves layer consistency. NOTE: This option will be ignored unless the order of walls is set to inner/outer"
 
 msgid "Speed of gap infill. Gap usually has irregular line width and should be printed more slowly"
 msgstr "This is the speed for gap infill. Gaps usually have irregular line width and should be printed more slowly."
@@ -11324,6 +12189,9 @@ msgstr "This option is enabled if machine support controlling chamber temperatur
 msgid "Apply top surface compensation"
 msgstr ""
 
+msgid "Enable this option to extend the travel distance between top surface lines, improving the adhesion between the top surface infill and the walls."
+msgstr ""
+
 msgid "Air filtration enhancement"
 msgstr "Air filtration enhancement"
 
@@ -11334,9 +12202,6 @@ msgid "Use cooling filter"
 msgstr ""
 
 msgid "Enable this if printer support cooling filter"
-msgstr ""
-
-msgid "Auto turn off filter on overheat"
 msgstr ""
 
 msgid "G-code flavor"
@@ -11409,6 +12274,18 @@ msgid "Symmetric infill y axis"
 msgstr ""
 
 msgid "If the model has two parts that are symmetric about the y-axis, and you want these parts to have symmetric textures, please click this option on one of the parts."
+msgstr ""
+
+msgid "Lattice angle 1"
+msgstr ""
+
+msgid "The angle of the first set of 2D lattice elements in the Z direction. Zero is vertical."
+msgstr ""
+
+msgid "Lattice angle 2"
+msgstr ""
+
+msgid "The angle of the second set of 2D lattice elements in the Z direction. Zero is vertical."
 msgstr ""
 
 msgid "Length of sparse infill anchor"
@@ -11841,7 +12718,7 @@ msgid "Long retraction when cut(experimental)"
 msgstr "Long retraction when cut (experimental)"
 
 msgid "Experimental feature.Retracting and cutting off the filament at a longer distance during changes to minimize purge.While this reduces flush significantly, it may also raise the risk of nozzle clogs or other printing problems."
-msgstr "Experimental feature: Retracting and cutting off the filament at a longer distance during changes to minimize purge.While this reduces flush significantly, it may also raise the risk of nozzle clogs or other printing problems."
+msgstr "Experimental feature: Retracting and cutting off the filament at a longer distance during changes to minimize purge.While this reduces purge significantly, it may also raise the risk of nozzle clogs or other printing problems."
 
 msgid "Retraction distance when cut"
 msgstr "Retraction distance when cut"
@@ -11889,9 +12766,6 @@ msgid "Bowden"
 msgstr "Bowden"
 
 msgid "Nozzle Volume Type"
-msgstr ""
-
-msgid "Hybrid"
 msgstr ""
 
 msgid "Default Nozzle Volume Type"
@@ -12039,9 +12913,6 @@ msgstr "Minimum sparse infill threshold"
 
 msgid "Sparse infill area which is smaller than threshold value is replaced by internal solid infill"
 msgstr "Sparse infill areas which are smaller than this threshold value are replaced by internal solid infill."
-
-msgid "mm²"
-msgstr "mm²"
 
 msgid "Solid infill filament"
 msgstr ""
@@ -12223,8 +13094,32 @@ msgstr "Same as top"
 msgid "Top interface spacing"
 msgstr "Top interface spacing"
 
-msgid "Spacing of interface lines. Zero means solid interface"
-msgstr "Spacing of interface lines. Zero means solid interface"
+msgid "Spacing of interface lines. Zero means solid interface.And zero spacing is required to access the enable_support_ironing option"
+msgstr ""
+
+msgid "Enable ironing support interface"
+msgstr ""
+
+msgid "Ironing is using small flow to print on same height of surface again to make flat surface more smooth. This setting controls whether support interface or raft interface will be ironned.Support ironing could only works on solid interface,that is, support_interface_spacing was zero and support_interface_pattern was't grid"
+msgstr ""
+
+msgid "Support ironing pattern"
+msgstr ""
+
+msgid "Support ironing flow"
+msgstr ""
+
+msgid "Support ironing line spacing"
+msgstr ""
+
+msgid "Support ironing inset"
+msgstr ""
+
+msgid "Support ironing speed"
+msgstr ""
+
+msgid "Support ironing direction"
+msgstr ""
 
 msgid "Bottom interface spacing"
 msgstr "Bottom interface spacing"
@@ -12294,7 +13189,7 @@ msgstr "Tree Organic"
 msgid "Z overrides X/Y"
 msgstr ""
 
-msgid "When top z distance overrides support/object xy distance, give priority to ensuring that supports are generated beneath overhangs, and a gap of the same size as top z distance is leaved with the model. Whereas in the opposite case, the gap between supports and the model follows support/object xy distance all the time"
+msgid "When top z distance overrides support/object xy distance, give priority to ensuring that supports are generated beneath overhangs, and a gap of the same size as top z distance is leaved with the model. Whereas in the opposite case, the gap between supports and the model follows support/object xy distance all the time. Only recommended to enable when using HybridTree."
 msgstr ""
 
 msgid "Independent support layer height"
@@ -12390,7 +13285,7 @@ msgstr ""
 msgid "Bottom paint penetration layers"
 msgstr ""
 
-msgid "This is  the number of layers of top bottom penetration."
+msgid "This is the number of layers of bottom paint penetration."
 msgstr ""
 
 msgid "Use infill instead of top and bottom surfaces"
@@ -12445,7 +13340,7 @@ msgid "User Customized Offset"
 msgstr ""
 
 msgid "If you want to have tighter or looser assemble, you can set this value. When it is positive, it indicates tightening, otherwise, it indicates loosening"
-msgstr "If you want to have tighter or looser assembly, you can set this value. When it is positive, it indicates a tighter fit, otherwise, it indicates a looser fit."
+msgstr "If you want to have tighter or looser assembly, you can set this value. When it is positive, it indicates a looser fit, otherwise, it indicates a tighter fit."
 
 msgid "Scarf Seam On Compensation Circles"
 msgstr ""
@@ -12529,10 +13424,10 @@ msgid "Purging volumes"
 msgstr "Purging volumes"
 
 msgid "Flush multiplier"
-msgstr "Flush multiplier"
+msgstr "Purge multiplier"
 
 msgid "The actual flushing volumes is equal to the flush multiplier multiplied by the flushing volumes in the table."
-msgstr "The actual flushing volumes is equal to the flush multiplier value multiplied by the flushing volumes in the table."
+msgstr "The actual purging volumes is equal to the purge multiplier value multiplied by the purging volumes in the table."
 
 msgid "Width of prime tower"
 msgstr "Width of prime tower"
@@ -13019,6 +13914,9 @@ msgstr "The name cannot exceed 40 characters."
 msgid "Nozzle ID"
 msgstr ""
 
+msgid "Standard Flow"
+msgstr ""
+
 msgid "Please find the best line on your plate"
 msgstr "Please find the best line on your plate"
 
@@ -13095,7 +13993,7 @@ msgstr "A test model will be printed. Please clear the build plate and place it 
 msgid "Printing Parameters"
 msgstr "Printing Parameters"
 
-msgid "Synchronize nozzle and AMS information"
+msgid "Synchronize nozzle and BOX information"
 msgstr ""
 
 msgid "Please connect the printer first before synchronizing."
@@ -13105,7 +14003,7 @@ msgstr ""
 msgid "Printer %s nozzle information has not been set. Please configure it before proceeding with the calibration."
 msgstr ""
 
-msgid "AMS and nozzle information are synced"
+msgid "BOX and nozzle information are synced"
 msgstr ""
 
 msgid "Nozzle Flow"
@@ -13181,7 +14079,7 @@ msgid ""
 "as the results may be unstable and affect print quality."
 msgstr ""
 
-msgid "Sync AMS and nozzle information"
+msgid "Sync BOX and nozzle information"
 msgstr ""
 
 msgid "Connecting to printer"
@@ -13209,6 +14107,9 @@ msgid "To Volumetric Speed"
 msgstr "To Volumetric Speed"
 
 msgid "Are you sure to stop printing?"
+msgstr ""
+
+msgid "0min"
 msgstr ""
 
 msgid "Flow Dynamics Calibration Result"
@@ -14341,13 +15242,13 @@ msgstr ""
 msgid "This filament is only used to print models with a low density usually, and some special parameters are required. To get better printing quality, please refer to this wiki: ASA Aero Printing Guide."
 msgstr ""
 
-msgid "This filament is too soft and not compatible with the AMS. Printing it is of many requirements, and to get better printing quality, please refer to this wiki: TPU printing guide."
+msgid "This filament is too soft and not compatible with the BOX. Printing it is of many requirements, and to get better printing quality, please refer to this wiki: TPU printing guide."
 msgstr ""
 
-msgid "This filament has high enough hardness (about 67D)  and is compatible with the AMS. Printing it is of many requirements, and to get better printing quality, please refer to this wiki: TPU printing guide."
+msgid "This filament has high enough hardness (about 67D)  and is compatible with the BOX. Printing it is of many requirements, and to get better printing quality, please refer to this wiki: TPU printing guide."
 msgstr ""
 
-msgid "If you are to print a kind of soft TPU, please don't slice with this profile, and it is only for TPU that has high enough hardness (not less than 55D) and is compatible with the AMS. To get better printing quality, please refer to this wiki: TPU printing guide."
+msgid "If you are to print a kind of soft TPU, please don't slice with this profile, and it is only for TPU that has high enough hardness (not less than 55D) and is compatible with the BOX. To get better printing quality, please refer to this wiki: TPU printing guide."
 msgstr ""
 
 msgid "This is a water-soluble support filament, and usually it is only for the support structure and not for the model body. Printing this filament is of many requirements, and to get better printing quality, please refer to this wiki: PVA Printing Guide."
@@ -14449,6 +15350,9 @@ msgstr ""
 msgid "Helio: optimization working"
 msgstr ""
 
+msgid "Helio: optimization failed"
+msgstr ""
+
 msgid "Helio: Optimzaion check failed"
 msgstr ""
 
@@ -14461,8 +15365,8 @@ msgstr ""
 msgid "Helio: GCode download failed"
 msgstr ""
 
-msgid "No AMS"
-msgstr "No AMS"
+msgid "No BOX"
+msgstr "No BOX"
 
 msgid "There is no device available to send printing."
 msgstr ""
@@ -14482,8 +15386,8 @@ msgstr "Device Name"
 msgid "Device Status"
 msgstr "Device Status"
 
-msgid "Ams Status"
-msgstr "AMS Status"
+msgid "Box Status"
+msgstr "BOX Status"
 
 msgid "Please select the devices you would like to manage here (up to 6 devices)"
 msgstr ""
@@ -14651,9 +15555,6 @@ msgstr ""
 msgid "Video tutorial"
 msgstr ""
 
-msgid "Learn more"
-msgstr ""
-
 msgid "(Sync with printer)"
 msgstr ""
 
@@ -14701,9 +15602,6 @@ msgid "Zoom In"
 msgstr ""
 
 msgid "Load skipping objects information failed. Please try again."
-msgstr ""
-
-msgid "Loading ..."
 msgstr ""
 
 #, c-format, boost-format
@@ -14774,7 +15672,14 @@ msgstr ""
 msgid "Available Nozzles"
 msgstr ""
 
+msgid "Sync Nozzle status"
+msgstr ""
+
 msgid "Caution: Mixing nozzle diameters in one print is not supported. If the selected size is only on one extruder, single-extruder printing will be enforced."
+msgstr ""
+
+#, c-format, boost-format
+msgid "Refresh %d/%d..."
 msgstr ""
 
 msgid "Unknown nozzle detected. Refresh to update info (unrefreshed nozzles will be excluded during slicing). Verify nozzle diameter & flow rate against displayed values."
@@ -14795,16 +15700,262 @@ msgstr ""
 msgid "Standard Mode"
 msgstr "Standard"
 
-msgid "Performs full purging for the best print quality. Requires more material and time."
+msgid "Performs full priming for the best print quality. Requires more material and time."
 msgstr ""
 
-msgid "Purge Saving"
+msgid "Prime Saving"
 msgstr ""
 
-msgid "Reduces purge waste and prints faster. May cause slight color mixing or small surface defects."
+msgid "Reduces prime waste and prints faster. May cause slight color mixing or small surface defects."
 msgstr ""
 
-msgid "Learn more about purge mode"
+msgid "Learn more about prime mode"
+msgstr ""
+
+msgid "BOX Dryness Control"
+msgstr ""
+
+msgid "Filament Drying Settings"
+msgstr ""
+
+msgid "Start"
+msgstr "Start"
+
+msgid "Unable to dry temporarily due to ..."
+msgstr ""
+
+msgid "Drying Error"
+msgstr ""
+
+msgid "Please check the Assistant for troubleshooting"
+msgstr ""
+
+msgid "Please remove and store the filament (as shown)."
+msgstr ""
+
+msgid "The BOX can rotate the filament which is properly stored, providing better drying results."
+msgstr ""
+
+msgid "Rotate spool when drying"
+msgstr ""
+
+msgctxt "boxdrying"
+msgid "Back"
+msgstr ""
+
+msgid "Drying-Heating"
+msgstr ""
+
+msgid "Drying-Dehumidifying"
+msgstr ""
+
+msgid " maximum drying temperature is "
+msgstr ""
+
+msgid " minimum drying temperature is "
+msgstr ""
+
+msgid "This filament may not be completely dried."
+msgstr ""
+
+msgid "This BOX is currently printing. To ensure print quality, the drying temperature cannot exceed the recommended drying temperature."
+msgstr ""
+
+msgid "The temperature shall not exceed the filament's heat distortion temperature"
+msgstr ""
+
+msgid "Minimum time value cannot be less than 1."
+msgstr ""
+
+msgid "Maximum time value cannot be greater than 24."
+msgstr ""
+
+msgid "Insufficient power"
+msgstr ""
+
+msgid "  Too many BOX drying simultaneously. Please plug in the power or stop other drying processes before starting."
+msgstr ""
+
+msgid "BOX is busy"
+msgstr ""
+
+msgid "  BOX is calibrating | reading RFID | loading/unloading material, please wait."
+msgstr ""
+
+msgid "Filament in BOX outlet"
+msgstr ""
+
+msgid "  The high drying temperature may cause BOX blockage, please unload first."
+msgstr ""
+
+msgid "Initiating BOX drying"
+msgstr ""
+
+msgid "Not supported in 2D mode"
+msgstr ""
+
+msgid "Task in progress"
+msgstr ""
+
+msgid "  The BOX might be in use during Task."
+msgstr ""
+
+msgid "  Firmware update in progress, please wait..."
+msgstr ""
+
+msgid "  Please plug in the power and then use the drying function."
+msgstr ""
+
+msgid "System is busy"
+msgstr ""
+
+msgid "  Initiating other drying processes, please wait a few seconds..."
+msgstr ""
+
+msgid "For better drying results, remove the filament and allow it to rotate."
+msgstr ""
+
+msgid "The BOX will automatically rotate the stored filament slots to enhance the drying performance."
+msgstr ""
+
+msgid "Alternatively, you can dry the filament without removing it."
+msgstr ""
+
+msgid "Unknown filaments will be treated as PLA."
+msgstr ""
+
+msgid "Please store the filament marked with an exclamation mark."
+msgstr ""
+
+msgid "Filament left in the feeder during drying may soften because the drying temperature exceeds the softening point of materials like PLA and TPU."
+msgstr ""
+
+msgid "Starting: Checking adapter connection"
+msgstr ""
+
+msgid "Starting: Checking filament status"
+msgstr ""
+
+msgid "Starting: Checking drying presets"
+msgstr ""
+
+msgid "Starting: Checking filament location"
+msgstr ""
+
+msgid "Starting: Checking air intake"
+msgstr ""
+
+msgid "Starting: Checking air vent"
+msgstr ""
+
+msgid "Terms of QIDI Tech User Experience Improvement Program"
+msgstr ""
+
+msgid "Recent Helio Runs"
+msgstr ""
+
+msgid "Showing recent completed optimizations and simulations"
+msgstr ""
+
+msgid "Loading recent runs..."
+msgstr ""
+
+msgid "No Recent Runs Found"
+msgstr ""
+
+msgid "No completed simulations or optimizations found"
+msgstr ""
+
+#, c-format, boost-format
+msgid "OPTIMIZATIONS (%d)"
+msgstr ""
+
+#, c-format, boost-format
+msgid "SIMULATIONS (%d)"
+msgstr ""
+
+#, c-format, boost-format
+msgid "%d layers"
+msgstr ""
+
+#, c-format, boost-format
+msgid "Quality: %s | Consistency: %s"
+msgstr ""
+
+msgid "Download GCode"
+msgstr ""
+
+msgid "View Results"
+msgstr ""
+
+msgid "GCode URL is not available"
+msgstr ""
+
+msgid "Download Error"
+msgstr ""
+
+msgid "Save GCode File"
+msgstr ""
+
+#, c-format, boost-format
+msgid ""
+"GCode file downloaded successfully!\n"
+"\n"
+"Saved to: %s"
+msgstr ""
+
+msgid "Download Complete"
+msgstr ""
+
+#, c-format, boost-format
+msgid ""
+"Failed to open file for writing:\n"
+"%s"
+msgstr ""
+
+#, c-format, boost-format
+msgid "Error saving file: %s"
+msgstr ""
+
+#, c-format, boost-format
+msgid ""
+"Failed to download GCode file.\n"
+"\n"
+"Error: %s"
+msgstr ""
+
+msgid "Optimization Details"
+msgstr ""
+
+msgid "Simulation Details"
+msgstr ""
+
+#, c-format, boost-format
+msgid "%d seconds ago"
+msgstr ""
+
+#, c-format, boost-format
+msgid "%d minutes ago"
+msgstr ""
+
+#, c-format, boost-format
+msgid "%d hours ago"
+msgstr ""
+
+#, c-format, boost-format
+msgid "%d days ago"
+msgstr ""
+
+msgid "Print Outcome: WILL_PRINT"
+msgstr ""
+
+msgid "Print Outcome: MAY_PRINT"
+msgstr ""
+
+msgid "Print Outcome: LIKELY_FAIL"
+msgstr ""
+
+msgid "Print Outcome: "
 msgstr ""
 
 #: resources/data/hints.ini: [hint:How to use keyboard shortcuts]
@@ -14999,8 +16150,8 @@ msgid ""
 "Flush into support/objects/infill\n"
 "Did you know that you can save the wasted filament by flushing them into support/objects/infill during filament change?"
 msgstr ""
-"Flush into support/objects/infill\n"
-"Did you know that you can reduce wasted filament by flushing it into support/objects/infill during filament changes?"
+"Purge into support/objects/infill\n"
+"Did you know that you can reduce wasted filament by purging it into support/objects/infill during filament changes?"
 
 #: resources/data/hints.ini: [hint:Improve strength]
 msgid ""
@@ -15027,102 +16178,114 @@ msgstr ""
 "Avoid warping\n"
 "Did you know that when printing materials that are prone to warping such as ABS, appropriately increasing the heatbed temperature can reduce the probability of warping?"
 
-#: resources/data/helio_hints.ini: [hint: Single-Material Only]
+#: resources/data/helio_hints.ini: [hint: Run Nylon & PC (and other advanced
+#: materials) Like a Pro]
 msgid ""
-"Single-Material Only\n"
-"Helio currently simulates one material and one nozzle per job. Multi-material or multi-extruder G-code adds long pauses that break thermal continuity, so results wouldn’t be meaningful."
+"Run Nylon & PC (and other advanced materials) Like a Pro\n"
+"Printing Nylon 612 or Polycarbonate or other advanced materials? Helio helps you avoid the 'almost worked' failure."
 msgstr ""
 
-#: resources/data/helio_hints.ini: [hint: One Plate per Job]
+#: resources/data/helio_hints.ini: [hint: Make Prints up to 30% Faster
+#: (Safely)]
 msgid ""
-"One Plate per Job\n"
-"Upload G-code with a single build plate—multi-plate projects aren’t yet supported, so only the first plate would run."
+"Make Prints up to 30% Faster (Safely)\n"
+"Get real throughput, not risky 'speed mode'. A print that normally takes 8 hours might drop to ~5.6 hours."
 msgstr ""
 
-#: resources/data/helio_hints.ini: [hint: What is the Thermal Quality Index?]
+#: resources/data/helio_hints.ini: [hint: Stop Wasting Precious Design Time on
+#: Tuning]
 msgid ""
-"What is the Thermal Quality Index?\n"
-"The Thermal Quality Index (scale –100 to +100) shows how hot or cold each region prints—green (≈ 0) is the “just right” zone for strong, warp-free parts. Keep most of the part green for best results."
+"Stop Wasting Precious Design Time on Tuning\n"
+"Fewer trial prints, faster dial-in. Instead of multiple test prints, detect issues and print first time right."
 msgstr ""
 
-#: resources/data/helio_hints.ini: [hint: Voxel-Level Accuracy]
+#: resources/data/helio_hints.ini: [hint: Cut Warping on ASA/ABS and other
+#: advanced materials]
 msgid ""
-"Voxel-Level Accuracy\n"
-"We predict temperature in every voxel at every time-step, and for standard jobs the forecast is typically within ±5–10 °C. Pauses, custom firmware or odd cooling can widen that margin."
+"Cut Warping on ASA/ABS and other advanced materials\n"
+"Warping ruins long jobs. Helio shows where risk is highest before you print, and, with enhance, cuts the risk of warping to almost nil."
 msgstr ""
 
-#: resources/data/helio_hints.ini: [hint: Fan & Airflow Model]
+#: resources/data/helio_hints.ini: [hint: Quality Check Before You Hit Print]
 msgid ""
-"Fan & Airflow Model\n"
-"A simplified fan-and-room model shows how cooling settings change part temps without slow CFD maths—great for day-to-day tuning. Chamber vortices aren’t yet simulated so runs stay fast."
+"Quality Check Before You Hit Print\n"
+"Think of it like a pre-flight check. Example: if a PC bracket shows low TQI in thin ribs, you'll know to adjust before committing to an overnight run."
 msgstr ""
 
-#: resources/data/helio_hints.ini: [hint: TQI Limits Explained]
+#: resources/data/helio_hints.ini: [hint: Stronger Parts With One Click]
 msgid ""
-"TQI Limits Explained\n"
-"-100 → too cold: tensile strength is ~50 % lower than parts printed at the ideal 0 (ASTM D638 dog-bone tests). +100 → too hot: layers stay molten and may sag or collapse. Keep regions near 0 for peak strength and accuracy."
+"Stronger Parts With One Click\n"
+"Better bonding, fewer brittle failures. Example: for Polycarbonate, results show ~+65% tensile strength after optimization."
 msgstr ""
 
-#: resources/data/helio_hints.ini: [hint: What Drives Runtime?]
+#: resources/data/helio_hints.ini: [hint: Save Money Every Run]
 msgid ""
-"What Drives Runtime?\n"
-"Extra layers, dense infill, lots of tiny arcs (small mesh elements) or very slow printing speeds all extend simulation time because the solver must step through more seconds. Multi-core CPUs or CUDA GPUs speed things up."
+"Save Money Every Run\n"
+"Faster + fewer failures = real savings."
 msgstr ""
 
-#: resources/data/helio_hints.ini: [hint: Nozzle Temp Range]
+#: resources/data/helio_hints.ini: [hint: First-Time-Right Reliability]
 msgid ""
-"Nozzle Temp Range\n"
-"Supported set-points are 190 – 320 °C; anything outside is clamped to keep physics realistic."
+"First-Time-Right Reliability\n"
+"Less babysitting, more predictable output. Example: a small farm running PETG parts avoids 'fail at hour 6' surprises and keeps batches on schedule."
 msgstr ""
 
-#: resources/data/helio_hints.ini: [hint: Debugging Flowchart]
-msgid ""
-"Debugging Flowchart\n"
-"Not sure why a result looks off? Follow our step-by-step debugging flowchart to trace settings, G-code and material issues in minutes."
-msgstr ""
+#~ msgid "Helio does not support using a number of materials greater than 1."
+#~ msgstr "Helio simulation does not support using more than 1 material."
 
-#: resources/data/helio_hints.ini: [hint: Why Cooling Varies]
-msgid ""
-"Why Cooling Varies\n"
-"Outer walls and bridges cool fastest while thick interiors stay warmer—geometry, airflow and tool-path all play a part, and the simulation visualises these differences."
-msgstr ""
+#~ msgid "Use Immediately"
+#~ msgstr "Use Now"
 
-#: resources/data/helio_hints.ini: [hint: Extrusion Temp Model]
-msgid ""
-"Extrusion Temp Model\n"
-"Material properties shape the melt curve, but printer geometry decides how much heat the filament actually gains, so the model is material-specific and printer-calibrated."
-msgstr ""
+#~ msgid "Join Customer Experience Improvement Program."
+#~ msgstr "Join Customer Experience Improvement Program."
 
-#: resources/data/helio_hints.ini: [hint: Nozzle setting of 190 °C vs 320
-#: °C?]
-msgid ""
-"Nozzle setting of 190 °C vs 320 °C?\n"
-"A 100 °C nozzle change only nudges the thermal index because extrusion temp, flow rate and post-deposition cooling dominate the part’s heat history."
-msgstr ""
+#~ msgid "What data would be collected?"
+#~ msgstr "What data would be collected?"
 
-#: resources/data/helio_hints.ini: [hint: Bed Temperature influence]
-msgid ""
-"Bed Temperature influence\n"
-"Only the first-layer bed temp feeds the model right now; later bed changes aren’t yet captured."
-msgstr ""
+#~ msgid "CF/GF filaments are hard and brittle, It's easy to break or get stuck in BOX, please use with caution."
+#~ msgstr "CF/GF filaments are hard and brittle, so they can easily break or get stuck in an BOX; please use with caution."
 
-#: resources/data/helio_hints.ini: [hint: Actual Tool-Path]
-msgid ""
-"Actual Tool-Path\n"
-"Yes—your exact G-code path, speeds and fan commands are simulated."
-msgstr ""
+#~ msgid "Micro lidar calibration"
+#~ msgstr "Micro lidar calibration"
 
-#: resources/data/helio_hints.ini: [hint: Mesh Resolution]
-msgid ""
-"Mesh Resolution\n"
-"The voxel grid is finer than the G-code line spacing, capturing layer-by-layer detail without wasting compute."
-msgstr ""
+#~ msgid "Bed leveling"
+#~ msgstr "Bed leveling"
 
-#: resources/data/helio_hints.ini: [hint: Shrinkage, Warping & Stress]
-msgid ""
-"Shrinkage, Warping & Stress\n"
-"By controlling the thermal index you can remove the heat-driven causes of warp and stress."
-msgstr ""
+#~ msgid "Note: Only filament-loaded slots can be selected."
+#~ msgstr "Note: Only slots with filament loaded can be selected."
+
+#~ msgid "This calibration does not support the currently selected nozzle diameter"
+#~ msgstr "This calibration does not support the currently selected nozzle diameter"
+
+#~ msgid "Current flowrate cali param is invalid"
+#~ msgstr "Current flowrate cali param is invalid"
+
+#~ msgid "Selected diameter and machine diameter do not match"
+#~ msgstr "Selected diameter and machine diameter do not match"
+
+#~ msgid "Failed to generate cali gcode"
+#~ msgstr "Failed to generate cali gcode"
+
+#~ msgid "Calibration error"
+#~ msgstr "Calibration error"
+
+#~ msgid "Allow Prompt Sound"
+#~ msgstr "Allow Prompt Sound"
+
+#~ msgid "Set special cooling fan for the first certain layers. Cooling fan of the first layer used to be closed to get better build plate adhesion and used for auto cooling function"
+#~ msgstr "Set the additional cooling fan for the first certain layers. The additional cooling fan of the first layer used to be closed to get better build plate adhesion and used for auto cooling function. Simultaneously, the part cooling fan will be set to 0"
+
+#~ msgid "Scale to build volume"
+#~ msgstr "Scale to build volume"
+
+#~ msgid "Scale an object to fit the build volume"
+#~ msgstr "Scale an object to fit the build volume"
+
+#~ msgid "Log in failed. Please check the Pin Code."
+#~ msgstr "Log in failed. Please check the Pin Code."
+
+#~ msgid "Spacing of interface lines. Zero means solid interface"
+#~ msgstr "Spacing of interface lines. Zero means solid interface"
 
 #~ msgid "Pauses printing when the detected build plate type does not mhatch the selected one."
 #~ msgstr "Pauses printing when the detected build plate type does not match the selected one."
@@ -15251,8 +16414,8 @@ msgstr ""
 #~ msgid "Skip step pause"
 #~ msgstr "Skip step pause"
 
-#~ msgid "Paused due to AMS lost"
-#~ msgstr "Paused due to AMS lost"
+#~ msgid "Paused due to BOX lost"
+#~ msgstr "Paused due to BOX lost"
 
 #~ msgid "Paused due to low speed of the heat break fan"
 #~ msgstr "Paused due to low speed of the heat break fan"
@@ -15278,8 +16441,8 @@ msgstr ""
 #~ msgid "Connecting to the printer. Unable to cancel during the connection process."
 #~ msgstr "Connecting to the printer. Unable to cancel during the connection process."
 
-#~ msgid "Note: Only the AMS slots loaded with the same material type can be selected."
-#~ msgstr "Note: Only the AMS slots loaded with the same material type can be selected."
+#~ msgid "Note: Only the BOX slots loaded with the same material type can be selected."
+#~ msgstr "Note: Only the BOX slots loaded with the same material type can be selected."
 
 #~ msgid "Shift + Mouse move up or down"
 #~ msgstr "Shift + Mouse move up or down"
@@ -15356,14 +16519,14 @@ msgstr ""
 #~ msgstr "Still load"
 
 #, c-format, boost-format
-#~ msgid "Filament %s exceeds the number of AMS slots. Please update the printer firmware to support AMS slot assignment."
-#~ msgstr "Filament %s exceeds the number of AMS slots. Please update the printer firmware to support AMS slot assignment."
+#~ msgid "Filament %s exceeds the number of BOX slots. Please update the printer firmware to support BOX slot assignment."
+#~ msgstr "Filament %s exceeds the number of BOX slots. Please update the printer firmware to support BOX slot assignment."
 
-#~ msgid "Filament exceeds the number of AMS slots. Please update the printer firmware to support AMS slot assignment."
-#~ msgstr "Filament exceeds the number of AMS slots. Please update the printer firmware to support AMS slot assignment."
+#~ msgid "Filament exceeds the number of BOX slots. Please update the printer firmware to support BOX slot assignment."
+#~ msgstr "Filament exceeds the number of BOX slots. Please update the printer firmware to support BOX slot assignment."
 
-#~ msgid "The printer firmware only supports sequential mapping of filament => AMS slot."
-#~ msgstr "The printer firmware only supports sequential mapping of filament => AMS slot."
+#~ msgid "The printer firmware only supports sequential mapping of filament => BOX slot."
+#~ msgstr "The printer firmware only supports sequential mapping of filament => BOX slot."
 
 #~ msgid "Resume Printing(defects acceptable)"
 #~ msgstr "Resume Printing (defects acceptable)"
@@ -15443,11 +16606,11 @@ msgstr ""
 #~ "Performing boolean intersection failed \n"
 #~ " because the selected parts have no intersection"
 
-#~ msgid "Filaments to AMS slots mappings have been established. You can click a filament above to change its mapping AMS slot"
-#~ msgstr "Filaments to AMS slots mappings have been established. You can click a filament above to change its mapping AMS slot"
+#~ msgid "Filaments to BOX slots mappings have been established. You can click a filament above to change its mapping BOX slot"
+#~ msgstr "Filaments to BOX slots mappings have been established. You can click a filament above to change its mapping BOX slot"
 
-#~ msgid "Please click each filament above to specify its mapping AMS slot before sending the print job"
-#~ msgstr "Please click each filament above to specify its mapping AMS slot before sending the print job"
+#~ msgid "Please click each filament above to specify its mapping BOX slot before sending the print job"
+#~ msgstr "Please click each filament above to specify its mapping BOX slot before sending the print job"
 
 #~ msgid "Auto-Calc"
 #~ msgstr "Auto-Calc"
@@ -15505,18 +16668,18 @@ msgstr ""
 #~ msgid "Prime volume"
 #~ msgstr "Prime volume"
 
-#~ msgid "QIDI PET-CF/PA6-CF is not supported by AMS."
-#~ msgstr "QIDI PET-CF/PA6-CF is not supported by AMS."
+#~ msgid "QIDI PET-CF/PA6-CF is not supported by BOX."
+#~ msgstr "QIDI PET-CF/PA6-CF is not supported by BOX."
 
 #~ msgid ""
-#~ "If there are two identical filaments in AMS, AMS filament backup will be enabled. \n"
+#~ "If there are two identical filaments in BOX, BOX filament backup will be enabled. \n"
 #~ "(Currently supporting automatic supply of consumables with the same brand, material type, and color)"
 #~ msgstr ""
-#~ "If there are two identical filaments in an AMS, AMS filament backup will be enabled. \n"
+#~ "If there are two identical filaments in an BOX, BOX filament backup will be enabled. \n"
 #~ "(This currently supports automatic supply of consumables with the same brand, material type, and color)"
 
-#~ msgid "The AMS will estimate QIDI filament's remaining capacity after the filament info is updated. During printing, remaining capacity will be updated automatically."
-#~ msgstr "The AMS will estimate QIDI filament's remaining capacity after the filament info is updated. During printing, remaining capacity will be updated automatically."
+#~ msgid "The BOX will estimate QIDI filament's remaining capacity after the filament info is updated. During printing, remaining capacity will be updated automatically."
+#~ msgstr "The BOX will estimate QIDI filament's remaining capacity after the filament info is updated. During printing, remaining capacity will be updated automatically."
 
 #~ msgid "The current chamber temperature or the target chamber temperature exceeds 45\\u2103.In order to avoid extruder clogging,low temperature filament(PLA/PETG/TPU) is not allowed to be loaded."
 #~ msgstr "The current chamber temperature or the target chamber temperature exceeds 45\\u2103. In order to avoid extruder clogging, low temperature filament (PLA/PETG/TPU) cannot be loaded."
@@ -15560,8 +16723,8 @@ msgstr ""
 #~ "\n"
 #~ "You can discard the preset values you have modified or choose to continue using the modified values in the new project"
 
-#~ msgid "Print with filaments in ams"
-#~ msgstr "Print with filaments in ams"
+#~ msgid "Print with filaments in box"
+#~ msgstr "Print with filaments in box"
 
 #~ msgid "Calibrating the micro lida"
 #~ msgstr "Calibrating the micro lidar"
@@ -15579,17 +16742,14 @@ msgstr ""
 #~ "You can find it in \"Settings > Network > Access code\"\n"
 #~ "on the printer, as shown in the figure:"
 
-#~ msgid "No AMS filaments. Please select a printer in 'Device' page to load AMS info."
-#~ msgstr "No AMS filaments. Please select a printer in 'Device' page to load AMS info."
+#~ msgid "No BOX filaments. Please select a printer in 'Device' page to load BOX info."
+#~ msgstr "No BOX filaments. Please select a printer in 'Device' page to load BOX info."
 
-#~ msgid "Sync filaments with AMS will drop all current selected filament presets and colors. Do you want to continue?"
-#~ msgstr "Sync filaments with AMS will drop all current selected filament presets and colors. Do you want to continue?"
+#~ msgid "Sync filaments with BOX will drop all current selected filament presets and colors. Do you want to continue?"
+#~ msgstr "Sync filaments with BOX will drop all current selected filament presets and colors. Do you want to continue?"
 
 #~ msgid "Already did a synchronization, do you want to sync only changes or resync all?"
 #~ msgstr "Already did a synchronization, do you want to sync only changes or resync all?"
-
-#~ msgid "Sync"
-#~ msgstr "Sync"
 
 #~ msgid "Resync"
 #~ msgstr "Resync"
@@ -15668,8 +16828,8 @@ msgstr ""
 #~ msgid "/"
 #~ msgstr "/"
 
-#~ msgid "AMS not connected"
-#~ msgstr "AMS not connected"
+#~ msgid "BOX not connected"
+#~ msgstr "BOX not connected"
 
 #~ msgid "Ext Spool"
 #~ msgstr "Ext Spool"
@@ -15677,8 +16837,8 @@ msgstr ""
 #~ msgid "Guide"
 #~ msgstr "Guide"
 
-#~ msgid "Calibrating AMS..."
-#~ msgstr "Calibrating AMS..."
+#~ msgid "Calibrating BOX..."
+#~ msgstr "Calibrating BOX..."
 
 #~ msgid "A problem occurred during calibration. Click to view the solution."
 #~ msgstr "A problem occurred during calibration. Click to view the solution."
@@ -15927,8 +17087,8 @@ msgstr ""
 #~ msgid "%1% is too close to exclusion area, there will be collisions when printing."
 #~ msgstr "%1% is too close to an exclusion area; there will be collisions when printing."
 
-#~ msgid "%s is not supported by AMS."
-#~ msgstr "%s is not supported by the AMS."
+#~ msgid "%s is not supported by BOX."
+#~ msgstr "%s is not supported by the BOX."
 
 #~ msgid "&Edit"
 #~ msgstr "&Edit"
@@ -15991,17 +17151,17 @@ msgstr ""
 #~ msgid "ABS/ASA"
 #~ msgstr "ABS/ASA"
 
-#~ msgid "AMS-Extra"
-#~ msgstr "AMS-Extra"
+#~ msgid "BOX-Extra"
+#~ msgstr "BOX-Extra"
 
-#~ msgid "AMSMaterialsSetting"
-#~ msgstr "AMS Materials Setting"
+#~ msgid "BOXMaterialsSetting"
+#~ msgstr "BOX Materials Setting"
 
-#~ msgid "AMS auto switch filament"
-#~ msgstr "AMS auto switch filament"
+#~ msgid "BOX auto switch filament"
+#~ msgstr "BOX auto switch filament"
 
-#~ msgid "AMS settings are not supported for external spool"
-#~ msgstr "Current AMS settings do not support using an external spool."
+#~ msgid "BOX settings are not supported for external spool"
+#~ msgstr "Current BOX settings do not support using an external spool."
 
 #~ msgid "AWS PRE host"
 #~ msgstr "AWS PRE host"
@@ -16036,8 +17196,8 @@ msgstr ""
 #~ msgid "Alt+Left mouse button"
 #~ msgstr "Alt+Left mouse button"
 
-#~ msgid "Ams filament backup"
-#~ msgstr "AMS filament backup"
+#~ msgid "Box filament backup"
+#~ msgstr "BOX filament backup"
 
 #~ msgid ""
 #~ "An object is layed over the boundary of plate.\n"
@@ -16116,8 +17276,8 @@ msgstr ""
 #~ msgid "QIDIStudio configuration file may be corrupted and is not abled to be parsed.Please delete the file and try again."
 #~ msgstr "QIDIStudio configuration file may be corrupted and is not able to be parsed. Please delete the file and try again."
 
-#~ msgid "Bed exclude area that can't used as printable area in X-Y plane. For example, the bottom left area which is used to cut filament in X1 when printing multi colors with AMS. The area is expressed as polygon by points in following format: \"XxY, XxY, ...\""
-#~ msgstr "Bed excludes area that can't used as printable area in the X-Y plane. For example, the bottom left area which is used to cut filament in X1 when printing multi-color with an AMS. The area is expressed as polygon by points in following format: \"XxY, XxY, ...\""
+#~ msgid "Bed exclude area that can't used as printable area in X-Y plane. For example, the bottom left area which is used to cut filament in X1 when printing multi colors with BOX. The area is expressed as polygon by points in following format: \"XxY, XxY, ...\""
+#~ msgstr "Bed excludes area that can't used as printable area in the X-Y plane. For example, the bottom left area which is used to cut filament in X1 when printing multi-color with an BOX. The area is expressed as polygon by points in following format: \"XxY, XxY, ...\""
 
 #~ msgid "Bed temperature difference"
 #~ msgstr "Bed temperature difference"
@@ -16181,8 +17341,8 @@ msgstr ""
 #~ msgid "Check the normative items."
 #~ msgstr "Check the normative items."
 
-#~ msgid "Choose an AMS slot then press \"Load\" or \"Unload\" button to automatically load or unload filiament."
-#~ msgstr "Choose an AMS slot then press \"Load\" or \"Unload\" to automatically load or unload filament."
+#~ msgid "Choose an BOX slot then press \"Load\" or \"Unload\" button to automatically load or unload filiament."
+#~ msgstr "Choose an BOX slot then press \"Load\" or \"Unload\" to automatically load or unload filament."
 
 #~ msgid "Choose one or more files (3mf/step/stl/obj/amf):"
 #~ msgstr "Choose one or more files (3mf/step/stl/obj/amf):"
@@ -16541,17 +17701,17 @@ msgstr ""
 #~ msgid "Filament bundle(.qdsflmt)"
 #~ msgstr "Filament bundle(.qdsflmt)"
 
-#~ msgid "Filament index %s does not match the filament in AMS slot %s. Please update the printer firmware to support AMS slot assignment."
-#~ msgstr "Filament index %s does not match the filament in AMS slot %s. Please update the printer firmware to support AMS slot assignment."
+#~ msgid "Filament index %s does not match the filament in BOX slot %s. Please update the printer firmware to support BOX slot assignment."
+#~ msgstr "Filament index %s does not match the filament in BOX slot %s. Please update the printer firmware to support BOX slot assignment."
 
-#~ msgid "Filament index %s exceeds the number of AMS slots. Please update the printer firmware to support AMS slot assignment."
-#~ msgstr "Filament index %s exceeds the number of AMS slots. Please update the printer firmware to support AMS slot assignment."
+#~ msgid "Filament index %s exceeds the number of BOX slots. Please update the printer firmware to support BOX slot assignment."
+#~ msgstr "Filament index %s exceeds the number of BOX slots. Please update the printer firmware to support BOX slot assignment."
 
-#~ msgid "Filament index does not match the filament in AMS slot. Please update the printer firmware to support AMS slot assignment."
-#~ msgstr "Filament index does not match the filament in AMS slot. Please update the printer firmware to support AMS slot assignment."
+#~ msgid "Filament index does not match the filament in BOX slot. Please update the printer firmware to support BOX slot assignment."
+#~ msgstr "Filament index does not match the filament in BOX slot. Please update the printer firmware to support BOX slot assignment."
 
-#~ msgid "Filament index exceeds the number of AMS slots. Please update the printer firmware to support AMS slot assignment."
-#~ msgstr "Filament index exceeds the number of AMS slots. Please update the printer firmware to support AMS slot assignment."
+#~ msgid "Filament index exceeds the number of BOX slots. Please update the printer firmware to support BOX slot assignment."
+#~ msgstr "Filament index exceeds the number of BOX slots. Please update the printer firmware to support BOX slot assignment."
 
 #~ msgid "Filament to print support and raft. \"Default\" means no specific filament for support and current filament is used"
 #~ msgstr "Filament to print supports and rafts. \"Default\" means no specific filament for support and current filament is used"
@@ -16620,14 +17780,14 @@ msgstr ""
 #~ msgid "G-code path is genereated after simplifing the contour of model to avoid too much points and gcode lines in gcode file. Smaller value means higher resolution and more time to slice"
 #~ msgstr "G-code path is genereated after simplifing the contour of model to avoid too much points and gcode lines in gcode file. Smaller value means higher resolution and more time to slice"
 
-#~ msgid "Green means that AMS humidity is normal, orange represent humidity is high, red represent humidity is too high.(Hygrometer: lower the better.)"
-#~ msgstr "Green means that AMS humidity is normal, orange represent humidity is high, red represent humidity is too high.(Hygrometer: lower the better.)"
+#~ msgid "Green means that BOX humidity is normal, orange represent humidity is high, red represent humidity is too high.(Hygrometer: lower the better.)"
+#~ msgstr "Green means that BOX humidity is normal, orange represent humidity is high, red represent humidity is too high.(Hygrometer: lower the better.)"
 
-#~ msgid "Green means that AMS humidity is normal, orange represents humidity is high, red represents humidity is too high.(Hygrometer: lower the better.)"
-#~ msgstr "Green means that AMS humidity is normal, orange represents high humidity, and red represents overly high humidity. (Hygrometer: lower is better.)"
+#~ msgid "Green means that BOX humidity is normal, orange represents humidity is high, red represents humidity is too high.(Hygrometer: lower the better.)"
+#~ msgstr "Green means that BOX humidity is normal, orange represents high humidity, and red represents overly high humidity. (Hygrometer: lower is better.)"
 
-#~ msgid "Green represents that AMS humidity is normal, orange and red represent that humidity is too high.(Lower the better)"
-#~ msgstr "Green represents that AMS humidity is normal, and orange and red represent that humidity is too high. (the lower, the better)"
+#~ msgid "Green represents that BOX humidity is normal, orange and red represent that humidity is too high.(Lower the better)"
+#~ msgstr "Green represents that BOX humidity is normal, and orange and red represent that humidity is too high. (the lower, the better)"
 
 #~ msgid "HMS"
 #~ msgstr "HMS"
@@ -16901,8 +18061,8 @@ msgstr ""
 #~ msgid "NEW QA  host: api-qa.qidi3d.net/v1"
 #~ msgstr "NEW QA  host: api-qa.qidi3d.net/v1"
 
-#~ msgid "NO AMS"
-#~ msgstr "NO AMS"
+#~ msgid "NO BOX"
+#~ msgstr "NO BOX"
 
 #~ msgid "No arrangable objects are selected."
 #~ msgstr "No arrangable objects are selected."
@@ -16931,8 +18091,8 @@ msgstr ""
 #~ msgid "Note: When the lid is open or the desiccant pack is changed, it can take hours or a night to absorb the moisture. Low temperatures also slow down the process. During this time, the indicator may not represent the chamber accurately."
 #~ msgstr "Note: When the lid is open or the desiccant pack is changed, it can take hours or a night to absorb the moisture. Low temperatures also slow down the process. During this time, the indicator may not represent the chamber accurately."
 
-#~ msgid "Note: if new filament is inserted during  printing, the AMS will not automatically read any information until printing is completed."
-#~ msgstr "Note: if new filament is inserted during  printing, the AMS will not automatically read any information until printing has finished."
+#~ msgid "Note: if new filament is inserted during  printing, the BOX will not automatically read any information until printing is completed."
+#~ msgstr "Note: if new filament is inserted during  printing, the BOX will not automatically read any information until printing has finished."
 
 #~ msgid "Note : The location of IP and access code on the machine is as follows :"
 #~ msgstr "Note: The location of IP and access code on the machine is as follows:"
@@ -17135,8 +18295,8 @@ msgstr ""
 #~ msgid "Printer config bundle(.qdscfg)"
 #~ msgstr "Printer config bundle(.qdscfg)"
 
-#~ msgid "Printer firmware does not support material = >ams slot mapping."
-#~ msgstr "Printer firmware does not support material = > AMS slot mapping."
+#~ msgid "Printer firmware does not support material = >box slot mapping."
+#~ msgstr "Printer firmware does not support material = > BOX slot mapping."
 
 #~ msgid "Printer is busy downloading, Please wait for the downloading to finish."
 #~ msgstr "Printer is busy downloading, Please wait for the downloading to finish."
@@ -17308,9 +18468,6 @@ msgstr ""
 #~ msgid "Split the selected object into mutiple parts"
 #~ msgstr "Split the selected object into mutiple parts"
 
-#~ msgid "Start"
-#~ msgstr "Start"
-
 #~ msgid "Stop printing when Spaghetti or Excess Chute Pileup is detected"
 #~ msgstr "Stop printing when Spaghetti or Excess Chute Pileup is detected"
 
@@ -17420,8 +18577,8 @@ msgstr ""
 #~ msgid "Swith cloud environment, Please login again!"
 #~ msgstr "Cloud environment has switched; please login again!"
 
-#~ msgid "Sync material list from AMS"
-#~ msgstr "Sync material list from AMS"
+#~ msgid "Sync material list from BOX"
+#~ msgstr "Sync material list from BOX"
 
 #~ msgid "TH"
 #~ msgstr "TH"
@@ -17438,8 +18595,8 @@ msgstr ""
 #~ msgid "Thank you for purchasing a QIDI Tech device.Before using your QIDI Tech device, please read the termsand conditions.By clicking to agree to use your QIDI Tech device, you agree to abide by the Privacy Policyand Terms of Use(collectively, the \"Terms\"). If you do not comply with or agree to the QIDI Tech Privacy Policy, please do not use QIDI Tech equipment and services."
 #~ msgstr "Thank you for purchasing a QIDI Tech device.Before using your QIDI Tech device, please read the termsand conditions.By clicking to agree to use your QIDI Tech device, you agree to abide by the Privacy Policyand Terms of Use(collectively, the \"Terms\"). If you do not comply with or agree to the QIDI Tech Privacy Policy, please do not use QIDI Tech equipment and services."
 
-#~ msgid "The %s filament is too soft to be used with the AMS"
-#~ msgstr "The %s filament is too soft to be used with the AMS"
+#~ msgid "The %s filament is too soft to be used with the BOX"
+#~ msgstr "The %s filament is too soft to be used with the BOX"
 
 #~ msgid "The 3mf's version %s is newer than %s's version %s, Found following keys unrecognized:"
 #~ msgstr "The 3mf's version %s is newer than %s's version %s, Found following keys unrecognized:"
@@ -17477,8 +18634,8 @@ msgstr ""
 #~ msgid "The configuration package is changed in previous Config Guide"
 #~ msgstr "The configuration package is changed in previous Config Guide"
 
-#~ msgid "The firmware versions of printer and AMS are too low.Please update to the latest version before sending the print job"
-#~ msgstr "The firmware versions of the printer and AMS are too low. Please update them to the latest version before sending any print jobs."
+#~ msgid "The firmware versions of printer and BOX are too low.Please update to the latest version before sending the print job"
+#~ msgstr "The firmware versions of the printer and BOX are too low. Please update them to the latest version before sending any print jobs."
 
 #~ msgid "The flush volume is less than the minimum value and will be automatically set to the minimum value."
 #~ msgstr "The flush volume is less than the minimum value and will be automatically set to the minimum value."
@@ -17887,9 +19044,6 @@ msgstr ""
 #~ msgid "you can always update QIDI Studio at your convenience. The slicer file will now be loaded without full functionality."
 #~ msgstr "You can always update QIDI Studio at your convenience. The slicer file will now be loaded without full functionality."
 
-#~ msgid "°C"
-#~ msgstr "°C"
-
 #~ msgid "⌘+Any arrow"
 #~ msgstr "⌘+Any arrow"
 
@@ -18137,9 +19291,6 @@ msgstr ""
 msgid "Delete Physical Printer"
 msgstr ""
 
-msgid "Don't slow down outer walls"
-msgstr ""
-
 msgid ""
 "If enabled, this setting will ensure external perimeters are not slowed down to meet the minimum layer time. This is particularly helpful in the below scenarios:\n"
 "\n"
@@ -18230,9 +19381,6 @@ msgstr ""
 msgid "Upper half area:  Original\nLower half area:  Filament in Box\nAnd you cannot click it to modify"
 msgstr ""
 
-msgid "BOX Slots"
-msgstr ""
-
 msgid "Use BOX"
 msgstr ""
 
@@ -18262,9 +19410,6 @@ msgstr ""
 
 msgid "Current printer is printing now"​​
 ​msgstr ""​
-
-msgid "Please do not mix-use the Ext with BOX"
-msgstr ""
 
 msgid "Recommended box temperature"
 msgstr ""
@@ -18299,21 +19444,12 @@ msgstr ""
 msgid "Failed to set the timelapse..."
 msgstr ""
 
-msgid "Enable Air Condition"
-msgstr ""
-
 msgid "Cancel"
 msgstr ""
 
 msgid ""
 "This enables timelapse mode. It will take a picture every 5 seconds during printing.\n"
 "*Automatic mode: Skip if timelapse is not supported."
-msgstr ""
-
-msgid "Turn on the air conditioner for better cooling effect."
-msgstr ""
-
-msgid "BOX Settings"
 msgstr ""
 
 msgid "The BOX will automatically read the filament information when inserting a new QIDI Tech filament. This takes about 20 seconds."
@@ -18331,4 +19467,19 @@ msgid "BOX will continue to another spool with the same properties of filament a
 msgstr ""
 
 msgid "Synchronize nozzle information and the number of BOX"
+msgstr ""
+
+msgid "Printer not connected, offline, or the connected machines do not support synchronous operations. Please go to the device page to connect %s before syncing"
+msgstr ""
+
+msgid "Enable Polar Cooler"
+msgstr ""
+
+msgid "When enabled, this function helps reduce the internal temperature of the extruder, preventing filament softening or clogging inside the extruder and improving printing stability."
+msgstr ""
+
+msgid "filament weight"
+msgstr ""
+
+msgid "pre time"
 msgstr ""

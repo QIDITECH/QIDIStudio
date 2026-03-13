@@ -50,6 +50,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/Widgets/SwitchButton.hpp
 	GUI/Widgets/DeviceButton.cpp
 	GUI/Widgets/DeviceButton.hpp
+    GUI/Widgets/DeviceModelList.cpp
+	GUI/Widgets/DeviceModelList.hpp
     GUI/Widgets/SpinInput.cpp
     GUI/Widgets/SpinInput.hpp
     GUI/Widgets/StaticLine.cpp
@@ -198,6 +200,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/Preferences.hpp
     GUI/AMSSetting.cpp
     GUI/AMSSetting.hpp
+    GUI/AMSDryControl.cpp
+    GUI/AMSDryControl.hpp
     GUI/AMSMaterialsSetting.cpp
     GUI/AMSMaterialsSetting.hpp
     GUI/ExtrusionCalibration.cpp
@@ -302,6 +306,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/WebDownPluginDlg.cpp
     GUI/WebGuideDialog.hpp
     GUI/WebGuideDialog.cpp
+    GUI/UxProgramTermsDialog.hpp
+    GUI/UxProgramTermsDialog.cpp
     GUI/WebUserLoginDialog.cpp
     GUI/WebUserLoginDialog.hpp
     GUI/ConfigManipulation.cpp
@@ -507,6 +513,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/ReleaseNote.cpp
     GUI/HelioReleaseNote.hpp
     GUI/HelioReleaseNote.cpp
+    GUI/HelioHistoryDialog.hpp
+    GUI/HelioHistoryDialog.cpp
     GUI/SingleChoiceDialog.hpp
     GUI/SingleChoiceDialog.cpp
     GUI/CaliHistoryDialog.hpp
@@ -639,6 +647,7 @@ if(QDT_RELEASE_TO_PUBLIC)
 	list(APPEND SLIC3R_GUI_SOURCES
 			QIDI/QIDINetwork.cpp
 			QIDI/QIDINetwork.hpp
+			QIDI/QIDINetworkTypes.hpp
 		)
 endif ()
 

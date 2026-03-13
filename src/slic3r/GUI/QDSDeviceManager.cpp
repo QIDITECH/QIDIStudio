@@ -4,33 +4,21 @@
 #include <random>
 #include "libslic3r/Utils.hpp"
 #include "GUI_App.hpp"
+#include "slic3r/Utils/Http.hpp"
+
+//cj_2
+#if QDT_RELEASE_TO_PUBLIC
+#include "../QIDI/QIDINetwork.hpp"
+#endif
+
+//cj_2
+#include <wx/image.h>
+#include <wx/url.h>
+#include <wx/stream.h>
+#include <wx/mstream.h>
 
 namespace Slic3r {
 namespace GUI {
-
-std::string UrlEncodeForFilename(const std::string& input) {
-    std::ostringstream escaped;
-    escaped.fill('0');
-    escaped << std::hex << std::uppercase;
-    
-    for (char c : input) {
-        unsigned char uc = static_cast<unsigned char>(c);
-
-        if ((uc >= 32 && uc <= 126) && 
-            uc != '%' &&
-            uc != '+' &&
-            uc != ' ') {
-            escaped << c;
-        }
-        else if (c == '/') {
-            escaped << c;
-        }
-        else {
-            escaped << '%' << std::setw(2) << static_cast<int>(uc);
-        }
-    }
-    return escaped.str();
-}
 
 namespace pt = boost::property_tree;
 std::vector<QDSDevice::Filament> QDSDevice::m_general_filamentConfig;
@@ -77,163 +65,6 @@ void twoStageParse1(const json& status, T& target, std::string first, std::strin
 	}
 }
 
-//cj_1
-QDSFilamentConfig::QDSFilamentConfig()
-{
-    init();
-}
-
-QDSFilamentConfig::~QDSFilamentConfig()
-{
-	
-}
-
-
-std::string QDSFilamentConfig::getHexCode(int index)
-{
-    return getData(m_colorHexCode, index);
-}
-
-int QDSFilamentConfig::getColorIndex(std::string hexCode)
-{
-    return getIndex(m_colorHexCode, hexCode) + 1;
-}
-
-std::string QDSFilamentConfig::getcolorDes(int index)
-{
-    return getData(m_colorDes, index);
-}
-
-std::string QDSFilamentConfig::getTypeName(int index)
-{
-    return getData(m_typeName, index);
-}
-
-int QDSFilamentConfig::getTypeNameIndex(std::string typeName)
-{
-    return getIndex(m_typeName, typeName);
-}
-
-std::string QDSFilamentConfig::getVendor(int index)
-{
-    return getData(m_vendor, index);
-}
-
-int QDSFilamentConfig::getVendorIndex(std::string vendor)
-{
-    return getIndex(m_vendor, vendor);
-
-}
-
-std::string QDSFilamentConfig::getFilamentType(int index){
-    return getData(m_filament_type, index);
-}
-
-void QDSFilamentConfig::init()
-{
-    //y77
-#if QDT_RELEASE_TO_PUBLIC
-    std::string region = wxGetApp().app_config->get("region");
-    if (region == "China") {
-        m_env = PRODUCTIONENV;
-    }
-    else {
-        m_env = FOREIGNENV;
-    }
-#endif
-
-    new std::thread([this]{
-        initFilamentData(m_colorHexCode);
-        initFilamentData(m_colorDes);
-        initTypeName();
-        initFilamentData(m_vendor);
-        initFilamentData(m_filament_type);
-        });
-
-
-}
-void QDSFilamentConfig::initTypeName()
-{
-#if QDT_RELEASE_TO_PUBLIC
-    std::this_thread::sleep_for(std::chrono::seconds(3));
-	std::string resultBody = MakerHttpHandle::getInstance().httpGetTask(m_env, m_typeName.path);
-	if (resultBody == "") {
-		return;
-	}
-    m_typeName.data.resize(100);
-	try {
-		json bodyJson = json::parse(resultBody);
-		if (!bodyJson.contains("data") || !bodyJson["data"].is_array()) {
-			return;
-		}
-		for (json data : bodyJson["data"]) {
-			if (!data.contains(m_typeName.name)
-				|| !data[m_typeName.name].is_string()) {
-				continue;
-			}
-			if (!data.contains("filamentTypeId")
-				|| !data["filamentTypeId"].is_number_integer()) {
-				continue;
-			}
-            int filamentTypeId = data["filamentTypeId"].get<int>();
-            if (filamentTypeId > 0) {
-                m_typeName.data[filamentTypeId] = data[m_typeName.name].get<std::string>();
-            }
-		}
-
-	}
-	catch (...) {
-
-	}
-#endif
-}
-
-void QDSFilamentConfig::initFilamentData(FilamentData& filamentData)
-{
-#if QDT_RELEASE_TO_PUBLIC
-	std::string resultBody = MakerHttpHandle::getInstance().httpGetTask(m_env, filamentData.path);
-	if (resultBody == "") {
-		return;
-	}
-	try {
-		json bodyJson = json::parse(resultBody);
-		if (!bodyJson.contains("data") || !bodyJson["data"].is_array()) {
-			return;
-		}
-		for (json data : bodyJson["data"]) {
-			if (!data.contains(filamentData.name)
-				|| !data[filamentData.name].is_string()) {
-				continue;
-			}
-			filamentData.data.push_back(data[filamentData.name].get<std::string>());
-		}
-
-	}
-	catch (...) {
-
-	}
-#endif
-}
-
-std::string QDSFilamentConfig::getData(FilamentData filamentData, int index)
-{
-	if (index <0 ||index >= filamentData.data.size()) {
-		return "";
-	}
-	return filamentData.data[index];
-}
-
-int QDSFilamentConfig::getIndex(FilamentData filementData, std::string name)
-{
-	int index = 0;
-	for (std::string data : filementData.data) {
-		if (name == data) {
-			return index;
-		}
-		++index;
-	}
-	return -1;
-}
 
 QDSDevice::QDSDevice(const std::string dev_id, const std::string& dev_name, const std::string& dev_ip, const std::string& dev_url, const std::string& dev_type)
     : m_id(dev_id), m_name(dev_name), m_ip(dev_ip), m_type(dev_type)
@@ -382,8 +213,6 @@ void QDSDevice::updateBoxDataByJson(const json status)
                     if(!status[box_stepper]["runout_button"].is_null()){
                         int runout_value = status[box_stepper]["runout_button"].get<int>();
                         m_boxData[i].hasMaterial = (runout_value == 0) ? 1 : 0;
-						box_filament_is_update = true;
-
                     }
                     else {
                         //m_boxData[i].hasMaterial = false;
@@ -656,6 +485,10 @@ void QDSDevice::initGeneralData()
     QDSDevice::m_is_init_general = true;
 }
 
+std::vector<float> QDSDevice::getNozzleDiameter(){
+    return m_nozzle_diameter;
+}
+
 QDSDeviceManager::QDSDeviceManager() {
     health_check_running_ = true;
     health_check_thread_ = std::thread(&QDSDeviceManager::healthCheckLoop, this);
@@ -702,13 +535,13 @@ void QDSDeviceManager::performHealthCheck() {
                     needs_reconnect = true;
                     reason = "no update for " +
                         std::to_string(std::chrono::duration_cast<std::chrono::seconds>(now - device->last_update).count()) + " seconds";
-                    std::cout << "device last update : " << (device->last_update).time_since_epoch().count() << std::endl;
-                    std::cout << "now time is  : " << now.time_since_epoch().count() << std::endl;
+                    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "device last update : " << (device->last_update).time_since_epoch().count() << std::endl;
+                    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "now time is  : " << now.time_since_epoch().count() << std::endl;
                 }
             }
 
             if (needs_reconnect) {
-                std::cout << "[HealthCheck] Device " << device_id << "device name is " << device->m_name << " needs reconnect: " << reason << std::endl;
+                BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[HealthCheck] Device " << device_id << "device name is " << device->m_name << " needs reconnect: " << reason << std::endl;
                 devices_to_reconnect.push_back(device_id);
             }
         }
@@ -720,7 +553,7 @@ void QDSDeviceManager::performHealthCheck() {
 }
 
 void QDSDeviceManager::reconnectDevice(const std::string& device_id) {
-    std::cout << "[HealthCheck] Reconnecting device " << device_id << "..." << std::endl;
+    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[HealthCheck] Reconnecting device " << device_id << "..." << std::endl;
 
     stopConnection(device_id);
 
@@ -793,7 +626,7 @@ void QDSDeviceManager::safeStopConnection(const std::string& device_id) {
                                websocketpp::close::status::going_away, 
                                "Connection stopped by manager", ec);
             if (ec) {
-                std::cout << "[Stop] Warning closing connection for device " 
+                BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Stop] Warning closing connection for device " 
                           << device_id << ": " << ec.message() << std::endl;
             }
         }
@@ -802,7 +635,7 @@ void QDSDeviceManager::safeStopConnection(const std::string& device_id) {
         conn->running = false;
         
     } catch (const std::exception& e) {
-        std::cout << "[Stop] Exception while stopping client for device " 
+        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Stop] Exception while stopping client for device " 
                   << device_id << ": " << e.what() << std::endl;
         if (conn) {
             conn->running = false;
@@ -821,7 +654,7 @@ void QDSDeviceManager::cleanupConnection(const std::string& device_id) {
         connections_.erase(conn_it);
     }
 
-    std::cout << "[Manager] Starting cleanup for device " << device_id << std::endl;
+    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Manager] Starting cleanup for device " << device_id << std::endl;
 
     if (conn) {
         std::thread& client_thread = conn->client_thread;
@@ -833,9 +666,10 @@ void QDSDeviceManager::cleanupConnection(const std::string& device_id) {
                 }
             }
             catch (const std::system_error& e) {
-                std::cout << "[Cleanup] System error joining thread for device "
+                BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Cleanup] System error joining thread for device "
                     << device_id << ": " << e.what()
                     << " (code: " << e.code() << ")" << std::endl;
+
                 if (e.code() == std::errc::no_such_process ||
                     e.code() == std::errc::invalid_argument) {
                     try {
@@ -844,19 +678,19 @@ void QDSDeviceManager::cleanupConnection(const std::string& device_id) {
                         }
                     }
                     catch (...) {
-                        std::cout << "[Cleanup] Failed to detach thread for device "
+                        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Cleanup] Failed to detach thread for device "
                             << device_id << std::endl;
                     }
                 }
             }
             catch (const std::exception& e) {
-                std::cout << "[Cleanup] Error joining thread for device "
+                BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Cleanup] Error joining thread for device "
                     << device_id << ": " << e.what() << std::endl;
             }
         }
     }
 
-    std::cout << "[Manager] Device " << device_id << " connection cleaned up." << std::endl;
+    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Manager] Device " << device_id << " connection cleaned up." << std::endl;
 }
 
 std::string QDSDeviceManager::addDevice(const std::string& dev_name, const std::string& dev_ip, const std::string& dev_url, const std::string& dev_type) {
@@ -884,7 +718,7 @@ std::string QDSDeviceManager::addDevice(const std::string& dev_name, const std::
         devices_[device_id] = device;
         
 
-        std::cout << "[Manager] Device added: " << device_id << std::endl;
+        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Manager] Device added: " << device_id << std::endl;
     }
 
     std::thread([this, device_id]() {
@@ -900,7 +734,7 @@ bool QDSDeviceManager::addDevice(std::shared_ptr<QDSDevice> device)
 	std::string device_id = device->m_id;
 	std::lock_guard<std::mutex> lock(manager_mutex_);
 	if (devices_.find(device_id) != devices_.end()) {
-		std::cout << "device :" << device << "exit" << std::endl;
+		BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "device :" << device << "exit" << std::endl;
 		return false;
 	}
     
@@ -927,7 +761,7 @@ bool QDSDeviceManager::removeDevice(const std::string& device_id) {
 bool QDSDeviceManager::connectDevice(const std::string device_id) {
     std::shared_ptr<QDSDevice> dev = getDevice(device_id);
     if (!dev) {
-        std::cout << "[Connect] Error: Device " << device_id << " not found." << std::endl;
+        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Connect] Error: Device " << device_id << " not found." << std::endl;
         return false;
     }
 
@@ -979,9 +813,9 @@ bool QDSDeviceManager::connectDevice(const std::string device_id) {
         if (conn) {
             conn->last_activity = std::chrono::steady_clock::now();
         }
-        std::cout << "[DEBUG] WebSocket closed for device: " << device_id << std::endl;
-        std::cout << "[DEBUG] Close code: " << conn->client.get_con_from_hdl(hdl)->get_remote_close_code() << std::endl;
-        std::cout << "[DEBUG] Close reason: " << conn->client.get_con_from_hdl(hdl)->get_remote_close_reason() << std::endl;
+        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[DEBUG] WebSocket closed for device: " << device_id << std::endl;
+        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[DEBUG] Close code: " << conn->client.get_con_from_hdl(hdl)->get_remote_close_code() << std::endl;
+        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[DEBUG] Close reason: " << conn->client.get_con_from_hdl(hdl)->get_remote_close_reason() << std::endl;
 
         onClose(device_id, hdl);
     });
@@ -998,7 +832,7 @@ bool QDSDeviceManager::connectDevice(const std::string device_id) {
         websocketpp::lib::error_code ec;
         auto con = connection->client.get_connection(dev->m_url, ec);
         if (ec) {
-            std::cout << "[Connect] Connection error for device " << device_id 
+            BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Connect] Connection error for device " << device_id 
                       << ": " << ec.message() << std::endl;
             updateDeviceStatus(device_id, "offline");
             
@@ -1016,21 +850,21 @@ bool QDSDeviceManager::connectDevice(const std::string device_id) {
             try {
                 connection->client.run();
             } catch (const websocketpp::exception& e) {
-                std::cout << "[WebSocket] Exception in client thread: " 
+                BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[WebSocket] Exception in client thread: " 
                           << e.what() << std::endl;
             } catch (const std::exception& e) {
-                std::cout << "[WebSocket] Exception in client thread: " 
+                BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[WebSocket] Exception in client thread: " 
                           << e.what() << std::endl;
             }
             connection->running = false;
         });
         
-        std::cout << "[Connect] Connecting to device " << device_id 
+        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Connect] Connecting to device " << device_id 
                   << " (" << dev->m_name << ")..." << std::endl;
         return true;
         
     } catch (const std::exception& e) {
-        std::cout << "[Connect] Exception while connecting to device " << device_id
+        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Connect] Exception while connecting to device " << device_id
                   << ": " << e.what() << std::endl;
         updateDeviceStatus(device_id, "error");
         
@@ -1046,7 +880,7 @@ bool QDSDeviceManager::disconnectDevice(const std::string& device_id) {
 }
 
 void QDSDeviceManager::onOpen(const std::string& device_id, websocketpp::connection_hdl hdl) {
-    std::cout << "[WS] Device " << device_id << " connected." << std::endl;
+    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[WS] Device " << device_id << " connected." << std::endl;
     processConnectionStatus(device_id, "connected");
     
     std::thread([this, device_id]() {
@@ -1058,7 +892,6 @@ void QDSDeviceManager::onMessage(const std::string& device_id, websocketpp::conn
     std::string msg_str;
     try {
         msg_str = msg->get_payload();
-
         std::shared_ptr<WebSocketConnect> conn;
         {
             std::lock_guard<std::mutex> lock(manager_mutex_);
@@ -1072,7 +905,7 @@ void QDSDeviceManager::onMessage(const std::string& device_id, websocketpp::conn
         try {
             message_json = json::parse(msg_str);
         } catch (const json::parse_error& e) {
-            std::cout << "[Message] JSON parse error for device " << device_id 
+            BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Message] JSON parse error for device " << device_id 
                       << ": " << e.what() << std::endl;
             return;
         }
@@ -1080,19 +913,19 @@ void QDSDeviceManager::onMessage(const std::string& device_id, websocketpp::conn
         handleDeviceMessage(device_id, message_json);
         
     } catch (const std::exception& e) {
-//         std::cout << "[Message] Error in onMessage for device " << device_id 
+//         BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Message] Error in onMessage for device " << device_id 
 //                   << ": " << e.what() 
 //                   << ", message length: " << msg_str.length() << std::endl;
     }
 }
 
 void QDSDeviceManager::onClose(const std::string& device_id, websocketpp::connection_hdl hdl) {
-    std::cout << "[WS] Device " << device_id << " disconnected." << std::endl;
+    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[WS] Device " << device_id << " disconnected." << std::endl;
     processConnectionStatus(device_id, "offline");
 }
 
 void QDSDeviceManager::onFail(const std::string& device_id, websocketpp::connection_hdl hdl) {
-    std::cout << "[WS] Device " << device_id << " connection failed." << std::endl;
+    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[WS] Device " << device_id << " connection failed." << std::endl;
     processConnectionStatus(device_id, "offline");
 }
 
@@ -1308,46 +1141,15 @@ void QDSDeviceManager::sendSubscribeMessage(const std::string& device_id) {
                           websocketpp::frame::opcode::text, 
                           ec);
         if (ec) {
-            std::cout << "[Send] Error sending subscribe to " << device_id 
+            BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Send] Error sending subscribe to " << device_id 
                       << ": " << ec.message() << std::endl;
         } else {
-            std::cout << "[Send] Sent subscribe message to " << device_id << std::endl;
+            BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Send] Sent subscribe message to " << device_id << std::endl;
         }
     } catch (const std::exception& e) {
-        std::cout << "[Send] Exception sending to device " << device_id 
+        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Send] Exception sending to device " << device_id 
                   << ": " << e.what() << std::endl;
     }
-
-
-    subscribe_msg = {
-       {"id", std::atoi(device_id.c_str())},
-       {"method", "server.files.get_directory"},
-       {"jsonrpc", "2.0"},
-       {"params", {
-           {"root", "gcodes"},
-           {"path", "gcodes"},
-           {"extended", true}
-       }}
-    };
-
-
-    try {
-       websocketpp::lib::error_code ec;
-       conn->client.send(conn->connection_hdl, 
-                         subscribe_msg.dump(), 
-                         websocketpp::frame::opcode::text, 
-                         ec);
-       if (ec) {
-           std::cout << "[Send] Error sending subscribe to " << device_id 
-                     << ": " << ec.message() << std::endl;
-       } else {
-           std::cout << "[Send] Sent subscribe message to " << device_id << std::endl;
-       }
-    } catch (const std::exception& e) {
-       std::cout << "[Send] Exception sending to device " << device_id 
-                 << ": " << e.what() << std::endl;
-    }
-
 }
 
 void QDSDeviceManager::sendCommand(const std::string& device_id, const std::string& script){
@@ -1379,15 +1181,58 @@ void QDSDeviceManager::sendCommand(const std::string& device_id, const std::stri
                           websocketpp::frame::opcode::text, 
                           ec);
         if (ec) {
-            std::cout << "[Send] Error sending subscribe to " << device_id 
+            BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Send] Error sending subscribe to " << device_id 
                       << ": " << ec.message() << std::endl;
         } else {
-            std::cout << "[Send] Sent subscribe message to " << device_id << std::endl;
+            BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Send] Sent subscribe message to " << device_id << std::endl;
         }
     } catch (const std::exception& e) {
-        std::cout << "[Send] Exception sending to device " << device_id 
+        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Send] Exception sending to device " << device_id 
                   << ": " << e.what() << std::endl;
     }
+}
+
+void QDSDeviceManager::sendCommand(const std::string& device_id, const std::string& scriptName, const std::string& script, const std::string& method)
+{
+	std::shared_ptr<WebSocketConnect> conn = nullptr;
+	{
+		std::lock_guard<std::mutex> lock(manager_mutex_);
+		auto conn_it = connections_.find(device_id);
+		if (conn_it == connections_.end() || conn_it->second->stopping) {
+			return;
+		}
+		conn = conn_it->second;
+	}
+
+	if (!conn) return;
+
+	json subscribe_msg = {
+		{"id", std::atoi(device_id.c_str())},
+		{"method", method},
+		{"jsonrpc", "2.0"},
+		{"params", {
+			{scriptName, script}
+		}}
+	};
+
+	try {
+		websocketpp::lib::error_code ec;
+		conn->client.send(conn->connection_hdl,
+			subscribe_msg.dump(),
+			websocketpp::frame::opcode::text,
+			ec);
+		if (ec) {
+			BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Send] Error sending subscribe to " << device_id
+				<< ": " << ec.message() << std::endl;
+		}
+		else {
+			BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Send] Sent subscribe message to " << device_id << std::endl;
+		}
+	}
+	catch (const std::exception& e) {
+		BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Send] Exception sending to device " << device_id
+			<< ": " << e.what() << std::endl;
+	}
 }
 
 void QDSDeviceManager::sendActionCommand(const std::string& device_id, const std::string& action_type){
@@ -1417,13 +1262,13 @@ void QDSDeviceManager::sendActionCommand(const std::string& device_id, const std
                           websocketpp::frame::opcode::text, 
                           ec);
         if (ec) {
-            std::cout << "[Send] Error sending subscribe to " << device_id 
+            BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Send] Error sending subscribe to " << device_id 
                       << ": " << ec.message() << std::endl;
         } else {
-            std::cout << "[Send] Sent subscribe message to " << device_id << std::endl;
+            BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Send] Sent subscribe message to " << device_id << std::endl;
         }
     } catch (const std::exception& e) {
-        std::cout << "[Send] Exception sending to device " << device_id 
+        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Send] Exception sending to device " << device_id 
                   << ": " << e.what() << std::endl;
     }
 }
@@ -1476,6 +1321,18 @@ void QDSDeviceManager::updateDeviceMsg(const std::string& device_id, const json&
 
                 if(result.contains("config_items")){
                     device->m_polar_cooler = result["config_items"]["printing.polar_cooler"].get<std::string>() == "1" ? true : false;
+                    
+                    //y78
+                    if(result["config_items"].contains("nozzle.diameter")){
+                        device->m_nozzle_diameter.clear();
+                        if (result["config_items"]["nozzle.diameter"].is_array()) {
+                            for (const auto& item : result["config_items"]["nozzle.diameter"]) {
+                                device->m_nozzle_diameter.push_back(std::stof(item.get<std::string>()));
+                            }
+                        } else {
+                            device->m_nozzle_diameter.push_back(std::stof(result["config_items"]["nozzle.diameter"].get<std::string>()));
+                        }
+                    }
                 }
 
                 if (result.contains("mqtt_state")) {
@@ -1493,6 +1350,7 @@ void QDSDeviceManager::updateDeviceMsg(const std::string& device_id, const json&
         }
         
         if (message.contains("result")) {
+            
             if(message.at("result").contains("files")){
                 const json& result = message.at("result");
                 updateDeviceFileInfo(device, result);
@@ -1523,7 +1381,12 @@ void QDSDeviceManager::updateDeviceMsg(const std::string& device_id, const json&
             !message.at("params").empty()) {
             
             const json& result = message.at("params").at(0);
+            
             updateDeviceData(device, result, new_status, is_update);
+
+// 			if (result.contains("files")) {
+// 				updateDeviceFileInfo(device, result);
+// 			}
         }
         
         if (message.contains("error") && 
@@ -1572,7 +1435,7 @@ void QDSDeviceManager::updateDeviceData(std::shared_ptr<QDSDevice>& device,
             new_status = status;
         }
     }
-
+   
     if(result.contains("save_variables")){
         device->updateBoxDataByJson(result);
     }
@@ -1715,39 +1578,139 @@ void QDSDeviceManager::updateDeviceData(std::shared_ptr<QDSDevice>& device,
 
 }
 
+//cj_2
+std::string extractAfterGcodes(const std::string& fullPath) {
+	std::string keyword = "/gcodes/";
+
+	size_t pos = fullPath.find(keyword);
+	if (pos != std::string::npos) {
+		// 从 keyword 后面开始截取
+		return fullPath.substr(pos + keyword.length());
+	}
+
+	return "";  // 没找到返回空字符串
+}
+//cj_2
+bool getImageData(const wxString& url, wxMemoryBuffer& output) {
+	wxURL wxUrl(url);
+	if (wxUrl.GetError() != wxURL_NOERR) {
+		BOOST_LOG_TRIVIAL(trace) << "Invalid URL: " << url;
+		return false;
+	}
+
+	wxInputStream* httpStream = wxUrl.GetInputStream();
+	if (!httpStream) {
+		BOOST_LOG_TRIVIAL(trace) << "Failed to open URL: " << url;
+		return false;
+	}
+
+	// 读取图片数据
+	wxMemoryOutputStream memStream;
+	httpStream->Read(memStream);
+
+	delete httpStream;
+
+	// 复制到输出buffer
+	wxStreamBuffer* memBuffer = memStream.GetOutputStreamBuffer();
+	output.AppendData(memBuffer->GetBufferStart(),
+		memBuffer->GetBufferSize());
+
+	return output.GetDataLen() > 0;
+}
 void QDSDeviceManager::updateDeviceFileInfo(std::shared_ptr<QDSDevice>& device, const json& result){
     device->file_info.clear();
-    auto files = result.at("files");
-    for(auto file : files){
-       FileInfo file_info;
-       file_info.file_name = file["filename"];
-       file_info.filament_weight = std::to_string(file["filament_weight_total"].get<float>());
-       file_info.print_time = get_qdt_monitor_time_dhm(file["estimated_time"].get<float>());
-       file_info.modified_time = file["modified"];
-       file_info.thumb_url = UrlEncodeForFilename(file["thumbnails"][0]["relative_path"]);
-       device->file_info.emplace_back(file_info);
-    }
+    //y78
+    const auto& result_array = result["result"];
+    for(const auto& file_item : result_array){
+        GCodeFileInfo file_info;
+        //cj_2 filter cache file
+        file_info.file_path = file_item["filepath"].get<std::string>();
+        if (file_info.file_path.find("/.cache/")!= std::string::npos) {
+            continue;
+        }
+        file_info.extension = file_item["extension"].get<std::string>();
+		//file_info.file_name = file_item["filename"].get<std::string>();
+		file_info.file_name = extractAfterGcodes(file_item["filepath"].get<std::string>());
+        file_info.plate_count = file_item["plate_count"].get<std::string>();
+        file_info.show_filament_weight = file_item["show_filament_weight"].get<std::string>();
+        file_info.show_print_time = file_item["show_print_time"].get<std::string>();
+        
+        int plate_count = std::stoi(file_info.plate_count);
+        if(plate_count > 0){
+            auto plates_array = file_item["plates"];
+            for(const auto& plate_item : plates_array){
+                PlateInfo plate_info;
+                plate_info.index = plate_item["plate_index"].get<std::string>();
+                boost::split(plate_info.filament_colours, plate_item["filament_colour"].get<std::string>(), boost::is_any_of(";"));
+                boost::split(plate_info.filament_types, plate_item["filament_type"].get<std::string>(), boost::is_any_of(";"));
+                boost::split(plate_info.used_extruders, plate_item["used_extruders"].get<std::string>(), boost::is_any_of(";"));
+                plate_info.filament_weight = plate_item["filament_weight"].get<std::string>();
+                plate_info.print_time = plate_item["print_time"].get<std::string>();
+                plate_info.nozzle_diameter = plate_item["nozzle_diameter"].get<std::string>();
+
+                size_t last_dot = file_info.file_name.find_last_of('.');
+                std::string name_without_extension;
+                if (last_dot != std::string::npos) {
+                    name_without_extension = file_info.file_name.substr(0, last_dot);
+                }
+                else {
+                    name_without_extension = file_info.file_name;
+                }
+
+				plate_info.thumb_url = device->m_frp_url + "/server/files/gcodes/.thumbs/" + name_without_extension + "/plate_" + plate_info.index + ".png";
+                //cj_2
+				wxMemoryBuffer imageData;
+                if (getImageData(UrlEncodeForFilename(plate_info.thumb_url), imageData))
+                {
+					size_t dataSize = imageData.GetDataLen();
+					unsigned char* dataPtr = (unsigned char*)imageData.GetData();
+                    plate_info.thumbnailData.pixels.resize(dataSize);
+                    memcpy(plate_info.thumbnailData.pixels.data(), dataPtr, dataSize);
+                }
+                else {
+                    wxBitmap bitmap=ScalableBitmap(nullptr, "monitor_placeholder", 160).bmp();
+					wxImage image = bitmap.ConvertToImage();
+					if (image.IsOk()) {
+						unsigned int width = bitmap.GetWidth();
+						unsigned int height = bitmap.GetHeight();
+						unsigned char* rgbData = image.GetData();
+						size_t dataSize = width * height * 3; // RGB 格式
+
+                        plate_info.thumbnailData.pixels.assign(rgbData, rgbData + dataSize);
+					}
+					
+                }
+                file_info.plates.emplace_back(plate_info);
+
+            } 
+        }
+        file_info.show_thumb_url = file_info.plates.empty() ? "" : file_info.plates[0].thumb_url;
+        
+        device->file_info.emplace_back(file_info);
+    }       
+    device->m_fresh_file_info = true;
 }
 
 void QDSDeviceManager::updatePrintThumbUrl(std::shared_ptr<QDSDevice>& device, const json& message){
     const json& result = message.at("params")[0];
     if(result["action"] == "added"){
-        device->m_print_filename = result["job"]["filename"];
-        std::string thumb_path = result["job"]["metadata"]["thumbnails"]["relative_path"];
-        device->m_print_png_url = device->m_frp_url + "/server/files/gcodes/" + thumb_path;
-    } else if(result["action"] == "finished"){
+		device->m_print_filename = result["job"]["filename"];
+		std::string thumb_path = result["job"]["metadata"]["thumbnails"]["relative_path"];
+		device->m_print_png_url = device->m_frp_url + "/server/files/gcodes/" + thumb_path;
+	}
+	else if (result["action"] == "finished") {
         device->m_print_filename = "";
-        device->m_print_png_url = "";
-    }
+		device->m_print_png_url = "";
+	}
 }
 
 void QDSDeviceManager::updatePrintThumbUrlWithOutMsg(std::shared_ptr<QDSDevice>& device){
     if(!device->file_info.empty() && device->m_print_png_url.empty()){
         std::string print_file_name = device->m_print_filename;
-        std::vector<FileInfo> files_info = device->file_info;
+        std::vector<GCodeFileInfo> files_info = device->file_info;
         for(auto file_ : files_info){
             if(file_.file_name == print_file_name)
-                device->m_print_png_url = device->m_frp_url + "/server/files/gcodes/" + file_.thumb_url;
+                device->m_print_png_url = file_.show_thumb_url;
         }
     }
 }
@@ -1900,8 +1863,19 @@ void QDSDeviceManager::upBoxInfoToBoxMsg(std::shared_ptr<QDSDevice>& device){
         box_count = device->m_box_count;
         auto_reload_detect = device->m_auto_reload_detect;
         box_list_preset_name = device->m_type;
-        wxGetApp().plater()->sidebar().box_list_printer_ip = device->m_ip;
+        //y78
+        if(box_count > 0)
+            wxGetApp().plater()->sidebar().box_list_printer_ip = device->m_ip;
+        else
+            wxGetApp().plater()->sidebar().box_list_printer_ip = "";
     }
+
+    //y78
+    device->m_filament_colors = filament_colors;
+    device->m_filament_type = filament_type;
+    device->m_filament_id = filament_id;
+    device->m_slot_id = slot_id;
+    device->m_slot_state = slot_state;
 
     wxGetApp().plater()->box_msg.slot_state = slot_state;
     wxGetApp().plater()->box_msg.filament_id = filament_id;
@@ -1913,6 +1887,41 @@ void QDSDeviceManager::upBoxInfoToBoxMsg(std::shared_ptr<QDSDevice>& device){
     wxGetApp().plater()->box_msg.box_list_preset_name = box_list_preset_name;
 
     GUI::wxGetApp().sidebar().load_box_list();
+}
+
+//y78
+void QDSDeviceManager::getFileInfo(const std::string& device_id){
+    std::shared_ptr<QDSDevice> device = getDevice(device_id);
+    if (!device) {
+        return;
+    }
+
+	std::string api_url = device->m_frp_url + "/api/qidiclient/files/list";
+
+    auto http = Http::get(std::move(api_url));
+    
+    http.on_error([&](std::string body, std::string error, unsigned status) {
+		//BOOST_LOG_TRIVIAL(trace) << boost::format("Error getting version: %1%, HTTP %2%, body: `%3%`") % error % status % body;
+
+        })
+        .on_complete([&, this](std::string body, unsigned) {
+            try {
+				json bodyJson = json::parse(body);
+                if (bodyJson.contains("result"))
+                    updateDeviceFileInfo(device, bodyJson);
+            }
+            catch (const std::exception &) {
+                ;
+            };
+        })
+        .perform_sync();
+}
+
+void QDSDeviceManager::resetBoxUpdateStatus(const std::string& device_id) {
+    std::shared_ptr<QDSDevice> device = getDevice(device_id);
+    if (device) {
+        device->reset_update_status();
+    }
 }
 
 }}

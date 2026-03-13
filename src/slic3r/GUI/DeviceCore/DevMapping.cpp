@@ -8,8 +8,10 @@
 #include "slic3r/GUI/I18N.hpp"
 #include "slic3r/GUI/GuiColor.hpp"
 
-//y71
-#include "../GUI_App.hpp"
+//y78
+#include "slic3r/GUI/GUI_App.hpp"
+#include "Slic3r/GUI/QDSDeviceManager.hpp"
+
 
 using namespace nlohmann;
 
@@ -105,7 +107,8 @@ namespace Slic3r
         }
     }
 
-    int DevMappingUtil::ams_filament_mapping(const MachineObject* obj, const std::vector<FilamentInfo>& filaments, std::vector<FilamentInfo>& result, std::vector<bool> map_opt, std::vector<int> exclude_id, bool nozzle_has_ams_then_ignore_ext)
+    //y78
+    int DevMappingUtil::ams_filament_mapping(const MachineObject* obj, const std::vector<FilamentInfo>& filaments, std::vector<FilamentInfo>& result, std::vector<bool> map_opt, std::vector<int> exclude_id, bool nozzle_has_ams_then_ignore_ext, bool is_from_sd_card)
     {
         if (filaments.empty())
             return -1;
@@ -113,14 +116,31 @@ namespace Slic3r
         /////////////////////////
         // Step 1: collect filaments in machine
         std::map<int, FilamentInfo> tray_filaments; // tray_index : tray_color
-        bool  left_nozzle_has_ams = false, right_nozzle_has_ams = false;
+        //y78
+        bool  left_nozzle_has_ams = map_opt[0], right_nozzle_has_ams = map_opt[1];
 
-        //y71
-        std::vector<std::string> filament_colors = GUI::wxGetApp().plater()->box_msg.filament_colors;
-        std::vector<std::string> filament_type = GUI::wxGetApp().plater()->box_msg.filament_type;
-        std::vector<std::string> filament_id = GUI::wxGetApp().plater()->box_msg.filament_id;
-        std::vector<int> slot_id = GUI::wxGetApp().plater()->box_msg.slot_id;
-        int box_count = GUI::wxGetApp().plater()->box_msg.box_count;
+        //y78
+        std::vector<std::string> filament_colors;
+        std::vector<std::string> filament_type;
+        std::vector<std::string> filament_id;
+        std::vector<int> slot_id;
+        int box_count;
+        if (is_from_sd_card) {
+            auto qds_dev = GUI::wxGetApp().qdsdevmanager;
+            auto qds_obj = qds_dev->getSelectedDevice();
+            filament_colors = qds_obj->m_filament_colors;
+            filament_type = qds_obj->m_filament_type;
+            filament_id = qds_obj->m_filament_id;
+            slot_id = qds_obj->m_slot_id;
+            box_count = qds_obj->m_box_count;
+        }
+        else {
+            filament_colors = GUI::wxGetApp().plater()->box_msg.filament_colors;
+            filament_type = GUI::wxGetApp().plater()->box_msg.filament_type;
+            filament_id = GUI::wxGetApp().plater()->box_msg.filament_id;
+            slot_id = GUI::wxGetApp().plater()->box_msg.slot_id;
+            box_count = GUI::wxGetApp().plater()->box_msg.box_count;
+        }
 
         if (filament_colors.empty())
             return -1;
@@ -135,8 +155,21 @@ namespace Slic3r
                 box_fila_info.filament_id = filament_id[i];
                 box_fila_info.slot_id = std::to_string(slot_id[i]);
                 box_fila_info.ams_id = std::to_string(slot_id[i] / 4 + 1);
+                box_fila_info.tray_id = slot_id[i];
                 box_filament_infos.push_back(box_fila_info);
             }
+        }
+
+        //y78
+        if(!right_nozzle_has_ams){
+            FilamentInfo box_fila_info;
+            box_fila_info.color = filament_colors[16].erase(0, 1) + "FF";
+            box_fila_info.type = filament_type[16];
+            box_fila_info.filament_id = filament_id[16];
+            box_fila_info.slot_id = std::to_string(slot_id[16]);
+            box_fila_info.ams_id = "";
+            box_fila_info.tray_id = -1;
+            box_filament_infos.push_back(box_fila_info);
         }
 
         // const auto& ams_list = obj->GetFilaSystem()->GetAmsList();
@@ -271,7 +304,7 @@ namespace Slic3r
             // }
             for(int j = 0; j < box_filament_infos.size(); j++){
                 DisValue val;
-                val.tray_id = j;
+                val.tray_id = box_filament_infos[j].tray_id;
                 wxColour c = wxColour(filaments[i].color);
                 wxColour tray_c = DevAmsTray::decode_color(box_filament_infos[j].color);
                 val.distance = GUI::calc_color_distance(c, tray_c);

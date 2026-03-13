@@ -94,9 +94,10 @@ public:
     int         extruder_cali_manual_mode = -1;
     //y71
     int         enable_multi_box{0};
+    //y76
     int         enable_air_condition{0};
 
-    //y
+    //y76
     void set_print_config(std::string bed_type, bool bed_leveling, bool flow_cali, bool vabration_cali, bool record_timelapse, bool layer_inspect, bool ext_change_assist,
         int auto_bed_levelingt,
         int auto_enable_multi_box,

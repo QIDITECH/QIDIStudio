@@ -117,6 +117,12 @@ protected:
     wxStaticLine*          m_air_pump_line_above = nullptr;;
     uiDeviceUpdateVersion* m_air_pump_version = nullptr;
 
+    /* rotary attachment*/
+    wxBoxSizer            *m_rotary_sizer      = nullptr;
+    wxStaticBitmap        *m_rotary_img        = nullptr;
+    wxStaticLine          *m_rotary_line_above = nullptr;
+    uiDeviceUpdateVersion *m_rotary_version    = nullptr;
+
     /* cutting module info*/
     wxBoxSizer*            m_cutting_sizer = nullptr;
     wxStaticBitmap*        m_cutting_img = nullptr;
@@ -164,6 +170,7 @@ protected:
     ScalableBitmap m_img_cutting;
     ScalableBitmap m_img_laser;
     ScalableBitmap m_img_extinguish;
+    ScalableBitmap m_img_rotary;
     ScalableBitmap upgrade_gray_icon;
     ScalableBitmap upgrade_green_icon;
     ScalableBitmap upgrade_yellow_icon;
@@ -223,17 +230,20 @@ private:
     void createLaserWidgets(wxBoxSizer* main_left_sizer);
     void createExtinguishWidgets(wxBoxSizer* main_left_sizer);
     void createNozzleRackWidgets(wxBoxSizer* main_left_sizer);
+    void createRotaryWidgets(wxBoxSizer *main_left_sizer);
 
     void update_air_pump(MachineObject* obj);
     void update_cut(MachineObject* obj);
     void update_laszer(MachineObject* obj);
     void update_extinguish(MachineObject* obj);
+    void update_rotary(MachineObject *obj);
     void update_nozzle_rack(MachineObject *obj);
     void on_nozzle_rack_update(wxCommandEvent &event);
 
     void show_air_pump(bool show = true);
     void show_cut(bool show = true);
     void show_laszer(bool show = true);
+    void show_rotary(bool show = true);
     void show_extinguish(bool show = true);
     void show_nozzle_rack(bool show = true);
 };

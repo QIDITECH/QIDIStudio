@@ -32,6 +32,8 @@ public:
 	bool can_test() const override { return true; }
     PrintHostPostUploadActions get_post_upload_actions() const override { return PrintHostPostUploadAction::StartPrint | PrintHostPostUploadAction::StartSimulation; }
 	std::string get_host() const override { return host; }
+	//y78
+	virtual bool send_msg_to_printer(std::string api, std::string msg) const override {return false;};
    
 private:
 	enum class ConnectionType { rrf, dsf, error };

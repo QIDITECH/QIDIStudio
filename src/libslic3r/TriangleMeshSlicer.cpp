@@ -1649,8 +1649,8 @@ static std::vector<Polygons> make_slab_loops(
 #endif /* SLIC3R_DEBUG_SLICE_PROCESSING */
                         assert(! loops.empty());
                         assert(open_polylines.empty());
-                        if (! open_polylines.empty())
-                            BOOST_LOG_TRIVIAL(trace) << "make_slab_loops - chaining failed. #" << open_polylines.size() << " open polylines";
+                        //if (! open_polylines.empty())
+                            // BOOST_LOG_TRIVIAL(trace) << "make_slab_loops - chaining failed. #" << open_polylines.size() << " open polylines";
                     }
                 }
             }
@@ -2326,7 +2326,7 @@ void cut_mesh(const indexed_triangle_set& mesh, float z, indexed_triangle_set* u
     if (upper == nullptr && lower == nullptr)
         return;
 
-    BOOST_LOG_TRIVIAL(trace) << "cut_mesh - slicing object";
+    // BOOST_LOG_TRIVIAL(trace) << "cut_mesh - slicing object";
 
     if (upper) {
         upper->clear();
@@ -2453,7 +2453,7 @@ void cut_mesh(const indexed_triangle_set& mesh, float z, indexed_triangle_set* u
             if (!find_isolated_vertex && isolated_vertex_option != -1) {
                 calc_isolated_vertex(isolated_vertex_option, find_isolated_vertex);
                 if (!find_isolated_vertex) {
-                    BOOST_LOG_TRIVIAL(trace) << "cut_mesh:error:could not find isolated_vertex";
+                    // BOOST_LOG_TRIVIAL(trace) << "cut_mesh:error:could not find isolated_vertex";
                     continue;
                 }
                 iv = isolated_vertex_option;
@@ -2581,7 +2581,7 @@ void cut_mesh
     if (upper == nullptr && lower == nullptr)
         return;
 
-    BOOST_LOG_TRIVIAL(trace) << "cut_mesh - slicing object";
+    // BOOST_LOG_TRIVIAL(trace) << "cut_mesh - slicing object";
 
     Vec3d plane_normal = calc_plane_normal(plane_points);
     if (std::abs(plane_normal(0)) < EPSILON && std::abs(plane_normal(1)) < EPSILON) {

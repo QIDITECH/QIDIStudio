@@ -99,7 +99,7 @@ TaskStateInfo::TaskStateInfo(QDT::PrintParams param)
                 95,    // PrintingStageFinished
                 100    // PrintingStageFinished
         };
-        BOOST_LOG_TRIVIAL(trace) << "task_manager: update task, " << QDTCrossTalk::Crosstalk_DevId(m_params.dev_id) << ", stage = " << stage << "code = " << code;
+        // BOOST_LOG_TRIVIAL(trace) << "task_manager: update task, " << QDTCrossTalk::Crosstalk_DevId(m_params.dev_id) << ", stage = " << stage << "code = " << code;
         // update current percnet
         int curr_percent = 0;
         if (stage >= 0 && stage <= (int)PrintingStageFinished) {
@@ -108,11 +108,11 @@ TaskStateInfo::TaskStateInfo(QDT::PrintParams param)
                 || stage == QDT::SendingPrintJobStage::PrintingStageRecord)
                 && (code > 0 && code <= 100)) {
                 curr_percent = (StagePercentPoint[stage + 1] - StagePercentPoint[stage]) * code / 100 + StagePercentPoint[stage];
-                BOOST_LOG_TRIVIAL(trace) << "task_manager: percent = " << curr_percent;
+                // BOOST_LOG_TRIVIAL(trace) << "task_manager: percent = " << curr_percent;
             }
         }
 
-        BOOST_LOG_TRIVIAL(trace) << "task_manager: update task, curr_percent = " << curr_percent;
+        // BOOST_LOG_TRIVIAL(trace) << "task_manager: update task, curr_percent = " << curr_percent;
         update_sending_percent(curr_percent);
     };
 
@@ -139,7 +139,7 @@ bool TaskGroup::need_schedule(std::chrono::system_clock::time_point last, TaskSt
     std::chrono::system_clock::time_point curr_time = std::chrono::system_clock::now();
     auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(curr_time - last);
     if (diff.count() > TaskManager::SendingInterval * 1000) {
-        BOOST_LOG_TRIVIAL(trace) << "task_manager: diff count = " << diff.count() << " milliseconds";
+        // BOOST_LOG_TRIVIAL(trace) << "task_manager: diff count = " << diff.count() << " milliseconds";
         return true;
     }
     return false;
@@ -211,12 +211,12 @@ int TaskManager::schedule(TaskStateInfo* task)
     assert(task->state() == TaskState::TS_PENDING);
     task->set_state(TaskState::TS_SENDING);
 
-    BOOST_LOG_TRIVIAL(trace) << "task_manager: schedule a task to dev_id = " << QDTCrossTalk::Crosstalk_DevId(task->params().dev_id);
+    // BOOST_LOG_TRIVIAL(trace) << "task_manager: schedule a task to dev_id = " << QDTCrossTalk::Crosstalk_DevId(task->params().dev_id);
     boost::thread* new_sending_thread = new boost::thread();
     *new_sending_thread = Slic3r::create_thread(
         [this, task] {
             if (!m_agent) {
-                BOOST_LOG_TRIVIAL(trace) << "task_manager: NetworkAgent is nullptr";
+                // BOOST_LOG_TRIVIAL(trace) << "task_manager: NetworkAgent is nullptr";
                 return;
             }
             assert(m_agent);
@@ -243,7 +243,7 @@ int TaskManager::schedule(TaskStateInfo* task)
             m_scedule_mutex.lock();
             auto it = std::find(m_scedule_list.begin(), m_scedule_list.end(), task);
             if (it != m_scedule_list.end()) {
-                BOOST_LOG_TRIVIAL(trace) << "task_manager: schedule, scedule task has removed from list";
+                // BOOST_LOG_TRIVIAL(trace) << "task_manager: schedule, scedule task has removed from list";
                 m_scedule_list.erase(it);
             }
             else {
@@ -264,7 +264,7 @@ void TaskManager::start()
     m_started = true;
     m_scedule_thread = Slic3r::create_thread(
         [this] {
-        BOOST_LOG_TRIVIAL(trace) << "task_manager: thread start()";
+        // BOOST_LOG_TRIVIAL(trace) << "task_manager: thread start()";
         while (m_started) {
             m_map_mutex.lock();
             for (auto it = m_cache_map.begin(); it != m_cache_map.end(); it++) {
@@ -279,7 +279,7 @@ void TaskManager::start()
             }
             m_map_mutex.unlock();
             if (!m_scedule_list.empty()) {
-                //BOOST_LOG_TRIVIAL(trace) << "task_manager: need scedule task count = " << m_scedule_list.size();
+                //// BOOST_LOG_TRIVIAL(trace) << "task_manager: need scedule task count = " << m_scedule_list.size();
                 m_scedule_mutex.lock();
                 for (auto it = m_scedule_list.begin(); it != m_scedule_list.end(); it++) {
                     this->schedule(*it);
@@ -288,7 +288,7 @@ void TaskManager::start()
             }
             boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
         }
-        BOOST_LOG_TRIVIAL(trace) << "task_manager: thread exit()";
+        // BOOST_LOG_TRIVIAL(trace) << "task_manager: thread exit()";
     });
 }
 
@@ -329,7 +329,7 @@ std::map<std::string, TaskStateInfo> TaskManager::get_task_list(int curr_page, i
         int result = m_agent->get_user_tasks(task_query_params, &task_info);
 
 #if !QDT_RELEASE_TO_PUBLIC
-        BOOST_LOG_TRIVIAL(trace) << "task_manager: get_task_list task_info=" << task_info;
+        // BOOST_LOG_TRIVIAL(trace) << "task_manager: get_task_list task_info=" << task_info;
 #endif
 
         if (result == 0) {
@@ -341,7 +341,7 @@ std::map<std::string, TaskStateInfo> TaskManager::get_task_list(int curr_page, i
                 if (!j.contains("hits")) {
                     return out;
                 }
-                BOOST_LOG_TRIVIAL(trace) << "task_manager: get_task_list task count =" << j["hits"].size();
+                // BOOST_LOG_TRIVIAL(trace) << "task_manager: get_task_list task count =" << j["hits"].size();
                 for (auto& hit : j["hits"]) {
                     TaskStateInfo task_info;
                     int64_t design_id = 0;

@@ -42,11 +42,13 @@
 	#endif
 #endif
 
+#include "LogSink.hpp"
+
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
-#include <boost/log/sinks/text_file_backend.hpp>
 #include <boost/log/utility/setup/file.hpp>
+#include <boost/log/utility/setup/console.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/sources/severity_logger.hpp>
 #include <boost/log/sources/record_ostream.hpp>
@@ -113,9 +115,20 @@ void set_logging_level(unsigned int level)
 {
     logSeverity = level_to_boost(level);
 
-    boost::log::core::get()->set_filter
-    (
-        boost::log::trivial::severity >= logSeverity
+    boost::log::core::get()->set_filter(
+        [level](const boost::log::attribute_value_set& attr_set)
+        {
+            // 获取日志等级
+            auto severity = attr_set[boost::log::trivial::severity].get();
+            
+            // 如果是trace等级，始终输出到控制台
+            if (severity == boost::log::trivial::trace) {
+                return true;  // trace等级始终通过过滤器
+            }
+            
+            // 其他等级按原逻辑过滤
+            return severity >= logSeverity;
+        }
     );
 }
 
@@ -157,8 +170,6 @@ unsigned get_logging_level()
     default: return 1;
     }
 }
-
-boost::shared_ptr<boost::log::sinks::synchronous_sink<boost::log::sinks::text_file_backend>> g_log_sink;
 
 // Force set_logging_level(<=error) after loading of the DLL.
 // This is currently only needed if libslic3r is loaded as a shared library into Perl interpreter
@@ -306,45 +317,77 @@ std::string debug_out_path(const char *name, ...)
 	return svg_folder.string() + std::string(buffer);
 }
 
+boost::shared_ptr<LogSink> g_log_sink;
+boost::shared_ptr<LogSinkBackend> g_log_sink_backend;
+bool is_log_trivival_valid()
+{
+    return g_log_sink != nullptr;
+}
+
 namespace logging = boost::log;
 namespace src = boost::log::sources;
 namespace expr = boost::log::expressions;
 namespace keywords = boost::log::keywords;
 namespace attrs = boost::log::attributes;
-void set_log_path_and_level(const std::string& file, unsigned int level)
+void set_log_path_and_level(const std::string& file, unsigned int level, const LogEncOptions& enc_options)
 {
 #ifdef __APPLE__
 	//currently on old macos, the boost::log::add_file_log will crash
 	//TODO: need to be fixed
 	if (!is_macos_support_boost_add_file_log()) {
+		setup_console_sink();
+        set_logging_level(level);
 		return;
 	}
 #endif
 
-	//QDS log file at C:\\Users\\[yourname]\\AppData\\Roaming\\QIDIStudio\\log\\[log_filename].log
-	auto log_folder = boost::filesystem::path(g_data_dir) / "log";
-	if (!boost::filesystem::exists(log_folder)) {
-		boost::filesystem::create_directory(log_folder);
-	}
-	auto full_path = (log_folder / file).make_preferred();
-
-	g_log_sink = boost::log::add_file_log(
-		keywords::file_name = full_path.string() + ".%N",
-		keywords::rotation_size = 100 * 1024 * 1024,
-		keywords::format =
-		(
-			expr::stream
-			<< expr::format_date_time< boost::posix_time::ptime >("TimeStamp", "%Y-%m-%d %H:%M:%S.%f")
-			<<"[Thread " << expr::attr<attrs::current_thread_id::value_type>("ThreadID") << "]"
-			<< ":" << expr::smessage
-			)
+	g_log_sink_backend = boost::make_shared<LogSinkBackend>(file, enc_options);
+    g_log_sink = boost::make_shared<LogSink>(g_log_sink_backend);
+	g_log_sink->set_formatter(
+		expr::stream
+		<< expr::format_date_time< boost::posix_time::ptime >("TimeStamp", "%Y-%m-%d %H:%M:%S.%f")
+		<< "[Thread " << expr::attr<attrs::current_thread_id::value_type>("ThreadID") << "]"
+		<< ":" << expr::smessage
 	);
+
+	setup_console_sink();
+	boost::log::core::get()->add_sink(g_log_sink);
 
 	logging::add_common_attributes();
 
 	set_logging_level(level);
-
 	return;
+}
+
+void setup_console_sink()
+{
+    static boost::shared_ptr<boost::log::sinks::synchronous_sink<boost::log::sinks::text_ostream_backend>> console_sink;
+    
+    if (!console_sink) {
+        // 创建控制台sink
+        console_sink = boost::log::add_console_log(
+            std::clog,
+            boost::log::keywords::format = 
+            (
+                expr::stream
+                << expr::format_date_time<boost::posix_time::ptime>("TimeStamp", "%H:%M:%S.%f")
+                << " [TRACE] "
+                << expr::smessage
+            )
+        );
+        
+        // 设置控制台sink只输出trace等级
+        console_sink->set_filter(
+            boost::log::trivial::severity == boost::log::trivial::trace
+        );
+    }
+}
+
+void update_log_sink(const std::string& file, const LogEncOptions& enc_options)
+{
+    if (g_log_sink_backend) {
+        g_log_sink_backend->update_enc_option(file, enc_options);
+    }
 }
 
 void flush_logs()

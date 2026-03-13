@@ -480,6 +480,83 @@ bool generate_image(const std::string &filename, wxImage &image, wxSize img_size
     return true;
 }
 
+//cj_2
+std::string UrlEncodeForFilename(const std::string& input) {
+	std::ostringstream escaped;
+	escaped.fill('0');
+	escaped << std::hex << std::uppercase;
+
+	for (char c : input) {
+		unsigned char uc = static_cast<unsigned char>(c);
+
+		if ((uc >= 32 && uc <= 126) &&
+			uc != '%' &&
+			uc != '+' &&
+			uc != ' ') {
+			escaped << c;
+		}
+		else if (c == '/') {
+			escaped << c;
+		}
+		else {
+			escaped << '%' << std::setw(2) << static_cast<int>(uc);
+		}
+	}
+	return escaped.str();
+}
+
+//cj_2
+// 将单个字符转换为 \uXXXX 格式
+std::string charToUnicodeEscape(char32_t ch) {
+	std::stringstream ss;
+	ss << "\\u"
+		<< std::hex << std::setw(4) << std::setfill('0')
+		<< static_cast<uint32_t>(ch);
+	return ss.str();
+}
+
+// 将字符串中的非 ASCII 字符转换为 \u 转义
+std::string stringToUnicodeEscape(const std::string& utf8_str) {
+	std::string result;
+	std::stringstream ss;
+
+	for (size_t i = 0; i < utf8_str.size(); ) {
+		unsigned char c = utf8_str[i];
+
+		// 判断 UTF-8 字符长度
+		if (c < 0x80) { // ASCII
+			result += c;
+			i++;
+		}
+		else if ((c & 0xE0) == 0xC0) { // 2 字节 UTF-8
+			char32_t codepoint = ((c & 0x1F) << 6) | (utf8_str[i + 1] & 0x3F);
+			result += charToUnicodeEscape(codepoint);
+			i += 2;
+		}
+		else if ((c & 0xF0) == 0xE0) { // 3 字节 UTF-8（常用汉字）
+			char32_t codepoint = ((c & 0x0F) << 12) |
+				((utf8_str[i + 1] & 0x3F) << 6) |
+				(utf8_str[i + 2] & 0x3F);
+			result += charToUnicodeEscape(codepoint);
+			i += 3;
+		}
+		else if ((c & 0xF8) == 0xF0) { // 4 字节 UTF-8
+			char32_t codepoint = ((c & 0x07) << 18) |
+				((utf8_str[i + 1] & 0x3F) << 12) |
+				((utf8_str[i + 2] & 0x3F) << 6) |
+				(utf8_str[i + 3] & 0x3F);
+			result += charToUnicodeEscape(codepoint);
+			i += 4;
+		}
+		else {
+			// 无效 UTF-8
+			i++;
+		}
+	}
+
+	return result;
+}
+
 std::deque<wxDialog*> dialogStack;
 
 WikiPanel::WikiPanel(wxWindow *parent, const wxString &wiki_text, const wxString &tooltip, const std::string &wiki_url)

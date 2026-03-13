@@ -5,6 +5,11 @@
 #include "GUI_App.hpp"
 #include "MainFrame.hpp"
 #include "Widgets/RadioBox.hpp"
+
+//cj_2
+#if QDT_RELEASE_TO_PUBLIC
+#include "../QIDI/QIDINetwork.hpp"
+#endif
 #include <wx/listimpl.cpp>
 
 #include "DeviceCore/DevManager.h"
@@ -484,7 +489,7 @@ QDT::PrintParams SendMultiMachinePage::request_params(MachineObject* obj)
     if (&job_data) {
         std::string temp_file = Slic3r::resources_dir() + "/check_access_code.txt";
         auto check_access_code_path = temp_file.c_str();
-        //BOOST_LOG_TRIVIAL(trace) << "sned_job: check_access_code_path = " << check_access_code_path;
+        //// BOOST_LOG_TRIVIAL(trace) << "sned_job: check_access_code_path = " << check_access_code_path;
         job_data._temp_path = fs::path(check_access_code_path);
     }
 
@@ -1097,7 +1102,7 @@ void SendMultiMachinePage::on_set_finish_mapping(wxCommandEvent& evt)
                 m_ams_mapping_result[i].ams_id  = selection_data_arr[6].ToStdString();
                 m_ams_mapping_result[i].slot_id = selection_data_arr[7].ToStdString();
             }
-            BOOST_LOG_TRIVIAL(trace) << "The box mapping result: id is " << m_ams_mapping_result[i].id << "tray_id is " << m_ams_mapping_result[i].tray_id;
+            // BOOST_LOG_TRIVIAL(trace) << "The box mapping result: id is " << m_ams_mapping_result[i].id << "tray_id is " << m_ams_mapping_result[i].tray_id;
         }
 
         MaterialHash::iterator iter = m_material_list.begin();
@@ -1139,7 +1144,7 @@ wxPanel* SendMultiMachinePage::create_page()
     m_task_name->SetMinSize(wxSize(FromDIP(200), -1));
     m_task_name->SetMaxSize(wxSize(FromDIP(200), -1));
     m_task_name->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
-    m_rename_button = new ScalableButton(m_rename_normal_panel, wxID_ANY, "ams_editable");
+    m_rename_button = new ScalableButton(m_rename_normal_panel, wxID_ANY, "box_editable");
     m_rename_button->SetBackgroundColour(*wxWHITE);
     rename_sizer_h->Add(m_task_name, 0, wxALIGN_CENTER, 0);
     rename_sizer_h->Add(m_rename_button, 0, wxALIGN_CENTER, 0);

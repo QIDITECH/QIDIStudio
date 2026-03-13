@@ -232,11 +232,8 @@ template<class RawBox, class RawShape, class Ratio = double> inline NfpResult<Ra
                       {bedMaxx + rightOffset, bedMiny + bottomOffset},
                       {bedMinx + leftOffset, bedMiny + bottomOffset},
                       {bedMinx + leftOffset, bedMaxy + topOffset}};
-    if (sheight > boxHeight || swidth > boxWidth) {
-        return {{}, {0, 0}};
-    } else {
-        return {innerNfp, {0, 0}};
-    }
+
+    return {innerNfp, {0, 0}};
 }
 
 /**

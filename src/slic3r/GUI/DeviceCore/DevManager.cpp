@@ -3,6 +3,14 @@
 #include "DevManager.h"
 #include "DevUtil.h"
 
+/* mac need the macro while including <boost/stacktrace.hpp>*/
+#ifdef  __APPLE__
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#endif
+#include <boost/stacktrace.hpp>
+
 // TODO: remove this include
 #include "slic3r/GUI/DeviceManager.hpp"
 #include "slic3r/GUI/I18N.hpp"
@@ -264,6 +272,11 @@ namespace Slic3r
                     << ", ip = " << QDTCrossTalk::Crosstalk_DevIP(dev_ip) <<", printer_name = " << QDTCrossTalk::Crosstalk_DevName(dev_name)
                     << ", con_type= " << connect_type <<", signal= " << printer_signal << ", bind_state= " << bind_state;
             }
+
+            if (obj && obj->is_cloud_mode_printer()) {
+                obj->erase_user_access_code();
+                obj->erase_user_access_dev_ip();
+            }
         }
         catch (...) {
             ;
@@ -313,7 +326,7 @@ namespace Slic3r
             return -1;
         }
 
-        BOOST_LOG_TRIVIAL(trace) << "DeviceManager::query_bind_status";
+        // BOOST_LOG_TRIVIAL(trace) << "DeviceManager::query_bind_status";
         std::map<std::string, MachineObject*>::iterator it;
         std::vector<std::string> query_list;
         for (it = localMachineList.begin(); it != localMachineList.end(); it++)
@@ -386,7 +399,7 @@ namespace Slic3r
 
     void DeviceManager::clean_user_info()
     {
-        BOOST_LOG_TRIVIAL(trace) << "DeviceManager::clean_user_info";
+        // BOOST_LOG_TRIVIAL(trace) << "DeviceManager::clean_user_info";
         // reset selected_machine
         selected_machine = "";
         local_selected_machine = "";
@@ -412,6 +425,20 @@ namespace Slic3r
             << " cur_selected=" << QDTCrossTalk::Crosstalk_DevId(selected_machine);
         auto my_machine_list = get_my_machine_list();
         auto it = my_machine_list.find(dev_id);
+
+        // Check the dev_id is in my_machine_list
+        if (!dev_id.empty() && it == my_machine_list.end()) {
+            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": "
+                << QDTCrossTalk::Crosstalk_DevId(dev_id) << " not in my_machine_list";
+
+            static std::unordered_set<std::string> s_unknown_devs;
+            if (s_unknown_devs.find(dev_id) == s_unknown_devs.end()) {
+                s_unknown_devs.insert(dev_id);
+                BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::stacktrace::stacktrace();
+            };
+
+            return false;
+        };
 
         // disconnect last if dev_id difference from previous one
         auto last_selected = my_machine_list.find(selected_machine);
@@ -471,7 +498,6 @@ namespace Slic3r
                 {
                     if (it->second->connection_type() != "lan" || it->second->connection_type().empty())
                     {
-                        // diff dev_id, cloud => set_user_selected_machine(new)
                         BOOST_LOG_TRIVIAL(info) << "set_selected_machine: select new cloud machine, dev_id =" << QDTCrossTalk::Crosstalk_DevId(dev_id);
                         m_agent->set_user_selected_machine(dev_id);
                         it->second->reset();
@@ -499,11 +525,13 @@ namespace Slic3r
         }
 
         selected_machine = dev_id;
+        record_user_last_machine(selected_machine);
         return true;
     }
 
     MachineObject* DeviceManager::get_selected_machine()
     {
+        //y76
         return nullptr;
 
         if (selected_machine.empty()) return nullptr;
@@ -529,7 +557,7 @@ namespace Slic3r
         for (auto it = userMachineList.begin(); it != userMachineList.end(); it++)
         {
             dev_list.push_back(it->first);
-            BOOST_LOG_TRIVIAL(trace) << "add_user_subscribe: " << QDTCrossTalk::Crosstalk_DevId(it->first);
+            // BOOST_LOG_TRIVIAL(trace) << "add_user_subscribe: " << QDTCrossTalk::Crosstalk_DevId(it->first);
         }
         m_agent->add_subscribe(dev_list);
     }
@@ -542,7 +570,7 @@ namespace Slic3r
         for (auto it = userMachineList.begin(); it != userMachineList.end(); it++)
         {
             dev_list.push_back(it->first);
-            BOOST_LOG_TRIVIAL(trace) << "del_user_subscribe: " << QDTCrossTalk::Crosstalk_DevId(it->first);
+            // BOOST_LOG_TRIVIAL(trace) << "del_user_subscribe: " << QDTCrossTalk::Crosstalk_DevId(it->first);
         }
         m_agent->del_subscribe(dev_list);
     }
@@ -556,10 +584,10 @@ namespace Slic3r
             if (it != selected_machine)
             {
                 unsub_list.push_back(it);
-                BOOST_LOG_TRIVIAL(trace) << "subscribe_device_list: unsub dev id = " << QDTCrossTalk::Crosstalk_DevId(it);
+                // BOOST_LOG_TRIVIAL(trace) << "subscribe_device_list: unsub dev id = " << QDTCrossTalk::Crosstalk_DevId(it);
             }
         }
-        BOOST_LOG_TRIVIAL(trace) << "subscribe_device_list: unsub_list size = " << unsub_list.size();
+        // BOOST_LOG_TRIVIAL(trace) << "subscribe_device_list: unsub_list size = " << unsub_list.size();
 
         if (!selected_machine.empty())
         {
@@ -568,9 +596,9 @@ namespace Slic3r
         for (auto& it : dev_list)
         {
             subscribe_list_cache.push_back(it);
-            BOOST_LOG_TRIVIAL(trace) << "subscribe_device_list: sub dev id = " << QDTCrossTalk::Crosstalk_DevId(it);
+            // BOOST_LOG_TRIVIAL(trace) << "subscribe_device_list: sub dev id = " << QDTCrossTalk::Crosstalk_DevId(it);
         }
-        BOOST_LOG_TRIVIAL(trace) << "subscribe_device_list: sub_list size = " << subscribe_list_cache.size();
+        // BOOST_LOG_TRIVIAL(trace) << "subscribe_device_list: sub_list size = " << subscribe_list_cache.size();
         if (!unsub_list.empty())
             m_agent->del_subscribe(unsub_list);
         if (!dev_list.empty())
@@ -627,7 +655,7 @@ namespace Slic3r
 
     void DeviceManager::modify_device_name(std::string dev_id, std::string dev_name)
     {
-        BOOST_LOG_TRIVIAL(trace) << "modify_device_name";
+        // BOOST_LOG_TRIVIAL(trace) << "modify_device_name";
         if (m_agent)
         {
             int result = m_agent->modify_printer_name(dev_id, dev_name);
@@ -647,7 +675,7 @@ namespace Slic3r
             }
         }
 
-        BOOST_LOG_TRIVIAL(trace) << "DeviceManager::parse_user_print_info";
+        // BOOST_LOG_TRIVIAL(trace) << "DeviceManager::parse_user_print_info";
         std::lock_guard<std::mutex> lock(listMutex);
         std::set<std::string> new_list;
         try
@@ -760,30 +788,38 @@ namespace Slic3r
         }
     }
 
+    void DeviceManager::record_user_last_machine(const std::string& dev_id)
+    {
+        if (GUI::wxGetApp().app_config) {
+            GUI::wxGetApp().app_config->set("user_last_selected_machine", dev_id);
+        }
+    }
+
+    std::string DeviceManager::get_user_last_machine() const
+    {
+        if (GUI::wxGetApp().app_config) {
+            const auto& user_last_machine = GUI::wxGetApp().app_config->get("user_last_selected_machine");
+            if (!user_last_machine.empty()) {
+                return  user_last_machine;
+            } else {
+                return m_agent->get_user_selected_machine();
+            }
+        }
+
+        return "";
+    }
+
     void DeviceManager::load_last_machine()
     {
         if (userMachineList.empty()) return;
-
-        else if (userMachineList.size() == 1)
-        {
+        else if (userMachineList.size() == 1) {
             this->set_selected_machine(userMachineList.begin()->second->get_dev_id());
-        }
-        else
-        {
-            if (m_agent)
-            {
-                std::string last_monitor_machine = m_agent->get_user_selected_machine();
-                bool found = false;
-                for (auto it = userMachineList.begin(); it != userMachineList.end(); it++)
-                {
-                    if (last_monitor_machine == it->first)
-                    {
-                        this->set_selected_machine(last_monitor_machine);
-                        found = true;
-                    }
-                }
-                if (!found)
-                    this->set_selected_machine(userMachineList.begin()->second->get_dev_id());
+        } else {
+            const auto& last_monitor_machine = get_user_last_machine();
+            if (userMachineList.find(last_monitor_machine) != userMachineList.end()) {
+                set_selected_machine(last_monitor_machine);
+            } else {
+                this->set_selected_machine(userMachineList.begin()->second->get_dev_id());
             }
         }
     }
@@ -807,6 +843,7 @@ namespace Slic3r
                                                  const std::string& /*new_dev_id*/)
     {
         if (MachineObject* obj_ = get_selected_machine()) {
+            //y76
             //GUI::wxGetApp().sidebar().update_sync_status(obj_);
             
             GUI::wxGetApp().sidebar().load_ams_list(obj_);
@@ -849,7 +886,6 @@ namespace Slic3r
         if (obj && m_manager->get_my_machine(obj->get_dev_id()) == nullptr)
         {
             m_manager->set_selected_machine("");
-            agent->set_user_selected_machine("");
             return;
         }
 

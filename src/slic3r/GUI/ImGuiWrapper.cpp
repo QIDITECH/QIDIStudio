@@ -461,9 +461,15 @@ bool ImGuiWrapper::update_mouse_data(wxMouseEvent& evt)
     io.MouseDown[0] = evt.LeftIsDown();
     io.MouseDown[1] = evt.RightIsDown();
     io.MouseDown[2] = evt.MiddleIsDown();
-    float wheel_delta = static_cast<float>(evt.GetWheelDelta());
-    if (wheel_delta != 0.0f) {
-        io.MouseWheel = evt.GetWheelRotation() > 0 ? 1.f : -1.f;
+    int wheel_delta = evt.GetWheelDelta();
+    if (wheel_delta != 0) {
+        int wheel_rotation = evt.GetWheelRotation();
+        if (wheel_rotation > 0)
+            io.MouseWheel = 1.f;
+        else if (wheel_rotation < 0)
+            io.MouseWheel = -1.f;
+        else
+            io.MouseWheel = 0.0f;
     }
     unsigned buttons = (evt.LeftIsDown() ? 1 : 0) | (evt.RightIsDown() ? 2 : 0) | (evt.MiddleIsDown() ? 4 : 0);
     m_mouse_buttons = buttons;
@@ -2695,7 +2701,7 @@ void ImGuiWrapper::init_font(bool compress)
     unsigned char* pixels;
     int width, height;
     io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bits (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders. If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
-    BOOST_LOG_TRIVIAL(trace) << "Build default font texture done. width: " << width << ", height: " << height;
+    // BOOST_LOG_TRIVIAL(trace) << "Build default font texture done. width: " << width << ", height: " << height;
 
     // Fill rectangles from the SVG-icons
     for (auto icon : font_icons) {
@@ -2781,12 +2787,12 @@ void ImGuiWrapper::load_fonts_texture()
     //    for (auto sys_font : sys_fonts_map) {
     //        boost::filesystem::path font_path(sys_font.second);
     //        if (!boost::filesystem::exists(font_path)) {
-    //            BOOST_LOG_TRIVIAL(trace) << "load font = " << sys_font.first << ", path = " << font_path << " is not exists";
+    //            // BOOST_LOG_TRIVIAL(trace) << "load font = " << sys_font.first << ", path = " << font_path << " is not exists";
     //            continue;
     //        }
     //        ImFont* im_font = io.Fonts->AddFontFromFileTTF(sys_font.second.c_str(), m_font_size, &cfg, ImGui::GetIO().Fonts->GetGlyphRangesBasic());
     //        if (im_font == nullptr) {
-    //            BOOST_LOG_TRIVIAL(trace) << "load font = " << sys_font.first << " failed, path = " << font_path << " is not exists";
+    //            // BOOST_LOG_TRIVIAL(trace) << "load font = " << sys_font.first << " failed, path = " << font_path << " is not exists";
     //            continue;
     //        }
     //        im_fonts_map.insert({ sys_font.first, im_font });
@@ -2796,7 +2802,7 @@ void ImGuiWrapper::load_fonts_texture()
     //    unsigned char* pixels;
     //    int            width, height;
     //    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
-    //    BOOST_LOG_TRIVIAL(trace) << "Build system fonts texture done. width: " << width << ", height: " << height;
+    //    // BOOST_LOG_TRIVIAL(trace) << "Build system fonts texture done. width: " << width << ", height: " << height;
 
     //    if (m_fonts_names.size() == 0) {
     //        std::vector<std::string> to_delete_fonts;

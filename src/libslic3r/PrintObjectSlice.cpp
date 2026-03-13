@@ -698,7 +698,7 @@ std::string fix_slicing_errors(PrintObject* object, LayerPtrs &layers, const std
                     continue;
                 assert(layer->slicing_errors);
                 // Try to repair the layer surfaces by merging all contours and all holes from neighbor layers.
-                // BOOST_LOG_TRIVIAL(trace) << "Attempting to repair layer" << idx_layer;
+                // // BOOST_LOG_TRIVIAL(trace) << "Attempting to repair layer" << idx_layer;
                 for (size_t region_id = 0; region_id < layer->region_count(); ++ region_id) {
                     LayerRegion *layerm = layer->get_region(region_id);
                     // Find the first valid layer below / above the current layer.
@@ -1314,6 +1314,8 @@ void PrintObject::slice_volumes()
                         }
 	                }
 	                // Merge all regions' slices to get islands, chain them by a shortest path.
+                    if (this->config().enable_circle_compensation)
+                        layer->apply_auto_circle_compensation();
 	                layer->make_slices();
 	            }
 	        });

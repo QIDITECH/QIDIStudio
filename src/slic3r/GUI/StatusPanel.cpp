@@ -35,14 +35,17 @@
 #include "DeviceCore/DevLamp.h"
 #include "DeviceCore/DevNozzleSystem.h"
 #include "DeviceCore/DevStorage.h"
+#include "DeviceCore/DevFilaSystem.h"
+#include "DeviceCore/DevStatus.h"
 
 #include "DeviceCore/DevConfig.h"
 #include "DeviceCore/DevInfo.h"
 #include "DeviceCore/DevManager.h"
 #include "DeviceCore/DevPrintTaskInfo.h"
-
+#include "DeviceCore/DevPrintOptions.h"
 #include "DeviceTab/wgtDeviceNozzleRack.h"
-
+//cj_2
+#include "Widgets/DeviceModelList.hpp"
 
 
 #include "PrintOptionsDialog.hpp"
@@ -50,6 +53,11 @@
 
 #include "ThermalPreconditioningDialog.hpp"
 #include <tuple>
+//cj_2
+#include <wx/image.h>
+#include <wx/url.h>
+#include <wx/stream.h>
+#include <wx/mstream.h>
 namespace Slic3r { namespace GUI {
 
 #define TEMP_THRESHOLD_VAL 2
@@ -75,7 +83,9 @@ namespace Slic3r { namespace GUI {
 	wxDEFINE_EVENT(EVTSET_FILAMENT_TYPE, wxCommandEvent);
 	wxDEFINE_EVENT(EVTSET_FILAMENT_VENDOR, wxCommandEvent);
     wxDEFINE_EVENT(EVTSET_FILAMENT_LOAD, wxCommandEvent); ///set/filament/load
-    wxDEFINE_EVENT(EVTSET_FILAMENT_UNLOAD, wxCommandEvent); ///set/filament/unload
+	wxDEFINE_EVENT(EVTSET_FILAMENT_UNLOAD, wxCommandEvent); ///set/filament/unload
+	wxDEFINE_EVENT(EVTSET_DEL_PRINTER_FILE, wxCommandEvent); ///del printer file cj_2
+	wxDEFINE_EVENT(EVTSET_DOWNLOAD_PRINTER_FILE, wxCommandEvent); //cj_2
 
 /* const strings */
 static const wxString NA_STR         = _L("N/A");
@@ -613,6 +623,16 @@ void PrintingTaskPanel::create_panel(wxWindow *parent)
                         std::pair<wxColour, int>(wxColour(255, 255, 255), StateColor::Hovered), std::pair<wxColour, int>(wxColour(255, 255, 255), StateColor::Enabled),
                         std::pair<wxColour, int>(wxColour(255, 255, 255), StateColor::Normal));
 
+    std::vector<std::string> list{ "ams_rfid_1", "ams_rfid_2", "ams_rfid_3", "ams_rfid_4" };
+    m_pausing_icon = new AnimaIcon(progress_lr_panel, wxID_ANY, list, "refresh_printer", 100);
+    m_pausing_icon->SetMinSize(wxSize(FromDIP(20), FromDIP(20)));
+    m_pausing_icon->SetToolTip(_L("Pausing"));
+    m_pausing_icon->Hide();
+    m_stopping_icon = new AnimaIcon(progress_lr_panel, wxID_ANY, list, "refresh_printer", 100);
+    m_stopping_icon->SetMinSize(wxSize(FromDIP(20), FromDIP(20)));
+    m_stopping_icon->SetToolTip(_L("Stopping"));
+    m_stopping_icon->Hide();
+
     m_button_partskip = new Button(progress_lr_panel, wxEmptyString, "print_control_partskip_disable", 0, 20, wxID_ANY);
     m_button_partskip->Enable(false);
     m_button_partskip->Hide();
@@ -814,8 +834,10 @@ void PrintingTaskPanel::create_panel(wxWindow *parent)
     progress_right_sizer->Add(0, 0, 0, wxEXPAND | wxLEFT, FromDIP(18));
     progress_right_sizer->Add(m_button_partskip, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(0)); // 5
     progress_right_sizer->Add(0, 0, 0, wxEXPAND | wxLEFT, FromDIP(18));
+    progress_right_sizer->Add(m_pausing_icon, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(0));
     progress_right_sizer->Add(m_button_pause_resume, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(0));
     progress_right_sizer->Add(0, 0, 0, wxEXPAND | wxLEFT, FromDIP(18));
+    progress_right_sizer->Add(m_stopping_icon, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(0));
     progress_right_sizer->Add(m_button_abort, 0, wxALL | wxALIGN_CENTER_VERTICAL, FromDIP(0));
     progress_right_sizer->Add(0, 0, 0, wxEXPAND | wxLEFT, FromDIP(18));
 
@@ -988,6 +1010,28 @@ void PrintingTaskPanel::create_panel(wxWindow *parent)
     parent->Fit();
 }
 
+static wxString get_qdt_time_dhms(float time_in_secs)
+{
+    int days = (int) (time_in_secs / 86400.0f);
+    time_in_secs -= (float) days * 86400.0f;
+    int hours = (int) (time_in_secs / 3600.0f);
+    time_in_secs -= (float) hours * 3600.0f;
+    int minutes = (int) (time_in_secs / 60.0f);
+    time_in_secs -= (float) minutes * 60.0f;
+
+    wxString s;
+    if (days > 0)
+        s = wxString::Format(_L("%dday%dh%dmin%ds"), days, hours, minutes, (int) time_in_secs);
+    else if (hours > 0)
+        s = wxString::Format(_L("%dh%dmin%ds"), hours, minutes, (int) time_in_secs);
+    else if (minutes > 0)
+        s = wxString::Format(_L("%dmin%ds"), minutes, (int) time_in_secs);
+    else
+        s = wxString::Format(_L("%ds"), (int) time_in_secs);
+
+    return s;
+}
+
 void PrintingTaskPanel::paint(wxPaintEvent &)
 {
     wxPaintDC dc(m_bitmap_thumbnail);
@@ -1020,6 +1064,8 @@ void PrintingTaskPanel::set_has_reted_text(bool has_rated)
 
 void PrintingTaskPanel::msw_rescale()
 {
+    m_pausing_icon->Rescale();
+    m_stopping_icon->Rescale();
     m_panel_printing_title->SetSize(wxSize(-1, FromDIP(PAGE_TITLE_HEIGHT)));
     m_printing_sizer->SetMinSize(wxSize(PAGE_MIN_WIDTH, -1));
     // m_staticText_printing->SetMinSize(wxSize(PAGE_TITLE_TEXT_WIDTH, PAGE_TITLE_HEIGHT));
@@ -1081,6 +1127,8 @@ void PrintingTaskPanel::reset_printing_value()
 {
     this->set_thumbnail_img(m_thumbnail_placeholder.bmp(), m_thumbnail_placeholder.name());
     this->set_plate_index(-1);
+    update_pausing_state(false);
+    update_stopping_state(false);
 }
 
 void PrintingTaskPanel::enable_partskip_button(MachineObject *obj, bool enable)
@@ -1096,6 +1144,40 @@ void PrintingTaskPanel::enable_partskip_button(MachineObject *obj, bool enable)
     } else if (obj && obj->is_support_brtc) {
         m_button_partskip->Enable(true);
         m_button_partskip->SetIcon("print_control_partskip");
+    }
+}
+
+void PrintingTaskPanel::update_pausing_state(bool enter)
+{
+    if (m_pausing_icon->IsPlaying() != enter) {
+        if (enter) {
+            m_pausing_icon->Play();
+            m_pausing_icon->Show();
+            m_button_pause_resume->Hide();
+        } else {
+            m_pausing_icon->Stop();
+            m_pausing_icon->Hide();
+            m_button_pause_resume->Show();
+        }
+
+        Layout();
+    }
+}
+
+void PrintingTaskPanel::update_stopping_state(bool enter)
+{
+    if (m_stopping_icon->IsPlaying() != enter) {
+        if (enter) {
+            m_stopping_icon->Play();
+            m_stopping_icon->Show();
+            m_button_abort->Hide();
+        } else {
+            m_stopping_icon->Stop();
+            m_stopping_icon->Hide();
+            m_button_abort->Show();
+        }
+
+        Layout();
     }
 }
 
@@ -1215,12 +1297,12 @@ void PrintingTaskPanel::update_finish_time(wxString finish_time)
 void PrintingTaskPanel::update_left_time(int mc_left_time)
 {
     // update gcode progress
-    std::string left_time;
+    wxString left_time;
     std::string right_time;
     wxString    left_time_text = NA_STR;
 
     try {
-        left_time  = get_qdt_monitor_time_dhm(mc_left_time);
+        left_time  = get_qdt_time_dhms(mc_left_time);
         right_time = get_qdt_finish_time_dhm(mc_left_time);
     } catch (...) {
         ;
@@ -1400,16 +1482,6 @@ StatusBasePanel::StatusBasePanel(wxWindow *parent, wxWindowID id, const wxPoint 
 
 //y76
     bSizer_right_vertical->Add(m_machine_ctrl_panel, 0, wxEXPAND | wxALL, 0);
-    // //y76
-    // m_task_list_panel = new wxPanel(this);
-    // m_task_list_panel->SetBackgroundColour(*wxWHITE);
-    // m_task_list_panel->SetDoubleBuffered(true);
-    // auto task_list_group = create_task_list_group(m_task_list_panel);
-    // m_task_list_panel->SetSizer(task_list_group);
-    // m_task_list_panel->Layout();
-    // task_list_group->Fit(m_task_list_panel);
-
-    // bSizer_right_vertical->Add(m_task_list_panel, 1, wxEXPAND | wxTOP, FromDIP(10));
     bSizer_status_below->Add(bSizer_right_vertical, 0, wxALL, 0);
 //y76
 
@@ -1424,216 +1496,11 @@ StatusBasePanel::StatusBasePanel(wxWindow *parent, wxWindowID id, const wxPoint 
     m_panel_separotor_bottom->SetBackgroundColour(STATUS_PANEL_BG);
 
     bSizer_status->Add(m_panel_separotor_bottom, 0, wxEXPAND | wxALL, 0);
+
+    tabSiwtch(m_control_tab, m_control_panel);
     this->SetSizerAndFit(bSizer_status);
     this->Layout();
 }
-
-//y76
-wxBoxSizer *StatusBasePanel::create_task_list_group(wxWindow *parent)
-{
-    auto sizer = new wxBoxSizer(wxVERTICAL);
-    
-    StaticBox* task_panel = new StaticBox(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-    StateColor box_colour(std::pair<wxColour, int>(*wxWHITE, StateColor::Normal));
-    StateColor box_border_colour(std::pair<wxColour, int>(STATUS_PANEL_BG, StateColor::Normal));
-
-    task_panel->SetBackgroundColor(box_colour);
-    task_panel->SetBorderColor(box_border_colour);
-    task_panel->SetCornerRadius(5);
-    task_panel->SetMinSize(wxSize(FromDIP(586), -1));
-    task_panel->SetMaxSize(wxSize(FromDIP(586), -1));
-
-    wxBoxSizer* bSizer_task_title;
-    wxBoxSizer* bSizer_task_content;
-    wxBoxSizer* file_list_sizer;
-
-    wxBoxSizer* content_sizer = new wxBoxSizer(wxVERTICAL);
-    {
-        m_panel_task_title = new wxPanel(task_panel, wxID_ANY, wxDefaultPosition, wxSize(-1, FromDIP(50)), wxTAB_TRAVERSAL);
-        m_panel_task_title->SetBackgroundColour(STATUS_TITLE_BG);
-        bSizer_task_title = new wxBoxSizer(wxHORIZONTAL);
-        {
-            m_staticText_task = new Label(m_panel_task_title, _L("Task List"));
-            m_staticText_task->Wrap(-1);
-            m_staticText_task->SetForegroundColour(PAGE_TITLE_FONT_COL);
-            
-            bSizer_task_title->Add(m_staticText_task, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, PAGE_TITLE_LEFT_MARGIN);
-            //bSizer_task_title->AddStretchSpacer(1);
-            
-            // m_refresh_btn = new wxButton(m_panel_task_title, wxID_ANY, _L("Refresh"),
-            //                                       wxDefaultPosition, wxSize(FromDIP(60), FromDIP(25)));
-            // m_refresh_btn->SetBackgroundColour(wxColour(0x1E, 0x90, 0xFF));  // DodgerBlue
-            // m_refresh_btn->SetForegroundColour(*wxWHITE);
-            // m_refresh_btn->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
-            
-            // bSizer_task_title->Add(m_refresh_btn, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(10));
-        }
-        m_panel_task_title->SetSizer(bSizer_task_title);
-        m_panel_task_title->Layout();
-        
-        content_sizer->Add(m_panel_task_title, 0, wxEXPAND);
-        
-        m_scroll_files = new wxScrolledWindow(task_panel, wxID_ANY, 
-                                                             wxDefaultPosition, wxSize(-1, FromDIP(300)), 
-                                                             wxVSCROLL | wxBORDER_NONE);
-        m_scroll_files->SetScrollRate(0, FromDIP(5));
-        m_scroll_files->SetBackgroundColour(*wxWHITE);
-        m_scroll_files->SetDoubleBuffered(true);
-        
-        m_file_list_sizer = new wxBoxSizer(wxVERTICAL);
-        wxPanel* header_panel = new wxPanel(m_scroll_files, wxID_ANY);
-        header_panel->SetBackgroundColour(STATUS_TITLE_BG);
-        header_panel->SetMinSize(wxSize(-1, FromDIP(35)));
-
-        wxBoxSizer* header_sizer = new wxBoxSizer(wxHORIZONTAL);
-        {
-            wxStaticText* header_name = new wxStaticText(header_panel, wxID_ANY, _L("File Name"),
-                                                        wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_END);
-            header_name->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
-            header_name->SetForegroundColour(wxColour(0x66, 0x66, 0x66));
-            header_sizer->Add(header_name, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, FromDIP(15));
-
-            wxStaticText* header_weight = new wxStaticText(header_panel, wxID_ANY, _L("Filament Weight"),
-                                                            wxDefaultPosition, wxSize(FromDIP(80), -1), wxALIGN_RIGHT);
-            header_weight->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
-            header_weight->SetForegroundColour(wxColour(0x66, 0x66, 0x66));
-            header_sizer->Add(header_weight, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(15));
-            
-            wxStaticText* header_time = new wxStaticText(header_panel, wxID_ANY, _L("Print Time"),
-                                                        wxDefaultPosition, wxSize(FromDIP(80), -1), wxALIGN_RIGHT);
-            header_time->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
-            header_time->SetForegroundColour(wxColour(0x66, 0x66, 0x66));
-            header_sizer->Add(header_time, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(15));
-        }
-        header_panel->SetSizer(header_sizer);
-        m_file_list_sizer->Add(header_panel, 0, wxEXPAND);
-        
-        init_empty_task_list();
-        
-        m_scroll_files->SetSizer(m_file_list_sizer);
-        m_scroll_files->FitInside();
-        m_scroll_files->SetScrollbars(0, FromDIP(20), 0, 0);
-        
-        content_sizer->Add(m_scroll_files, 1, wxEXPAND | wxTOP, FromDIP(5));
-    }
-
-    task_panel->SetSizer(content_sizer);
-    sizer->Add(task_panel, 0, wxEXPAND | wxALL, FromDIP(0));
-    
-    return sizer;
-}
-
-void StatusBasePanel::init_empty_task_list()
-{
-    // if (!m_scroll_files || !m_file_list_sizer) return;
-    
-    // while (m_file_list_sizer->GetItemCount() > 1) {
-    //     m_file_list_sizer->Remove(1);
-    // }
-    
-    // wxPanel* empty_item = new wxPanel(m_scroll_files, wxID_ANY);
-    // empty_item->SetBackgroundColour(*wxWHITE);
-    // empty_item->SetMinSize(wxSize(-1, FromDIP(40)));
-    
-    // wxBoxSizer* item_sizer = new wxBoxSizer(wxHORIZONTAL);
-    // {
-    //     wxStaticText* label_name = new wxStaticText(empty_item, wxID_ANY, _L("-"),
-    //                                               wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_END);
-    //     label_name->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
-    //     label_name->SetForegroundColour(wxColour(0x99, 0x99, 0x99));
-    //     item_sizer->Add(label_name, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, FromDIP(15));
-        
-    //     wxStaticText* label_weight = new wxStaticText(empty_item, wxID_ANY, _L("-"),
-    //                                                  wxDefaultPosition, wxSize(FromDIP(80), -1), wxALIGN_RIGHT);
-    //     label_weight->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
-    //     label_weight->SetForegroundColour(wxColour(0x99, 0x99, 0x99));
-    //     item_sizer->Add(label_weight, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(15));
-        
-    //     wxStaticText* label_time = new wxStaticText(empty_item, wxID_ANY, _L("-"),
-    //                                                wxDefaultPosition, wxSize(FromDIP(80), -1), wxALIGN_RIGHT);
-    //     label_time->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
-    //     label_time->SetForegroundColour(wxColour(0x99, 0x99, 0x99));
-    //     item_sizer->Add(label_time, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(15));
-    // }
-    // empty_item->SetSizer(item_sizer);
-    // m_file_list_sizer->Add(empty_item, 0, wxEXPAND);
-    
-    // update_task_list_layout();
-}
-
-void StatusBasePanel::clear_task_list()
-{
-    // if (!m_file_list_sizer) return;
-    
-    // while (m_file_list_sizer->GetItemCount() > 1) {
-    //     m_file_list_sizer->Remove(1);
-    // }
-}
-
-void StatusBasePanel::update_task_list(const std::vector<FileInfo>& files)
-{
-
-    // if (!m_scroll_files || !m_file_list_sizer) return;
-    
-    // clear_task_list();
-    
-    // if (files.empty()) {
-    //     init_empty_task_list();
-    //     return;
-    // }
-    
-    // const int left_padding = FromDIP(15);
-    // const int col_spacing = FromDIP(20);
-    
-    // for (size_t i = 0; i < files.size(); ++i) {
-    //     const auto& file = files[i];
-        
-    //     wxPanel* file_item = new wxPanel(m_scroll_files, wxID_ANY);
-    //     file_item->SetBackgroundColour(i % 2 == 0 ? *wxWHITE : wxColour(0xFA, 0xFA, 0xFA));
-    //     file_item->SetMinSize(wxSize(-1, FromDIP(40)));
-        
-    //     wxBoxSizer* item_sizer = new wxBoxSizer(wxHORIZONTAL);
-    //     {
-    //         wxStaticText* label_name = new wxStaticText(file_item, wxID_ANY, file.name,
-    //                                                   wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_END);
-    //         label_name->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
-    //         label_name->SetForegroundColour(wxColour(0x26, 0x26, 0x26));
-    //         label_name->SetToolTip(file.name);
-    //         item_sizer->Add(label_name, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, left_padding);
-            
-    //         wxStaticText* label_weight = new wxStaticText(file_item, wxID_ANY, file.weight);
-    //         label_weight->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
-    //         label_weight->SetForegroundColour(wxColour(0x26, 0x26, 0x26));
-    //         item_sizer->Add(label_weight, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT, col_spacing);
-            
-    //         wxStaticText* label_time = new wxStaticText(file_item, wxID_ANY, file.time);
-    //         label_time->SetFont(wxFont(FromDIP(9), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false));
-    //         label_time->SetForegroundColour(wxColour(0x26, 0x26, 0x26));
-    //         item_sizer->Add(label_time, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT, col_spacing);
-    //     }
-    //     file_item->SetSizer(item_sizer);
-    //     m_file_list_sizer->Add(file_item, 0, wxEXPAND);
-    // }
-    
-    // update_task_list_layout();
-}
-
-void StatusBasePanel::update_task_list_layout()
-{
-    // if (m_scroll_files && m_file_list_sizer) {
-    //     m_scroll_files->FitInside();
-    //     m_scroll_files->SetScrollbars(0, FromDIP(20), 0, 0);
-        
-    //     if (m_scroll_files->GetSizer()) {
-    //         m_scroll_files->GetSizer()->Layout();
-    //     }
-        
-    //     if (m_task_list_panel) {
-    //         m_task_list_panel->Layout();
-    //     }
-    // }
-}
-//y76
 
 StatusBasePanel::~StatusBasePanel() { delete m_media_play_ctrl; }
 
@@ -1790,6 +1657,11 @@ wxBoxSizer *StatusBasePanel::create_machine_control_page(wxWindow *parent)
     m_staticText_control->Wrap(-1);
     // m_staticText_control->SetFont(PAGE_TITLE_FONT);
     m_staticText_control->SetForegroundColour(PAGE_TITLE_FONT_COL);
+    m_staticText_control->Hide();
+
+    //cj_1
+    wxPanel* m_tabPanel = create_tab_page(m_panel_control_title);
+    create_model_fun(m_panel_control_title);
 
     //y76
 	StateColor btn_bg_blue(std::pair<wxColour, int>(AMS_CONTROL_DISABLE_COLOUR, StateColor::Disabled), std::pair<wxColour, int>(wxColour(95, 82, 253), StateColor::Pressed),
@@ -1828,32 +1700,39 @@ wxBoxSizer *StatusBasePanel::create_machine_control_page(wxWindow *parent)
     m_options_btn->Hide();
     m_safety_btn->Hide();
 
-    bSizer_control_title->Add(m_staticText_control, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, PAGE_TITLE_LEFT_MARGIN);
-    bSizer_control_title->Add(0, 0, 1, wxEXPAND, 0);
-    bSizer_control_title->Add(m_parts_btn, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(10));
-    bSizer_control_title->Add(m_options_btn, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(10));
-    bSizer_control_title->Add(m_safety_btn, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(10));
-    bSizer_control_title->Add(m_calibration_btn, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(10));
+	bSizer_control_title->Add(m_staticText_control, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, PAGE_TITLE_LEFT_MARGIN);
+	bSizer_control_title->Add(m_tabPanel, 1, wxALL, FromDIP(5));
+    bSizer_control_title->Add(40, 10, 0, wxEXPAND, 0);
+	bSizer_control_title->Add(m_model_button_panel, 0, wxALL, FromDIP(8));
+// 
+//     bSizer_control_title->Add(m_parts_btn, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(10));
+//     bSizer_control_title->Add(m_options_btn, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(10));
+//     bSizer_control_title->Add(m_safety_btn, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(10));
+//     bSizer_control_title->Add(m_calibration_btn, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(10));
 
     m_panel_control_title->SetSizer(bSizer_control_title);
+    //bSizer_control_title->Fit(m_panel_control_title);
+    m_panel_control_title->SetSize(1000, 340);
     m_panel_control_title->Layout();
-    bSizer_control_title->Fit(m_panel_control_title);
-    bSizer_right->Add(m_panel_control_title, 0, wxALL | wxEXPAND, 0);
+    bSizer_right->Add(m_panel_control_title,0, wxEXPAND | wxALL, 0);
 
+	//cj_2
+	m_control_panel = new wxPanel(parent);
     wxBoxSizer *bSizer_control = new wxBoxSizer(wxVERTICAL);
+	m_control_panel->SetSizer(bSizer_control);
 
-    auto temp_axis_ctrl_sizer  = create_temp_axis_group(parent);
-    auto m_filament_load_sizer = create_filament_group(parent);
+    auto temp_axis_ctrl_sizer  = create_temp_axis_group(m_control_panel);
+    auto m_filament_load_sizer = create_filament_group(m_control_panel);
 
     /* ams or rack*/
     wxSizer *ams_rack_sizer = new wxBoxSizer(wxHORIZONTAL);
-    ams_rack_sizer->Add(create_ams_group(parent), 0, wxEXPAND | wxLEFT);
+    ams_rack_sizer->Add(create_ams_group(m_control_panel), 0, wxEXPAND | wxLEFT);
 
-    m_panel_nozzle_rack = new wgtDeviceNozzleRack(parent);
+    m_panel_nozzle_rack = new wgtDeviceNozzleRack(m_control_panel);
     m_panel_nozzle_rack->Show(false);
     ams_rack_sizer->Add(m_panel_nozzle_rack, 0, wxEXPAND | wxLEFT);
 
-    m_ams_rack_switch = new SwitchBoard(parent, _L("Filament"), _L("Hotends"), wxSize(FromDIP(126), FromDIP(26)));
+    m_ams_rack_switch = new SwitchBoard(m_control_panel, _L("Filament"), _L("Hotends"), wxSize(FromDIP(126), FromDIP(26)));
     m_ams_rack_switch->updateState("left");
     m_ams_rack_switch->Hide();
     m_ams_rack_switch->Bind(wxCUSTOMEVT_SWITCH_POS, &StatusBasePanel::on_ams_rack_switch, this);
@@ -1867,23 +1746,228 @@ wxBoxSizer *StatusBasePanel::create_machine_control_page(wxWindow *parent)
     bSizer_control->Add(m_filament_load_sizer, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, FromDIP(8));
     bSizer_control->Add(0, 0, 0, wxTOP, FromDIP(4));
 
-    bSizer_right->Add(bSizer_control, 1, wxEXPAND | wxALL, 0);
+    
+	//cj_2
+    m_model_panel = new DeviceModelListCtrl(parent);
+    m_lapsePhtot_panel = new wxPanel(parent);
+    m_lapsePhtot_panel->SetMinSize(wxSize(602, 915));
+    m_lapsePhtot_panel->SetMaxSize(wxSize(602, 915));
 
+	bSizer_right->Add(m_control_panel, 0, wxEXPAND | wxALL, 0);
+	bSizer_right->Add(m_model_panel, 0, wxEXPAND | wxALL, 0);
+	bSizer_right->Add(m_lapsePhtot_panel, 0, wxEXPAND | wxALL, 0);
+
+    m_model_panel->SetBackgroundColour(wxColour(248, 248, 248));
+    m_model_panel->Bind(wxEVT_CHECKBOX, &StatusBasePanel::on_model_checkchange, this);
     return bSizer_right;
+}
+
+//cj_2
+wxPanel* StatusBasePanel::create_tab_page(wxWindow* parent)
+{
+
+    StateColor add_btn_bg(
+        std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Pressed),
+        //std::pair<wxColour, int>(wxColour(238, 238, 238), StateColor::NotHovered),
+        std::pair<wxColour, int>(wxColour(116, 168, 255), StateColor::Hovered),
+        std::pair<wxColour, int>(wxColour(238, 238, 238), StateColor::Normal)
+    );
+
+	StateColor btn_text_color(std::pair<wxColour, int>(wxColour(153, 153, 153), StateColor::Normal)
+        
+		);
+
+    auto setButtonTri = [add_btn_bg, btn_text_color](Button* button) {
+        if (button == nullptr) {
+            return;
+        }
+        button->SetBackgroundColor(add_btn_bg);
+        button->SetBorderWidth(0);
+        button->SetMinSize(wxSize(100, 34));
+        button->SetTextColor(btn_text_color);
+        button->SetCanFocus(false);
+
+        button->SetBackgroundColour(wxColour(238, 238, 238));
+
+    };
+
+	wxPanel* tab = new wxPanel(parent);
+    wxBoxSizer* tabSizer = new wxBoxSizer(wxHORIZONTAL);
+    tab->SetSizer(tabSizer);{
+        m_control_tab = new Button(tab, _L("Control"));
+        setButtonTri(m_control_tab);
+
+        m_model_tab = new Button(tab, _L("Model"));
+        setButtonTri(m_model_tab);
+
+        m_lapsePhoto_tab = new Button(tab, _L("Timelapse"));
+        setButtonTri(m_lapsePhoto_tab);
+    }
+    tabSizer->Add(m_control_tab, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, FromDIP(0));
+    tabSizer->Add(m_model_tab, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, FromDIP(0));
+    tabSizer->Add(m_lapsePhoto_tab, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, FromDIP(0));
+    
+    
+    tab->SetBackgroundColour(wxColour(248, 248, 248));
+    
+
+	m_control_tab->Bind(wxEVT_BUTTON, &StatusBasePanel::on_control_tab, this);
+    m_model_tab->Bind(wxEVT_BUTTON, &StatusBasePanel::on_model_tab, this);
+
+    m_lapsePhoto_tab->Hide(); //cj_2 Temporarily hide
+    m_lapsePhoto_tab->Bind(wxEVT_BUTTON, &StatusBasePanel::on_timelapse_tab, this);
+
+    return tab;
+}
+
+//cj_2
+wxPanel* StatusBasePanel::create_model_fun(wxWindow* parent)
+{
+	StateColor add_btn_bg(std::pair<wxColour, int>(wxColour(196, 196, 196), StateColor::Disabled),
+		std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Pressed),
+		std::pair<wxColour, int>(wxColour(116, 168, 255), StateColor::Hovered),
+		std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));
+
+	StateColor del_btn_bg(std::pair<wxColour, int>(wxColour(196, 196, 196), StateColor::Disabled),
+		std::pair<wxColour, int>(wxColour(255, 0, 0), StateColor::Pressed),
+		std::pair<wxColour, int>(wxColour(255, 120, 120), StateColor::Hovered),
+		std::pair<wxColour, int>(wxColour(255, 77, 77), StateColor::Normal));
+
+    StateColor btn_text_blue(std::pair<wxColour, int>(wxColour(255, 255, 254), StateColor::Normal)
+    
+    );
+
+	auto setButtonTri = [add_btn_bg, btn_text_blue,this](Button* button) {
+		if (button == nullptr) {
+			return;
+		}
+		button->SetBackgroundColor(add_btn_bg);
+        button->SetTextColor(btn_text_blue);
+        
+        wxFont font = button->GetFont();
+        font.SetPixelSize(wxSize(13,13));
+        button->SetFont(font);
+        button->SetCornerRadius(5);
+        button->SetMinSize(wxSize(FromDIP(50), FromDIP(20)));
+        button->SetMaxSize(wxSize(FromDIP(50), FromDIP(20)));
+        button->SetCanFocus(false);
+        button->Enable(false);
+
+        button->SetBackgroundColour(wxColour(248, 248, 248));
+	};
+
+    m_model_button_panel = new wxPanel(parent);
+    wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
+    m_model_button_panel->SetSizer(sizer); {
+        m_model_print = new Button(m_model_button_panel, _L("Print"));
+        //y78
+        m_model_print->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& e) {
+            Slic3r::DynamicPrintConfig config;
+            Slic3r::Model              model;
+            Slic3r::PlateDataPtrs      plate_data_list;
+            std::string file_path = "";
+            std::string file_name;
+            std::string file_extension;
+
+            auto qdsdev = wxGetApp().qdsdevmanager;
+            auto obj = qdsdev->getSelectedDevice();
+
+            std::vector<GCodeFileInfo> file_infos = obj->file_info;
+
+            std::vector<DeviceModelItem*> m_model_items = m_model_panel->GetSelectedItems();
+            std::string selected_items_name = into_u8(m_model_items[0]->GetName());
+            std::vector<PlateInfo> plates_info;
+
+            for (auto file_info : file_infos) {
+                if (file_info.file_name == selected_items_name) {
+                    file_extension = file_info.extension;
+                    file_name = file_info.file_name;
+                    file_path = file_info.file_path;
+                    plates_info = file_info.plates;
+                    break;
+                }
+            }
+
+            if(file_extension != "gcode.3mf"){
+                PrintHostJob upload_job(obj->m_ip, obj->m_ip);
+                std::string send_api = "printer/print/start";
+                std::string send_msg = "{\"filename\":\"" + file_path + "\"}";
+                bool success = upload_job.printhost->send_msg_to_printer(send_api, send_msg);
+                if(success){
+                    GUI::MessageDialog msgdialog(nullptr, _L("Print command sent successfully."), "", wxOK);
+                    msgdialog.ShowModal();
+                } else {
+                    GUI::MessageDialog msgdialog(nullptr, _L("Print command sent successfully."), "", wxOK);
+                    msgdialog.ShowModal();
+                }
+                return;
+            }
+
+            plate_data_list.reserve(plates_info.size());
+            for(unsigned int i = 0; i < plates_info.size(); i++){
+                PlateData* plate = new PlateData();
+                plate->plate_index = std::stoi(plates_info[i].index);
+                plate->gcode_weight = plates_info[i].filament_weight;
+                plate->nozzle_diameters = plates_info[i].nozzle_diameter;
+                plate->gcode_prediction = plates_info[i].print_time;
+                plate->gcode_weight = plates_info[i].filament_weight;
+                plate->plate_thumbnail = plates_info[i].thumbnailData;
+
+                std::vector<FilamentInfo> slice_filaments_info;
+                for (unsigned int j = 0; j < plates_info[i].filament_types.size(); j++) {
+                    FilamentInfo filament_info;
+                    filament_info.type = plates_info[i].filament_types[j];
+                    filament_info.color = plates_info[i].filament_colours[j];
+                    filament_info.id = std::stoi(plates_info[i].used_extruders[j]);
+                    slice_filaments_info.push_back(filament_info);
+                }
+                plate->slice_filaments_info = slice_filaments_info;
+
+                std::vector<int> extruder_ids {};
+                for (const auto& extruder : plates_info[i].used_extruders) {
+                    extruder_ids.push_back(std::stoi(extruder));
+                }
+                plate->filament_maps = extruder_ids;
+                plate_data_list.push_back(plate);
+            }
+            int gcode_file_count = Slic3r::GUI::wxGetApp().plater()->update_print_required_data(config, model, plate_data_list, file_name, file_path);
+            if (gcode_file_count > 0) {
+                wxPostEvent(Slic3r::GUI::wxGetApp().plater(), SimpleEvent(EVT_PRINT_FROM_SDCARD_VIEW));
+            }
+            else {
+                MessageDialog dlg(this, _L("The .gcode.3mf file contains no G-code data.Please slice it whth QIDI Studio and export a new .gcode.3mf file."), wxEmptyString, wxICON_WARNING | wxOK);
+                auto res = dlg.ShowModal();
+            }
+            });
+        setButtonTri(m_model_print);
+
+        m_model_down = new Button(m_model_button_panel, _L("Download"));
+		setButtonTri(m_model_down);
+
+        m_model_del = new Button(m_model_button_panel, _L("Delete"));
+		setButtonTri(m_model_del);
+        m_model_del->SetBackgroundColor(del_btn_bg);
+    }
+    sizer->Add(m_model_print,  0,   wxLEFT, FromDIP(10));
+    sizer->Add(m_model_down,   0,   wxLEFT, FromDIP(10));
+    sizer->Add(m_model_del,    0,  wxLEFT , FromDIP(10));
+    m_model_button_panel->SetBackgroundColour(wxColour(248, 248, 248));
+
+
+    return m_model_button_panel;
 }
 
 wxBoxSizer *StatusBasePanel::create_temp_axis_group(wxWindow *parent)
 {
     auto sizer = new wxBoxSizer(wxVERTICAL);
     auto box   = new StaticBox(parent);
-
     StateColor box_colour(std::pair<wxColour, int>(*wxWHITE, StateColor::Normal));
     StateColor box_border_colour(std::pair<wxColour, int>(STATUS_PANEL_BG, StateColor::Normal));
 
     box->SetBackgroundColor(box_colour);
     box->SetBorderColor(box_border_colour);
+    box->SetBackgroundColour(wxColour(255, 255, 255));
     box->SetCornerRadius(5);
-
     box->SetMinSize(wxSize(FromDIP(586), -1));
     box->SetMaxSize(wxSize(FromDIP(586), -1));
 
@@ -2344,6 +2428,8 @@ wxBoxSizer *StatusBasePanel::create_filament_group(wxWindow *parent)
                             std::pair<wxColour, int>(AMS_CONTROL_DEF_BLOCK_BK_COLOUR, StateColor::Hovered),
                             std::pair<wxColour, int>(AMS_CONTROL_WHITE_COLOUR, StateColor::Normal));
 
+    wxBoxSizer* fila_change_sizer = new wxBoxSizer(wxHORIZONTAL);
+
     m_button_retry = new Button(m_filament_load_box, _L("Retry"));
     m_button_retry->SetFont(Label::Body_13);
     m_button_retry->SetBorderColor(btn_bd_white);
@@ -2357,8 +2443,24 @@ wxBoxSizer *StatusBasePanel::create_filament_group(wxWindow *parent)
         if (obj) { obj->command_ams_control("resume"); }
     });
 
+    m_fila_change_abort = new Button(m_filament_load_box, _L("Abort"));
+    m_fila_change_abort->SetFont(Label::Body_13);
+    m_fila_change_abort->SetBorderColor(btn_bd_white);
+    m_fila_change_abort->SetTextColor(btn_text_white);
+    m_fila_change_abort->SetMinSize(wxSize(FromDIP(80), FromDIP(31)));
+    m_fila_change_abort->SetBackgroundColor(btn_bg_white);
+    m_fila_change_abort->Hide();
+
+    m_fila_change_abort->Bind(wxEVT_BUTTON, [this](wxCommandEvent &e) {
+        BOOST_LOG_TRIVIAL(info) << "on_ams_abort";
+        if (obj) { obj->command_ams_control("abort"); }
+    });
+
+    fila_change_sizer->Add(m_button_retry, 0, wxRIGHT, FromDIP(7));
+    fila_change_sizer->Add(m_fila_change_abort, 0, wxLEFT, FromDIP(7));
+
     sizer_box->Add(steps_sizer, 0, wxEXPAND | wxALIGN_LEFT | wxTOP, FromDIP(5));
-    sizer_box->Add(m_button_retry, 0, wxLEFT, FromDIP(28));
+    sizer_box->Add(fila_change_sizer, 0, wxLEFT, FromDIP(28));
     sizer_box->Add(0, 0, 0, wxTOP, FromDIP(5));
     m_filament_load_box->SetBackgroundColour(*wxWHITE);
     m_filament_load_box->Layout();
@@ -2409,6 +2511,7 @@ void StatusBasePanel::expand_filament_loading(wxMouseEvent &e)
                 m_filament_load_img->SetBitmap(create_scaled_bitmap("filament_load_o_series", this, load_img_size));
             }
         }
+        m_fila_change_abort->Show(obj->is_support_fila_change_abort);
     }
 
     m_filament_load_box->Show(tag_show);
@@ -2460,7 +2563,7 @@ void StatusBasePanel::show_filament_load_group(bool show)
 
         Layout();
         Fit();
-
+        
         wxGetApp().mainframe->m_monitor->get_status_panel()->Layout();
         wxGetApp().mainframe->m_monitor->Layout();
     }
@@ -2489,6 +2592,70 @@ void StatusBasePanel::on_ams_rack_switch(wxCommandEvent &e)
     }
 
     e.Skip();
+}
+
+void StatusBasePanel::on_control_tab(wxCommandEvent& event)
+{
+    tabSiwtch(m_control_tab,m_control_panel);
+    Layout();
+}
+
+void StatusBasePanel::on_model_tab(wxCommandEvent& event)
+{
+	tabSiwtch(m_model_tab, m_model_panel);
+    m_model_button_panel->Show(true);
+    m_model_button_panel->Layout();
+    m_panel_control_title->Layout();
+    Layout();
+}
+
+void StatusBasePanel::on_timelapse_tab(wxCommandEvent& event)
+{
+	tabSiwtch(m_lapsePhoto_tab, m_lapsePhtot_panel);
+    Layout();
+
+}
+
+void StatusBasePanel::on_model_checkchange(wxCommandEvent& event)
+{
+    int selectNum = event.GetInt();
+    if (selectNum>0) {
+		m_model_print->Enable(true);
+        m_model_down->Enable(true);
+        m_model_del->Enable(true);
+    }
+    else {
+		m_model_print->Enable(false);
+		m_model_down->Enable(false);
+		m_model_del->Enable(false);
+    }
+
+    if (selectNum == 2) {
+        m_model_print->Enable(false);
+    }
+}
+
+void StatusBasePanel::tabSiwtch(Button* button, wxPanel* panel)
+{
+	auto setButtonNormal = [](Button* button, wxPanel* panel) {
+		if (button == nullptr) {
+			return;
+		}
+        button->SetBackgroundColorNormal(wxColour(238, 238, 238));
+        button->SetTextColorNormal(wxColour(153, 153, 153));
+        panel->Hide();
+	};
+    m_model_button_panel->Hide();
+
+
+	setButtonNormal(m_control_tab, m_control_panel);
+	setButtonNormal(m_model_tab, m_model_panel);
+	setButtonNormal(m_lapsePhoto_tab, m_lapsePhtot_panel);
+
+	button->SetBackgroundColorNormal(wxColour(68, 121, 251));
+	button->SetTextColorNormal(wxColour(255, 255, 255));
+    panel->Show();
+    
 }
 
 //cj_1
@@ -2692,6 +2859,10 @@ StatusPanel::StatusPanel(wxWindow *parent, wxWindowID id, const wxPoint &pos, co
     m_bpButton_e_10->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(StatusPanel::on_axis_ctrl_e_up_10), NULL, this);
     m_bpButton_e_down_10->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(StatusPanel::on_axis_ctrl_e_down_10), NULL, this);
     m_nozzle_btn_panel->Connect(wxCUSTOMEVT_SWITCH_POS, wxCommandEventHandler(StatusPanel::on_nozzle_selected), NULL, this);
+
+	m_model_print->Bind(wxEVT_BUTTON, &StatusPanel::on_print_model, this);
+	m_model_down->Bind(wxEVT_BUTTON, &StatusPanel::on_download_model, this);
+	m_model_del->Bind(wxEVT_BUTTON, &StatusPanel::on_del_model, this);
 
     Bind(EVT_AMS_EXTRUSION_CALI, &StatusPanel::on_filament_extrusion_cali, this);
     Bind(EVT_AMS_LOAD, &StatusPanel::on_ams_load, this);
@@ -3124,7 +3295,7 @@ void StatusPanel::on_print_error_clean(wxCommandEvent &event)
 
 void StatusPanel::on_webrequest_state(wxWebRequestEvent &evt)
 {
-    BOOST_LOG_TRIVIAL(trace) << "monitor: monitor_panel web request state = " << evt.GetState();
+    // BOOST_LOG_TRIVIAL(trace) << "monitor: monitor_panel web request state = " << evt.GetState();
     switch (evt.GetState()) {
     case wxWebRequest::State_Completed: {
     //cj_1
@@ -3168,9 +3339,9 @@ void StatusPanel::refresh_thumbnail_webrequest(wxMouseEvent &event)
         m_request_url = wxString(obj->slice_info->thumbnail_url);
         if (!m_request_url.IsEmpty()) {
             web_request = wxWebSession::GetDefault().CreateRequest(this, m_request_url);
-            BOOST_LOG_TRIVIAL(trace) << "monitor: create new webrequest, state = " << web_request.GetState();
+            // BOOST_LOG_TRIVIAL(trace) << "monitor: create new webrequest, state = " << web_request.GetState();
             if (web_request.GetState() == wxWebRequest::State_Idle) web_request.Start();
-            BOOST_LOG_TRIVIAL(trace) << "monitor: start new webrequest, state = " << web_request.GetState();
+            // BOOST_LOG_TRIVIAL(trace) << "monitor: start new webrequest, state = " << web_request.GetState();
         }
     }
 }
@@ -3259,7 +3430,8 @@ void StatusPanel::update(MachineObject *obj)
 
         DevConfig *config = obj->GetConfig();
 
-        if (config->SupportFirstLayerInspect() || config->SupportAIMonitor() || obj->is_support_build_plate_marker_detect || obj->is_support_auto_recovery_step_loss) {
+        if (config->SupportFirstLayerInspect() || config->SupportAIMonitor() || obj->GetPrintOptions()->GetDetectionOption(PrintOptionEnum::Buildplate_Mark_Detection)->is_support_detect ||
+            obj->GetPrintOptions()->GetDetectionOption(PrintOptionEnum::Auto_Recovery_Detection)->is_support_detect) {
             m_options_btn->Show();
             if (print_options_dlg) {
                 print_options_dlg->update_machine_obj(obj);
@@ -3324,9 +3496,16 @@ void StatusPanel::update_error_message()
 
     if (obj->print_error <= 0) {
         error_info_reset();
+        if (m_print_error_dlg) {
+            delete m_print_error_dlg;
+            m_print_error_dlg = nullptr;
+        }
     } else if (obj->print_error != last_error) {
         /* clear old dialog */
-        if (m_print_error_dlg) { delete m_print_error_dlg; }
+        if (m_print_error_dlg) {
+            delete m_print_error_dlg;
+            m_print_error_dlg = nullptr;
+        }
 
         /* show device error message*/
         m_print_error_dlg  = new DeviceErrorDialog(obj, this);
@@ -3443,7 +3622,7 @@ void StatusPanel::update_temp_ctrl(std::shared_ptr<QDSDevice> obj)
     } else {
         m_tempCtrl_bed->SetIconNormal();
     }
-
+    
     // bool to_update_layout = false;
     // int nozzle_num = obj->GetExtderSystem()->GetTotalExtderCount();
     // if (nozzle_num == 1)
@@ -3616,6 +3795,89 @@ void StatusPanel::update_AMS_humidity(int amsId, int humidity)
 
 }
 
+//cj_2
+void StatusPanel::clear_model_item()
+{
+    m_model_panel->ClearAll();
+
+    //y78
+    tabSiwtch(m_control_tab, m_control_panel);
+    Layout();
+}
+
+//cj_2
+bool DownloadImage(const wxString& url, wxMemoryBuffer& output) {
+	wxURL wxUrl(url);
+	if (wxUrl.GetError() != wxURL_NOERR) {
+        BOOST_LOG_TRIVIAL(info) << "Invalid URL: " <<  url;
+		return false;
+	}
+
+	wxInputStream* httpStream = wxUrl.GetInputStream();
+	if (!httpStream) {
+        BOOST_LOG_TRIVIAL(info) << "Failed to open URL: " << url;
+		return false;
+	}
+
+	// 读取图片数据
+	wxMemoryOutputStream memStream;
+	httpStream->Read(memStream);
+
+	delete httpStream;
+
+	// 复制到输出buffer
+	wxStreamBuffer* memBuffer = memStream.GetOutputStreamBuffer();
+	output.AppendData(memBuffer->GetBufferStart(),
+		memBuffer->GetBufferSize());
+
+	return output.GetDataLen() > 0;
+}
+
+void StatusPanel::add_model_item(std::string modelName, std::string weight, std::string preTime, std::string imgPath)
+{
+
+	wxBitmap sampleImage = ScalableBitmap(this, "monitor_placeholder", 20).bmp();
+    //cj_2
+	wxMemoryBuffer imageData;
+	if (DownloadImage(UrlEncodeForFilename(imgPath), imageData)) {
+		wxMemoryInputStream stream(imageData.GetData(), imageData.GetDataLen());
+		wxImage image(stream, wxBITMAP_TYPE_PNG);
+
+		if (image.IsOk()) {
+			// 计算缩放尺寸（保持宽高比）
+			double scale = 1.0;
+			if (image.GetWidth() > 20 || image.GetHeight() > 20) {
+				double scaleX = (double)20 / image.GetWidth();
+				double scaleY = (double)20 / image.GetHeight();
+				scale = std::min(scaleX, scaleY);
+			}
+
+			int newWidth = (int)(image.GetWidth() * scale);
+			int newHeight = (int)(image.GetHeight() * scale);
+
+			// 缩放图像
+			wxImage resizedImage = image.Scale(newWidth, newHeight, wxIMAGE_QUALITY_HIGH);
+
+
+
+			sampleImage = wxBitmap(resizedImage);
+			// use bitmap...
+            BOOST_LOG_TRIVIAL(trace) << "download succeed:  " << UrlEncodeForFilename(imgPath);
+		}
+        else {
+            BOOST_LOG_TRIVIAL(trace) << "download fail:  " << UrlEncodeForFilename(imgPath);
+        }
+
+
+	}
+
+	// test data
+	m_model_panel->AddItem(from_u8(modelName),
+		sampleImage, std::atoi(weight.c_str()), preTime);
+	
+    m_model_panel->Refresh();
+}
+
 void StatusPanel::update_misc_ctrl(MachineObject *obj)
 {
     auto get_extder_shown_state = [](bool ext_has_filament) -> ExtruderState {
@@ -3707,7 +3969,7 @@ void StatusPanel::update_misc_ctrl(MachineObject *obj)
 
     /*other*/
     bool light_on = obj->GetLamp()->IsChamberLightOn();
-    BOOST_LOG_TRIVIAL(trace) << "light: " << light_on ? "on" : "off";
+    // BOOST_LOG_TRIVIAL(trace) << "light: " << light_on ? "on" : "off";
     if (m_switch_lamp_timeout > 0)
         m_switch_lamp_timeout--;
     else {
@@ -3737,8 +3999,9 @@ void StatusPanel::update_ams(MachineObject *obj)
     if (m_ams_setting_dlg && m_ams_setting_dlg->IsShown()) { m_ams_setting_dlg->UpdateByObj(obj); }
     if (m_filament_setting_dlg) { m_filament_setting_dlg->obj = obj; }
 
-    if (obj && (obj->last_cali_version != obj->cali_version) && obj->is_security_control_ready()) {
-        obj->last_cali_version = obj->cali_version;
+    if (obj && obj->GetCalib()->IsVersionExpired() && obj->is_security_control_ready()) {
+        obj->GetCalib()->SyncCalibVersion();
+
         PACalibExtruderInfo cali_info;
         cali_info.nozzle_diameter        = obj->GetExtderSystem()->GetNozzleDiameter(0);
         cali_info.use_extruder_id        = false;
@@ -3765,7 +4028,7 @@ void StatusPanel::update_ams(MachineObject *obj)
         last_read_done_bits   = -1;
         last_reading_bits     = -1;
         last_ams_version      = -1;
-        BOOST_LOG_TRIVIAL(trace) << "machine object" << QDTCrossTalk::Crosstalk_DevName(obj->get_dev_name()) << " was disconnected, set show_ams_group is false";
+        // BOOST_LOG_TRIVIAL(trace) << "machine object" << QDTCrossTalk::Crosstalk_DevName(obj->get_dev_name()) << " was disconnected, set show_ams_group is false";
 
         m_ams_control->SetAmsModel(AMSModel::EXT_AMS, ams_mode);
         show_ams_group(false);
@@ -3808,6 +4071,7 @@ void StatusPanel::update_ams(MachineObject *obj)
 
     // must select a current can
     m_ams_control->UpdateAms(obj->get_printer_series_str(), obj->printer_type, ams_info, ext_info, *obj->GetExtderSystem(), obj->get_dev_id(), false);
+    m_ams_control->UpdateAmsDryControl(obj);
 
     last_tray_exist_bits  = obj->tray_exist_bits;
     last_ams_exist_bits   = obj->ams_exist_bits;
@@ -3908,58 +4172,85 @@ void StatusPanel::update_ams(MachineObject *obj)
     update_ams_control_state(curr_ams_id, curr_can_id);
 }
 
+void sGetSwitchInfo(MachineObject* obj,
+                    const std::string& ams_id,
+                    const std::string& slot_id,
+                    wxString& load_error_info,
+                    wxString& unload_error_info)
+{
+
+    load_error_info.clear();
+    unload_error_info.clear();
+
+    if (!obj) {
+        load_error_info = "Please select a printer";
+        unload_error_info = "Please select a printer";
+        return;
+    }
+
+    if (obj->is_in_printing() && !obj->can_resume()) {
+        const auto& err_info = _L("The printer is busy on other print job");
+        load_error_info = err_info;
+        unload_error_info = err_info;
+        return;
+    }
+
+    if (obj->can_resume() && !devPrinterUtil::IsVirtualSlot(ams_id)) {
+        const auto& err_info = _L("When printing is paused, filament loading and unloading are only supported for external slots.");
+        load_error_info = err_info;
+        unload_error_info = err_info;
+        return;
+    }
+
+    bool in_switch_filament = false;
+    if (obj->is_enable_np && obj->GetExtderSystem()->IsBusyLoading()) {
+        in_switch_filament = true;
+    } else if (obj->ams_status_main == AMS_STATUS_MAIN_FILAMENT_CHANGE) {
+        in_switch_filament = true;
+    }
+
+    if (in_switch_filament) {
+        const auto& err_info = _L("Current extruder is busy changing filament");
+        load_error_info = err_info;
+        unload_error_info = err_info;
+        return;
+    }
+
+    auto tray_item = obj->get_tray(ams_id, slot_id);
+    if (!tray_item) {
+        const auto& err_info = _L("Choose an AMS slot then press \"Load\" or \"Unload\" button to automatically load or unload filaments.");
+        load_error_info = err_info;
+        unload_error_info = err_info;
+        return;
+    }
+
+    for (auto ext : obj->GetExtderSystem()->GetExtruders()) {
+        if (ext.GetSlotNow().ams_id == ams_id && ext.GetSlotNow().slot_id == slot_id) {
+            load_error_info = _L("Current slot has alread been loaded");
+        }
+    }
+    if (!devPrinterUtil::IsVirtualSlot(ams_id) && !tray_item->is_exists) {
+        load_error_info = _L("The selected slot is empty.");
+    }
+
+    auto extder = obj->GetExtderSystem()->GetExtderById(obj->GetFilaSystem()->GetExtruderIdByAmsId(ams_id));
+    if (!extder) {
+        unload_error_info = _L("No extruder found for the selected slot.");
+    }
+
+    if (!devPrinterUtil::IsVirtualSlot(ams_id)) {
+        if (!extder->HasFilamentInExt() ||
+            extder->GetSlotNow().ams_id != ams_id ||
+            extder->GetSlotNow().slot_id != slot_id) {
+            unload_error_info = _L("The selected slot is not loaded in the extruder.");
+        };
+    }
+};
+
 void StatusPanel::update_ams_control_state(std::string ams_id, std::string slot_id)
 {
     wxString load_error_info, unload_error_info;
-
-    if (obj->is_in_printing() && !obj->can_resume()) {
-        load_error_info   = _L("The printer is busy on other print job");
-        unload_error_info = _L("The printer is busy on other print job");
-    } else if (obj->can_resume() && !devPrinterUtil::IsVirtualSlot(ams_id)) {
-        load_error_info   = _L("When printing is paused, filament loading and unloading are only supported for external slots.");
-        unload_error_info = _L("When printing is paused, filament loading and unloading are only supported for external slots.");
-    } else {
-        /*switch now*/
-        bool in_switch_filament = false;
-
-        if (obj->is_enable_np) {
-            if (obj->GetExtderSystem()->IsBusyLoading()) { in_switch_filament = true; }
-        } else if (obj->ams_status_main == AMS_STATUS_MAIN_FILAMENT_CHANGE) {
-            in_switch_filament = true;
-        }
-
-        if (in_switch_filament) {
-            load_error_info   = _L("Current extruder is busy changing filament");
-            unload_error_info = _L("Current extruder is busy changing filament");
-        }
-
-        if (ams_id.empty() || slot_id.empty()) {
-            load_error_info = _L("Choose an BOX slot then press \"Load\" or \"Unload\" button to automatically load or unload filaments.");
-            unload_error_info = _L("Choose an BOX slot then press \"Load\" or \"Unload\" button to automatically load or unload filaments.");
-        } else if (ams_id == std::to_string(VIRTUAL_TRAY_MAIN_ID) || ams_id == std::to_string(VIRTUAL_TRAY_DEPUTY_ID)) {
-            for (auto ext : obj->GetExtderSystem()->GetExtruders()) {
-                if (ext.GetSlotNow().ams_id == ams_id && ext.GetSlotNow().slot_id == slot_id) { load_error_info = _L("Current slot has alread been loaded"); }
-            }
-        } else {
-            for (auto ext : obj->GetExtderSystem()->GetExtruders()) {
-                if (ext.GetSlotNow().ams_id == ams_id && ext.GetSlotNow().slot_id == slot_id) { load_error_info = _L("Current slot has alread been loaded"); }
-            }
-
-            /*empty*/
-            auto ams_item = obj->GetFilaSystem()->GetAmsById(ams_id);
-            if (!ams_item) {
-                load_error_info = _L("Choose an AMS slot then press \"Load\" or \"Unload\" button to automatically load or unload filaments.");
-            } else {
-                auto tray_item = ams_item->GetTray(slot_id);
-                if (!tray_item) {
-                    load_error_info = _L("Choose an AMS slot then press \"Load\" or \"Unload\" button to automatically load or unload filaments.");
-                } else if (!tray_item->is_exists) {
-                    load_error_info = _L("The selected slot is empty.");
-                }
-            }
-        }
-    }
-
+    sGetSwitchInfo(obj, ams_id, slot_id, load_error_info, unload_error_info);
     m_ams_control->EnableLoadFilamentBtn(load_error_info.empty(), ams_id, slot_id, load_error_info);
     m_ams_control->EnableUnLoadFilamentBtn(unload_error_info.empty(), ams_id, slot_id, unload_error_info);
 }
@@ -4238,6 +4529,9 @@ void StatusPanel::update_subtask(MachineObject *obj)
     } else {
         reset_printing_values();
     }
+
+    m_project_task_panel->update_pausing_state(obj->GetStatus()->GetJobState() == DevJobState::JobStatePausing);
+    m_project_task_panel->update_stopping_state(obj->GetStatus()->GetJobState() == DevJobState::JobStateStoppping);
 }
 
 void StatusPanel::update_partskip_subtask(MachineObject *obj)
@@ -4303,12 +4597,12 @@ void StatusPanel::update_cloud_subtask(MachineObject *obj)
                         m_project_task_panel->set_plate_index(-1);
                     }
                     task_thumbnail_state = ThumbnailState::TASK_THUMBNAIL;
-                    BOOST_LOG_TRIVIAL(trace) << "web_request: use cache image";
+                    // BOOST_LOG_TRIVIAL(trace) << "web_request: use cache image";
                 } else {
                     web_request = wxWebSession::GetDefault().CreateRequest(this, m_request_url);
 
 #if !QDT_RELEASE_TO_PUBLIC
-                    BOOST_LOG_TRIVIAL(trace) << "monitor: start request thumbnail, url = " << m_request_url;
+                    // BOOST_LOG_TRIVIAL(trace) << "monitor: start request thumbnail, url = " << m_request_url;
 #endif
                     web_request.Start();
                     m_start_loading_thumbnail = false;
@@ -4335,6 +4629,8 @@ void StatusPanel::update_sdcard_subtask(MachineObject *obj)
 
 void StatusPanel::reset_printing_values()
 {
+    m_project_task_panel->update_pausing_state(false);
+    m_project_task_panel->update_stopping_state(false);
     m_project_task_panel->enable_partskip_button(nullptr, false);
     m_project_task_panel->enable_pause_resume_button(false, "pause_disable");
     m_project_task_panel->enable_abort_button(false);
@@ -4372,6 +4668,8 @@ void StatusPanel::on_axis_ctrl_xy(wxCommandEvent &event)
         return;
     }
     // cj_1 
+    // Each button has a corresponding number. The ones in the x-axis direction are 1, 3, 5, 7,
+    //  and those in the y-axis direction are 0, 2, 4, 6. The one in the middle is 8.
     //check is at home
 
 	if (event.GetInt() == 0) { postEventValueAndEnable(EVTSET_Y_AXIS, 10,"value"); }
@@ -4446,6 +4744,10 @@ bool StatusPanel::check_axis_z_at_home(MachineObject *obj)
 void StatusPanel::on_axis_ctrl_z_up_10(wxCommandEvent &event)
 {
 //cj_1
+	if (m_homed_axes == "") {
+		show_recenter_dialog();
+		return;
+	}
     postEventValueAndEnable(EVTSET_Z_AXIS, -10, "value");
     if (obj) {
         obj->GetAxis()->Ctrl_Axis("Z", 1.0, -10.0f, 900);
@@ -4456,6 +4758,10 @@ void StatusPanel::on_axis_ctrl_z_up_10(wxCommandEvent &event)
 void StatusPanel::on_axis_ctrl_z_up_1(wxCommandEvent &event)
 {
 //cj_1
+	if (m_homed_axes == "") {
+		show_recenter_dialog();
+		return;
+	}
     postEventValueAndEnable(EVTSET_Z_AXIS, -1, "value");
     if (obj) {
         obj->GetAxis()->Ctrl_Axis("Z", 1.0, -1.0f, 900);
@@ -4466,6 +4772,10 @@ void StatusPanel::on_axis_ctrl_z_up_1(wxCommandEvent &event)
 void StatusPanel::on_axis_ctrl_z_down_1(wxCommandEvent &event)
 {
 //cj_1
+	if (m_homed_axes == "") {
+		show_recenter_dialog();
+		return;
+	}
     postEventValueAndEnable(EVTSET_Z_AXIS, 1, "value");
     if (obj) {
         obj->GetAxis()->Ctrl_Axis("Z", 1.0, 1.0f, 900);
@@ -4476,6 +4786,10 @@ void StatusPanel::on_axis_ctrl_z_down_1(wxCommandEvent &event)
 void StatusPanel::on_axis_ctrl_z_down_10(wxCommandEvent &event)
 {
 //cj_1
+	if (m_homed_axes == "") {
+		show_recenter_dialog();
+		return;
+	}
     postEventValueAndEnable(EVTSET_Z_AXIS, 10, "value");
     if (obj) {
         obj->GetAxis()->Ctrl_Axis("Z", 1.0, 10.0f, 900);
@@ -4758,12 +5072,12 @@ void StatusPanel::on_ams_load_curr()
 
         std::map<std::string, DevAms *>::iterator it = obj->GetFilaSystem()->GetAmsList().find(curr_ams_id);
         if (it == obj->GetFilaSystem()->GetAmsList().end()) {
-            BOOST_LOG_TRIVIAL(trace) << "ams: find " << curr_ams_id << " failed";
+            // BOOST_LOG_TRIVIAL(trace) << "ams: find " << curr_ams_id << " failed";
             return;
         }
         auto tray_it = it->second->GetTrays().find(curr_can_id);
         if (tray_it == it->second->GetTrays().end()) {
-            BOOST_LOG_TRIVIAL(trace) << "ams: find " << curr_can_id << " failed";
+            // BOOST_LOG_TRIVIAL(trace) << "ams: find " << curr_can_id << " failed";
             return;
         }
         DevAmsTray *curr_tray = obj->get_curr_tray();
@@ -5164,12 +5478,12 @@ void StatusPanel::on_ams_refresh_rfid(wxCommandEvent &event)
 
         std::map<std::string, DevAms *>::iterator it = obj->GetFilaSystem()->GetAmsList().find(curr_ams_id);
         if (it == obj->GetFilaSystem()->GetAmsList().end()) {
-            BOOST_LOG_TRIVIAL(trace) << "ams: find " << curr_ams_id << " failed";
+            // BOOST_LOG_TRIVIAL(trace) << "ams: find " << curr_ams_id << " failed";
             return;
         }
         auto slot_it = it->second->GetTrays().find(curr_can_id);
         if (slot_it == it->second->GetTrays().end()) {
-            BOOST_LOG_TRIVIAL(trace) << "ams: find " << curr_can_id << " failed";
+            // BOOST_LOG_TRIVIAL(trace) << "ams: find " << curr_can_id << " failed";
             return;
         }
 
@@ -5255,12 +5569,12 @@ void StatusPanel::on_ams_selected(wxCommandEvent &event)
             std::string                               curr_can_id = event.GetString().ToStdString();
             std::map<std::string, DevAms *>::iterator it          = obj->GetFilaSystem()->GetAmsList().find(curr_ams_id);
             if (it == obj->GetFilaSystem()->GetAmsList().end()) {
-                BOOST_LOG_TRIVIAL(trace) << "ams: find " << curr_ams_id << " failed";
+                // BOOST_LOG_TRIVIAL(trace) << "ams: find " << curr_ams_id << " failed";
                 return;
             }
             auto tray_it = it->second->GetTrays().find(curr_can_id);
             if (tray_it == it->second->GetTrays().end()) {
-                BOOST_LOG_TRIVIAL(trace) << "ams: find " << curr_can_id << " failed";
+                // BOOST_LOG_TRIVIAL(trace) << "ams: find " << curr_can_id << " failed";
                 return;
             }
             try {
@@ -5727,6 +6041,47 @@ void StatusPanel::on_selected_type(wxCommandEvent& event)
 	}
 }
 
+std::vector<DeviceModelItem* > StatusPanel::getModelSelectItems()
+{
+	if (m_model_panel != nullptr) {
+		return m_model_panel->GetSelectedItems();
+	}
+	return std::vector<DeviceModelItem*>();
+}
+
+void StatusPanel::removeSelectModelItems()
+{
+    m_model_panel->RemoveSelectedItems();
+}
+
+void StatusPanel::on_print_model(wxCommandEvent& event)
+{
+   
+}
+
+void StatusPanel::on_download_model(wxCommandEvent& event)
+{
+    BOOST_LOG_TRIVIAL(trace) << wxGetApp().app_config->get("download_path");
+    std::string downloadPath = wxGetApp().app_config->get("download_path");
+    if (downloadPath == "") {
+        BOOST_LOG_TRIVIAL(info) << "download print file fail: download_path no exit!" << __FUNCTION__ << "  ";
+
+
+
+    }
+
+	wxCommandEvent downloadEvent;
+    downloadEvent.SetEventType(EVTSET_DOWNLOAD_PRINTER_FILE);
+	wxPostEvent(this, downloadEvent);
+}
+
+void StatusPanel::on_del_model(wxCommandEvent& event)
+{
+	wxCommandEvent delEvent;
+	delEvent.SetEventType(EVTSET_DEL_PRINTER_FILE);
+	wxPostEvent(this, delEvent);
+}
+
 bool StatusPanel::is_stage_list_info_changed(MachineObject *obj)
 {
     if (!obj) return true;
@@ -5742,7 +6097,7 @@ bool StatusPanel::is_stage_list_info_changed(MachineObject *obj)
 
 void StatusPanel::set_default()
 {
-    BOOST_LOG_TRIVIAL(trace) << "status_panel: set_default";
+    // BOOST_LOG_TRIVIAL(trace) << "status_panel: set_default";
     obj                           = nullptr;
     last_subtask                  = nullptr;
     last_tray_exist_bits          = -1;
@@ -5990,7 +6345,7 @@ void StatusPanel::update_filament_loading_panel(MachineObject *obj)
     bool ams_loading_state = false;
     auto ams_status_sub    = obj->ams_status_sub;
 
-    if (obj->is_enable_np) {
+    if (obj->is_enable_np && obj->ams_status_main != AMS_STATUS_MAIN_COLD_PULL) {
         ams_loading_state = obj->GetExtderSystem()->IsBusyLoading();
     } else if (obj->ams_status_main == AMS_STATUS_MAIN_FILAMENT_CHANGE) {
         ams_loading_state = true;

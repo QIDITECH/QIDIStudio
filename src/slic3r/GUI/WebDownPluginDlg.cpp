@@ -90,7 +90,7 @@ DownPluginFrame::~DownPluginFrame()
 
 void DownPluginFrame::load_url(wxString &url)
 {
-    BOOST_LOG_TRIVIAL(trace) << "app_start: DownPluginFrame url=" << url.ToStdString();
+    // BOOST_LOG_TRIVIAL(trace) << "app_start: DownPluginFrame url=" << url.ToStdString();
     this->Show();
     m_browser->LoadURL(url);
     m_browser->SetFocus();

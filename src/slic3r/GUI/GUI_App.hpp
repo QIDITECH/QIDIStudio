@@ -37,11 +37,15 @@
 #include <IOKit/IOMessage.h>
 #endif
 
+//cj_2
 #if QDT_RELEASE_TO_PUBLIC
-#include "../QIDI/QIDINetwork.hpp"
+#include "../QIDI/QIDINetworkTypes.hpp"
 #endif
 
 #include "slic3r/GUI/WebUserLoginDialog.hpp"
+
+//y76
+
 
 //#define QDT_HAS_FIRST_PAGE          1
 #define STUDIO_INACTIVE_TIMEOUT     15*60*1000
@@ -236,6 +240,7 @@ public:
 
 struct TryLoadLastMachine
 {
+    ~TryLoadLastMachine();
     bool is_mqtt_ok = false;
     bool is_list_ok = false;
 
@@ -251,6 +256,8 @@ struct TryLoadLastMachine
         is_list_ok |= true;
         InnerLoad(agent, dev);
     }
+
+    boost::thread local_bind_thread;
 };
 
 class GUI_App : public wxApp
@@ -756,6 +763,8 @@ public:
 
     void set_picking_color(const ColorRGB& color);
     const ColorRGB& get_picking_color() const;
+
+    void update_log_sink_region();
 
     //y
 #if QDT_RELEASE_TO_PUBLIC

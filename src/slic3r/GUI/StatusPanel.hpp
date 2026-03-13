@@ -49,7 +49,8 @@ namespace Slic3r {
 class DevExtderSystem;
 
 namespace GUI {
-
+    //cj_2
+    class DeviceModelListCtrl;
 //cj_1
 	wxDECLARE_EVENT(EVTSET_EXTRUESION, wxCommandEvent);
 	wxDECLARE_EVENT(EVTSET_BACK, wxCommandEvent);
@@ -71,6 +72,9 @@ namespace GUI {
 	wxDECLARE_EVENT(EVTSET_FILAMENT_VENDOR, wxCommandEvent); ///filament/vendor
 	wxDECLARE_EVENT(EVTSET_FILAMENT_LOAD, wxCommandEvent); ///set/filament/load
 	wxDECLARE_EVENT(EVTSET_FILAMENT_UNLOAD, wxCommandEvent); ///set/filament/unload
+	wxDECLARE_EVENT(EVTSET_DEL_PRINTER_FILE, wxCommandEvent); ///set/filament/unload
+    wxDECLARE_EVENT(EVTSET_DOWNLOAD_PRINTER_FILE, wxCommandEvent); //cj_2
+
 
 // Previous definitions
 class MessageDialog;
@@ -152,9 +156,11 @@ class ExtruderImage : public wxWindow
     ExtruderState m_single_ext_state = {ExtruderState::EMPTY_LOAD};
 
 public:
+
     void update(int nozzle_num, int nozzle_id);
     void update(ExtruderState single_state);
     void update(ExtruderState right_state, ExtruderState left_state);
+
 
     void msw_rescale();
     void setExtruderCount(int nozzle_num);
@@ -338,6 +344,8 @@ private:
     int             m_plate_index { -1 };
     wxStaticBitmap* m_bitmap_static_use_time;
     wxStaticBitmap* m_bitmap_static_use_weight;
+    AnimaIcon*      m_pausing_icon;
+    AnimaIcon*      m_stopping_icon;
     ScalableButton* m_button_pause_resume;
     ScalableButton* m_button_abort;
     Button*         m_button_partskip;
@@ -374,6 +382,8 @@ public:
 
 public:
     void enable_partskip_button(MachineObject* obj, bool enable);
+    void update_pausing_state(bool enter);
+    void update_stopping_state(bool enter);
     void enable_pause_resume_button(bool enable, std::string type);
     void enable_abort_button(bool enable);
     void update_subtask_name(wxString name);
@@ -382,7 +392,6 @@ public:
     void on_stage_clicked(wxMouseEvent& event);
 
     // Public interface to update remaining time text in the thermal dialog
-    void update_thermal_remaining_time(MachineObject* obj);
     void update_progress_percent(wxString percent, wxString icon);
     void update_left_time(wxString time);
     void update_finish_time(wxString finish_time);
@@ -416,6 +425,8 @@ public:
     int get_part_skipped_dirty() { return m_part_skipped_dirty; }
     void set_part_skipped_dirty(int dirty) { m_part_skipped_dirty = dirty; }
     void                           set_has_reted_text(bool has_rated);
+
+private:
     void paint(wxPaintEvent&);
 };
 
@@ -591,6 +602,7 @@ protected:
     wxStaticBitmap *m_filament_load_img;
 
     Button *m_button_retry {nullptr};
+    Button *m_fila_change_abort {nullptr};
     StaticBox* m_filament_load_box;
 
 //y76
@@ -599,6 +611,25 @@ protected:
     Label* m_staticText_task = nullptr;
     wxScrolledWindow* m_scroll_files = nullptr;
     wxBoxSizer* m_file_list_sizer = nullptr;
+
+    //cj_2 
+    wxPanel* m_tab{ nullptr };
+    Button* m_control_tab{ nullptr };
+    Button* m_model_tab{ nullptr };
+    Button* m_lapsePhoto_tab{ nullptr };
+
+    wxPanel* m_control_panel{ nullptr };
+
+    // model
+    DeviceModelListCtrl* m_model_panel{ nullptr };
+    wxPanel* m_model_button_panel{ nullptr };
+    Button* m_model_print{ nullptr };
+    Button* m_model_down{ nullptr };
+    Button* m_model_del{ nullptr };
+
+    wxPanel* m_lapsePhtot_panel{ nullptr };
+
+
 //y76
 
     // Virtual event handlers, override them in your derived class
@@ -620,6 +651,7 @@ protected:
     virtual void on_axis_ctrl_e_down_10(wxCommandEvent &event) { event.Skip(); }
     virtual void on_nozzle_selected(wxCommandEvent &event) { event.Skip(); }
 
+
 public:
     StatusBasePanel(wxWindow *      parent,
                     wxWindowID      id    = wxID_ANY,
@@ -634,6 +666,10 @@ public:
     void init_bitmaps();
     wxBoxSizer *create_monitoring_page();
     wxBoxSizer *create_machine_control_page(wxWindow *parent);
+    //cj_2
+    wxPanel* create_tab_page(wxWindow* parent);
+    //cj_2
+    wxPanel* create_model_fun(wxWindow* parent);
 
     wxBoxSizer *create_temp_axis_group(wxWindow *parent);
     wxBoxSizer *create_temp_control(wxWindow *parent);
@@ -661,23 +697,24 @@ public:
 	void update_temp_target(std::string nozzle, std::string bed, std::string chamber);
     //y76
     void update_light_status(bool on);
-
-    wxBoxSizer* create_task_list_group(wxWindow *parent);
-    void init_empty_task_list();
-
-    void update_task_list_layout();
-
-    void clear_task_list();
-
-    void update_task_list(const std::vector<FileInfo>& files);
+    //cj_2
+    void tabSiwtch(Button* button, wxPanel* panel);
 
 private:
     void on_ams_rack_switch(wxCommandEvent& event);
+
+    //cj_2
+	void on_control_tab(wxCommandEvent& event);
+	void on_model_tab(wxCommandEvent& event);
+	void on_timelapse_tab(wxCommandEvent& event);
+    void on_model_checkchange(wxCommandEvent& event);
 };
 
-
+class DeviceModelItem;
 class StatusPanel : public StatusBasePanel
 {
+
+
 
 //cj_1
 public:
@@ -709,6 +746,16 @@ public:
     //cj_2
 	void update_AMS_temp(int amsId, int temp);
 	void update_AMS_humidity(int amsId, int humidity);
+
+    // cj_2
+    void clear_model_item();
+    // cj_2 
+    void add_model_item(std::string itemName, std::string weight, std::string preTime, std::string imgPath);
+	//cj_2
+	std::vector<DeviceModelItem* > getModelSelectItems();
+    //cj_2
+    void removeSelectModelItems();
+
 private:
     friend class MonitorPanel;
     //cj_1
@@ -850,6 +897,13 @@ protected:
     //cj_1
     void on_selected_type(wxCommandEvent& event);
 
+    
+
+    //cj_2
+	void on_print_model(wxCommandEvent& event);
+	void on_download_model(wxCommandEvent& event);
+	void on_del_model(wxCommandEvent& event);
+
 
     /* update apis */
     void update(MachineObject* obj);
@@ -940,6 +994,7 @@ public:
     void msw_rescale();
 
 //cj_1
+
 private:
     std::vector<AMSinfo> m_boxS;
     std::vector<AMSinfo> m_ext_info;

@@ -597,6 +597,35 @@ std::pair<std::string, float> OctoPrint::get_status_progress(wxString& msg) cons
     return std::make_pair(print_state, process);
 }
 
+//y78
+bool OctoPrint::send_msg_to_printer(std::string api, std::string msg) const
+{
+  const char* name = get_name();
+
+  auto url = make_url(api);
+   bool successful = false;
+  Http http = Http::post(std::move(url));
+  //y72
+  set_auth(http);
+  http.header("Content-Type", "application/json")
+      .set_post_body(msg)
+      .timeout_connect(4)
+      .on_error([&](std::string body, std::string error, unsigned status) {
+      BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error sending G-code: %2%, HTTP %3%, body: %4%")
+          % name % error % status % body;
+          })
+      .on_complete([&](std::string body, unsigned status) {
+              BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: G-code sent successfully: %2%") % name % msg;
+              successful = true;
+          })
+#ifdef _WIN32
+              .ssl_revoke_best_effort(m_ssl_revoke_best_effort)
+#endif // _WIN32
+              .perform_sync();
+  
+  return successful;
+}
+
 SL1Host::SL1Host(DynamicPrintConfig *config) : 
     OctoPrint(config, true),
     m_authorization_type(dynamic_cast<const ConfigOptionEnum<AuthorizationType>*>(config->option("printhost_authorization_type"))->value),

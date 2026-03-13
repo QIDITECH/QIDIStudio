@@ -357,7 +357,7 @@ bool run_post_process_scripts(std::string &src_path, bool make_copy, const std::
                                                                   fs::path(new_output_name).parent_path().string()));
                 }
 
-                BOOST_LOG_TRIVIAL(trace) << "Post-processing script changed the file name from " << output_name << " to " << new_output_name;
+                // BOOST_LOG_TRIVIAL(trace) << "Post-processing script changed the file name from " << output_name << " to " << new_output_name;
                 output_name = new_output_name;
             } catch (const std::exception &err) {
                 throw Slic3r::RuntimeError(Slic3r::format("run_post_process_scripts: Failed reading a file %1% "

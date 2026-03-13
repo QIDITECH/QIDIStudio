@@ -284,7 +284,7 @@ void SliceInfoPanel::on_mouse_leave(wxMouseEvent &event) { ; }
 
 void SliceInfoPanel::on_webrequest_state(wxWebRequestEvent &evt)
 {
-    BOOST_LOG_TRIVIAL(trace) << "monitor: sub_task_panel web request state = " << evt.GetState();
+    // BOOST_LOG_TRIVIAL(trace) << "monitor: sub_task_panel web request state = " << evt.GetState();
     switch (evt.GetState()) {
     case wxWebRequest::State_Completed: {
         m_thumbnail_img    = *evt.GetResponse().GetStream();
@@ -317,7 +317,7 @@ void SliceInfoPanel::update(QDTSliceInfo *info)
 
     if (!info->thumbnail_url.empty()) {
         web_request = wxWebSession::GetDefault().CreateRequest(this, info->thumbnail_url);
-        BOOST_LOG_TRIVIAL(trace) << "slice info: start reqeust thumbnail, url = " << info->thumbnail_url;
+        // BOOST_LOG_TRIVIAL(trace) << "slice info: start reqeust thumbnail, url = " << info->thumbnail_url;
         web_request.Start();
     }
 

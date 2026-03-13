@@ -201,20 +201,28 @@ void PresetComboBox::update_selection()
 
 // A workaround for a set of issues related to text fitting into gtk widgets:
 #if defined(__WXGTK20__) || defined(__WXGTK3__)
-    GList* cells = gtk_cell_layout_get_cells(GTK_CELL_LAYOUT(m_widget));
-
-    // 'cells' contains the GtkCellRendererPixBuf for the icon,
-    // 'cells->next' contains GtkCellRendererText for the text we need to ellipsize
-    if (!cells || !cells->next) return;
-
-    auto cell = static_cast<GtkCellRendererText *>(cells->next->data);
-
-    if (!cell) return;
-
-    g_object_set(G_OBJECT(cell), "ellipsize", PANGO_ELLIPSIZE_END, (char*)NULL);
-
-    // Only the list of cells must be freed, the renderer isn't ours to free
-    g_list_free(cells);
+  GtkWidget* widget = m_widget;
+    if (GTK_IS_CONTAINER(widget)) {
+        GList* children = gtk_container_get_children(GTK_CONTAINER(widget));
+        if (children) {
+            widget = GTK_WIDGET(children->data);
+            g_list_free(children);
+        }
+    }
+    if (GTK_IS_ENTRY(widget)) {
+        // Set ellipsization for the entry
+        gtk_entry_set_width_chars(GTK_ENTRY(widget), 20);  // Adjust this value as needed
+        gtk_entry_set_max_width_chars(GTK_ENTRY(widget), 20);  // Adjust this value as needed
+        // Create a PangoLayout for the entry and set ellipsization
+        PangoLayout* layout = gtk_entry_get_layout(GTK_ENTRY(widget));
+        if (layout) { 
+            pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
+        } else {
+            g_warning("Unable to get PangoLayout from GtkEntry");
+        }
+    } else {
+        g_warning("Expected GtkEntry, but got %s", G_OBJECT_TYPE_NAME(widget));
+    }
 #endif
 }
 
@@ -1308,14 +1316,18 @@ void PlaterPresetComboBox::update()
         selected_in_box = add_box_filaments(into_u8(selected_user_preset.empty() ? selected_system_preset : selected_user_preset), true);
     }
 
-    //y
-    //std::vector<std::string> filament_orders = {"QIDI PLA Basic", "QIDI PLA Matte", "QIDI PETG HF",    "QIDI ABS",      "QIDI PLA Silk", "QIDI PLA-CF",
-    //                                            "QIDI PLA Galaxy", "QIDI PLA Metal", "QIDI PLA Marble", "QIDI PETG-CF", "QIDI PETG Translucent", "QIDI ABS-GF"};
-    std::vector<std::string> filament_orders = {};
+    std::vector<std::string> filament_orders = {"QIDI PLA Basic", "QIDI PLA Matte", "QIDI PLA Lite", "QIDI PLA Tough+", "QIDI PETG Basic", "QIDI PETG HF", "QIDI ABS",
+                                                "QIDI ASA", "QIDI PLA Silk+", "QIDI PLA Silk", "QIDI PLA-CF", "QIDI PLA Marble", "QIDI PLA Metal", "QIDI PLA Sparkle",
+                                                "QIDI PLA Galaxy", "QIDI PLA Glow", "QIDI PLA Wood", "QIDI PLA Translucent", "QIDI PETG Translucent", "QIDI PC",
+                                                "QIDI PC FR", "QIDI PETG-CF", "QIDI ABS-GF", "QIDI ASA-CF", "QIDI PA6-CF", "QIDI PA6-GF", "QIDI PAHT-CF", "QIDI PET-CF",
+                                                "QIDI PPA-CF", "QIDI PPS-CF", "QIDI PLA Aero", "QIDI ASA-Aero", "QIDI TPU for AMS", "QIDI TPU 95A HF", "QIDI TPU 90A",
+                                                "QIDI TPU 85A", "QIDI Support For PLA", "QIDI Support For PLA/PETG", "QIDI Support for ABS", "QIDI PVA", "QIDI Support For PA/PET",
+                                                "QIDI TPU 95A", "QIDI PA-CF", "QIDI PLA Tough", "QIDI PLA Dynamic", "QIDI Support W", "QIDI Support G"};
     //w38
     std::vector<std::string> first_vendors     = {"QIDI", "Generic","Bambu Lab","HATCHBOX","Overture","Polymaker"};
     std::vector<std::string> first_types     = {"PLA", "PETG", "ABS", "TPU"};
-    auto  add_presets       = [this, &preset_descriptions, &filament_orders, &preset_filament_vendors, &first_vendors, &preset_filament_types, &first_types, &selected_in_box]
+    std::vector<std::string>    polymaker_priority = {"PolyLite PLA", "PolyTerra PLA", "PolyLite PETG"};
+    auto  add_presets       = [this, &preset_descriptions, &filament_orders, &preset_filament_vendors, &first_vendors, &preset_filament_types, &first_types, &selected_in_box, &polymaker_priority]
             (std::map<wxString, wxBitmap *> const &presets, wxString const &selected, std::string const &group, wxString const &groupName) {
         if (!presets.empty()) {
             set_label_marker(Append(_L(group), wxNullBitmap, DD_ITEM_STYLE_SPLIT_ITEM));
@@ -1328,7 +1340,7 @@ void PlaterPresetComboBox::update()
                 //    else SetString(GetCount() - 1, "");
                 //}
                 if (group == "System presets" || group == "Unsupported presets")
-                    std::sort(list.begin(), list.end(), [&filament_orders, &preset_filament_vendors, &first_vendors, &preset_filament_types, &first_types](auto *l, auto *r) {
+                    std::sort(list.begin(), list.end(), [&filament_orders, &preset_filament_vendors, &first_vendors, &preset_filament_types, &first_types, &polymaker_priority](auto *l, auto *r) {
                         { // Compare order
                             auto iter1 = std::find(filament_orders.begin(), filament_orders.end(), l->first);
                             auto iter2 = std::find(filament_orders.begin(), filament_orders.end(), r->first);
@@ -1340,6 +1352,37 @@ void PlaterPresetComboBox::update()
                             auto iter2 = std::find(first_vendors.begin(), first_vendors.end(), preset_filament_vendors[r->first]);
                             if (iter1 != iter2)
                                 return iter1 < iter2;
+                        }
+                        if (preset_filament_vendors[l->first] == "Polymaker" && preset_filament_vendors[r->first] == "Polymaker") {
+                            wxString l_name = l->first;
+                            wxString r_name = r->first;
+
+                            // Check if left is in priority list
+                            auto l_priority_it = std::find(polymaker_priority.begin(), polymaker_priority.end(), l_name);
+                            int  l_priority    = (l_priority_it != polymaker_priority.end()) ? std::distance(polymaker_priority.begin(), l_priority_it) : -1;
+
+                            // Check if right is in priority list
+                            auto r_priority_it = std::find(polymaker_priority.begin(), polymaker_priority.end(), r_name);
+                            int  r_priority    = (r_priority_it != polymaker_priority.end()) ? std::distance(polymaker_priority.begin(), r_priority_it) : -1;
+
+                            // If both have priority positions, sort by priority
+                            if (l_priority >= 0 && r_priority >= 0) return l_priority < r_priority;
+
+                            // If only left has priority, it comes first
+                            if (l_priority >= 0) return true;
+
+                            // If only right has priority, it comes first
+                            if (r_priority >= 0) return false;
+
+                            // Check if either starts with "Fiberon"
+                            bool l_is_fiberon = l_name.StartsWith("Fiberon");
+                            bool r_is_fiberon = r_name.StartsWith("Fiberon");
+
+                            // If both are Fiberon or both are not, sort alphabetically
+                            if (l_is_fiberon == r_is_fiberon) return l_name < r_name;
+
+                            // Fiberon comes before non-Fiberon (after priority items)
+                            return l_is_fiberon;
                         }
                         { // Compare type
                             auto iter1 = std::find(first_types.begin(), first_types.end(), preset_filament_types[l->first]);
@@ -1850,6 +1893,7 @@ void GUI::CalibrateFilamentComboBox::load_tray(DynamicPrintConfig &config)
         m_selected_preset = nullptr;
         m_is_compatible = false;
         clr_picker->SetBitmap(*get_extruder_color_icon("#F0F0F0FF", m_tray_name, FromDIP(20), FromDIP(20)));
+        clr_picker->SetBitmapDisabled(*get_extruder_color_icon("#F0F0F0FF", m_tray_name, FromDIP(20), FromDIP(20)));
     } else {
         auto &filaments = m_collection->get_presets();
         auto  iter      = std::find_if(filaments.begin(), filaments.end(), [this](auto &f) {

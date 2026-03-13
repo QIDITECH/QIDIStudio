@@ -279,6 +279,7 @@ void PrintJob::process()
     params.try_emmc_print         = this->could_emmc_print;
     //y71
     params.enable_multi_box     = this->enable_multi_box;
+    //y76
     params.enable_air_condition = this->enable_air_condition;
 
     if (m_print_type == "from_sdcard_view") {
@@ -510,7 +511,7 @@ void PrintJob::process()
                 if (job_info_j.contains("job_id")) {
                     curr_job_id = DevJsonValParser::get_longlong_val(job_info_j["job_id"]);
                 }
-                BOOST_LOG_TRIVIAL(trace) << "print_job: curr_obj_id=" << curr_job_id;
+                // BOOST_LOG_TRIVIAL(trace) << "print_job: curr_obj_id=" << curr_job_id;
 
             } catch(...) {
                 ;
@@ -519,7 +520,7 @@ void PrintJob::process()
             if (obj) {
                 int time_out = 0;
                 while (time_out < PRINT_JOB_SENDING_TIMEOUT) {
-                    BOOST_LOG_TRIVIAL(trace) << "print_job: obj job_id = " << obj->job_id_;
+                    // BOOST_LOG_TRIVIAL(trace) << "print_job: obj job_id = " << obj->job_id_;
                     if (!obj->job_id_.empty() && obj->job_id_.compare(curr_job_id) == 0) {
                         BOOST_LOG_TRIVIAL(info) << "print_job: got job_id = " << obj->job_id_ << ", time_out=" << time_out;
                         return true;

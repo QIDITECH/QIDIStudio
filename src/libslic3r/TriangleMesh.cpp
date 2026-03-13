@@ -86,7 +86,7 @@ static void trianglemesh_repair_on_import(stl_file &stl)
 
     // checking exact
 #ifdef SLIC3R_TRACE_REPAIR
-    BOOST_LOG_TRIVIAL(trace) << "\tstl_check_faces_exact";
+    // BOOST_LOG_TRIVIAL(trace) << "\tstl_check_faces_exact";
 #endif /* SLIC3R_TRACE_REPAIR */
     assert(stl_validate(&stl));
     stl_check_facets_exact(&stl);
@@ -107,7 +107,7 @@ static void trianglemesh_repair_on_import(stl_file &stl)
                 // Still not a manifold, some triangles have unconnected edges.
                 //printf("Checking nearby. Tolerance= %f Iteration=%d of %d...", tolerance, i + 1, iterations);
 #ifdef SLIC3R_TRACE_REPAIR
-                BOOST_LOG_TRIVIAL(trace) << "\tstl_check_faces_nearby";
+                // BOOST_LOG_TRIVIAL(trace) << "\tstl_check_faces_nearby";
 #endif /* SLIC3R_TRACE_REPAIR */
                 stl_check_facets_nearby(&stl, tolerance);
                 //printf("  Fixed %d edges.\n", stl.stats.edges_fixed - last_edges_fixed);
@@ -123,7 +123,7 @@ static void trianglemesh_repair_on_import(stl_file &stl)
     // remove_unconnected
     if (stl.stats.connected_facets_3_edge < (int)stl.stats.number_of_facets) {
 #ifdef SLIC3R_TRACE_REPAIR
-        BOOST_LOG_TRIVIAL(trace) << "\tstl_remove_unconnected_facets";
+        // BOOST_LOG_TRIVIAL(trace) << "\tstl_remove_unconnected_facets";
 #endif /* SLIC3R_TRACE_REPAIR */
         stl_remove_unconnected_facets(&stl);
         assert(stl_validate(&stl));
@@ -135,7 +135,7 @@ static void trianglemesh_repair_on_import(stl_file &stl)
     // Rather let the slicing algorithm close gaps in 2D slices.
     if (stl.stats.connected_facets_3_edge < stl.stats.number_of_facets) {
 #ifdef SLIC3R_TRACE_REPAIR
-        BOOST_LOG_TRIVIAL(trace) << "\tstl_fill_holes";
+        // BOOST_LOG_TRIVIAL(trace) << "\tstl_fill_holes";
 #endif /* SLIC3R_TRACE_REPAIR */
         stl_fill_holes(&stl);
         stl_clear_error(&stl);
@@ -144,21 +144,21 @@ static void trianglemesh_repair_on_import(stl_file &stl)
 
     // normal_directions
 #ifdef SLIC3R_TRACE_REPAIR
-    BOOST_LOG_TRIVIAL(trace) << "\tstl_fix_normal_directions";
+    // BOOST_LOG_TRIVIAL(trace) << "\tstl_fix_normal_directions";
 #endif /* SLIC3R_TRACE_REPAIR */
     stl_fix_normal_directions(&stl);
     assert(stl_validate(&stl));
 
     // normal_values
 #ifdef SLIC3R_TRACE_REPAIR
-    BOOST_LOG_TRIVIAL(trace) << "\tstl_fix_normal_values";
+    // BOOST_LOG_TRIVIAL(trace) << "\tstl_fix_normal_values";
 #endif /* SLIC3R_TRACE_REPAIR */
     stl_fix_normal_values(&stl);
     assert(stl_validate(&stl));
     
     // always calculate the volume and reverse all normals if volume is negative
 #ifdef SLIC3R_TRACE_REPAIR
-    BOOST_LOG_TRIVIAL(trace) << "\tstl_calculate_volume";
+    // BOOST_LOG_TRIVIAL(trace) << "\tstl_calculate_volume";
 #endif /* SLIC3R_TRACE_REPAIR */
     // If the volume is negative, all the facets are flipped and added to stats.facets_reversed.
     stl_calculate_volume(&stl);
@@ -166,7 +166,7 @@ static void trianglemesh_repair_on_import(stl_file &stl)
     
     // neighbors
 #ifdef SLIC3R_TRACE_REPAIR
-    BOOST_LOG_TRIVIAL(trace) << "\tstl_verify_neighbors";
+    // BOOST_LOG_TRIVIAL(trace) << "\tstl_verify_neighbors";
 #endif /* SLIC3R_TRACE_REPAIR */
     stl_verify_neighbors(&stl);
     assert(stl_validate(&stl));
@@ -532,6 +532,30 @@ TriangleMesh TriangleMesh::convex_hull_3d() const
     // Quite often qhull produces non-manifold mesh.
     // assert(mesh.stats().manifold());
     return mesh;
+}
+
+void TriangleMesh::extract_son_mesh(TriangleMesh &temp_mesh, int face_start, int face_end) const
+{
+    indexed_triangle_set temp_its;
+    if (face_end > face_start && face_end  < its.indices.size()) {
+        auto new_face_count = face_end - face_start + 1;
+        temp_its.vertices.reserve(new_face_count *3);
+        temp_its.indices.reserve(new_face_count);
+
+        for (int i = face_start; i <= face_end; i++) {
+            auto face = its.indices[i];
+            auto v0   = its.vertices[face[0]];
+            auto v1   = its.vertices[face[1]];
+            auto v2   = its.vertices[face[2]];
+            temp_its.vertices.emplace_back(v0);
+            temp_its.vertices.emplace_back(v1);
+            temp_its.vertices.emplace_back(v2);
+            auto  new_i = i - face_start;
+            Vec3i new_face(new_i * 3 + 0, new_i * 3 + 1, new_i * 3 + 2);
+            temp_its.indices.emplace_back(new_face);
+        }
+        temp_mesh.its =temp_its;
+    }
 }
 
 std::vector<ExPolygons> TriangleMesh::slice(const std::vector<double> &z) const

@@ -57,7 +57,7 @@ std::string get_file_path(const wxFont& font) {
     const wxString &path = uri.GetPath();
     wxString path_unescaped = wxURI::Unescape(path);
     std::string path_str = path_unescaped.ToUTF8().data();
-    BOOST_LOG_TRIVIAL(trace) << "input uri(" << file_uri.c_str() << ") convert to path(" << path.c_str() << ") string(" << path_str << ").";
+    // BOOST_LOG_TRIVIAL(trace) << "input uri(" << file_uri.c_str() << ") convert to path(" << path.c_str() << ") string(" << path_str << ").";
     return path_str;
 }
 } // namespace
@@ -168,23 +168,23 @@ std::string WxFontUtils::store_wxFont(const wxFont &font)
 {
     // wxString os = wxPlatformInfo::Get().GetOperatingSystemIdName();
     wxString font_descriptor = font.GetNativeFontInfoDesc();
-    BOOST_LOG_TRIVIAL(trace) << "'" << font_descriptor << "' wx string get from GetNativeFontInfoDesc. wxFont " <<
-        "IsOk(" << font.IsOk() << "), " <<
-        "isNull(" << font.IsNull() << ")" <<
-        // "IsFree(" << font.IsFree() << "), " << // on MacOs is no function is free
-        "IsFixedWidth(" << font.IsFixedWidth() << "), " <<
-        "IsUsingSizeInPixels(" << font.IsUsingSizeInPixels() << "), " <<
-        "Encoding(" << (int)font.GetEncoding() << "), " ;
+    // BOOST_LOG_TRIVIAL(trace) << "'" << font_descriptor << "' wx string get from GetNativeFontInfoDesc. wxFont " <<
+        //"IsOk(" << font.IsOk() << "), " <<
+        //"isNull(" << font.IsNull() << ")" <<
+        //// "IsFree(" << font.IsFree() << "), " << // on MacOs is no function is free
+        //"IsFixedWidth(" << font.IsFixedWidth() << "), " <<
+        //"IsUsingSizeInPixels(" << font.IsUsingSizeInPixels() << "), " <<
+        //"Encoding(" << (int)font.GetEncoding() << "), " ;
     return std::string(font_descriptor.ToUTF8().data());
 }
 
 wxFont WxFontUtils::load_wxFont(const std::string &font_descriptor)
 {
-    BOOST_LOG_TRIVIAL(trace) << "'" << font_descriptor << "'font descriptor string param of load_wxFont()";
+    // BOOST_LOG_TRIVIAL(trace) << "'" << font_descriptor << "'font descriptor string param of load_wxFont()";
     wxString font_descriptor_wx = wxString::FromUTF8(font_descriptor);
-    BOOST_LOG_TRIVIAL(trace) << "'" << font_descriptor_wx.c_str() << "' wx string descriptor";
+    // BOOST_LOG_TRIVIAL(trace) << "'" << font_descriptor_wx.c_str() << "' wx string descriptor";
     wxFont wx_font(font_descriptor_wx);
-    BOOST_LOG_TRIVIAL(trace) << "loaded font is '" << get_human_readable_name(wx_font) << "'.";
+    // BOOST_LOG_TRIVIAL(trace) << "loaded font is '" << get_human_readable_name(wx_font) << "'.";
     return wx_font;
 }
 

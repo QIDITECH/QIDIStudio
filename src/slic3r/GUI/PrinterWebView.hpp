@@ -39,8 +39,9 @@
 #include <wx/tokenzr.h>
 
 //B64
+//cj_2
 #if QDT_RELEASE_TO_PUBLIC
-#include "../QIDI/QIDINetwork.hpp"
+#include "../QIDI/QIDINetworkTypes.hpp"
 #endif
 
 #include <boost/thread.hpp>
@@ -105,6 +106,11 @@ public:
     void onSetBoxTask(wxCommandEvent& event);
     //cj_1
     void onRefreshRfid(wxCommandEvent& event);
+    //cj_2
+    void delPrinterFile(wxCommandEvent& event);
+    //cj_2
+    void downloadPrinterFile(wxCommandEvent& event);
+
     //void SendRecentList(int images);
     void SetButtons(std::vector<DeviceButton *> buttons);
     void  AddButton(const wxString &                           device_name,
@@ -152,13 +158,14 @@ public:
 
 private:
     // cj_1
+    // 
 	void HideDeviceButtons(std::vector<DeviceButton*>& buttons);
 	void HideAllDeviceButtons();
 
-    // cj_1
+    // cj_1 
 	void cancelAllDevButtonSelect();
 
-    // cj_1
+    // cj_1 
     void clearStatusPanelData();
 
     void ShowDeviceButtons(std::vector<DeviceButton*>& buttons, bool isShow = true);
@@ -241,7 +248,8 @@ private:
     wxStaticText* m_netTable;
 	bool m_netIsExpand{ true };
 
-
+    //cj_2
+    bool m_isUpdating = false;
 };
 
 // y13

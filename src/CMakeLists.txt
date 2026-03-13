@@ -103,7 +103,7 @@ endif()
 
 
 # Create a slic3r executable
-# Process mainfests for various platforms.
+# Process manifests for various platforms.
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/platform/msw/QIDIStudio.rc.in ${CMAKE_CURRENT_BINARY_DIR}/QIDIStudio.rc @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/platform/msw/QIDIStudio.manifest.in ${CMAKE_CURRENT_BINARY_DIR}/QIDIStudio.manifest @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/platform/osx/Info.plist.in ${CMAKE_CURRENT_BINARY_DIR}/Info.plist @ONLY)
@@ -135,7 +135,7 @@ elseif (MSVC)
     # Manifest is provided through QIDIStudio.rc, don't generate your own.
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFEST:NO")
 else ()
-    # Boost on Raspberry-Pi does not link to pthreads explicitely.
+    # Boost on Raspberry-Pi does not link to pthreads explicitly.
     target_link_libraries(QIDIStudio ${CMAKE_DL_LIBS} -lstdc++ Threads::Threads pangoft2-1.0)
 endif ()
 
@@ -195,7 +195,7 @@ set(output_dlls_Release "")
 set(output_dlls_Debug "")
 set(output_dlls_RelWithDebInfo "")
 if (WIN32)
-    # This has to be a separate target due to the windows command line lenght limits
+    # This has to be a separate target due to the windows command line length limits
     add_custom_target(QIDIStudioDllsCopy ALL DEPENDS QIDIStudio)
 
     if (CMAKE_CONFIGURATION_TYPES)
@@ -255,7 +255,8 @@ else ()
     if (XCODE)
         # Because of Debug/Release/etc. configurations (similar to MSVC) the slic3r binary is located in an extra level
         set(BIN_RESOURCES_DIR "${CMAKE_CURRENT_BINARY_DIR}/resources")
-        set(BIN_CONF_DIR "Debug")
+        # Use generator expression for Xcode multi-config builds
+        set(BIN_CONF_DIR "$<CONFIG>")
     else ()
         set(BIN_RESOURCES_DIR "${CMAKE_CURRENT_BINARY_DIR}/../resources")
     endif ()
@@ -264,7 +265,7 @@ else ()
         set(MACOSX_BUNDLE_ICON_FILE Icon.icns)
         set(MACOSX_BUNDLE_BUNDLE_NAME "QIDI Studio")
         set(MACOSX_BUNDLE_SHORT_VERSION_STRING ${SLIC3R_VERSION})
-        set(MACOSX_BUNDLE_COPYRIGHT "Copyright(C) 2024 QIDI All Rights Reserved")
+        set(MACOSX_BUNDLE_COPYRIGHT "Copyright(C) 2025 QIDI All Rights Reserved")
     endif()
     add_custom_command(TARGET QIDIStudio POST_BUILD
         COMMAND ln -sfn "${SLIC3R_RESOURCES_DIR}" "${BIN_RESOURCES_DIR}"
