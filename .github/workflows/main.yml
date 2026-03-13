@@ -66,8 +66,9 @@ jobs:
       with:
         version: 3.31.6
 
-    - name: Setup Perl
-      uses: shogo82148/actions-setup-perl@v1.36.0
+    - name: Install Perl via Chocolatey
+      if: startsWith(matrix.os, 'windows-')
+      run: choco install strawberryperl -y
 
     - name: Checkout code
       uses: actions/checkout@v2
