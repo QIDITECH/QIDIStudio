@@ -257,6 +257,42 @@ void QDSDevice::updateBoxDataByJson(const json status)
     if (autoReloadInt != -1) {
         m_auto_reload_detect = bool(autoReloadInt);
     }
+
+    //y78
+    std::vector<int> slot_state(17);
+    std::vector<int> slot_id(17);
+    std::vector<std::string> filament_id(17);
+    std::vector<std::string> filament_colors(17);
+    std::vector<std::string> filament_type(17);
+    
+    std::unordered_map<std::string, std::string> mapping = {
+        {"X-Plus 4", "0"},
+        {"Q2", "1"},
+        {"Q2C", "2"},
+        {"X-Max 4", "3"}
+    };
+    for(int i = 0; i < 17; ++i){
+        if(m_boxData[i].hasMaterial){
+            slot_state[i] = m_boxData[i].hasMaterial;
+            slot_id[i] = i;
+            filament_type[i] = m_boxData[i].type;
+            filament_colors[i] = m_boxData[i].colorHexCode;
+            
+            std::string slot_vendor = m_boxData[i].vendor;
+
+            std::string test_type = mapping[m_type];
+            std::string test_vendor = slot_vendor == "QIDI" ? "1" : "0";
+            std::string tset_idx = std::to_string(m_boxData[i].filament_idex);
+            std::string test_id = "QD_" + test_type + "_" +  test_vendor + "_" + tset_idx;
+            filament_id[i] = test_id;
+        }
+    }
+    m_filament_colors = filament_colors;
+    m_filament_type = filament_type;
+    m_filament_id = filament_id;
+    m_slot_id = slot_id;
+    m_slot_state = slot_state;
+
     box_is_update = true;
 }
 
@@ -1863,19 +1899,7 @@ void QDSDeviceManager::upBoxInfoToBoxMsg(std::shared_ptr<QDSDevice>& device){
         box_count = device->m_box_count;
         auto_reload_detect = device->m_auto_reload_detect;
         box_list_preset_name = device->m_type;
-        //y78
-        if(box_count > 0)
-            wxGetApp().plater()->sidebar().box_list_printer_ip = device->m_ip;
-        else
-            wxGetApp().plater()->sidebar().box_list_printer_ip = "";
     }
-
-    //y78
-    device->m_filament_colors = filament_colors;
-    device->m_filament_type = filament_type;
-    device->m_filament_id = filament_id;
-    device->m_slot_id = slot_id;
-    device->m_slot_state = slot_state;
 
     wxGetApp().plater()->box_msg.slot_state = slot_state;
     wxGetApp().plater()->box_msg.filament_id = filament_id;
@@ -1885,7 +1909,11 @@ void QDSDeviceManager::upBoxInfoToBoxMsg(std::shared_ptr<QDSDevice>& device){
     wxGetApp().plater()->box_msg.slot_id = slot_id;
     wxGetApp().plater()->box_msg.auto_reload_detect = auto_reload_detect;
     wxGetApp().plater()->box_msg.box_list_preset_name = box_list_preset_name;
-
+    //y78
+    if(box_count > 0)
+        wxGetApp().plater()->sidebar().box_list_printer_ip = device->m_ip;
+    else
+        wxGetApp().plater()->sidebar().box_list_printer_ip = "";
     GUI::wxGetApp().sidebar().load_box_list();
 }
 

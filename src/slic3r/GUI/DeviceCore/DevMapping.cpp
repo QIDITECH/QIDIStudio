@@ -10,7 +10,7 @@
 
 //y78
 #include "slic3r/GUI/GUI_App.hpp"
-#include "Slic3r/GUI/QDSDeviceManager.hpp"
+#include "slic3r/GUI/QDSDeviceManager.hpp"
 
 
 using namespace nlohmann;
@@ -22,7 +22,7 @@ namespace Slic3r
         if (result.empty()) return false;
 
         for (int i = 0; i < result.size(); i++)
-        {
+        {       
             // invalid mapping result
             if (result[i].tray_id < 0)
             {

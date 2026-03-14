@@ -1572,6 +1572,7 @@ bool DownloadFile(const std::string& url, const std::string& path)
 	catch (...) {
 		return false;
 	}
+    return true;
 }
 //cj_2
 void PrinterWebView::downloadPrinterFile(wxCommandEvent& event)

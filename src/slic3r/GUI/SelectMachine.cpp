@@ -1227,9 +1227,9 @@ void SelectMachineDialog::sync_ams_mapping_result(const std::vector<FilamentInfo
                 }
                 m->set_ams_info(ams_col, ams_id,f->ctype, cols);
                 m->set_nozzle_info(get_mapped_nozzle_str(id));
-                //y59
-                if (exceed_slot_num)
-                    m->disable();
+                ////y59
+                //if (exceed_slot_num)
+                //    m->disable();
                 break;
             }
             iter++;
@@ -2648,7 +2648,7 @@ void SelectMachineDialog::send_to_sd_card(){
     auto obj = dev_manager->getSelectedDevice();
 
     if(m_isNetMode){
-#if RELEASE_TO_PUBLIC
+#if QDT_RELEASE_TO_PUBLIC
         HttpData http_data;
         json bodyJson;
         bodyJson["selects"] = json::array();
@@ -3970,37 +3970,44 @@ void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
         }
     }
 
-    std::string box_ip = wxGetApp().plater()->sidebar().box_list_printer_ip;
+    if(m_print_type != FROM_SDCARD_VIEW){
+        std::string box_ip = wxGetApp().plater()->sidebar().box_list_printer_ip;
     
-    int extruders_size = wxGetApp().plater()->get_partplate_list().get_curr_plate()->get_used_filaments().size();
-    
-    //y65
-    bool is_can_change_color = m_plater->is_can_change_color();
-    if (extruders_size > 1 && !is_can_change_color) {
-        if (box_ip != select_printer_ip && !box_ip.empty()) {
-            show_status(PrintDialogStatus::PrinterNotConnectBox);
+        int extruders_size = wxGetApp().plater()->get_partplate_list().get_curr_plate()->get_used_filaments().size();
+        
+        //y65
+        bool is_can_change_color = m_plater->is_can_change_color();
+        if (extruders_size > 1 && !is_can_change_color) {
+            if (box_ip != select_printer_ip && !box_ip.empty()) {
+                show_status(PrintDialogStatus::PrinterNotConnectBox);
+                has_box_machine = false;
+            }
+            else 
+                has_box_machine = true;
+
+            if (extruders_size > wxGetApp().preset_bundle->filament_ams_list.size()){
+                show_status(PrintDialogStatus::PrinterNotConnectBox);
+            }
+        }
+        else {
+            if (box_ip != select_printer_ip)
+                has_box_machine = false;
+            else
+                has_box_machine = true;
+        }
+
+        //y68 //y70
+        if(!preset_typename_normalized.empty() && preset_typename_normalized.find(NormalizeVendor(select_machine_type)) == std::string::npos && !selection_name.empty())
+        {
+            show_status(PrintDialogStatus::PrintStatusUnsupportedPrinter);
             has_box_machine = false;
         }
-        else 
-            has_box_machine = true;
-
-        if (extruders_size > wxGetApp().preset_bundle->filament_ams_list.size()){
-            show_status(PrintDialogStatus::PrinterNotConnectBox);
-        }
-    }
-    else {
-        if (box_ip != select_printer_ip)
-            has_box_machine = false;
-        else
-            has_box_machine = true;
+    } else {
+        auto qds_dev = GUI::wxGetApp().qdsdevmanager;
+        auto qds_obj = qds_dev->getSelectedDevice();
+        has_box_machine = qds_obj->m_box_count != 0 ? true : false;
     }
 
-    //y68 //y70
-    if(!preset_typename_normalized.empty() && preset_typename_normalized.find(NormalizeVendor(select_machine_type)) == std::string::npos && !selection_name.empty())
-    {
-        show_status(PrintDialogStatus::PrintStatusUnsupportedPrinter);
-        has_box_machine = false;
-    }
 
     update_option_opts(nullptr);
     update_show_status();
