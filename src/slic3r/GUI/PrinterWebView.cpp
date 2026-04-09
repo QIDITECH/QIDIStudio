@@ -2285,7 +2285,7 @@ void PrinterWebView::updateDeviceParameter(const std::string& device_id) {
                         cans[i].material_colour = wxColour(device->m_boxData[i].colorHexCode);
                         cans[i].material_name = device->m_boxData[i].name;
                         cans[i].material_state = AMSCanType::AMS_CAN_TYPE_VIRTUAL;
-                        cans[i].ctype = device->m_boxData[i].vendor == "Generic" ? 0 : 1;
+                        cans[i].ctype = device->m_boxData[i].vendor == "QIDI" ? 1 : 0;
                     }
                     else {
                         cans[i].material_colour = *wxWHITE;
