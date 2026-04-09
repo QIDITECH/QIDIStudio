@@ -1,6 +1,8 @@
 #include "QDSDeviceManager.hpp"
+#include <algorithm>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
+#include <cctype>
 #include <random>
 #include "libslic3r/Utils.hpp"
 #include "GUI_App.hpp"
@@ -19,6 +21,91 @@
 
 namespace Slic3r {
 namespace GUI {
+
+namespace {
+
+std::string normalize_filament_key(std::string value)
+{
+    auto not_space = [](unsigned char ch) { return !std::isspace(ch); };
+    value.erase(value.begin(), std::find_if(value.begin(), value.end(), not_space));
+    value.erase(std::find_if(value.rbegin(), value.rend(), not_space).base(), value.end());
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char ch) {
+        return static_cast<char>(std::tolower(ch));
+    });
+    return value;
+}
+
+std::string normalized_preset_vendor(const Preset& preset, const std::string& shown_name)
+{
+    std::string vendor = normalize_filament_key(preset.config.get_filament_vendor());
+    if (!vendor.empty())
+        return vendor;
+    if (normalize_filament_key(shown_name).rfind("qidi ", 0) == 0)
+        return "qidi";
+    return vendor;
+}
+
+std::string resolve_connected_filament_id(const QDSDevice::Filament& filament)
+{
+    auto* preset_bundle = wxGetApp().preset_bundle;
+    if (preset_bundle == nullptr)
+        return {};
+
+    const std::string target_name = normalize_filament_key(filament.name);
+    if (target_name.empty())
+        return {};
+
+    const std::string target_type = normalize_filament_key(filament.type);
+    const std::string target_vendor = normalize_filament_key(filament.vendor);
+    std::string type_match_id;
+    std::string fallback_id;
+
+    auto& filaments = preset_bundle->filaments;
+    for (auto filament_it = filaments.begin(); filament_it != filaments.end(); ++filament_it) {
+        const std::string alias = filaments.get_preset_alias(*filament_it, true);
+        const std::string shown_name = alias.empty() ? filament_it->name : alias;
+        const std::string normalized_name = normalize_filament_key(shown_name);
+        const std::string normalized_internal_name = normalize_filament_key(filament_it->name);
+        if (normalized_name != target_name && normalized_internal_name != target_name)
+            continue;
+
+        const std::string candidate_type = normalize_filament_key(filament_it->config.get_filament_type());
+        const std::string candidate_vendor = normalized_preset_vendor(*filament_it, shown_name);
+        const bool type_matches = target_type.empty() || candidate_type.empty() || candidate_type == target_type;
+        const bool vendor_matches = target_vendor.empty() || candidate_vendor.empty() || candidate_vendor == target_vendor;
+
+        if (type_matches && vendor_matches)
+            return filament_it->filament_id;
+
+        if (type_matches && type_match_id.empty())
+            type_match_id = filament_it->filament_id;
+        if (fallback_id.empty())
+            fallback_id = filament_it->filament_id;
+    }
+
+    if (!type_match_id.empty())
+        return type_match_id;
+    return fallback_id;
+}
+
+std::string build_legacy_connected_filament_id(const QDSDevice& device, const QDSDevice::Filament& filament)
+{
+    static const std::unordered_map<std::string, std::string> machine_mapping = {
+        {"X-Plus 4", "0"},
+        {"Q2", "1"},
+        {"Q2C", "2"},
+        {"X-Max 4", "3"}
+    };
+
+    const auto machine_it = machine_mapping.find(device.m_type);
+    if (machine_it == machine_mapping.end() || filament.filament_idex < 0)
+        return {};
+
+    const std::string vendor_bit = filament.vendor == "QIDI" ? "1" : "0";
+    return "QD_" + machine_it->second + "_" + vendor_bit + "_" + std::to_string(filament.filament_idex);
+}
+
+} // namespace
 
 namespace pt = boost::property_tree;
 std::vector<QDSDevice::Filament> QDSDevice::m_general_filamentConfig;
