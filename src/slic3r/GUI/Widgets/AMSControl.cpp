@@ -146,8 +146,8 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     m_panel_option_left->SetMinSize(wxSize(FromDIP(180), -1));
     m_panel_option_left->SetMaxSize(wxSize(FromDIP(180), -1));
 
-    m_panel_option_right->SetMinSize(wxSize(FromDIP(180), -1));
-    m_panel_option_right->SetMaxSize(wxSize(FromDIP(180), -1));
+    m_panel_option_right->SetMinSize(wxSize(FromDIP(268), -1));
+    m_panel_option_right->SetMaxSize(wxSize(FromDIP(268), -1));
 
 
     /*option left*/
@@ -158,6 +158,8 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     m_button_auto_refill->SetFont(Label::Body_13);
     m_button_auto_refill->SetMinSize(wxSize(FromDIP(80), FromDIP(34)));
     m_button_auto_refill->SetMaxSize(wxSize(FromDIP(80), FromDIP(34)));
+    m_button_auto_refill->Hide();
+
 
     m_button_ams_setting_normal = ScalableBitmap(this, "box_setting_normal", 24);
     m_button_ams_setting_hover = ScalableBitmap(this, "box_setting_hover", 24);
@@ -219,7 +221,28 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
         if (wxGetApp().app_config->get("language") == "pt_BR") m_button_extruder_back->SetLabel("Unload");
     }
 
-    m_sizer_option_right->Add(m_button_extruder_back, 0, wxLEFT, FromDIP(0));
+    //cj_3
+    m_button_extruder_eject = new Button(m_panel_option_right, _L("Eject")); {
+        m_button_extruder_eject->SetBackgroundColor(btn_bg_white);
+        m_button_extruder_eject->SetBorderColor(btn_bd_white);
+        m_button_extruder_eject->SetTextColor(btn_text_white);
+        m_button_extruder_eject->SetFont(Label::Body_13);
+        m_button_extruder_eject->SetMinSize(wxSize(FromDIP(80), FromDIP(34)));
+        m_button_extruder_eject->SetMaxSize(wxSize(FromDIP(80), FromDIP(34)));
+        m_button_extruder_eject->EnableTooltipEvenDisabled();
+
+        if (wxGetApp().app_config->get("language") == "de_DE") m_button_extruder_eject->SetFont(Label::Body_9);
+        if (wxGetApp().app_config->get("language") == "fr_FR") m_button_extruder_eject->SetFont(Label::Body_9);
+        if (wxGetApp().app_config->get("language") == "nl_NL") m_button_extruder_eject->SetFont(Label::Body_9);
+        if (wxGetApp().app_config->get("language") == "hu_HU") m_button_extruder_eject->SetFont(Label::Body_9);
+        if (wxGetApp().app_config->get("language") == "ja_JP") m_button_extruder_eject->SetFont(Label::Body_9);
+        if (wxGetApp().app_config->get("language") == "sv_SE") m_button_extruder_eject->SetFont(Label::Body_9);
+        if (wxGetApp().app_config->get("language") == "cs_CZ") m_button_extruder_eject->SetFont(Label::Body_9);
+        if (wxGetApp().app_config->get("language") == "uk_UA") m_button_extruder_eject->SetFont(Label::Body_9);
+    }
+
+    m_sizer_option_right->Add(m_button_extruder_eject, 0, wxLEFT, FromDIP(0));
+    m_sizer_option_right->Add(m_button_extruder_back, 0, wxLEFT, FromDIP(20));
     m_sizer_option_right->Add(m_button_extruder_feed, 0, wxLEFT, FromDIP(20));
 
     m_panel_option_left->Layout();
@@ -228,7 +251,6 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     m_sizer_ams_option->Add(m_panel_option_left, 0, wxALIGN_TOP, 0);
     m_sizer_ams_option->Add( 0, 0, 1, wxEXPAND, 0);
     m_sizer_ams_option->Add(m_sizer_option_mid, 0, wxALIGN_TOP, 0);
-    m_sizer_ams_option->Add( 0, 0, 1, wxEXPAND, 0);
     m_sizer_ams_option->Add(m_panel_option_right, 0, wxALIGN_TOP, 0);
 
 
@@ -255,6 +277,8 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
 
     m_button_extruder_feed->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AMSControl::on_filament_load), NULL, this);
     m_button_extruder_back->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AMSControl::on_filament_unload), NULL, this);
+    //cj_3
+    m_button_extruder_eject->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AMSControl::on_filament_eject), NULL, this);
     m_button_auto_refill->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(AMSControl::auto_refill), NULL, this);
 
     m_button_ams_setting->Bind(wxEVT_ENTER_WINDOW, [this](wxMouseEvent& e) {
@@ -408,6 +432,7 @@ void AMSControl::AmsSelectedSwitch(wxCommandEvent& event) {
             ;
         }
     }
+
 }
 
 wxColour AMSControl::GetCanColour(std::string amsid, std::string canid)
@@ -442,6 +467,17 @@ void AMSControl::EnableUnLoadFilamentBtn(bool enable, const std::string& ams_id,
         m_button_extruder_back->SetToolTip(tips);
     }
 }
+
+//cj_3
+void AMSControl::EnableEjectFilamentBtn(bool enable, const std::string& ams_id, const std::string& can_id, const wxString& tips)
+{
+    m_button_extruder_eject->Enable(enable);
+    if (m_button_extruder_eject->GetToolTipText() != tips) {
+        BOOST_LOG_TRIVIAL(info) << "ams_id=" << ams_id << ", can_id=" << can_id << "  Set Eject Filament Button ToolTip : " << tips.ToUTF8();
+        m_button_extruder_eject->SetToolTip(tips);
+    }
+}
+
 
 void AMSControl::EnterNoneAMSMode()
 {
@@ -1130,6 +1166,9 @@ void AMSControl::AddAmsPreview(AMSinfo info, AMSModel type)
             SwitchAms(ams_prv->get_ams_id());
             e.Skip();
         });
+        //y79
+        if (info.ams_id == "0")
+            ams_prv->OnSelected();
         m_ams_preview_list[info.ams_id] = ams_prv;
        // ams_prv->Hide();
     }
@@ -1633,10 +1672,17 @@ void AMSControl::SetAmsStep(std::string ams_id, std::string canid, AMSPassRoadTy
     else{
         return;
     }
-    if (can_index >= 0 && can_index < info.cans.size())
-    {
-        m_down_road->SetPassRoadColour(left, info.cans[can_index].material_colour);
+    //cj_3
+    for (auto can : info.cans) {
+        if (can.can_id == canid) {
+            m_down_road->SetPassRoadColour(left, can.material_colour);
+        }
     }
+
+//     if (can_index >= 0 && can_index < info.cans.size())
+//     {
+//         m_down_road->SetPassRoadColour(left, info.cans[can_index].material_colour);
+//     }
 
     AMSPanelPos pos = left ? AMSPanelPos::LEFT_PANEL : AMSPanelPos::RIGHT_PANEL;
 
@@ -1724,6 +1770,13 @@ void AMSControl::on_filament_unload(wxCommandEvent &event)
     }
     post_event(SimpleEvent(EVT_AMS_UNLOAD));
 }
+
+//cj_3
+void AMSControl::on_filament_eject(wxCommandEvent &event)
+{
+    post_event(SimpleEvent(EVT_AMS_EJECT));
+}
+
 
 void AMSControl::auto_refill(wxCommandEvent& event)
 {

@@ -46,7 +46,17 @@ struct GCodeFileInfo {
     std::string show_filament_weight;
     std::string show_print_time;
     std::string show_thumb_url;
+    int thumbnailsSize{ 0 };
 };
+
+//cj_3
+struct TimelapseFileInfo {
+    std::string file_name;
+    std::string file_size;
+    std::string modified_time;
+    std::string thumb_url;
+};
+
 class QDSDevice{
 public:
     struct Filament {
@@ -76,6 +86,12 @@ public:
         box_is_update = true;
     };
 
+    //y79
+    void updatePrinterStatusData(json& status);
+    std::string getMakerJobState();
+    std::string getMakerJobProgress();
+    void setMakerJobIsUpdate(bool value);
+
 private:
 	void twoStageParseIntToString(const json& status, std::string& target, std::string first, std::string second);
 	void twoStageParseStringToString(const json& status, std::string& target, std::string first, std::string second);
@@ -104,12 +120,16 @@ public:
     std::atomic<bool>            m_case_light{ false };
     bool                         m_extruder_filament{ false };   // 
 
-    std::string                  m_home_axes; 
+    std::string                  m_home_axes;
 
-    std::atomic<bool>  m_polar_cooler{ false };
-    float m_auxiliary_fan_speed{ 0.0 };
+    //cj_3
+	std::atomic<bool>  m_enable_polar_cooler{ false };
+	std::atomic<bool>  m_polar_cooler{ false };
+	float m_auxiliary_fan_speed{ 0.0 };
     float m_chamber_fan_speed{ 0.0 };
     float m_cooling_fan_speed{ 0.0 };
+    /** Snapped display percent (50/100/124/166) from gcode_move.speed_factor; fan row print speed label */
+    int m_print_speed_display_percent{ 100 };
 
     //y78
     std::vector<float> m_nozzle_diameter { 0.4f };
@@ -151,29 +171,43 @@ public:
     //cj_2 print model data
 
 
+	// common data
     std::atomic<bool>            has_box{false};
 	std::atomic<bool>            is_selected{ false };
 	std::atomic<bool>            is_update{ false };
-    std::atomic<bool>            is_support_mqtt{ false };
-    std::atomic<bool>            is_first_connect{ true };
-    std::atomic<bool>            should_stop{ false };
+    //cj_3
+    std::atomic<bool>            reconnecting{ false };
     std::atomic<bool>            m_is_update_box_temp{ false };
     std::chrono::steady_clock::time_point last_update = std::chrono::steady_clock::now();
+    //cj_3
+    std::chrono::steady_clock::time_point last_reconnect = std::chrono::steady_clock::time_point::min();
 
     std::vector<GCodeFileInfo>    file_info {};
     bool m_fresh_file_info{ false };
+
+    //cj_3
+    std::vector<TimelapseFileInfo> timelapse_file_info {};
+    bool m_fresh_timelapse_file_info{ false };
 
     bool m_is_init_filamentConfig{ false };
     static bool m_is_init_general;
 	static std::mutex m_general_mtx;
 	std::mutex m_config_mtx;
     bool is_net_device{ false };
+
+    //cj_3
+    std::string m_net_link_url;
+    bool        m_net_poll_use_frp{ false };
+
+    //y79
+    std::string maker_job_state = "";
+    std::string maker_job_progress = "";
+    std::atomic<bool> maker_job_is_update{ false };
 };
 
 
 using ParameterUpdateCallback = std::function<void(const std::string& device_id)>;
 using ConnectionEventCallback = std::function<void(const std::string& device_id, std::string new_status)>;
-using DeviceConnectTypeUpdateCallback = std::function<void(const std::string& device_id, std::string device_ip)>;
 using DeleteDeviceIDCallback = std::function<void(const std::string& device_id)>;
 using FileInfoUpdateCallback = std::function<void(const std::string& device_id)>;
 
@@ -196,10 +230,6 @@ public:
     void setParameterUpdateCallback(ParameterUpdateCallback cb) { 
         std::lock_guard<std::mutex> lock(callback_mutex_);
         parameter_update_callback_ = std::move(cb); 
-    }
-    void setDeviceConnectTypeUpdateCallback(DeviceConnectTypeUpdateCallback cb) { 
-        std::lock_guard<std::mutex> lock(callback_mutex_);
-        device_connect_type_update_callback_ = std::move(cb); 
     }
     void setDeleteDeviceIDCallback(DeleteDeviceIDCallback cb) { 
         std::lock_guard<std::mutex> lock(callback_mutex_);
@@ -234,6 +264,8 @@ public:
     void upBoxInfoToBoxMsg(std::shared_ptr<QDSDevice>& device);
     void getFileInfo(const std::string& device_id);
     void resetBoxUpdateStatus(const std::string& device_id);
+
+    std::vector<std::pair<std::string, std::shared_ptr<QDSDevice>>> snapshotDevices();
 
 private:
     using WebSocketClient = websocketpp::client<websocketpp::config::asio_client>;
@@ -282,7 +314,6 @@ private:
 
     ConnectionEventCallback connection_event_callback_;
     ParameterUpdateCallback parameter_update_callback_;
-    DeviceConnectTypeUpdateCallback device_connect_type_update_callback_;
     DeleteDeviceIDCallback delete_device_id_callback_;
     FileInfoUpdateCallback file_info_update_callback_;
 
@@ -299,6 +330,9 @@ private:
     void processConnectionStatus(const std::string& device_id, const std::string& status);
     void safeCallbackInvoke();
     void updateDeviceFileInfo(std::shared_ptr<QDSDevice>& device, const json& result);
+
+    //cj_3
+    void updateDeviceTimelapseFileInfo(std::shared_ptr<QDSDevice>& device, const std::string& response_body);
     
     ConnectionEventCallback getConnectionEventCallback() {
         std::lock_guard<std::mutex> lock(callback_mutex_);
@@ -308,11 +342,6 @@ private:
     ParameterUpdateCallback getParameterUpdateCallback() {
         std::lock_guard<std::mutex> lock(callback_mutex_);
         return parameter_update_callback_;
-    }
-    
-    DeviceConnectTypeUpdateCallback getDeviceConnectTypeUpdateCallback() {
-        std::lock_guard<std::mutex> lock(callback_mutex_);
-        return device_connect_type_update_callback_;
     }
     
     DeleteDeviceIDCallback getDeleteDeviceIDCallback() {

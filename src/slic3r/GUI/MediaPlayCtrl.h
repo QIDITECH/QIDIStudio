@@ -46,8 +46,11 @@ public:
     void SetMachineObject(MachineObject * obj);
 
     bool IsStreaming() const;
+    //cj_3
+    bool IsMonitorPlaying() const;
 
     void ToggleStream();
+
 
     void msw_rescale();
 
@@ -55,7 +58,7 @@ public:
 
     void setUrl(wxString url) { m_url = url; };
     //cj_1
-    void stopMonitor();
+    void stopMonitor(bool is_without_print=false);
 
 protected:
     void onStateChanged(wxMediaEvent & event);

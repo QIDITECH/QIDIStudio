@@ -16,6 +16,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/Widgets/Button.hpp
     GUI/Widgets/CheckBox.cpp
     GUI/Widgets/CheckBox.hpp
+    GUI/Widgets/FileListBitmapCheckBox.cpp
+    GUI/Widgets/FileListBitmapCheckBox.hpp
     GUI/Widgets/RadioBox.hpp
     GUI/Widgets/RadioBox.cpp
     GUI/Widgets/ProgressDialog.hpp
@@ -52,6 +54,10 @@ set(SLIC3R_GUI_SOURCES
 	GUI/Widgets/DeviceButton.hpp
     GUI/Widgets/DeviceModelList.cpp
 	GUI/Widgets/DeviceModelList.hpp
+	GUI/Widgets/FileListDownloadTintFrame.hpp
+	GUI/Widgets/FileListDownloadTintFrame.cpp
+    GUI/Widgets/TimelapseFileList.cpp
+    GUI/Widgets/TimelapseFileList.hpp
     GUI/Widgets/SpinInput.cpp
     GUI/Widgets/SpinInput.hpp
     GUI/Widgets/StaticLine.cpp
@@ -226,6 +232,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/MainFrame.hpp
     GUI/QDTTopbar.cpp
     GUI/QDTTopbar.hpp
+    GUI/DownloadManager.cpp
+    GUI/DownloadManager.hpp
     GUI/QDSDeviceManager.cpp
     GUI/QDSDeviceManager.hpp
     GUI/BedShapeDialog.cpp
@@ -302,6 +310,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/WebViewDialog.hpp
     GUI/PrinterWebView.cpp
     GUI/PrinterWebView.hpp
+    GUI/PrinterTaskDispatcher.cpp
+    GUI/PrinterTaskDispatcher.hpp
     GUI/WebDownPluginDlg.hpp
     GUI/WebDownPluginDlg.cpp
     GUI/WebGuideDialog.hpp
@@ -648,6 +658,8 @@ if(QDT_RELEASE_TO_PUBLIC)
 			QIDI/QIDINetwork.cpp
 			QIDI/QIDINetwork.hpp
 			QIDI/QIDINetworkTypes.hpp
+			QIDI/QIDISSEClientV2.cpp
+			QIDI/QIDISSEClientV2.hpp
 		)
 endif ()
 

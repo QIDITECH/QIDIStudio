@@ -18243,3 +18243,36 @@ msgstr "필라멘트 무게"
 
 msgid "pre time"
 msgstr "예상 시간"
+
+msgid "Expert Mode"
+msgstr "전문가 모드"
+
+msgid "When enabled, use the legacy Fluidd web UI for MQTT-capable local devices. When disabled, use the built-in status UI."
+msgstr "활성화된 경우, MQTT 지원 로컬 장치에 대해 기존 Fluidd 웹 UI를 사용합니다. 비활성화된 경우, 내장 상태 UI를 사용합니다."
+
+msgid "Eject"
+msgstr "꺼내기"
+
+msgid "Set polar cooler.."
+msgstr "폴라 쿨러 설정.."
+
+msgid "The material softens at this temperature, so when the bed temperature is equal to or greater than it, it's highly recommended to open the front door and/or remove the upper glass to avoid cloggings. Warning: With Polar Cooler enabled, keep PLA chamber temperature ≤45°C to ensure print quality and prevent filament issues."
+msgstr "재료는 이 온도에서 연화되므로, 베드 온도가 이와 같거나 더 높을 때는 막힘을 방지하기 위해 앞문을 열고/또는 상부 유리를 제거하는 것을 적극 권장합니다. 경고: 폴라 쿨러가 활성화된 경우, PLA 챔버 온도를 ≤45°C로 유지하여 인쇄 품질을 보장하고 필라멘트 문제를 방지하세요."
+
+msgid "Are you sure you want to delete this file?\n\n%s"
+msgstr "이 파일을 삭제하시겠습니까?\n\n%s"
+
+msgid "Due to network issues, the file upload failed. Please check your network connection."
+msgstr "네트워크 문제로 인해 파일 업로드에 실패했습니다. 네트워크 연결을 확인하세요."
+
+msgid "Last modified"
+msgstr "최종 수정"
+
+msgid "File size"
+msgstr "파일 크기"
+
+msgid "The following file(s) already exist in the directory:\n\n%s"
+msgstr "다음 파일이 디렉토리에 이미 존재합니다:\n\n%s"
+
+msgid "Only adjustable while printing or paused."
+msgstr "인쇄 중 또는 일시 중지 중에만 조정 가능합니다."

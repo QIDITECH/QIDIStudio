@@ -95,7 +95,7 @@ public:
     //y71
     int         enable_multi_box{0};
     //y76
-    int         enable_air_condition{0};
+    int         enable_polar_cooler{0};
 
     //y76
     void set_print_config(std::string bed_type, bool bed_leveling, bool flow_cali, bool vabration_cali, bool record_timelapse, bool layer_inspect, bool ext_change_assist,
@@ -104,7 +104,7 @@ public:
         int auto_flow_calit,
         int auto_offset_calit,
         int extruder_calit_manual_mode,
-        int auto_enable_air_condition)
+        int auto_enable_polar_cooler)
     {
         task_bed_type       = bed_type;
         task_bed_leveling   = bed_leveling;
@@ -120,7 +120,7 @@ public:
         auto_offset_cali = auto_offset_calit;
         extruder_cali_manual_mode = extruder_calit_manual_mode;
         //y76
-        enable_air_condition = auto_enable_air_condition;
+        enable_polar_cooler = auto_enable_polar_cooler;
 
     }
 

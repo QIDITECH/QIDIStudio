@@ -844,7 +844,6 @@ wxString HelioHistoryDialog::format_file_size(int layers)
 
 std::chrono::system_clock::time_point HelioHistoryDialog::parse_timestamp_from_name(const std::string& name)
 {
-    // Parse timestamp from name format: "BambuSlicer 2026-01-23T07:52:27"
     // Use regex to extract the ISO timestamp
     std::regex timestamp_regex(R"((\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}))");
     std::smatch match;

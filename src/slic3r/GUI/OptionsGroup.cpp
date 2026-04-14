@@ -168,6 +168,27 @@ void OptionsGroup::remove_option_if(std::function<bool(std::string const &)> con
     // TODO: remove items from g->m_options;
 }
 
+namespace {
+//cj_3_cursor
+// Recursively find wxSizerItem for `win_item` inside nested sizers (e.g. full_width string fields use v_sizer).
+bool show_field_match_and_apply(wxGridSizer* grid, wxSizerItem* win_item, wxSizerItem* item, size_t row_shift, size_t cols, bool show)
+{
+    if (!item)
+        return false;
+    if (item == win_item) {
+        for (size_t i = 0; i < cols; ++i)
+            grid->Show(row_shift + i, show);
+        return true;
+    }
+    if (item->IsSizer()) {
+        for (wxSizerItem* child_item : item->GetSizer()->GetChildren())
+            if (show_field_match_and_apply(grid, win_item, child_item, row_shift, cols, show))
+                return true;
+    }
+    return false;
+}
+} // namespace
+
 void OptionsGroup::show_field(const t_config_option_key& opt_key, bool show/* = true*/)
 {
     Field* field = get_field(opt_key);
@@ -180,28 +201,13 @@ void OptionsGroup::show_field(const t_config_option_key& opt_key, bool show/* = 
     const size_t cols = (size_t)m_grid_sizer->GetCols();
     const size_t rows = (size_t)m_grid_sizer->GetEffectiveRowsCount();
 
-    auto show_row = [this, show, cols, win_item](wxSizerItem* item, size_t row_shift) {
-        // check if item contanes required win
-        if (!item->IsWindow() || item != win_item)
-            return false;
-        // show/hide hole line contanes this window
-        for (size_t i = 0; i < cols; ++i)
-            m_grid_sizer->Show(row_shift + i, show);
-        return true;
-    };
-
     size_t row_shift = 0;
     for (size_t j = 0; j < rows; ++j) {
         for (size_t i = 0; i < cols; ++i) {
             wxSizerItem* item = m_grid_sizer->GetItem(row_shift + i);
             if (!item)
                 continue;
-            if (item->IsSizer()) {
-                for (wxSizerItem* child_item : item->GetSizer()->GetChildren())
-                    if (show_row(child_item, row_shift))
-                        return;
-            }
-            else if (show_row(item, row_shift))
+            if (show_field_match_and_apply(m_grid_sizer, win_item, item, row_shift, cols, show))
                 return;
         }
         row_shift += cols;

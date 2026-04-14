@@ -308,6 +308,9 @@ public:
 
     void    msw_rescale();
 
+    //y79
+    void    setDisableMode(bool disable) { m_disable_mode = disable; Refresh(); };
+
 protected:
     void create(wxWindow *parent, wxWindowID id, const wxPoint &pos, const wxSize &size);
 
@@ -836,6 +839,8 @@ private:
 wxDECLARE_EVENT(EVT_AMS_EXTRUSION_CALI, wxCommandEvent);
 wxDECLARE_EVENT(EVT_AMS_LOAD, SimpleEvent);
 wxDECLARE_EVENT(EVT_AMS_UNLOAD, SimpleEvent);
+//cj_3
+wxDECLARE_EVENT(EVT_AMS_EJECT, SimpleEvent);
 wxDECLARE_EVENT(EVT_AMS_SETTINGS, SimpleEvent);
 wxDECLARE_EVENT(EVT_AMS_FILAMENT_BACKUP, SimpleEvent);
 wxDECLARE_EVENT(EVT_AMS_REFRESH_RFID, wxCommandEvent);

@@ -5068,7 +5068,8 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
     else if (evt.LeftDown() || evt.RightDown() || evt.MiddleDown()) {
         //QDS: add orient deactivate logic
         if (!m_gizmos.on_mouse(evt)) {
-            if (_deactivate_arrange_menu() || _deactivate_orient_menu() || _deactivate_layersediting_menu())
+            //y79
+            if (_deactivate_arrange_menu() || _deactivate_orient_menu())
                 return;
         }
 

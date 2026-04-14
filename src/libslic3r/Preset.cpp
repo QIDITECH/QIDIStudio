@@ -41,6 +41,8 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/locale.hpp>
 #include <boost/log/trivial.hpp>
+//cj_3_cursor
+#include "nlohmann/json.hpp"
 
 #include "libslic3r.h"
 #include "Utils.hpp"
@@ -1111,7 +1113,7 @@ static std::vector<std::string> s_Preset_printer_options {
     //y65
     , "is_support_multi_box"
     , "is_support_mqtt"
-    , "is_support_air_condition"
+    , "is_support_polar_cooler"
 };
 
 static std::vector<std::string> s_Preset_sla_print_options {
@@ -3466,11 +3468,100 @@ std::string PhysicalPrinter::separator()
     return " * ";
 }
 
+//cj_3_cursor
+namespace {
+
+bool mqtt_ui_capable_from_printers(const std::string& token, const PrinterPresetCollection& printers)
+{
+    if (token.empty())
+        return false;
+    if (const Preset* p = printers.find_preset(token, false))
+        return p->config.opt_bool("is_support_mqtt");
+    for (const Preset& preset : printers.get_presets()) {
+        if (!preset.is_visible)
+            continue;
+        std::string pm = preset.config.opt_string("printer_model");
+        boost::trim(pm);
+        if (pm.empty())
+            continue;
+        if (boost::iequals(pm, token))
+            return preset.config.opt_bool("is_support_mqtt");
+    }
+    return false;
+}
+
+bool json_bool_value(const nlohmann::json& j, const char* key, bool fallback)
+{
+    if (!j.contains(key))
+        return fallback;
+    const auto& v = j.at(key);
+    if (v.is_boolean())
+        return v.get<bool>();
+    if (v.is_number_integer())
+        return v.get<int>() != 0;
+    if (v.is_string()) {
+        std::string s = v.get<std::string>();
+        boost::trim(s);
+        boost::to_lower(s);
+        if (s == "1" || s == "true" || s == "yes")
+            return true;
+        if (s == "0" || s == "false" || s == "no")
+            return false;
+    }
+    return fallback;
+}
+
+std::string first_preset_name_token(const std::string& s)
+{
+    size_t semi = s.find(';');
+    std::string t = semi == std::string::npos ? s : s.substr(0, semi);
+    boost::trim(t);
+    return t;
+}
+} // namespace
+
+bool PhysicalPrinter::is_mqtt_ui_capable_preset_model(const std::string& preset_model_name, const PrinterPresetCollection* printer_presets)
+{
+    std::string token = first_preset_name_token(preset_model_name);
+    boost::trim(token);
+    if (token.empty())
+        return false;
+    if (printer_presets != nullptr)
+        return mqtt_ui_capable_from_printers(token, *printer_presets);
+    return false;
+}
+
+void PhysicalPrinter::migrate_expert_mode_from_json_file(const std::string& json_path, DynamicPrintConfig& config, const PrinterPresetCollection* printer_presets)
+{
+    try {
+        boost::nowide::ifstream ifs(json_path);
+        nlohmann::json j;
+        ifs >> j;
+        if (j.contains("expert_mode"))
+            return;
+        bool expert = true;
+        if (j.contains("use_fluidd_legacy")) {
+            expert = json_bool_value(j, "use_fluidd_legacy", true);
+        } else {
+            const std::string preset_token = first_preset_name_token(config.opt_string("preset_name"));
+            expert = is_mqtt_ui_capable_preset_model(preset_token, printer_presets) ? false : true;
+        }
+        config.set_key_value("expert_mode", new ConfigOptionBool(expert));
+    }
+    catch (...) {
+        const std::string preset_token = first_preset_name_token(config.opt_string("preset_name"));
+        const bool expert = is_mqtt_ui_capable_preset_model(preset_token, printer_presets) ? false : true;
+        config.set_key_value("expert_mode", new ConfigOptionBool(expert));
+    }
+}
+
 static std::vector<std::string> s_PhysicalPrinter_opts {
     "preset_name", // temporary option to compatibility with older Slicer
     "preset_names",
     "printer_technology",
     "host_type",
+    //cj_3_cursor
+    "expert_mode",
     "print_host",
     "printhost_apikey",
     "printhost_cafile",
@@ -3637,7 +3728,8 @@ PhysicalPrinterCollection::PhysicalPrinterCollection( const std::vector<std::str
 // Throws an exception on error.
 void PhysicalPrinterCollection::load_printers(
     const std::string& dir_path, const std::string& subdir,
-    PresetsConfigSubstitutions& substitutions, ForwardCompatibilitySubstitutionRule substitution_rule)
+    PresetsConfigSubstitutions& substitutions, ForwardCompatibilitySubstitutionRule substitution_rule,
+    const PrinterPresetCollection* printer_presets_mqtt)
 {
     // Don't use boost::filesystem::canonical() on Windows, it is broken in regard to reparse points,
     // see https://github.com/prusa3d/PrusaSlicer/issues/732
@@ -3673,6 +3765,8 @@ void PhysicalPrinterCollection::load_printers(
                     if (! config_substitutions.empty())
                         substitutions.push_back({ name, Preset::TYPE_PHYSICAL_PRINTER, PresetConfigSubstitutions::Source::UserFile, printer.file, std::move(config_substitutions) });
                     printer.update_from_config(config);
+                    //cj_3_cursor
+                    PhysicalPrinter::migrate_expert_mode_from_json_file(printer.file, printer.config, printer_presets_mqtt);
                     printer.loaded = true;
                 }
                 catch (const std::ifstream::failure& err) {
@@ -3695,7 +3789,8 @@ void PhysicalPrinterCollection::load_printers(
         throw Slic3r::RuntimeError(errors_cummulative);
 }
 
-void PhysicalPrinterCollection::load_printer(const std::string& path, const std::string& name, DynamicPrintConfig&& config, bool select, bool save/* = false*/)
+void PhysicalPrinterCollection::load_printer(const std::string& path, const std::string& name, DynamicPrintConfig&& config, bool select, bool save/* = false*/,
+    const PrinterPresetCollection* printer_presets_mqtt)
 {
     auto it = this->find_printer_internal(name);
     if (it == m_printers.end() || it->name != name) {
@@ -3705,6 +3800,9 @@ void PhysicalPrinterCollection::load_printer(const std::string& path, const std:
 
     it->file = path;
     it->config = std::move(config);
+    //cj_3_cursor
+    if (boost::filesystem::exists(path) && boost::iends_with(path, ".json"))
+        PhysicalPrinter::migrate_expert_mode_from_json_file(path, it->config, printer_presets_mqtt);
     it->loaded = true;
     if (select)
         this->select_printer(*it);

@@ -17939,3 +17939,36 @@ msgstr "hmotnost filamentu"
 
 msgid "pre time"
 msgstr "odhadovaný čas"
+
+msgid "Expert Mode"
+msgstr "Expertní režim"
+
+msgid "When enabled, use the legacy Fluidd web UI for MQTT-capable local devices. When disabled, use the built-in status UI."
+msgstr "Pokud je povoleno, použijte pro místní zařízení s podporou MQTT starší verzi webového rozhraní Fluidd. Pokud je zakázáno, použijte vestavěné rozhraní stavu."
+
+msgid "Eject"
+msgstr "Vysunout"
+
+msgid "Set polar cooler.."
+msgstr "Nastavit polar cooler.."
+
+msgid "The material softens at this temperature, so when the bed temperature is equal to or greater than it, it's highly recommended to open the front door and/or remove the upper glass to avoid cloggings. Warning: With Polar Cooler enabled, keep PLA chamber temperature ≤45°C to ensure print quality and prevent filament issues."
+msgstr "Při této teplotě materiál změkne, takže pokud je teplota podložky rovna nebo vyšší, důrazně se doporučuje otevřít přední dvířka a/nebo odstranit horní sklo, aby se zabránilo ucpávání. Varování: Při zapnutém Polar Cooler udržujte teplotu komory pro PLA ≤45°C, abyste zajistili kvalitu tisku a předešli problémům s filamentem."
+
+msgid "Are you sure you want to delete this file?\n\n%s"
+msgstr "Opravdu chcete tento soubor smazat?\n\n%s"
+
+msgid "Due to network issues, the file upload failed. Please check your network connection."
+msgstr "Nahrání souboru selhalo kvůli problémům se sítí. Zkontrolujte prosím své připojení k síti."
+
+msgid "Last modified"
+msgstr "Poslední úprava"
+
+msgid "File size"
+msgstr "Velikost souboru"
+
+msgid "The following file(s) already exist in the directory:\n\n%s"
+msgstr "Následující soubor(y) již v adresáři existují:\n\n%s"
+
+msgid "Only adjustable while printing or paused."
+msgstr "Lze upravit pouze během tisku nebo pozastavení."

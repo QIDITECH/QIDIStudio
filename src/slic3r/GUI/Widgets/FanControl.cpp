@@ -4,6 +4,7 @@
 #include "../I18N.hpp"
 #include "../GUI_App.hpp"
 #include "../MsgDialog.hpp"
+#include "../StatusPanel.hpp"
 
 #include <wx/simplebook.h>
 #include <wx/dcgraph.h>
@@ -712,12 +713,47 @@ FanControlPopupNew::FanControlPopupNew(wxWindow* parent, MachineObject* obj, con
     m_sub_mode_sizer = new wxBoxSizer(wxVERTICAL);
     m_sub_mode_panel->SetSizer(m_sub_mode_sizer);
 
+    //cj_3
+    m_cooler_row_panel = new wxPanel(this, wxID_ANY);
+    m_cooler_row_panel->SetBackgroundColour(wxColour(248, 248, 248));
+    m_cooler_row_panel->SetMinSize(wxSize(FromDIP(180), FromDIP(44)));
+    m_cooler_row_panel->SetMaxSize(wxSize(FromDIP(180), FromDIP(44)));
+    m_cooler_fan_bmp   = new ScalableBitmap(m_cooler_row_panel, "fan_icon", 20);
+    m_cooler_toggle_off = new ScalableBitmap(m_cooler_row_panel, "toggle_off", 16);
+    m_cooler_toggle_on  = new ScalableBitmap(m_cooler_row_panel, "toggle_on", 16);
+    m_cooler_icon = new wxStaticBitmap(m_cooler_row_panel, wxID_ANY, m_cooler_fan_bmp->bmp());
+    m_cooler_label = new wxStaticText(m_cooler_row_panel, wxID_ANY, _L("Polar Cooler"), wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_END);
+    m_cooler_label->SetBackgroundColour(wxColour(248, 248, 248));
+    m_cooler_label->SetFont(Label::Head_16);
+    m_cooler_label->SetMinSize(wxSize(FromDIP(100), -1));
+    m_cooler_label->SetMaxSize(wxSize(FromDIP(100), -1));
+    m_cooler_switch = new wxStaticBitmap(m_cooler_row_panel, wxID_ANY, m_cooler_toggle_off->bmp());
+    m_cooler_switch->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) { m_cooler_switch->SetCursor(wxCURSOR_HAND); e.Skip(); });
+    m_cooler_switch->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) { m_cooler_switch->SetCursor(wxCURSOR_RIGHT_ARROW); e.Skip(); });
+    m_cooler_switch->Bind(wxEVT_LEFT_DOWN, &FanControlPopupNew::on_cooler_switch_left_down, this);
+    {
+        L("Polar Cooler");
+        wxBoxSizer* cooler_sizer = new wxBoxSizer(wxHORIZONTAL);
+        cooler_sizer->Add(m_cooler_icon, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, FromDIP(8));
+        cooler_sizer->Add(m_cooler_label, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, FromDIP(5));
+        cooler_sizer->Add(0, 0, 1, wxEXPAND, 0);
+        cooler_sizer->Add(m_cooler_switch, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(5 + 12));
+        wxBoxSizer* cooler_outer = new wxBoxSizer(wxVERTICAL);
+        cooler_outer->Add(0, 1, 1, wxEXPAND);
+        cooler_outer->Add(cooler_sizer, 0, wxEXPAND);
+        cooler_outer->Add(0, 1, 1, wxEXPAND);
+        m_cooler_row_panel->SetSizer(cooler_outer);
+        m_cooler_row_panel->Layout();
+    }
+
     m_sizer_main->Add(0, 0, 0, wxTOP, FromDIP(23));
     m_sizer_main->Add(m_mode_sizer, 0, wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT, FromDIP(30));
     m_sizer_main->Add(0, 0, 0, wxTOP, FromDIP(10));
     m_sizer_main->Add(m_mode_text, 0, wxLEFT, FromDIP(35));
     m_sizer_main->Add(0, 0, 0, wxTOP, FromDIP(10));
     m_sizer_main->Add(m_sub_mode_panel, 0, wxLEFT | wxRIGHT, FromDIP(30));
+    m_sizer_main->Add(0, 0, 0, wxTOP, FromDIP(10));
+    m_sizer_main->Add(m_cooler_row_panel, 0, wxALIGN_LEFT | wxLEFT | wxRIGHT, FromDIP(25));
     m_sizer_main->Add(m_sizer_fanControl, 0, wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT, 0);
     m_sizer_main->Add(0, 0, 0, wxTOP, FromDIP(16));
 
@@ -935,6 +971,16 @@ void FanControlPopupNew::on_left_down(wxMouseEvent& evt)
 {
     auto mouse_pos = ClientToScreen(evt.GetPosition());
 
+    //cj_3
+    if (m_cooler_switch) {
+        auto win_pos = m_cooler_switch->ClientToScreen(wxPoint(0, 0));
+        if (mouse_pos.x > win_pos.x && mouse_pos.x < (win_pos.x + m_cooler_switch->GetSize().x) && mouse_pos.y > win_pos.y &&
+            mouse_pos.y < (win_pos.y + m_cooler_switch->GetSize().y)) {
+            on_cooler_switch_left_down(evt);
+            return;
+        }
+    }
+
     for (const auto& iter : m_mode_switch_btns) {
         SendModeSwitchButton* sw_it = iter.second;
         auto win_pos = sw_it->ClientToScreen(wxPoint(0, 0));
@@ -979,6 +1025,9 @@ void FanControlPopupNew::post_event(int fan_type, wxString speed)
 void FanControlPopupNew::on_show(wxShowEvent& evt)
 {
     wxGetApp().UpdateDarkUIWin(this);
+    if (m_cooler_row_panel) {
+        wxGetApp().UpdateDarkUIWin(m_cooler_row_panel);
+    }
 }
 
 void FanControlPopupNew::command_control_air_duct(int mode_id, int submode)
@@ -994,10 +1043,46 @@ void FanControlPopupNew::command_control_air_duct(int mode_id, int submode)
     }
 }
 
+//cj_3
+void FanControlPopupNew::sync_polar_cooler_from_device(bool on)
+{
+    if (!m_cooler_switch || !m_cooler_toggle_off || !m_cooler_toggle_on) {
+        return;
+    }
+    m_cooler_switch_on = on;
+    m_cooler_switch->SetBitmap(m_cooler_switch_on ? m_cooler_toggle_on->bmp() : m_cooler_toggle_off->bmp());
+}
+
+//cj_3
+void FanControlPopupNew::on_cooler_switch_left_down(wxMouseEvent& evt)
+{
+    m_cooler_switch_on = !m_cooler_switch_on;
+    if (m_cooler_switch_on) {
+        m_cooler_switch->SetBitmap(m_cooler_toggle_on->bmp());
+    } else {
+        m_cooler_switch->SetBitmap(m_cooler_toggle_off->bmp());
+    }
+    bool value = m_cooler_switch_on;
+    wxCommandEvent e(EVTSET_COOLER_SWITCH);
+    e.SetInt(value ? 1 : 0);
+    e.SetString("enable");
+    wxPostEvent(GetParent(), e);
+}
+
 void FanControlPopupNew::msw_rescale()
 {
     for (const auto& btn_iter : m_mode_switch_btns) { btn_iter.second->msw_rescale(); }
     for (const auto& fan_iter : m_fan_control_list) { fan_iter.second->msw_rescale(); }
+    if (m_cooler_fan_bmp && m_cooler_icon) {
+        m_cooler_fan_bmp->msw_rescale();
+        m_cooler_icon->SetBitmap(m_cooler_fan_bmp->bmp());
+    }
+    //cj_3
+    if (m_cooler_toggle_off && m_cooler_toggle_on && m_cooler_switch) {
+        m_cooler_toggle_off->msw_rescale();
+        m_cooler_toggle_on->msw_rescale();
+        m_cooler_switch->SetBitmap(m_cooler_switch_on ? m_cooler_toggle_on->bmp() : m_cooler_toggle_off->bmp());
+    }
 }
 
 void FanControlPopupNew::paintEvent(wxPaintEvent& evt)

@@ -454,8 +454,11 @@ wxBitmap create_scaled_bitmap(  const std::string& bmp_name_in,
     if (bitmap2) {
         return create_scaled_bitmap2(bmp_name_in, cache, win, px_cnt, grayscale, resize, array_new_color);
     }
+    //cj_3
+    // `create_scaled_bitmap()` is called with `win == nullptr` in multiple places.
+    // Avoid win->FromDIP on nullptr by using em_unit-based scaling, which already handles null win.
     unsigned int width = 0;
-    unsigned int height = (unsigned int) (win->FromDIP(px_cnt) + 0.5f);
+    unsigned int height = static_cast<unsigned int>(em_unit(win) * px_cnt * 0.1f + 0.5f);
 
     std::string bmp_name = bmp_name_in;
     boost::replace_last(bmp_name, ".png", "");
@@ -469,7 +472,7 @@ wxBitmap create_scaled_bitmap(  const std::string& bmp_name_in,
     // Try loading an SVG first, then PNG if SVG is not found:
     wxBitmap *bmp = cache.load_svg(bmp_name, width, height, grayscale, dark_mode, new_color, resize ? em_unit(win) * 0.1f : 0.f);
     if (bmp == nullptr) {
-        bmp = cache.load_png(bmp_name, width, height, grayscale, resize ? win->FromDIP(10) * 0.1f : 0.f);
+        bmp = cache.load_png(bmp_name, width, height, grayscale, resize ? em_unit(win) * 0.1f : 0.f);
     }
 
     if (bmp == nullptr) {
@@ -482,7 +485,7 @@ wxBitmap create_scaled_bitmap(  const std::string& bmp_name_in,
 
         //y73
         bmp_name = "printer_placeholder";
-        bmp = cache.load_png(bmp_name, width, height, grayscale, resize ? win->FromDIP(10) * 0.1f : 0.f);
+        bmp = cache.load_png(bmp_name, width, height, grayscale, resize ? em_unit(win) * 0.1f : 0.f);
         if (bmp == nullptr) {
             // Neither SVG nor PNG has been found, raise error
             throw Slic3r::RuntimeError("Could not load bitmap: " + bmp_name);
@@ -561,8 +564,10 @@ wxBitmap create_scaled_bitmap2(const std::string& bmp_name_in, Slic3r::GUI::Bitm
     const int px_cnt/* = 16*/, const bool grayscale/* = false*/ , const bool resize/* = false*/ ,
     const vector<std::string>& array_new_color/* = vector<std::string>()*/) // color witch will used instead of orange
 {
+    //cj_3
+    // Avoid win->FromDIP on nullptr by using em_unit-based scaling.
     unsigned int width = 0;
-    unsigned int height = (unsigned int)(win->FromDIP(px_cnt) + 0.5f);
+    unsigned int height = static_cast<unsigned int>(em_unit(win) * px_cnt * 0.1f + 0.5f);
 
     std::string bmp_name = bmp_name_in;
     boost::replace_last(bmp_name, ".png", "");

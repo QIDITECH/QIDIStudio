@@ -34,6 +34,9 @@ public:
     static std::map<wxColour, wxColour> const & GetDarkMap();
     static wxColour darkModeColorFor(wxColour const &color);
     static wxColour lightModeColorFor(wxColour const &color);
+
+    /// Light: WXCOLOUR_GREY200 (#F8F8F8). Dark: same mapping as gDarkColors (uses app dark flag, not gDarkMode).
+    static wxColour themed_surface_f8(bool app_is_dark);
     
     // Button style
     static StateColor createButtonStyleGray();

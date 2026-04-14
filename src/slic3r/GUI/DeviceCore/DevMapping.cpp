@@ -22,7 +22,7 @@ namespace Slic3r
         if (result.empty()) return false;
 
         for (int i = 0; i < result.size(); i++)
-        {       
+        {
             // invalid mapping result
             if (result[i].tray_id < 0)
             {

@@ -149,11 +149,12 @@ struct Machine_info {
     std::string display_name;
     std::string apikey;
     std::string link_url = "";
+    std::string device_id = "";
     bool        is_special = false;
     bool        bed_leveling = true;
     bool        enable_multi_box = false;
     bool        timelapse = true;
-    bool        enable_air_condition = false;
+    bool        enable_polar_cooler = false;
 };
 
 #define PRINT_OPT_WIDTH  FromDIP(44)
@@ -543,6 +544,7 @@ public:
     void update_page_turn_state(bool show);
     void on_timer(wxTimerEvent& event);
     void on_selection_changed(wxCommandEvent &event);
+    void on_printer_combobox_dropdown(wxCommandEvent& event);
     void Enable_Refresh_Button(bool en);
     void Enable_Send_Button(bool en);
     void on_dpi_changed(const wxRect& suggested_rect) override;

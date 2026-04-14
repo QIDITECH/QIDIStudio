@@ -649,16 +649,20 @@ void VideoPanel::PlayThread()
                 
 
                 if (newImage.LoadFile(imgStream, wxBITMAP_TYPE_JPEG)) {
+                    bool imageChanged = false;
                     {
                         std::lock_guard<std::mutex> lock(m_mutex);
-                        if (m_url == currentUrl) {
+                        if (m_url == currentUrl && (!m_frame.IsOk() || !m_frame.IsSameAs(newImage))) {
                             m_frame = newImage;
+                            imageChanged = true;
 
                             UpdateFrameStatistics();
 
-                            CallAfter([this] { 
-                                Refresh(); 
-                            });
+                            if(imageChanged){
+                                CallAfter([this] { 
+                                    Refresh(); 
+                                });
+                            }
                         }
                     }
                 } else {

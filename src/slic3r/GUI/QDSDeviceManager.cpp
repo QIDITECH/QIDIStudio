@@ -5,6 +5,18 @@
 #include "libslic3r/Utils.hpp"
 #include "GUI_App.hpp"
 #include "slic3r/Utils/Http.hpp"
+#include "DownloadManager.hpp"
+#include "GUI_Utils.hpp"
+#include "DeviceCore/DevDefs.h"
+
+#include <cctype>
+#include <cmath>
+#include <cstdint>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
+#include <unordered_set>
+#include <wx/datetime.h>
 
 //cj_2
 #if QDT_RELEASE_TO_PUBLIC
@@ -13,12 +25,53 @@
 
 //cj_2
 #include <wx/image.h>
-#include <wx/url.h>
-#include <wx/stream.h>
-#include <wx/mstream.h>
+
 
 namespace Slic3r {
 namespace GUI {
+
+//cj_3
+namespace {
+
+static void apply_gcode_move_speed_percent(QDSDevice& dev, const json& status, bool* out_update = nullptr)
+{
+    try {
+        if (!status.contains("gcode_move") || !status["gcode_move"].is_object())
+            return;
+        const auto& gm = status["gcode_move"];
+        if (!gm.contains("speed_factor") || !gm["speed_factor"].is_number())
+            return;
+        const double sf = gm["speed_factor"].get<double>();
+        const int    pct = Slic3r::dev_speed_factor_to_snapped_percent(sf);
+        if (dev.m_print_speed_display_percent != pct) {
+            dev.m_print_speed_display_percent = pct;
+            if (out_update)
+                *out_update = true;
+            else
+                dev.is_update = true;
+        }
+    } catch (...) {
+    }
+}
+
+std::string format_timelapse_file_size_b_kb_mb(std::uint64_t bytes)
+{
+    constexpr std::uint64_t k_kb = 1024;
+    constexpr std::uint64_t k_mb = 1024ULL * 1024ULL;
+    std::ostringstream oss;
+    oss << std::fixed;
+    if (bytes >= k_mb) {
+        oss << std::setprecision(2) << (static_cast<double>(bytes) / static_cast<double>(k_mb)) << "MB";
+        return oss.str();
+    }
+    if (bytes >= k_kb) {
+        oss << std::setprecision(2) << (static_cast<double>(bytes) / static_cast<double>(k_kb)) << "KB";
+        return oss.str();
+    }
+    oss << std::setprecision(0) << bytes << "B";
+    return oss.str();
+}
+} // namespace
 
 namespace pt = boost::property_tree;
 std::vector<QDSDevice::Filament> QDSDevice::m_general_filamentConfig;
@@ -70,7 +123,9 @@ QDSDevice::QDSDevice(const std::string dev_id, const std::string& dev_name, cons
     : m_id(dev_id), m_name(dev_name), m_ip(dev_ip), m_type(dev_type)
     , m_boxData(17), m_boxTemperature(4, 0.0), m_boxHumidity(4, 0)
 {
-    m_url = "ws://" + dev_ip + ":7125/websocket";
+    //y79
+    m_url = "ws://" + dev_url + ":7125/websocket";
+
     last_update = std::chrono::steady_clock::now();
     
     QDSDevice::initGeneralData();
@@ -156,12 +211,22 @@ void QDSDevice::updateByJsonData(json& status)
 		}
 	}
 
+	//cj_3
+	if (status.contains("output_pin polar_cooler") && status["output_pin polar_cooler"].contains("value")) {
+        const bool pin_on = bool(status["output_pin polar_cooler"]["value"].get<float>());
+        if (m_polar_cooler.load() != pin_on) {
+			is_update = true;
+			m_polar_cooler = pin_on;
+		}
+	}
 
 	twoStageParse(status, m_auxiliary_fan_speed, "fan_generic auxiliary_cooling_fan", "speed");
 	twoStageParse(status, m_chamber_fan_speed, "fan_generic chamber_circulation_fan", "speed");
 	twoStageParse(status, m_cooling_fan_speed, "fan_generic cooling_fan", "speed");
 	twoStageParse(status, m_home_axes, "toolhead", "homed_axes");
 	twoStageParse(status, m_extruder_filament, "filament_switch_sensor filament_switch_sensor", "filament_detected");
+
+    apply_gcode_move_speed_percent(*this, status, nullptr);
 
     for (int i = 0; i < 4; ++i) {
         std::string key = "aht20_f heater_box" + std::to_string(i + 1);
@@ -181,8 +246,6 @@ void QDSDevice::updateByJsonData(json& status)
 			}
 		}
     }
-
-
 }
 
 void QDSDevice::updateBoxDataByJson(const json status)
@@ -238,11 +301,18 @@ void QDSDevice::updateBoxDataByJson(const json status)
 	if (count != -1) {
 		m_box_count = count;
 	}
-
-	if (saveVariables.contains("slot_sync") && saveVariables["slot_sync"].is_string()) {
-        m_cur_slot = saveVariables["slot_sync"].get<std::string>();
+    
+	if (saveVariables.contains("last_load_slot") && saveVariables["last_load_slot"].is_string()) {
+        m_cur_slot = saveVariables["last_load_slot"].get<std::string>();
 	}
 	
+    int b_endstop_state = 0;
+    //twoStageParse1(status, target, first, second, temp_is_update);
+    twoStageParse1(status, b_endstop_state, "", "", box_is_update);
+    if (b_endstop_state == 1) {
+        m_cur_slot = "slot16";
+    }
+
     int autoReadInt = getJsonCurStageToInt(saveVariables, "auto_read_rfid");
     if (autoReadInt != -1) {
         m_auto_read_rfid = bool(autoReadInt);
@@ -277,7 +347,7 @@ void QDSDevice::updateBoxDataByJson(const json status)
             slot_id[i] = i;
             filament_type[i] = m_boxData[i].type;
             filament_colors[i] = m_boxData[i].colorHexCode;
-            
+
             std::string slot_vendor = m_boxData[i].vendor;
 
             std::string test_type = mapping[m_type];
@@ -525,6 +595,34 @@ std::vector<float> QDSDevice::getNozzleDiameter(){
     return m_nozzle_diameter;
 }
 
+//y79
+void QDSDevice::updatePrinterStatusData(json& status){
+    std::lock_guard<std::mutex> lock(m_config_mtx);
+    maker_job_is_update = true;
+    maker_job_state = status.contains("jobState") ? status["jobState"].get<std::string>() : maker_job_state;
+    maker_job_progress = status.contains("progress") ? status["progress"].get<std::string>() : maker_job_progress;
+    if(status.contains("failCause") && !status["failCause"].empty()){
+        std::cout << "some error is " << status << std::endl;
+        maker_job_is_update = false;
+    }
+}
+
+std::string QDSDevice::getMakerJobState(){
+    std::lock_guard<std::mutex> lock(m_config_mtx);
+    return maker_job_state;
+}
+
+std::string QDSDevice::getMakerJobProgress(){
+    std::lock_guard<std::mutex> lock(m_config_mtx);
+    return maker_job_progress;
+}
+
+void QDSDevice::setMakerJobIsUpdate(bool value) {
+    std::lock_guard<std::mutex> lock(m_config_mtx);
+    maker_job_is_update = value;
+}
+//y79
+
 QDSDeviceManager::QDSDeviceManager() {
     health_check_running_ = true;
     health_check_thread_ = std::thread(&QDSDeviceManager::healthCheckLoop, this);
@@ -551,6 +649,7 @@ void QDSDeviceManager::healthCheckLoop() {
 
 void QDSDeviceManager::performHealthCheck() {
     std::vector<std::string> devices_to_reconnect;
+    const auto reconnect_cooldown = std::chrono::seconds(20);
 
     {
         std::lock_guard<std::mutex> lock(manager_mutex_);
@@ -560,7 +659,14 @@ void QDSDeviceManager::performHealthCheck() {
             bool needs_reconnect = false;
             std::string reason;
 
-            if (device->is_selected.load()) {
+            if (device->is_selected.load() && !device->is_net_device) {
+                if (device->reconnecting.load()) {
+                    continue;
+                }
+                if (device->last_reconnect != std::chrono::steady_clock::time_point::min() &&
+                    (now - device->last_reconnect) < reconnect_cooldown) {
+                    continue;
+                }
                 if (device->m_status == "Unauthorized")
                     continue;
                 if (device->m_status == "offline" || device->m_status == "error") {
@@ -589,6 +695,20 @@ void QDSDeviceManager::performHealthCheck() {
 }
 
 void QDSDeviceManager::reconnectDevice(const std::string& device_id) {
+    auto device = getDevice(device_id);
+    if (!device) {
+        return;
+    }
+    bool expected = false;
+    if (!device->reconnecting.compare_exchange_strong(expected, true)) {
+        return;
+    }
+    struct ReconnectGuard {
+        std::shared_ptr<QDSDevice> dev;
+        ~ReconnectGuard() { if (dev) dev->reconnecting = false; }
+    } guard { device };
+
+    device->last_reconnect = std::chrono::steady_clock::now();
     BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[HealthCheck] Reconnecting device " << device_id << "..." << std::endl;
 
     stopConnection(device_id);
@@ -609,6 +729,18 @@ std::shared_ptr<QDSDevice> QDSDeviceManager::getDevice(const std::string& device
     std::lock_guard<std::mutex> lock(manager_mutex_);
     auto it = devices_.find(device_id);
     return (it != devices_.end()) ? it->second : nullptr;
+}
+
+//cj_3
+std::vector<std::pair<std::string, std::shared_ptr<QDSDevice>>> QDSDeviceManager::snapshotDevices()
+{
+    std::lock_guard<std::mutex> lock(manager_mutex_);
+    std::vector<std::pair<std::string, std::shared_ptr<QDSDevice>>> out;
+    out.reserve(devices_.size());
+    for (const auto& kv : devices_) {
+        out.emplace_back(kv.first, kv.second);
+    }
+    return out;
 }
 
 std::shared_ptr<QDSDevice> QDSDeviceManager::getSelectedDevice(){
@@ -746,14 +878,10 @@ std::string QDSDeviceManager::addDevice(const std::string& dev_name, const std::
         }
 
         auto device = std::make_shared<QDSDevice>(device_id, dev_name, dev_ip, dev_url, dev_type);
-        device->m_frp_url = "http://" + dev_ip ;
-        
-        
-            
-        
-        devices_[device_id] = device;
-        
+        //y79
+        device->m_frp_url = "http://" + dev_url ;
 
+        devices_[device_id] = device;
         BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Manager] Device added: " << device_id << std::endl;
     }
 
@@ -848,10 +976,13 @@ bool QDSDeviceManager::connectDevice(const std::string device_id) {
         auto conn = weak_conn.lock();
         if (conn) {
             conn->last_activity = std::chrono::steady_clock::now();
+            BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[DEBUG] WebSocket closed for device: " << device_id << std::endl;
+            auto ws_conn = conn->client.get_con_from_hdl(hdl);
+            if (ws_conn) {
+                BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[DEBUG] Close code: " << ws_conn->get_remote_close_code() << std::endl;
+                BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[DEBUG] Close reason: " << ws_conn->get_remote_close_reason() << std::endl;
+            }
         }
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[DEBUG] WebSocket closed for device: " << device_id << std::endl;
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[DEBUG] Close code: " << conn->client.get_con_from_hdl(hdl)->get_remote_close_code() << std::endl;
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[DEBUG] Close reason: " << conn->client.get_con_from_hdl(hdl)->get_remote_close_reason() << std::endl;
 
         onClose(device_id, hdl);
     });
@@ -945,6 +1076,11 @@ void QDSDeviceManager::onMessage(const std::string& device_id, websocketpp::conn
                       << ": " << e.what() << std::endl;
             return;
         }
+        //cj_3
+        // Any valid websocket payload means the connection is alive.
+        if (auto dev = getDevice(device_id)) {
+            dev->last_update = std::chrono::steady_clock::now();
+        }
         
         handleDeviceMessage(device_id, message_json);
         
@@ -1036,7 +1172,7 @@ void QDSDeviceManager::sendSubscribeMessage(const std::string& device_id) {
             // {"gcode_macro CUT_FILAMENT_1", nullptr},
             // {"gcode_macro M603", nullptr},
             // {"gcode_macro M604", nullptr},
-            // {"gcode_move", nullptr},
+            {"gcode_move", nullptr},
             // {"gcode_macro M109", nullptr},
             // {"exclude_object", nullptr},
             // {"gcode_macro G31", nullptr},
@@ -1125,7 +1261,8 @@ void QDSDeviceManager::sendSubscribeMessage(const std::string& device_id) {
              {"fan_generic cooling_fan", nullptr},
             // {"controller_fan board_fan", nullptr},
              {"fan_generic auxiliary_cooling_fan", nullptr},
-             {"output_pin Polar_cooler", nullptr},
+             //cj_3
+             {"output_pin polar_cooler", nullptr},
             // {"output_pin beeper", nullptr},
             // {"probe", nullptr},
             // {"probe_air", nullptr},
@@ -1315,13 +1452,7 @@ void QDSDeviceManager::handleDeviceMessage(const std::string& device_id, const j
         return;
     }
 
-    if (device->should_stop.load()) {
-        std::thread([this, device_id]() {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            removeDevice(device_id);
-        }).detach();
-        return;
-    } else if(!device->is_first_connect.load() && !device->is_selected.load()){
+    if(!device->is_selected.load()){
         std::thread([this, device_id]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             stopConnection(device_id);
@@ -1345,18 +1476,17 @@ void QDSDeviceManager::updateDeviceMsg(const std::string& device_id, const json&
         }
         device = dev_it->second;
         
-        if(!device->is_first_connect.load() && !device->is_selected.load())
+        if(!device->is_selected.load())
             return;
 
-        if (message.contains("method") && message.contains("params")) {
-            if (message.at("method").get<std::string>() == "notify_proc_stat_update" && 
-                device->is_first_connect && 
-                message.at("params").is_array()) {
+		if (message.contains("method") && message.contains("params") 
+            ) {
+            if (message.at("method").get<std::string>() == "notify_proc_stat_update" && message.at("params").is_array()) {
                 
                 const json& result = message.at("params").at(0);
 
                 if(result.contains("config_items")){
-                    device->m_polar_cooler = result["config_items"]["printing.polar_cooler"].get<std::string>() == "1" ? true : false;
+                    device->m_enable_polar_cooler = result["config_items"]["printing.polar_cooler"].get<std::string>() == "1" ? true : false;
                     
                     //y78
                     if(result["config_items"].contains("nozzle.diameter")){
@@ -1371,17 +1501,6 @@ void QDSDeviceManager::updateDeviceMsg(const std::string& device_id, const json&
                     }
                 }
 
-                if (result.contains("mqtt_state")) {
-                    device->is_first_connect = false;
-                    device->is_support_mqtt = true;
-                    auto callback = getDeviceConnectTypeUpdateCallback();
-                    if (callback) {
-                        callback(device_id, device->m_ip);
-                    }
-                } else {
-                    device->is_first_connect = false;
-                    device->is_support_mqtt = false;
-                }
             }
         }
         
@@ -1390,7 +1509,7 @@ void QDSDeviceManager::updateDeviceMsg(const std::string& device_id, const json&
             if(message.at("result").contains("files")){
                 const json& result = message.at("result");
                 updateDeviceFileInfo(device, result);
-                //is_file_info_update = true;
+                is_file_info_update = true;
             }
             if(message.at("result").contains("status")){
                 const json& result = message.at("result").at("status");
@@ -1452,10 +1571,6 @@ void QDSDeviceManager::updateDeviceMsg(const std::string& device_id, const json&
         auto callback = getFileInfoUpdateCallback();
         if(callback)
             callback(device_id);
-    }
-    
-    if (device && !device->is_first_connect && !device->is_support_mqtt) {
-        device->should_stop = true;
     }
 }
 
@@ -1527,6 +1642,15 @@ void QDSDeviceManager::updateDeviceData(std::shared_ptr<QDSDevice>& device,
         is_update = true;
     }
 
+	//cj_3
+	if (result.contains("output_pin polar_cooler") && result["output_pin polar_cooler"].contains("value")) {
+        const bool pin_on = result["output_pin polar_cooler"]["value"].get<double>() > 0.0;
+        if (device->m_polar_cooler.load() != pin_on) {
+            device->m_polar_cooler = pin_on;
+            is_update = true;
+        }
+	}
+
 	for (int i = 0; i < 4; ++i) {
 		std::string key = "aht20_f heater_box" + std::to_string(i + 1);
 		if (result.contains(key)) {
@@ -1551,67 +1675,27 @@ void QDSDeviceManager::updateDeviceData(std::shared_ptr<QDSDevice>& device,
 	twoStageParse1(result, device->m_chamber_fan_speed, "fan_generic chamber_circulation_fan", "speed", is_update);
 	twoStageParse1(result, device->m_cooling_fan_speed, "fan_generic cooling_fan", "speed", is_update);
     twoStageParse1(result, device->m_home_axes, "toolhead", "homed_axes", is_update); 
-    twoStageParse1(result, device->m_extruder_filament, "filament_switch_sensor filament_switch_sensor", "filament_detected",is_update);
-    if (result.contains("print_stats")){ 
-         if(result["print_stats"].contains("filename")) {
-             if (device->m_print_filename != result["print_stats"]["filename"].get<std::string>()) {
-                 is_update = true;
-                 device->m_print_filename = result["print_stats"]["filename"].get<std::string>();
-             }
-         }
-     }
+	twoStageParse1(result, device->m_extruder_filament, "filament_switch_sensor filament_switch_sensor", "filament_detected",is_update);
 
-    if (result.contains("display_status")){
-        if(result["display_status"].contains("progress")) {
-            if (device->m_print_progress_float != result["display_status"]["progress"].get<float>()) {
-                is_update = true;
-                device->m_print_progress_float = result["display_status"]["progress"].get<float>();
-            }
-        }
-	}
+    apply_gcode_move_speed_percent(*device, result, &is_update);
 
-    if (result.contains("print_stats")){
-        if (result["print_stats"].contains("info")) {
-            if (result["print_stats"]["info"].contains("total_layer") && result["print_stats"]["info"]["total_layer"].is_number_integer()) {
-                if (device->m_print_total_layer != result["print_stats"]["info"]["total_layer"].get<int>()) {
-                    is_update = true;
-                    device->m_print_total_layer = result["print_stats"]["info"]["total_layer"].get<int>();
-                }
-            }
-        }
-	}
+    twoStageParse1(result, device->m_print_filename, "print_stats", "filename", is_update);
+    twoStageParse1(result, device->m_print_progress_float, "display_status", "progress", is_update);
+    twoStageParse1(result, device->m_print_total_duration, "print_stats", "total_duration", is_update);
 
-	if (result.contains("print_stats")){
-        if(result["print_stats"].contains("info")
-		&& result["print_stats"]["info"].contains("current_layer")){
-            if (device->m_print_cur_layer != result["print_stats"]["info"]["current_layer"].get<int>()) {
-                is_update = true;
-                device->m_print_cur_layer = result["print_stats"]["info"]["current_layer"].get<int>();
-            }
-        }
-	}
-
-    if(result.contains("print_stats")){
-        if(result["print_stats"].contains("print_duration")) {
+    if (result.contains("print_stats")) {
+        twoStageParse1(result["print_stats"], device->m_print_total_layer, "info", "total_layer", is_update);
+        twoStageParse1(result["print_stats"], device->m_print_cur_layer, "info", "current_layer", is_update);
+        if (result["print_stats"].contains("print_duration")) {
             if (device->m_print_duration != std::to_string(result["print_stats"]["print_duration"].get<int>())) {
                 is_update = true;
                 device->m_print_duration = std::to_string(result["print_stats"]["print_duration"].get<int>());
-                if(device->m_print_png_url.empty())
+                if (device->m_print_png_url.empty())
                     updatePrintThumbUrlWithOutMsg(device);
             }
         }
+
     }
-
-    if(result.contains("print_stats")){
-        if(result["print_stats"].contains("total_duration")) {
-            if (device->m_print_total_duration != std::to_string(result["print_stats"]["total_duration"].get<int>())) {
-                is_update = true;
-                device->m_print_total_duration = std::to_string(result["print_stats"]["total_duration"].get<int>());
-            }
-        }
-    }
-
-
 }
 
 //cj_2
@@ -1626,33 +1710,7 @@ std::string extractAfterGcodes(const std::string& fullPath) {
 
 	return "";  // 没找到返回空字符串
 }
-//cj_2
-bool getImageData(const wxString& url, wxMemoryBuffer& output) {
-	wxURL wxUrl(url);
-	if (wxUrl.GetError() != wxURL_NOERR) {
-		BOOST_LOG_TRIVIAL(trace) << "Invalid URL: " << url;
-		return false;
-	}
 
-	wxInputStream* httpStream = wxUrl.GetInputStream();
-	if (!httpStream) {
-		BOOST_LOG_TRIVIAL(trace) << "Failed to open URL: " << url;
-		return false;
-	}
-
-	// 读取图片数据
-	wxMemoryOutputStream memStream;
-	httpStream->Read(memStream);
-
-	delete httpStream;
-
-	// 复制到输出buffer
-	wxStreamBuffer* memBuffer = memStream.GetOutputStreamBuffer();
-	output.AppendData(memBuffer->GetBufferStart(),
-		memBuffer->GetBufferSize());
-
-	return output.GetDataLen() > 0;
-}
 void QDSDeviceManager::updateDeviceFileInfo(std::shared_ptr<QDSDevice>& device, const json& result){
     device->file_info.clear();
     //y78
@@ -1675,6 +1733,7 @@ void QDSDeviceManager::updateDeviceFileInfo(std::shared_ptr<QDSDevice>& device, 
         if(plate_count > 0){
             auto plates_array = file_item["plates"];
             for(const auto& plate_item : plates_array){
+                
                 PlateInfo plate_info;
                 plate_info.index = plate_item["plate_index"].get<std::string>();
                 boost::split(plate_info.filament_colours, plate_item["filament_colour"].get<std::string>(), boost::is_any_of(";"));
@@ -1694,34 +1753,51 @@ void QDSDeviceManager::updateDeviceFileInfo(std::shared_ptr<QDSDevice>& device, 
                 }
 
 				plate_info.thumb_url = device->m_frp_url + "/server/files/gcodes/.thumbs/" + name_without_extension + "/plate_" + plate_info.index + ".png";
-                //cj_2
-				wxMemoryBuffer imageData;
-                if (getImageData(UrlEncodeForFilename(plate_info.thumb_url), imageData))
-                {
-					size_t dataSize = imageData.GetDataLen();
-					unsigned char* dataPtr = (unsigned char*)imageData.GetData();
-                    plate_info.thumbnailData.pixels.resize(dataSize);
-                    memcpy(plate_info.thumbnailData.pixels.data(), dataPtr, dataSize);
-                }
-                else {
-                    wxBitmap bitmap=ScalableBitmap(nullptr, "monitor_placeholder", 160).bmp();
-					wxImage image = bitmap.ConvertToImage();
-					if (image.IsOk()) {
-						unsigned int width = bitmap.GetWidth();
-						unsigned int height = bitmap.GetHeight();
-						unsigned char* rgbData = image.GetData();
-						size_t dataSize = width * height * 3; // RGB 格式
 
-                        plate_info.thumbnailData.pixels.assign(rgbData, rgbData + dataSize);
-					}
-					
+                wxBitmap bitmap = ScalableBitmap(nullptr, "monitor_placeholder", 160).bmp();
+                wxImage image = bitmap.ConvertToImage();
+                if (image.IsOk()) {
+                    wxMemoryOutputStream mos;
+                    if (image.SaveFile(mos, wxBITMAP_TYPE_PNG)) {
+						const size_t len = mos.GetSize();
+                        plate_info.thumbnailData.pixels.resize(len);
+                        if (len > 0) {
+                            mos.CopyTo(plate_info.thumbnailData.pixels.data(), len);
+                        }
+                    }
                 }
+
                 file_info.plates.emplace_back(plate_info);
 
-            } 
+                DownloadManager::getInstance().downloadThumbnail(
+                    UrlEncodeForFilename(plate_info.thumb_url),
+                    file_info.file_name,
+                    [device](ThumbnailResult result) {
+                        if (!result.success)
+                            return;
+
+                        for (auto& file_info_item : device->file_info) {
+                            for (auto& plate_info_item : file_info_item.plates) {
+                                if (UrlEncodeForFilename(plate_info_item.thumb_url) == result.url) {
+                                    plate_info_item.thumbnailData.pixels.assign(result.png_data.begin(), result.png_data.end());
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                );
+            }
         }
         file_info.show_thumb_url = file_info.plates.empty() ? "" : file_info.plates[0].thumb_url;
         
+        
+        const auto& thumbnails = file_item["thumbnails"];
+        for (const auto& thumbnailItem : thumbnails) {
+            file_info.thumbnailsSize = thumbnailItem["data_size"].get<int>();
+            break;
+        }
+
+
         device->file_info.emplace_back(file_info);
     }       
     device->m_fresh_file_info = true;
@@ -1871,12 +1947,19 @@ void QDSDeviceManager::upBoxInfoToBoxMsg(std::shared_ptr<QDSDevice>& device){
     if(device == nullptr)
         return;
     
-    std::unordered_map<std::string, std::string> mapping = {
-        {"X-Plus 4", "0"},
-        {"Q2", "1"},
-        {"Q2C", "2"},
-        {"X-Max 4", "3"}
-    };
+    //y79
+    std::set<std::pair<std::string, std::string>> mapping;
+
+    auto vendor_presets = wxGetApp().preset_bundle->printers.get_presets();
+    for(auto preset : vendor_presets){
+        std::string printer_model = preset.config.opt_string("printer_model");
+        std::string box_id = preset.config.opt_string("box_id");
+
+        if (!printer_model.empty() && !box_id.empty()) {
+            mapping.emplace(printer_model, box_id);
+        }
+    }
+
     {
         std::lock_guard<std::mutex> lock(manager_mutex_);
         GUI::wxGetApp().sidebar().update_sync_status(device);
@@ -1889,7 +1972,17 @@ void QDSDeviceManager::upBoxInfoToBoxMsg(std::shared_ptr<QDSDevice>& device){
                 
                 std::string slot_vendor = device->m_boxData[i].vendor;
 
-                std::string test_type = mapping[device->m_type];
+                std::string test_type = "";
+
+                auto it = std::find_if(mapping.begin(), mapping.end(),
+                    [&](const std::pair<std::string, std::string>& pair) {
+                        return pair.first == device->m_type;
+                    });
+
+                if (it != mapping.end()) {
+                    test_type = it->second;
+                }
+
                 std::string test_vendor = slot_vendor == "QIDI" ? "1" : "0";
                 std::string tset_idx = std::to_string(device->m_boxData[i].filament_idex);
                 std::string test_id = "QD_" + test_type + "_" +  test_vendor + "_" + tset_idx;
@@ -1914,35 +2007,145 @@ void QDSDeviceManager::upBoxInfoToBoxMsg(std::shared_ptr<QDSDevice>& device){
         wxGetApp().plater()->sidebar().box_list_printer_ip = device->m_ip;
     else
         wxGetApp().plater()->sidebar().box_list_printer_ip = "";
+
     GUI::wxGetApp().sidebar().load_box_list();
 }
 
 //y78
 void QDSDeviceManager::getFileInfo(const std::string& device_id){
-    std::shared_ptr<QDSDevice> device = getDevice(device_id);
+    new std::thread([this,device_id]() {
+        std::shared_ptr<QDSDevice> device = getDevice(device_id);
+        if (!device) {
+            return;
+        }
+
+        std::string api_url = device->m_frp_url + "/api/qidiclient/files/list";
+
+        auto http = Http::get(std::move(api_url));
+
+        http.on_error([&](std::string body, std::string error, unsigned status) {
+            //BOOST_LOG_TRIVIAL(trace) << boost::format("Error getting version: %1%, HTTP %2%, body: `%3%`") % error % status % body;
+
+            })
+            .on_complete([&, this](std::string body, unsigned) {
+                try {
+                    json bodyJson = json::parse(body);
+                    if (bodyJson.contains("result"))
+                        updateDeviceFileInfo(device, bodyJson);
+                }
+                catch (const std::exception& error) {
+                    BOOST_LOG_TRIVIAL(trace) << "json error " << error.what();
+                };
+                })
+                .perform_sync();
+
+                //cj_3
+                const std::string timelapse_dir_url =
+                    device->m_frp_url + "/server/files/directory?root=timelapse&path=timelapse&extended=true";
+                auto http_timelapse = Http::get(timelapse_dir_url);
+                http_timelapse
+                    .on_error([&](std::string body, std::string error, unsigned status) {
+                    (void)body;
+                    (void)error;
+                    (void)status;
+                        })
+                    .on_complete([&, this](std::string body, unsigned) {
+                            updateDeviceTimelapseFileInfo(device, body);
+                        })
+                            .perform_sync();
+
+        auto file_cb = getFileInfoUpdateCallback();
+        if (file_cb) {
+            file_cb(device_id);
+        }
+        });
+}
+
+//cj_3
+void QDSDeviceManager::updateDeviceTimelapseFileInfo(std::shared_ptr<QDSDevice>& device, const std::string& response_body)
+{
     if (!device) {
         return;
     }
 
-	std::string api_url = device->m_frp_url + "/api/qidiclient/files/list";
+    device->timelapse_file_info.clear();
 
-    auto http = Http::get(std::move(api_url));
-    
-    http.on_error([&](std::string body, std::string error, unsigned status) {
-		//BOOST_LOG_TRIVIAL(trace) << boost::format("Error getting version: %1%, HTTP %2%, body: `%3%`") % error % status % body;
+    try {
+        json bodyJson = json::parse(response_body);
 
-        })
-        .on_complete([&, this](std::string body, unsigned) {
-            try {
-				json bodyJson = json::parse(body);
-                if (bodyJson.contains("result"))
-                    updateDeviceFileInfo(device, bodyJson);
+        //cj_3
+        if (!bodyJson.contains("result") || !bodyJson["result"].is_object()) {
+            device->m_fresh_timelapse_file_info = true;
+            return;
+        }
+        const json& res = bodyJson["result"];
+        if (!res.contains("files") || !res["files"].is_array()) {
+            device->m_fresh_timelapse_file_info = true;
+            return;
+        }
+        const json& files = res["files"];
+
+        std::unordered_set<std::string> name_set;
+        for (const auto& f : files) {
+            if (f.is_object() && f.contains("filename") && f["filename"].is_string()) 
+                name_set.insert(f["filename"].get<std::string>());
+            
+        }
+
+        for (const auto& f : files) {
+            if (!f.is_object() || !f.contains("filename") || !f["filename"].is_string())
+                continue;
+            const std::string fname = f["filename"].get<std::string>();
+            const size_t dot = fname.rfind('.');
+            if (dot == std::string::npos || dot + 4 > fname.size())
+                continue;
+            std::string ext = fname.substr(dot);
+            for (char& c : ext)
+                c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            if (ext != ".mp4")
+                continue;
+
+            TimelapseFileInfo info;
+            info.file_name = fname;
+            if (f.contains("size")) {
+                std::uint64_t size_bytes = 0;
+                bool            have_size = false;
+                if (f["size"].is_number_integer()) {
+                    const auto v = f["size"].get<std::int64_t>();
+                    size_bytes = v > 0 ? static_cast<std::uint64_t>(v) : 0;
+                    have_size  = true;
+                } else if (f["size"].is_number_unsigned()) {
+                    size_bytes = f["size"].get<std::uint64_t>();
+                    have_size  = true;
+                } else if (f["size"].is_number_float()) {
+                    const double d = f["size"].get<double>();
+                    if (d > 0 && std::isfinite(d))
+                        size_bytes = static_cast<std::uint64_t>(d);
+                    have_size = true;
+                }
+                if (have_size)
+                    info.file_size = format_timelapse_file_size_b_kb_mb(size_bytes);
             }
-            catch (const std::exception &) {
-                ;
-            };
-        })
-        .perform_sync();
+            if (f.contains("modified") && f["modified"].is_number()) {
+                const double mod = f["modified"].get<double>();
+                wxDateTime dt(static_cast<time_t>(std::llround(mod)));
+                info.modified_time = std::string(dt.Format("%Y/%m/%d %H:%M").utf8_string());
+            }
+
+            const std::string jpg_name = fname.substr(0, dot) + ".jpg";
+            
+            if (name_set.find(jpg_name) != name_set.end()) {
+                info.thumb_url = device->m_frp_url + "/server/files/timelapse/" + UrlEncodeForFilename(jpg_name);
+            }
+
+            device->timelapse_file_info.push_back(std::move(info));
+        }
+    }
+    catch (const std::exception& err) {
+        BOOST_LOG_TRIVIAL(trace) << "timelapse directory json error " << err.what();
+    }
+
+    device->m_fresh_timelapse_file_info = true;
 }
 
 void QDSDeviceManager::resetBoxUpdateStatus(const std::string& device_id) {
@@ -1951,5 +2154,4 @@ void QDSDeviceManager::resetBoxUpdateStatus(const std::string& device_id) {
         device->reset_update_status();
     }
 }
-
 }}

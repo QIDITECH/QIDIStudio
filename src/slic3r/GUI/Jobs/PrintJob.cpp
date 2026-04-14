@@ -280,7 +280,7 @@ void PrintJob::process()
     //y71
     params.enable_multi_box     = this->enable_multi_box;
     //y76
-    params.enable_air_condition = this->enable_air_condition;
+    params.enable_polar_cooler = this->enable_polar_cooler;
 
     if (m_print_type == "from_sdcard_view") {
         params.dst_file = m_dst_path;

@@ -681,10 +681,10 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater)
         ops_no_auto, "enable_multi_box");
 
 //y76
-    auto option_enable_air_condition = new PrintOption(
+    auto option_enable_polar_cooler = new PrintOption(
             m_options_other, _L("Enable Polar Cooler"),
             _L("When enabled, this function helps reduce the internal temperature of the extruder, preventing filament softening or clogging inside the extruder and improving printing stability."),
-            ops_no_auto, "enable_air_condition");
+            ops_no_auto, "enable_polar_cooler");
 
     auto option_flow_dynamics_cali =
         new PrintOption(m_options_other, _L("Flow Dynamics Calibration"),
@@ -742,14 +742,14 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater)
     m_sizer_options->Add(option_timelapse, 0, wxEXPAND);
     m_sizer_options->Add(option_auto_bed_level, 0, wxEXPAND);
     m_sizer_options->Add(option_enable_multi_box, 0, wxEXPAND);
-    m_sizer_options->Add(option_enable_air_condition, 0, wxEXPAND);
+    m_sizer_options->Add(option_enable_polar_cooler, 0, wxEXPAND);
     m_sizer_options->Add(option_flow_dynamics_cali, 0, wxEXPAND);
     m_sizer_options->Add(option_nozzle_offset_cali_cali, 0, wxEXPAND);
 
     m_checkbox_list_order.push_back(option_timelapse);
     m_checkbox_list_order.push_back(option_auto_bed_level);
     m_checkbox_list_order.push_back(option_enable_multi_box);
-    m_checkbox_list_order.push_back(option_enable_air_condition);
+    m_checkbox_list_order.push_back(option_enable_polar_cooler);
     m_checkbox_list_order.push_back(option_flow_dynamics_cali);
     m_checkbox_list_order.push_back(option_nozzle_offset_cali_cali);
 
@@ -764,7 +764,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater)
     m_checkbox_list["timelapse"]     = option_timelapse;
     m_checkbox_list["bed_leveling"]  = option_auto_bed_level;
     m_checkbox_list["enable_multi_box"]  = option_enable_multi_box;
-    m_checkbox_list["enable_air_condition"] = option_enable_air_condition;
+    m_checkbox_list["enable_polar_cooler"] = option_enable_polar_cooler;
     m_checkbox_list["flow_cali"]     = option_flow_dynamics_cali;
     m_checkbox_list["nozzle_offset_cali"] = option_nozzle_offset_cali_cali;
     for (auto print_opt : m_checkbox_list_order) {
@@ -773,7 +773,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater)
 
     option_auto_bed_level->Hide();
     option_enable_multi_box->Hide();
-    option_enable_air_condition->Hide();
+    option_enable_polar_cooler->Hide();
     option_flow_dynamics_cali->Hide();
     option_nozzle_offset_cali_cali->Hide();
     //y59
@@ -1227,9 +1227,9 @@ void SelectMachineDialog::sync_ams_mapping_result(const std::vector<FilamentInfo
                 }
                 m->set_ams_info(ams_col, ams_id,f->ctype, cols);
                 m->set_nozzle_info(get_mapped_nozzle_str(id));
-                ////y59
-                //if (exceed_slot_num)
-                //    m->disable();
+                //y59
+                if (exceed_slot_num)
+                    m->disable();
                 break;
             }
             iter++;
@@ -1967,6 +1967,7 @@ void SelectMachineDialog::show_status(PrintDialogStatus status, std::vector<wxSt
         Enable_Refresh_Button(true);
         Enable_Send_Button(false);
     } else if (status == PrintDialogStatus::PrintStatusPublicUploadFiled){
+        msg = _L("Due to network issues, the file upload failed. Please check your network connection.");
         Enable_Refresh_Button(true);
         Enable_Send_Button(true);
     }
@@ -2490,112 +2491,227 @@ void SelectMachineDialog::start_to_send(PrintHostJob upload_job) {
         return;
     }
 
-    //y71
-    for (auto item : m_checkbox_list) {
-        wxString command = "";
-        bool success = true;
-        if(item.second->getParam() == "enable_multi_box"){
-            bool use_box = false;
-            if(has_box_machine){
-                //y72
-                wxString msg = _L("Box Setting..");
-                m_status_bar->update_status(msg, m_is_canceled, 10, true);
-                if (item.second->getValue() == "on"){
-                    command = "SAVE_VARIABLE VARIABLE=enable_box VALUE=1";
-                    use_box = true;
+    //y79
+    bool success = false;
+    if(!wxGetApp().is_link_connect() && wxGetApp().app_config->get("user_token") != "" && m_isNetMode){
+        auto dev_manager = wxGetApp().qdsdevmanager;
+        auto obj = dev_manager->getSelectedDevice();
+
+#if QDT_RELEASE_TO_PUBLIC
+        HttpData http_data;
+        json bodyJson;
+
+        bodyJson["upload_name"] = upload_job.upload_data.upload_path.string();
+        bodyJson["upload_path"] = upload_job.upload_data.source_path.string();
+
+        http_data.body = bodyJson.dump();
+
+        std::string region = wxGetApp().app_config->get("region");
+        if (region == "China") {
+            http_data.env = PRODUCTIONENV;
+        }
+        else {
+            http_data.env = FOREIGNENV;
+        }
+        http_data.target = NONETYPE;
+
+        http_data.taskPath = "/sliceModelConfiguration/fileUrl/upload";
+
+        wxString msg = _L("Preparing to upload file...");
+        m_status_bar->update_status(msg, m_is_canceled, 10, true);
+		std::string resultBody = MakerHttpHandle::getInstance().httpUploadTask(http_data, success,
+            [&msg, this](Http::Progress progress, bool& cancel) {
+                int gui_progress = progress.ultotal > 0 ? 100 * progress.ulnow / progress.ultotal : 0;
+                msg = Slic3r::format(_u8L("Uploadling file : %1%%%"), std::to_string(gui_progress));
+                m_status_bar->update_status(msg, m_is_canceled, 10 + gui_progress / 2, true);
+            }
+        );
+
+        if(success){
+            http_data.taskPath = "/printer/sliced/print/start";
+            json body_json_2;
+            //y71
+            for (auto item : m_checkbox_list) {
+                if(item.second->getParam() == "enable_multi_box"){
+                    if (item.second->getValue() == "on" && !m_ams_mapping_result.empty()){
+                        body_json_2["coolerEnable"] = true;
+                        std::vector<int> consumable_t (16, -1);
+
+                        for (auto result : m_ams_mapping_result) {
+                            consumable_t[result.id] = std::stoi(result.slot_id);
+                            std::cout << "result id is  " << result.id << " and slot id is " << result.slot_id << std::endl;
+                        }
+                        body_json_2["consumable"] = consumable_t;
+                    }
+                    else{
+                        body_json_2["coolerEnable"] = false;
+                        body_json_2["consumable"] = nullptr;
+                    }
+                } else if (item.second->getParam() == "bed_leveling") {
+                    body_json_2["levelingEnable"] = item.second->getValue() == "on" ? true : false;
+                } else if(item.second->getParam() == "timelapse" && select_machine.timelapse){
+                    body_json_2["delayVideoEnable"] = item.second->getValue() == "on" ? true : false;
+                } else if(item.second->getParam() == "enable_polar_cooler" && select_machine.enable_polar_cooler){
+                    body_json_2["coolerEnable"] = item.second->getValue() == "on" ? true : false;
                 }
-                else {
-                    command = "SAVE_VARIABLE VARIABLE=enable_box VALUE=0";
+            }
+
+            body_json_2["serialNumber"] = select_machine.device_id;
+            body_json_2["fileName"] = upload_job.upload_data.upload_path.string();
+            body_json_2["plateIndex"] = m_print_plate_idx + 1;
+            
+            json res_json = json::parse(resultBody);
+            body_json_2["fileUrl"] = res_json["data"]["modelPictureUrl"];
+
+            http_data.body = body_json_2.dump();
+            wxString msg = _L("Cloud service notifies the printer to accept the printing task...");
+            m_status_bar->update_status(msg, m_is_canceled, 70, true);
+            resultBody = MakerHttpHandle::getInstance().httpPostTask(http_data, success);
+        } else {
+            show_status(PrintDialogStatus::PrintStatusPublicUploadFiled);
+            return;
+        }
+
+        if(success){
+            int count = 0;
+            while(count < 10){
+                if(obj->maker_job_is_update){
+                    std::string obj_state = obj->getMakerJobState();
+                    if(obj_state == "downloading"){
+                        msg = Slic3r::format(_u8L("Printer downloads the printing task: %1%"), obj->maker_job_progress );
+                        m_status_bar->update_status(msg, m_is_canceled, 80, true);
+                        continue;
+                    }
+                    else if (obj_state == "started") {
+                        wxString msg = _L("Printer starts printing...");
+                        m_status_bar->update_status(msg, m_is_canceled, 100, true);
+                        obj->setMakerJobIsUpdate(false);
+                        break;
+                    } 
                 }
-                success &= upload_job.printhost->send_command_to_printer(check_status_msg, command);
-                if(use_box){
-                    for (auto result : m_ams_mapping_result) {
-                        wxString command = wxString::Format(
-                            "SAVE_VARIABLE VARIABLE=value_t%d VALUE=\\\"'slot%s'\\\"",
-                            result.id,
-                            result.slot_id
-                        );
-                        success &= upload_job.printhost->send_command_to_printer(check_status_msg, command);
-                        if (!success) {
-                            show_status(PrintDialogStatus::BoxhasSomeProblem);
-                            return;
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                count++;
+                
+            }
+        } else {
+            show_status(PrintDialogStatus::PrintStatusPublicUploadFiled);
+            return;
+        }
+#endif
+    }
+    else {
+        //y71
+        for (auto item : m_checkbox_list) {
+            wxString command = "";
+            success = true;
+            if(item.second->getParam() == "enable_multi_box"){
+                bool use_box = false;
+                if(has_box_machine){
+                    //y72
+                    wxString msg = _L("Box Setting..");
+                    m_status_bar->update_status(msg, m_is_canceled, 10, true);
+                    if (item.second->getValue() == "on"){
+                        command = "SAVE_VARIABLE VARIABLE=enable_box VALUE=1";
+                        use_box = true;
+                    }
+                    else {
+                        command = "SAVE_VARIABLE VARIABLE=enable_box VALUE=0";
+                    }
+                    success &= upload_job.printhost->send_command_to_printer(check_status_msg, command);
+                    if(use_box){
+                        for (auto result : m_ams_mapping_result) {
+                            wxString command = wxString::Format(
+                                "SAVE_VARIABLE VARIABLE=value_t%d VALUE=\\\"'slot%s'\\\"",
+                                result.id,
+                                result.slot_id
+                            );
+                            success &= upload_job.printhost->send_command_to_printer(check_status_msg, command);
+                            if (!success) {
+                                show_status(PrintDialogStatus::BoxhasSomeProblem);
+                                return;
+                            }
                         }
                     }
                 }
-            }
-        } else if (item.second->getParam() == "bed_leveling") {
-            wxString msg = _L("Set automatic leveling..");
-            m_status_bar->update_status(msg, m_is_canceled, 10, true);
-            if (item.second->getValue() == "on") {
-                command = "G31";
-            }
-            else {
-                command = "G32";
-            }
-            success &= upload_job.printhost->send_command_to_printer(check_status_msg, command);
-            if (!success) {
-                show_status(PrintDialogStatus::BedLevelingFailed);
-                return;
-            }
-        } else if(item.second->getParam() == "timelapse" && select_machine.timelapse){
-            bool open_timelapse;
-            wxString msg = _L("Set timelapse..");
-            m_status_bar->update_status(msg, m_is_canceled, 10, true);
-            if (item.second->getValue() == "on") {
-                open_timelapse = true;
-            }
-            else {
-                open_timelapse = false;
-            }
-            success &= upload_job.printhost->send_timelapse_status(check_status_msg, select_machine.url, open_timelapse);
-            if (!success) {
-                show_status(PrintDialogStatus::TimelapseSettingFailed);
-                return;
-            }
-//y76
-        } else if(item.second->getParam() == "enable_air_condition" && select_machine.enable_air_condition){
-            bool open_air_condition;
-            wxString msg = _L("Set air condition..");
-            m_status_bar->update_status(msg, m_is_canceled, 10, true);
-            if(item.second->getValue() == "on"){
-                command = "SAVE_VARIABLE VARIABLE=enable_polar_cooler VALUE=1";
-            }
-            else {
-                command = "SAVE_VARIABLE VARIABLE=enable_polar_cooler VALUE=0";
-            }
-            success &= upload_job.printhost->send_command_to_printer(check_status_msg, command);
-            if(!success){
-                show_status(PrintDialogStatus::AirConditionSettingFailed);
-                return;
+            } else if (item.second->getParam() == "bed_leveling") {
+                wxString msg = _L("Set automatic leveling..");
+                m_status_bar->update_status(msg, m_is_canceled, 10, true);
+                if (item.second->getValue() == "on") {
+                    command = "G31";
+                }
+                else {
+                    command = "G32";
+                }
+                success &= upload_job.printhost->send_command_to_printer(check_status_msg, command);
+                if (!success) {
+                    show_status(PrintDialogStatus::BedLevelingFailed);
+                    return;
+                }
+            } else if(item.second->getParam() == "timelapse" && select_machine.timelapse){
+                bool open_timelapse;
+                wxString msg = _L("Set timelapse..");
+                m_status_bar->update_status(msg, m_is_canceled, 10, true);
+                if (item.second->getValue() == "on") {
+                    open_timelapse = true;
+                }
+                else {
+                    open_timelapse = false;
+                }
+                success &= upload_job.printhost->send_timelapse_status(check_status_msg, select_machine.url, open_timelapse);
+                if (!success) {
+                    show_status(PrintDialogStatus::TimelapseSettingFailed);
+                    return;
+                }
+    //y76
+            } else if(item.second->getParam() == "enable_polar_cooler" && select_machine.enable_polar_cooler){
+                bool open_polar_cooler;
+                wxString msg = _L("Set polar cooler..");
+                m_status_bar->update_status(msg, m_is_canceled, 10, true);
+                if(item.second->getValue() == "on"){
+                    command = "SAVE_VARIABLE VARIABLE=enable_polar_cooler VALUE=1";
+                }
+                else {
+                    command = "SAVE_VARIABLE VARIABLE=enable_polar_cooler VALUE=0";
+                }
+                success &= upload_job.printhost->send_command_to_printer(check_status_msg, command);
+                if(!success){
+                    show_status(PrintDialogStatus::AirConditionSettingFailed);
+                    return;
+                }
             }
         }
-    }
 
-    bool success = upload_job.printhost->upload(std::move(upload_job.upload_data),
-    [this](Http::Progress progress, bool& cancel) {
-        cancel = this->m_is_canceled;
-        int gui_progress = progress.ultotal > 0 ? 100 * progress.ulnow / progress.ultotal : 0;
-        OctoPrint::progress_percentage = gui_progress / 100.f;
-        //y62
-        if(gui_progress < 100){
-            wxString msg = _L("Sending...");
-            bool is_undisplay = false;
-            m_status_bar->update_status(msg, is_undisplay, std::floor(10 + gui_progress * 0.9), true);
-        }
-        else{
-            std::vector<std::string> dot = {"..", "....", "......"};
-            for(int i = 0; i < 3; i++){
-                wxString msg = _L("Waiting for the printer's response") + dot[i];
-                bool is_undisplay = false;
-                m_status_bar->update_status(msg, is_undisplay, 100, true);
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        success = upload_job.printhost->upload(std::move(upload_job.upload_data),
+            [this](Http::Progress progress, bool& cancel) {
+                cancel = this->m_is_canceled;
+                int gui_progress = progress.ultotal > 0 ? 100 * progress.ulnow / progress.ultotal : 0;
+                OctoPrint::progress_percentage = gui_progress / 100.f;
+                //y62
+                if(gui_progress < 100){
+                    wxString msg = _L("Sending...");
+                    bool is_undisplay = false;
+                    m_status_bar->update_status(msg, is_undisplay, std::floor(10 + gui_progress * 0.9), true);
+                }
+                else{
+                    std::vector<std::string> dot = {"..", "....", "......"};
+                    for(int i = 0; i < 3; i++){
+                        wxString msg = _L("Waiting for the printer's response") + dot[i];
+                        bool is_undisplay = false;
+                        m_status_bar->update_status(msg, is_undisplay, 100, true);
+                        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                    }
+                }
+            },
+            [this](wxString error) {
+                show_status(PrintDialogStatus::PrintStatusPublicUploadFiled);
             }
+        );
+        if(!success){
+            show_status(PrintDialogStatus::PrintStatusPublicUploadFiled);
+            return;
         }
-    },
-    [this](wxString error) {
-        show_status(PrintDialogStatus::PrintStatusPublicUploadFiled);
     }
-    );
+    //y79
 
     if (success)
     {
@@ -2686,7 +2802,7 @@ void SelectMachineDialog::send_to_sd_card(){
                 else {
                     bodyJson["delayVideoEnable"] = false;
                 }
-            } else if(item.second->getParam() == "enable_air_condition" && select_machine.enable_air_condition){
+            } else if(item.second->getParam() == "enable_polar_cooler" && select_machine.enable_polar_cooler){
                 if (item.second->getValue() == "on") {
                     bodyJson["coolerEnable"] = true;
                 }
@@ -2701,7 +2817,13 @@ void SelectMachineDialog::send_to_sd_card(){
         bodyJson["plateIndex"] = m_print_plate_idx + 1;
 
         http_data.body = bodyJson.dump();
-        http_data.env = DEVENV;
+        std::string region = wxGetApp().app_config->get("region");
+        if (region == "China") {
+            http_data.env = PRODUCTIONENV;
+        }
+        else {
+            http_data.env = FOREIGNENV;
+        }
         http_data.target = PRINTERTYPE;
 
         http_data.taskPath = "/set/print/start";
@@ -2808,9 +2930,9 @@ void SelectMachineDialog::send_to_sd_card(){
                     show_status(PrintDialogStatus::TimelapseSettingFailed);
                     return;
                 }
-            } else if(item.second->getParam() == "enable_air_condition" && select_machine.enable_air_condition){
-                bool open_air_condition;
-                wxString msg = _L("Set air condition..");
+            } else if(item.second->getParam() == "enable_polar_cooler" && select_machine.enable_polar_cooler){
+                bool open_polar_cooler;
+                wxString msg = _L("Set polar cooler..");
                 m_status_bar->update_status(msg, m_is_canceled, 80, true);
                 if(item.second->getValue() == "on"){
                     command = "SAVE_VARIABLE VARIABLE=enable_polar_cooler VALUE=1";
@@ -2957,7 +3079,7 @@ void SelectMachineDialog::update_option_opts(MachineObject *obj)
         std::string type = preset_config.opt_string("printer_model");
         if (NormalizeVendor(type).find(NormalizeVendor(select_machine.type)) != std::string::npos) {
             select_machine.timelapse = preset_config.opt_bool("is_support_timelapse");
-            select_machine.enable_air_condition = preset_config.opt_bool("is_support_air_condition");
+            select_machine.enable_polar_cooler = preset_config.opt_bool("is_support_polar_cooler");
             break;
         }
     }
@@ -2978,9 +3100,9 @@ void SelectMachineDialog::update_option_opts(MachineObject *obj)
     }
     
 //y76
-    if(select_machine.enable_air_condition){
-        m_checkbox_list["enable_air_condition"]->Show();
-        m_checkbox_list["enable_air_condition"]->update_options(ops_no_auto, _L("When enabled, this function helps reduce the internal temperature of the extruder, preventing filament softening or clogging inside the extruder and improving printing stability."));
+    if(select_machine.enable_polar_cooler){
+        m_checkbox_list["enable_polar_cooler"]->Show();
+        m_checkbox_list["enable_polar_cooler"]->update_options(ops_no_auto, _L("When enabled, this function helps reduce the internal temperature of the extruder, preventing filament softening or clogging inside the extruder and improving printing stability."));
     }
 
     // if (!obj)
@@ -3078,10 +3200,10 @@ void SelectMachineDialog::load_option_vals(MachineObject *obj)
 //y76
     auto sel_obj = wxGetApp().qdsdevmanager->getSelectedDevice();
     //y77
-    if(sel_obj && sel_obj->m_polar_cooler && select_machine.ip == sel_obj->m_ip){
-        m_checkbox_list["enable_air_condition"]->enable(true);
+    if(sel_obj && sel_obj->m_enable_polar_cooler && select_machine.ip == sel_obj->m_ip){
+        m_checkbox_list["enable_polar_cooler"]->enable(true);
     } else {
-        m_checkbox_list["enable_air_condition"]->enable(false);
+        m_checkbox_list["enable_polar_cooler"]->enable(false);
     }
 
     ///*STUDIO-9197*/
@@ -3333,7 +3455,7 @@ void SelectMachineDialog::on_send_print()
         m_checkbox_list["flow_cali"]->getValueInt(),
         m_checkbox_list["nozzle_offset_cali"]->getValueInt(),
         (m_pa_value_switch->GetValue() ? 0 : 1),
-        m_checkbox_list["enable_air_condition"]->getValueInt()
+        m_checkbox_list["enable_polar_cooler"]->getValueInt()
     );
 
     if (obj_->HasAms()) {
@@ -3696,6 +3818,7 @@ void SelectMachineDialog::update_user_printer()
             machine.url = device.url;
             machine.ip = device.local_ip;
             machine.type = device.machine_type;
+            machine.device_id = device.mac_address;
             if (machine.type.empty())
             {
                 std::size_t found = device.device_name.find('@');
@@ -3849,7 +3972,9 @@ void SelectMachineDialog::update_printer_combobox(wxCommandEvent &event)
 
 void SelectMachineDialog::update_ams_backup(MachineObject* obj_)
 {
-    bool to_show = obj_ && obj_->GetFilaSystem()->CanShowFilamentBackup() && _HasAms(m_ams_mapping_result);
+    //cj_3
+    (void) obj_;
+    const bool to_show = false;
     if (to_show != m_ams_backup_tip->IsShown() || to_show != img_ams_backup->IsShown()) {
         m_ams_backup_tip->Show(to_show);
         img_ams_backup->Show(to_show);
@@ -3870,19 +3995,7 @@ void SelectMachineDialog::on_timer(wxTimerEvent &event)
 {
     //y61
     update_show_status();
-    if (_HasAms(m_ams_mapping_result) && wxGetApp().plater()->box_msg.auto_reload_detect) {
-        if (!m_ams_backup_tip->IsShown()) {
-            m_ams_backup_tip->Show();
-            img_ams_backup->Show();
-        }
-    }
-    else {
-        if (m_ams_backup_tip->IsShown()) {
-            m_ams_backup_tip->Hide();
-            img_ams_backup->Hide();
-        }
-    }
-
+    //cj_3
     load_option_vals(nullptr);
     Layout();
     Fit();
@@ -3903,6 +4016,27 @@ void SelectMachineDialog::on_timer(wxTimerEvent &event)
     update_show_status(obj_);
     update_print_status_msg();
     //update_scroll_area_size();/*STUDIO-12867 the page maybe blank in some platform. FIXME*/
+}
+
+void SelectMachineDialog::on_printer_combobox_dropdown(wxCommandEvent& event)
+{
+#if QDT_RELEASE_TO_PUBLIC
+    event.Skip();
+    if (!m_isNetMode)
+        return;
+    if (wxGetApp().is_link_connect())
+        return;
+    if (wxGetApp().app_config->get("user_token").empty())
+        return;
+    if (MakerHttpHandle::getInstance().isSSEConnected())
+        return;
+    MainFrame* main = wxGetApp().mainframe;
+    if (!main || !main->m_printer_view)
+        return;
+    PrinterWebView* pw = main->m_printer_view;
+    MakerHttpHandle::getInstance().setSSEHandle(
+        [pw](const std::string& sse_event, const std::string& data) { pw->onSSEMessageHandle(sse_event, data); });
+#endif
 }
 
 void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
@@ -3951,6 +4085,7 @@ void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
                 else {
                     select_machine = machine;
                     select_machine_type = machine.type;
+                    //y79
                     select_printer_ip = machine.ip;
                     if (preset_typename_normalized.find(NormalizeVendor(machine.type)) != std::string::npos)
                     {
@@ -4007,7 +4142,6 @@ void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
         auto qds_obj = qds_dev->getSelectedDevice();
         has_box_machine = qds_obj->m_box_count != 0 ? true : false;
     }
-
 
     update_option_opts(nullptr);
     update_show_status();
@@ -7377,6 +7511,7 @@ void PrinterInfoBox::Create()
     m_comboBox_printer->SetMaxSize(wxSize(FromDIP(300), FromDIP(60)));
     m_comboBox_printer->SetBackgroundColor(*wxWHITE);
     m_comboBox_printer->Bind(wxEVT_COMBOBOX, &SelectMachineDialog::on_selection_changed, m_select_dialog);
+    m_comboBox_printer->Bind(wxEVT_COMBOBOX_DROPDOWN, &SelectMachineDialog::on_printer_combobox_dropdown, m_select_dialog);
 
     m_button_refresh = new ScalableButton(printer_staticbox, wxID_ANY, "refresh_printer", wxEmptyString, wxDefaultSize, wxDefaultPosition, wxBU_EXACTFIT | wxNO_BORDER, true);
     m_button_refresh->Bind(wxEVT_BUTTON, &SelectMachineDialog::on_refresh, m_select_dialog);
@@ -7489,7 +7624,7 @@ void PrinterInfoBox::SetQDTPrinters(std::vector<Machine_info> machine_list, bool
             Machine_info& machine = machine_list[i];
             if(preset_typename_normalized.find(NormalizeVendor(machine.type)) != std::string::npos){
                 m_comboBox_printer->SetSelection(i);
-                if(!wxGetApp().plater()->sidebar().box_list_printer_ip.empty() && machine.url == wxGetApp().plater()->sidebar().box_list_printer_ip)
+                if(!wxGetApp().plater()->sidebar().box_list_printer_ip.empty() && machine.ip == wxGetApp().plater()->sidebar().box_list_printer_ip)
                     break;
             }
         }

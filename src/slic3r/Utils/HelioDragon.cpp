@@ -197,7 +197,7 @@ void HelioQuery::request_remaining_optimizations(const std::string & helio_api_u
 void HelioQuery::request_support_machine(const std::string helio_api_url, const std::string helio_api_key, int page)
 {
     std::string query_body = R"( {
-            "query": "query GetPrinters($page: Int) { printers(page: $page, pageSize: 20) { pages pageInfo { hasNextPage } objects { ... on Printer  { id name alternativeNames { bambustudio } } } } }",
+            "query": "query GetPrinters($page: Int) { printers(page: $page, pageSize: 20) { pages pageInfo { hasNextPage } objects { ... on Printer  { id name alternativeNames { qidistudio } } } } }",
             "variables": {"page": %1%}
 		} )";
 
@@ -234,8 +234,8 @@ void HelioQuery::request_support_machine(const std::string helio_api_url, const 
                             if (pobj.contains("alternativeNames") && pobj["alternativeNames"].is_object()) {
                                 auto alternativeNames = pobj["alternativeNames"];
 
-                                if (alternativeNames.contains("bambustudio") && !alternativeNames["bambustudio"].is_null()) {
-                                    sp.native_name = alternativeNames["bambustudio"].get<std::string>();
+                                if (alternativeNames.contains("qidistudio") && !alternativeNames["qidistudio"].is_null()) {
+                                    sp.native_name = alternativeNames["qidistudio"].get<std::string>();
                                 }
                             }
 
@@ -260,7 +260,7 @@ void HelioQuery::request_support_machine(const std::string helio_api_url, const 
 void HelioQuery::request_support_material(const std::string helio_api_url, const std::string helio_api_key, int page)
 {
     std::string query_body = R"( {
-			"query": "query GetMaterias($page: Int) { materials(page: $page, pageSize: 20) { pages pageInfo { hasNextPage } objects { ... on Material  { id name feedstock alternativeNames { bambustudio } } } } }",
+			"query": "query GetMaterias($page: Int) { materials(page: $page, pageSize: 20) { pages pageInfo { hasNextPage } objects { ... on Material  { id name feedstock alternativeNames { qidistudio } } } } }",
             "variables": {"page": %1%}
 		} )";
 
@@ -297,9 +297,9 @@ void HelioQuery::request_support_material(const std::string helio_api_url, const
                             if (pobj.contains("alternativeNames") && pobj["alternativeNames"].is_object()) {
                                 auto alternativeNames = pobj["alternativeNames"];
 
-                                //bambu materials
-                                if (alternativeNames.contains("bambustudio") && !alternativeNames["bambustudio"].is_null()) {
-                                    sp.native_name = alternativeNames["bambustudio"].get<std::string>();
+                                //qidi materials
+                                if (alternativeNames.contains("qidistudio") && !alternativeNames["qidistudio"].is_null()) {
+                                    sp.native_name = alternativeNames["qidistudio"].get<std::string>();
                                 }
                                 //third party materials
                                 else {
@@ -481,9 +481,9 @@ void HelioQuery::request_pat_token(std::function<void(std::string)> func)
     std::string url_copy = "";
 
     if (GUI::wxGetApp().app_config->get("region") == "China") {
-        url_copy = "https://api.helioam.cn/rest/auth/anonymous_token/bambustudio";
+        url_copy = "https://api.helioam.cn/rest/auth/anonymous_token/qidistudio";
     } else {
-        url_copy = "https://api.helioadditive.com/rest/auth/anonymous_token/bambustudio";
+        url_copy = "https://api.helioadditive.com/rest/auth/anonymous_token/qidistudio";
     }
 
     auto http = Http::get(url_copy);
@@ -2368,8 +2368,6 @@ HelioQuery::GetRecentRunsResult HelioQuery::get_recent_runs(const std::string& h
 std::chrono::system_clock::time_point HelioQuery::parse_timestamp_from_name(const std::string& name)
 {
     try {
-        // Parse timestamp from name format: "BambuSlicer 2026-01-23T07:52:27"
-        // Extract the ISO timestamp using simple string parsing
         size_t pos = name.find_last_of(' ');
         if (pos != std::string::npos && pos + 1 < name.length()) {
             std::string timestamp_str = name.substr(pos + 1);

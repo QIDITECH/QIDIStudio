@@ -912,6 +912,13 @@ public:
     // get preset name from the full name uncluded printer name
     static std::string  get_preset_name(std::string full_name);
 
+    //cj_3_cursor
+    // True when the selected machine preset (by preset name or printer_model) has is_support_mqtt in its JSON / config.
+
+    static bool         is_mqtt_ui_capable_preset_model(const std::string& preset_model_name, const PrinterPresetCollection* printer_presets = nullptr);
+    // After load_from_json, fix expert_mode using raw JSON keys (expert_mode / use_fluidd_legacy) and preset defaults.
+    static void         migrate_expert_mode_from_json_file(const std::string& json_path, DynamicPrintConfig& config, const PrinterPresetCollection* printer_presets = nullptr);
+
 protected:
     friend class        PhysicalPrinterCollection;
 };
@@ -943,10 +950,12 @@ public:
     const std::deque<PhysicalPrinter>& operator()() const { return m_printers; }
 
     // Load ini files of the particular type from the provided directory path.
-    void            load_printers(const std::string& dir_path, const std::string& subdir, PresetsConfigSubstitutions& substitutions, ForwardCompatibilitySubstitutionRule rule);
+    void            load_printers(const std::string& dir_path, const std::string& subdir, PresetsConfigSubstitutions& substitutions, ForwardCompatibilitySubstitutionRule rule,
+                                  const PrinterPresetCollection* printer_presets = nullptr);
     void            load_printers_from_presets(PrinterPresetCollection &printer_presets);
     // Load printer from the loaded configuration
-    void            load_printer(const std::string& path, const std::string& name, DynamicPrintConfig&& config, bool select, bool save=false);
+    void            load_printer(const std::string& path, const std::string& name, DynamicPrintConfig&& config, bool select, bool save=false,
+                                  const PrinterPresetCollection* printer_presets = nullptr);
 
     // Save the printer under a new name. If the name is different from the old one,
     // a new printer is stored into the list of printers.

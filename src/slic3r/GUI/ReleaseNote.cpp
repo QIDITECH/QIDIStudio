@@ -759,6 +759,31 @@ void SecondaryCheckDialog::update_text(wxString text)
     Fit();
 }
 
+//cj_3
+void SecondaryCheckDialog::set_message_area_width(int width_dip)
+{
+    const int body_w = FromDIP(width_dip);
+    const int label_w = std::max(FromDIP(200), body_w - FromDIP(30));
+    if (m_vebview_release_note) {
+        int cur_h = m_vebview_release_note->GetMinSize().GetHeight();
+        m_vebview_release_note->SetMinSize(wxSize(body_w, std::max(cur_h, FromDIP(80))));
+    }
+    if (m_staticText_release_note) {
+        m_staticText_release_note->SetMinSize(wxSize(label_w, -1));
+        m_staticText_release_note->SetMaxSize(wxSize(label_w, -1));
+        m_vebview_release_note->Layout();
+        const wxSize text_size = m_staticText_release_note->GetBestSize();
+        if (m_vebview_release_note) {
+            if (text_size.y < FromDIP(360))
+                m_vebview_release_note->SetMinSize(wxSize(body_w, text_size.y + FromDIP(25)));
+            else
+                m_vebview_release_note->SetMinSize(wxSize(body_w, FromDIP(360)));
+        }
+    }
+    Layout();
+    Fit();
+}
+
 void SecondaryCheckDialog::on_show()
 {
 #ifdef __APPLE__
@@ -2306,7 +2331,6 @@ ExpandCenterDialog::ExpandCenterDialog(wxWindow* parent /*= nullptr*/) :
         wxDefaultSize,
         wxCAPTION | wxCLOSE_BOX)
 {
-    // Set Helio icon (not BambuStudio icon)
     wxBitmap bmp = create_scaled_bitmap("helio_icon", this, 32);
     wxIcon icon;
     icon.CopyFromBitmap(bmp);

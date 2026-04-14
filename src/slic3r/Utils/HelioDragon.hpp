@@ -381,7 +381,7 @@ public:
         std::string iso_datetime = boost::posix_time::to_iso_extended_string(now);
 
         // Combine with your desired prefix
-        return "BambuSlicer " + iso_datetime;
+        return "QIDISlicer " + iso_datetime;
     }
 
     static std::vector<SupportedData> global_supported_printers;

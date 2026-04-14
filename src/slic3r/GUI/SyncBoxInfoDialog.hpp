@@ -391,6 +391,7 @@ public:
 
 
     std::vector<std::string> m_printer_ip;
+    std::vector<std::string> m_printer_url;
     std::vector<std::string> m_printer_api_key;
 
 private:

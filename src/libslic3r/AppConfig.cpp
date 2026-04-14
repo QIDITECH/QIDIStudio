@@ -469,8 +469,8 @@ void AppConfig::set_defaults()
     }
 
 //y76
-    if (get("print", "enable_air_condition").empty()){
-        set_str("print", "enable_air_condition", "0");
+    if (get("print", "enable_polar_cooler").empty()){
+        set_str("print", "enable_polar_cooler", "0");
     }
 
     if (get("print", "flow_cali").empty()) {

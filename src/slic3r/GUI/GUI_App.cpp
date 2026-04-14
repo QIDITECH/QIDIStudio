@@ -68,6 +68,7 @@
 #include "3DScene.hpp"
 #include "MainFrame.hpp"
 #include "Plater.hpp"
+#include "DownloadManager.hpp"
 #include "GLCanvas3D.hpp"
 #include "EncodedFilament.hpp"
 
@@ -2844,6 +2845,10 @@ bool GUI_App::on_init_inner()
 #ifdef NDEBUG
     wxImage::SetDefaultLoadFlags(0); // ignore waring in release build
 #endif
+
+    std::string thumb_cache_dir = (boost::filesystem::path(Slic3r::data_dir()) / "thumb_cache").string();
+    DownloadManager::getInstance().init(thumb_cache_dir);
+
 
 #if defined(_WIN32) && ! defined(_WIN64)
     // QDS: remove 32bit build prompt

@@ -107,6 +107,8 @@ protected:
 
     Button *m_button_extruder_feed {nullptr};
     Button *m_button_extruder_back {nullptr};
+    //cj_3
+    Button *m_button_extruder_eject {nullptr};
     Button *m_button_auto_refill{ nullptr };
     wxStaticBitmap* m_button_ams_setting   {nullptr};
     wxStaticBitmap* m_img_ams_backup  {nullptr};
@@ -144,6 +146,9 @@ public:
 
     void EnableLoadFilamentBtn(bool enable, const std::string& ams_id, const std::string& can_id, const wxString& tips);
     void EnableUnLoadFilamentBtn(bool enable, const std::string& ams_id, const std::string& can_id,const wxString& tips);
+    //cj_3
+    void EnableEjectFilamentBtn(bool enable, const std::string& ams_id, const std::string& can_id, const wxString& tips);
+
 
     void EnterNoneAMSMode();
     void EnterGenericAMSMode();
@@ -197,6 +202,8 @@ public:
     void msw_rescale();
     void on_filament_load(wxCommandEvent &event);
     void on_filament_unload(wxCommandEvent &event);
+    //cj_3
+    void on_filament_eject(wxCommandEvent &event);
     void auto_refill(wxCommandEvent& event);
     void on_ams_setting_click(wxMouseEvent &event);
     void on_extrusion_cali(wxCommandEvent &event);

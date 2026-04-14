@@ -1677,10 +1677,10 @@ bool Sidebar::priv::sync_extruder_list(bool &only_external_material)
             try {
                 json resultJson = json::parse(resultBody);
                 BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "/get/database/config/all return is " << resultJson;
-                //y78
+                //y79
                 if (resultJson.contains("data") && resultJson["data"].is_object()) {
-                    if (resultJson["data"].contains("polarCooler") && resultJson["data"]["printing.polar_cooler"].is_string()) {
-                        obj->m_polar_cooler = resultJson["data"]["printing.polar_cooler"].get<std::string>() == "1";
+                    if (resultJson["data"].contains("printing.polar_cooler") && resultJson["data"]["printing.polar_cooler"].is_string()) {
+                        obj->m_enable_polar_cooler = resultJson["data"]["printing.polar_cooler"].get<std::string>() == "1";
                     }
 
                     if (resultJson["data"].contains("nozzle.diameter")) {
@@ -1755,7 +1755,7 @@ bool Sidebar::priv::sync_extruder_list(bool &only_external_material)
        assert(physical_extruder_map->values.size() == extruder_nums);
        extruder_map = physical_extruder_map->values;
     }
-    assert(obj->GetExtderSystem()->GetTotalExtderCount() == extruder_nums);
+    //assert(obj->GetExtderSystem()->GetTotalExtderCount() == extruder_nums);
 
     std::vector<float> nozzle_diameters;
     nozzle_diameters.resize(extruder_nums);
@@ -6628,7 +6628,14 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
     std::vector<std::string> qdt_different_keys;
     En3mfType _3mf_type;
     bool has_different_settings_to_system;
-    std::string old_preset_name = wxGetApp().preset_bundle->printers.get_edited_preset().name;
+    //y79
+    std::string old_preset_name;
+    bool old_preset_is_user = wxGetApp().preset_bundle->printers.get_edited_preset().is_user();
+    if(old_preset_is_user)
+        old_preset_name = wxGetApp().preset_bundle->printers.get_edited_preset().inherits();
+    else
+        old_preset_name = wxGetApp().preset_bundle->printers.get_edited_preset().name;
+
 //y75
 
     for (size_t i = 0; i < input_files.size(); ++i) {
@@ -10654,7 +10661,6 @@ static std::vector<std::string> extract_printer_keywords(const std::string& prin
     std::string lower_name = printer_name;
     boost::algorithm::to_lower(lower_name);
     
-    // Common Bambu Lab printer series keywords
     std::vector<std::string> printer_models = {
         "x1c", "x1e", "x1", "p1s", "p1p", "p1", "a1", "a1 mini",
         "h2d", "h2d pro", "h2" , "a", "p", "x", "h"
@@ -10716,7 +10722,6 @@ static std::vector<HelioQuery::SupportedData> find_similar_printers(
 
 // Helper function to match printer name with word-boundary awareness
 // Returns the matched printer ID and match length if found, empty string otherwise
-// Handles cases like "myBambu Lab H2Dsmells" matching to "Bambu Lab H2D"
 static std::pair<std::string, size_t> match_printer_with_boundaries(
     const std::string& target_name,
     const std::vector<HelioQuery::SupportedData>& supported_printers)
@@ -10740,26 +10745,14 @@ static std::pair<std::string, size_t> match_printer_with_boundaries(
             is_match = true;
         }
         // Case 2: Target is longer than native name - user may have added prefix/suffix
-        // e.g., "myBambu Lab H2Dsmells" contains "Bambu Lab H2D"
         // We check if target CONTAINS native_name (not the other way around!)
         else if (target_lower.length() > native_name.length()) {
             size_t pos = target_lower.find(native_name);
             if (pos != std::string::npos) {
-                // For word boundary matching with modified names like "myBambu Lab H2Dsmells"
                 // We check if native_name appears in target and prefer longer matches
                 is_match = true;
             }
         }
-        // Case 3: Native name is longer than target - DO NOT automatically match
-        // e.g., "Bambu Lab H2D" should NOT match "Bambu Lab H2D Pro"
-        // This is intentionally left out to prevent the exact issue reported:
-        // "Bambu Lab H2D" was incorrectly matching "Bambu Lab H2D Pro" because
-        // the old logic checked if native contains target with word boundaries.
-        // If user needs a more specific printer, they should select it explicitly.
-        
-        // Keep track of longest native_name match to prefer more specific printers
-        // when user has modified preset names with prefix/suffix
-        // e.g., if user has "myBambu Lab H2D Pro test", we want "H2D Pro" not "H2D"
         if (is_match && native_name.length() > best_match_length) {
             best_match_length = native_name.length();
             best_match_id = pdata.id;
@@ -10770,7 +10763,6 @@ static std::pair<std::string, size_t> match_printer_with_boundaries(
 }
 
 // Token-based matching for printers with modified preset names
-// Handles cases like "myBambu Lab H2Dsmells" or "yourH2Dfast"
 static std::pair<std::string, std::string> match_printer_tokens(
     const std::string& target_name,
     const std::vector<HelioQuery::SupportedData>& supported_printers)
@@ -11459,7 +11451,7 @@ int Plater::priv::update_helio_background_process(std::string& printer_id, std::
     notification_manager->close_notification_of_type(NotificationType::HelioSlicingError);
     PresetBundle *           preset_bundle     = wxGetApp().preset_bundle;
     std::string              preset_name       = preset_bundle->printers.get_edited_preset().get_printer_name(preset_bundle);
-    std::vector<std::string> preset_name_array = wxGetApp().split_str(preset_name, "Bambu Lab ");
+    std::vector<std::string> preset_name_array = wxGetApp().split_str(preset_name, "QIDI Tech ");
     std::string              preset_pure_name  = preset_name_array.size() >= 2 ? preset_name_array[1] : "";
 
     /*running helio task*/
@@ -11473,7 +11465,6 @@ int Plater::priv::update_helio_background_process(std::string& printer_id, std::
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": preset_name = '" << preset_name << "', preset_pure_name = '" << preset_pure_name << "'";
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": global_supported_printers.size() = " << HelioQuery::global_supported_printers.size();
     
-    // For printer matching, use the full preset_name to handle modified names like "myBambu Lab H2Dsmells"
     std::string printer_target_name = preset_name;
     boost::trim(printer_target_name);
     
@@ -11499,7 +11490,6 @@ int Plater::priv::update_helio_background_process(std::string& printer_id, std::
     }
     
     // Step 2: If no match, try token-based matching for modified preset names
-    // This handles cases like "myBambu Lab H2Dsmells" or "yourH2Dfast"
     if (!helio_support) {
         auto [token_printer_id, token_native_name] = match_printer_tokens(
             printer_target_name, HelioQuery::global_supported_printers);
@@ -11935,7 +11925,6 @@ int Plater::priv::update_helio_background_process(std::string& printer_id, std::
         bool is_supported_by_helio = false;
 
         // Find best (longest) match to prefer specific materials over generic ones
-    // e.g., "Bambu PC FR" should match "Bambu PC FR" not "Bambu PC"
     size_t best_match_length = 0;
     std::string best_material_id;
 
@@ -11952,24 +11941,17 @@ int Plater::priv::update_helio_background_process(std::string& printer_id, std::
             boost::algorithm::to_lower(target_name);
 
             // Fuzzy match: check if target_name contains native_name
-            // This allows modified preset names like:
-            // - "Bambu TPU 95A HF brown" to match "Bambu TPU 95A HF" (suffix with space)
-            // - "blueBambu PLA basicblue" to match "Bambu PLA Basic" (prefix/suffix no space)
-            // - "Bambu TPU 95A HF" to match "Bambu TPU 95A HF" (exact)
-            // The longest matching native_name wins to prefer specific materials
             bool is_match = false;
             if (target_name == native_name) {
                 is_match = true;
             } else if (target_name.length() > native_name.length()) {
                 // Check if target_name contains native_name as a substring
-                // No word-boundary requirement - handles cases like "blueBambu PLA basicblue"
                 size_t pos = target_name.find(native_name);
                 if (pos != std::string::npos) {
                     is_match = true;
                 }
             }
             // Note: Do NOT match when native is longer than target
-            // e.g., "Bambu PLA" should not match "Bambu PLA Basic"
 
             // Keep track of longest match to prefer more specific materials
             if (is_match && native_name.length() > best_match_length) {
@@ -12007,7 +11989,6 @@ int Plater::priv::update_helio_background_process(std::string& printer_id, std::
                 
                 // Check if all native tokens appear in target tokens in order
                 // Also check if native tokens are embedded within target tokens
-                // (e.g., "bambu" in "bluebambu")
                 bool all_tokens_match = true;
                 size_t target_idx = 0;
                 for (const std::string& native_token : native_tokens) {
@@ -12020,7 +12001,6 @@ int Plater::priv::update_helio_background_process(std::string& printer_id, std::
                             break;
                         }
                         // Check if native token is embedded in target token
-                        // (e.g., "bambu" in "bluebambu")
                         else if (target_tokens[i].find(native_token) != std::string::npos) {
                             found = true;
                             target_idx = i + 1;

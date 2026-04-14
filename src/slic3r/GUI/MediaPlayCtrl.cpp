@@ -436,7 +436,7 @@ void MediaPlayCtrl::Stop(wxString const &msg, wxString const &msg2)
         m_tasks.push_back("<stop>");
         m_cond.notify_all();
         if (!msg.IsEmpty())
-            SetStatus(msg);
+            SetStatus(msg, false);
         else if (m_failed_code) {
             auto iter = error_messages.find(m_failed_code);
             auto msg2 = iter == error_messages.end()
@@ -452,14 +452,14 @@ void MediaPlayCtrl::Stop(wxString const &msg, wxString const &msg2)
                     start_ping_test();
                 });
 #endif
-            SetStatus(msg2);
+            SetStatus(msg2, false);
         } else
             SetStatus(_L("Video Stopped."), false);
         m_last_state = wxMEDIASTATE_STOPPED;
         bool auto_retry = wxGetApp().app_config->get("liveview", "auto_retry") != "false";
         if (!auto_retry || m_failed_code >= 100 || m_failed_code == 1 || m_failed_code == -2) // not keep retry on local error or EOS
             m_next_retry = wxDateTime();
-    } else if (!msg.IsEmpty()) {
+    } else if (msg.IsEmpty()) {
         SetStatus(msg, false);
         return;
     } else {
@@ -700,10 +700,13 @@ void MediaPlayCtrl::jump_to_play()
     TogglePlay();
 }
 
-//cj_1
-void MediaPlayCtrl::stopMonitor()
+//cj_1 y79
+void MediaPlayCtrl::stopMonitor(bool is_without_print)
 {
-    Stop();
+    if(is_without_print)
+        Stop(_L("Temporarily closed because there is no printing for a while."));
+    else
+        Stop();
 }
 
 void MediaPlayCtrl::onStateChanged(wxMediaEvent &event)
@@ -826,7 +829,14 @@ void MediaPlayCtrl::SetStatus(wxString const &msg2, bool hyperlink)
 
 bool MediaPlayCtrl::IsStreaming() const { return m_streaming; }
 
+//cj_3
+bool MediaPlayCtrl::IsMonitorPlaying() const
+{
+    return m_last_state != wxMEDIASTATE_STOPPED;
+}
+
 void MediaPlayCtrl::load()
+
 {
     m_last_state = MEDIASTATE_IDLE;    //y76
     SetStatus(_L("Loading..."));

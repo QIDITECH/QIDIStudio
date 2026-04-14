@@ -20322,3 +20322,36 @@ msgstr "filamenttömeg"
 
 msgid "pre time"
 msgstr "becsült idő"
+
+msgid "Expert Mode"
+msgstr "Szakértői mód"
+
+msgid "When enabled, use the legacy Fluidd web UI for MQTT-capable local devices. When disabled, use the built-in status UI."
+msgstr "Ha engedélyezve van, használja a régi Fluidd webes felhasználói felületet az MQTT-kompatibilis helyi eszközökhöz. Ha letiltva van, használja a beépített állapotfelületet."
+
+msgid "Eject"
+msgstr "Kiadás"
+
+msgid "Set polar cooler.."
+msgstr "Polar Cooler beállítása.."
+
+msgid "The material softens at this temperature, so when the bed temperature is equal to or greater than it, it's highly recommended to open the front door and/or remove the upper glass to avoid cloggings. Warning: With Polar Cooler enabled, keep PLA chamber temperature ≤45°C to ensure print quality and prevent filament issues."
+msgstr "Az anyag ezen a hőmérsékleten megpuhul, ezért ha a tárgyasztal hőmérséklete eléri vagy meghaladja ezt az értéket, erősen ajánlott kinyitni az első ajtót és/vagy eltávolítani a felső üveget a dugulások elkerülése érdekében. Figyelem: A Polar Cooler bekapcsolt állapotában tartsa a PLA kamra hőmérsékletét ≤45°C-on, hogy biztosítsa a nyomtatási minőséget és megelőzze a filament problémákat."
+
+msgid "Are you sure you want to delete this file?\n\n%s"
+msgstr "Biztos benne, hogy törölni szeretné ezt a fájlt?\n\n%s"
+
+msgid "Due to network issues, the file upload failed. Please check your network connection."
+msgstr "Hálózati problémák miatt a fájlfeltöltés sikertelen volt. Kérjük, ellenőrizze a hálózati kapcsolatát."
+
+msgid "Last modified"
+msgstr "Utoljára módosítva"
+
+msgid "File size"
+msgstr "Fájlméret"
+
+msgid "The following file(s) already exist in the directory:\n\n%s"
+msgstr "A következő fájl(ok) már léteznek a könyvtárban:\n\n%s"
+
+msgid "Only adjustable while printing or paused."
+msgstr "Csak nyomtatás vagy szünetelés közben állítható."

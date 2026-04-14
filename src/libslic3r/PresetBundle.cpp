@@ -906,7 +906,7 @@ PresetsConfigSubstitutions PresetBundle::load_user_presets(std::string user, For
     }
     // y4
     try {
-        this->physical_printers.load_printers(dir_user_presets, PHYSICAL_PRINTER, substitutions, substitution_rule);
+        this->physical_printers.load_printers(dir_user_presets, PHYSICAL_PRINTER, substitutions, substitution_rule, &this->printers);
     } catch (const std::runtime_error &err) {
         errors_cummulative += err.what();
     }

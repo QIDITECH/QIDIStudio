@@ -1454,7 +1454,7 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
     //y65
     ((ConfigOptionBool,                is_support_multi_box))
     //y76
-    ((ConfigOptionBool,                is_support_air_condition)))
+    ((ConfigOptionBool,                is_support_polar_cooler)))
 
 // This object is mapped to Perl as Slic3r::Config::Full.
 PRINT_CONFIG_CLASS_DERIVED_DEFINE0(

@@ -82,6 +82,8 @@ extern void about();
 extern void login();
 // Ask the destop to open the datadir using the default file explorer.
 extern void desktop_open_datadir_folder();
+// Open a directory path in the default file explorer (not for /select file semantics on Windows).
+extern void desktop_open_folder(const std::string& path);
 // Ask the destop to open one folder
 extern void desktop_open_any_folder(const std::string& path);
 } // namespace GUI

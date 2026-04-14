@@ -20322,3 +20322,36 @@ msgstr "peso do filamento"
 
 msgid "pre time"
 msgstr "tempo estimado"
+
+msgid "Expert Mode"
+msgstr "Modo Especialista"
+
+msgid "When enabled, use the legacy Fluidd web UI for MQTT-capable local devices. When disabled, use the built-in status UI."
+msgstr "Quando ativado, use a interface web Fluidd legada para dispositivos locais com capacidade MQTT. Quando desativado, use a interface de status integrada."
+
+msgid "Eject"
+msgstr "Ejetar"
+
+msgid "Set polar cooler.."
+msgstr "Definir resfriador polar.."
+
+msgid "The material softens at this temperature, so when the bed temperature is equal to or greater than it, it's highly recommended to open the front door and/or remove the upper glass to avoid cloggings. Warning: With Polar Cooler enabled, keep PLA chamber temperature ≤45°C to ensure print quality and prevent filament issues."
+msgstr "O material amolece a esta temperatura, portanto, quando a temperatura da mesa for igual ou maior, é altamente recomendado abrir a porta frontal e/ou remover o vidro superior para evitar entupimentos. Aviso: Com o resfriador polar ativado, mantenha a temperatura da câmara PLA ≤45°C para garantir a qualidade de impressão e evitar problemas de filamento."
+
+msgid "Are you sure you want to delete this file?\n\n%s"
+msgstr "Tem certeza de que deseja excluir este arquivo?\n\n%s"
+
+msgid "Due to network issues, the file upload failed. Please check your network connection."
+msgstr "Devido a problemas de rede, o envio do arquivo falhou. Verifique sua conexão de rede."
+
+msgid "Last modified"
+msgstr "Última modificação"
+
+msgid "File size"
+msgstr "Tamanho do arquivo"
+
+msgid "The following file(s) already exist in the directory:\n\n%s"
+msgstr "O(s) seguinte(s) arquivo(s) já existe(m) no diretório:\n\n%s"
+
+msgid "Only adjustable while printing or paused."
+msgstr "Ajustável apenas durante a impressão ou pausa."

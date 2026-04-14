@@ -10,11 +10,15 @@
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
 #include <wx/button.h>
+//cj_3
 #include <wx/statbox.h>
 #include <wx/wupdlock.h>
+#include <wx/event.h>
+#include <boost/any.hpp>
 
 #include "libslic3r/libslic3r.h"
 #include "libslic3r/PrintConfig.hpp"
+#include "libslic3r/Preset.hpp"
 #include "libslic3r/PresetBundle.hpp"
 
 #include "GUI.hpp"
@@ -72,8 +76,17 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_
     {
         inherits = sel_preset.config.opt_string("printer_model");
     }
+    //cj_3_cursor
+    bool expert_mode_val = true;
+    if (printer != nullptr) {
+        expert_mode_val = printer->config.opt_bool("expert_mode");
+    } else if (PhysicalPrinter::is_mqtt_ui_capable_preset_model(into_u8(inherits), &printer_bundle.printers)) {
+        expert_mode_val = false;
+    }
+
     exit_machine = m_machine;
     m_exit_host = exit_host;
+
 
     wxStaticText *label_top = new wxStaticText(this, wxID_ANY, _L("Machine Name") + ":");
     label_top->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#323A3C")));
@@ -122,8 +135,9 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_
     auto input_sizer = new wxBoxSizer(wxVERTICAL);
     input_sizer->Add(input_sizer_name, 0, wxEXPAND, BORDER_W);
     input_sizer->Add(pret_sizer, 0, wxEXPAND, BORDER_W);
-    
+
     m_printer = PhysicalPrinter("Default Name", m_printer.config, sel_preset);
+
     m_config = &m_printer.config;
     //y40
     if (printer)
@@ -136,6 +150,9 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_
         m_config->set_key_value("print_host", new ConfigOptionString(""));
         m_config->set_key_value("printhost_apikey", new ConfigOptionString(""));
     }
+    //cj_3
+    m_config->set_key_value("expert_mode", new ConfigOptionBool(expert_mode_val));
+
     m_optgroup = new ConfigOptionsGroup(this, _L("Print Host upload"), m_config);
     //y47
     m_optgroup->set_label_width(15);
@@ -174,12 +191,18 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_
     button_sizer->Add(m_button_ok, 0, wxALL, FromDIP(5));
     button_sizer->Add(m_button_cancel, 0, wxALL, FromDIP(5));
 
+
     wxBoxSizer *topSizer = new wxBoxSizer(wxVERTICAL);
 
 
     Bind(wxEVT_CLOSE_WINDOW, [this](auto& e) {this->EndModal(wxID_NO);});
+    //cj_3_cursor
+    m_last_physical_preset_value = pret_combobox->GetValue();
+    pret_combobox->Bind(wxEVT_COMBOBOX, &PhysicalPrinterDialog::on_physical_preset_combobox, this);
+    pret_combobox->Bind(wxEVT_TEXT, &PhysicalPrinterDialog::on_physical_preset_text, this);
     //m_input_ctrl->Bind(wxEVT_TEXT, [this](wxCommandEvent &) { update(); });
     build_printhost_settings(m_optgroup);
+
 
     topSizer->Add(input_sizer, 0, wxEXPAND | wxLEFT | wxTOP | wxRIGHT, BORDER_W);
     topSizer->Add(m_optgroup->sizer, 0, wxEXPAND | wxLEFT | wxTOP | wxRIGHT, BORDER_W);
@@ -189,10 +212,83 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_
     topSizer->SetSizeHints(this);
     this->CenterOnParent();
     wxGetApp().UpdateDlgDarkUI(this);
+    //cj_3_cursor
+    sync_expert_mode_widgets();
 }
 
 PhysicalPrinterDialog::~PhysicalPrinterDialog()
 {
+}
+
+//cj_3
+void PhysicalPrinterDialog::update_expert_mode_apikey_visibility()
+{
+    if (!m_optgroup || !pret_combobox || !m_config)
+        return;
+    const bool mqtt = PhysicalPrinter::is_mqtt_ui_capable_preset_model(into_u8(pret_combobox->GetValue()), &wxGetApp().preset_bundle->printers);
+    const bool expert_on = m_config->opt_bool("expert_mode");
+    const bool show_apikey = !mqtt || expert_on;
+    m_optgroup->show_field("printhost_apikey", show_apikey);
+    //cj_3
+    if (m_optgroup->sizer)
+        m_optgroup->sizer->Layout();
+
+    Layout();
+}
+
+//cj_3
+void PhysicalPrinterDialog::apply_expert_mode_value(bool value)
+{
+    if (!m_config || !m_optgroup) {
+        return;
+    }
+    m_config->set_key_value("expert_mode", new ConfigOptionBool(value));
+    m_optgroup->set_value("expert_mode", boost::any(value), false);
+}
+
+void PhysicalPrinterDialog::sync_expert_mode_widgets()
+{
+    if (!pret_combobox || !m_optgroup)
+        return;
+    const bool mqtt = PhysicalPrinter::is_mqtt_ui_capable_preset_model(into_u8(pret_combobox->GetValue()), &wxGetApp().preset_bundle->printers);
+    if (!mqtt) {
+        apply_expert_mode_value(true);
+    }
+    m_optgroup->show_field("expert_mode", mqtt);
+    if (mqtt) {
+        apply_expert_mode_value(m_config->opt_bool("expert_mode"));
+    }
+    update_expert_mode_apikey_visibility();
+    if (m_optgroup->sizer)
+        m_optgroup->sizer->Layout();
+    Layout();
+}
+
+//cj_3_cursor
+void PhysicalPrinterDialog::on_physical_preset_combobox(wxCommandEvent& e)
+{
+    if (!pret_combobox || !m_optgroup)
+        return;
+    const wxString new_val      = pret_combobox->GetValue();
+    const bool       new_mqtt   = PhysicalPrinter::is_mqtt_ui_capable_preset_model(into_u8(new_val), &wxGetApp().preset_bundle->printers);
+    const bool       old_mqtt   = PhysicalPrinter::is_mqtt_ui_capable_preset_model(into_u8(m_last_physical_preset_value), &wxGetApp().preset_bundle->printers);
+    m_last_physical_preset_value = new_val;
+    if (!new_mqtt) {
+        apply_expert_mode_value(true);
+    } else if (!old_mqtt && new_mqtt) {
+        // 非 MQTT → MQTT：默认开启专家模式（Fluidd 等）
+        apply_expert_mode_value(true);
+    }
+    sync_expert_mode_widgets();
+    Layout();
+    e.Skip();
+}
+
+//cj_3_cursor
+void PhysicalPrinterDialog::on_physical_preset_text(wxCommandEvent& e)
+{
+    sync_expert_mode_widgets();
+    e.Skip();
 }
 
 void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgroup)
@@ -200,6 +296,9 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
     m_optgroup->m_on_change = [this](t_config_option_key opt_key, boost::any value) {
         if (opt_key == "print_host")
             this->update_printhost_buttons();
+        //cj_3_cursor
+        if (opt_key == "expert_mode")
+            this->update_expert_mode_apikey_visibility();
     };
 
     auto create_sizer_with_btn = [](wxWindow* parent, ScalableButton** btn, const std::string& icon_name, const wxString& label) {
@@ -264,13 +363,34 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
     host_line.append_widget(print_host_test);
     m_optgroup->append_line(host_line);
 
+    //cj_3_cursor
+    // Use the same grid row layout as other Print Host options (aligns label/control; avoids full_width double-padding overlap).
+    option = m_optgroup->get_option("expert_mode");
+    m_optgroup->append_single_option_line(option);
+
     //y49
     option = m_optgroup->get_option("printhost_apikey");
     option.opt.width = Field::def_width_wider() * 2;
-    option.opt.full_width = 1;
+    //cj_3_cursor
+    // Avoid full_width v_sizer nesting so OptionsGroup::show_field can show/hide the whole row (see nested sizer fix).
+    option.opt.full_width = 0;
     m_optgroup->append_single_option_line(option);
 
     m_optgroup->activate();
+
+    //cj_3_cursor
+    if (Field* expert_field = m_optgroup->get_field("expert_mode")) {
+        if (wxWindow* w = expert_field->getWindow()) {
+            w->SetFont(wxGetApp().normal_font());
+            // Keep the toggle next to the "Expert Mode" label column: left-align in the value cell (do not stretch to match host field width).
+            if (wxSizer* row_sizer = w->GetContainingSizer()) {
+                if (row_sizer->Detach(w)) {
+                    row_sizer->Add(w, 0, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL);
+                    row_sizer->AddStretchSpacer(1);
+                }
+            }
+        }
+    }
 
     Field* printhost_field = m_optgroup->get_field("print_host");
     if (printhost_field)
@@ -518,6 +638,10 @@ void PhysicalPrinterDialog::OnOK(wxMouseEvent& event)
     m_config->set_key_value("preset_names", new ConfigOptionString(into_u8(pret_combobox->GetValue())));
     m_config->set_key_value("print_host", new ConfigOptionString(m_printer_host));
     m_config->set_key_value("printhost_apikey", new ConfigOptionString(m_apikey));
+    //cj_3_cursor
+    const bool is_mqtt = PhysicalPrinter::is_mqtt_ui_capable_preset_model(into_u8(pret_combobox->GetValue()), &wxGetApp().preset_bundle->printers);
+    const bool expert_mode_saved = !is_mqtt ? true : m_config->opt_bool("expert_mode");
+    m_config->set_key_value("expert_mode", new ConfigOptionBool(expert_mode_saved));
     PhysicalPrinterCollection& printers = wxGetApp().preset_bundle->physical_printers;
     m_printer.set_name(m_printer_name);
     if(!old_name.empty())

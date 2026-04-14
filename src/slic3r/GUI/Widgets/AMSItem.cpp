@@ -26,6 +26,8 @@ namespace Slic3r { namespace GUI {
     wxDEFINE_EVENT(EVT_AMS_EXTRUSION_CALI, wxCommandEvent);
     wxDEFINE_EVENT(EVT_AMS_LOAD, SimpleEvent);
     wxDEFINE_EVENT(EVT_AMS_UNLOAD, SimpleEvent);
+    //cj_3
+    wxDEFINE_EVENT(EVT_AMS_EJECT, SimpleEvent);
     wxDEFINE_EVENT(EVT_AMS_SETTINGS, SimpleEvent);
     wxDEFINE_EVENT(EVT_AMS_FILAMENT_BACKUP, SimpleEvent);
     wxDEFINE_EVENT(EVT_AMS_REFRESH_RFID, wxCommandEvent);
@@ -452,14 +454,14 @@ void AMSrefresh::paintEvent(wxPaintEvent &evt)
             if (m_rfid_bitmap_list.size() <= 0)return;
             dc.DrawBitmap(m_rfid_bitmap_list[m_rotation_angle].bmp(), pot);
         }
+        //y79
+        dc.SetFont(Label::Body_10);
+        //dc.SetTextForeground(StateColor::darkModeColorFor(AMS_CONTROL_BLACK_COLOUR));
+        dc.SetTextForeground(colour);
+        auto tsize = dc.GetTextExtent(m_refresh_id);
+        pot        = wxPoint((size.x - tsize.x) / 2, (size.y - tsize.y) / 2);
+        dc.DrawText(m_refresh_id, pot);
     }
-
-    dc.SetFont(Label::Body_10);
-    //dc.SetTextForeground(StateColor::darkModeColorFor(AMS_CONTROL_BLACK_COLOUR));
-    dc.SetTextForeground(colour);
-    auto tsize = dc.GetTextExtent(m_refresh_id);
-    pot        = wxPoint((size.x - tsize.x) / 2, (size.y - tsize.y) / 2);
-    dc.DrawText(m_refresh_id, pot);
 }
 
 void AMSrefresh::Update(std::string ams_id, Caninfo info)
@@ -572,9 +574,10 @@ void AMSextruderImage::doRender(wxDC &dc)
     auto size = GetSize();
     //dc.DrawRectangle(0, FromDIP(5), size.x, size.y - FromDIP(5) - FromDIP(2));
     if (m_show_state){
+        //cj_3
         if (m_ams_loading) {
             dc.SetPen(*wxTRANSPARENT_PEN);
-            dc.SetBrush(m_colour);
+            dc.SetBrush(*wxWHITE);
             dc.DrawRectangle(FromDIP(2), FromDIP(10), size.x - FromDIP(3), size.y - FromDIP(20));
         }
         else{
@@ -895,15 +898,15 @@ void AMSLib::create(wxWindow *parent, wxWindowID id, const wxPoint &pos, const w
     m_bitmap_transparent_lite = ScalableBitmap(this, "transparent_box_lib", 56);
 
     m_bitmap_extra_tray_left    = ScalableBitmap(this, "extra_box_tray_left", 72);
-    m_bitmap_extra_tray_right    = ScalableBitmap(this, "extra_ams_tray_right", 72);
+    m_bitmap_extra_tray_right    = ScalableBitmap(this, "extra_box_tray_right", 72);
     m_bitmap_extra_tray_mid = ScalableBitmap(this, "extra_box_tray_mid", 72);
 
     m_bitmap_extra_tray_left_hover = ScalableBitmap(this, "extra_box_tray_left_hover", 72);
-    m_bitmap_extra_tray_right_hover = ScalableBitmap(this, "extra_ams_tray_right_hover", 72);
+    m_bitmap_extra_tray_right_hover = ScalableBitmap(this, "extra_box_tray_right_hover", 72);
     m_bitmap_extra_tray_mid_hover = ScalableBitmap(this, "extra_box_tray_mid_hover", 72);
 
     m_bitmap_extra_tray_left_selected = ScalableBitmap(this, "extra_box_tray_left_selected", 72);
-    m_bitmap_extra_tray_right_selected = ScalableBitmap(this, "extra_ams_tray_right_selected", 72);
+    m_bitmap_extra_tray_right_selected = ScalableBitmap(this, "extra_box_tray_right_selected", 72);
     m_bitmap_extra_tray_mid_selected = ScalableBitmap(this, "extra_box_tray_mid_selected", 72);
 
 
@@ -1728,15 +1731,15 @@ void AMSLib::msw_rescale()
     m_bitmap_transparent_def = ScalableBitmap(this, "transparent_box_lib", 76);
 
     m_bitmap_extra_tray_left = ScalableBitmap(this, "extra_box_tray_left", 72);
-    m_bitmap_extra_tray_right = ScalableBitmap(this, "extra_ams_tray_right", 72);
+    m_bitmap_extra_tray_right = ScalableBitmap(this, "extra_box_tray_right", 72);
     m_bitmap_extra_tray_mid = ScalableBitmap(this, "extra_box_tray_mid", 72);
 
     m_bitmap_extra_tray_left_hover = ScalableBitmap(this, "extra_box_tray_left_hover", 72);
-    m_bitmap_extra_tray_right_hover = ScalableBitmap(this, "extra_ams_tray_right_hover", 72);
+    m_bitmap_extra_tray_right_hover = ScalableBitmap(this, "extra_box_tray_right_hover", 72);
     m_bitmap_extra_tray_mid_hover = ScalableBitmap(this, "extra_box_tray_mid_hover", 72);
 
     m_bitmap_extra_tray_left_selected = ScalableBitmap(this, "extra_box_tray_left_selected", 72);
-    m_bitmap_extra_tray_right_selected = ScalableBitmap(this, "extra_ams_tray_right_selected", 72);
+    m_bitmap_extra_tray_right_selected = ScalableBitmap(this, "extra_box_tray_right_selected", 72);
     m_bitmap_extra_tray_mid_selected = ScalableBitmap(this, "extra_box_tray_mid_selected", 72);
 
     Layout();
@@ -2187,6 +2190,7 @@ void AMSRoadUpPart::doRender(wxDC& dc)
             }
         }
         dc.SetPen(wxPen(*wxTRANSPARENT_PEN));
+        dc.SetPen(wxPen(*wxTRANSPARENT_PEN));
         dc.SetBrush(wxBrush(wxColour(194, 194, 194)));
         //width = 0.11 * size.x, height = 0.294 * size.y;
         //dc.DrawRectangle((size.x - width) / 2, (16), (28), (10));
@@ -2207,6 +2211,10 @@ void AMSRoadUpPart::UpdatePassRoad(std::string ams_index, std::string slot_index
 
     m_load_ams_index  = ams_idx;
     m_load_slot_index = slot_idx;
+    //cj_3  patch   TODO 
+    if (m_amsinfo.cans.size() < slot_idx + 1) {
+        m_load_slot_index = m_amsinfo.cans.size() - 1;
+    }
     m_load_step = step;
     Refresh();
 }
@@ -3084,7 +3092,7 @@ Description:AmsItem
 **************************************************/
 AmsItem::AmsItem(wxWindow *parent,AMSinfo info,  AMSModel model, AMSPanelPos pos)
 {
-    m_bitmap_extra_framework = ScalableBitmap(this, "ams_extra_framework_mid_new", 134);
+    m_bitmap_extra_framework = ScalableBitmap(this, "box_extra_framework_mid_new", 134);
 
     SetDoubleBuffered(true);
     m_ams_model = model;
@@ -3186,7 +3194,9 @@ void AmsItem::AddCan(Caninfo caninfo, int canindex, int maxcan, wxBoxSizer* size
     if (m_ams_model != AMSModel::EXT_AMS)
     {
         m_panel_refresh = new AMSrefresh(amscan, m_info.ams_id, m_can_count, caninfo);
-
+        //y79
+        m_panel_refresh->setDisableMode(caninfo.material_state == AMSCanType::AMS_CAN_TYPE_EMPTY);
+        
         m_can_refresh_list[caninfo.can_id] = m_panel_refresh;
     }
     else if (m_ams_model == AMSModel::EXT_AMS){
@@ -3449,7 +3459,7 @@ void AmsItem::SetAmsStepExtra(wxString canid, AMSPassRoadType type, AMSPassRoadS
 
 void AmsItem::SetAmsStep(std::string amsid, std::string canid, AMSPassRoadType type, AMSPassRoadSTEP step)
 {
-    if (m_panel_road){
+     if (m_panel_road){
         m_panel_road->UpdatePassRoad(amsid, canid, type, step);
     }
     if (m_info.ams_id != amsid){

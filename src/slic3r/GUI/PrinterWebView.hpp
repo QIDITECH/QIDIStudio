@@ -48,16 +48,24 @@
 
 
 #include <atomic>
+//cj_3
+#include <chrono>
+#include <thread>
 #include "./Widgets/SwitchButton.hpp"
+
 #include "./Widgets/DeviceButton.hpp"
 
+
 #include "OctoPrint.hpp"
+#include "PrinterTaskDispatcher.hpp"
 
 
 
 
 namespace Slic3r {
 namespace GUI {
+
+wxDECLARE_EVENT(EVT_PRINTER_TASK_RESULT, wxCommandEvent);
 
 //y28
 enum WebState
@@ -70,6 +78,9 @@ enum WebState
 class StatusPanel;
 //cj_2
 class QDSDeviceManager;
+//cj_3
+class LoadingOverlayWithGif;
+
 
 class PrinterWebView : public wxPanel {
 public:
@@ -108,8 +119,14 @@ public:
     void onRefreshRfid(wxCommandEvent& event);
     //cj_2
     void delPrinterFile(wxCommandEvent& event);
+    //cj_3
+    void delTimelapseFile(wxCommandEvent& event);
     //cj_2
     void downloadPrinterFile(wxCommandEvent& event);
+    //cj_3
+    void downloadTimelapseFile(wxCommandEvent& event);
+
+
 
     //void SendRecentList(int images);
     void SetButtons(std::vector<DeviceButton *> buttons);
@@ -118,8 +135,9 @@ public:
                     const wxString &                           machine_type,
                     const wxString &                           fullname,
                     bool                                       isSelected,
-                   bool                                         isQIDI,
-                    const wxString &                            apikey);
+                    //cj_3_cursor
+                    bool                                       expert_mode,
+                    const wxString &                           apikey);
     void                        DeleteButton();
     void                        UnSelectedButton();
     void ShowNetPrinterButton();
@@ -152,6 +170,7 @@ public:
     QDSDeviceManager* m_device_manager;
 
     void onSSEMessageHandle(const std::string& event, const std::string& data);
+    void onTaskDispatchResult(wxCommandEvent& event);
 
     //y76
     void pauseCamera();
@@ -172,14 +191,26 @@ private:
 
 
 	void updateDeviceButton(const std::string& device_id, std::string new_status);
+	//cj_3
+	void removeDeviceButtonMapEntriesForButtons(const std::vector<DeviceButton*>& buttons);
 	void updateDeviceParameter(const std::string& device_id);
-    void updateDeviceConnectType(const std::string& device_id, const std::string& device_ip);
 	void InitDeviceManager();
 	void initEventToTaskPath();
 	void bindTaskHandle();
     void init_select_machine();
+    void syncDeviceSectionExpandFromLastSelection();
+    void emitTaskDispatchResult(PrinterTaskType task_type, const PrinterTaskResult& result);
+    //cj_3
+    void showLoadingOverlay();
+    void hideLoadingOverlay();
+    void startLegacyStatusPolling();
+    void stopLegacyStatusPolling();
+    //cj_3
+    void resetProgressWatchdogHeartbeat();
+    void onProgressWatchdogTimer(wxTimerEvent& event);
 
 private:
+
     wxBoxSizer *leftallsizer;
 
     wxBoxSizer *                          devicesizer;
@@ -223,10 +254,13 @@ private:
     wxSimplebook* m_status_book;
     std::mutex m_ui_map_mutex;
     std::unordered_map<std::string, DeviceButton*> m_device_id_to_button;
+    //cj_3_cursor
+    std::unordered_map<std::string, bool> m_device_id_to_expert_mode;
+    std::unordered_map<std::string, DynamicPrintConfig> m_device_id_to_config;
+    std::thread m_legacy_status_thread;
+    std::atomic<bool> m_stop_legacy_status_polling { false };
 
-	std::map<wxEventType, std::string> m_eventToTaskPath;
-    std::map<wxEventType, std::string> m_boxEventToTaskPath;
-    std::map<wxEventType, std::string> m_localEventToTaskPath;
+
     std::string m_userInfo;
 
 #if QDT_RELEASE_TO_PUBLIC
@@ -235,6 +269,7 @@ private:
 
 #endif
     std::atomic<bool> m_isloginin{false};
+    std::unique_ptr<PrinterTaskDispatcher> m_task_dispatcher;
     
 
     //cj_2
@@ -250,7 +285,16 @@ private:
 
     //cj_2
     bool m_isUpdating = false;
+    //cj_3
+    bool m_printer_view_bootstrap{ true };
+    //cj_3
+    std::unique_ptr<LoadingOverlayWithGif> m_loading_overlay;
+    wxTimer* m_progress_watchdog_timer { nullptr };
+    std::chrono::steady_clock::time_point m_last_progress_heartbeat {};
+    std::string m_last_progress_signature;
+    bool m_watchdog_camera_active { false };
 };
+
 
 // y13
 class RoundButton : public wxButton

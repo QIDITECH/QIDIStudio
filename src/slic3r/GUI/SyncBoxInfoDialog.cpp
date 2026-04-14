@@ -3311,6 +3311,7 @@ GetBoxInfoDialog::GetBoxInfoDialog(Plater* plater)
         m_comboBox_printer->SetValue("");
         m_comboBox_printer->Clear();
         m_printer_ip.clear();
+        m_printer_url.clear();
         m_printer_api_key.clear();  //y70
         PresetBundle& preset_bundle = *wxGetApp().preset_bundle;
         PhysicalPrinterCollection& ph_printers = preset_bundle.physical_printers;
@@ -3322,6 +3323,7 @@ GetBoxInfoDialog::GetBoxInfoDialog(Plater* plater)
                 if (preset_typename.find(NormalizeVendor(printer_preset)) != std::string::npos) {
                     m_comboBox_printer->Append(from_u8(printer_name));
                     m_printer_ip.push_back((it->config.opt_string("print_host")));
+                    m_printer_url.push_back((it->config.opt_string("print_host")));
                     //y70
                     m_printer_api_key.push_back((it->config.opt_string("printhost_apikey")));
                 }
@@ -3336,7 +3338,9 @@ GetBoxInfoDialog::GetBoxInfoDialog(Plater* plater)
                     if (preset_typename.find(NormalizeVendor(device.machine_type)) != std::string::npos)
                     {
                         m_comboBox_printer->Append(from_u8(device.device_name));
+                        //y79
                         m_printer_ip.push_back(device.local_ip);
+                        m_printer_url.push_back(device.url);
                     }
                 }
                 m_comboBox_printer->SetSelection(0);
@@ -3426,6 +3430,7 @@ void GetBoxInfoDialog::synchronization(wxCommandEvent &event)
 #if QDT_RELEASE_TO_PUBLIC
     int selected_idx = m_comboBox_printer->GetSelection();
     std::string printer_ip = m_printer_ip[selected_idx];
+    std::string printer_url = m_printer_url[selected_idx];
 
     //y70
     std::string api_key = "";
@@ -3434,7 +3439,7 @@ void GetBoxInfoDialog::synchronization(wxCommandEvent &event)
 
     QIDINetwork qidi;
     wxString msg = "";
-    bool has_box = qidi.get_box_state(msg, printer_ip, api_key);    //y70
+    bool has_box = qidi.get_box_state(msg, printer_url, api_key);    //y70
     if (!has_box) {
         WarningDialog(this, _L("This Printer has not connect the box, please check.")).ShowModal();
     }
@@ -3442,8 +3447,8 @@ void GetBoxInfoDialog::synchronization(wxCommandEvent &event)
         //y70
         //Get Box_info
         GUI::Box_info filament_info;
-        filament_info = qidi.get_box_info(msg, printer_ip, api_key);
-        qidi.get_color_filament_str(msg, filament_info, printer_ip, api_key);
+        filament_info = qidi.get_box_info(msg, printer_url, api_key);
+        qidi.get_color_filament_str(msg, filament_info, printer_url, api_key);
         generate_filament_id(filament_info);
         update_filament_info(filament_info);
         wxGetApp().plater()->sidebar().box_list_printer_ip = printer_ip;

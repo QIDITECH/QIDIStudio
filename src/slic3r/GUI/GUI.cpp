@@ -525,10 +525,14 @@ void login()
 
 void desktop_open_datadir_folder()
 {
+	desktop_open_folder(data_dir());
+}
+
+void desktop_open_folder(const std::string& path)
+{
 	// Execute command to open a file explorer, platform dependent.
 	// FIXME: The const_casts aren't needed in wxWidgets 3.1, remove them when we upgrade.
 
-	const auto path = data_dir();
 #ifdef _WIN32
 		const wxString widepath = from_u8(path);
 		const wchar_t *argv[] = { L"explorer", widepath.GetData(), nullptr };

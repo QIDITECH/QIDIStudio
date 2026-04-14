@@ -21,6 +21,7 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/algorithm/string.hpp>
+#include <cmath>
 
 /* mac need the macro while including <boost/stacktrace.hpp>*/
 #ifdef  __APPLE__
@@ -1662,7 +1663,11 @@ int MachineObject::command_set_printing_speed(DevPrintingSpeedLevel lvl)
     json j;
     j["print"]["command"] = "print_speed";
     j["print"]["sequence_id"] = std::to_string(MachineObject::m_sequence_id++);
-    j["print"]["param"] = std::to_string((int)lvl);
+    int idx = static_cast<int>(lvl) - 1;
+    if (idx >= 0 && idx < 4)
+        j["print"]["param"] = std::to_string(DEV_PRINT_SPEED_PERCENT_TIERS[idx]);
+    else
+        j["print"]["param"] = std::to_string(100);
 
     return this->publish_json(j);
 }
@@ -3062,12 +3067,26 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
                         m_fan->ParseV1_0(jj);
 
                         try {
-                            if (jj.contains("spd_mag")) {
-                                printing_speed_mag = jj["spd_mag"].get<int>();
+                            bool got_from_gcode = false;
+                            if (jj.contains("gcode_move") && jj["gcode_move"].is_object()) {
+                                const auto& gm = jj["gcode_move"];
+                                if (gm.contains("speed_factor") && gm["speed_factor"].is_number()) {
+                                    const double sf = gm["speed_factor"].get<double>();
+                                    printing_speed_mag = dev_speed_factor_to_snapped_percent(sf);
+                                    if (m_print_options)
+                                        m_print_options->SetPrintingSpeedLevel(dev_snapped_percent_to_level(printing_speed_mag));
+                                    got_from_gcode = true;
+                                }
                             }
-                        }
-                        catch (...) {
-                            ;
+                            if (!got_from_gcode && jj.contains("spd_mag") && jj["spd_mag"].is_number()) {
+                                const int raw = jj["spd_mag"].is_number_float()
+                                                      ? static_cast<int>(std::lround(jj["spd_mag"].get<double>()))
+                                                      : jj["spd_mag"].get<int>();
+                                printing_speed_mag = dev_snap_print_speed_percent(static_cast<double>(raw));
+                                if (m_print_options)
+                                    m_print_options->SetPrintingSpeedLevel(dev_snapped_percent_to_level(printing_speed_mag));
+                            }
+                        } catch (...) {
                         }
                     }
 

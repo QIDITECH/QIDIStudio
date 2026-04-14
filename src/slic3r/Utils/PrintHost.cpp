@@ -184,9 +184,10 @@ void PrintHostJobQueue::priv::bg_thread_main()
                 perform_job(std::move(job));
             }
 
-            remove_source();
             job_id++;
             if (channel_jobs.size_hint() == 0) {
+                //y79
+                remove_source();
                 GUI::wxGetApp().plater()->resetUploadCount();
             }
         }

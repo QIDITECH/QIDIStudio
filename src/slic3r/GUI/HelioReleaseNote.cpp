@@ -73,7 +73,6 @@ namespace {
      m_original_tooltip_delay = 500; // Default tooltip delay
      wxToolTip::SetDelay(200);
 
-     // Set Helio icon (not BambuStudio icon)
      wxBitmap bmp = create_scaled_bitmap("helio_icon", this, 32);
      wxIcon icon;
      icon.CopyFromBitmap(bmp);
@@ -386,23 +385,6 @@ void HelioStatementDialog::create_legal_page()
         helio_privacy_url = "https://www.helioadditive.com/en-us/policies/privacy";
         helio_tou_url = "https://www.helioadditive.com/en-us/policies/terms";
     }
-    
-    // Build HTML content with embedded links
-    // Note: URLs are hardcoded and validated (not user input), so they are safe from XSS.
-    // Translated strings from _L() are trusted content (legal terms are carefully controlled).
-    // wxHtmlWindow provides basic HTML sanitization for rendered content.
-    // wxString terms_html = _L("Unless otherwise specified, Bambu Lab only provides support for the software features officially provided. The slicing evaluation and slicing optimization features based on <a href=\"") + 
-    //     helio_home_url + _L("\" style=\"color:#00AE42; text-decoration:underline;\">Helio Additive</a>'s cloud service in this software will be developed, operated, provided, and maintained by <a href=\"") +
-    //     helio_home_url + _L("\" style=\"color:#00AE42; text-decoration:underline;\">Helio Additive</a>. Helio Additive is responsible for the effectiveness and availability of this service. The optimization feature of this service may modify the default print commands, posing a risk of printer damage. These features will collect necessary user information and data to achieve relevant service functions. Subscriptions and payments may be involved. Please visit <a href=\"") +
-    //     helio_home_url + _L("\" style=\"color:#00AE42; text-decoration:underline;\">Helio Additive</a> and refer to the <a href=\"") +
-    //     helio_privacy_url + _L("\" style=\"color:#00AE42; text-decoration:underline;\">Helio Additive Privacy Agreement</a> and <a href=\"") +
-    //     helio_tou_url + _L("\" style=\"color:#00AE42; text-decoration:underline;\">Helio Additive User Agreement</a> for detailed information.<br><br>") +
-    //     _L("Meanwhile, you understand that this product is provided to you \"as is\" based on <a href=\"") +
-    //     helio_home_url + _L("\" style=\"color:#00AE42; text-decoration:underline;\">Helio Additive</a>'s services, and Bambu Lab makes no express or implied warranties of any kind, nor can it control the service effects. To the fullest extent permitted by applicable law, Bambu Lab or its licensors/affiliates do not provide any express or implied representations or warranties, including but not limited to warranties regarding merchantability, satisfactory quality, fitness for a particular purpose, accuracy, confidentiality, and non-infringement of third-party rights. Due to the nature of network services, Bambu Lab cannot guarantee that the service will be available at all times, and Bambu Lab reserves the right to terminate the service based on relevant circumstances. You agree not to use this product and its related updates to engage in the following activities:<br><br>") +
-    //     _L("1. Copy or use any part of this product outside the authorized scope of Helio Additive and Bambu Lab;<br>") +
-    //     _L("2. Attempt to disrupt, bypass, alter, invalidate, or evade any Digital Rights Management system related to and/or an integral part of this product;<br>") +
-    //     _L("3. Using this software and services for any improper or illegal activities.<br><br>") +
-    //     _L("When you confirm to enable this feature, it means that you have confirmed and agreed to the above statements.");
 
     const wxString STYLE_LINK = "color:#00AE42; text-decoration:underline;";
     const wxString STYLE_END = "\">";
@@ -420,7 +402,7 @@ void HelioStatementDialog::create_legal_page()
     const wxString TXT_PRIVACY = _L("Helio Additive Privacy Agreement");
     const wxString TXT_TOU = _L("Helio Additive User Agreement");
 
-    const wxString TXT_P1_S1 = _L("Unless otherwise specified, Bambu Lab only provides support for the software features officially provided. The slicing evaluation and slicing optimization features based on ");
+    const wxString TXT_P1_S1 = _L("Unless otherwise specified, QIDI Tech only provides support for the software features officially provided. The slicing evaluation and slicing optimization features based on ");
     const wxString TXT_P1_S2 = _L("'s cloud service in this software will be developed, operated, provided, and maintained by ");
     const wxString TXT_P1_S3 = _L(". Helio Additive is responsible for the effectiveness and availability of this service. The optimization feature of this service may modify the default print commands, posing a risk of printer damage. These features will collect necessary user information and data to achieve relevant service functions. Subscriptions and payments may be involved. Please visit ");
     const wxString TXT_P1_S4 = _L(" and refer to the ");
@@ -428,9 +410,9 @@ void HelioStatementDialog::create_legal_page()
     const wxString TXT_P1_S6 = _L(" for detailed information.");
 
     const wxString TXT_P2_S1 = _L("Meanwhile, you understand that this product is provided to you \"as is\" based on ");
-    const wxString TXT_P2_S2 = _L("'s services, and Bambu Lab makes no express or implied warranties of any kind, nor can it control the service effects. To the fullest extent permitted by applicable law, Bambu Lab or its licensors/affiliates do not provide any express or implied representations or warranties, including but not limited to warranties regarding merchantability, satisfactory quality, fitness for a particular purpose, accuracy, confidentiality, and non-infringement of third-party rights. Due to the nature of network services, Bambu Lab cannot guarantee that the service will be available at all times, and Bambu Lab reserves the right to terminate the service based on relevant circumstances. You agree not to use this product and its related updates to engage in the following activities:");
+    const wxString TXT_P2_S2 = _L("'s services, and QIDI Tech makes no express or implied warranties of any kind, nor can it control the service effects. To the fullest extent permitted by applicable law, QIDI Tech or its licensors/affiliates do not provide any express or implied representations or warranties, including but not limited to warranties regarding merchantability, satisfactory quality, fitness for a particular purpose, accuracy, confidentiality, and non-infringement of third-party rights. Due to the nature of network services, QIDI Tech cannot guarantee that the service will be available at all times, and QIDI Tech reserves the right to terminate the service based on relevant circumstances. You agree not to use this product and its related updates to engage in the following activities:");
 
-    const wxString TXT_ITEM_1 = _L("1. Copy or use any part of this product outside the authorized scope of Helio Additive and Bambu Lab;");
+    const wxString TXT_ITEM_1 = _L("1. Copy or use any part of this product outside the authorized scope of Helio Additive and QIDI Tech;");
     const wxString TXT_ITEM_2 = _L("2. Attempt to disrupt, bypass, alter, invalidate, or evade any Digital Rights Management system related to and/or an integral part of this product;");
     const wxString TXT_ITEM_3 = _L("3. Using this software and services for any improper or illegal activities.");
 
@@ -519,7 +501,7 @@ void HelioStatementDialog::create_legal_page()
     wxBoxSizer* privacy_content_sizer = new wxBoxSizer(wxVERTICAL);
     
     auto privacy_text = new Label(privacy_content_panel, Label::Body_12, 
-        _L("This service is provided and hosted by a third party, Helio Additive. All data collection and processing activities are solely managed by Helio Additive, and Bambu Lab assumes no responsibility in this regard. By clicking \"Agree and Proceed\", you agree to Helio Additive's privacy policy."));
+        _L("This service is provided and hosted by a third party, Helio Additive. All data collection and processing activities are solely managed by Helio Additive, and QIDI Tech assumes no responsibility in this regard. By clicking \"Agree and Proceed\", you agree to Helio Additive's privacy policy."));
     privacy_text->SetForegroundColour(wxColour(200, 200, 200));
     privacy_text->SetMinSize(wxSize(FromDIP(560), -1));
     privacy_text->Wrap(FromDIP(560));
@@ -697,7 +679,7 @@ void HelioStatementDialog::create_pat_page()
     copy_pat_button->SetMinSize(wxSize(FromDIP(120), FromDIP(32)));
     copy_pat_button->SetCornerRadius(FromDIP(4));
     copy_pat_button->SetToolTip(_L("Personal Access Token (PAT)\n\nA secure credential that verifies your identity with Helio services. "
-        "It's automatically used by BambuStudio for optimizations and simulations.\n\n"
+        "It's automatically used by QIDIStudio for optimizations and simulations.\n\n"
         "You may need to copy this to:\n"
         "• Integrate Helio with other slicers or tools\n"
         "• Use the Helio API directly\n"
@@ -1411,7 +1393,6 @@ void HelioInputDialog::update_mode_card_styling(int selected_action)
     m_original_tooltip_delay = 500; // Default tooltip delay
     wxToolTip::SetDelay(200);
 
-    // Set Helio icon (not BambuStudio icon)
     wxBitmap bmp = create_scaled_bitmap("helio_icon", this, 32);
     wxIcon icon;
     icon.CopyFromBitmap(bmp);
@@ -2983,7 +2964,6 @@ void HelioInputDialog::on_dpi_changed(const wxRect &suggested_rect)
 HelioPatNotEnoughDialog::HelioPatNotEnoughDialog(wxWindow* parent /*= nullptr*/)
     : DPIDialog(static_cast<wxWindow *>(wxGetApp().mainframe), wxID_ANY, wxString("Helio Additive"), wxDefaultPosition, wxDefaultSize, wxCAPTION | wxCLOSE_BOX)
 {
-    // Set Helio icon (not BambuStudio icon)
     wxBitmap bmp = create_scaled_bitmap("helio_icon", this, 32);
     wxIcon icon;
     icon.CopyFromBitmap(bmp);
@@ -3078,7 +3058,6 @@ HelioRatingDialog::HelioRatingDialog(wxWindow *parent, int original, int optimiz
 
     shared_ptr = std::make_shared<int>(0);
 
-    // Set Helio icon (not BambuStudio icon)
     wxBitmap bmp = create_scaled_bitmap("helio_icon", this, 32);
     wxIcon icon;
     icon.CopyFromBitmap(bmp);
@@ -3430,7 +3409,6 @@ HelioSimulationResultsDialog::HelioSimulationResultsDialog(wxWindow *parent,
     // Get theme colors for current mode
     auto theme = get_theme();
 
-    // Set Helio icon (not BambuStudio icon)
     wxBitmap bmp = create_scaled_bitmap("helio_icon", this, 32);
     wxIcon icon;
     icon.CopyFromBitmap(bmp);

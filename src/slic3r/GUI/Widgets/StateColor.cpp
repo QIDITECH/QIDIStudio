@@ -81,6 +81,16 @@ wxColour StateColor::lightModeColorFor(wxColour const &color)
 
 wxColour StateColor::darkModeColorFor(wxColour const &color) { return darkModeColorFor2(color); }
 
+wxColour StateColor::themed_surface_f8(bool app_is_dark)
+{
+    if (!app_is_dark)
+        return WXCOLOUR_GREY200;
+    auto it = gDarkColors.find(WXCOLOUR_GREY200);
+    if (it != gDarkColors.end())
+        return it->second;
+    return wxColour(54, 54, 60);
+}
+
 StateColor::StateColor(wxColour const &color) { append(color, 0); }
 
 StateColor::StateColor(wxString const &color) { append(color, 0); }

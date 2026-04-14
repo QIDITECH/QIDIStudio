@@ -18462,3 +18462,36 @@ msgstr "filament ağırlığı"
 
 msgid "pre time"
 msgstr "tahmini süre"
+
+msgid "Expert Mode"
+msgstr "Uzman Modu"
+
+msgid "When enabled, use the legacy Fluidd web UI for MQTT-capable local devices. When disabled, use the built-in status UI."
+msgstr "Etkinleştirildiğinde, MQTT destekli yerel cihazlar için eski Fluidd web arayüzünü kullanın. Devre dışı bırakıldığında, yerleşik durum arayüzünü kullanın."
+
+msgid "Eject"
+msgstr "Çıkar"
+
+msgid "Set polar cooler.."
+msgstr "Polar soğutucuyu ayarla.."
+
+msgid "The material softens at this temperature, so when the bed temperature is equal to or greater than it, it's highly recommended to open the front door and/or remove the upper glass to avoid cloggings. Warning: With Polar Cooler enabled, keep PLA chamber temperature ≤45°C to ensure print quality and prevent filament issues."
+msgstr "Malzeme bu sıcaklıkta yumuşar, bu nedenle tabla sıcaklığı buna eşit veya daha yüksek olduğunda, tıkanmaları önlemek için ön kapıyı açmanız ve/veya üst camı çıkarmanız şiddetle tavsiye edilir. Uyarı: Polar Soğutucu etkinken, baskı kalitesini sağlamak ve filament sorunlarını önlemek için PLA oda sıcaklığını ≤45°C'de tutun."
+
+msgid "Are you sure you want to delete this file?\n\n%s"
+msgstr "Bu dosyayı silmek istediğinizden emin misiniz?\n\n%s"
+
+msgid "Due to network issues, the file upload failed. Please check your network connection."
+msgstr "Ağ sorunları nedeniyle dosya yükleme başarısız oldu. Lütfen ağ bağlantınızı kontrol edin."
+
+msgid "Last modified"
+msgstr "Son değiştirilme"
+
+msgid "File size"
+msgstr "Dosya boyutu"
+
+msgid "The following file(s) already exist in the directory:\n\n%s"
+msgstr "Aşağıdaki dosya(lar) dizinde zaten mevcut:\n\n%s"
+
+msgid "Only adjustable while printing or paused."
+msgstr "Sadece yazdırma veya duraklatma sırasında ayarlanabilir."

@@ -9,6 +9,7 @@
 #include "GUI.hpp"
 #include "ThermalPreconditioningDialog.hpp"
 #include <wx/panel.h>
+#include <wx/bmpbuttn.h>
 #include <wx/bitmap.h>
 #include <wx/image.h>
 #include <wx/sizer.h>
@@ -51,16 +52,21 @@ class DevExtderSystem;
 namespace GUI {
     //cj_2
     class DeviceModelListCtrl;
+    class TimelapseFileListCtrl;
+    class RoundedToolButton;
+    //cj_3
+    class TimelapseFileItem;
 //cj_1
 	wxDECLARE_EVENT(EVTSET_EXTRUESION, wxCommandEvent);
 	wxDECLARE_EVENT(EVTSET_BACK, wxCommandEvent);
+	//cj_3
 	wxDECLARE_EVENT(EVTSET_COOLER_SWITCH, wxCommandEvent);
-	wxDECLARE_EVENT(EVTSET_COOLER_ENABLE, wxCommandEvent);
 	wxDECLARE_EVENT(EVTSET_LEVELING_ENABLE, wxCommandEvent);
 	wxDECLARE_EVENT(EVTSET_AMS_ENABLE, wxCommandEvent);
 	wxDECLARE_EVENT(EVTSET_CASE_LIGHT, wxCommandEvent);
 	wxDECLARE_EVENT(EVTSET_BEEPER_SWITHC, wxCommandEvent);
 	wxDECLARE_EVENT(EVTSET_EXTRUDER_TEMPERATURE, wxCommandEvent);
+	wxDECLARE_EVENT(EVTSET_PRINT_SPEED, wxCommandEvent);
 	wxDECLARE_EVENT(EVTSET_HEATERBED_TEMPERATURE, wxCommandEvent);
 	wxDECLARE_EVENT(EVTSET_CHAMBER_TEMPERATURE, wxCommandEvent);
 	wxDECLARE_EVENT(EVTSET_RETURN_SAFEHOME, wxCommandEvent);
@@ -72,8 +78,15 @@ namespace GUI {
 	wxDECLARE_EVENT(EVTSET_FILAMENT_VENDOR, wxCommandEvent); ///filament/vendor
 	wxDECLARE_EVENT(EVTSET_FILAMENT_LOAD, wxCommandEvent); ///set/filament/load
 	wxDECLARE_EVENT(EVTSET_FILAMENT_UNLOAD, wxCommandEvent); ///set/filament/unload
+    //cj_3
+    wxDECLARE_EVENT(EVTSET_FILAMENT_EJECT, wxCommandEvent); ///set/filament/unload
 	wxDECLARE_EVENT(EVTSET_DEL_PRINTER_FILE, wxCommandEvent); ///set/filament/unload
+    //cj_3
+    wxDECLARE_EVENT(EVTSET_DEL_TIMELAPSE_FILE, wxCommandEvent);
     wxDECLARE_EVENT(EVTSET_DOWNLOAD_PRINTER_FILE, wxCommandEvent); //cj_2
+    //cj_3
+	wxDECLARE_EVENT(EVTSET_DOWNLOAD_TIMELAPSE_FILE, wxCommandEvent);
+	//wxDECLARE_EVENT(EVTSET_DOWNLOAD_TIMELAPSE_FILE, wxCommandEvent);
 
 
 // Previous definitions
@@ -616,18 +629,25 @@ protected:
     wxPanel* m_tab{ nullptr };
     Button* m_control_tab{ nullptr };
     Button* m_model_tab{ nullptr };
-    Button* m_lapsePhoto_tab{ nullptr };
+    Button* m_timelapse_tab{ nullptr };
 
     wxPanel* m_control_panel{ nullptr };
 
     // model
     DeviceModelListCtrl* m_model_panel{ nullptr };
     wxPanel* m_model_button_panel{ nullptr };
-    Button* m_model_print{ nullptr };
-    Button* m_model_down{ nullptr };
-    Button* m_model_del{ nullptr };
+    RoundedToolButton* m_model_flash_btn{ nullptr };
+    RoundedToolButton* m_model_print_btn{ nullptr };
+    RoundedToolButton* m_model_download_btn{ nullptr };
+    RoundedToolButton* m_model_open_btn{ nullptr };
+    RoundedToolButton* m_model_delete_btn{ nullptr };
 
-    wxPanel* m_lapsePhtot_panel{ nullptr };
+    TimelapseFileListCtrl* m_timelapse_file_panel{ nullptr };
+    wxPanel* m_timelapse_button_panel{ nullptr };
+    RoundedToolButton* m_timelapse_flash_btn{ nullptr };
+    RoundedToolButton* m_timelapse_download_btn{ nullptr };
+    RoundedToolButton* m_timelapse_open_btn{ nullptr };
+    RoundedToolButton* m_timelapse_delete_btn{ nullptr };
 
 
 //y76
@@ -670,6 +690,8 @@ public:
     wxPanel* create_tab_page(wxWindow* parent);
     //cj_2
     wxPanel* create_model_fun(wxWindow* parent);
+    wxPanel* create_timelapse_fun(wxWindow* parent);
+    void open_monitor_download_folder(wxCommandEvent& event);
 
     wxBoxSizer *create_temp_axis_group(wxWindow *parent);
     wxBoxSizer *create_temp_control(wxWindow *parent);
@@ -700,6 +722,13 @@ public:
     //cj_2
     void tabSiwtch(Button* button, wxPanel* panel);
 
+protected:
+    //cj_3
+    virtual void after_timelapse_tab_shown() {}
+    virtual void request_refresh_file_lists() {}
+    void sync_model_file_toolbar(int select_num);
+    void sync_timelapse_file_toolbar(int select_num);
+
 private:
     void on_ams_rack_switch(wxCommandEvent& event);
 
@@ -708,6 +737,7 @@ private:
 	void on_model_tab(wxCommandEvent& event);
 	void on_timelapse_tab(wxCommandEvent& event);
     void on_model_checkchange(wxCommandEvent& event);
+    void on_timelapse_checkchange(wxCommandEvent& event);
 };
 
 class DeviceModelItem;
@@ -732,11 +762,17 @@ public:
 
     void set_filament_config(std::vector<QDSDevice::Filament>config);
 
-    void pause_camera();
+    void pause_camera(bool is_without_print=false);
+    //cj_3
+    bool is_camera_monitoring() const;
 
     void update_AMSSettingData(bool autoRead, bool initDetect, bool autoReload);
 
+
     void update_fan_speed(AIR_FUN id, int speed);
+    void update_print_speed_display_for_qds(int snapped_percent);
+    //cj_3
+    void update_polar_cooler(bool cooler_on);
 
     void update_temp_ctrl(std::shared_ptr<QDSDevice> obj);
 //cj_1
@@ -749,12 +785,30 @@ public:
 
     // cj_2
     void clear_model_item();
+    //cj_3
+    void clear_model_items_only();
     // cj_2 
-    void add_model_item(std::string itemName, std::string weight, std::string preTime, std::string imgPath);
+    void add_model_item(std::string itemName, std::string weight, std::string preTime, std::string imgPath,int imgSize = 0);
+    void refreshThumbnailItem(const std::string& file_name, const std::vector<uint8_t>& png_data);
 	//cj_2
 	std::vector<DeviceModelItem* > getModelSelectItems();
     //cj_2
     void removeSelectModelItems();
+    //cj_3
+    std::vector<TimelapseFileItem*> getTimelapseSelectItems();
+    //cj_3
+    void removeSelectTimelapseItems();
+	//cj_3
+	void clear_timelapse_file_list();
+	//cj_3
+	void add_timelapse_file_item(const std::string& file_name,
+		const std::string& file_size,
+		const std::string& modified_time,
+		const std::string& thumb_url);
+    //cj_3
+protected:
+    void after_timelapse_tab_shown() override;
+    void request_refresh_file_lists() override;
 
 private:
     friend class MonitorPanel;
@@ -781,6 +835,11 @@ protected:
 
     SecondaryCheckDialog* sdcard_hint_dlg = nullptr;
     SecondaryCheckDialog* axis_go_home_dlg = nullptr;
+    //cj_3
+    SecondaryCheckDialog* delete_model_dlg = nullptr;
+    //cj_3
+    SecondaryCheckDialog* delete_timelapse_dlg = nullptr;
+
 
     FanControlPopupNew* m_fan_control_popup{nullptr};
 
@@ -804,7 +863,7 @@ protected:
     bool nozzle_temp_input = false;
     bool cham_temp_input   = false;
     bool request_model_info_flag = false;
-    int speed_lvl = 1; // 0 - 3
+    int speed_lvl = 2; /* DevPrintingSpeedLevel 1..4£¬Ä¬ÈÏ 2=100% */
     int speed_lvl_timeout {0};
     boost::posix_time::ptime speed_dismiss_time;
     bool m_show_mode_changed = false;
@@ -831,6 +890,10 @@ protected:
     void on_subtask_abort(wxCommandEvent &event);
     void on_print_error_clean(wxCommandEvent &event);
     void error_info_reset();
+    //cj_3
+    void fill_timelapse_test_data();
+    
+
     void show_recenter_dialog();
 
     /* axis control */
@@ -861,6 +924,8 @@ protected:
     void on_ams_load_vams(wxCommandEvent& event);
     void on_ams_switch(SimpleEvent &event);
     void on_ams_unload(SimpleEvent &event);
+    //cj_3
+    void on_ams_eject(SimpleEvent &event);
     void on_ams_filament_backup(SimpleEvent& event);
     void on_ams_setting_click(SimpleEvent& event);
     void on_filament_edit(wxCommandEvent &event);
@@ -903,6 +968,9 @@ protected:
 	void on_print_model(wxCommandEvent& event);
 	void on_download_model(wxCommandEvent& event);
 	void on_del_model(wxCommandEvent& event);
+    //cj_3
+    void on_download_timelapse(wxCommandEvent& event);
+    void on_del_timelapse(wxCommandEvent& event);
 
 
     /* update apis */
@@ -1011,6 +1079,9 @@ private:
     std::string m_homed_axes{ "" };
     //cj_2
     bool m_extruder_filament{ false };
+    //cj_3
+    bool m_allow_print_speed_control{ false };
+    bool m_monitor_misc_temp_area{ false };
 };
 }
 }

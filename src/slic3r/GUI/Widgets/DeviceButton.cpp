@@ -289,6 +289,15 @@ void DeviceButton::render(wxDC &dc)
         } else {
             dc.SetTextForeground(wxColour(196, 196, 196));
         }
+
+        //cj_3
+        const wxString state_text = m_state_text.Lower();
+        const bool is_online = !state_text.empty() && state_text != "offline" && state_text != "error" && state_text != "unauthorized";
+        const wxColour dot_color = is_online ? wxColour(0, 204, 102) : wxColour(166, 166, 166);
+        dc.SetBrush(wxBrush(dot_color));
+        dc.SetPen(wxPen(dot_color));
+        dc.DrawCircle(14, rcContent.y + 15, 3);
+
         dc.DrawText(m_name_text, 32, rcContent.y+5);
         
         //cj_2
@@ -300,6 +309,7 @@ void DeviceButton::render(wxDC &dc)
 //         } 
 
     } else {
+
          dc.DrawBitmap(icon.bmp(), 10, (GetSize().GetHeight() - icon.bmp().GetHeight()) / 2);
 
          dc.SetFont(wxFont(15, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));

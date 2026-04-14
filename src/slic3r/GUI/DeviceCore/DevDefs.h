@@ -9,6 +9,7 @@
 */
 
 #pragma once
+#include <cmath>
 #include <string>
 #include <nlohmann/json.hpp>
 
@@ -99,6 +100,38 @@ enum DevPrintingSpeedLevel
     SPEED_LEVEL_RAMPAGE = 4,
     SPEED_LEVEL_COUNT
 };
+
+/** Klipper Moonraker gcode_move.speed_factor is a ratio; UI / M220 use percent tiers below. */
+inline constexpr int DEV_PRINT_SPEED_PERCENT_TIERS[4] = { 50, 100, 124, 166 };
+
+inline int dev_snap_print_speed_percent(double percent)
+{
+    int best = DEV_PRINT_SPEED_PERCENT_TIERS[0];
+    double best_d = std::fabs(percent - static_cast<double>(best));
+    for (int i = 1; i < 4; ++i) {
+        const int v = DEV_PRINT_SPEED_PERCENT_TIERS[i];
+        const double d = std::fabs(percent - static_cast<double>(v));
+        if (d < best_d) {
+            best_d = d;
+            best = v;
+        }
+    }
+    return best;
+}
+
+inline int dev_speed_factor_to_snapped_percent(double speed_factor)
+{
+    return dev_snap_print_speed_percent(speed_factor * 100.0);
+}
+
+inline DevPrintingSpeedLevel dev_snapped_percent_to_level(int snapped_percent)
+{
+    for (int i = 0; i < 4; ++i) {
+        if (DEV_PRINT_SPEED_PERCENT_TIERS[i] == snapped_percent)
+            return static_cast<DevPrintingSpeedLevel>(i + 1);
+    }
+    return SPEED_LEVEL_NORMAL;
+}
 
 /*Upgrade*/
 enum class DevFirmwareUpgradeState : int

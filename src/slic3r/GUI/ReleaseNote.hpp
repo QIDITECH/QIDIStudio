@@ -135,6 +135,9 @@ public:
         bool not_show_again_check = false
     );
     void update_text(wxString text);
+    //cj_3
+    // Call after update_text(); widens scroll + wrapped label (width_dip is logical DIP, e.g. 600).
+    void set_message_area_width(int width_dip);
     void on_show();
     void on_hide();
     void update_btn_label(wxString ok_btn_text, wxString cancel_btn_text);

@@ -15,6 +15,7 @@ class wxTextCtrl;
 class wxStaticText;
 class ScalableButton;
 class wxBoxSizer;
+class wxCommandEvent;
 
 namespace Slic3r {
 
@@ -53,10 +54,19 @@ class PhysicalPrinterDialog : public DPIDialog
 
     // y2 add param
     wxComboBox*         pret_combobox                       {nullptr};
+    //cj_3_cursor
+    wxString            m_last_physical_preset_value;
     wxTextCtrl*         printer_host_ctrl                   { nullptr };
     std::set<std::string>        m_exit_host;
 
     void build_printhost_settings(ConfigOptionsGroup* optgroup);
+    //cj_3_cursor
+    void                sync_expert_mode_widgets();
+    void                on_physical_preset_combobox(wxCommandEvent& e);
+    void                on_physical_preset_text(wxCommandEvent& e);
+    void                update_expert_mode_apikey_visibility();
+    //cj_3
+    void                apply_expert_mode_value(bool value);
     void OnOK(wxMouseEvent& event);
 
 public:

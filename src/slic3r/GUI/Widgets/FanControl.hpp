@@ -230,6 +230,16 @@ private:
     wxBoxSizer*           m_sub_mode_sizer{ nullptr };
     FanControlNewSwitchPanel* m_cooling_filter_switch_panel{ nullptr };
 
+    //cj_3
+    wxPanel*           m_cooler_row_panel{ nullptr };
+    wxStaticBitmap*    m_cooler_icon{ nullptr };
+    wxStaticText*      m_cooler_label{ nullptr };
+    wxStaticBitmap*    m_cooler_switch{ nullptr };
+    ScalableBitmap*    m_cooler_fan_bmp{ nullptr };
+    ScalableBitmap*    m_cooler_toggle_off{ nullptr };
+    ScalableBitmap*    m_cooler_toggle_on{ nullptr };
+    bool               m_cooler_switch_on{ false };
+
     // The fan operates
     std::map<int, FanControlNew*> m_fan_control_list; //<duct_id, <fan_id, FanControl>>
 
@@ -263,11 +273,15 @@ private:
     void  paintEvent(wxPaintEvent& evt);
 
     void  command_control_air_duct(int mode_id, int submode = -1);
+    //cj_3
+    void  on_cooler_switch_left_down(wxMouseEvent& evt);
 
 public:
     //cj_1
     void  update_fan_data(AIR_FUN id, int speed);
     void  update_fan_data(MachineObject *obj);
+    //cj_3
+    void  sync_polar_cooler_from_device(bool on);
     
     void  msw_rescale();
 };

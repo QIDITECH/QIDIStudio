@@ -1316,7 +1316,8 @@ void PlaterPresetComboBox::update()
         selected_in_box = add_box_filaments(into_u8(selected_user_preset.empty() ? selected_system_preset : selected_user_preset), true);
     }
 
-    std::vector<std::string> filament_orders = {"QIDI PLA Basic", "QIDI PLA Matte", "QIDI PLA Lite", "QIDI PLA Tough+", "QIDI PETG Basic", "QIDI PETG HF", "QIDI ABS",
+    //y79
+    std::vector<std::string> filament_orders = {"QIDI PLA Basic", "QIDI PLA Matte", "QIDI PLA Rapido", "QIDI PLA Lite", "QIDI PLA Tough+", "QIDI PETG Basic", "QIDI PETG Rapido", "QIDI ABS Rapido",
                                                 "QIDI ASA", "QIDI PLA Silk+", "QIDI PLA Silk", "QIDI PLA-CF", "QIDI PLA Marble", "QIDI PLA Metal", "QIDI PLA Sparkle",
                                                 "QIDI PLA Galaxy", "QIDI PLA Glow", "QIDI PLA Wood", "QIDI PLA Translucent", "QIDI PETG Translucent", "QIDI PC",
                                                 "QIDI PC FR", "QIDI PETG-CF", "QIDI ABS-GF", "QIDI ASA-CF", "QIDI PA6-CF", "QIDI PA6-GF", "QIDI PAHT-CF", "QIDI PET-CF",
