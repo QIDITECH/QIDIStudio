@@ -1808,9 +1808,9 @@ wxBoxSizer *StatusBasePanel::create_monitoring_page()
 	
     // test_panel->SetStreamUrl("http://192.168.110.17/webcam/?action=snapshot");
     // test_panel->Play();
-// 	if (!m_media_ctrl->Create(this, wxID_ANY))  // Windows ÍÆ¼öÊ¹ÓÃ WMP10
+// 	if (!m_media_ctrl->Create(this, wxID_ANY))  // Windows ï¿½Æ¼ï¿½Ê¹ï¿½ï¿½ WMP10
 // 	{
-// 		wxLogError("ÎÞ·¨´´½¨Ã½Ìå¿Ø¼þ£¡");
+// 		wxLogError("ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½Ã½ï¿½ï¿½Ø¼ï¿½ï¿½ï¿½");
 // 	}
 // 
 //     m_media_ctrl->Load(wxURI("http://2k2m4y94k1bwd4d3mf86.aliyun.qidi3dprinter.com:7680/webcam"));
@@ -1983,7 +1983,7 @@ wxPanel* StatusBasePanel::create_tab_page(wxWindow* parent)
         m_model_tab = new Button(tab, _L("Model"));
         setButtonTri(m_model_tab);
 
-        m_timelapse_tab = new Button(tab, wxString::FromUTF8(u8"\u5ef6\u65f6\u6444\u5f71"));
+        m_timelapse_tab = new Button(tab, _L("Timelapse"));
         setButtonTri(m_timelapse_tab);
     }
     tabSizer->Add(m_control_tab, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, FromDIP(0));
