@@ -2214,10 +2214,11 @@ void AMSRoadUpPart::UpdatePassRoad(std::string ams_index, std::string slot_index
     };
 
     m_load_ams_index  = ams_idx;
-    m_load_slot_index = slot_idx;
-    //cj_3  patch   TODO 
-    if (m_amsinfo.cans.size() < slot_idx + 1) {
-        m_load_slot_index = m_amsinfo.cans.size() - 1;
+    m_load_slot_index = 0;
+    for (int i = 0; i < m_amsinfo.cans.size(); ++i) {
+        if (m_amsinfo.cans[i].can_id == slot_index) {
+            m_load_slot_index = i;
+        }
     }
     m_load_step = step;
     Refresh();
