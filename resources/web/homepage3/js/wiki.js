@@ -4,6 +4,11 @@ var cardData = {
   "traceId":"71ce01ec38ce414692a88a2fd44e7330.18616.17631185286483121",
   "data":[
     {
+      "id":"Max4",
+      "printerType":"X-Max 4",
+      "img":"img/printer_xmax4.png"
+    },
+    {
       "id":"Q2",
       "printerType":"Q2",
       "img":"img/printer_q2.png"

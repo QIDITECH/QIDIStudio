@@ -863,7 +863,7 @@ protected:
     bool nozzle_temp_input = false;
     bool cham_temp_input   = false;
     bool request_model_info_flag = false;
-    int speed_lvl = 2; /* DevPrintingSpeedLevel 1..4£¬Ä¬ÈÏ 2=100% */
+    int speed_lvl = 2; /* DevPrintingSpeedLevel 1..4ï¿½ï¿½Ä¬ï¿½ï¿½ 2=100% */
     int speed_lvl_timeout {0};
     boost::posix_time::ptime speed_dismiss_time;
     bool m_show_mode_changed = false;
@@ -1050,6 +1050,12 @@ public:
 
     enum ThumbnailState task_thumbnail_state {ThumbnailState::PLACE_HOLDER};
     std::vector<int> last_stage_list_info;
+
+    //cj_4
+    // One-shot guard for resetting the printing progress UI when transitioning
+    // from "printing" to "finished". Cleared by reset_printing_values() so that
+    // task change / state change can re-arm the next finish transition.
+    bool m_printing_finished_handled{false};
 
     bool is_stage_list_info_changed(MachineObject* obj);
 

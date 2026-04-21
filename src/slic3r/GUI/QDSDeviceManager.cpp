@@ -217,6 +217,8 @@ void QDSDevice::updateByJsonData(json& status)
         if (m_polar_cooler.load() != pin_on) {
 			is_update = true;
 			m_polar_cooler = pin_on;
+            //cj_4
+			m_polar_cooler_dirty_for_ui = true;
 		}
 	}
 
@@ -1648,6 +1650,8 @@ void QDSDeviceManager::updateDeviceData(std::shared_ptr<QDSDevice>& device,
         if (device->m_polar_cooler.load() != pin_on) {
             device->m_polar_cooler = pin_on;
             is_update = true;
+            //cj_4
+            device->m_polar_cooler_dirty_for_ui = true;
         }
 	}
 
@@ -1911,6 +1915,8 @@ void QDSDeviceManager::setSelected(const std::string& device_id){
         }
         device = dev_it->second;
         device->is_selected = true;
+        //cj_4
+        device->m_polar_cooler_dirty_for_ui = true;
     }
 }
 

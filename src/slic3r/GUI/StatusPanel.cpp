@@ -76,6 +76,23 @@
 #include "DownloadManager.hpp"
 namespace Slic3r { namespace GUI {
 
+namespace {
+//cj_4 Model/timelapse download path hint: app-styled dialog (SecondaryCheckDialog), not wxMessageBox.
+void show_monitor_download_notice(wxWindow* parent, const wxString& title, const wxString& message)
+{
+	wxWindow* dlg_parent = parent;
+	if (!dlg_parent)
+		dlg_parent = wxGetApp().mainframe;
+	auto* dlg = new SecondaryCheckDialog(dlg_parent, wxID_ANY, title, SecondaryCheckDialog::ButtonStyle::ONLY_CONFIRM);
+	dlg->m_button_ok->SetLabel(_L("OK"));
+	dlg->update_text(message);
+	dlg->set_message_area_width(600);
+	dlg->Bind(EVT_SECONDARY_CHECK_CONFIRM, [dlg](wxCommandEvent&) { dlg->Destroy(); });
+	dlg->on_show();
+	dlg->Raise();
+}
+} // namespace
+
 //cj_3
 class RoundedToolButton : public wxPanel
 {
@@ -2122,8 +2139,8 @@ void StatusBasePanel::open_monitor_download_folder(wxCommandEvent&)
 {
     std::string download_path = wxGetApp().app_config->get("download_path");
     if (download_path.empty()) {
-        wxMessageBox(_L("Please set the download path in Preferences first."),
-            _L("Open download folder"), wxOK | wxICON_WARNING);
+        show_monitor_download_notice(GetParent(), _L("Open download folder"),
+            _L("Please set the download path in Preferences first."));
         return;
     }
     boost::filesystem::create_directories(boost::filesystem::path(download_path));
@@ -4830,6 +4847,13 @@ void StatusPanel::update_subtask(MachineObject *obj)
             }
 
             if (obj->is_printing_finished()) {
+                //cj_4
+                // Reset the whole printing progress UI exactly once when the job
+                // transitions from "printing" to "finished".
+                if (!m_printing_finished_handled) {
+                    reset_printing_values();
+                    m_printing_finished_handled = true;
+                }
                 obj->update_model_task();
                 m_project_task_panel->enable_abort_button(false);
                 m_project_task_panel->enable_partskip_button(nullptr, false);
@@ -5003,6 +5027,11 @@ void StatusPanel::reset_printing_values()
     m_start_loading_thumbnail = false;
     m_load_sdcard_thumbnail   = false;
     skip_print_error          = 0;
+
+    //cj_4
+    // Re-arm the one-shot finish transition so the next time we switch
+    // from "printing" to "finished" the UI is initialized again.
+    m_printing_finished_handled = false;
 }
 
 void StatusPanel::on_axis_ctrl_xy(wxCommandEvent &event)
@@ -6548,9 +6577,8 @@ void StatusPanel::on_download_model(wxCommandEvent& event)
 {
     std::string downloadPath = wxGetApp().app_config->get("download_path");
     if (downloadPath.empty()) {
-        wxMessageBox(
-            _L("Download path is not set. Please configure it in Preferences."),
-            _L("Download Failed"), wxOK | wxICON_WARNING);
+        show_monitor_download_notice(GetParent(), _L("Download Failed"),
+            _L("Download path is not set. Please configure it in Preferences."));
         return;
     }
 
@@ -6679,9 +6707,8 @@ void StatusPanel::on_download_timelapse(wxCommandEvent& event)
     boost::ignore_unused(event);
     std::string downloadPath = wxGetApp().app_config->get("download_path");
     if (downloadPath.empty()) {
-        wxMessageBox(
-            _L("Download path is not set. Please configure it in Preferences."),
-            _L("Download Failed"), wxOK | wxICON_WARNING);
+        show_monitor_download_notice(GetParent(), _L("Download Failed"),
+            _L("Download path is not set. Please configure it in Preferences."));
         return;
     }
 

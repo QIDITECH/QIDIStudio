@@ -125,6 +125,9 @@ public:
     //cj_3
 	std::atomic<bool>  m_enable_polar_cooler{ false };
 	std::atomic<bool>  m_polar_cooler{ false };
+	//cj_4
+	// Set true when m_polar_cooler changes from device JSON; cleared after status UI sync.
+	std::atomic<bool>  m_polar_cooler_dirty_for_ui{ false };
 	float m_auxiliary_fan_speed{ 0.0 };
     float m_chamber_fan_speed{ 0.0 };
     float m_cooling_fan_speed{ 0.0 };

@@ -1976,6 +1976,13 @@ ColorPickerPopup::ColorPickerPopup(wxWindow* parent)
     m_sizer_box->Add(fg_sizer, 0, wxEXPAND|wxLEFT|wxRIGHT, FromDIP(10));
     m_sizer_box->Add(m_sizer_custom, 0, wxEXPAND|wxLEFT|wxRIGHT, FromDIP(10));
     m_sizer_box->Add(m_custom_cp, 0, wxEXPAND|wxLEFT|wxRIGHT, FromDIP(16));
+    //cj_4
+    // Device status box color popup: hide custom color entry; palette swatches only.
+    {
+        const size_t n = m_sizer_box->GetItemCount();
+        m_sizer_box->Show(n - 2, false);
+        m_sizer_box->Show(n - 1, false);
+    }
     m_sizer_box->Add(0, 0, 0, wxTOP, FromDIP(10));
 
 

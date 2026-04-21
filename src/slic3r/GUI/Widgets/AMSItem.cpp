@@ -575,14 +575,15 @@ void AMSextruderImage::doRender(wxDC &dc)
     //dc.DrawRectangle(0, FromDIP(5), size.x, size.y - FromDIP(5) - FromDIP(2));
     if (m_show_state){
         //cj_3
+        // Filament colour block behind the nozzle bitmap (was forced to white; restore for pre-dispatch / loading feedback).
         if (m_ams_loading) {
             dc.SetPen(*wxTRANSPARENT_PEN);
-            dc.SetBrush(*wxWHITE);
+            dc.SetBrush(wxBrush(m_colour));
             dc.DrawRectangle(FromDIP(2), FromDIP(10), size.x - FromDIP(3), size.y - FromDIP(20));
         }
         else{
             dc.SetPen(*wxTRANSPARENT_PEN);
-            dc.SetBrush(*wxWHITE);
+            dc.SetBrush(wxBrush(m_colour));
             dc.DrawRectangle(FromDIP(3), FromDIP(10), size.x - FromDIP(6), size.y - FromDIP(20));
         }
         dc.DrawBitmap(m_ams_extruder.bmp(), wxPoint((size.x - m_ams_extruder.GetBmpSize().x) / 2, 0));
@@ -594,6 +595,9 @@ AMSextruderImage::AMSextruderImage(wxWindow *parent, wxWindowID id, string file_
 {
     wxWindow::Create(parent, id, pos, size);
     SetBackgroundColour(StateColor::darkModeColorFor(*wxWHITE));
+
+    //cj_3
+    m_colour = AMS_EXTRUDER_DEF_COLOUR;
 
     m_ams_extruder = ScalableBitmap(this, file_name,36);
     m_file_name = file_name;

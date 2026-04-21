@@ -144,6 +144,21 @@ bool local_download_target_exists(const std::string& download_dir, const wxStrin
         return false;
     }
 }
+
+//cj_4 Model/timelapse download notices: SecondaryCheckDialog (app UI), not wxMessageBox.
+static void show_printer_webview_download_notice(wxWindow* parent, const wxString& title, const wxString& message)
+{
+	wxWindow* dlg_parent = parent;
+	if (!dlg_parent)
+		dlg_parent = wxGetApp().mainframe;
+	auto* dlg = new SecondaryCheckDialog(dlg_parent, wxID_ANY, title, SecondaryCheckDialog::ButtonStyle::ONLY_CONFIRM);
+	dlg->m_button_ok->SetLabel(_L("OK"));
+	dlg->update_text(message);
+	dlg->set_message_area_width(600);
+	dlg->Bind(EVT_SECONDARY_CHECK_CONFIRM, [dlg](wxCommandEvent&) { dlg->Destroy(); });
+	dlg->on_show();
+	dlg->Raise();
+}
 } // namespace
 
 namespace Slic3r {
@@ -2106,10 +2121,13 @@ void PrinterWebView::delTimelapseFile(wxCommandEvent& event)
 //cj_2
 void PrinterWebView::downloadPrinterFile(wxCommandEvent& event)
 {
+    boost::ignore_unused(event);
 	std::string downloadPath = wxGetApp().app_config->get("download_path");
 	if (downloadPath.empty()) {
-		wxMessageBox(_L("Please set the download path in Preferences first."),
-			_L("Download Failed"), wxOK | wxICON_WARNING);
+		show_printer_webview_download_notice(
+			t_status_page ? t_status_page->GetParent() : nullptr,
+			_L("Download Failed"),
+			_L("Please set the download path in Preferences first."));
 		return;
 	}
 
@@ -2135,7 +2153,7 @@ void PrinterWebView::downloadPrinterFile(wxCommandEvent& event)
 
 	const std::shared_ptr<QDSDevice> dev = device;
 	const std::string path = downloadPath;
-	auto run_model_downloads = [dev, path, items_to_fetch]() {
+	auto run_model_downloads = [this, dev, path, items_to_fetch]() {
 		for (DeviceModelItem* item : items_to_fetch) {
 			std::string fileName = item->GetName().ToUTF8().data();
 			std::string localPath = path + "/" + fileName;
@@ -2150,18 +2168,18 @@ void PrinterWebView::downloadPrinterFile(wxCommandEvent& event)
 				urlStr,
 				localPath,
 				fileName,
-				[item, fileName](FileDownloadProgress progress) {
+				[this, item, fileName](FileDownloadProgress progress) {
 					item->setDownloadProgressFraction(-1.f);
 					if (progress.state == FileDownloadProgress::State::Completed) {
 						BOOST_LOG_TRIVIAL(info) << "Downloaded: " << fileName;
 					}
 					else if (progress.state == FileDownloadProgress::State::Failed) {
-						wxMessageBox(
+						show_printer_webview_download_notice(
+							t_status_page ? t_status_page->GetParent() : nullptr,
+							_L("Download Error"),
 							wxString::Format(_L("Download failed: %s\n%s"),
 								wxString::FromUTF8(fileName),
-								wxString::FromUTF8(progress.error_msg)),
-							_L("Download Error"),
-							wxOK | wxICON_ERROR);
+								wxString::FromUTF8(progress.error_msg)));
 					}
 				},
 				[item](FileDownloadProgress progress) {
@@ -2221,8 +2239,10 @@ void PrinterWebView::downloadTimelapseFile(wxCommandEvent& event)
 	boost::ignore_unused(event);
 	std::string downloadPath = wxGetApp().app_config->get("download_path");
 	if (downloadPath.empty()) {
-		wxMessageBox(_L("Please set the download path in Preferences first."),
-			_L("Download Failed"), wxOK | wxICON_WARNING);
+		show_printer_webview_download_notice(
+			t_status_page ? t_status_page->GetParent() : nullptr,
+			_L("Download Failed"),
+			_L("Please set the download path in Preferences first."));
 		return;
 	}
 
@@ -2248,7 +2268,7 @@ void PrinterWebView::downloadTimelapseFile(wxCommandEvent& event)
 
 	const std::shared_ptr<QDSDevice> dev = device;
 	const std::string path = downloadPath;
-	auto run_timelapse_downloads = [dev, path, items_to_fetch]() {
+	auto run_timelapse_downloads = [this, dev, path, items_to_fetch]() {
 		for (TimelapseFileItem* item : items_to_fetch) {
 			std::string fileName = item->GetName().ToUTF8().data();
 			std::string localPath = path + "/" + fileName;
@@ -2263,18 +2283,18 @@ void PrinterWebView::downloadTimelapseFile(wxCommandEvent& event)
 				urlStr,
 				localPath,
 				fileName,
-				[item, fileName](FileDownloadProgress progress) {
+				[this, item, fileName](FileDownloadProgress progress) {
 					item->setDownloadProgressFraction(-1.f);
 					if (progress.state == FileDownloadProgress::State::Completed) {
 						BOOST_LOG_TRIVIAL(info) << "Downloaded timelapse: " << fileName;
 					}
 					else if (progress.state == FileDownloadProgress::State::Failed) {
-						wxMessageBox(
+						show_printer_webview_download_notice(
+							t_status_page ? t_status_page->GetParent() : nullptr,
+							_L("Download Error"),
 							wxString::Format(_L("Download failed: %s\n%s"),
 								wxString::FromUTF8(fileName),
-								wxString::FromUTF8(progress.error_msg)),
-							_L("Download Error"),
-							wxOK | wxICON_ERROR);
+								wxString::FromUTF8(progress.error_msg)));
 					}
 				},
 				[item](FileDownloadProgress progress) {
@@ -3010,8 +3030,10 @@ void PrinterWebView::updateDeviceParameter(const std::string& device_id) {
             t_status_page->update_fan_speed(AIR_FUN::FAN_COOLING_0_AIRDOOR, device->m_cooling_fan_speed * 10.0);
 			t_status_page->update_fan_speed(AIR_FUN::FAN_REMOTE_COOLING_0_IDX, device->m_auxiliary_fan_speed * 10.0);
             t_status_page->update_fan_speed(AIR_FUN::FAN_CHAMBER_0_IDX, device->m_chamber_fan_speed * 10.0);
-            //cj_3
-            t_status_page->update_polar_cooler(device->m_polar_cooler.load());
+            //cj_4
+            if (device->m_polar_cooler_dirty_for_ui.exchange(false)) {
+                t_status_page->update_polar_cooler(device->m_polar_cooler.load());
+            }
             t_status_page->update_print_speed_display_for_qds(device->m_print_speed_display_percent);
 
 			//cj_1
