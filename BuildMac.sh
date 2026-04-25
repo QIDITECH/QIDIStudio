@@ -86,12 +86,19 @@ if [ -z "$OSX_DEPLOYMENT_TARGET" ]; then
   export OSX_DEPLOYMENT_TARGET="10.15"
 fi
 
+# CMake 4+ drops compatibility modes for very old minimum versions used by some
+# third-party deps; forward this floor into configure steps.
+if [ -z "$CMAKE_POLICY_VERSION_MINIMUM" ]; then
+  export CMAKE_POLICY_VERSION_MINIMUM="3.5"
+fi
+
 echo "Build params:"
 echo " - ARCH: $ARCH"
 echo " - BUILD_CONFIG: $BUILD_CONFIG"
 echo " - BUILD_TARGET: $BUILD_TARGET"
 echo " - CMAKE_GENERATOR: $SLICER_CMAKE_GENERATOR for Slicer, $DEPS_CMAKE_GENERATOR for deps"
 echo " - OSX_DEPLOYMENT_TARGET: $OSX_DEPLOYMENT_TARGET"
+echo " - CMAKE_POLICY_VERSION_MINIMUM: $CMAKE_POLICY_VERSION_MINIMUM"
 echo " - CMAKE_BUILD_PARALLEL_LEVEL: $CMAKE_BUILD_PARALLEL_LEVEL" 
 echo
 
@@ -128,6 +135,7 @@ function build_deps() {
                         -DDESTDIR="$DEPS" \
                         -DOPENSSL_ARCH="darwin64-${_ARCH}-cc" \
                         -DCMAKE_BUILD_TYPE="$BUILD_CONFIG" \
+                        -DCMAKE_POLICY_VERSION_MINIMUM:STRING="${CMAKE_POLICY_VERSION_MINIMUM}" \
                         -DCMAKE_OSX_ARCHITECTURES:STRING="${_ARCH}" \
                         -DCMAKE_OSX_DEPLOYMENT_TARGET="${OSX_DEPLOYMENT_TARGET}"
                 fi
@@ -169,6 +177,7 @@ function build_slicer() {
                     -DCMAKE_PREFIX_PATH="$DEPS/usr/local" \
                     -DCMAKE_INSTALL_PREFIX="$PWD/QIDIStudio" \
                     -DCMAKE_BUILD_TYPE="$BUILD_CONFIG" \
+                    -DCMAKE_POLICY_VERSION_MINIMUM:STRING="${CMAKE_POLICY_VERSION_MINIMUM}" \
                     -DCMAKE_MACOSX_RPATH=ON \
                     -DCMAKE_INSTALL_RPATH="${DEPS}/usr/local" \
                     -DCMAKE_MACOSX_BUNDLE=ON \
