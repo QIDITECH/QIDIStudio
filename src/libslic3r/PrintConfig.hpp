@@ -1194,6 +1194,8 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionBoolsNullable,       long_retractions_when_cut))
     ((ConfigOptionFloatsNullable,      retraction_distances_when_ec))
     ((ConfigOptionBoolsNullable,       long_retractions_when_ec))
+    ((ConfigOptionFloatsNullable,      z_offset))
+    ((ConfigOptionFloatsNullable,      z_offset_initial_layer))
     ((ConfigOptionFloatsNullable,      z_hop))
     // QDS
     ((ConfigOptionEnumsGenericNullable,z_hop_types))

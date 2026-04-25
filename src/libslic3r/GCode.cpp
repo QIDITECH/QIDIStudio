@@ -2562,7 +2562,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
         m_placeholder_parser.set("first_layer_bed_temperature", new ConfigOptionInts(*first_bed_temp_opt));
         m_placeholder_parser.set("first_layer_temperature", new ConfigOptionIntsNullable(m_config.nozzle_temperature_initial_layer));
         m_placeholder_parser.set("max_print_height", new ConfigOptionInt(m_config.printable_height));
-        m_placeholder_parser.set("z_offset", new ConfigOptionFloat(0.0f));
+        m_placeholder_parser.set("z_offset", new ConfigOptionFloat(m_config.z_offset_initial_layer.get_at(initial_extruder_id)));
         m_placeholder_parser.set("plate_name", new ConfigOptionString(print.get_plate_name()));
 
         auto used_filaments = print.get_slice_used_filaments(false);
@@ -2927,9 +2927,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
                 m_wipe_tower->set_wipe_tower_depth(print.get_wipe_tower_depth());
                 m_wipe_tower->set_wipe_tower_bbx(print.get_wipe_tower_bbx());
                 m_wipe_tower->set_rib_offset(print.get_rib_offset());
-                // QDS
-                // file.write(m_writer.travel_to_z(initial_layer_print_height + m_config.z_offset.value, "Move to the first layer height"));
-                file.write(m_writer.travel_to_z(initial_layer_print_height, "Move to the first layer height"));
+                file.write(m_writer.travel_to_z(initial_layer_print_height + FILAMENT_CONFIG(z_offset_initial_layer), "Move to the first layer height"));
 #if 0
             if (print.config().single_extruder_multi_material_priming) {
                 file.write(m_wipe_tower->prime(*this));
@@ -5076,9 +5074,10 @@ std::string GCode::change_layer(coordf_t print_z)
     if (m_layer_count > 0)
         // Increment a progress bar indicator.
         gcode += m_writer.update_progress(++ m_layer_index, m_layer_count);
-    //QDS
-    //coordf_t z = print_z + m_config.z_offset.value;  // in unscaled coordinates
-    coordf_t z = print_z;  // in unscaled coordinates
+    coordf_t z_offset = 0.0;
+    if (m_writer.filament() != nullptr)
+        z_offset = (m_layer_index == 0) ? FILAMENT_CONFIG(z_offset_initial_layer) : FILAMENT_CONFIG(z_offset);
+    coordf_t z = print_z + z_offset; // in unscaled coordinates
     if (FILAMENT_CONFIG(retract_when_changing_layer) && m_writer.will_move_z(z)) {
         LiftType lift_type = this->to_lift_type(ZHopType(FILAMENT_CONFIG(z_hop_types)));
         //QDS: force to use SpiralLift when change layer if lift type is auto
