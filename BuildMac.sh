@@ -36,6 +36,7 @@ while getopts "1dpa:st:xbc:h" opt; do
         ;;
     h ) echo "Usage: ./BuildMac.sh [-1][-d][-s][-x][-b][-c]"
         echo "   -d: Build deps"
+        echo "   -p: Pack deps into archive after build"
         echo "   -a: Set ARCHITECTURE (arm64 or x86_64 or universal)"
         echo "   -s: Build slicer only"
         echo "   -t: Specify minimum version of the target platform, default is 10.15"
@@ -237,6 +238,10 @@ esac
 
 if [ "$ARCH" = "universal" ] && [ "$BUILD_TARGET" != "deps" ]; then
     build_universal
+fi
+
+if [ "$PACK_DEPS" = "1" ]; then
+    pack_deps
 fi
 
 if [ "1." == "$PACK_DEPS". ]; then
