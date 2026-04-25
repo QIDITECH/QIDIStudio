@@ -62,6 +62,8 @@ namespace Slic3r {
 const std::vector<std::string> filament_extruder_override_keys = {
     // floats
     "filament_retraction_length",
+    "filament_z_offset",
+    "filament_z_offset_initial_layer",
     "filament_z_hop",
     "filament_z_hop_types",
     "filament_retract_lift_above",  //not in filament_options_with_variant, not used?
@@ -4214,6 +4216,28 @@ void PrintConfigDef::init_fff_params()
     def->nullable = true;
     def->set_default_value(new ConfigOptionFloatsNullable { 0.4 });
 
+    def = this->add("z_offset", coFloats);
+    def->label = L("Other layers Z offset");
+    def->tooltip = L("Z offset applied to all layers except the first one. "
+                     "Use a negative value to move the nozzle slightly closer to the bed.");
+    def->sidetext = L("mm");
+    def->mode = comAdvanced;
+    def->min = -2;
+    def->max = 2;
+    def->nullable = true;
+    def->set_default_value(new ConfigOptionFloatsNullable { 0.0 });
+
+    def = this->add("z_offset_initial_layer", coFloats);
+    def->label = L("Initial layer Z offset");
+    def->tooltip = L("Z offset applied only to the first layer. "
+                     "Use a negative value to improve first-layer adhesion.");
+    def->sidetext = L("mm");
+    def->mode = comAdvanced;
+    def->min = -2;
+    def->max = 2;
+    def->nullable = true;
+    def->set_default_value(new ConfigOptionFloatsNullable { 0.0 });
+
     def             = this->add("retract_lift_above", coFloats);
     def->label      = L("Z hop lower boundary");
     def->tooltip    = L("Z hop will only come into effect when Z is above this value and is below the parameter: \"Z hop upper boundary\"");
@@ -5976,7 +6000,7 @@ void PrintConfigDef::init_filament_option_keys()
 {
     m_filament_option_keys = {
         "filament_diameter", "min_layer_height", "max_layer_height","volumetric_speed_coefficients",
-        "retraction_length", "z_hop", "z_hop_types", "retraction_speed", "deretraction_speed",
+        "retraction_length", "z_offset", "z_offset_initial_layer", "z_hop", "z_hop_types", "retraction_speed", "deretraction_speed",
         "retract_before_wipe", "filament_retract_length_nc","retract_restart_extra", "retraction_minimum_travel", "wipe", "wipe_distance",
         "retract_when_changing_layer", "retract_length_toolchange", "retract_restart_extra_toolchange", "filament_colour",
         "default_filament_profile","retraction_distances_when_cut","long_retractions_when_cut"
@@ -6890,6 +6914,8 @@ std::set<std::string> print_options_with_variant = {
 
 std::set<std::string> filament_options_with_variant = {
     "filament_flow_ratio",
+    "filament_z_offset",
+    "filament_z_offset_initial_layer",
     "filament_max_volumetric_speed",
     "filament_ramming_volumetric_speed",
     "filament_pre_cooling_temperature",

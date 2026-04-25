@@ -3,7 +3,7 @@
 set -e
 set -o pipefail
 
-while getopts "1dpa:st:xbc:h" opt; do
+while getopts ":1dpa:st:xbc:h" opt; do
   case "${opt}" in
     d )
         export BUILD_TARGET="deps"
@@ -36,6 +36,7 @@ while getopts "1dpa:st:xbc:h" opt; do
         ;;
     h ) echo "Usage: ./BuildMac.sh [-1][-d][-s][-x][-b][-c]"
         echo "   -d: Build deps"
+        echo "   -p: Pack deps into archive after build"
         echo "   -a: Set ARCHITECTURE (arm64 or x86_64 or universal)"
         echo "   -s: Build slicer only"
         echo "   -t: Specify minimum version of the target platform, default is 10.15"
@@ -45,7 +46,13 @@ while getopts "1dpa:st:xbc:h" opt; do
         echo "   -1: limit builds to 1 core (where possible)"
         exit 0
         ;;
-    * )
+    : )
+        echo "Option -${OPTARG} requires an argument."
+        exit 1
+        ;;
+    \? )
+        echo "Unknown option: -${OPTARG}"
+        exit 1
         ;;
   esac
 done
@@ -79,12 +86,19 @@ if [ -z "$OSX_DEPLOYMENT_TARGET" ]; then
   export OSX_DEPLOYMENT_TARGET="10.15"
 fi
 
+# CMake 4+ drops compatibility modes for very old minimum versions used by some
+# third-party deps; forward this floor into configure steps.
+if [ -z "$CMAKE_POLICY_VERSION_MINIMUM" ]; then
+  export CMAKE_POLICY_VERSION_MINIMUM="3.5"
+fi
+
 echo "Build params:"
 echo " - ARCH: $ARCH"
 echo " - BUILD_CONFIG: $BUILD_CONFIG"
 echo " - BUILD_TARGET: $BUILD_TARGET"
 echo " - CMAKE_GENERATOR: $SLICER_CMAKE_GENERATOR for Slicer, $DEPS_CMAKE_GENERATOR for deps"
 echo " - OSX_DEPLOYMENT_TARGET: $OSX_DEPLOYMENT_TARGET"
+echo " - CMAKE_POLICY_VERSION_MINIMUM: $CMAKE_POLICY_VERSION_MINIMUM"
 echo " - CMAKE_BUILD_PARALLEL_LEVEL: $CMAKE_BUILD_PARALLEL_LEVEL" 
 echo
 
@@ -121,6 +135,7 @@ function build_deps() {
                         -DDESTDIR="$DEPS" \
                         -DOPENSSL_ARCH="darwin64-${_ARCH}-cc" \
                         -DCMAKE_BUILD_TYPE="$BUILD_CONFIG" \
+                        -DCMAKE_POLICY_VERSION_MINIMUM:STRING="${CMAKE_POLICY_VERSION_MINIMUM}" \
                         -DCMAKE_OSX_ARCHITECTURES:STRING="${_ARCH}" \
                         -DCMAKE_OSX_DEPLOYMENT_TARGET="${OSX_DEPLOYMENT_TARGET}"
                 fi
@@ -162,6 +177,7 @@ function build_slicer() {
                     -DCMAKE_PREFIX_PATH="$DEPS/usr/local" \
                     -DCMAKE_INSTALL_PREFIX="$PWD/QIDIStudio" \
                     -DCMAKE_BUILD_TYPE="$BUILD_CONFIG" \
+                    -DCMAKE_POLICY_VERSION_MINIMUM:STRING="${CMAKE_POLICY_VERSION_MINIMUM}" \
                     -DCMAKE_MACOSX_RPATH=ON \
                     -DCMAKE_INSTALL_RPATH="${DEPS}/usr/local" \
                     -DCMAKE_MACOSX_BUNDLE=ON \
@@ -182,9 +198,16 @@ function build_slicer() {
             # fully copy newly built app
             cp -pR "../src$BUILD_DIR_CONFIG_SUBDIR/QIDIStudio.app" ./QIDIStudio.app
             # fix resources
-            resources_path=$(readlink ./QIDIStudio.app/Contents/Resources)
-            rm ./QIDIStudio.app/Contents/Resources
-            cp -R "$resources_path" ./QIDIStudio.app/Contents/Resources
+            resources_link="./QIDIStudio.app/Contents/Resources"
+            if [ -L "$resources_link" ]; then
+                resources_path=$(
+                    cd "$(dirname "$resources_link")"
+                    cd "$(readlink "$resources_link")"
+                    pwd
+                )
+                rm "$resources_link"
+                cp -R "$resources_path" "$resources_link"
+            fi
             # delete .DS_Store file
             find ./QIDIStudio.app/ -name '.DS_Store' -delete
         )
@@ -237,6 +260,10 @@ esac
 
 if [ "$ARCH" = "universal" ] && [ "$BUILD_TARGET" != "deps" ]; then
     build_universal
+fi
+
+if [ "$PACK_DEPS" = "1" ]; then
+    pack_deps
 fi
 
 if [ "1." == "$PACK_DEPS". ]; then

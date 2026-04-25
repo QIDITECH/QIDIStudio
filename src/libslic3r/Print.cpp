@@ -103,7 +103,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
         "before_layer_change_gcode",
         "enable_pressure_advance",
         "pressure_advance",
-        "enable_overhang_bridge_fan"
+        "enable_overhang_bridge_fan",
         "overhang_fan_speed",
         "pre_start_fan_time",
         "overhang_fan_threshold",
@@ -125,6 +125,10 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
         "extruder_colour",
         "extruder_offset",
         "filament_flow_ratio",
+        "filament_z_offset",
+        "filament_z_offset_initial_layer",
+        "z_offset",
+        "z_offset_initial_layer",
         "reduce_fan_stop_start_freq",
         "fan_cooling_layer_time",
         "full_fan_speed_layer",
@@ -187,7 +191,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
         "is_infill_first",
         //OrcaSlicer
         "seam_gap",
-        "wipe_speed"
+        "wipe_speed",
         "default_jerk",
         "outer_wall_jerk",
         "inner_wall_jerk",
