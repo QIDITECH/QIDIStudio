@@ -3,7 +3,7 @@
 set -e
 set -o pipefail
 
-while getopts "1dpa:st:xbc:h" opt; do
+while getopts ":1dpa:st:xbc:h" opt; do
   case "${opt}" in
     d )
         export BUILD_TARGET="deps"
@@ -46,7 +46,13 @@ while getopts "1dpa:st:xbc:h" opt; do
         echo "   -1: limit builds to 1 core (where possible)"
         exit 0
         ;;
-    * )
+    : )
+        echo "Option -${OPTARG} requires an argument."
+        exit 1
+        ;;
+    \? )
+        echo "Unknown option: -${OPTARG}"
+        exit 1
         ;;
   esac
 done
