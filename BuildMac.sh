@@ -183,9 +183,16 @@ function build_slicer() {
             # fully copy newly built app
             cp -pR "../src$BUILD_DIR_CONFIG_SUBDIR/QIDIStudio.app" ./QIDIStudio.app
             # fix resources
-            resources_path=$(readlink ./QIDIStudio.app/Contents/Resources)
-            rm ./QIDIStudio.app/Contents/Resources
-            cp -R "$resources_path" ./QIDIStudio.app/Contents/Resources
+            resources_link="./QIDIStudio.app/Contents/Resources"
+            if [ -L "$resources_link" ]; then
+                resources_path=$(
+                    cd "$(dirname "$resources_link")"
+                    cd "$(readlink "$resources_link")"
+                    pwd
+                )
+                rm "$resources_link"
+                cp -R "$resources_path" "$resources_link"
+            fi
             # delete .DS_Store file
             find ./QIDIStudio.app/ -name '.DS_Store' -delete
         )
