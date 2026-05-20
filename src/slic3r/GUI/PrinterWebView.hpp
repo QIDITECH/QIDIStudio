@@ -65,6 +65,9 @@
 namespace Slic3r {
 namespace GUI {
 
+//cj_4
+class TimelapseFileItem;
+
 wxDECLARE_EVENT(EVT_PRINTER_TASK_RESULT, wxCommandEvent);
 
 //y28
@@ -117,14 +120,15 @@ public:
     void onSetBoxTask(wxCommandEvent& event);
     //cj_1
     void onRefreshRfid(wxCommandEvent& event);
-    //cj_2
-    void delPrinterFile(wxCommandEvent& event);
     //cj_3
-    void delTimelapseFile(wxCommandEvent& event);
-    //cj_2
-    void downloadPrinterFile(wxCommandEvent& event);
+    void onTimelapseDeleteUi(wxCommandEvent& event);
+    void run_delete_timelapse_files(const std::vector<TimelapseFileItem*>& items, bool also_remove_local_copy);
     //cj_3
     void downloadTimelapseFile(wxCommandEvent& event);
+    //cj_4
+    void playTimelapseFile(wxCommandEvent& event);
+    void revealTimelapseFile(wxCommandEvent& event);
+    void downloadTimelapseOne(wxCommandEvent& event);
 
 
 
@@ -152,6 +156,8 @@ public:
     void SetPresetChanged(bool status);
     void SetLoginStatus(bool status);
     std::string NormalizeVendor(const std::string& str);
+    //cj_4
+    bool select_device_by_id(const std::string& device_id);
 
 
     std::vector<DeviceButton *> GetButton() { return m_buttons; };
@@ -171,6 +177,14 @@ public:
 
     void onSSEMessageHandle(const std::string& event, const std::string& data);
     void onTaskDispatchResult(wxCommandEvent& event);
+    //cj_3
+    void onModelFileListCommand(wxCommandEvent& event);
+    void downloadSinglePrinterFile(const wxString& storage_path);
+    void deleteSinglePrinterFile(const wxString& storage_path);
+    void run_delete_printer_file_task(const wxString& storage_path, bool also_remove_local_copy = false);
+    void revealDownloadedPrinterFile(const wxString& storage_path);
+    //cj_4
+    void downloadTimelapseItems(const std::vector<TimelapseFileItem*>& items);
 
     //y76
     void pauseCamera();

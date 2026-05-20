@@ -64,6 +64,7 @@
     "support_box_temp_control": "0",
     "support_chamber_temp_control": "1",
     "support_cooling_filter": "0",
+    "support_multi_bed_types": "1",
     "thumbnail_size": ["380x380/QIDI","210x210/QIDI","110x110/PNG"],
     "thumbnails_format": "QIDI",
     "wipe": ["1"],

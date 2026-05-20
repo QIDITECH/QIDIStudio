@@ -77,7 +77,7 @@ namespace Slic3r
         bool  is_type_match = true;
     };
 
-    static void _parse_tray_info(int ams_id, int slot_id, DevAms::AmsType type, DevAmsTray tray, FilamentInfo& result)
+    static void _parse_tray_info(int ams_id, int slot_id, DevAmsType type, DevAmsTray tray, FilamentInfo& result)
     {
         result.color = tray.color;
         result.type = tray.get_filament_type();
@@ -96,7 +96,7 @@ namespace Slic3r
         }
         else
         {
-            if (type == DevAms::N3S)
+            if (type == DevAmsType::N3S)
             {
                 result.id = ams_id + slot_id;
             }
@@ -107,8 +107,8 @@ namespace Slic3r
         }
     }
 
-    //y78
-    int DevMappingUtil::ams_filament_mapping(const MachineObject* obj, const std::vector<FilamentInfo>& filaments, std::vector<FilamentInfo>& result, std::vector<bool> map_opt, std::vector<int> exclude_id, bool nozzle_has_ams_then_ignore_ext, bool is_from_sd_card)
+    //y80
+    int DevMappingUtil::ams_filament_mapping(const MachineObject* obj, const std::vector<FilamentInfo>& filaments, std::vector<FilamentInfo>& result, std::vector<bool> map_opt, std::vector<int> exclude_id, bool nozzle_has_ams_then_ignore_ext, bool is_from_sd_card, std::string dev_id)
     {
         if (filaments.empty())
             return -1;
@@ -134,7 +134,15 @@ namespace Slic3r
             slot_id = qds_obj->m_slot_id;
             box_count = qds_obj->m_box_count;
         }
-        else {
+        //y80
+        else if (dev_id != "") {
+            auto qds_device = GUI::wxGetApp().qdsdevmanager->getDevice(dev_id);
+            filament_colors = qds_device->m_filament_colors;
+            filament_type = qds_device->m_filament_type;
+            filament_id = qds_device->m_filament_id;
+            slot_id = qds_device->m_slot_id;
+            box_count = qds_device->m_box_count;
+        } else {
             filament_colors = GUI::wxGetApp().plater()->box_msg.filament_colors;
             filament_type = GUI::wxGetApp().plater()->box_msg.filament_type;
             filament_id = GUI::wxGetApp().plater()->box_msg.filament_id;
@@ -181,12 +189,11 @@ namespace Slic3r
         //     {
         //         int ams_id = atoi(ams->first.c_str());
         //         int tray_id = atoi(tray->first.c_str());
-        //         int tray_index = 0;
-        //         if (ams_type == DevAms::AMS || ams_type == DevAms::AMS_LITE || ams_type == DevAms::N3F)
-        //         {
+                // if (ams_type == DevAmsType::AMS || ams_type == DevAmsType::AMS_LITE || ams_type == DevAmsType::N3F)
+                // {
         //             tray_index = ams_id * 4 + tray_id;
         //         }
-        //         else if (ams_type == DevAms::N3S)
+        //         else if (ams_type == DevAmsType::N3S)
         //         {
         //             tray_index = ams_id + tray_id;
         //         }
@@ -209,9 +216,9 @@ namespace Slic3r
         //         }
 
         //         //first: left,nozzle=1,map=1   second: right,nozzle=0,map=2
-        //         bool right_ams_valid = ams->second->GetExtruderId() == 0 && map_opt[MappingOption::USE_RIGHT_AMS];
-        //         bool left_ams_valid = ams->second->GetExtruderId() == 1 && map_opt[MappingOption::USE_LEFT_AMS];
-        //         if (right_ams_valid || left_ams_valid)
+                // bool right_ams_valid = (ams->second->GetBindedExtruderSet().count(MAIN_EXTRUDER_ID) != 0) && map_opt[MappingOption::USE_RIGHT_AMS];
+                // bool left_ams_valid = (ams->second->GetBindedExtruderSet().count(DEPUTY_EXTRUDER_ID) != 0) && map_opt[MappingOption::USE_LEFT_AMS];
+                // if (right_ams_valid || left_ams_valid)
         //         {
         //             tray_filaments.emplace(std::make_pair(tray_index, info));
         //             if (right_ams_valid)
@@ -246,7 +253,7 @@ namespace Slic3r
                         }
                     }
                     FilamentInfo info;
-                    _parse_tray_info(atoi(tray.id.c_str()), 0, DevAms::DUMMY, tray, info);
+                    _parse_tray_info(atoi(tray.id.c_str()), 0, DevAmsType::EXT_SPOOL, tray, info);
                     tray_filaments.emplace(std::make_pair(info.tray_id, info));
                 }
             }

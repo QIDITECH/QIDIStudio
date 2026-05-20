@@ -297,19 +297,19 @@ var topicData = [
 var $prev;
 var $next;
 
-var video_prev;
-var video_next;
+var $video_prev;
+var $video_next;
 
 function OnInit() {
+  $prev = $('#academy_Left_Btn');
+  $next = $('#academy_Right_Btn');
+
   getAcademyData();
   createVideoHTML();
   if (IsChinese())
     $("#tutorial_block").hide();
   createTopicHTML();
   TranslatePage();
-
-  $prev = $('#academy_Left_Btn');
-  $next = $('#academy_Right_Btn');
 
   $prev.on('click', () => scrollByStep(-1));
   $next.on('click', () => scrollByStep(+1));
@@ -383,7 +383,47 @@ function updateSearchResult(result) {
   }
 }
 
-//--------------- Academy Cards -------------------
+//--------------- Academy Tabs & Cards -------------------
+
+var currentTabIdx = 0;
+var currentTabData = [];
+
+function initAcademyTabs(data) {
+  currentTabData = data.slice().sort((a, b) => a.sort - b.sort);
+  currentTabIdx = 0;
+  $('#academy_tabs').empty();
+  $('#academy_Card_Content').empty();
+  $('#academy_content').scrollLeft(0);
+  for (let i = 0; i < currentTabData.length; i++) {
+    let activeClass = i === 0 ? 'active' : '';
+    let html = `<div class="academyTab ${activeClass}" data-idx="${i}" onclick="switchAcademyTab(${i})">${currentTabData[i].name}</div>`;
+    $('#academy_tabs').append(html);
+  }
+  renderAcademyCards(0);
+}
+
+function switchAcademyTab(idx) {
+  if (idx === currentTabIdx) return;
+  currentTabIdx = idx;
+  $('.academyTab').removeClass('active');
+  $(`.academyTab[data-idx="${idx}"]`).addClass('active');
+  $('#academy_Card_Content').empty();
+  $('#academy_content').scrollLeft(0);
+  renderAcademyCards(idx);
+}
+
+function renderAcademyCards(idx) {
+  let children = currentTabData[idx].childList.slice().sort((a, b) => a.sort - b.sort);
+  for (let i = 0; i < children.length; i++) {
+    let item = children[i];
+    let html = `<div class="card" data-idx="${i}" onclick="openAcademyUrl('${item.id}')">
+                  <img class="cardImg" src="${item.img}" />
+                  <div class="cardTitle TextS1">${item.printerType}</div>
+                </div>`;
+    $('#academy_Card_Content').append(html);
+  }
+  updateButtons();
+}
 
 function getAcademyData() {
   var tSend={};
@@ -392,6 +432,7 @@ function getAcademyData() {
 	SendWXMessage( JSON.stringify(tSend) );
 }
 
+//y80
 function createCardHTML(data) {
   for (let i = 0; i < data.length; i++) {
     let html = `<div class="card" data-idx="${i}" onclick="openAcademyUrl('${data[i].id}')">
@@ -401,6 +442,18 @@ function createCardHTML(data) {
     $('#academy_Card_Content').append(html)
   }
 }
+
+function get_image_url(printer_type) {
+  if (!printer_type) return 'img/printer_q2.png';
+  
+  const found = cardData.data.find(item => 
+    item.printerType.toLowerCase() === printer_type.toLowerCase() ||
+    item.id.toLowerCase() === printer_type.toLowerCase()
+  );
+  
+  return found ? found.img : 'img/printer_q2.png';
+}
+//y80
 
 function stepCardSize() {
   const $first = $('#academy_Card_Content').children().first();
@@ -423,6 +476,16 @@ function clampScroll(x) {
 function updateButtons() {
   const x = Math.round($('#academy_content').scrollLeft());
   const max = Math.round(maxScrollLeft());
+
+//y80
+  // if (max <= 0) {
+  //   $prev.hide();
+  //   $next.hide();
+  //   return;
+  // }
+  // $prev.show();
+  // $next.show();
+//y80
   $prev.prop('disabled', x <= 0);
   $next.prop('disabled', x >= max);
 }
@@ -612,46 +675,6 @@ function langStringTransfer()
   }
 }
 
-function get_image_url(printer_type) {
-  // const raw = (printer_type || '').toLowerCase();
-  // const normalized = raw.replace(/[^a-z0-9]/g, '');
-
-  // const mappings = [
-  //   { keywords: ['h2d'], src: 'img/printer_h2d.png', useRaw: false },
-  //   { keywords: ['h2c'], src: 'img/printer_h2c.png', useRaw: false },
-  //   { keywords: ['h2s'], src: 'img/printer_h2s.png', useRaw: false },
-  //   { keywords: ['p2s'], src: 'img/printer_p2s.png', useRaw: false },
-  //   { keywords: ['p1s'], src: 'img/printer_p1s.png', useRaw: false },
-  //   { keywords: ['a1mini'], src: 'img/printer_a1mini.png', useRaw: false },
-  //   { keywords: ['a1'], src: 'img/printer_a1.png', useRaw: false },
-  //   { keywords: ['x1c'], src: 'img/printer_x1c.png', useRaw: false },
-  //   { keywords: ['studio'], src: 'img/studio.png', useRaw: false },
-  //   { keywords: ['suite'], src: 'img/suite.png', useRaw: false },
-  //   { keywords: ['handy'], src: 'img/handy.png', useRaw: false },
-  //   { keywords: ['拓竹耗材'], src: 'img/filament.png', useRaw: true },
-  //   { keywords: ['filament'], src: 'img/filament.png', useRaw: false },
-  //   { keywords: ['canvas'], src: 'img/canvas.png', useRaw: false },
-  //   { keywords: ['彩色版画生成器'], src: 'img/canvas.png', useRaw: true },
-  // ];
-
-  // for (const item of mappings) {
-  //   const haystack = item.useRaw ? raw : normalized;
-  //   if (item.keywords.some(keyword => haystack.includes(keyword))) {
-  //     return item.src;
-  //   }
-  // }
-  // return 'img/printer_a1.png';
-
-  if (!printer_type) return 'img/printer_q2.png';
-  
-  const found = cardData.data.find(item => 
-    item.printerType.toLowerCase() === printer_type.toLowerCase() ||
-    item.id.toLowerCase() === printer_type.toLowerCase()
-  );
-  
-  return found ? found.img : 'img/printer_q2.png';
-}
-
 function HandleStudio( pVal )
 {
   let strCmd = pVal['command'];
@@ -659,6 +682,8 @@ function HandleStudio( pVal )
 	{
 		updateSearchResult(pVal['data']);
 	}else if(strCmd=='academy_list_get') {
+    //y80
+    //initAcademyTabs(cardData['data']);
     createCardHTML(cardData['data']);
   }
 }

@@ -122,7 +122,12 @@ public:
         CONFIRM_AND_RETRY   = 3,
         CONFIRM_AND_RESUME  = 4,
         DONE_AND_RETRY      = 5,
-        MAX_STYLE_NUM       = 6
+        //cj_4
+        DELETE_LOCAL_AND_BOTH_AND_CANCEL = 6,
+        //cj_3
+        // Same as DELETE_LOCAL_AND_BOTH_AND_CANCEL but hides "Delete on printer only" (middle button).
+        DELETE_LOCAL_AND_BOTH_AND_CANCEL_NO_PRINTER_ONLY = 7,
+        MAX_STYLE_NUM       = 8
     };
     SecondaryCheckDialog(
         wxWindow* parent,
@@ -132,10 +137,12 @@ public:
         const wxPoint& pos = wxDefaultPosition,
         const wxSize& size = wxDefaultSize,
         long            style = wxCLOSE_BOX | wxCAPTION,
-        bool not_show_again_check = false
+        bool not_show_again_check = false,
+        //cj_4
+        bool external_action_button_handlers = false
     );
     void update_text(wxString text);
-    //cj_3
+    //cj_4
     // Call after update_text(); widens scroll + wrapped label (width_dip is logical DIP, e.g. 600).
     void set_message_area_width(int width_dip);
     void on_show();
@@ -161,6 +168,8 @@ public:
     Button* m_button_resume { nullptr };
     wxCheckBox* m_show_again_checkbox;
     ButtonStyle m_button_style;
+    //cj_4
+    bool m_external_action_button_handlers{ false };
     bool not_show_again = false;
     std::string show_again_config_text = "";
 };

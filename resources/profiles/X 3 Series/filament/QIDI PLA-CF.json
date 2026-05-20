@@ -21,5 +21,6 @@
     "overhang_fan_threshold": ["50%"],
     "pressure_advance": ["0.02"],
     "temperature_vitrification": ["45"],
-    "compatible_printers": []
+    "compatible_printers": [],
+    "close_additional_fan_first_x_layers": ["1"]
 }

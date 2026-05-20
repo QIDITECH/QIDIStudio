@@ -1,4 +1,4 @@
-//#include "D:/dev/bamboo_slicer/build_release/src/slic3r/CMakeFiles/libslic3r_gui.dir/Release/cmake_pch.hxx"
+//#include "D:/dev/qidi_slicer/build_release/src/slic3r/CMakeFiles/libslic3r_gui.dir/Release/cmake_pch.hxx"
 #include "DevHMS.h"
 
 namespace Slic3r

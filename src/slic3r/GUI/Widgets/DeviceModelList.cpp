@@ -26,7 +26,31 @@ namespace Slic3r {
 
 namespace GUI {
 
+//cj_4
+static wxString model_file_list_display_label(const wxString& storage_path)
+{
+	if (storage_path.empty())
+		return wxString();
+	wxString s(storage_path);
+	s.Replace("\\", "/");
+	const int pos = s.Find('/', true);
+	if (pos == wxNOT_FOUND || pos + 1 >= static_cast<int>(s.length()))
+		return s;
+	return s.Mid(pos + 1);
+}
+
+//cj_4
+static bool model_file_list_path_is_usb(const wxString& storage_path)
+{
+	if (storage_path.empty())
+		return false;
+	wxString s(storage_path);
+	s.Replace("\\", "/");
+	return s.StartsWith("USB/", false);
+}
+
 //cj_3
+// MSVC: helpers in an anonymous namespace may not resolve from out-of-line member definitions in the same TU (C3861); use file-scope static in the GUI namespace instead.
 static wxColour file_list_row_separator_colour()
 {
 	return wxGetApp().dark_mode() ? wxColour(76, 76, 85) : wxColour(238, 238, 238);
@@ -37,10 +61,55 @@ static wxColour file_list_panel_background()
 	return wxGetApp().dark_mode() ? wxColour(45, 45, 49) : wxColour(255, 255, 255);
 }
 
-// 浅色对齐历史 file_list_primary；深色对齐 GUI_App m_color_label_sys (#B2B3B5)
+// Light theme matches legacy file_list_primary; dark theme matches GUI_App m_color_label_sys (#B2B3B5).
 static wxColour file_list_primary_text_colour()
 {
 	return wxGetApp().dark_mode() ? wxColour(0xB2, 0xB3, 0xB5) : wxColour(140, 140, 140);
+}
+
+//cj_3 Idle face for Local/USB toggle; same as ModelFileListView (separator tone; no #EEE under dark refresh).
+static wxColour mount_filter_button_idle_background()
+{
+	return file_list_row_separator_colour();
+}
+
+//cj_4 Same idle/hover/press as StatusBasePanel::create_tab_page tab buttons (#EEE / #999).
+static void apply_model_file_mount_button_chrome(Button* button)
+{
+	if (button == nullptr)
+		return;
+	//cj_3
+	const wxColour idle_bg = mount_filter_button_idle_background();
+	StateColor add_btn_bg(
+		std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Pressed),
+		std::pair<wxColour, int>(wxColour(116, 168, 255), StateColor::Hovered),
+		std::pair<wxColour, int>(idle_bg, StateColor::Normal));
+	//cj_3
+	StateColor btn_text_color(std::pair<wxColour, int>(file_list_primary_text_colour(), StateColor::Normal));
+	button->SetBackgroundColor(add_btn_bg);
+	button->SetBorderWidth(0);
+	button->SetFont(Label::Body_15);
+	button->SetTextColor(btn_text_color);
+	//cj_3 MSW StaticBox pre-clear must not use fixed #EEE in dark mode.
+	button->SetBackgroundColour(file_list_panel_background());
+}
+
+//cj_4 Unselected / selected faces match tabSiwtch.
+static void set_mount_filter_button_unselected(Button* b)
+{
+	if (b == nullptr)
+		return;
+	//cj_3
+	b->SetBackgroundColorNormal(mount_filter_button_idle_background());
+	b->SetTextColorNormal(file_list_primary_text_colour());
+}
+
+static void set_mount_filter_button_selected(Button* b)
+{
+	if (b == nullptr)
+		return;
+	b->SetBackgroundColorNormal(wxColour(68, 121, 251));
+	b->SetTextColorNormal(wxColour(255, 255, 255));
 }
 
 //cj_3 Same face as printing-progress filename (HarmonyOS / Label body); row text at 10pt.
@@ -65,7 +134,7 @@ static wxFont file_list_header_label_font()
 
 //cj_3
 //cj_3
-// Green when a local file already exists under Preferences download_path (readable in light / dark theme).
+// Blue when a local file already exists under Preferences download_path (readable in light / dark theme).
 static wxColour file_list_local_exists_text_colour()
 {
 	return wxGetApp().dark_mode() ? wxColour(150, 195, 255) : wxColour(95, 145, 235);
@@ -120,6 +189,12 @@ static constexpr int kFileListThumbDip    = 18;
 //cj_3 Model list header/data column widths (DIP); keep header row bundle in sync with DeviceModelItem.
 static constexpr int kModelListWeightColDip = 93;
 static constexpr int kModelListTimeColDip   = 78;
+//cj_3 Max width (DIP) for the name column in data rows only.
+static constexpr int kModelListNameColMaxDip = 350;
+//cj_3 Header-only: tail pad after Local/USB (inside name flex item) so weight column x matches rows.
+static constexpr int kModelListNameHeaderToggleBandMaxDip = 260;
+static constexpr int kModelListNameHeaderToggleToWeightPadDip =
+	kModelListNameColMaxDip - kModelListNameHeaderToggleBandMaxDip;
 //cj_3 Row gutters (DIP): checkbox–thumb, thumb–name, name–weight, weight–time, time–row edge.
 static constexpr int kModelListGapCbToThumbDip    = 10;
 static constexpr int kModelListGapThumbToNameDip  = 10;
@@ -163,17 +238,17 @@ static void apply_fg_to_static_texts(wxWindow* root, const wxColour& fg)
 }
 
 DeviceModelItem::DeviceModelItem(wxWindow* parent,
-	const wxString& name,
+	const wxString& storagePath,
 	const wxBitmap& image,
 	double weight,
 	const wxString& estimatedTime)
 	: wxPanel(parent, wxID_ANY),
-	m_name(name),
+	m_storage_path(storagePath),
+	m_display_name(model_file_list_display_label(storagePath)),
+	m_is_usb(model_file_list_path_is_usb(storagePath)),
 	m_weight(weight),
 	m_estimatedTime(estimatedTime)
 {
-	//cj_3
-	const int row_pad = parent->FromDIP(4);
 	const int row_lead = parent->FromDIP(10);
 	const int thumb_sz = parent->FromDIP(kFileListThumbDip);
 	const int row_h    = parent->FromDIP(kFileListRowHeightDip);
@@ -187,106 +262,129 @@ DeviceModelItem::DeviceModelItem(wxWindow* parent,
 	const int col_time_w      = parent->FromDIP(kModelListTimeColDip);
 	const int w_time_bundle_w = col_weight_w + g_wt_mid + col_time_w + g_time_end;
 
-	wxBoxSizer* mainSizer = new wxBoxSizer(wxHORIZONTAL); {
-		//cj_3
-		// Stack cancel (file_cancel.svg) above checkbox; same cell width as checkbox column.
+	//cj_4 WxDeclareFirst: declarations → root sizer + SetSizer(this) → mainSizer → { build } → Add.
+	wxBoxSizer* outer     = nullptr;
+	wxBoxSizer* mainSizer = nullptr;
+	wxBoxSizer* cell_col  = nullptr;
+	wxBoxSizer* img_col   = nullptr;
+	wxBoxSizer* img_row   = nullptr;
+	wxBoxSizer* nameSizer = nullptr;
+	wxBoxSizer* wt_h      = nullptr;
+	wxBoxSizer* wt_v      = nullptr;
+
+	SetBackgroundColour(file_list_panel_background());
+	outer = new wxBoxSizer(wxVERTICAL);
+	SetSizer(outer);
+
+	mainSizer = new wxBoxSizer(wxHORIZONTAL);
+
+	{
+		//cj_3 Stack cancel (file_cancel.svg) above checkbox; same cell width as checkbox column.
 		m_checkbox_cell = new wxPanel(this);
 		m_checkbox_cell->SetBackgroundColour(file_list_panel_background());
-		wxBoxSizer* cell_col = new wxBoxSizer(wxVERTICAL);
-		//cj_3 Same bitmap toggle as Physical Printer dialog expert_mode (Field.cpp / ConfigOptionsGroup).
-		//cj_3 Bitmap toggle (15px ScalableBitmap tier); not Field::CheckBox.
-		m_checkbox = new FileListBitmapCheckBox(m_checkbox_cell, wxID_ANY);
-		const int cb_cell_w = m_checkbox->GetSize().GetWidth();
-		m_checkbox_cell->SetMinSize(wxSize(cb_cell_w, 2 * cb_cell_w + parent->FromDIP(2)));
-		m_cancel_download_btn = new Button(m_checkbox_cell, wxEmptyString, "file_cancel", 0, cb_cell_w, wxID_ANY);
-		m_cancel_download_btn->SetPaddingSize(wxSize(0, 0));
-		m_cancel_download_btn->SetMinSize(wxSize(cb_cell_w, cb_cell_w));
-		m_cancel_download_btn->SetMaxSize(wxSize(cb_cell_w, cb_cell_w));
-		m_cancel_download_btn->SetBorderWidth(0);
-		m_cancel_download_btn->SetCornerRadius(0);
-		m_cancel_download_btn->SetBackgroundColor(StateColor(file_list_panel_background()));
-		m_cancel_download_btn->SetToolTip(_L("Cancel download"));
+		cell_col = new wxBoxSizer(wxVERTICAL);
+		m_checkbox_cell->SetSizer(cell_col);
+		{
+			//cj_3 Bitmap toggle (15px tier); not Field::CheckBox.
+			m_checkbox = new FileListBitmapCheckBox(m_checkbox_cell, wxID_ANY);
+			const int cb_cell_w = m_checkbox->GetSize().GetWidth();
+			m_checkbox_cell->SetMinSize(wxSize(cb_cell_w, 2 * cb_cell_w + parent->FromDIP(2)));
+			m_cancel_download_btn = new Button(m_checkbox_cell, wxEmptyString, "file_cancel", 0, cb_cell_w, wxID_ANY);
+			m_cancel_download_btn->SetPaddingSize(wxSize(0, 0));
+			m_cancel_download_btn->SetMinSize(wxSize(cb_cell_w, cb_cell_w));
+			m_cancel_download_btn->SetMaxSize(wxSize(cb_cell_w, cb_cell_w));
+			m_cancel_download_btn->SetBorderWidth(0);
+			m_cancel_download_btn->SetCornerRadius(0);
+			m_cancel_download_btn->SetBackgroundColor(StateColor(file_list_panel_background()));
+			m_cancel_download_btn->SetToolTip(_L("Cancel download"));
 #ifdef __WXMSW__
-		m_cancel_download_btn->SetCursor(wxCURSOR_HAND);
+			m_cancel_download_btn->SetCursor(wxCURSOR_HAND);
 #endif
-		m_cancel_download_btn->Bind(wxEVT_BUTTON, &DeviceModelItem::onCancelDownload, this);
-		//cj_3
-		m_cancel_download_btn->SetCanFocus(false);
-		m_cancel_download_btn->Hide();
+			m_cancel_download_btn->Bind(wxEVT_BUTTON, &DeviceModelItem::onCancelDownload, this);
+			m_cancel_download_btn->SetCanFocus(false);
+			m_cancel_download_btn->Hide();
+		}
 		cell_col->AddStretchSpacer(1);
 		cell_col->Add(m_cancel_download_btn, 0, wxALIGN_CENTER_HORIZONTAL);
 		cell_col->Add(m_checkbox, 0, wxALIGN_CENTER_HORIZONTAL);
 		cell_col->AddStretchSpacer(1);
-		m_checkbox_cell->SetSizer(cell_col);
 
 		m_image_panel = new wxPanel(this);
 		m_image_panel->SetBackgroundColour(file_list_panel_background());
-		m_image = new wxStaticBitmap(m_image_panel, wxID_ANY, image);
-		m_image->SetMinSize(wxSize(thumb_sz, thumb_sz));
-		m_image->SetMaxSize(wxSize(thumb_sz, thumb_sz));
-		wxBoxSizer* img_col = new wxBoxSizer(wxVERTICAL);
-		wxBoxSizer* img_row = new wxBoxSizer(wxHORIZONTAL);
+		img_col = new wxBoxSizer(wxVERTICAL);
+		img_row = new wxBoxSizer(wxHORIZONTAL);
+		m_image_panel->SetSizer(img_col);
+		{
+			m_image = new wxStaticBitmap(m_image_panel, wxID_ANY, image);
+			m_image->SetMinSize(wxSize(thumb_sz, thumb_sz));
+			m_image->SetMaxSize(wxSize(thumb_sz, thumb_sz));
+		}
 		img_row->Add(m_image, 0, wxALIGN_CENTER_VERTICAL);
 		img_col->AddStretchSpacer(1);
 		img_col->Add(img_row, 0, wxALIGN_CENTER_HORIZONTAL);
 		img_col->AddStretchSpacer(1);
-		m_image_panel->SetSizer(img_col);
-		const wxSize img_col_sz(thumb_sz, row_h);
-		m_image_panel->SetMinSize(img_col_sz);
-		m_image_panel->SetMaxSize(img_col_sz);
+		{
+			const wxSize img_col_sz(thumb_sz, row_h);
+			m_image_panel->SetMinSize(img_col_sz);
+			m_image_panel->SetMaxSize(img_col_sz);
+		}
+
+		const wxColour row_bg = file_list_panel_background();
+		m_gap_cb_thumb_panel   = make_file_list_row_gap_panel(this, g_cb_thumb, row_h, row_bg);
+		m_gap_thumb_name_panel = make_file_list_row_gap_panel(this, g_thumb_name, row_h, row_bg);
 
 		m_namePanel = new wxPanel(this);
 		m_namePanel->SetBackgroundColour(file_list_panel_background());
-		wxBoxSizer* nameSizer = new wxBoxSizer(wxVERTICAL);
-		m_nameText = new wxStaticText(m_namePanel, wxID_ANY, name);
-		//cj_3
-		m_nameText->SetFont(file_list_row_content_font());
+		nameSizer = new wxBoxSizer(wxVERTICAL);
+		m_namePanel->SetSizer(nameSizer);
+		{
+			m_nameText = new wxStaticText(m_namePanel, wxID_ANY, m_display_name);
+			m_nameText->SetFont(file_list_row_content_font());
+		}
 		nameSizer->AddStretchSpacer(1);
 		nameSizer->Add(m_nameText, 0, wxALIGN_LEFT | wxLEFT | wxRIGHT, 0);
 		nameSizer->AddStretchSpacer(1);
-		m_namePanel->SetSizer(nameSizer);
-
-		m_namePanel->SetMaxSize(wxSize(parent->FromDIP(350), -1));
-		//cj_3
+		m_namePanel->SetMaxSize(wxSize(parent->FromDIP(kModelListNameColMaxDip), -1));
 		m_namePanel->Bind(wxEVT_SIZE, [this](wxSizeEvent& e) {
 			updateNameLabelWidth();
 			e.Skip();
 		});
 
-		//cj_3 No space between value and unit (e.g. 12.34g).
-		wxString weightStr = wxString::Format("%.2fg", weight);
-		const wxFont row_font = file_list_row_content_font();
-		//cj_3 Weight+time in one panel (verify semi-transparent download tint vs Timelapse row structure).
-		m_weight_time_panel = new wxPanel(this);
-		m_weight_time_panel->SetBackgroundColour(file_list_panel_background());
-		m_weightText = new wxStaticText(m_weight_time_panel, wxID_ANY, weightStr);
-		m_weightText->SetFont(row_font);
-		m_weightText->SetMinSize(wxSize(col_weight_w, -1));
-		m_weightText->SetMaxSize(wxSize(col_weight_w, -1));
-
-		wxString time_compact(estimatedTime);
+		const wxString weightStr = wxString::Format("%.2fg", weight);
+		const wxFont   row_font  = file_list_row_content_font();
+		wxString       time_compact(estimatedTime);
 		time_compact.Replace(" ", wxEmptyString, true);
 		time_compact.Replace("\t", wxEmptyString, true);
-		m_timeText = new wxStaticText(m_weight_time_panel, wxID_ANY, time_compact);
-		m_timeText->SetFont(row_font);
-		m_timeText->SetMinSize(wxSize(col_time_w, -1));
-		m_timeText->SetMaxSize(wxSize(col_time_w, -1));
-		wxBoxSizer* wt_h = new wxBoxSizer(wxHORIZONTAL);
+
+		m_weight_time_panel = new wxPanel(this);
+		m_weight_time_panel->SetBackgroundColour(file_list_panel_background());
+		wt_h = new wxBoxSizer(wxHORIZONTAL);
+		wt_v = new wxBoxSizer(wxVERTICAL);
+		m_weight_time_panel->SetSizer(wt_v);
+		{
+			m_weightText = new wxStaticText(m_weight_time_panel, wxID_ANY, weightStr);
+			m_weightText->SetFont(row_font);
+			m_weightText->SetMinSize(wxSize(col_weight_w, -1));
+			m_weightText->SetMaxSize(wxSize(col_weight_w, -1));
+			m_timeText = new wxStaticText(m_weight_time_panel, wxID_ANY, time_compact);
+			m_timeText->SetFont(row_font);
+			m_timeText->SetMinSize(wxSize(col_time_w, -1));
+			m_timeText->SetMaxSize(wxSize(col_time_w, -1));
+		}
 		wt_h->Add(m_weightText, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_LEFT | wxRIGHT, g_wt_mid);
 		wt_h->Add(m_timeText, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_LEFT | wxRIGHT, g_time_end);
-		wxBoxSizer* wt_v = new wxBoxSizer(wxVERTICAL);
 		wt_v->AddStretchSpacer(1);
 		wt_v->Add(wt_h, 0, wxALIGN_CENTER_VERTICAL);
 		wt_v->AddStretchSpacer(1);
-		m_weight_time_panel->SetSizer(wt_v);
 		m_weight_time_panel->SetMinSize(wxSize(w_time_bundle_w, row_h));
 		m_weight_time_panel->SetMaxSize(wxSize(w_time_bundle_w, row_h));
 
-		//cj_3
-		const wxColour row_bg = file_list_panel_background();
-		m_gap_cb_thumb_panel   = make_file_list_row_gap_panel(this, g_cb_thumb, row_h, row_bg);
-		m_gap_thumb_name_panel = make_file_list_row_gap_panel(this, g_thumb_name, row_h, row_bg);
+		m_row_sep = new wxPanel(this);
+		m_row_sep->SetBackgroundColour(file_list_row_separator_colour());
+		m_row_sep->SetMinSize(wxSize(-1, sep_h));
+		m_row_sep->SetMaxSize(wxSize(-1, sep_h));
 	}
+
 	mainSizer->Add(m_checkbox_cell, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, row_lead);
 	mainSizer->Add(m_gap_cb_thumb_panel, 0, wxALIGN_CENTER_VERTICAL);
 	mainSizer->Add(m_image_panel, 0, wxALIGN_CENTER_VERTICAL);
@@ -294,14 +392,8 @@ DeviceModelItem::DeviceModelItem(wxWindow* parent,
 	mainSizer->Add(m_namePanel, 1, wxALIGN_CENTER_VERTICAL | wxEXPAND | wxRIGHT, g_name_wt);
 	mainSizer->Add(m_weight_time_panel, 0, wxALIGN_CENTER_VERTICAL);
 
-	wxBoxSizer* outer = new wxBoxSizer(wxVERTICAL);
 	outer->Add(mainSizer, 1, wxEXPAND);
-	m_row_sep = new wxPanel(this);
-	m_row_sep->SetBackgroundColour(file_list_row_separator_colour());
-	m_row_sep->SetMinSize(wxSize(-1, sep_h));
-	m_row_sep->SetMaxSize(wxSize(-1, sep_h));
 	outer->Add(m_row_sep, 0, wxEXPAND);
-	SetSizer(outer);
 
 	m_download_tint_panel = new FileListDownloadTintPanel(this, file_list_download_tint_colour(), k_download_tint_alpha);
 	m_download_tint_panel->Hide();
@@ -312,7 +404,6 @@ DeviceModelItem::DeviceModelItem(wxWindow* parent,
 	});
 
 	SetMinSize(wxSize(-1, row_h + sep_h));
-	SetBackgroundColour(file_list_panel_background());
 	SetBackgroundStyle(wxBG_STYLE_PAINT);
 
 	applyListLabelColour(file_list_primary_text_colour());
@@ -350,7 +441,7 @@ void DeviceModelItem::updateNameLabelWidth()
 	int w = m_namePanel->GetClientSize().GetWidth() - 2 * hpad;
 	if (w < 1)
 		w = 1;
-	m_nameText->SetLabel(wxControl::Ellipsize(m_name, dc, wxELLIPSIZE_END, w));
+	m_nameText->SetLabel(wxControl::Ellipsize(m_display_name, dc, wxELLIPSIZE_END, w));
 }
 
 //cj_3
@@ -515,7 +606,7 @@ void DeviceModelItem::SetSelected(bool selected)
 
 void DeviceModelItem::refresh_local_copy_label_from_disk()
 {
-	m_local_copy_exists = local_file_exists_in_download_dir(m_name);
+	m_local_copy_exists = local_file_exists_in_download_dir(m_storage_path);
 	applyListLabelColour(file_list_primary_text_colour());
 	Refresh();
 	if (wxWindow* p = GetParent())
@@ -631,103 +722,183 @@ void DeviceModelListCtrl::sync_file_list_surface_colours()
 		it->setLocalCopyExists(local_file_exists_in_download_dir(it->GetName()));
 		it->sync_row_surface_colours(bg, fg);
 	}
+	//cj_4 Re-apply chrome so Normal/hover StateColor tracks theme; then restore selection.
+	if (m_btn_mount_local != nullptr && m_btn_mount_usb != nullptr) {
+		apply_model_file_mount_button_chrome(m_btn_mount_local);
+		apply_model_file_mount_button_chrome(m_btn_mount_usb);
+	}
+	updateMountFilterButtonStyles();
 	Refresh();
 }
 
 wxPanel* DeviceModelListCtrl::CreateHeaderPanel()
 {
-	wxPanel* headerPanel = new wxPanel(this);
-	//cj_3
-    const wxColour header_bg = file_list_panel_background();
-	const int row_pad = headerPanel->FromDIP(4);
-	const int row_lead = headerPanel->FromDIP(10);
-	const int thumb_hdr = headerPanel->FromDIP(kFileListThumbDip);
+	//cj_4 WxDeclareFirst: declarations → headerPanel → headerOuter + SetSizer → headerSizer → { build } → Add.
+	wxPanel*      headerPanel              = nullptr;
+	wxBoxSizer*   headerOuter              = nullptr;
+	wxBoxSizer*   headerSizer             = nullptr;
+	wxPanel*      hdr_gap_cb               = nullptr;
+	wxPanel*      hdr_gap_tn               = nullptr;
+	wxPanel*      nameHeaderWrap           = nullptr;
+	wxBoxSizer*   nameHeaderRow            = nullptr;
+	wxStaticText* nameHeader               = nullptr;
+	wxPanel*      mountToggleWrap          = nullptr;
+	wxBoxSizer*   mountVBox                = nullptr;
+	wxBoxSizer*   mountHBox                = nullptr;
+	wxPanel*      hdr_toggle_to_weight_pad = nullptr;
+	wxPanel*      wt_header_panel          = nullptr;
+	wxStaticText* weightHeader             = nullptr;
+	wxStaticText* timeHeader               = nullptr;
+	wxBoxSizer*   hdr_wt_h                 = nullptr;
+	wxBoxSizer*   hdr_wt_v                 = nullptr;
+
+	headerPanel = new wxPanel(this);
+	const wxColour header_bg = file_list_panel_background();
+	headerPanel->SetBackgroundColour(header_bg);
+	const int header_row_h = headerPanel->FromDIP(kFileListRowHeightDip);
+	headerPanel->SetMinSize(wxSize(-1, header_row_h));
+	const int row_lead     = headerPanel->FromDIP(10);
+	const int thumb_hdr    = headerPanel->FromDIP(kFileListThumbDip);
 	const int g_cb_thumb   = headerPanel->FromDIP(kModelListGapCbToThumbDip);
 	const int g_thumb_name = headerPanel->FromDIP(kModelListGapThumbToNameDip);
 	const int g_name_wt    = headerPanel->FromDIP(kModelListGapNameToWeightDip);
 	const int g_wt_mid     = headerPanel->FromDIP(kModelListGapWeightToTimeDip);
 	const int g_time_end   = headerPanel->FromDIP(kModelListGapTimeToEdgeDip);
-    headerPanel->SetBackgroundColour(header_bg);
-	const int header_row_h = headerPanel->FromDIP(kFileListRowHeightDip);
-	headerPanel->SetMinSize(wxSize(-1, header_row_h));
 
-	wxBoxSizer* headerSizer = new wxBoxSizer(wxHORIZONTAL);
+	headerOuter = new wxBoxSizer(wxVERTICAL);
+	headerPanel->SetSizer(headerOuter);
 
-	//cj_3
-	//cj_3 Same control style as expert_mode in add physical printer dialog.
-	m_header_select_all_cb = new FileListBitmapCheckBox(headerPanel, wxID_ANY);
-	m_header_select_all_cb->SetToolTip(_L("Select all"));
-	m_header_select_all_cb->Bind(wxEVT_TOGGLEBUTTON, [this](wxCommandEvent& e) {
-		SelectAllRows(m_header_select_all_cb->GetValue());
-		//cj_3 Same as row toggle: allow built-in handler to run update() for bitmap.
-		e.Skip();
-	});
-	headerSizer->Add(m_header_select_all_cb, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, row_lead);
-	//cj_3
+	headerSizer = new wxBoxSizer(wxHORIZONTAL);
+
 	{
-		wxPanel* hdr_gap_cb = new wxPanel(headerPanel);
+		m_header_select_all_cb = new FileListBitmapCheckBox(headerPanel, wxID_ANY);
+		m_header_select_all_cb->SetToolTip(_L("Select all"));
+		m_header_select_all_cb->Bind(wxEVT_TOGGLEBUTTON, [this](wxCommandEvent& e) {
+			SelectAllRows(m_header_select_all_cb->GetValue());
+			e.Skip();
+		});
+
+		hdr_gap_cb = new wxPanel(headerPanel);
 		hdr_gap_cb->SetBackgroundColour(header_bg);
 		hdr_gap_cb->SetMinSize(wxSize(g_cb_thumb, header_row_h));
 		hdr_gap_cb->SetMaxSize(wxSize(g_cb_thumb, header_row_h));
-		headerSizer->Add(hdr_gap_cb, 0, wxALIGN_CENTER_VERTICAL);
-	}
-	headerSizer->AddSpacer(thumb_hdr);
-	//cj_3
-	{
-		wxPanel* hdr_gap_tn = new wxPanel(headerPanel);
+
+		hdr_gap_tn = new wxPanel(headerPanel);
 		hdr_gap_tn->SetBackgroundColour(header_bg);
 		hdr_gap_tn->SetMinSize(wxSize(g_thumb_name, header_row_h));
 		hdr_gap_tn->SetMaxSize(wxSize(g_thumb_name, header_row_h));
-		headerSizer->Add(hdr_gap_tn, 0, wxALIGN_CENTER_VERTICAL);
+
+		nameHeaderWrap = new wxPanel(headerPanel);
+		nameHeaderWrap->SetBackgroundColour(header_bg);
+		nameHeaderRow = new wxBoxSizer(wxHORIZONTAL);
+		nameHeaderWrap->SetSizer(nameHeaderRow);
+		{
+			nameHeader = new wxStaticText(nameHeaderWrap, wxID_ANY, _L("Name"));
+			nameHeader->SetFont(file_list_header_label_font());
+			mountToggleWrap = new wxPanel(nameHeaderWrap);
+			mountToggleWrap->SetBackgroundColour(header_bg);
+			mountVBox = new wxBoxSizer(wxVERTICAL);
+			mountHBox = new wxBoxSizer(wxHORIZONTAL);
+			mountToggleWrap->SetSizer(mountVBox);
+			{
+				m_btn_mount_local = new Button(mountToggleWrap, _L("Local"), wxEmptyString, 0, 0, wxID_ANY);
+				m_btn_mount_usb = new Button(mountToggleWrap, _L("USB"), wxEmptyString, 0, 0, wxID_ANY);
+				m_btn_mount_local->SetCanFocus(false);
+				m_btn_mount_usb->SetCanFocus(false);
+				m_btn_mount_local->SetMinSize(mountToggleWrap->FromDIP(wxSize(44, 22)));
+				m_btn_mount_local->SetMaxSize(mountToggleWrap->FromDIP(wxSize(56, 24)));
+				m_btn_mount_usb->SetMinSize(mountToggleWrap->FromDIP(wxSize(44, 22)));
+				m_btn_mount_usb->SetMaxSize(mountToggleWrap->FromDIP(wxSize(56, 24)));
+				apply_model_file_mount_button_chrome(m_btn_mount_local);
+				apply_model_file_mount_button_chrome(m_btn_mount_usb);
+				//cj_3
+				{
+					const double corner_r = static_cast<double>(m_btn_mount_local->FromDIP(4));
+					m_btn_mount_local->SetCornerRadius(corner_r);
+					m_btn_mount_usb->SetCornerRadius(corner_r);
+				}
+				m_btn_mount_local->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+					if (m_mount_filter == ModelListMountFilter::Local)
+						return;
+					m_mount_filter = ModelListMountFilter::Local;
+					applyMountFilterVisibility();
+					updateMountFilterButtonStyles();
+				});
+				m_btn_mount_usb->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+					if (m_mount_filter == ModelListMountFilter::Usb)
+						return;
+					m_mount_filter = ModelListMountFilter::Usb;
+					applyMountFilterVisibility();
+					updateMountFilterButtonStyles();
+				});
+			}
+			mountHBox->Add(m_btn_mount_local, 0, wxALIGN_CENTER_VERTICAL);
+			mountHBox->Add(m_btn_mount_usb, 0, wxALIGN_CENTER_VERTICAL);
+			mountVBox->AddStretchSpacer(1);
+			mountVBox->Add(mountHBox, 0, wxALIGN_CENTER_HORIZONTAL);
+			mountVBox->AddStretchSpacer(1);
+			mountToggleWrap->SetMinSize(wxSize(headerPanel->FromDIP(92), header_row_h));
+			mountToggleWrap->SetMaxSize(wxSize(headerPanel->FromDIP(104), header_row_h));
+			hdr_toggle_to_weight_pad = new wxPanel(nameHeaderWrap);
+			hdr_toggle_to_weight_pad->SetBackgroundColour(header_bg);
+			const int g_hdr_toggle_wt = headerPanel->FromDIP(kModelListNameHeaderToggleToWeightPadDip);
+			hdr_toggle_to_weight_pad->SetMinSize(wxSize(g_hdr_toggle_wt, header_row_h));
+			hdr_toggle_to_weight_pad->SetMaxSize(wxSize(g_hdr_toggle_wt, header_row_h));
+		}
+		nameHeaderRow->Add(nameHeader, 0, wxALIGN_CENTER_VERTICAL);
+		nameHeaderRow->AddStretchSpacer(1);
+		nameHeaderRow->AddSpacer(headerPanel->FromDIP(50));
+		nameHeaderRow->Add(mountToggleWrap, 0, wxALIGN_CENTER_VERTICAL);
+		nameHeaderRow->Add(hdr_toggle_to_weight_pad, 0, wxALIGN_CENTER_VERTICAL);
+		nameHeaderWrap->SetMaxSize(wxSize(headerPanel->FromDIP(kModelListNameColMaxDip), header_row_h));
+
+		const int col_weight_w    = headerPanel->FromDIP(kModelListWeightColDip);
+		const int col_time_w      = headerPanel->FromDIP(kModelListTimeColDip);
+		const int w_time_bundle_w = col_weight_w + g_wt_mid + col_time_w + g_time_end;
+
+		wt_header_panel = new wxPanel(headerPanel);
+		wt_header_panel->SetBackgroundColour(header_bg);
+		hdr_wt_h = new wxBoxSizer(wxHORIZONTAL);
+		hdr_wt_v = new wxBoxSizer(wxVERTICAL);
+		wt_header_panel->SetSizer(hdr_wt_v);
+		{
+			weightHeader = new wxStaticText(wt_header_panel, wxID_ANY, _L("filament weight"));
+			weightHeader->SetMinSize(wxSize(col_weight_w, -1));
+			weightHeader->SetMaxSize(wxSize(col_weight_w, -1));
+			weightHeader->SetFont(file_list_header_label_font());
+			timeHeader = new wxStaticText(wt_header_panel, wxID_ANY, _L("pre time"));
+			timeHeader->SetMinSize(wxSize(col_time_w, -1));
+			timeHeader->SetMaxSize(wxSize(col_time_w, -1));
+			timeHeader->SetFont(file_list_header_label_font());
+		}
+		hdr_wt_h->Add(weightHeader, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_LEFT | wxRIGHT, g_wt_mid);
+		hdr_wt_h->Add(timeHeader, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_LEFT | wxRIGHT, g_time_end);
+		hdr_wt_v->AddStretchSpacer(1);
+		hdr_wt_v->Add(hdr_wt_h, 0, wxALIGN_CENTER_VERTICAL);
+		hdr_wt_v->AddStretchSpacer(1);
+		wt_header_panel->SetMinSize(wxSize(w_time_bundle_w, header_row_h));
+		wt_header_panel->SetMaxSize(wxSize(w_time_bundle_w, header_row_h));
+
+		const int sep_h = headerPanel->FromDIP(kFileListRowSeparatorDip);
+		m_header_sep = new wxPanel(headerPanel);
+		m_header_sep->SetBackgroundColour(file_list_row_separator_colour());
+		m_header_sep->SetMinSize(wxSize(-1, sep_h));
+		m_header_sep->SetMaxSize(wxSize(-1, sep_h));
 	}
 
-	wxPanel* nameHeaderWrap = new wxPanel(headerPanel);
-	nameHeaderWrap->SetBackgroundColour(header_bg);
-	wxBoxSizer* nameHeaderVBox = new wxBoxSizer(wxVERTICAL);
-	wxStaticText* nameHeader = new wxStaticText(nameHeaderWrap, wxID_ANY, _L("Name"));
-	nameHeader->SetFont(file_list_header_label_font());
-	nameHeaderVBox->AddStretchSpacer(1);
-	nameHeaderVBox->Add(nameHeader, 0, wxALIGN_LEFT);
-	nameHeaderVBox->AddStretchSpacer(1);
-	nameHeaderWrap->SetSizer(nameHeaderVBox);
-	nameHeaderWrap->SetMaxSize(wxSize(headerPanel->FromDIP(350), -1));
+	headerSizer->Add(m_header_select_all_cb, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, row_lead);
+	headerSizer->Add(hdr_gap_cb, 0, wxALIGN_CENTER_VERTICAL);
+	headerSizer->AddSpacer(thumb_hdr);
+	headerSizer->Add(hdr_gap_tn, 0, wxALIGN_CENTER_VERTICAL);
 	headerSizer->Add(nameHeaderWrap, 1, wxALIGN_CENTER_VERTICAL | wxEXPAND | wxRIGHT, g_name_wt);
-
-	const int col_weight_w    = headerPanel->FromDIP(kModelListWeightColDip);
-	const int col_time_w      = headerPanel->FromDIP(kModelListTimeColDip);
-	const int w_time_bundle_w = col_weight_w + g_wt_mid + col_time_w + g_time_end;
-	wxPanel* wt_header_panel  = new wxPanel(headerPanel);
-	wt_header_panel->SetBackgroundColour(header_bg);
-	wxStaticText* weightHeader = new wxStaticText(wt_header_panel, wxID_ANY, _L("filament weight"));
-	weightHeader->SetMinSize(wxSize(col_weight_w, -1));
-	weightHeader->SetMaxSize(wxSize(col_weight_w, -1));
-	weightHeader->SetFont(file_list_header_label_font());
-	wxStaticText* timeHeader = new wxStaticText(wt_header_panel, wxID_ANY, _L("pre time"));
-	timeHeader->SetMinSize(wxSize(col_time_w, -1));
-	timeHeader->SetMaxSize(wxSize(col_time_w, -1));
-	timeHeader->SetFont(file_list_header_label_font());
-	wxBoxSizer* hdr_wt_h = new wxBoxSizer(wxHORIZONTAL);
-	hdr_wt_h->Add(weightHeader, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_LEFT | wxRIGHT, g_wt_mid);
-	hdr_wt_h->Add(timeHeader, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_LEFT | wxRIGHT, g_time_end);
-	wxBoxSizer* hdr_wt_v = new wxBoxSizer(wxVERTICAL);
-	hdr_wt_v->AddStretchSpacer(1);
-	hdr_wt_v->Add(hdr_wt_h, 0, wxALIGN_CENTER_VERTICAL);
-	hdr_wt_v->AddStretchSpacer(1);
-	wt_header_panel->SetSizer(hdr_wt_v);
-	wt_header_panel->SetMinSize(wxSize(w_time_bundle_w, header_row_h));
-	wt_header_panel->SetMaxSize(wxSize(w_time_bundle_w, header_row_h));
+	if (g_name_wt > 0)
+		headerSizer->AddSpacer(g_name_wt);
 	headerSizer->Add(wt_header_panel, 0, wxALIGN_CENTER_VERTICAL);
 
-	const int sep_h = headerPanel->FromDIP(kFileListRowSeparatorDip);
-	wxBoxSizer* headerOuter = new wxBoxSizer(wxVERTICAL);
 	headerOuter->Add(headerSizer, 1, wxEXPAND);
-	m_header_sep = new wxPanel(headerPanel);
-	m_header_sep->SetBackgroundColour(file_list_row_separator_colour());
-	m_header_sep->SetMinSize(wxSize(-1, sep_h));
-	m_header_sep->SetMaxSize(wxSize(-1, sep_h));
 	headerOuter->Add(m_header_sep, 0, wxEXPAND);
-	headerPanel->SetSizer(headerOuter);
 
+	updateMountFilterButtonStyles();
 	return headerPanel;
 }
 
@@ -739,14 +910,18 @@ void DeviceModelListCtrl::syncHeaderSelectAllState()
 			m_header_select_all_cb->SetValue(false);
 		return;
 	}
+	bool any_visible = false;
 	bool all = true;
 	for (DeviceModelItem* item : m_items) {
+		if (!item->IsShown())
+			continue;
+		any_visible = true;
 		if (!item->IsSelected()) {
 			all = false;
 			break;
 		}
 	}
-	m_header_select_all_cb->SetValue(all);
+	m_header_select_all_cb->SetValue(all && any_visible);
 }
 
 //cj_3
@@ -754,7 +929,7 @@ void DeviceModelListCtrl::postSelectionAggregateEvent()
 {
     int selectNum = 0;
     for (DeviceModelItem* item : m_items) {
-        if (item->IsSelected()) {
+        if (item->IsShown() && item->IsSelected()) {
             ++selectNum;
         }
     }
@@ -771,7 +946,7 @@ void DeviceModelListCtrl::onCheckChange(wxCommandEvent& e)
 {
 	int selectNum = 0;
  	for (DeviceModelItem* item : m_items) {
-		if (item->IsSelected()) {
+		if (item->IsShown() && item->IsSelected()) {
 			++selectNum;
 		}
 	}
@@ -793,11 +968,12 @@ void DeviceModelListCtrl::SelectAllRows(bool selected)
 {
 	m_bulk_updating_selection = true;
 	for (DeviceModelItem* item : m_items) {
-		item->SetSelected(selected);
+		if (item->IsShown())
+			item->SetSelected(selected);
 	}
 	m_bulk_updating_selection = false;
 	if (m_header_select_all_cb)
-		m_header_select_all_cb->SetValue(selected && !m_items.empty());
+		m_header_select_all_cb->SetValue(selected && hasAnyVisibleItem());
 	syncHeaderSelectAllState();
 	postSelectionAggregateEvent();
 }
@@ -833,8 +1009,9 @@ void DeviceModelListCtrl::AddItem(const wxString& name,
 		cb->Bind(wxEVT_TOGGLEBUTTON, &DeviceModelListCtrl::onCheckChange, this);
 	item->SetMinSize(wxSize(-1, FromDIP(kFileListRowHeightDip) + FromDIP(kFileListRowSeparatorDip)));
 	//cj_3
-	item->setLocalCopyExists(local_file_exists_in_download_dir(name));
+	item->setLocalCopyExists(local_file_exists_in_download_dir(item->GetName()));
 	item->sync_row_surface_colours(file_list_panel_background(), file_list_primary_text_colour());
+	syncNewItemMountVisibility(item);
 	m_mainSizer->Layout();
 	//cj_3
 	FitInside();
@@ -843,7 +1020,7 @@ void DeviceModelListCtrl::AddItem(const wxString& name,
 void DeviceModelListCtrl::RemoveSelectedItems()
 {
 	for (auto iter = m_items.begin(); iter != m_items.end(); ) {
-		if ((*iter)->IsSelected()) {
+		if ((*iter)->IsShown() && (*iter)->IsSelected()) {
 			m_mainSizer->Detach(*iter);
 			(*iter)->Destroy();
 			iter = m_items.erase(iter);
@@ -865,6 +1042,8 @@ void DeviceModelListCtrl::ClearAll()
 		item->Destroy();
 	}
 	m_items.clear();
+	m_mount_filter = ModelListMountFilter::Local;
+	updateMountFilterButtonStyles();
 	//cj_3
 	if (m_header_select_all_cb)
 		m_header_select_all_cb->SetValue(false);
@@ -878,7 +1057,7 @@ std::vector<DeviceModelItem*> DeviceModelListCtrl::GetSelectedItems()
 {
 	std::vector<DeviceModelItem*> selected;
 	for (auto item : m_items) {
-		if (item->IsSelected()) {
+		if (item->IsShown() && item->IsSelected()) {
 			selected.push_back(item);
 		}
 	}
@@ -895,6 +1074,65 @@ bool DeviceModelListCtrl::UpdateItemThumbnail(const wxString& name, const wxBitm
 		}
 	}
 	return false;
+}
+
+//cj_4
+bool DeviceModelListCtrl::rowMatchesMountFilter(const DeviceModelItem* item) const
+{
+	if (item == nullptr)
+		return false;
+	const bool usb = item->IsUsbStorage();
+	return (m_mount_filter == ModelListMountFilter::Usb) ? usb : !usb;
+}
+
+//cj_4
+bool DeviceModelListCtrl::hasAnyVisibleItem() const
+{
+	for (DeviceModelItem* item : m_items) {
+		if (item != nullptr && item->IsShown())
+			return true;
+	}
+	return false;
+}
+
+//cj_4
+void DeviceModelListCtrl::syncNewItemMountVisibility(DeviceModelItem* item)
+{
+	if (item == nullptr)
+		return;
+	item->Show(rowMatchesMountFilter(item));
+}
+
+//cj_4
+void DeviceModelListCtrl::applyMountFilterVisibility()
+{
+	for (DeviceModelItem* item : m_items) {
+		const bool show = rowMatchesMountFilter(item);
+		item->Show(show);
+		if (!show)
+			item->SetSelected(false);
+	}
+	m_mainSizer->Layout();
+	FitInside();
+	syncHeaderSelectAllState();
+	postSelectionAggregateEvent();
+}
+
+//cj_4
+void DeviceModelListCtrl::updateMountFilterButtonStyles()
+{
+	if (m_btn_mount_local == nullptr || m_btn_mount_usb == nullptr)
+		return;
+	const bool local = (m_mount_filter == ModelListMountFilter::Local);
+	if (local) {
+		set_mount_filter_button_selected(m_btn_mount_local);
+		set_mount_filter_button_unselected(m_btn_mount_usb);
+	} else {
+		set_mount_filter_button_unselected(m_btn_mount_local);
+		set_mount_filter_button_selected(m_btn_mount_usb);
+	}
+	m_btn_mount_local->Refresh();
+	m_btn_mount_usb->Refresh();
 }
 }
 }

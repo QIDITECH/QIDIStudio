@@ -17,5 +17,6 @@
     "nozzle_temperature_range_low": ["190"],
     "overhang_fan_threshold": ["50%"],
     "temperature_vitrification": ["45"],
-    "compatible_printers": []
+    "compatible_printers": [],
+    "close_additional_fan_first_x_layers": ["1"]
 }

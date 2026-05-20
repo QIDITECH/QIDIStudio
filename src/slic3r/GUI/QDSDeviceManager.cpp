@@ -148,6 +148,9 @@ void QDSDevice::updateByJsonData(json& status)
                 m_print_cur_layer = 0;
                 m_print_total_layer = 0;
                 m_print_progress_float = 0.0;
+                m_print_duration = "";
+                m_print_total_time = "";
+                m_filament_weight = "";
             }
 		}
 
@@ -217,7 +220,7 @@ void QDSDevice::updateByJsonData(json& status)
         if (m_polar_cooler.load() != pin_on) {
 			is_update = true;
 			m_polar_cooler = pin_on;
-            //cj_4
+			//cj_4
 			m_polar_cooler_dirty_for_ui = true;
 		}
 	}
@@ -728,9 +731,35 @@ int QDSDeviceManager::generateDeviceID() {
 }
 
 std::shared_ptr<QDSDevice> QDSDeviceManager::getDevice(const std::string& device_id) {
+    std::shared_ptr<QDSDevice> ret;
+
+    {
+        std::lock_guard<std::mutex> lock(manager_mutex_);
+        auto it = devices_.find(device_id);
+        if (it != devices_.end())
+            ret = it->second;
+    }
+    return ret;
+}
+
+//y80
+std::string QDSDeviceManager::getNetDeviceIDByIp(const std::string& ip){
     std::lock_guard<std::mutex> lock(manager_mutex_);
-    auto it = devices_.find(device_id);
-    return (it != devices_.end()) ? it->second : nullptr;
+    for(const auto& [device_id, device] : devices_){
+        if(device->m_ip == ip && device->is_net_device)
+            return device_id;
+    }
+    return "";
+}
+
+//y80
+std::string QDSDeviceManager::getLocalDeviceIDByIp(const std::string& ip){
+    std::lock_guard<std::mutex> lock(manager_mutex_);
+    for(const auto& [device_id, device] : devices_){
+        if(device->m_ip == ip && !device->is_net_device)
+            return device_id;
+    }
+    return "";
 }
 
 //cj_3
@@ -789,7 +818,6 @@ void QDSDeviceManager::safeStopConnection(const std::string& device_id) {
     
     try {
         websocketpp::lib::error_code ec;
-
         auto con = conn->client.get_con_from_hdl(conn->connection_hdl);
         if (con && con->get_state() == websocketpp::session::state::open) {
             conn->client.close(conn->connection_hdl, 
@@ -1176,7 +1204,7 @@ void QDSDeviceManager::sendSubscribeMessage(const std::string& device_id) {
             // {"gcode_macro M604", nullptr},
             {"gcode_move", nullptr},
             // {"gcode_macro M109", nullptr},
-            // {"exclude_object", nullptr},
+             {"exclude_object", nullptr},
             // {"gcode_macro G31", nullptr},
             // {"gcode_macro G32", nullptr},
             // {"gcode_macro G29", nullptr},
@@ -1367,19 +1395,19 @@ void QDSDeviceManager::sendCommand(const std::string& device_id, const std::stri
     }
 }
 
-void QDSDeviceManager::sendCommand(const std::string& device_id, const std::string& scriptName, const std::string& script, const std::string& method)
+bool QDSDeviceManager::sendCommand(const std::string& device_id, const std::string& scriptName, const std::string& script, const std::string& method)
 {
 	std::shared_ptr<WebSocketConnect> conn = nullptr;
 	{
 		std::lock_guard<std::mutex> lock(manager_mutex_);
 		auto conn_it = connections_.find(device_id);
 		if (conn_it == connections_.end() || conn_it->second->stopping) {
-			return;
+			return false;
 		}
 		conn = conn_it->second;
 	}
 
-	if (!conn) return;
+	if (!conn) return false;
 
 	json subscribe_msg = {
 		{"id", std::atoi(device_id.c_str())},
@@ -1399,14 +1427,15 @@ void QDSDeviceManager::sendCommand(const std::string& device_id, const std::stri
 		if (ec) {
 			BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Send] Error sending subscribe to " << device_id
 				<< ": " << ec.message() << std::endl;
+			return false;
 		}
-		else {
-			BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Send] Sent subscribe message to " << device_id << std::endl;
-		}
+		BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Send] Sent subscribe message to " << device_id << std::endl;
+		return true;
 	}
 	catch (const std::exception& e) {
 		BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Send] Exception sending to device " << device_id
 			<< ": " << e.what() << std::endl;
+		return false;
 	}
 }
 
@@ -1454,12 +1483,12 @@ void QDSDeviceManager::handleDeviceMessage(const std::string& device_id, const j
         return;
     }
 
-    if(!device->is_selected.load()){
-        std::thread([this, device_id]() {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            stopConnection(device_id);
-        }).detach();
-    }
+    // if(!device->is_selected.load()){
+    //     std::thread([this, device_id]() {
+    //         std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    //         stopConnection(device_id);
+    //     }).detach();
+    // }
 
     updateDeviceMsg(device_id, message);
 }
@@ -1478,8 +1507,8 @@ void QDSDeviceManager::updateDeviceMsg(const std::string& device_id, const json&
         }
         device = dev_it->second;
         
-        if(!device->is_selected.load())
-            return;
+        // if(!device->is_selected.load())
+        //     return;
 
 		if (message.contains("method") && message.contains("params") 
             ) {
@@ -1506,6 +1535,7 @@ void QDSDeviceManager::updateDeviceMsg(const std::string& device_id, const json&
             }
         }
         
+        // 处理状态更新
         if (message.contains("result")) {
             
             if(message.at("result").contains("files")){
@@ -1580,12 +1610,26 @@ void QDSDeviceManager::updateDeviceData(std::shared_ptr<QDSDevice>& device,
                                         const json& result, 
                                         std::string& new_status, 
                                         bool& is_update) {
-    if (result.contains("print_stats") && 
+
+
+    if (result.contains("print_stats") &&
         result["print_stats"].contains("state")) {
         std::string status = result["print_stats"]["state"].get<std::string>();
         if (status != device->m_status) {
             device->m_status = status;
             new_status = status;
+            //cj_4 reset progress fields when print finishes
+            if (status == "standby") {
+                device->m_print_progress = "N/A";
+                device->m_print_filename = "";
+                device->m_print_png_url = "";
+                device->m_print_cur_layer = 0;
+                device->m_print_total_layer = 0;
+                device->m_print_progress_float = 0.0;
+                device->m_print_duration = "";
+                device->m_print_total_time = "";
+                device->m_filament_weight = "";
+            }
         }
     }
    
@@ -1690,6 +1734,16 @@ void QDSDeviceManager::updateDeviceData(std::shared_ptr<QDSDevice>& device,
     if (result.contains("print_stats")) {
         twoStageParse1(result["print_stats"], device->m_print_total_layer, "info", "total_layer", is_update);
         twoStageParse1(result["print_stats"], device->m_print_cur_layer, "info", "current_layer", is_update);
+        //cj_4
+        // Parse plate index from print_stats/plateindex.
+        // JSON value is a string, but represents an int.
+        if (result["print_stats"].contains("plateindex")) {
+            int plate_idx = std::stoi(result["print_stats"]["plateindex"].get<std::string>());
+            if (device->m_plate_index != plate_idx) {
+                device->m_plate_index = plate_idx;
+                is_update = true;
+            }
+        }
         if (result["print_stats"].contains("print_duration")) {
             if (device->m_print_duration != std::to_string(result["print_stats"]["print_duration"].get<int>())) {
                 is_update = true;
@@ -1699,6 +1753,23 @@ void QDSDeviceManager::updateDeviceData(std::shared_ptr<QDSDevice>& device,
             }
         }
 
+    }
+
+    //cj_4
+    // Parse Klipper exclude_object/excluded_objects list.
+    if (result.contains("exclude_object") && result["exclude_object"].is_object()) {
+        const auto& eo = result["exclude_object"];
+        if (eo.contains("excluded_objects") && eo["excluded_objects"].is_array()) {
+            std::vector<std::string> new_list;
+            for (const auto& obj : eo["excluded_objects"]) {
+                if (obj.is_string())
+                    new_list.push_back(obj.get<std::string>());
+            }
+            if (device->m_excluded_objects != new_list) {
+                device->m_excluded_objects = std::move(new_list);
+                is_update = true;
+            }
+        }
     }
 }
 

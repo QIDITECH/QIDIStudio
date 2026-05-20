@@ -18,5 +18,6 @@
     "overhang_fan_threshold": ["50%"],
     "slow_down_layer_time": ["10"],
     "temperature_vitrification": ["45"],
-    "compatible_printers": []
+    "compatible_printers": [],
+    "close_additional_fan_first_x_layers": ["1"]
 }

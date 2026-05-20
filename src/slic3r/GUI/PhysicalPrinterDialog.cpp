@@ -77,11 +77,10 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_
         inherits = sel_preset.config.opt_string("printer_model");
     }
     //cj_3_cursor
-    bool expert_mode_val = true;
+    //cj_4 default expert_mode to unchecked
+    bool expert_mode_val = false;
     if (printer != nullptr) {
         expert_mode_val = printer->config.opt_bool("expert_mode");
-    } else if (PhysicalPrinter::is_mqtt_ui_capable_preset_model(into_u8(inherits), &printer_bundle.printers)) {
-        expert_mode_val = false;
     }
 
     exit_machine = m_machine;
@@ -276,8 +275,8 @@ void PhysicalPrinterDialog::on_physical_preset_combobox(wxCommandEvent& e)
     if (!new_mqtt) {
         apply_expert_mode_value(true);
     } else if (!old_mqtt && new_mqtt) {
-        // 非 MQTT → MQTT：默认开启专家模式（Fluidd 等）
-        apply_expert_mode_value(true);
+        //cj_4 non-MQTT → MQTT: default expert mode unchecked
+        apply_expert_mode_value(false);
     }
     sync_expert_mode_widgets();
     Layout();

@@ -22,7 +22,7 @@ class DeviceModelItem : public wxPanel
 {
 public:
 	DeviceModelItem(wxWindow* parent,
-		const wxString& name,
+		const wxString& storagePath,
 		const wxBitmap& image,
 		double weight,
 		const wxString& estimatedTime);
@@ -30,7 +30,10 @@ public:
 	bool IsSelected() const;
 	void SetSelected(bool selected);
 
-	wxString GetName() const { return m_name; }
+	//cj_4 Full server path (folders + USB/ prefix); used for download, delete, thumbnails, disk check.
+	wxString GetName() const { return m_storage_path; }
+	//cj_4 Moonraker path starts with USB/ (case-insensitive) after normalizing slashes.
+	bool IsUsbStorage() const { return m_is_usb; }
 	double GetWeight() const { return m_weight; }
 	wxString GetEstimatedTime() const { return m_estimatedTime; }
 	FileListBitmapCheckBox* getCheckBox() { return m_checkbox; }
@@ -67,7 +70,10 @@ private:
 	wxPanel* m_gap_cb_thumb_panel{ nullptr };
 	wxPanel* m_gap_thumb_name_panel{ nullptr };
 	wxStaticBitmap* m_image;
-	wxString m_name;
+	//cj_4
+	wxString m_storage_path;
+	wxString m_display_name;
+	bool m_is_usb{ false };
 	double m_weight;
 	wxString m_estimatedTime;
 
@@ -87,6 +93,13 @@ private:
 };
 
 //cj_2
+//cj_4
+enum class ModelListMountFilter
+{
+	Local,
+	Usb,
+};
+
 class DeviceModelListCtrl : public wxScrolledWindow
 {
 public:
@@ -117,6 +130,12 @@ private:
     void postSelectionAggregateEvent();
     //cj_3
     void syncHeaderSelectAllState();
+	//cj_4
+	void applyMountFilterVisibility();
+	void updateMountFilterButtonStyles();
+	void syncNewItemMountVisibility(DeviceModelItem* item);
+	bool rowMatchesMountFilter(const DeviceModelItem* item) const;
+	bool hasAnyVisibleItem() const;
 private:
 	void on_download_overlay_scroll(wxScrollWinEvent& e);
 	void on_download_overlay_top_move(wxMoveEvent& e);
@@ -132,6 +151,11 @@ private:
     FileListBitmapCheckBox* m_header_select_all_cb{ nullptr };
     //cj_3 Suppress per-row handlers during SelectAllRows (programmatic SetValue may emit toggle events).
     bool m_bulk_updating_selection{ false };
+
+	//cj_4
+	ModelListMountFilter m_mount_filter{ ModelListMountFilter::Local };
+	Button* m_btn_mount_local{ nullptr };
+	Button* m_btn_mount_usb{ nullptr };
 
 };
 	}

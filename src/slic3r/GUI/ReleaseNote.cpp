@@ -543,10 +543,12 @@ void UpdateVersionDialog::update_version_info(wxString release_note, wxString ve
     Fit();
 }
 
-SecondaryCheckDialog::SecondaryCheckDialog(wxWindow* parent, wxWindowID id, const wxString& title, enum ButtonStyle btn_style, const wxPoint& pos, const wxSize& size, long style, bool not_show_again_check)
+SecondaryCheckDialog::SecondaryCheckDialog(wxWindow* parent, wxWindowID id, const wxString& title, enum ButtonStyle btn_style, const wxPoint& pos, const wxSize& size, long style, bool not_show_again_check, bool external_action_button_handlers)
     :DPIFrame(parent, id, title, pos, size, style)
 {
     m_button_style = btn_style;
+    //cj_4
+    m_external_action_button_handlers = external_action_button_handlers;
     std::string icon_path = (boost::format("%1%/images/QIDIStudioTitle.ico") % resources_dir()).str();
     SetIcon(wxIcon(encode_path(icon_path.c_str()), wxBITMAP_TYPE_ICO));
 
@@ -599,12 +601,16 @@ SecondaryCheckDialog::SecondaryCheckDialog(wxWindow* parent, wxWindowID id, cons
     m_button_ok->SetMaxSize(wxSize(-1, FromDIP(24)));
     m_button_ok->SetCornerRadius(FromDIP(12));
 
+    //cj_4
+    if (!m_external_action_button_handlers) {
     m_button_ok->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [this](wxCommandEvent& e) {
         wxCommandEvent evt(EVT_SECONDARY_CHECK_CONFIRM, GetId());
-        e.SetEventObject(this);
+        evt.SetEventObject(this);
+        evt.SetString(e.GetString());
         GetEventHandler()->ProcessEvent(evt);
         this->on_hide();
     });
+    }
 
     m_button_retry = new Button(this, _L("Retry"));
     m_button_retry->SetBackgroundColor(btn_bg_blue);
@@ -616,12 +622,15 @@ SecondaryCheckDialog::SecondaryCheckDialog(wxWindow* parent, wxWindowID id, cons
     m_button_retry->SetMaxSize(wxSize(-1, FromDIP(24)));
     m_button_retry->SetCornerRadius(FromDIP(12));
 
+    if (!m_external_action_button_handlers) {
     m_button_retry->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [this](wxCommandEvent& e) {
         wxCommandEvent evt(EVT_SECONDARY_CHECK_RETRY, GetId());
-        e.SetEventObject(this);
+        evt.SetEventObject(this);
+        evt.SetString(e.GetString());
         GetEventHandler()->ProcessEvent(evt);
         this->on_hide();
     });
+    }
 
     m_button_cancel = new Button(this, _L("Cancel"));
     m_button_cancel->SetBackgroundColor(btn_bg_white);
@@ -632,12 +641,15 @@ SecondaryCheckDialog::SecondaryCheckDialog(wxWindow* parent, wxWindowID id, cons
     m_button_cancel->SetMaxSize(wxSize(-1, FromDIP(24)));
     m_button_cancel->SetCornerRadius(FromDIP(12));
 
+    if (!m_external_action_button_handlers) {
     m_button_cancel->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [this](wxCommandEvent& e) {
-            wxCommandEvent evt(EVT_SECONDARY_CHECK_CANCEL);
-            e.SetEventObject(this);
+            wxCommandEvent evt(EVT_SECONDARY_CHECK_CANCEL, GetId());
+            evt.SetEventObject(this);
+            evt.SetString(e.GetString());
             GetEventHandler()->ProcessEvent(evt);
             this->on_hide();
         });
+    }
 
     m_button_fn = new Button(this, _L("Done"));
     m_button_fn->SetBackgroundColor(btn_bg_white);
@@ -648,10 +660,20 @@ SecondaryCheckDialog::SecondaryCheckDialog(wxWindow* parent, wxWindowID id, cons
     m_button_fn->SetMaxSize(wxSize(-1, FromDIP(24)));
     m_button_fn->SetCornerRadius(FromDIP(12));
 
+    if (!m_external_action_button_handlers) {
     m_button_fn->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [this](wxCommandEvent& e) {
-            post_event(wxCommandEvent(EVT_SECONDARY_CHECK_DONE));
-            e.Skip();
+            if (m_button_style == DELETE_LOCAL_AND_BOTH_AND_CANCEL) {
+                wxCommandEvent evt(EVT_SECONDARY_CHECK_DONE, GetId());
+                evt.SetEventObject(this);
+                evt.SetString(e.GetString());
+                GetEventHandler()->ProcessEvent(evt);
+                this->on_hide();
+            } else {
+                post_event(wxCommandEvent(EVT_SECONDARY_CHECK_DONE));
+                e.Skip();
+            }
         });
+    }
 
     m_button_resume = new Button(this, _L("resume"));
     m_button_resume->SetBackgroundColor(btn_bg_white);
@@ -662,10 +684,12 @@ SecondaryCheckDialog::SecondaryCheckDialog(wxWindow* parent, wxWindowID id, cons
     m_button_resume->SetMaxSize(wxSize(-1, FromDIP(24)));
     m_button_resume->SetCornerRadius(FromDIP(12));
 
+    if (!m_external_action_button_handlers) {
     m_button_resume->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [this](wxCommandEvent& e) {
         post_event(wxCommandEvent(EVT_SECONDARY_CHECK_RESUME));
         e.Skip();
         });
+    }
     m_button_resume->Hide();
 
     if (btn_style == CONFIRM_AND_CANCEL) {
@@ -680,10 +704,22 @@ SecondaryCheckDialog::SecondaryCheckDialog(wxWindow* parent, wxWindowID id, cons
         m_button_retry->Show();
         m_button_cancel->Hide();
         m_button_fn->Hide();
-    } else if (style == DONE_AND_RETRY) {
+    } else if (btn_style == DONE_AND_RETRY) {
         m_button_retry->Show();
         m_button_fn->Show();
         m_button_cancel->Hide();
+    //cj_4
+    } else if (btn_style == DELETE_LOCAL_AND_BOTH_AND_CANCEL) {
+        m_button_retry->Show();
+        m_button_fn->Show();
+        m_button_ok->Show();
+        m_button_cancel->Show();
+    //cj_3
+    } else if (btn_style == DELETE_LOCAL_AND_BOTH_AND_CANCEL_NO_PRINTER_ONLY) {
+        m_button_retry->Show();
+        m_button_fn->Hide();
+        m_button_ok->Show();
+        m_button_cancel->Show();
     }
     else {
         m_button_retry->Hide();
@@ -759,7 +795,7 @@ void SecondaryCheckDialog::update_text(wxString text)
     Fit();
 }
 
-//cj_3
+//cj_4
 void SecondaryCheckDialog::set_message_area_width(int width_dip)
 {
     const int body_w = FromDIP(width_dip);
@@ -846,6 +882,22 @@ void SecondaryCheckDialog::update_title_style(wxString title, SecondaryCheckDial
         m_button_cancel->Hide();
         m_button_resume->Hide();
     }
+    //cj_4
+    else if (style == DELETE_LOCAL_AND_BOTH_AND_CANCEL) {
+        m_button_retry->Show();
+        m_button_fn->Show();
+        m_button_ok->Show();
+        m_button_cancel->Show();
+        m_button_resume->Hide();
+    }
+    //cj_3
+    else if (style == DELETE_LOCAL_AND_BOTH_AND_CANCEL_NO_PRINTER_ONLY) {
+        m_button_retry->Show();
+        m_button_fn->Hide();
+        m_button_ok->Show();
+        m_button_cancel->Show();
+        m_button_resume->Hide();
+    }
     else if(style == CONFIRM_AND_RESUME)
     {
         m_button_retry->Hide();
@@ -891,6 +943,9 @@ void SecondaryCheckDialog::rescale()
 {
     m_button_ok->Rescale();
     m_button_cancel->Rescale();
+    //cj_4
+    m_button_retry->Rescale();
+    m_button_fn->Rescale();
 }
 
 PrintErrorDialog::PrintErrorDialog(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style)

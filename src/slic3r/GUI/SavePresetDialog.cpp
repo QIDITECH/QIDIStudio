@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <vector>
 #include <string>
+#include <unordered_set>
 #include <boost/algorithm/string.hpp>
 #include <boost/log/trivial.hpp>
 
@@ -24,6 +25,33 @@ using Slic3r::GUI::format_wxstr;
 namespace Slic3r { namespace GUI {
 
 #define BORDER_W 10
+
+namespace {
+//cj_4
+static bool is_windows_reserved_basename(std::string name_no_ext)
+{
+    boost::trim(name_no_ext);
+    boost::to_upper(name_no_ext);
+    static const std::unordered_set<std::string> k_reserved = {
+        "CON",  "PRN",  "AUX",  "NUL",
+        "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+    };
+    return k_reserved.find(name_no_ext) != k_reserved.end();
+}
+
+//cj_4
+static bool has_forbidden_filename_char(char c)
+{
+    switch (c) {
+    case '<': case '>': case ':': case '"': case '/': case '\\': case '|': case '?': case '*':
+        return true;
+    default:
+        break;
+    }
+    return static_cast<unsigned char>(c) < 0x20;
+}
+} // namespace
 
 //-----------------------------------------------
 //          SavePresetDialog::Item
@@ -185,14 +213,32 @@ void SavePresetDialog::Item::update()
 
     m_valid_type = Valid;
     wxString info_line;
-    const char *unusable_symbols = "#\'<>:\\|?*\"";
+    const char *unusable_symbols = "<>:\"/\\|?*";
 
     const std::string unusable_suffix = PresetCollection::get_suffix_modified(); //"(modified)";
-    for (size_t i = 0; i < std::strlen(unusable_symbols); i++) {
-        if (m_preset_name.find_first_of(unusable_symbols[i]) != std::string::npos) {
+    for (char c : m_preset_name) {
+        if (has_forbidden_filename_char(c)) {
             info_line    = _L("Name is invalid;") + "\n" + _L("illegal characters:") + " " + unusable_symbols;
             m_valid_type = NoValid;
             break;
+        }
+    }
+
+    //cj_4
+    if (m_valid_type == Valid && !m_preset_name.empty() &&
+        (m_preset_name.back() == ' ' || m_preset_name.back() == '.')) {
+        info_line    = _L("Name is invalid;") + "\n" + _L("Name is not allowed to end with space or dot.");
+        m_valid_type = NoValid;
+    }
+
+    //cj_4
+    if (m_valid_type == Valid) {
+        std::string base_name = m_preset_name;
+        const auto  dot_pos   = base_name.find('.');
+        if (dot_pos != std::string::npos) base_name = base_name.substr(0, dot_pos);
+        if (is_windows_reserved_basename(base_name)) {
+            info_line    = _L("Name is invalid;") + "\n" + _L("Reserved system filename is not allowed.");
+            m_valid_type = NoValid;
         }
     }
 

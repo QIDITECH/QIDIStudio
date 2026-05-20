@@ -1,6 +1,6 @@
 {
     "name": "X-3-Series",
-    "version": "02.05.02.50",
+    "version": "02.06.00.51",
     "force_update": "0",
     "description": "X-3-Series configurations",
     "machine_model_list": [
@@ -781,6 +781,46 @@
             "sub_path": "filament/QIDI PA12-CF @Qidi X-Smart 3 0.8 nozzle.json"
         },
         {
+            "name": "QIDI PA6-CF@X3",
+            "sub_path": "filament/QIDI PA6-CF.json"
+        },
+        {
+            "name": "QIDI PA6-CF @Qidi X-Max 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PA6-CF @Qidi X-Max 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PA6-CF @Qidi X-Plus 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PA6-CF @Qidi X-Plus 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PA6-CF @Qidi X-Smart 3 0.4 nozzle",
+            "sub_path": "filament/QIDI PA6-CF @Qidi X-Smart 3 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PA6-CF @Qidi X-Max 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PA6-CF @Qidi X-Max 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PA6-CF @Qidi X-Plus 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PA6-CF @Qidi X-Plus 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PA6-CF @Qidi X-Smart 3 0.6 nozzle",
+            "sub_path": "filament/QIDI PA6-CF @Qidi X-Smart 3 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PA6-CF @Qidi X-Max 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PA6-CF @Qidi X-Max 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PA6-CF @Qidi X-Plus 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PA6-CF @Qidi X-Plus 3 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PA6-CF @Qidi X-Smart 3 0.8 nozzle",
+            "sub_path": "filament/QIDI PA6-CF @Qidi X-Smart 3 0.8 nozzle.json"
+        },
+        {
             "name": "QIDI PAHT-CF@X3",
             "sub_path": "filament/QIDI PAHT-CF.json"
         },
@@ -1471,6 +1511,26 @@
         {
             "name": "QIDI PPS-CF @Qidi X-Smart 3 0.8 nozzle",
             "sub_path": "filament/QIDI PPS-CF @Qidi X-Smart 3 0.8 nozzle.json"
+        },
+        {
+            "name": "Polymaker PLA-HT@X3",
+            "sub_path": "filament/Polymaker PLA-HT.json"
+        },
+        {
+            "name": "Polymaker PLA-HT @X3 0.2 nozzle",
+            "sub_path": "filament/Polymaker PLA-HT 0.2 nozzle.json"
+        },
+        {
+            "name": "Polymaker PLA-HT @X3 0.4 nozzle",
+            "sub_path": "filament/Polymaker PLA-HT 0.4 nozzle.json"
+        },
+        {
+            "name": "Polymaker PLA-HT @X3 0.6 nozzle",
+            "sub_path": "filament/Polymaker PLA-HT 0.6 nozzle.json"
+        },
+        {
+            "name": "Polymaker PLA-HT @X3 0.8 nozzle",
+            "sub_path": "filament/Polymaker PLA-HT 0.8 nozzle.json"
         },
         {
             "name": "PolyLite PLA@X3",

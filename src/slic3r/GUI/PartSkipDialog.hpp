@@ -18,21 +18,16 @@
 #include "Widgets/CheckBox.hpp"
 #include "Widgets/Button.hpp"
 #include "Widgets/AnimaController.hpp"
-#include "DeviceManager.hpp"
 #include "PartSkipCommon.hpp"
-#include "Printer/PrinterFileSystem.h"
 #include "I18N.hpp"
 #include "GUI_Utils.hpp"
+
+#include <atomic>
 
 
 namespace Slic3r { namespace GUI {
 
 class SkipPartCanvas;
-
-enum URL_STATE {
-    URL_TCP,
-    URL_TUTK,
-};
 
 class PartSkipConfirmDialog : public DPIDialog
 {
@@ -61,13 +56,28 @@ public:
     void on_dpi_changed(const wxRect &suggested_rect);
     bool Show(bool show);
 
-    void UpdatePartsStateFromPrinter(MachineObject *obj_);
+    //cj_4
+    // The caller passes the device's FRP base URL, a device identifier, and
+    // the live excluded-objects list pushed from Klipper. The dialog downloads
+    // pick_1.png / model_settings.config / slice_info.config for canvas image
+    // and model metadata, but the skipped state is now resolved in InitDialogUI
+    // against m_excluded_objects instead of reading the XML skipped attribute.
     void SetSimplebookPage(int page);
-    void InitSchedule(MachineObject *obj_);
+    //cj_4
+    // Excluded object names pushed from Klipper (exclude_object/excluded_objects).
+    std::vector<std::string> m_excluded_objects;
+
+    //cj_4
+    // plate_index: current plate index from Klipper print_stats/plateindex,
+    // used to select which pick_<N>.png and plate-specific metadata to load.
+    void InitSchedule(const std::string &frp_url, const std::string &dev_id, const std::vector<std::string>& excluded_objects, int plate_index);
+
+    
     void InitDialogUI();
     int  GetAllSkippedPartsNum();
-
-    MachineObject *m_obj{nullptr};
+    
+    // cj_4 Get the list of skipped object names
+    std::vector<std::string> GetSkippedObjectNames();
 
     wxSimplebook *m_simplebook;
     wxPanel      *m_book_third_panel;
@@ -111,7 +121,9 @@ public:
     AnimaIcon  *m_loading_icon;
 
 private:
-    int  m_plate_idx{-1};
+    //cj_4
+    // plate_index is hard-wired to 1 for this display-only phase.
+    int  m_plate_idx{1};
     int  m_zoom_percent{100};
     bool m_is_drag{false};
     bool m_print_lock{true};
@@ -122,25 +134,34 @@ private:
     std::map<uint32_t, std::string> m_parts_name;
     std::vector<int>                m_partskip_ids;
 
-    enum URL_STATE m_url_state = URL_STATE::URL_TCP;
-
     PartsInfo GetPartsInfo();
     bool      is_drag_mode();
 
-    boost::shared_ptr<PrinterFileSystem> m_file_sys;
-    bool                                 m_file_sys_result{false};
-    std::string                          m_timestamp;
-    std::string                          m_tmp_path;
-    std::vector<string>                  m_local_paths;
-    std::vector<string>                  m_target_paths;
-    std::string                          create_tmp_path();
+    //cj_4
+    // Inputs supplied by the caller (QDSDevice). m_frp_url is the HTTP base
+    // such as "http://192.168.x.x:7125"; the dialog appends
+    // "/server/files/.temp/<filename>" to form download URLs.
+    std::string m_frp_url;
+    std::string m_dev_id;
 
-    bool is_local_file_existed(const std::vector<string> &local_paths);
+    std::string              m_timestamp;
+    std::string              m_tmp_path;
+    std::vector<std::string> m_local_paths;
+    std::vector<std::string> m_target_paths; // kept for logging/diagnostics only
+
+    //cj_4
+    // Async download bookkeeping. Counts files still in flight and whether any
+    // of them failed. Updated from HTTP callbacks that are marshalled back onto
+    // the GUI thread via CallAfter().
+    std::atomic<int>  m_pending_downloads{0};
+    std::atomic<bool> m_download_failed{false};
+
+    std::string create_tmp_path();
+    bool        is_local_file_existed(const std::vector<std::string> &local_paths);
 
     void DownloadPartsFile();
-    void OnFileSystemEvent(wxCommandEvent &event);
-    void OnFileSystemResult(wxCommandEvent &event);
-    void fetchUrl(boost::weak_ptr<PrinterFileSystem> wfs);
+    void DownloadOneFile(const std::string &remote_name, const std::string &local_path);
+    void OnAllDownloadsFinished();
 
     void OnZoomIn(wxCommandEvent &event);
     void OnZoomOut(wxCommandEvent &event);

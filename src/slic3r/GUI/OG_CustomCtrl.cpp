@@ -1216,19 +1216,42 @@ wxPoint OG_CustomCtrl::CtrlLine::draw_blinking_bmp(wxDC& dc, wxPoint pos, bool i
 
 wxCoord OG_CustomCtrl::CtrlLine::draw_act_bmps(wxDC& dc, wxPoint pos, const wxBitmap& bmp_undo_to_sys, const wxBitmap& bmp_undo, bool is_blinking, size_t rect_id, bool skip_vertical_adjust)
 {
+    // cj_4: Debug logging for undo button positioning
+    wxCoord original_pos_y = pos.y;
+    wxCoord line_height = height;
+    wxCoord bmp_height = get_bitmap_size(bmp_undo).GetHeight();
+    
 #ifndef DISABLE_BLINKING
     pos = draw_blinking_bmp(dc, pos, is_blinking);
 #else
+    // cj_4: Fix vertical centering for undo buttons
+    // Always center the buttons vertically within the line height
     if (!skip_vertical_adjust) {
-        if (ctrl->opt_group->split_multi_line) { // QDS
+        if (ctrl->opt_group->split_multi_line) {
+            // For multi-line layout, calculate based on single item height
             const std::vector<Option> &option_set = og_line.get_options();
-            if (option_set.size() > 1)
-                pos.y += lround(((height - ctrl->m_v_gap + ctrl->m_v_gap2) / option_set.size() - get_bitmap_size(bmp_undo).GetHeight()) / 2);
-            else
-                pos.y += lround((height - get_bitmap_size(bmp_undo).GetHeight()) / 2);
+            if (option_set.size() > 1) {
+                // Multiple options: divide height by option count
+                wxCoord single_item_height = (height - ctrl->m_v_gap + ctrl->m_v_gap2) / option_set.size();
+                pos.y += lround((single_item_height - bmp_height) / 2);
+            } else {
+                // Single option: use full height
+                pos.y += lround((height - bmp_height) / 2);
+            }
+        } else {
+            // For non-split layout, center in full line height
+            pos.y += lround((height - bmp_height) / 2);
         }
     }
 #endif
+    
+    // cj_4: Log positioning debug info
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": Undo button positioning - original_y=" << original_pos_y 
+                             << ", adjusted_y=" << pos.y << ", line_height=" << line_height
+                             << ", bmp_height=" << bmp_height
+                             << ", skip_vertical_adjust=" << skip_vertical_adjust
+                             << ", split_multi_line=" << ctrl->opt_group->split_multi_line;
+    
     wxCoord h_pos = pos.x;
     wxCoord v_pos = pos.y;
 
@@ -1241,6 +1264,7 @@ wxCoord OG_CustomCtrl::CtrlLine::draw_act_bmps(wxDC& dc, wxPoint pos, const wxBi
 
     h_pos += bmp_dim + ctrl->m_h_gap;
 #endif
+   
     dc.DrawBitmap(og_line.undo_to_sys ? bmp_undo_to_sys : bmp_undo, h_pos, v_pos);
 
     int bmp_dim2 = get_bitmap_size(bmp_undo).GetWidth();

@@ -1766,6 +1766,8 @@ void PrinterFileSystem::Reconnect(boost::unique_lock<boost::mutex> &l, int resul
             } else if (ret == 1) {
                 m_stopped = true;
                 ret = ERROR_RES_BUSY;
+            } else if (ret == QIDI_would_block) {
+                ret = ERROR_TIME_OUT;
             }
             if (tunnel) {
                 QIDI_Close(tunnel);

@@ -41,14 +41,19 @@
 #include "Tab.hpp"
 //cj_2
 #include "StatusPanel.hpp"
+#include "Widgets/TimelapseUiEvents.hpp"
+#include "Widgets/TimelapseFileList.hpp"
+#include <wx/filename.h>
 //cj_2
 #include "QDSDeviceManager.hpp"
 //cj_2
-#include "Widgets/DeviceModelList.hpp"
+#include "Widgets/ModelFileListView.hpp"
+#include "libslic3r/Utils.hpp"
 #include "Widgets/TimelapseFileList.hpp"
 #include "DownloadManager.hpp"
 #include <wx/url.h>
 #include <wx/ffile.h>
+#include <wx/filename.h>
 
 #include "GUI.hpp"
 #include "ReleaseNote.hpp"
@@ -63,7 +68,7 @@
 namespace pt = boost::property_tree;
 
 namespace {
-//cj_3
+//cj_4
 std::string trim_ws(std::string s)
 {
     while (!s.empty() && (static_cast<unsigned char>(s.back()) <= ' '))
@@ -92,7 +97,7 @@ std::string normalize_net_legacy_poll_base(const std::string& link_url)
     return std::string("http://") + s;
 }
 
-//cj_3
+//cj_4
 // Relative path under download_dir (may contain subdirs); keep rules in sync with DeviceModelList local check.
 bool local_download_target_exists(const std::string& download_dir, const wxString& file_base_name)
 {
@@ -145,6 +150,55 @@ bool local_download_target_exists(const std::string& download_dir, const wxStrin
     }
 }
 
+//cj_4
+// Remove file under Preferences download_path; path rules must match local_download_target_exists.
+bool remove_local_download_for_storage_path(const wxString& storage_path)
+{
+    std::string download_dir = wxGetApp().app_config->get("download_path");
+    if (!local_download_target_exists(download_dir, storage_path))
+        return false;
+    wxString rel(storage_path);
+    rel.Replace("\\", "/");
+    while (!rel.empty() && rel[0] == '/')
+        rel = rel.Mid(1);
+    if (rel.empty())
+        return false;
+    try {
+        boost::filesystem::path root = boost::filesystem::absolute(boost::filesystem::path(download_dir));
+        boost::filesystem::path combined = root / std::string(rel.ToUTF8().data());
+        combined = combined.lexically_normal();
+        root = root.lexically_normal();
+        std::string rs = root.generic_string();
+        std::string cs = combined.generic_string();
+        if (cs.size() < rs.size())
+            return false;
+#ifdef _WIN32
+        std::string rsl = rs, csl = cs;
+        for (char& c : rsl)
+            c = static_cast<char>(::tolower(static_cast<unsigned char>(c)));
+        for (char& c : csl)
+            c = static_cast<char>(::tolower(static_cast<unsigned char>(c)));
+        if (csl.compare(0, rsl.size(), rsl) != 0)
+            return false;
+        if (csl.size() > rsl.size()) {
+            const char b = csl[rsl.size()];
+            if (b != '/' && b != '\\')
+                return false;
+        }
+#else
+        if (cs.compare(0, rs.size(), rs) != 0)
+            return false;
+        if (cs.size() > rs.size() && cs[rs.size()] != '/')
+            return false;
+#endif
+        if (!boost::filesystem::is_regular_file(combined))
+            return false;
+        return boost::filesystem::remove(combined);
+    } catch (const std::exception&) {
+        return false;
+    }
+}
+
 //cj_4 Model/timelapse download notices: SecondaryCheckDialog (app UI), not wxMessageBox.
 static void show_printer_webview_download_notice(wxWindow* parent, const wxString& title, const wxString& message)
 {
@@ -172,7 +226,7 @@ class LoadingOverlayWithGif : public wxFrame
 private:
     wxWindow* m_target_window { nullptr };
     wxPanel* m_root_panel { nullptr };
-    //cj_3
+    //cj_4
     wxFrame* m_center_frame { nullptr };
     wxPanel* m_center_panel { nullptr };
     wxAnimationCtrl* m_animation_ctrl { nullptr };
@@ -197,14 +251,14 @@ public:
                   wxDefaultSize,
                   wxFRAME_NO_TASKBAR | wxSTAY_ON_TOP | wxBORDER_NONE | wxFRAME_TOOL_WINDOW)
     {
-        //cj_3
+        //cj_4
         m_target_window = wxGetTopLevelParent(owner);
 
         SetBackgroundColour(wxColour(0, 0, 0));
-        //cj_3
+        //cj_4
         SetTransparent(180);
 
-        //cj_3
+        //cj_4
         m_show_delay_timer = new wxTimer(this, wxWindow::NewControlId());
         m_hide_delay_timer = new wxTimer(this, wxWindow::NewControlId());
         m_timeout_timer = new wxTimer(this, wxWindow::NewControlId());
@@ -212,14 +266,14 @@ public:
         Bind(wxEVT_TIMER, &LoadingOverlayWithGif::onHideDelayTimer, this, m_hide_delay_timer->GetId());
         Bind(wxEVT_TIMER, &LoadingOverlayWithGif::onTimeoutTimer, this, m_timeout_timer->GetId());
 
-        //cj_3
+        //cj_4
         m_root_panel = new wxPanel(this);
         m_root_panel->SetBackgroundColour(wxColour(0, 0, 0));
         auto* root_sizer = new wxBoxSizer(wxVERTICAL);
         root_sizer->Add(1, 1, 1, wxEXPAND, 0);
         m_root_panel->SetSizer(root_sizer);
 
-        //cj_3
+        //cj_4
         m_center_frame = new wxFrame(nullptr,
             wxID_ANY,
             wxEmptyString,
@@ -227,7 +281,7 @@ public:
             wxSize(300, 100),
             wxFRAME_NO_TASKBAR | wxSTAY_ON_TOP | wxBORDER_NONE | wxFRAME_TOOL_WINDOW);
         m_center_frame->SetBackgroundColour(*wxWHITE);
-        //cj_3
+        //cj_4
         {
             wxBitmap shape_bmp(300, 100, 32);
             wxMemoryDC mem_dc(shape_bmp);
@@ -246,11 +300,11 @@ public:
         m_center_panel->SetBackgroundColour(*wxWHITE);
 		m_center_panel->SetMinSize(wxSize(300, 100));
 		m_center_panel->SetMaxSize(wxSize(300, 100));
-        //cj_3
+        //cj_4
         m_center_panel->SetSize(wxSize(300, 100));
 
         auto* center_sizer = new wxBoxSizer(wxHORIZONTAL);
-        //cj_3
+        //cj_4
         center_sizer->AddStretchSpacer(1);
 
         m_animation_ctrl = new wxAnimationCtrl(m_center_panel, wxID_ANY, wxNullAnimation, wxDefaultPosition, wxDefaultSize, wxAC_DEFAULT_STYLE);
@@ -258,7 +312,7 @@ public:
         auto gif_path = Slic3r::var("wait1.gif");// "D:\\Backup\\Downloads\\wait1.gif";
         if (m_animation_ctrl->LoadFile(gif_path)) {
             const wxSize gif_size = m_animation_ctrl->GetAnimation().GetSize();
-            //cj_3
+            //cj_4
             const wxSize target_gif_size(gif_size.GetWidth() + 10, gif_size.GetHeight() + 10);
             m_animation_ctrl->SetMinSize(target_gif_size);
             m_animation_ctrl->SetSize(target_gif_size);
@@ -267,9 +321,9 @@ public:
 
 
         m_text = new wxStaticText(m_center_panel, wxID_ANY, _L("Loading"));
-        //cj_3
+        //cj_4
         wxFont loading_font = m_text->GetFont();
-        //cj_3
+        //cj_4
         loading_font.SetPointSize(13);
         loading_font.SetWeight(wxFONTWEIGHT_NORMAL);
         m_text->SetFont(loading_font);
@@ -277,28 +331,28 @@ public:
         m_text->SetForegroundColour(*wxBLACK);
 
         center_sizer->Add(m_text, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 12);
-        //cj_3
+        //cj_4
         center_sizer->AddStretchSpacer(1);
 
-        //cj_3
+        //cj_4
         auto* center_outer_sizer = new wxBoxSizer(wxVERTICAL);
         center_outer_sizer->AddStretchSpacer(1);
         center_outer_sizer->Add(center_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, 16);
         center_outer_sizer->AddStretchSpacer(1);
         m_center_panel->SetSizer(center_outer_sizer);
-        //cj_3
+        //cj_4
         m_center_panel->Layout();
 
 
         auto* center_frame_sizer = new wxBoxSizer(wxVERTICAL);
         center_frame_sizer->Add(m_center_panel, 1, wxEXPAND, 0);
         m_center_frame->SetSizer(center_frame_sizer);
-        //cj_3
+        //cj_4
         m_center_frame->Layout();
 
 
 
-        //cj_3
+        //cj_4
         Bind(wxEVT_LEFT_DOWN, &LoadingOverlayWithGif::onMouseConsume, this);
         Bind(wxEVT_LEFT_UP, &LoadingOverlayWithGif::onMouseConsume, this);
         Bind(wxEVT_RIGHT_DOWN, &LoadingOverlayWithGif::onMouseConsume, this);
@@ -307,7 +361,7 @@ public:
         Bind(wxEVT_MOUSEWHEEL, &LoadingOverlayWithGif::onMouseWheelConsume, this);
         Bind(wxEVT_CHAR_HOOK, &LoadingOverlayWithGif::onCharHook, this);
 
-        //cj_3
+        //cj_4
         if (m_center_frame) {
             m_center_frame->Bind(wxEVT_LEFT_DOWN, &LoadingOverlayWithGif::onMouseConsume, this);
             m_center_frame->Bind(wxEVT_LEFT_UP, &LoadingOverlayWithGif::onMouseConsume, this);
@@ -338,7 +392,7 @@ public:
             m_target_window->Unbind(wxEVT_SIZE, &LoadingOverlayWithGif::onTargetSize, this);
         }
 
-        //cj_3
+        //cj_4
         if (m_center_frame) {
             m_center_frame->Destroy();
             m_center_frame = nullptr;
@@ -414,7 +468,7 @@ private:
             m_root_panel->Layout();
         }
 
-        //cj_3
+        //cj_4
         if (m_center_frame) {
             const wxSize center_size = m_center_frame->GetSize();
             const int center_x = target_rect.x + (target_rect.width - center_size.x) / 2;
@@ -532,7 +586,11 @@ PrinterWebView::PrinterWebView(wxWindow* parent) :
     wxBoxSizer* t_browser_sizer;
     wxBoxSizer* t_status_sizer;
     // cj_1 ui
+
+
+
     allsizer = new wxBoxSizer(wxHORIZONTAL);
+    SetBackgroundColour(wxColour(255, 255, 255));
     SetSizer(allsizer); {
         leftallsizer = new wxBoxSizer(wxVERTICAL); {
 			titlePanel = new wxPanel(this, wxID_ANY);
@@ -562,6 +620,7 @@ PrinterWebView::PrinterWebView(wxWindow* parent) :
             }
 			buttonSizer->Add(0, 10);
 			buttonSizer->Add(menuPanel, wxSizerFlags(1).Expand());
+
 
 			devicesizer = new wxBoxSizer(wxVERTICAL);
 			devicesizer->SetMinSize(wxSize(220, -1));
@@ -597,6 +656,7 @@ PrinterWebView::PrinterWebView(wxWindow* parent) :
 		m_status_book->AddPage(t_browser_panel, "", false);
 		m_status_book->AddPage(t_status_panel, "", false);
     }
+
     //y74
     allsizer->Add(leftallsizer, wxSizerFlags(0).Expand());
     allsizer->Add(m_status_book, wxSizerFlags(1).Expand().Border(wxALL, 0));
@@ -612,10 +672,10 @@ PrinterWebView::PrinterWebView(wxWindow* parent) :
 
     //y74
     InitDeviceManager();
-    //cj_3
+    //cj_4
     startLegacyStatusPolling();
     m_task_dispatcher = std::make_unique<PrinterTaskDispatcher>(m_device_manager);
-    //cj_3
+    //cj_4
     m_progress_watchdog_timer = new wxTimer(this, wxWindow::NewControlId());
     Bind(wxEVT_TIMER, &PrinterWebView::onProgressWatchdogTimer, this, m_progress_watchdog_timer->GetId());
     resetProgressWatchdogHeartbeat();
@@ -639,23 +699,26 @@ PrinterWebView::PrinterWebView(wxWindow* parent) :
 	t_status_panel->Bind(EVTSET_FILAMENT_VENDOR, &PrinterWebView::onSetBoxTask, this);
 	t_status_panel->Bind(EVTSET_FILAMENT_LOAD, &PrinterWebView::onSetBoxTask, this);
 	t_status_panel->Bind(EVTSET_FILAMENT_UNLOAD, &PrinterWebView::onSetBoxTask, this);
-    //cj_3
+    //cj_4
     t_status_panel->Bind(EVTSET_FILAMENT_EJECT, &PrinterWebView::onSetBoxTask, this);
 	t_status_panel->Bind(EVT_AMS_REFRESH_RFID, &PrinterWebView::onRefreshRfid, this);
-	t_status_panel->Bind(EVTSET_DEL_PRINTER_FILE, &PrinterWebView::delPrinterFile, this);
-    //cj_3
-    t_status_panel->Bind(EVTSET_DEL_TIMELAPSE_FILE, &PrinterWebView::delTimelapseFile, this);
-	t_status_panel->Bind(EVTSET_DOWNLOAD_PRINTER_FILE, &PrinterWebView::downloadPrinterFile, this);
-    //cj_3
+    //cj_4
+    t_status_panel->Bind(EVT_TIMELAPSE_DELETE_UI, &PrinterWebView::onTimelapseDeleteUi, this);
+    t_status_panel->Bind(EVT_MODEL_FILE_LIST_COMMAND, &PrinterWebView::onModelFileListCommand, this);
+    //cj_4
     t_status_panel->Bind(EVTSET_DOWNLOAD_TIMELAPSE_FILE, &PrinterWebView::downloadTimelapseFile, this);
+    //cj_4
+    t_status_panel->Bind(EVT_TIMELAPSE_PLAY_FILE, &PrinterWebView::playTimelapseFile, this);
+    t_status_panel->Bind(EVT_TIMELAPSE_REVEAL_FILE, &PrinterWebView::revealTimelapseFile, this);
+    t_status_panel->Bind(EVT_TIMELAPSE_DOWNLOAD_ONE, &PrinterWebView::downloadTimelapseOne, this);
     bindTaskHandle();
 
     init_select_machine();
-    //cj_3
+    //cj_4
     m_printer_view_bootstrap = false;
 }
 
-//cj_3
+//cj_4
 void PrinterWebView::showLoadingOverlay()
 {
 
@@ -674,7 +737,7 @@ void PrinterWebView::showLoadingOverlay()
     m_loading_overlay->RequestShow();
 }
 
-//cj_3
+//cj_4
 void PrinterWebView::hideLoadingOverlay()
 {
     if (!m_loading_overlay) {
@@ -683,7 +746,7 @@ void PrinterWebView::hideLoadingOverlay()
     m_loading_overlay->RequestHide();
 }
 
-//cj_3
+//cj_4
 void PrinterWebView::startLegacyStatusPolling()
 {
     stopLegacyStatusPolling();
@@ -760,7 +823,7 @@ void PrinterWebView::startLegacyStatusPolling()
     });
 }
 
-//cj_3
+//cj_4
 void PrinterWebView::stopLegacyStatusPolling()
 {
     m_stop_legacy_status_polling = true;
@@ -769,7 +832,7 @@ void PrinterWebView::stopLegacyStatusPolling()
     }
 }
 
-//cj_3
+//cj_4
 void PrinterWebView::resetProgressWatchdogHeartbeat()
 {
     m_last_progress_heartbeat = std::chrono::steady_clock::now();
@@ -777,7 +840,7 @@ void PrinterWebView::resetProgressWatchdogHeartbeat()
     m_watchdog_camera_active = false;
 }
 
-//cj_3
+//cj_4
 void PrinterWebView::onProgressWatchdogTimer(wxTimerEvent& event)
 {
     boost::ignore_unused(event);
@@ -901,7 +964,7 @@ void PrinterWebView::init_scroll_window(wxPanel* Panel) {
         leftScrolledWindow->DestroyChildren();
         devicesizer->Clear();
         m_device_manager->stopAllConnection();
-        //cj_3
+        //cj_4
         {
             std::lock_guard<std::mutex> lock(m_ui_map_mutex);
             m_device_id_to_button.clear();
@@ -1004,7 +1067,7 @@ void PrinterWebView::init_scroll_window(wxPanel* Panel) {
 
                 const auto        opt = cfg_t->option<ConfigOptionEnum<PrintHostType>>("host_type");
                 auto       host_type = opt != nullptr ? opt->value : htOctoPrint;
-                //cj_3_cursor
+                //cj_4_cursor
                 bool expert_mode = true;
                 if (const auto* expert_opt = cfg_t->option<ConfigOptionBool>("expert_mode")) {
                     expert_mode = expert_opt->value;
@@ -1023,7 +1086,7 @@ void PrinterWebView::init_scroll_window(wxPanel* Panel) {
 
                 boost::ignore_unused(host_type);
                 AddButton(from_u8(it->get_short_name(full_name)), host, model_id, from_u8(full_name), is_selected,
-                    //cj_3_cursor
+                    //cj_4_cursor
                     expert_mode, apikey);
                 m_machine.insert(std::make_pair((it->get_short_name(full_name)), *cfg_t));
                 //y25
@@ -1072,8 +1135,8 @@ void PrinterWebView::init_scroll_window(wxPanel* Panel) {
 #if QDT_RELEASE_TO_PUBLIC
                     if (!wxGetApp().is_link_connect()) {
 
-
                         MakerHttpHandle::getInstance().get_maker_device_list();
+
                     }
                     else {
 						wxString    msg;
@@ -1213,6 +1276,50 @@ void PrinterWebView::SetLoginStatus(bool status) {
             MakerHttpHandle::getInstance().closeSSEClient();
         }
 #endif
+        //cj_4
+        // If the user was viewing an online (link / maker) device when the
+        // login session ends, the button stays selected and the browser keeps
+        // rendering the now-unauthenticated link page. Detect that case and
+        // drop every piece of "last selected online device" state so nothing
+        // of the previous session is left visible.
+        const bool was_online_selected =
+            (webisNetMode == isNetWeb) ||
+            wxGetApp().app_config->get_bool("last_sel_machine_is_net");
+        if (was_online_selected) {
+            cancelAllDevButtonSelect();
+            clearStatusPanelData();
+            if (m_device_manager) {
+                m_device_manager->unSelected();
+            }
+            m_cur_deviceId.clear();
+            m_ip.clear();
+            wxGetApp().app_config->set("last_selected_machine", "");
+            wxGetApp().app_config->set_bool("last_sel_machine_is_net", false);
+            wxGetApp().app_config->set("machine_list_net", "0");
+
+            //cj_4
+            // Blank the embedded browser. A link device was rendered into
+            // m_browser via FormatNetUrl/load_net_url, so just switching the
+            // simplebook page is not enough: the WebView still keeps the old
+            // URL alive and a short flash of the previous device page shows
+            // up on the next login. Use the WebView helper to force an
+            // about:blank navigation and reset m_web so any later load_url /
+            // load_net_url call with the same URL is not deduplicated away.
+            if (m_browser) {
+                WebView::LoadUrl(m_browser, "about:blank");
+            }
+            m_web.Clear();
+            if (m_status_book) {
+                m_status_book->ChangeSelection(0);
+            }
+            if (wxGetApp().mainframe) {
+                wxGetApp().mainframe->is_webview     = false;
+                wxGetApp().mainframe->is_net_url     = false;
+                wxGetApp().mainframe->printer_view_ip  = "";
+                wxGetApp().mainframe->printer_view_url = "";
+            }
+        }
+
         // y28
         if(webisNetMode == isNetWeb)
             webisNetMode = isDisconnect;
@@ -1224,7 +1331,7 @@ void PrinterWebView::SetLoginStatus(bool status) {
 
 PrinterWebView::~PrinterWebView()
 {
-    //cj_3
+    //cj_4
     if (m_progress_watchdog_timer) {
         m_progress_watchdog_timer->Stop();
         Unbind(wxEVT_TIMER, &PrinterWebView::onProgressWatchdogTimer, this, m_progress_watchdog_timer->GetId());
@@ -1249,7 +1356,7 @@ PrinterWebView::~PrinterWebView()
     //y77
     m_isloginin = false;
 
-    //cj_3
+    //cj_4
     hideLoadingOverlay();
     m_loading_overlay.reset();
 
@@ -1262,7 +1369,7 @@ PrinterWebView::~PrinterWebView()
                                 const wxString &    machine_type,
                                 const wxString &    fullname,
                                 bool                isSelected,
-                                //cj_3_cursor
+                                //cj_4_cursor
                                 bool                expert_mode,
                                 const wxString&     apikey)
  {
@@ -1281,7 +1388,7 @@ PrinterWebView::~PrinterWebView()
     //machine_button->SetBorderColor(wxColour(57, 51, 55));
     machine_button->SetCanFocus(false);
     machine_button->SetCornerRadius(0);
-    //cj_3
+    //cj_4
     machine_button->SetStateText("offline");
     std::thread([this, device_name, ip, machine_type, machine_button, expert_mode, apikey]() {
 
@@ -1300,7 +1407,7 @@ PrinterWebView::~PrinterWebView()
         if (!t_device_id.empty()) {
             std::lock_guard<std::mutex> lock(m_ui_map_mutex);
             m_device_id_to_button[t_device_id] = machine_button;
-            //cj_3
+            //cj_4
             m_device_id_to_expert_mode[t_device_id] = expert_mode;
             DynamicPrintConfig printer_cfg;
             printer_cfg.set_key_value("print_host", new ConfigOptionString(into_u8(ip)));
@@ -1328,7 +1435,7 @@ PrinterWebView::~PrinterWebView()
         for (auto it = m_device_id_to_button.begin(); it != m_device_id_to_button.end(); ++it) {
             if (it->second == machine_button) {
                 m_cur_deviceId = it->first;
-                //cj_3_cursor
+                //cj_4_cursor
                 auto mode_it = m_device_id_to_expert_mode.find(m_cur_deviceId);
                 if (mode_it != m_device_id_to_expert_mode.end()) {
                     expert_mode = mode_it->second;
@@ -1369,6 +1476,8 @@ PrinterWebView::~PrinterWebView()
         wxGetApp().app_config->set("machine_list_net", "0");
         wxGetApp().app_config->set("last_selected_machine", into_u8(machine_button->getIPLabel()));
         wxGetApp().app_config->set_bool("last_sel_machine_is_net", false);
+        //cj_4 clear sidebar sync status when switching to a different device
+        wxGetApp().plater()->update_machine_sync_status();
     });
     devicesizer->Add(machine_button, 0, wxEXPAND);
     devicesizer->Layout();
@@ -1387,6 +1496,28 @@ PrinterWebView::~PrinterWebView()
      }
      return normalized;
  }
+
+//cj_4
+bool PrinterWebView::select_device_by_id(const std::string& device_id)
+{
+    if (device_id.empty()) return false;
+
+    DeviceButton* target_button = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(m_ui_map_mutex);
+        auto it = m_device_id_to_button.find(device_id);
+        if (it != m_device_id_to_button.end()) target_button = it->second;
+    }
+
+    if (target_button == nullptr) return false;
+
+    wxEvtHandler* handler = target_button->GetEventHandler();
+    if (handler == nullptr) return false;
+
+    wxCommandEvent evt(wxEVT_BUTTON, target_button->GetId());
+    evt.SetEventObject(target_button);
+    return handler->ProcessEvent(evt);
+}
 
  #if QDT_RELEASE_TO_PUBLIC
  void PrinterWebView::AddNetButton(const NetDevice device)
@@ -1467,7 +1598,7 @@ PrinterWebView::~PrinterWebView()
             return;
         }
 
-        //cj_3
+        //cj_4
         //wxGetApp().CallAfter([this]{
 			if (!wxGetApp().is_link_connect()) {
 				showLoadingOverlay();
@@ -1483,7 +1614,7 @@ PrinterWebView::~PrinterWebView()
         machine_button->SetIsSelected(true);
 
         if (wxGetApp().is_link_connect()) {
-            //cj_3
+            //cj_4
             hideLoadingOverlay();
             m_status_book->ChangeSelection(0);
             m_device_manager->unSelected();
@@ -1572,9 +1703,10 @@ PrinterWebView::~PrinterWebView()
         wxGetApp().app_config->set("last_selected_machine", into_u8(machine_button->getIPLabel()));
         wxGetApp().app_config->set_bool("last_sel_machine_is_net", true);
         wxGetApp().app_config->set("machine_list_net", "1");
+        //cj_4 clear sidebar sync status when switching to a different device
+        wxGetApp().plater()->update_machine_sync_status();
 
         m_device_manager->getFileInfo(device.mac_address);
-				return;
 		std::shared_ptr<QDSDevice> tempDevice = m_device_manager->getDevice(device.mac_address);
 		if (tempDevice !=nullptr) {
             tempDevice->box_is_update = true;
@@ -1592,7 +1724,7 @@ PrinterWebView::~PrinterWebView()
  	 auto qdsDevice = std::make_shared<QDSDevice>(device.mac_address, device.device_name, "", "", t_device_type);
      qdsDevice->m_frp_url = device.url;// +"/webcam/?action=snapshot";
      qdsDevice->m_ip = device.local_ip;
-     //cj_3
+     //cj_4 线上旧：link_url；新（isSpecialMachine）：FRP
      qdsDevice->m_net_link_url     = device.link_url;
      qdsDevice->m_net_poll_use_frp = !wxGetApp().is_link_connect();
      qdsDevice->updateFilamentConfig();
@@ -1652,7 +1784,7 @@ PrinterWebView::~PrinterWebView()
      }
  }
 
-//cj_3
+//cj_4
 void PrinterWebView::removeDeviceButtonMapEntriesForButtons(const std::vector<DeviceButton*>& buttons)
 {
     if (buttons.empty()) {
@@ -1768,8 +1900,30 @@ void PrinterWebView::OnDeleteButtonClick(wxCommandEvent &event)
 
                 preset_bundle.physical_printers.delete_selected_printer();
 
+                //cj_4
+                // The selected local (fluid) device is removed. Clear all
+                // persisted "current monitor target" fields so MainFrame will
+                // not restore the deleted URL when switching tabs back.
+                m_cur_deviceId.clear();
+                m_ip.clear();
+                m_web.Clear();
+                if (m_device_manager) {
+                    m_device_manager->unSelected();
+                }
+                wxGetApp().app_config->set("last_selected_machine", "");
+                wxGetApp().app_config->set_bool("last_sel_machine_is_net", false);
+                if (wxGetApp().mainframe) {
+                    wxGetApp().mainframe->printer_view_ip  = "";
+                    wxGetApp().mainframe->printer_view_url = "";
+                    wxGetApp().mainframe->is_net_url       = false;
+                }
+
                 webisNetMode = isDisconnect;
+                load_disconnect_url();
                 SetPresetChanged(true);
+
+                //cj_4 clear sidebar sync badges after deleting selected device
+                wxGetApp().plater()->update_machine_sync_status();
 
                 UpdateLayout();
                 Refresh();
@@ -1816,8 +1970,30 @@ void PrinterWebView::OnDeleteButtonClick(wxCommandEvent &event)
                 }
 
 #endif         
+                //cj_4
+                // The selected online device is removed. Clear all persisted
+                // monitor target fields so tab switching cannot reload a stale
+                // page for a device that no longer exists.
+                m_cur_deviceId.clear();
+                m_ip.clear();
+                m_web.Clear();
+                if (m_device_manager) {
+                    m_device_manager->unSelected();
+                }
+                wxGetApp().app_config->set("last_selected_machine", "");
+                wxGetApp().app_config->set_bool("last_sel_machine_is_net", false);
+                if (wxGetApp().mainframe) {
+                    wxGetApp().mainframe->printer_view_ip  = "";
+                    wxGetApp().mainframe->printer_view_url = "";
+                    wxGetApp().mainframe->is_net_url       = false;
+                }
+
                 webisNetMode = isDisconnect;
+                load_disconnect_url();
                 SetPresetChanged(true);
+
+                //cj_4 clear sidebar sync badges after deleting selected device
+                wxGetApp().plater()->update_machine_sync_status();
 
                 UpdateLayout();
                 Refresh();
@@ -2047,196 +2223,540 @@ void PrinterWebView::onRefreshRfid(wxCommandEvent& event)
 
 
 
-//cj_2
-void PrinterWebView::delPrinterFile(wxCommandEvent& event)
+//cj_4
+void PrinterWebView::onModelFileListCommand(wxCommandEvent& event)
 {
-    boost::ignore_unused(event);
+    const auto cmd = static_cast<ModelFileListCommandType>(event.GetInt());
+    const wxString path = event.GetString();
+    switch (cmd) {
+    case ModelFileListCommandType::Print:
+        t_status_page->print_model_for_storage_path(path);
+        break;
+    case ModelFileListCommandType::Download:
+        downloadSinglePrinterFile(path);
+        break;
+    case ModelFileListCommandType::Delete:
+        deleteSinglePrinterFile(path);
+        break;
+    case ModelFileListCommandType::RevealLocal:
+        revealDownloadedPrinterFile(path);
+        break;
+    default:
+        break;
+    }
+}
 
-    if (m_task_dispatcher == nullptr)
+//cj_4
+void PrinterWebView::downloadSinglePrinterFile(const wxString& wx_storage_path)
+{
+    std::string downloadPath = wxGetApp().app_config->get("download_path");
+    if (downloadPath.empty()) {
+        show_printer_webview_download_notice(
+            t_status_page ? t_status_page->GetParent() : nullptr,
+            _L("Download Failed"),
+            _L("Please set the download path in Preferences first."));
+        return;
+    }
+
+    if (local_download_target_exists(downloadPath, wx_storage_path))
         return;
 
-    std::vector<DeviceModelItem*> items = t_status_page->getModelSelectItems();
+    boost::filesystem::create_directories(boost::filesystem::path(downloadPath));
+
+    std::shared_ptr<QDSDevice> device = m_device_manager->getDevice(m_cur_deviceId);
+    if (!device)
+        return;
+
+    const std::string fileName  = wx_storage_path.ToUTF8().data();
+    std::string       localPath = downloadPath + "/" + fileName;
+    std::string       encodedName = UrlEncodeForFilename(fileName);
+    std::string       urlStr      = device->m_frp_url + "/server/files/gcodes/" + encodedName + "?date=" +
+        std::to_string(wxGetUTCTimeMillis().GetValue());
+
+    const wxString wx_path_copy = wx_storage_path;
+
+    const std::string task_id = DownloadManager::getInstance().downloadFile(
+        urlStr,
+        localPath,
+        fileName,
+        [this, wx_path_copy, fileName](FileDownloadProgress progress) {
+            if (progress.state == FileDownloadProgress::State::Completed) {
+                BOOST_LOG_TRIVIAL(info) << "Downloaded: " << fileName;
+                t_status_page->end_model_file_download_ui(wx_path_copy, false);
+            } else if (progress.state == FileDownloadProgress::State::Failed) {
+                show_printer_webview_download_notice(
+                    t_status_page ? t_status_page->GetParent() : nullptr,
+                    _L("Download Error"),
+                    wxString::Format(_L("Download failed: %s\n%s"),
+                        wxString::FromUTF8(fileName),
+                        wxString::FromUTF8(progress.error_msg)));
+                t_status_page->end_model_file_download_ui(wx_path_copy, true);
+            }
+            t_status_page->refresh_model_file_local_exist_state();
+        },
+        [this, wx_path_copy](FileDownloadProgress progress) {
+            if (progress.state != FileDownloadProgress::State::Downloading) {
+                return;
+            }
+            float f = progress.progress;
+            if (f < 0.f && progress.bytes_total > 0) {
+                f = static_cast<float>(static_cast<double>(progress.bytes_downloaded) /
+                    static_cast<double>(std::max<int64_t>(progress.bytes_total, 1)));
+            }
+            if (f < 0.f && progress.bytes_downloaded > 0) {
+                f = std::min(0.92f,
+                    static_cast<float>(progress.bytes_downloaded) / (48.f * 1024.f * 1024.f));
+            }
+            if (f < 0.f) {
+                f = 0.f;
+            }
+            t_status_page->set_model_file_download_progress(wx_path_copy, std::min(1.f, f));
+        });
+    if (!task_id.empty())
+        t_status_page->begin_model_file_download_ui(wx_path_copy, task_id);
+}
+
+//cj_4
+void PrinterWebView::deleteSinglePrinterFile(const wxString& storage_path)
+{
+    if (t_status_page == nullptr)
+        return;
+    wxWindow* dlg_parent = t_status_page->GetParent();
+    std::string downloadPath = wxGetApp().app_config->get("download_path");
+    const bool local_copy_exists = !downloadPath.empty() && local_download_target_exists(downloadPath, storage_path);
+
+    if (local_copy_exists) {
+        //cj_3
+        auto* dlg = new SecondaryCheckDialog(dlg_parent, wxID_ANY, _L("Delete file"),
+            SecondaryCheckDialog::ButtonStyle::DELETE_LOCAL_AND_BOTH_AND_CANCEL_NO_PRINTER_ONLY, wxDefaultPosition,
+            wxDefaultSize, wxCLOSE_BOX | wxCAPTION, false, true);
+        dlg->m_button_retry->SetLabel(_L("Delete local copy"));
+        dlg->m_button_ok->SetLabel(_L("Delete on printer and locally"));
+        dlg->m_button_cancel->SetLabel(_L("Cancel"));
+        dlg->update_text(wxString::Format(_L("Are you sure you want to delete this file?\n\n%s"), storage_path));
+        dlg->set_message_area_width(600);
+        dlg->rescale();
+        dlg->m_button_retry->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [this, storage_path, dlg](wxCommandEvent&) {
+            wxGetApp().CallAfter([this, storage_path, dlg]() {
+                const bool ok = remove_local_download_for_storage_path(storage_path);
+                dlg->Destroy();
+                if (t_status_page) {
+                    if (ok)
+                        t_status_page->refresh_model_file_local_exist_state();
+                    else
+                        show_printer_webview_download_notice(
+                            t_status_page->GetParent(),
+                            _L("Delete local copy"),
+                            _L("Could not delete the local file."));
+                }
+            });
+            dlg->on_hide();
+        });
+        dlg->m_button_ok->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [this, storage_path, dlg](wxCommandEvent&) {
+            wxGetApp().CallAfter([this, storage_path, dlg]() {
+                run_delete_printer_file_task(storage_path, true);
+                dlg->Destroy();
+            });
+            dlg->on_hide();
+        });
+        dlg->m_button_cancel->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [dlg](wxCommandEvent&) {
+            dlg->on_hide();
+            dlg->Destroy();
+        });
+        dlg->on_show();
+        dlg->Raise();
+        return;
+    }
+
+    //cj_4
+    auto* dlg = new SecondaryCheckDialog(dlg_parent, wxID_ANY, _L("Delete file"),
+        SecondaryCheckDialog::ButtonStyle::CONFIRM_AND_CANCEL, wxDefaultPosition, wxDefaultSize, wxCLOSE_BOX | wxCAPTION,
+        false, true);
+    dlg->m_button_ok->SetLabel(_L("Delete"));
+    dlg->m_button_cancel->SetLabel(_L("Cancel"));
+    dlg->update_text(wxString::Format(_L("Are you sure you want to delete this file?\n\n%s"), storage_path));
+    dlg->set_message_area_width(600);
+    dlg->m_button_ok->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [this, storage_path, dlg](wxCommandEvent&) {
+        wxGetApp().CallAfter([this, storage_path, dlg]() {
+            run_delete_printer_file_task(storage_path, false);
+            dlg->Destroy();
+        });
+        dlg->on_hide();
+    });
+    dlg->m_button_cancel->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [dlg](wxCommandEvent&) {
+        dlg->on_hide();
+        dlg->Destroy();
+    });
+    dlg->on_show();
+    dlg->Raise();
+}
+
+//cj_4
+void PrinterWebView::run_delete_printer_file_task(const wxString& storage_path, bool also_remove_local_copy)
+{
+    if (m_task_dispatcher == nullptr || t_status_page == nullptr)
+        return;
+
     PrinterTask task;
-    task.type = PrinterTaskType::DeletePrinterFiles;
+    task.type      = PrinterTaskType::DeletePrinterFiles;
     task.device_id = m_cur_deviceId;
 
     if (wxGetApp().app_config->get_bool("last_sel_machine_is_net")) {
 #if QDT_RELEASE_TO_PUBLIC
         task.transport = PrinterTaskTransport::Cloud;
-        for (DeviceModelItem* item : items) {
-            task.file_paths.push_back("gcodes/" + std::string(item->GetName().ToUTF8()));
-        }
+        task.file_paths.push_back("gcodes/" + std::string(storage_path.ToUTF8()));
         PrinterTaskResult result = m_task_dispatcher->dispatch(task, m_env, PRINTERTYPE);
         emitTaskDispatchResult(task.type, result);
-#endif
-    }
-    else {
-        task.transport = PrinterTaskTransport::Local;
-        for (DeviceModelItem* item : items) {
-            task.file_paths.push_back("gcodes/" + decode_path((item->GetName().ToStdString()).c_str()));
+        if (result.success && result.code == PrinterTaskErrorCode::None) {
+            if (also_remove_local_copy)
+                (void)remove_local_download_for_storage_path(storage_path);
+            t_status_page->remove_model_row_by_storage_path(storage_path);
+        } else {
+            const wxString msg = result.message.empty() ? _L("Delete failed.") : wxString::FromUTF8(result.message);
+            show_printer_webview_download_notice(
+                t_status_page->GetParent(), _L("Delete failed"), msg);
         }
+#else
+        boost::ignore_unused(storage_path);
+        boost::ignore_unused(also_remove_local_copy);
+#endif
+    } else {
+        task.transport = PrinterTaskTransport::Local;
+        //cj_4
+        // Moonraker paths are UTF-8; use ToUTF8() like the cloud branch. decode_path(storage_path.data())
+        // mis-treats wxString as ACP and corrupts CJK (mojibake like "æµ‹è¯•" for UTF-8 Chinese).
+        task.file_paths.push_back("gcodes/" + std::string(storage_path.ToUTF8()));
         PrinterTaskResult result = m_task_dispatcher->dispatch(task);
         emitTaskDispatchResult(task.type, result);
+        if (result.success && result.code == PrinterTaskErrorCode::None) {
+            if (also_remove_local_copy)
+                (void)remove_local_download_for_storage_path(storage_path);
+            t_status_page->remove_model_row_by_storage_path(storage_path);
+        } else {
+            const wxString msg = result.message.empty()
+                ? _L("Could not send delete command to the printer. Check the connection and try again.")
+                : wxString::FromUTF8(result.message);
+            show_printer_webview_download_notice(
+                t_status_page->GetParent(), _L("Delete failed"), msg);
+        }
+    }
+}
+
+//cj_4
+void PrinterWebView::revealDownloadedPrinterFile(const wxString& storage_path)
+{
+    std::string downloadPath = wxGetApp().app_config->get("download_path");
+    if (downloadPath.empty()) {
+        show_printer_webview_download_notice(
+            t_status_page ? t_status_page->GetParent() : nullptr,
+            _L("Open Folder"),
+            _L("Please set the download path in Preferences first."));
+        return;
+    }
+    if (!local_download_target_exists(downloadPath, storage_path)) {
+        show_printer_webview_download_notice(
+            t_status_page ? t_status_page->GetParent() : nullptr,
+            _L("Open Folder"),
+            _L("The file is not present in the download folder yet."));
+        return;
     }
 
-    t_status_page->removeSelectModelItems();
+    wxString rel(storage_path);
+    rel.Replace("\\", "/");
+    while (!rel.empty() && rel[0] == '/')
+        rel = rel.Mid(1);
+    wxFileName root(wxString::FromUTF8(downloadPath), wxEmptyString);
+    root.MakeAbsolute();
+    wxString fullPath = root.GetPathWithSep() + rel;
+    wxFileName target(fullPath);
+    target.Normalize();
+    if (!target.FileExists()) {
+        show_printer_webview_download_notice(
+            t_status_page ? t_status_page->GetParent() : nullptr,
+            _L("Open Folder"),
+            _L("Could not find the file on disk."));
+        return;
+    }
+
+#ifdef __WXMSW__
+    wxString native = target.GetFullPath();
+    native.Replace("/", "\\");
+    wxString explorer = wxString::Format("explorer.exe /select,\"%s\"", native);
+    wxExecute(explorer, wxEXEC_ASYNC);
+#elif defined(__WXOSX__)
+    wxExecute(wxString::Format("open -R \"%s\"", target.GetFullPath()), wxEXEC_ASYNC);
+#else
+    wxLaunchDefaultApplication(target.GetPath());
+#endif
 }
 
 //cj_3
-void PrinterWebView::delTimelapseFile(wxCommandEvent& event)
+void PrinterWebView::run_delete_timelapse_files(const std::vector<TimelapseFileItem*>& items, bool also_remove_local_copy)
 {
-    boost::ignore_unused(event);
-
-    if (m_task_dispatcher == nullptr)
+    if (m_task_dispatcher == nullptr || t_status_page == nullptr || items.empty())
         return;
 
-    std::vector<TimelapseFileItem*> items = t_status_page->getTimelapseSelectItems();
     PrinterTask task;
-    task.type = PrinterTaskType::DeletePrinterFiles;
+    task.type      = PrinterTaskType::DeletePrinterFiles;
     task.device_id = m_cur_deviceId;
+    for (TimelapseFileItem* item : items) {
+        task.file_paths.push_back("timelapse/" + std::string(item->GetName().ToUTF8()));
+    }
 
     if (wxGetApp().app_config->get_bool("last_sel_machine_is_net")) {
 #if QDT_RELEASE_TO_PUBLIC
         task.transport = PrinterTaskTransport::Cloud;
-        for (TimelapseFileItem* item : items) {
-            task.file_paths.push_back("timelapse/" + std::string(item->GetName().ToUTF8()));
-        }
         PrinterTaskResult result = m_task_dispatcher->dispatch(task, m_env, PRINTERTYPE);
         emitTaskDispatchResult(task.type, result);
-#endif
-    }
-    else {
-        task.transport = PrinterTaskTransport::Local;
-        for (TimelapseFileItem* item : items) {
-            task.file_paths.push_back("timelapse/" + decode_path((item->GetName().ToStdString()).c_str()));
+        if (result.success && result.code == PrinterTaskErrorCode::None) {
+            if (also_remove_local_copy) {
+                for (TimelapseFileItem* item : items)
+                    (void)remove_local_download_for_storage_path(item->GetName());
+            }
+            t_status_page->remove_timelapse_file_rows(items);
+        } else {
+            const wxString msg = result.message.empty() ? _L("Delete failed.") : wxString::FromUTF8(result.message);
+            show_printer_webview_download_notice(t_status_page->GetParent(), _L("Delete failed"), msg);
         }
+#else
+        boost::ignore_unused(also_remove_local_copy);
+#endif
+    } else {
+        task.transport = PrinterTaskTransport::Local;
         PrinterTaskResult result = m_task_dispatcher->dispatch(task);
         emitTaskDispatchResult(task.type, result);
+        if (result.success && result.code == PrinterTaskErrorCode::None) {
+            if (also_remove_local_copy) {
+                for (TimelapseFileItem* item : items)
+                    (void)remove_local_download_for_storage_path(item->GetName());
+            }
+            t_status_page->remove_timelapse_file_rows(items);
+        } else {
+            const wxString msg = result.message.empty()
+                ? _L("Could not send delete command to the printer. Check the connection and try again.")
+                : wxString::FromUTF8(result.message);
+            show_printer_webview_download_notice(t_status_page->GetParent(), _L("Delete failed"), msg);
+        }
     }
-
-    t_status_page->removeSelectTimelapseItems();
 }
 
-
-//cj_2
-void PrinterWebView::downloadPrinterFile(wxCommandEvent& event)
+//cj_3
+void PrinterWebView::onTimelapseDeleteUi(wxCommandEvent& event)
 {
-    boost::ignore_unused(event);
+    if (!t_status_page || m_task_dispatcher == nullptr)
+        return;
+
+    std::vector<TimelapseFileItem*> items;
+    const wxString                   hint = event.GetString();
+    if (!hint.empty()) {
+        TimelapseFileItem* hit = t_status_page->find_timelapse_item_by_name(hint);
+        if (!hit)
+            return;
+        items.push_back(hit);
+    } else {
+        items = t_status_page->getTimelapseSelectItems();
+    }
+    if (items.empty())
+        return;
+
+    std::string                    downloadPath = wxGetApp().app_config->get("download_path");
+    bool                           any_local    = false;
+    if (!downloadPath.empty()) {
+        for (TimelapseFileItem* it : items) {
+            if (local_download_target_exists(downloadPath, it->GetName())) {
+                any_local = true;
+                break;
+            }
+        }
+    }
+
+    wxWindow* dlg_parent = t_status_page->GetParent();
+
+    //cj_3
+    wxString confirm_text;
+    const size_t selected_count = items.size();
+    if (selected_count == 1) {
+        confirm_text = wxString::Format(_L("Are you sure you want to delete this file?\n\n%s"), items[0]->GetName());
+    } else {
+        wxString preview_names;
+        const size_t preview_count = std::min<size_t>(3, selected_count);
+        for (size_t i = 0; i < preview_count; ++i) {
+            preview_names += items[i]->GetName();
+            if (i + 1 < preview_count)
+                preview_names += "\n";
+        }
+        if (selected_count > preview_count)
+            preview_names += "\n...";
+        confirm_text =
+            wxString::Format(_L("Are you sure you want to delete %d files?\n\n%s"), static_cast<int>(selected_count), preview_names);
+    }
+
+    if (any_local) {
+        //cj_3
+        auto* dlg = new SecondaryCheckDialog(dlg_parent, wxID_ANY, _L("Delete file"),
+            SecondaryCheckDialog::ButtonStyle::DELETE_LOCAL_AND_BOTH_AND_CANCEL_NO_PRINTER_ONLY, wxDefaultPosition,
+            wxDefaultSize, wxCLOSE_BOX | wxCAPTION, false, true);
+        dlg->m_button_retry->SetLabel(_L("Delete local copy"));
+        dlg->m_button_ok->SetLabel(_L("Delete on printer and locally"));
+        dlg->m_button_cancel->SetLabel(_L("Cancel"));
+        dlg->update_text(confirm_text);
+        dlg->set_message_area_width(600);
+        dlg->rescale();
+        dlg->m_button_retry->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [this, items, dlg](wxCommandEvent&) {
+            wxGetApp().CallAfter([this, items, dlg]() {
+                const std::string dp = wxGetApp().app_config->get("download_path");
+                bool              ok = true;
+                for (TimelapseFileItem* it : items) {
+                    if (local_download_target_exists(dp, it->GetName())) {
+                        if (!remove_local_download_for_storage_path(it->GetName()))
+                            ok = false;
+                    }
+                }
+                dlg->Destroy();
+                if (t_status_page) {
+                    if (ok)
+                        t_status_page->refresh_timelapse_local_exist_state();
+                    else
+                        show_printer_webview_download_notice(
+                            t_status_page->GetParent(),
+                            _L("Delete local copy"),
+                            _L("Could not delete the local file."));
+                }
+            });
+            dlg->on_hide();
+        });
+        dlg->m_button_ok->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [this, items, dlg](wxCommandEvent&) {
+            wxGetApp().CallAfter([this, items, dlg]() {
+                run_delete_timelapse_files(items, true);
+                dlg->Destroy();
+            });
+            dlg->on_hide();
+        });
+        dlg->m_button_cancel->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [dlg](wxCommandEvent&) {
+            dlg->on_hide();
+            dlg->Destroy();
+        });
+        dlg->on_show();
+        dlg->Raise();
+        return;
+    }
+
+    auto* dlg = new SecondaryCheckDialog(dlg_parent, wxID_ANY, _L("Delete file"),
+        SecondaryCheckDialog::ButtonStyle::CONFIRM_AND_CANCEL, wxDefaultPosition, wxDefaultSize, wxCLOSE_BOX | wxCAPTION,
+        false, true);
+    dlg->m_button_ok->SetLabel(_L("Delete"));
+    dlg->m_button_cancel->SetLabel(_L("Cancel"));
+    dlg->update_text(confirm_text);
+    dlg->set_message_area_width(600);
+    dlg->m_button_ok->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [this, items, dlg](wxCommandEvent&) {
+        wxGetApp().CallAfter([this, items, dlg]() {
+            run_delete_timelapse_files(items, false);
+            dlg->Destroy();
+        });
+        dlg->on_hide();
+    });
+    dlg->m_button_cancel->Bind(wxEVT_COMMAND_BUTTON_CLICKED, [dlg](wxCommandEvent&) {
+        dlg->on_hide();
+        dlg->Destroy();
+    });
+    dlg->on_show();
+    dlg->Raise();
+}
+
+//cj_4
+void PrinterWebView::downloadTimelapseOne(wxCommandEvent& event)
+{
+	const wxString name = event.GetString();
+	if (!t_status_page || name.empty())
+		return;
+	TimelapseFileItem* it = t_status_page->find_timelapse_item_by_name(name);
+	if (!it)
+		return;
+	std::vector<TimelapseFileItem*> one = { it };
+	downloadTimelapseItems(one);
+}
+
+//cj_4
+void PrinterWebView::playTimelapseFile(wxCommandEvent& event)
+{
+	const wxString name = event.GetString();
 	std::string downloadPath = wxGetApp().app_config->get("download_path");
 	if (downloadPath.empty()) {
 		show_printer_webview_download_notice(
 			t_status_page ? t_status_page->GetParent() : nullptr,
-			_L("Download Failed"),
+			_L("Play"),
 			_L("Please set the download path in Preferences first."));
 		return;
 	}
-
 	boost::filesystem::create_directories(boost::filesystem::path(downloadPath));
-
-	std::shared_ptr<QDSDevice> device = m_device_manager->getDevice(m_cur_deviceId);
-	if (!device)
+	if (local_download_target_exists(downloadPath, name)) {
+		wxFileName fn(wxString::FromUTF8(downloadPath), name);
+		fn.Normalize();
+		if (fn.FileExists())
+			wxLaunchDefaultApplication(fn.GetFullPath());
 		return;
-
-	std::vector<DeviceModelItem*> items = t_status_page->getModelSelectItems();
-	wxString skipped_existing;
-	std::vector<DeviceModelItem*> items_to_fetch;
-	items_to_fetch.reserve(items.size());
-	for (DeviceModelItem* item : items) {
-		if (local_download_target_exists(downloadPath, item->GetName())) {
-			if (!skipped_existing.empty())
-				skipped_existing += "\n";
-			skipped_existing += item->GetName();
-			continue;
-		}
-		items_to_fetch.push_back(item);
 	}
-
-	const std::shared_ptr<QDSDevice> dev = device;
+	if (!t_status_page)
+		return;
+	TimelapseFileItem* item = t_status_page->find_timelapse_item_by_name(name);
+	std::shared_ptr<QDSDevice> device = m_device_manager->getDevice(m_cur_deviceId);
+	if (!item || !device)
+		return;
 	const std::string path = downloadPath;
-	auto run_model_downloads = [this, dev, path, items_to_fetch]() {
-		for (DeviceModelItem* item : items_to_fetch) {
-			std::string fileName = item->GetName().ToUTF8().data();
-			std::string localPath = path + "/" + fileName;
-			std::string encodedName = UrlEncodeForFilename(fileName);
-			std::string urlStr = dev->m_frp_url
-				+ "/server/files/gcodes/"
-				+ encodedName
-				+ "?date=" + std::to_string(wxGetUTCTimeMillis().GetValue());
-
-			//cj_3
-			const std::string task_id = DownloadManager::getInstance().downloadFile(
-				urlStr,
-				localPath,
-				fileName,
-				[this, item, fileName](FileDownloadProgress progress) {
-					item->setDownloadProgressFraction(-1.f);
-					if (progress.state == FileDownloadProgress::State::Completed) {
-						BOOST_LOG_TRIVIAL(info) << "Downloaded: " << fileName;
-					}
-					else if (progress.state == FileDownloadProgress::State::Failed) {
-						show_printer_webview_download_notice(
-							t_status_page ? t_status_page->GetParent() : nullptr,
-							_L("Download Error"),
-							wxString::Format(_L("Download failed: %s\n%s"),
-								wxString::FromUTF8(fileName),
-								wxString::FromUTF8(progress.error_msg)));
-					}
-				},
-				[item](FileDownloadProgress progress) {
-					if (progress.state != FileDownloadProgress::State::Downloading) {
-						return;
-					}
-					float f = progress.progress;
-					if (f < 0.f && progress.bytes_total > 0) {
-						f = static_cast<float>(static_cast<double>(progress.bytes_downloaded)
-							/ static_cast<double>(std::max<int64_t>(progress.bytes_total, 1)));
-					}
-					if (f < 0.f && progress.bytes_downloaded > 0) {
-						f = std::min(0.92f,
-							static_cast<float>(progress.bytes_downloaded) / (48.f * 1024.f * 1024.f));
-					}
-					if (f < 0.f) {
-						f = 0.f;
-					}
-					item->setDownloadProgressFraction(std::min(1.f, f));
-				}
-			);
-			if (!task_id.empty())
-				item->beginFileDownload(task_id);
-		}
-	};
-
-	//cj_3
-	if (!skipped_existing.empty()) {
-		const wxString msg = wxString::Format(
-			_L("The following file(s) already exist in the directory:\n\n%s"),
-			skipped_existing);
-		wxWindow* dlg_parent = t_status_page ? t_status_page->GetParent() : nullptr;
-		auto* dlg = new SecondaryCheckDialog(dlg_parent, wxID_ANY, _L("Download"),
-			SecondaryCheckDialog::ButtonStyle::ONLY_CONFIRM);
-		dlg->m_button_ok->SetLabel(_L("OK"));
-		dlg->update_text(msg);
-		//cj_3
-		dlg->set_message_area_width(600);
-		dlg->Bind(EVT_SECONDARY_CHECK_CONFIRM, [dlg, run_model_downloads](wxCommandEvent&) {
-			//cj_3
-			// Run after the dialog button handler finishes (avoids hide vs Destroy re-entry).
-			wxGetApp().CallAfter([dlg, run_model_downloads]() {
-				run_model_downloads();
-				dlg->Destroy();
-			});
+	std::string fileName = name.ToUTF8().data();
+	std::string localPath = path + "/" + fileName;
+	std::string encodedName = UrlEncodeForFilename(fileName);
+	std::string urlStr = device->m_frp_url + "/server/files/timelapse/" + encodedName
+		+ "?date=" + std::to_string(wxGetUTCTimeMillis().GetValue());
+	const wxString openPath = wxString::FromUTF8(localPath);
+	const std::string task_id = DownloadManager::getInstance().downloadFile(
+		urlStr,
+		localPath,
+		fileName,
+		[this, item, fileName, openPath](FileDownloadProgress progress) {
+			item->setDownloadProgressFraction(-1.f);
+			if (progress.state == FileDownloadProgress::State::Completed) {
+				wxLaunchDefaultApplication(openPath);
+			} else if (progress.state == FileDownloadProgress::State::Failed) {
+				show_printer_webview_download_notice(
+					t_status_page ? t_status_page->GetParent() : nullptr,
+					_L("Download Error"),
+					wxString::Format(_L("Download failed: %s\n%s"),
+						wxString::FromUTF8(fileName),
+						wxString::FromUTF8(progress.error_msg)));
+			}
+		},
+		[item](FileDownloadProgress progress) {
+			if (progress.state != FileDownloadProgress::State::Downloading) {
+				return;
+			}
+			float f = progress.progress;
+			if (f < 0.f && progress.bytes_total > 0) {
+				f = static_cast<float>(static_cast<double>(progress.bytes_downloaded)
+					/ static_cast<double>(std::max<int64_t>(progress.bytes_total, 1)));
+			}
+			if (f < 0.f && progress.bytes_downloaded > 0) {
+				f = std::min(0.92f,
+					static_cast<float>(progress.bytes_downloaded) / (48.f * 1024.f * 1024.f));
+			}
+			if (f < 0.f) {
+				f = 0.f;
+			}
+			item->setDownloadProgressFraction(std::min(1.f, f));
 		});
-		dlg->on_show();
-		dlg->Raise();
-	} else {
-		run_model_downloads();
-	}
+	if (!task_id.empty())
+		item->beginFileDownload(task_id);
 }
 
-//cj_3
-void PrinterWebView::downloadTimelapseFile(wxCommandEvent& event)
+//cj_4
+void PrinterWebView::revealTimelapseFile(wxCommandEvent& event)
 {
-	boost::ignore_unused(event);
+	revealDownloadedPrinterFile(event.GetString());
+}
+
+//cj_4
+void PrinterWebView::downloadTimelapseItems(const std::vector<TimelapseFileItem*>& items)
+{
 	std::string downloadPath = wxGetApp().app_config->get("download_path");
 	if (downloadPath.empty()) {
 		show_printer_webview_download_notice(
@@ -2252,7 +2772,6 @@ void PrinterWebView::downloadTimelapseFile(wxCommandEvent& event)
 	if (!device)
 		return;
 
-	std::vector<TimelapseFileItem*> items = t_status_page->getTimelapseSelectItems();
 	wxString skipped_existing;
 	std::vector<TimelapseFileItem*> items_to_fetch;
 	items_to_fetch.reserve(items.size());
@@ -2278,7 +2797,7 @@ void PrinterWebView::downloadTimelapseFile(wxCommandEvent& event)
 				+ encodedName
 				+ "?date=" + std::to_string(wxGetUTCTimeMillis().GetValue());
 
-			//cj_3
+			//cj_4
 			const std::string task_id = DownloadManager::getInstance().downloadFile(
 				urlStr,
 				localPath,
@@ -2321,7 +2840,7 @@ void PrinterWebView::downloadTimelapseFile(wxCommandEvent& event)
 		}
 	};
 
-	//cj_3
+	//cj_4
 	if (!skipped_existing.empty()) {
 		const wxString msg = wxString::Format(
 			_L("The following file(s) already exist in the directory:\n\n%s"),
@@ -2331,10 +2850,10 @@ void PrinterWebView::downloadTimelapseFile(wxCommandEvent& event)
 			SecondaryCheckDialog::ButtonStyle::ONLY_CONFIRM);
 		dlg->m_button_ok->SetLabel(_L("OK"));
 		dlg->update_text(msg);
-		//cj_3
+		//cj_4
 		dlg->set_message_area_width(600);
 		dlg->Bind(EVT_SECONDARY_CHECK_CONFIRM, [dlg, run_timelapse_downloads](wxCommandEvent&) {
-			//cj_3
+			//cj_4
 			wxGetApp().CallAfter([dlg, run_timelapse_downloads]() {
 				run_timelapse_downloads();
 				dlg->Destroy();
@@ -2345,6 +2864,15 @@ void PrinterWebView::downloadTimelapseFile(wxCommandEvent& event)
 	} else {
 		run_timelapse_downloads();
 	}
+}
+
+//cj_4
+void PrinterWebView::downloadTimelapseFile(wxCommandEvent& event)
+{
+	boost::ignore_unused(event);
+	if (!t_status_page)
+		return;
+	downloadTimelapseItems(t_status_page->getTimelapseSelectItems());
 }
 
 void PrinterWebView::OnScroll(wxScrollWinEvent& event)
@@ -2386,7 +2914,7 @@ void PrinterWebView::OnScroll(wxScrollWinEvent& event)
 
  void PrinterWebView::load_url(wxString &url)
  {
-     if (m_browser == nullptr || m_web == url)
+     if (m_browser == nullptr)
          return;
      m_web = url;
      m_browser->LoadURL(url);
@@ -2424,7 +2952,8 @@ void PrinterWebView::OnScroll(wxScrollWinEvent& event)
  }
  void PrinterWebView::load_net_url(wxString& url, wxString& ip)
  {
-     if (m_browser == nullptr || m_web == url)
+     //cj_4 always reload even if the URL is the same
+    if (m_browser == nullptr)
         return;
     // y13
     m_web = url;
@@ -2432,9 +2961,14 @@ void PrinterWebView::OnScroll(wxScrollWinEvent& event)
     m_browser->LoadURL(m_web);
     //y28
     webisNetMode = isNetWeb;
-//     for (DeviceButton *button : m_buttons) {
-//         button->SetIsSelected(false);
-//     }
+    //cj_4
+    // When switching back to monitor from another tab, MainFrame restores the
+    // browser URL through load_net_url(). Keep the left device list selection
+    // consistent with that restored URL/IP so the previously selected Link
+    // device remains highlighted.
+    for (DeviceButton *button : m_buttons) {
+        button->SetIsSelected(false);
+    }
 
     for (DeviceButton *button : m_net_buttons) {
         wxString button_ip = button->getIPLabel();
@@ -2442,10 +2976,10 @@ void PrinterWebView::OnScroll(wxScrollWinEvent& event)
              button_ip.Remove(0, 7);
         if (button_ip.Lower().ends_with("10088"))
             button_ip.Remove(button_ip.length() - 6);
-//         if (m_ip == button_ip)
-//             button->SetIsSelected(true);
-//         else
-//             button->SetIsSelected(false);
+        if (m_ip == button_ip)
+            button->SetIsSelected(true);
+        else
+            button->SetIsSelected(false);
     }
     if (wxGetApp().mainframe != nullptr) {
         wxGetApp().mainframe->is_webview = true;
@@ -2530,7 +3064,8 @@ void PrinterWebView::OnScroll(wxScrollWinEvent& event)
          std::string formattedHost1 = "http://fluidd_" + formattedHost;
          std::string formattedHost2 = "http://fluidd2_" + formattedHost;
          if (formattedHost1 == m_web || formattedHost2 == m_web)
-             return;
+             //cj_4 always reload even for the same fluid URL, skip return
+             ;
 
          if (m_isfluidd_1)
          {
@@ -2760,7 +3295,7 @@ void PrinterWebView::InitDeviceManager(){
 			if (m_isUpdating) {
 				return;
 			}
-            //cj_3
+            //cj_4
             {
                 std::lock_guard<std::mutex> lock(m_ui_map_mutex);
                 auto mode_it = m_device_id_to_expert_mode.find(device_id);
@@ -2791,7 +3326,7 @@ void PrinterWebView::InitDeviceManager(){
 		}
         std::lock_guard<std::mutex> lock(m_ui_map_mutex);
         m_device_id_to_button.erase(device_id);
-        //cj_3
+        //cj_4
         m_device_id_to_expert_mode.erase(device_id);
         m_device_id_to_config.erase(device_id);
     });
@@ -2828,7 +3363,7 @@ void PrinterWebView::bindTaskHandle()
 
     t_status_page->Bind(EVTSET_EXTRUESION, &PrinterWebView::onStatusPanelTask, this);
     t_status_page->Bind(EVTSET_BACK, &PrinterWebView::onStatusPanelTask, this);
-    //cj_3
+    //cj_4
     t_status_page->Bind(EVTSET_COOLER_SWITCH, &PrinterWebView::onStatusPanelTask, this);
     t_status_page->Bind(EVTSET_LEVELING_ENABLE, &PrinterWebView::onStatusPanelTask, this);
     t_status_page->Bind(EVTSET_AMS_ENABLE, &PrinterWebView::onStatusPanelTask, this);
@@ -2849,6 +3384,9 @@ void PrinterWebView::bindTaskHandle()
     t_status_page->Bind(EVTSET_INSERT_READ, &PrinterWebView::onStatusPanelTask, this);
     t_status_page->Bind(EVTSET_BOOT_READ, &PrinterWebView::onStatusPanelTask, this);
     t_status_page->Bind(EVTSET_AUTO_FILAMENT, &PrinterWebView::onStatusPanelTask, this);
+    
+    // cj_4 Bind exclude print object event
+    t_status_page->Bind(EVTSET_EXCLUDE_PRINT_OBJECT, &PrinterWebView::onStatusPanelTask, this);
 }
 
 // cj_1
@@ -2888,14 +3426,14 @@ void PrinterWebView::clearStatusPanelData()
     t_status_page->update_thumbnail("");
 
     t_status_page->clear_model_item();
-    //cj_3
+    //cj_4
     resetProgressWatchdogHeartbeat();
 }
 
 //y76
 void PrinterWebView::pauseCamera(){
     t_status_page->pause_camera();
-    //cj_3
+    //cj_4
     m_watchdog_camera_active = false;
 }
 
@@ -2974,7 +3512,7 @@ void PrinterWebView::updateDeviceParameter(const std::string& device_id) {
         }
         
         if (m_cur_deviceId == device_id) {
-            //cj_3
+            //cj_4
             hideLoadingOverlay();
 
             t_status_page->update_temp_data(
@@ -2988,7 +3526,7 @@ void PrinterWebView::updateDeviceParameter(const std::string& device_id) {
                 m_isUpdating = false;
                 return;
             }
-            //cj_3
+            //cj_4
             if (device->m_print_cur_layer!=0 && device->m_print_cur_layer != device->m_print_total_layer) {
                 //m_last_progress_signature = progress_signature;
                 m_last_progress_heartbeat = std::chrono::steady_clock::now();
@@ -3059,8 +3597,7 @@ void PrinterWebView::updateDeviceParameter(const std::string& device_id) {
 
 				Slic3r::GUI::AMSinfo amsExt; {
 					amsExt.ams_id = "11";
-					amsExt.nozzle_id = 0;
-					amsExt.ams_type = AMSModel::EXT_AMS;
+					amsExt.ams_type = DevAmsType::EXT_SPOOL;
 					amsExt.current_step = AMSPassRoadSTEP::AMS_ROAD_STEP_NONE;
 					amsExt.cans = std::vector<Slic3r::GUI::Caninfo>{ cans[16] };
 				}
@@ -3072,13 +3609,23 @@ void PrinterWebView::updateDeviceParameter(const std::string& device_id) {
 				for (int i = 0; i < device->m_box_count; ++i) {
 					AMSinfo ams;
 					ams.ams_id = std::to_string(i);
-					ams.nozzle_id = 0;
                     ams.ams_humidity_percent = device->m_boxHumidity[i];
                     ams.current_temperature = device->m_boxTemperature[i];
-					ams.ams_type = AMSModel::N3F_AMS;
+                    //cj_4
+                    // QDS boxes report percentage humidity from aht20_f
+                    // heater_box*. Use a percent-capable AMS type so the
+                    // humidity widget renders the numeric value instead of
+                    // the legacy 1-5 level icon.
+					ams.ams_type = DevAmsType::N3F;
 					ams.current_step = AMSPassRoadSTEP::AMS_ROAD_STEP_NONE;
 					for (int j = i * 4; j < (i + 1) * 4; ++j) {
-					    ams.cans.push_back(cans[j]);
+                        //cj_4
+                        // AMS widgets expect slot ids local to a box (0-3).
+                        // Device data is indexed globally (0-16), so copy the
+                        // global slot data and remap only the UI can_id here.
+                        Caninfo local_can = cans[j];
+                        local_can.can_id = std::to_string(j - i * 4);
+					    ams.cans.push_back(local_can);
 					}
 					boxS.push_back(ams);
 				}
@@ -3105,6 +3652,7 @@ void PrinterWebView::updateDeviceParameter(const std::string& device_id) {
                         wxGetApp().qdsdevmanager->upBoxInfoToBoxMsg(device);
                     }
                 }
+
                 device->box_is_update = false;
             }
 
@@ -3126,7 +3674,7 @@ void PrinterWebView::updateDeviceParameter(const std::string& device_id) {
                 device->m_fresh_file_info = false;
             }
 
-            //cj_3
+            //cj_4
             if (device->m_fresh_timelapse_file_info) {
                 t_status_page->clear_timelapse_file_list();
                 for (const auto& info : device->timelapse_file_info)
@@ -3218,7 +3766,7 @@ void PrinterWebView::init_select_machine() {
     }
 
     if (selected_button) {
-        //cj_3
+        //cj_4
         wxEvtHandler* handler = selected_button->GetEventHandler();
 
         if (handler)

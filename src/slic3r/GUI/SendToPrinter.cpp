@@ -401,7 +401,7 @@ SendToPrinterDialog::SendToPrinterDialog(Plater *plater)
     /*m_connecting_printer_msg->Hide();*/
     m_connecting_printer_msg->Show();
 
-    std::vector<std::string> list{"ams_rfid_1", "ams_rfid_2", "ams_rfid_3", "ams_rfid_4"};
+    std::vector<std::string> list{ "box_rfid_1", "box_rfid_2", "box_rfid_3", "box_rfid_4" };
     m_animaicon = new AnimaIcon(m_connecting_panel, wxID_ANY, list, "refresh_printer", 100);
     m_sizer_connecting->Add(m_connecting_printer_msg, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(5));
     m_sizer_connecting->Add(m_animaicon, 0, wxALIGN_CENTER_VERTICAL);
@@ -728,12 +728,12 @@ void SendToPrinterDialog::update_storage_list(const std::vector<std::string> &st
 
         if (storages[i] == "emmc")
         {
-            storage_text->SetLabel(_L("Internal Storage"));
+            storage_text->SetLabel(wxString::FromUTF8(_CTX_utf8(L_CONTEXT("Cache", "sendtoprint"), "sendtoprint")));
             storage_text->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
         }
         else
         {
-            storage_text->SetLabel(_L("External Storage"));
+            storage_text->SetLabel(wxString::FromUTF8(_CTX_utf8(L_CONTEXT("External", "sendtoprint"), "sendtoprint")));
             storage_text->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#000000")));
         }
 
@@ -741,7 +741,7 @@ void SendToPrinterDialog::update_storage_list(const std::vector<std::string> &st
         //radiobox->SetLabel(storages[i]);
         if (storages[i] != "emmc" && m_if_has_sdcard == false)
         {
-            storage_text->SetLabel(_L("External Storage"));
+            storage_text->SetLabel(wxString::FromUTF8(_CTX_utf8(L_CONTEXT("External", "sendtoprint"), "sendtoprint")));
             radiobox->Disable();
             storage_text->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#CECECE")));
         }

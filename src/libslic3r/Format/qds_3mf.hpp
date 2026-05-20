@@ -4,6 +4,7 @@
 #include "../GCode/ThumbnailData.hpp"
 #include "libslic3r/ProjectTask.hpp"
 #include "libslic3r/GCode/GCodeProcessor.hpp"
+#include "libslic3r/MultiNozzleUtils.hpp"
 #include <functional>
 
 namespace Slic3r {
@@ -75,6 +76,7 @@ struct PlateData
     std::map<int, std::pair<int, int>> obj_inst_map;
     std::string     printer_model_id;
     std::string     nozzle_diameters;
+    std::string     nozzle_volume_types;
     std::string     gcode_file;
     std::string     gcode_file_md5;
     std::string     thumbnail_file;
@@ -101,6 +103,9 @@ struct PlateData
     using LayerFilaments = std::unordered_map<std::vector<unsigned int>, std::vector<std::pair<int, int>>, GCodeProcessorResult::FilamentSequenceHash>;
     LayerFilaments layer_filaments;
     std::vector<unsigned int> filament_change_sequence;
+    std::vector<unsigned int> nozzle_change_sequence;
+    std::vector<int> optimal_assignment;
+    std::optional<MultiNozzleUtils::LayeredNozzleGroupResult> nozzle_group_result;
     // Hexadecimal number,
     // the 0th digit corresponds to extruder 1
     // the 1th digit corresponds to extruder 2
@@ -109,6 +114,9 @@ struct PlateData
     std::vector<int>          limit_filament_maps;
 
     std::vector<GCodeProcessorResult::SliceWarning> warnings;
+
+    // 喷嘴信息列表，用于多喷嘴打印
+    std::vector<MultiNozzleUtils::NozzleInfo> nozzles_info;
 
     std::string get_gcode_prediction_str() {
         return gcode_prediction;
@@ -255,7 +263,7 @@ struct StoreParams
 // Load the content of a 3mf file into the given model and preset bundle.
 extern bool load_qds_3mf(const char* path, DynamicPrintConfig* config, ConfigSubstitutionContext* config_substitutions, Model* model, PlateDataPtrs* plate_data_list, std::vector<Preset*>* project_presets,
         bool* is_qdt_3mf, Semver* file_version, Import3mfProgressFn proFn = nullptr, LoadStrategy strategy = LoadStrategy::Default, QDTProject *project = nullptr, int plate_id = 0,
-        std::unordered_map<int, std::vector<std::string>>* color_group_map = nullptr, VolumeColorInfoMap* volume_color_data = nullptr);
+        std::map<int, std::vector<std::string>>* color_group_map = nullptr, VolumeColorInfoMap* volume_color_data = nullptr);
 
 extern std::string qds_3mf_get_thumbnail(const char * path);
 

@@ -51,8 +51,14 @@ protected:
 
     int         m_total_ext_count = 1;
     AMSextruder *m_extruder{nullptr};
+    SwitcherImage *m_switcher{nullptr};    
     AMSRoadDownPart* m_down_road{ nullptr };
 
+    /*tips text*/
+    wxPanel *tipPanel{nullptr};
+    wxBoxSizer *tipSizer{nullptr};
+    wxStaticBitmap *icon{nullptr};
+    wxStaticText *tipText{nullptr};
     /*items*/
     wxBoxSizer* m_sizer_ams_items{nullptr};
     wxScrolledWindow* m_panel_prv_left {nullptr};
@@ -68,6 +74,7 @@ protected:
 
     /*option*/
     wxBoxSizer *m_sizer_ams_option{nullptr};
+    wxBoxSizer *m_sizer_switcher_option{nullptr};    
     wxBoxSizer* m_sizer_option_left{nullptr};
     wxBoxSizer* m_sizer_option_mid{nullptr};
     wxBoxSizer* m_sizer_option_right{nullptr};
@@ -79,7 +86,6 @@ protected:
     wxSimplebook *m_simplebook_ams_left{nullptr};
     wxSimplebook *m_simplebook_ams_right{ nullptr };
     wxSimplebook *m_simplebook_bottom{nullptr};
-    wxPanel      *m_panel_down_road{ nullptr };
     int          m_left_page_index = 0;
     int          m_right_page_index = 0;
 
@@ -87,6 +93,7 @@ protected:
     wxStaticText *m_tip_right_top{nullptr};
     Label        *m_tip_load_info{nullptr};
     wxWindow *    m_amswin{nullptr};
+    wxBoxSizer   *m_sizer_body{nullptr};
     wxBoxSizer*   m_vams_sizer{nullptr};
     wxBoxSizer*   m_sizer_vams_tips{nullptr};
 
@@ -122,26 +129,21 @@ protected:
     uiAmsPercentHumidityDryPopup* m_percent_humidity_dry_popup;
     AMSDryCtrWin* m_ams_dry_ctr_win;
 
-
-    std::string m_last_ams_id = "";
-    std::string m_last_tray_id = "";
-
 public:
     std::string GetCurentAms();
     std::string GetCurentShowAms(AMSPanelPos pos = AMSPanelPos::RIGHT_PANEL);
     std::string GetCurrentCan(std::string amsid);
-    bool        IsAmsInRightPanel(std::string ams_id);
 	wxColour GetCanColour(std::string amsid, std::string canid);
     void createAms(wxSimplebook* parent, int& idx, AMSinfo info, AMSPanelPos pos);
     void createAmsPanel(wxSimplebook *parent, int &idx, std::vector<AMSinfo> infos, const std::string &series_name, const std::string &printer_type, AMSPanelPos pos, int total_ext_num);
     AMSRoadShowMode findFirstMode(AMSPanelPos pos);
 
-    AMSModel m_ams_model{AMSModel::EXT_AMS};
-    AMSModel m_ext_model{AMSModel::EXT_AMS};
-    AMSModel m_is_none_ams_mode{AMSModel::EXT_AMS};
+    DevAmsType m_ams_model{DevAmsType::EXT_SPOOL};
+    DevAmsType m_ext_model{DevAmsType::EXT_SPOOL};
+    DevAmsType m_is_none_ams_mode{DevAmsType::EXT_SPOOL};
     bool     m_single_nozzle_no_ams = { true };
 
-    void SetAmsModel(AMSModel mode, AMSModel ext_mode) {m_ams_model = mode; m_ext_model = ext_mode;};
+    void SetAmsModel(DevAmsType mode, DevAmsType ext_mode) {m_ams_model = mode; m_ext_model = ext_mode;};
     void AmsSelectedSwitch(wxCommandEvent& event);
 
     void EnableLoadFilamentBtn(bool enable, const std::string& ams_id, const std::string& can_id, const wxString& tips);
@@ -159,7 +161,6 @@ public:
     void ShowFilamentTip(bool hasams = true);
 
     void UpdatePassRoad(string ams_id, AMSPassRoadType type, AMSPassRoadSTEP step);
-    void CreateAms();
     void CreateAmsDoubleNozzle(const std::string &series_name, const std::string& printer_type);
     void CreateAmsSingleNozzle(const std::string &series_name, const std::string &printer_type);
     void ClearAms();
@@ -185,18 +186,8 @@ public:
     void updateAmsTemp(int id, int temp);
     void updateAmsHumidity(int id, int humidity);
 
-    std::vector<AMSinfo> GenerateSimulateData();
-
-    void AddAms(AMSinfo info, AMSPanelPos pos = AMSPanelPos::LEFT_PANEL);
-    //void AddExtAms(int ams_id);
-    void AddAmsPreview(AMSinfo info, AMSModel type);
-    //void AddExtraAms(AMSinfo info);
-
-    void AddAms(std::vector<AMSinfo> single_info, const std::string &series_name, const std::string &printer_type, AMSPanelPos pos = AMSPanelPos::LEFT_PANEL);
-    void AddAmsPreview(std::vector<AMSinfo>single_info, AMSPanelPos pos);
-    //void AddExtraAms(std::vector<AMSinfo>single_info);
     void SetExtruder(bool on_off, int nozzle_id, std::string ams_id, std::string slot_id);
-    void SetAmsStep(std::string ams_id, std::string canid, AMSPassRoadType type, AMSPassRoadSTEP step);
+    void SetAmsStep(std::string ams_id, std::string canid, int extruder_id, AMSPassRoadType type, AMSPassRoadSTEP step);
     void SwitchAms(std::string ams_id);
 
     void msw_rescale();
@@ -212,6 +203,8 @@ public:
     void on_clibration_cancel_click(wxMouseEvent &event);
     void Reset();
 
+    std::tuple<bool, bool> isFilaSwitchReady();
+    void show_switcher_status(bool show);    
     void show_noams_mode();
     void show_auto_refill(bool show);
     void enable_ams_setting(bool en);
@@ -224,8 +217,18 @@ public:
 private:
     std::string get_filament_id(const std::string& ams_id, const std::string& can_id);
 
-public:
-    std::string m_current_select;
+    void AddAms(AMSinfo info, AMSPanelPos pos);
+    void AddAms(std::vector<AMSinfo> single_info, const std::string& series_name, const std::string& printer_type, AMSPanelPos pos);
+
+    void AddAmsPreview(AMSinfo info, AMSPanelPos pos);
+    void AddAmsPreview(std::vector<AMSinfo>single_info, AMSPanelPos pos);
+
+    void UpdateAmsPreviewSelection();
+
+    bool IsInSlotPair(const std::string& ams_id) const;
+
+    //cj_3
+    void restore_ams_tab_selection_after_rebuild(const std::string& prev_left, const std::string& prev_right);
 };
 
 }} // namespace Slic3r::GUI

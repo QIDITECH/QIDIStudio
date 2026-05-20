@@ -82,6 +82,9 @@ message(STATUS "QIDIStudio deps DESTDIR: ${DESTDIR}")
 message(STATUS "QIDIStudio download dir for source packages: ${DEP_DOWNLOAD_DIR}")
 message(STATUS "QIDIStudio deps debug build: ${DEP_DEBUG}")
 
+message(STATUS "in deps, CMAKE_GENERATOR_PLATFORM is ${CMAKE_GENERATOR_PLATFORM} ")
+message(STATUS "in deps, CMAKE_SYSTEM_PROCESSOR is ${CMAKE_SYSTEM_PROCESSOR} ")
+
 find_package(Git REQUIRED)
 
 # The default command line for patching. Only works for newer 
@@ -119,6 +122,13 @@ function(qidistudio_add_cmake_project projectname)
         set(_gen CMAKE_GENERATOR "${DEP_MSVC_GEN}" CMAKE_GENERATOR_PLATFORM "${DEP_PLATFORM}")
         set(_build_j "/m")
     endif ()
+
+    message(STATUS "qidistudio_add_cmake_project ${projectname},  _gen is ${_gen} ")
+    message(STATUS "DEP_CMAKE_OPTS is ${DEP_CMAKE_OPTS} ")
+    message(STATUS "P_ARGS_CMAKE_ARGS is ${P_ARGS_CMAKE_ARGS} ")
+    message(STATUS "P_ARGS_UNPARSED_ARGUMENTS is ${P_ARGS_UNPARSED_ARGUMENTS} ")
+    message(STATUS "CMAKE_GENERATOR_PLATFORM is ${CMAKE_GENERATOR_PLATFORM} ")
+    message(STATUS "CMAKE_SYSTEM_PROCESSOR is ${CMAKE_SYSTEM_PROCESSOR} ")
 
     ExternalProject_Add(
         dep_${projectname}
@@ -242,6 +252,8 @@ include(CGAL/CGAL.cmake)
 
 include(NLopt/NLopt.cmake)
 
+include(libnoise/libnoise.cmake)
+
 set(OPENSSL_PKG "")
 if (DEP_BUILD_OPENSSL)
     include(OpenSSL/OpenSSL.cmake)
@@ -283,6 +295,7 @@ set(_dep_list
     ${WXWIDGETS_PKG}
     dep_Cereal
     dep_NLopt
+    dep_libnoise
     dep_OpenVDB
     dep_OpenCSG
     dep_OpenCV

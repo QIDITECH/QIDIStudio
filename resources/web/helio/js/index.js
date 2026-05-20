@@ -1,5 +1,5 @@
 function IsInSlicer() {
-    let bMatch = navigator.userAgent.match(RegExp('BBL-Slicer', 'i'));
+    let bMatch = navigator.userAgent.match(RegExp('QDT-Slicer', 'i'));
 
     return bMatch;
 }

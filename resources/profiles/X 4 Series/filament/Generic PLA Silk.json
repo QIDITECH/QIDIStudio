@@ -24,5 +24,6 @@
     "temperature_vitrification": ["45"],
     "textured_plate_temp_initial_layer" : ["55"],
     "textured_plate_temp" : ["55"],
-    "compatible_printers": []
+    "compatible_printers": [],
+    "close_additional_fan_first_x_layers": ["1"]
 }

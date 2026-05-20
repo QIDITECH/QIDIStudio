@@ -37,6 +37,7 @@
 #include "HMS.hpp"
 #include "PartSkipDialog.hpp"
 #include "DeviceErrorDialog.hpp"
+#include "Widgets/TimelapseUiEvents.hpp"
 
 //y76
 #include "QDSDeviceManager.hpp"
@@ -51,8 +52,10 @@ class DevExtderSystem;
 
 namespace GUI {
     //cj_2
-    class DeviceModelListCtrl;
+    class ModelFileListView;
     class TimelapseFileListCtrl;
+    //cj_4
+    class TimelapsePanelHost;
     class RoundedToolButton;
     //cj_3
     class TimelapseFileItem;
@@ -80,13 +83,14 @@ namespace GUI {
 	wxDECLARE_EVENT(EVTSET_FILAMENT_UNLOAD, wxCommandEvent); ///set/filament/unload
     //cj_3
     wxDECLARE_EVENT(EVTSET_FILAMENT_EJECT, wxCommandEvent); ///set/filament/unload
-	wxDECLARE_EVENT(EVTSET_DEL_PRINTER_FILE, wxCommandEvent); ///set/filament/unload
-    //cj_3
-    wxDECLARE_EVENT(EVTSET_DEL_TIMELAPSE_FILE, wxCommandEvent);
+    wxDECLARE_EVENT(EVTSET_DEL_PRINTER_FILE, wxCommandEvent); ///set/filament/unload
     wxDECLARE_EVENT(EVTSET_DOWNLOAD_PRINTER_FILE, wxCommandEvent); //cj_2
     //cj_3
 	wxDECLARE_EVENT(EVTSET_DOWNLOAD_TIMELAPSE_FILE, wxCommandEvent);
 	//wxDECLARE_EVENT(EVTSET_DOWNLOAD_TIMELAPSE_FILE, wxCommandEvent);
+    
+    // cj_4 Exclude print object event
+    wxDECLARE_EVENT(EVTSET_EXCLUDE_PRINT_OBJECT, wxCommandEvent);
 
 
 // Previous definitions
@@ -634,19 +638,14 @@ protected:
     wxPanel* m_control_panel{ nullptr };
 
     // model
-    DeviceModelListCtrl* m_model_panel{ nullptr };
+    ModelFileListView* m_model_panel{ nullptr };
     wxPanel* m_model_button_panel{ nullptr };
     RoundedToolButton* m_model_flash_btn{ nullptr };
-    RoundedToolButton* m_model_print_btn{ nullptr };
-    RoundedToolButton* m_model_download_btn{ nullptr };
-    RoundedToolButton* m_model_open_btn{ nullptr };
-    RoundedToolButton* m_model_delete_btn{ nullptr };
 
-    TimelapseFileListCtrl* m_timelapse_file_panel{ nullptr };
+    //cj_4
+    TimelapsePanelHost* m_timelapse_host{ nullptr };
     wxPanel* m_timelapse_button_panel{ nullptr };
     RoundedToolButton* m_timelapse_flash_btn{ nullptr };
-    RoundedToolButton* m_timelapse_download_btn{ nullptr };
-    RoundedToolButton* m_timelapse_open_btn{ nullptr };
     RoundedToolButton* m_timelapse_delete_btn{ nullptr };
 
 
@@ -721,12 +720,18 @@ public:
     void update_light_status(bool on);
     //cj_2
     void tabSiwtch(Button* button, wxPanel* panel);
+    //cj_3
+    void sync_model_file_toolbar_after_list_download_change() { sync_model_file_toolbar(0); }
 
 protected:
     //cj_3
     virtual void after_timelapse_tab_shown() {}
+    //cj_3 Model/timelapse list Refresh: overridden in StatusPanel; loads file list for the selected device
     virtual void request_refresh_file_lists() {}
+    // For subclasses: sync toolbar after clearing the list
+    //cj_3
     void sync_model_file_toolbar(int select_num);
+    //cj_3
     void sync_timelapse_file_toolbar(int select_num);
 
 private:
@@ -736,11 +741,9 @@ private:
 	void on_control_tab(wxCommandEvent& event);
 	void on_model_tab(wxCommandEvent& event);
 	void on_timelapse_tab(wxCommandEvent& event);
-    void on_model_checkchange(wxCommandEvent& event);
     void on_timelapse_checkchange(wxCommandEvent& event);
 };
 
-class DeviceModelItem;
 class StatusPanel : public StatusBasePanel
 {
 
@@ -770,6 +773,7 @@ public:
 
 
     void update_fan_speed(AIR_FUN id, int speed);
+    /** QDS/WebView: refresh print-speed label beside fans from gcode_move.speed_factor snapped percent */
     void update_print_speed_display_for_qds(int snapped_percent);
     //cj_3
     void update_polar_cooler(bool cooler_on);
@@ -785,19 +789,28 @@ public:
 
     // cj_2
     void clear_model_item();
-    //cj_3
+    //cj_3 Clear model list only; do not switch to Control tab (used when getFileInfo refreshes the list)
     void clear_model_items_only();
     // cj_2 
     void add_model_item(std::string itemName, std::string weight, std::string preTime, std::string imgPath,int imgSize = 0);
     void refreshThumbnailItem(const std::string& file_name, const std::vector<uint8_t>& png_data);
-	//cj_2
-	std::vector<DeviceModelItem* > getModelSelectItems();
-    //cj_2
-    void removeSelectModelItems();
+    //cj_3 Model file list (context menu drives actions; no multi-select).
+    void print_model_for_storage_path(const wxString& storage_path);
+    void remove_model_row_by_storage_path(const wxString& path);
+    void refresh_model_file_local_exist_state();
+    //cj_3
+    void refresh_timelapse_local_exist_state();
+    void begin_model_file_download_ui(const wxString& storage_path, const std::string& task_id);
+    void set_model_file_download_progress(const wxString& storage_path, float fraction01);
+    void end_model_file_download_ui(const wxString& storage_path, bool failed);
     //cj_3
     std::vector<TimelapseFileItem*> getTimelapseSelectItems();
+    //cj_4
+    TimelapseFileItem* find_timelapse_item_by_name(const wxString& name);
     //cj_3
     void removeSelectTimelapseItems();
+    //cj_3
+    void remove_timelapse_file_rows(const std::vector<TimelapseFileItem*>& rows);
 	//cj_3
 	void clear_timelapse_file_list();
 	//cj_3
@@ -836,9 +849,6 @@ protected:
     SecondaryCheckDialog* sdcard_hint_dlg = nullptr;
     SecondaryCheckDialog* axis_go_home_dlg = nullptr;
     //cj_3
-    SecondaryCheckDialog* delete_model_dlg = nullptr;
-    //cj_3
-    SecondaryCheckDialog* delete_timelapse_dlg = nullptr;
 
 
     FanControlPopupNew* m_fan_control_popup{nullptr};
@@ -863,7 +873,7 @@ protected:
     bool nozzle_temp_input = false;
     bool cham_temp_input   = false;
     bool request_model_info_flag = false;
-    int speed_lvl = 2; /* DevPrintingSpeedLevel 1..4��Ĭ�� 2=100% */
+    int speed_lvl = 2; /* DevPrintingSpeedLevel 1..4, default 2 = 100% */
     int speed_lvl_timeout {0};
     boost::posix_time::ptime speed_dismiss_time;
     bool m_show_mode_changed = false;
@@ -965,12 +975,10 @@ protected:
     
 
     //cj_2
-	void on_print_model(wxCommandEvent& event);
-	void on_download_model(wxCommandEvent& event);
-	void on_del_model(wxCommandEvent& event);
     //cj_3
-    void on_download_timelapse(wxCommandEvent& event);
     void on_del_timelapse(wxCommandEvent& event);
+    //cj_4
+    void on_timelapse_request_delete_ui(wxCommandEvent& event);
 
 
     /* update apis */
@@ -1011,11 +1019,14 @@ protected:
     // printer parts options
     void update_printer_parts_options(MachineObject* obj);
 
+    //get tray name
+    wxString getTrayName(const std::string amsID, const std::string slotID);
+
 
 private:
     // cj_1
 	void postEventValueAndEnable(wxEventType eventType, int value, std::string valueType);
-    //cj_1
+    //cj_1 Whether extrusion preconditions are met
     bool judgeAxis();
 public:
     void update_error_message();
@@ -1072,11 +1083,11 @@ public:
 private:
     std::vector<AMSinfo> m_boxS;
     std::vector<AMSinfo> m_ext_info;
-    int curSelectSlotIndex = 0;
-    int m_curSlotSync = -1;
-	bool m_auto_read_rfid{ false };
-	bool m_init_detect{ false };
-	bool m_auto_reload_detect{ false };
+    int curSelectSlotIndex = 0; // Slot index selected in the UI
+    int m_curSlotSync = -1;    // Slot index currently in use on the printer
+	bool m_auto_read_rfid{ false };             // Auto refresh RFID on insert
+	bool m_init_detect{ false };                // Detect on power-on
+	bool m_auto_reload_detect{ false };         // Auto filament reload
 
 //cj_1
     std::map< AIR_FUN, int> m_fan_speeds;

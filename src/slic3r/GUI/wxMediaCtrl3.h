@@ -10,6 +10,9 @@
 
 #include "wx/uri.h"
 #include "wx/mediactrl.h"
+#include "wx/timer.h"
+#include "../Utils/FrameBuffer.hpp"
+#include <atomic>
 #include <curl/curl.h>
 #include <condition_variable>
 #include <thread>
@@ -33,6 +36,12 @@ void wxMediaCtrl_OnSize(wxWindow * ctrl, wxSize const & videoSize, int width, in
 #endif
 #include "Printer/QIDITunnel.h"
 
+#ifdef _WIN32
+typedef wxBitmap PlayFrame;
+#else
+typedef wxImage PlayFrame;
+#endif
+
 class AVVideoDecoder;
 
 class wxMediaCtrl3 : public wxWindow, QIDILib
@@ -48,7 +57,8 @@ public:
 
     void Stop();
 
-    void SetIdleImage(wxString const & image);
+    void SetIdleImage(wxString const & image, wxString const & watermark_text = {});
+    void SetIdleImage(const wxImage &image, wxString const & watermark_text = {});
 
     wxMediaState GetState();
 
@@ -71,25 +81,32 @@ protected:
 
     void NotifyStopped();
 
+    void GetFrameThread(int frame_rate);
+
+    void OnRenderTimer(wxTimerEvent &evt);
+
 private:
     wxString m_idle_image;
+    wxString m_watermark_text;
     wxMediaState m_state  = wxMEDIASTATE_STOPPED;
     int m_error  = 0;
     wxSize m_video_size = wxDefaultSize;
     wxSize m_frame_size = wxDefaultSize;
-#ifdef _WIN32
-    wxBitmap m_frame;
-#else
-    wxImage m_frame;
-#endif
+    PlayFrame m_frame;
 
     std::shared_ptr<wxURI> m_url;
-    std::uint64_t m_last_PTS{0};
-    std::chrono::system_clock::time_point m_last_PTS_expected;
-    std::chrono::system_clock::time_point m_last_PTS_practical;
     std::mutex m_mutex;
+    std::mutex m_ui_mutex;
     std::condition_variable m_cond;
     std::thread m_thread;
+
+    const int m_buffer_time = 300;
+    Slic3r::Utils::FixedOverwriteBuffer<PlayFrame> m_frame_buffer;
+    std::thread m_get_frame_thread;
+    std::atomic<bool> m_get_frame_exit{false};
+
+    wxTimer m_render_timer;
+    std::atomic<bool> m_need_refresh{false};
 };
 
 #endif

@@ -672,6 +672,27 @@ std::string Preset::label(bool no_alias) const
         + ((no_alias || this->alias.empty()) ? this->name : this->alias);
 }
 
+std::string Preset::display_name() const
+{
+    std::string result;
+    if (!this->alias.empty()) {
+        result = this->alias;
+    } else {
+        size_t at_pos = this->name.find('@');
+        result = this->name.substr(0, at_pos);
+        boost::algorithm::trim(result);
+    }
+
+    std::string vendor = this->config.get_filament_vendor();
+    if (!vendor.empty()) {
+        std::string prefix = (vendor == "QIDI " ? "Qidi" : vendor) + " ";
+        if (result.compare(0, prefix.size(), prefix) == 0)
+            result = result.substr(prefix.size());
+    }
+
+    return result;
+}
+
 bool is_compatible_with_print(const PresetWithVendorProfile &preset, const PresetWithVendorProfile &active_print, const PresetWithVendorProfile &active_printer)
 {
 	if (preset.vendor != nullptr && preset.vendor != active_printer.vendor)
@@ -939,18 +960,19 @@ static std::vector<std::string> s_Preset_print_options {
     "top_shell_layers", "top_shell_thickness", "bottom_shell_layers", "bottom_shell_thickness", "ensure_vertical_shell_thickness", "reduce_crossing_wall", "detect_thin_wall",
     "detect_overhang_wall", "top_color_penetration_layers", "bottom_color_penetration_layers",
     "infill_instead_top_bottom_surfaces",
-    "smooth_speed_discontinuity_area","smooth_coefficient", "seam_position", "seam_placement_away_from_overhangs",
-    "wall_sequence", "is_infill_first", "sparse_infill_density", "fill_multiline", "sparse_infill_pattern", "sparse_infill_anchor", "sparse_infill_anchor_max", "top_surface_pattern",
+    "smooth_speed_discontinuity_area","smooth_coefficient", "seam_position", "seam_placement_away_from_overhangs", "wall_sequence", "is_infill_first", "sparse_infill_density", "fill_multiline",
+    "sparse_infill_pattern", "sparse_infill_anchor", "sparse_infill_anchor_max", "top_surface_pattern", "monotonic_travel_into_wall",
     "locked_skin_infill_pattern", "locked_skeleton_infill_pattern",
     "bottom_surface_pattern", "internal_solid_infill_pattern", "infill_direction", "bridge_angle", "infill_shift_step", "skeleton_infill_density", "infill_lock_depth", "skin_infill_depth", "skin_infill_density",
     "infill_rotate_step","top_surface_density", "bottom_surface_density",
     "symmetric_infill_y_axis","sparse_infill_lattice_angle_1","sparse_infill_lattice_angle_2",
-    "minimum_sparse_infill_area", "reduce_infill_retraction", "ironing_pattern", "ironing_type",
+    "minimum_sparse_infill_area", "reduce_infill_retraction_mode", "ironing_pattern", "ironing_type",
     "ironing_flow", "ironing_speed", "ironing_spacing","ironing_direction", "ironing_inset",
     "enable_support_ironing","support_ironing_pattern","support_ironing_speed",
     "support_ironing_flow","support_ironing_spacing","support_ironing_inset","support_ironing_direction",
     "max_travel_detour_distance", "avoid_crossing_wall_includes_support",
     "fuzzy_skin", "fuzzy_skin_thickness", "fuzzy_skin_point_distance",
+    "fuzzy_skin_first_layer", "fuzzy_skin_noise_type", "fuzzy_skin_scale", "fuzzy_skin_octaves", "fuzzy_skin_persistence", "fuzzy_skin_mode",
 #ifdef HAS_PRESSURE_EQUALIZER
     "max_volumetric_extrusion_rate_slope_positive", "max_volumetric_extrusion_rate_slope_negative",
 #endif /* HAS_PRESSURE_EQUALIZER */
@@ -981,7 +1003,7 @@ static std::vector<std::string> s_Preset_print_options {
     "prime_tower_rib_wall","prime_tower_extra_rib_length","prime_tower_rib_width","prime_tower_fillet_wall","prime_tower_infill_gap","prime_tower_lift_speed","prime_tower_lift_height",
     "prime_tower_flat_ironing","enable_circle_compensation", "circle_compensation_manual_offset", "apply_scarf_seam_on_circles",
     "wipe_tower_no_sparse_layers", "compatible_printers", "compatible_printers_condition", "inherits",
-    "flush_into_infill", "flush_into_objects", "flush_into_support","process_notes",
+    "flush_into_infill", "flush_into_objects", "flush_into_support","process_notes", "enable_mixed_color_sublayer",
     // QDS
      "tree_support_branch_angle", "tree_support_wall_count", "tree_support_branch_distance", "tree_support_branch_diameter",
     "tree_support_branch_diameter_angle",
@@ -1011,11 +1033,11 @@ static std::vector<std::string> s_Preset_print_options {
     ,"seal"
 };
 
-static std::vector<std::string> s_Preset_filament_options{/*"filament_colour", */ "default_filament_colour", "required_nozzle_HRC", "filament_diameter", "volumetric_speed_coefficients", "filament_type",
-                                                          "filament_soluble", "filament_is_support", "filament_printable", "filament_scarf_seam_type", "filament_scarf_height",
+static std::vector<std::string> s_Preset_filament_options {/*"filament_colour", */ "default_filament_colour", "required_nozzle_HRC", "filament_diameter", "volumetric_speed_coefficients", "filament_type",
+                                                          "filament_soluble", "filament_is_support", "filament_printable", "filament_extruder_compatibility", "filament_scarf_seam_type", "filament_scarf_height",
                                                           "filament_scarf_gap", "filament_scarf_length",
     "filament_max_volumetric_speed", "impact_strength_z", "filament_ramming_volumetric_speed","filament_ramming_volumetric_speed_nc", "filament_adaptive_volumetric_speed",
-    "filament_flow_ratio", "filament_density", "filament_adhesiveness_category", "filament_cost", "filament_minimal_purge_on_wipe_tower",
+    "filament_flow_ratio", "filament_density", "filament_adhesiveness_category", "filament_metal_stickiness", "filament_cost", "filament_minimal_purge_on_wipe_tower",
     "nozzle_temperature", "nozzle_temperature_initial_layer",
     // QDS
     "cool_plate_temp", "eng_plate_temp", "hot_plate_temp", "textured_plate_temp", "cool_plate_temp_initial_layer", "eng_plate_temp_initial_layer", "hot_plate_temp_initial_layer","textured_plate_temp_initial_layer",
@@ -1025,7 +1047,7 @@ static std::vector<std::string> s_Preset_filament_options{/*"filament_colour", *
     // "bed_type",
     //QDS:temperature_vitrification
     "temperature_vitrification", "reduce_fan_stop_start_freq", "slow_down_for_layer_cooling", "no_slow_down_for_cooling_on_outwalls", "cooling_slowdown_logic", "cooling_perimeter_transition_distance", "fan_min_speed","filament_ramming_travel_time","filament_pre_cooling_temperature","filament_ramming_travel_time_nc","filament_pre_cooling_temperature_nc",
-    "fan_max_speed", "enable_overhang_bridge_fan", "overhang_fan_speed", "pre_start_fan_time", "overhang_fan_threshold", "overhang_threshold_participating_cooling","close_fan_the_first_x_layers","first_x_layer_fan_speed", "full_fan_speed_layer", "fan_cooling_layer_time", "slow_down_layer_time", "slow_down_min_speed",
+    "fan_max_speed", "enable_overhang_bridge_fan", "overhang_fan_speed", "ironing_fan_speed", "pre_start_fan_time", "overhang_fan_threshold", "overhang_threshold_participating_cooling","close_fan_the_first_x_layers", "first_x_layer_part_fan_speed", "close_additional_fan_first_x_layers", "first_x_layer_fan_speed", "full_fan_speed_layer", "additional_fan_full_speed_layer", "fan_cooling_layer_time", "slow_down_layer_time", "slow_down_min_speed",
     "filament_start_gcode", "filament_end_gcode",
     //exhaust fan control
     "activate_air_filtration","during_print_exhaust_fan_speed","complete_print_exhaust_fan_speed",
@@ -1090,7 +1112,7 @@ static std::vector<std::string> s_Preset_printer_options {
     "nozzle_type","auxiliary_fan", "fan_direction", "nozzle_volume","upward_compatible_machine", "z_hop_types","support_chamber_temp_control","support_air_filtration","support_cooling_filter","cooling_filter_enabled","printer_structure","thumbnail_size",
     //w12
     "thumbnails_formats",
-    "best_object_pos", "head_wrap_detect_zone","printer_notes",
+    "best_object_pos", "head_wrap_detect_zone","printer_notes","print_in_clockwise",
     "enable_long_retraction_when_cut","long_retractions_when_cut","retraction_distances_when_cut",
     //OrcaSlicer
     "host_type", "print_host", "printhost_apikey",
@@ -1099,7 +1121,7 @@ static std::vector<std::string> s_Preset_printer_options {
     "printhost_user", "printhost_password", "printhost_ssl_ignore_revoke",
     "use_relative_e_distances", "extruder_type","use_firmware_retraction",
     "grab_length","machine_switch_extruder_time","hotend_cooling_rate","hotend_heating_rate","enable_pre_heating", "support_object_skip_flush","physical_extruder_map",
-    "bed_temperature_formula","machine_prepare_compensation_time", "nozzle_flush_dataset","apply_top_surface_compensation",
+    "bed_temperature_formula","machine_prepare_compensation_time", "nozzle_flush_dataset",
     "group_algo_with_time","extruder_max_nozzle_count"
     //w34
     ,"support_multi_bed_types"
@@ -1114,6 +1136,8 @@ static std::vector<std::string> s_Preset_printer_options {
     , "is_support_multi_box"
     , "is_support_mqtt"
     , "is_support_polar_cooler"
+    //y80
+    , "model_id"
 };
 
 static std::vector<std::string> s_Preset_sla_print_options {
@@ -2061,14 +2085,17 @@ bool PresetCollection::load_user_preset(std::string name, std::map<std::string, 
             }
         }
     } catch (const std::runtime_error &err) {
-        errors_cummulative += err.what();
+        std::string msg = name + ": " + err.what();
+        errors_cummulative += msg;
         errors_cummulative += "\n";
     }
 
     unlock();
 
-    if (! errors_cummulative.empty())
+    if (!errors_cummulative.empty()) {
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(" finished, load user preset %1% , type %2%, errors_cummulative %3%")%name %Preset::get_type_string(m_type) %errors_cummulative;
         throw Slic3r::RuntimeError(errors_cummulative);
+    }
 
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << boost::format(" finished, load user preset %1% , type %2%, errors_cummulative %3%")%name %Preset::get_type_string(m_type) %errors_cummulative;
     return (need_update)?false:true;
@@ -3451,6 +3478,22 @@ const Preset *PrinterPresetCollection::find_custom_preset_by_model_and_variant(c
     return it != cend() ? &*it : nullptr;
 }
 
+std::vector<const Preset*> PrinterPresetCollection::find_all_presets_by_model(const std::string &model_id, bool system_only) const
+{
+    std::vector<const Preset*> result;
+    if (model_id.empty()) { return result; }
+
+    for (auto it = cbegin(); it != cend(); ++it) {
+        if (system_only && !it->is_system)
+            continue;
+        if (it->config.opt_string("printer_model") == model_id) {
+            result.push_back(&(*it));
+        }
+    }
+
+    return result;
+}
+
 bool  PrinterPresetCollection::only_default_printers() const
 {
     for (const auto& printer : get_presets()) {
@@ -3471,6 +3514,7 @@ std::string PhysicalPrinter::separator()
 //cj_3_cursor
 namespace {
 
+//cj_4 check all matching presets, return true if any has is_support_mqtt=1
 bool mqtt_ui_capable_from_printers(const std::string& token, const PrinterPresetCollection& printers)
 {
     if (token.empty())
@@ -3484,8 +3528,8 @@ bool mqtt_ui_capable_from_printers(const std::string& token, const PrinterPreset
         boost::trim(pm);
         if (pm.empty())
             continue;
-        if (boost::iequals(pm, token))
-            return preset.config.opt_bool("is_support_mqtt");
+        if (boost::iequals(pm, token) && preset.config.opt_bool("is_support_mqtt"))
+            return true;
     }
     return false;
 }

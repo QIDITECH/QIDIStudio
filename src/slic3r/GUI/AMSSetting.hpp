@@ -74,6 +74,7 @@ protected:
 
     wxPanel *     m_panel_body;
     wxPanel*      m_panel_Insert_material;
+    wxPanel*      m_panel_remain{nullptr};
     CheckBox *    m_checkbox_Insert_material_auto_read;
     wxStaticText *m_title_Insert_material_auto_read;
     Label* m_tip_Insert_material_line1;

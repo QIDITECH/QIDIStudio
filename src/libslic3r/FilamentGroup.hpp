@@ -106,6 +106,7 @@ namespace Slic3r
         struct NozzleInfo {
             std::map<int, std::vector<int>> extruder_nozzle_list;
             std::vector<MultiNozzleUtils::NozzleInfo> nozzle_list;
+            std::unordered_map<int, int> nozzle_status;
         } nozzle_info;
     };
 
@@ -152,7 +153,6 @@ namespace Slic3r
         std::vector<int> calc_filament_group_for_match(int* cost = nullptr);
         std::vector<int> calc_filament_group_for_flush(int* cost = nullptr);
         std::vector<int> calc_filament_group_for_tpu(int* cost = nullptr);
-
     private:
         std::vector<int> calc_min_flush_group(int* cost = nullptr);
         std::vector<int> calc_min_flush_group_by_enum(const std::vector<unsigned int>& used_filaments, int* cost = nullptr);
@@ -191,6 +191,15 @@ namespace Slic3r
     std::vector<int> calc_filament_group_for_manual_multi_nozzle(const std::vector<int>& filament_map_manual,const FilamentGroupContext& ctx);
 
     std::vector<int> calc_filament_group_for_match_multi_nozzle(const FilamentGroupContext& ctx);
+
+    struct FilamentPlanRes
+    {
+        std::vector<int> fil_order;
+        std::vector<int> fil_nozzle_match;
+    };
+
+    std::vector<FilamentPlanRes> plan_filament_nozzle_mapping_and_order(const FilamentGroupContext& ctx);
+
 
     class KMediods2
     {
@@ -286,10 +295,10 @@ namespace Slic3r
     protected:
         MemoryedGroupHeap memoryed_groups;
         std::shared_ptr<FlushDistanceEvaluator>m_evaluator;
-        std::unordered_map<int, std::vector<int>> m_unplaceable_limits;
-        std::unordered_map<int, std::vector<int>> m_placeable_limits;
-        std::vector<int>m_max_cluster_size;
-        std::vector<int>m_cluster_labels;
+        std::unordered_map<int, std::vector<int>> m_unplaceable_limits; // 材料不允许分配到特定喷嘴
+        std::unordered_map<int, std::vector<int>> m_placeable_limits; // 材料必须分配到特定喷嘴
+        std::vector<int>m_max_cluster_size; // 每个喷嘴能够分配的最大耗材数量
+        std::vector<int>m_cluster_labels;  // 分配结果，细化到喷嘴id
         std::vector<std::pair<std::set<int>,int>> m_cluster_group_size;
         std::vector<int> m_nozzle_to_extruder;
 

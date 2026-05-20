@@ -1,6 +1,6 @@
 {
     "name": "X-4-Series",
-    "version": "02.05.02.50",
+    "version": "02.06.00.51",
     "force_update": "0",
     "description": "X-4-Series configurations",
     "machine_model_list": [     
@@ -233,6 +233,10 @@
             "sub_path": "filament/PolyLite PLA.json"
         },
         {
+            "name": "Polymaker PLA-HT@X4",
+            "sub_path": "filament/Polymaker PLA-HT.json"
+        },
+        {
             "name": "QIDI PLA-CF@X4",
             "sub_path": "filament/QIDI PLA-CF.json"
         },
@@ -431,6 +435,22 @@
         {
             "name": "QIDI PA12-CF @Qidi X-Plus 4 0.8 nozzle",
             "sub_path": "filament/QIDI PA12-CF @Qidi X-Plus 4 0.8 nozzle.json"
+        },
+        {
+            "name": "QIDI PA6-CF@X4",
+            "sub_path": "filament/QIDI PA6-CF.json"
+        },
+        {
+            "name": "QIDI PA6-CF @Qidi X-Plus 4 0.4 nozzle",
+            "sub_path": "filament/QIDI PA6-CF @Qidi X-Plus 4 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PA6-CF @Qidi X-Plus 4 0.6 nozzle",
+            "sub_path": "filament/QIDI PA6-CF @Qidi X-Plus 4 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PA6-CF @Qidi X-Plus 4 0.8 nozzle",
+            "sub_path": "filament/QIDI PA6-CF @Qidi X-Plus 4 0.8 nozzle.json"
         },
         {
             "name": "QIDI PAHT-CF@X4",
@@ -655,6 +675,22 @@
         {
             "name": "PolyLite PLA @Qidi X-Plus 4 0.8 nozzle",
             "sub_path": "filament/PolyLite PLA @Qidi X-Plus 4 0.8 nozzle.json"
+        },
+        {
+            "name": "Polymaker PLA-HT @Qidi X-Plus 4 0.2 nozzle",
+            "sub_path": "filament/Polymaker PLA-HT @Qidi X-Plus 4 0.2 nozzle.json"
+        },
+        {
+            "name": "Polymaker PLA-HT @Qidi X-Plus 4 0.4 nozzle",
+            "sub_path": "filament/Polymaker PLA-HT @Qidi X-Plus 4 0.4 nozzle.json"
+        },
+        {
+            "name": "Polymaker PLA-HT @Qidi X-Plus 4 0.6 nozzle",
+            "sub_path": "filament/Polymaker PLA-HT @Qidi X-Plus 4 0.6 nozzle.json"
+        },
+        {
+            "name": "Polymaker PLA-HT @Qidi X-Plus 4 0.8 nozzle",
+            "sub_path": "filament/Polymaker PLA-HT @Qidi X-Plus 4 0.8 nozzle.json"
         },
         {
             "name": "PolyLite ABS@X4",
@@ -1265,6 +1301,10 @@
             "sub_path": "filament/QIDI PA12-CF @X-Max 4.json"
         },
         {
+            "name": "QIDI PA6-CF@X-Max 4-Series",
+            "sub_path": "filament/QIDI PA6-CF @X-Max 4.json"
+        },
+        {
             "name": "QIDI PAHT-CF@X-Max 4-Series",
             "sub_path": "filament/QIDI PAHT-CF @X-Max 4.json"
         },
@@ -1469,6 +1509,18 @@
             "sub_path": "filament/QIDI PA12-CF @Qidi X-Max 4 0.8 nozzle.json"
         },
         {
+            "name": "QIDI PA6-CF @Qidi X-Max 4 0.4 nozzle",
+            "sub_path": "filament/QIDI PA6-CF @Qidi X-Max 4 0.4 nozzle.json"
+        },
+        {
+            "name": "QIDI PA6-CF @Qidi X-Max 4 0.6 nozzle",
+            "sub_path": "filament/QIDI PA6-CF @Qidi X-Max 4 0.6 nozzle.json"
+        },
+        {
+            "name": "QIDI PA6-CF @Qidi X-Max 4 0.8 nozzle",
+            "sub_path": "filament/QIDI PA6-CF @Qidi X-Max 4 0.8 nozzle.json"
+        },
+        {
             "name": "QIDI PAHT-CF @Qidi X-Max 4 0.4 nozzle",
             "sub_path": "filament/QIDI PAHT-CF @Qidi X-Max 4 0.4 nozzle.json"
         },
@@ -1607,6 +1659,26 @@
         {
             "name": "PolyLite PLA @Qidi X-Max 4 0.8 nozzle",
             "sub_path": "filament/PolyLite PLA @Qidi X-Max 4 0.8 nozzle.json"
+        },
+        {
+            "name": "Polymaker PLA-HT@X-Max 4-Series",
+            "sub_path": "filament/Polymaker PLA-HT @X-Max 4.json"
+        },
+        {
+            "name": "Polymaker PLA-HT @Qidi X-Max 4 0.2 nozzle",
+            "sub_path": "filament/Polymaker PLA-HT @Qidi X-Max 4 0.2 nozzle.json"
+        },
+        {
+            "name": "Polymaker PLA-HT @Qidi X-Max 4 0.4 nozzle",
+            "sub_path": "filament/Polymaker PLA-HT @Qidi X-Max 4 0.4 nozzle.json"
+        },
+        {
+            "name": "Polymaker PLA-HT @Qidi X-Max 4 0.6 nozzle",
+            "sub_path": "filament/Polymaker PLA-HT @Qidi X-Max 4 0.6 nozzle.json"
+        },
+        {
+            "name": "Polymaker PLA-HT @Qidi X-Max 4 0.8 nozzle",
+            "sub_path": "filament/Polymaker PLA-HT @Qidi X-Max 4 0.8 nozzle.json"
         },
         {
             "name": "PolyLite ABS@X-Max 4-Series",

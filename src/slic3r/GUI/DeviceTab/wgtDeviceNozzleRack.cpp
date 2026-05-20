@@ -298,7 +298,7 @@ wxSizer* wgtDeviceNozzleRackArea::CreateRefreshBook(wxPanel* parent)
 {
     wxSizer* refresh_sizer = new wxBoxSizer(wxVERTICAL);
 
-    std::vector<std::string> list{"ams_rfid_1", "ams_rfid_2", "ams_rfid_3", "ams_rfid_4"};
+    std::vector<std::string> list{ "box_rfid_1", "box_rfid_2", "box_rfid_3", "box_rfid_4" };
     m_refresh_icon = new AnimaIcon(parent, wxID_ANY, list, "refresh_printer", 100);
     m_refresh_icon->SetMinSize(wxSize(FromDIP(25), FromDIP(25)));
 
@@ -752,9 +752,9 @@ void wgtDeviceNozzleRackNozzleItem::CreateGui()
     m_nozzle_selected_bitmap->SetBackgroundColour(*wxWHITE);
 
     top_h_sizer->Add(m_nozzle_label_id, 0, wxTOP | wxLEFT, FromDIP(6));
-    top_h_sizer->AddSpacer(FromDIP(10));
+    top_h_sizer->AddStretchSpacer(1);
     top_h_sizer->Add(m_nozzle_icon, 0, wxTOP, FromDIP(10));
-    top_h_sizer->AddStretchSpacer();
+    top_h_sizer->AddStretchSpacer(1);
     top_h_sizer->Add(m_nozzle_selected_bitmap, 0, wxTOP | wxRIGHT, FromDIP(2));
 
     // Bottom V
@@ -786,7 +786,7 @@ void wgtDeviceNozzleRackNozzleItem::CreateGui()
 
     // Main sizer
     wxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
-    main_sizer->Add(top_h_sizer);
+    main_sizer->Add(top_h_sizer, 0, wxEXPAND);
     main_sizer->Add(bottom_v, 0, wxALIGN_CENTER_HORIZONTAL);
     SetSizer(main_sizer);
 

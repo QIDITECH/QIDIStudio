@@ -63,6 +63,7 @@
 #include "ConfigWizard.hpp"
 #include "Widgets/WebView.hpp"
 #include "DailyTips.hpp"
+#include "FilamentGroupPopup.hpp"
 #include "FilamentMapDialog.hpp"
 //cj_2
 #include "QDSDeviceManager.hpp"
@@ -73,6 +74,7 @@
 #include <dbt.h>
 #include <shlobj.h>
 #include <shellapi.h>
+#include <dwmapi.h>
 #endif // _WIN32
 #include <slic3r/GUI/CreatePresetsDialog.hpp>
 
@@ -191,6 +193,14 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
 {
 #ifdef __WXOSX__
     set_miniaturizable(GetHandle());
+#endif
+
+#ifdef _WIN32
+    // Enable DWM hardware-accelerated compositing for this borderless window.
+    // Without this, dragging the window by the title bar causes lag because
+    // DWM can't efficiently composite a frameless window during drag.
+    MARGINS margins = {0, 0, 0, 1};
+    DwmExtendFrameIntoClientArea((HWND)GetHandle(), &margins);
 #endif
 
     if (!wxGetApp().app_config->has("user_mode")) {
@@ -354,6 +364,14 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
             } else {
                 m_topbar->SetMaximizedSize();
             }
+#endif
+#ifdef _WIN32
+        if (m_is_in_move_or_resize) {
+            ULONGLONG now = GetTickCount64();
+            if (now - m_last_resize_layout_ms < 33)
+                return;
+            m_last_resize_layout_ms = now;
+        }
 #endif
         Refresh();
         Layout();
@@ -694,6 +712,15 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
             if (dlg.seq_top_layer_only_changed())
 #endif // ENABLE_GCODE_LINES_ID_IN_H_SLIDER
                 plater()->refresh_print();
+
+            // Refresh recent list if time format changed
+            if (dlg.use_12h_time_format_changed() && m_webview) {
+                wxGetApp().CallAfter([this]() {
+                    if (m_webview) {
+                        m_webview->SendRecentList(-1);
+                    }
+                });
+            }
             return;
         }
 
@@ -846,7 +873,17 @@ WXLRESULT MainFrame::MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam
             AdjustWorkingAreaForAutoHide(hWnd, mmi);
             return 0;
         }
-      }
+        break;
+    }
+    case WM_ENTERSIZEMOVE:
+        m_is_in_move_or_resize = true;
+        break;
+    case WM_EXITSIZEMOVE:
+        m_is_in_move_or_resize = false;
+        Refresh();
+        Layout();
+        wxQueueEvent(wxGetApp().plater(), new SimpleEvent(EVT_NOTICE_CHILDE_SIZE_CHANGED));
+        break;
     }
     return wxFrame::MSWWindowProc(nMsg, wParam, lParam);
 }
@@ -1153,6 +1190,36 @@ void MainFrame::init_tabpanel()
     m_settings_dialog.set_tabpanel(m_tabpanel);
 
     m_tabpanel->Bind(wxEVT_NOTEBOOK_PAGE_CHANGING, [this](wxBookCtrlEvent& e) {
+        //if (bool test = false) {
+        //    SupportRecommendDialog* dialog = new SupportRecommendDialog(nullptr, _L("Notice"));;
+
+        //    wxArrayString params;
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
+
+        //    std::vector<wxString> objects;
+        //    for (int i = 0; i < 10; i++) {
+        //        objects.push_back("ABCABCABCABC");
+        //    }
+
+        //    std::vector<std::tuple<int, wxColour, wxString>> mainMat;
+        //    mainMat.push_back(std::make_tuple(2, *wxRED, "QIDI PLA Basic"));
+        //    mainMat.push_back(std::make_tuple(5, *wxBLUE, "QIDI PLA Basic"));
+        //    mainMat.push_back(std::make_tuple(3, *wxGREEN, "QIDI PLA Basic"));
+        //    mainMat.push_back(std::make_tuple(1, *wxWHITE, "QIDI PLA Basic"));
+
+        //    dialog->AddSupportComboCard(objects, mainMat, std::make_tuple(1, *wxWHITE, "QIDI PLA Basic"), params);
+        //    dialog->AddSupportComboCard(objects, mainMat, std::make_tuple(1, *wxWHITE, "QIDI PLA Basic"), params);
+        //    dialog->ShowModal();
+        //}
+
         //y77
         if (e.GetEventObject() != m_tabpanel) {
             e.Skip();
@@ -1872,6 +1939,9 @@ wxBoxSizer* MainFrame::create_side_tools()
 
     m_slice_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event)
         {
+            if (m_plater->is_background_process_update_scheduled())
+                m_plater->update(false, true);
+
             m_plater->reset_check_status();
             if (!m_plater->check_ams_status(m_slice_select == eSliceAll))
                 return;
@@ -1890,9 +1960,16 @@ wxBoxSizer* MainFrame::create_side_tools()
                 slice = try_pop_up_before_slice(m_slice_select == eSliceAll, m_plater, curr_plate, false);
             #endif
 
-            if (slice) {
+            bool model_fits     = false;
+            bool validate_error = false;
+            m_plater->validate_current_plate(model_fits, validate_error);
+
+            if (slice && model_fits && !validate_error) {
                 std::string printer_model = wxGetApp().preset_bundle->printers.get_edited_preset().config.opt_string("printer_model");
+                //y
+                //std::unordered_set<std::string> printer_models = {"Bambu Lab H2D", "Bambu Lab H2D Pro", "Bambu Lab H2C"};
                 int extruder_count = wxGetApp().preset_bundle->get_printer_extruder_count();
+                //if (extruder_count > 1 && printer_models.count(printer_model)) {
                 if (extruder_count > 1) {
                     if (wxGetApp().app_config->get("play_slicing_video") == "true") {
                         MessageDialog dlg(this, _L("This is your first time slicing with the dual extruder machine.\nWould you like to watch a quick tutorial video?"), _L("First Guide"), wxYES_NO);
@@ -2255,6 +2332,9 @@ bool MainFrame::get_enable_slice_status()
         }
     }
 
+    if (enable && m_plater->sidebar().has_broken_mixed_filament())
+        enable = false;
+
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": m_slice_select %1%, enable= %2% ")%m_slice_select %enable;
     return enable;
 }
@@ -2558,6 +2638,9 @@ void MainFrame::on_sys_color_changed()
     wxGetApp().plate_tab->sys_color_changed();
 
     MenuFactory::sys_color_changed(m_menubar);
+
+    // update DiffPresetDialog from here, we're friends
+    diff_dialog.on_sys_color_changed();
 
     WebView::RecreateAll();
 
@@ -3170,9 +3253,12 @@ void MainFrame::init_menubar_as_editor()
             [this]() { return (m_tabpanel->GetSelection() == TabPosition::tp3DEditor || m_tabpanel->GetSelection() == TabPosition::tpPreview) && m_plater->is_sidebar_enabled(); },
             this);
         viewMenu->AppendSeparator();
-        append_menu_check_item(viewMenu, wxID_ANY, _L("Show Labels") + "\t" + ctrl + "E", _L("Show object labels in 3D scene"),
-            [this](wxCommandEvent&) { m_plater->show_view3D_labels(!m_plater->are_view3D_labels_shown()); m_plater->get_current_canvas3D()->post_event(SimpleEvent(wxEVT_PAINT)); }, this,
-            [this]() { return m_plater->is_view3D_shown(); }, [this]() { return m_plater->are_view3D_labels_shown(); }, this);
+        append_menu_check_item(viewMenu, wxID_ANY, _L("Show Labels by Layer") + "\t" + ctrl + "E", _L("Show Labels of printing by layer in 3D scene"),
+            [this](wxCommandEvent&) { m_plater->show_view3D_layer_labels(!m_plater->are_view3D_layer_labels_shown()); m_plater->get_current_canvas3D()->post_event(SimpleEvent(wxEVT_PAINT)); }, this,
+            [this]() { return m_plater->is_view3D_shown(); }, [this]() { return m_plater->are_view3D_layer_labels_shown(); }, this);
+        append_menu_check_item(viewMenu, wxID_ANY, _L("Show Labels by Object") + "\t" + _L("Shift+") + "E", _L("Show Labels of printing by object in 3D scene"),
+            [this](wxCommandEvent&) { m_plater->show_view3D_object_labels(!m_plater->are_view3D_object_labels_shown()); m_plater->get_current_canvas3D()->post_event(SimpleEvent(wxEVT_PAINT)); }, this,
+            [this]() { return m_plater->is_view3D_shown(); }, [this]() { return m_plater->are_view3D_object_labels_shown(); }, this);
 
         append_menu_check_item(viewMenu, wxID_ANY, _L("Show &Overhang") + "\t" + ctrl + "L", _L("Show object overhang highlight in 3D scene"),
             [this](wxCommandEvent &) {
@@ -3344,6 +3430,15 @@ void MainFrame::init_menubar_as_editor()
             if (dlg.seq_top_layer_only_changed())
 #endif
                 plater()->refresh_print();
+
+            // Refresh recent list if time format changed
+            if (dlg.use_12h_time_format_changed() && m_webview) {
+                wxGetApp().CallAfter([this]() {
+                    if (m_webview) {
+                        m_webview->SendRecentList(-1);
+                    }
+                });
+            }
         },
         "", nullptr, []() { return true; }, this, 1);
     //parent_menu->Insert(1, preference_item);
@@ -3370,6 +3465,15 @@ void MainFrame::init_menubar_as_editor()
             if (dlg.seq_top_layer_only_changed())
 #endif
                 plater()->refresh_print();
+
+            // Refresh recent list if time format changed
+            if (dlg.use_12h_time_format_changed() && m_webview) {
+                wxGetApp().CallAfter([this]() {
+                    if (m_webview) {
+                        m_webview->SendRecentList(-1);
+                    }
+                });
+            }
         },
         "", nullptr, []() { return true; }, this);
     //m_topbar->AddDropDownMenuItem(preference_item);
@@ -3992,7 +4096,15 @@ void MainFrame::select_tab(wxPanel* panel)
 void MainFrame::jump_to_monitor(std::string dev_id)
 {
     m_tabpanel->SetSelection(tpMonitor);
-    if (!dev_id.empty()) {
+    if (dev_id.empty()) return;
+
+    //cj_4
+    if (m_tabpanel->GetPage(tpMonitor) == m_printer_view && m_printer_view != nullptr) {
+        m_printer_view->select_device_by_id(dev_id);
+        return;
+    }
+
+    if (m_monitor != nullptr) {
         ((MonitorPanel*)m_monitor)->select_machine(dev_id);
     }
 }
@@ -4212,8 +4324,25 @@ void MainFrame::get_recent_projects(boost::property_tree::wptree &tree, int imag
         boost::system::error_code ec;
         std::time_t t = boost::filesystem::last_write_time(proj, ec);
         if (!ec) {
-            std::wstring time = wxDateTime(t).FormatISOCombined(' ').ToStdWstring();
-            item.put(L"time", time);
+            std::tm* local_tm = std::localtime(&t);
+            if (local_tm != nullptr)
+            {
+                bool use_12h_format = wxGetApp().app_config->get("use_12h_time_format") == "true";
+
+                // Format date and time: YYYY-MM-DD HH:MM[:SS][AM/PM]
+                std::wstringstream time_stream;
+                time_stream << std::setw(4) << std::setfill(L'0') << (local_tm->tm_year + 1900) << L"-"
+                        << std::setw(2) << std::setfill(L'0') << (local_tm->tm_mon + 1) << L"-"
+                        << std::setw(2) << std::setfill(L'0') << local_tm->tm_mday << L" "
+                        << from_u8(Slic3r::format_time_hm(local_tm, use_12h_format));
+                item.put(L"time", time_stream.str());
+
+            }
+            else
+            {
+                std::wstring time = wxDateTime(t).FormatISOCombined(' ').ToStdWstring();
+                item.put(L"time", time);
+            }
             if (i <= images) {
                 auto thumbnail = m_recent_projects.GetThumbnailUrl(i);
                 if (!thumbnail.empty()) item.put(L"image", thumbnail);

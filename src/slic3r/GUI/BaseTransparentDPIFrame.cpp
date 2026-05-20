@@ -23,7 +23,7 @@ using namespace Slic3r::GUI;
 namespace Slic3r { namespace GUI {
 #define ANIMATION_REFRESH_INTERVAL 20
 BaseTransparentDPIFrame::BaseTransparentDPIFrame(
-    wxWindow *parent, int win_width, wxPoint dialog_pos, int ok_button_width, wxString win_text, wxString ok_text, wxString cancel_text, DisappearanceMode disappearance_mode)
+    wxWindow *parent, int win_width, wxPoint dialog_pos, int ok_button_width, wxString win_text, wxString ok_text, wxString cancel_text, DisappearanceMode disappearance_mode, std::string icon_name)
     : DPIFrame(static_cast<wxWindow *>(wxGetApp().mainframe), wxID_ANY, "", wxDefaultPosition, wxDefaultSize, !wxCAPTION | !wxCLOSE_BOX | wxBORDER_NONE)
     , m_timed_disappearance_mode(disappearance_mode)
 {
@@ -47,7 +47,7 @@ BaseTransparentDPIFrame::BaseTransparentDPIFrame(
     text_sizer->AddSpacer(FromDIP(20));
     auto image_sizer  = new wxBoxSizer(wxVERTICAL);
     auto imgsize      = FromDIP(25);
-    auto completedimg = new wxStaticBitmap(this, wxID_ANY, create_scaled_bitmap("completed", this, 25), wxDefaultPosition, wxSize(imgsize, imgsize), 0);
+    auto completedimg = new wxStaticBitmap(this, wxID_ANY, create_scaled_bitmap(icon_name, this, 25), wxDefaultPosition, wxSize(imgsize, imgsize), 0);
     image_sizer->Add(completedimg, 0, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(0));
     image_sizer->AddStretchSpacer();
     text_sizer->Add(image_sizer);
@@ -74,7 +74,7 @@ BaseTransparentDPIFrame::BaseTransparentDPIFrame(
     m_button_ok = new Button(this, ok_text);
     m_button_ok->SetBackgroundColor(btn_bg_blue);
     m_button_ok->SetBorderWidth(0);
-    m_button_ok->SetTextColor(wxColour(0xFEFEFE));
+    m_button_ok->SetTextColor(wxColour("#FEFEFE"));
     m_button_ok->SetFont(Label::Body_12);
     m_button_ok->SetSize(wxSize(FromDIP(60), FromDIP(30)));
     m_button_ok->SetMinSize(wxSize(FromDIP(90), FromDIP(30)));
@@ -87,7 +87,7 @@ BaseTransparentDPIFrame::BaseTransparentDPIFrame(
     m_button_cancel->SetBackgroundColor(btn_bg_white);
     m_button_cancel->SetBorderColor(wxColour(93, 93, 91));
     m_button_cancel->SetFont(Label::Body_12);
-    m_button_cancel->SetTextColor(wxColour(0xFEFEFE));
+    m_button_cancel->SetTextColor(wxColour("#FEFEFE"));
     m_button_cancel->SetSize(wxSize(FromDIP(65), FromDIP(30)));
     m_button_cancel->SetMinSize(wxSize(FromDIP(65), FromDIP(30)));
     m_button_cancel->SetCornerRadius(FromDIP(6));
@@ -160,12 +160,16 @@ void BaseTransparentDPIFrame::on_dpi_changed(const wxRect &suggested_rect)
 }
 
 void BaseTransparentDPIFrame::on_show() {
+    BOOST_LOG_TRIVIAL(trace) << "[sync_popup] on_show";
+    //cj_4 keep popup on top, prevent mainframe/sidebar layout from covering it
+    SetWindowStyleFlag(GetWindowStyleFlag() | wxSTAY_ON_TOP);
     Show();
     Raise();
 }
 
 void BaseTransparentDPIFrame::on_hide()
 {
+    BOOST_LOG_TRIVIAL(trace) << "[sync_popup] on_hide called";
     if (m_refresh_timer) {
         m_refresh_timer->Stop();
     }
@@ -203,6 +207,7 @@ void BaseTransparentDPIFrame::on_timer(wxTimerEvent &event)
     if (m_timed_disappearance_mode == DisappearanceMode::TimedDisappearance && m_display_stage == 0) {
         auto cur_time = ANIMATION_REFRESH_INTERVAL * m_timer_count;
         if (cur_time > m_disappearance_second) {
+            BOOST_LOG_TRIVIAL(trace) << "[sync_popup] timer expired, start gradual disappearance";
             start_gradual_disappearance();
             m_display_stage++;
         }

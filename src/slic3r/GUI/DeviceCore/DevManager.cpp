@@ -844,8 +844,8 @@ namespace Slic3r
     {
         if (MachineObject* obj_ = get_selected_machine()) {
             //y76
+            //GUI::wxGetApp().sidebar().reset_fila_switch();
             //GUI::wxGetApp().sidebar().update_sync_status(obj_);
-            
             GUI::wxGetApp().sidebar().load_ams_list(obj_);
         };
     }

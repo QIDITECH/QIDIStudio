@@ -232,6 +232,15 @@ void SwitchBoard::updateState(wxString target)
     Refresh();
 }
 
+void SwitchBoard::SetLabels(const wxString &left, const wxString &right)
+{
+    if (leftLabel == left && rightLabel == right)
+        return;
+    leftLabel  = left;
+    rightLabel = right;
+    Refresh();
+}
+
 void SwitchBoard::paintEvent(wxPaintEvent &evt)
 {
     wxPaintDC dc(this);
@@ -309,19 +318,9 @@ void SwitchBoard::on_left_down(wxMouseEvent &evt)
     if (!is_enable) {
         return;
     }
-    int index = -1;
-    auto pos = ClientToScreen(evt.GetPosition());
-    auto rect = ClientToScreen(wxPoint(0, 0));
 
-    if (pos.x > 0 && pos.x < rect.x + GetSize().x / 2) {
-        switch_left = true;
-        switch_right = false;
-        index = 1;
-    } else {
-        switch_left  = false;
-        switch_right = true;
-        index = 0;
-    }
+    switch_left = evt.GetPosition().x < GetSize().GetWidth() / 2;
+    switch_right = !switch_left;
 
     if (auto_disable_when_switch)
     {
@@ -330,7 +329,7 @@ void SwitchBoard::on_left_down(wxMouseEvent &evt)
     Refresh();
 
     wxCommandEvent event(wxCUSTOMEVT_SWITCH_POS);
-    event.SetInt(index);
+    event.SetInt((int)switch_left);
     wxPostEvent(this, event);
 }
 

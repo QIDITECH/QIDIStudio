@@ -3,6 +3,7 @@
 #include <boost/log/trivial.hpp>
 #include <unordered_map>
 
+#include "libslic3r/Utils.hpp"
 #include "QDSDeviceManager.hpp"
 #include "StatusPanel.hpp"
 //#include "LocalesUtils.hpp"
@@ -15,6 +16,21 @@
 namespace Slic3r { namespace GUI {
 
 using json = nlohmann::json;
+
+namespace {
+//cj_4
+// NFC-normalized UTF-8 so cloud JSON and Moonraker paths match Unicode file names (CJK, etc.).
+void normalize_delete_task_paths_to_unicode_utf8(PrinterTask& task)
+{
+    if (task.type != PrinterTaskType::DeletePrinterFiles || task.file_paths.empty())
+        return;
+    for (std::string& p : task.file_paths) {
+        if (p.empty())
+            continue;
+        p = normalize_utf8_nfc(p.c_str());
+    }
+}
+} // namespace
 
 PrinterTaskDispatcher::PrinterTaskDispatcher(QDSDeviceManager* device_manager)
     : m_device_manager(device_manager)
@@ -81,8 +97,11 @@ PrinterTaskResult PrinterTaskDispatcher::build_local_task(PrinterTask& task) con
         {EVTSET_COOLLINGFAN_SPEED, "SET_FAN_SPEED FAN=cooling_fan SPEED="},
         {EVTSET_AUXILIARYFAN_SPEED, "SET_FAN_SPEED FAN=auxiliary_cooling_fan SPEED="},
         {EVTSET_CHAMBERFAN_SPEED, "SET_FAN_SPEED FAN=chamber_circulation_fan SPEED="},
+        {EVTSET_PRINT_CONTROL, "PAUSE"},
         // 打印速度：Marlin M220 S<percent>，int_value 为 50/100/124/166
-        {EVTSET_PRINT_SPEED, "M220 S%d"}
+        {EVTSET_PRINT_SPEED, "M220 S%d"},
+        // cj_4 Exclude print object: use EXCLUDE_OBJECT NAME=<object_name>
+        {EVTSET_EXCLUDE_PRINT_OBJECT, "EXCLUDE_OBJECT NAME=%s"}
     };
 
     if (task.type == PrinterTaskType::StatusPanel) {
@@ -114,16 +133,24 @@ PrinterTaskResult PrinterTaskDispatcher::build_local_task(PrinterTask& task) con
         } else if (task.event_type == EVTSET_COOLLINGFAN_SPEED || task.event_type == EVTSET_CHAMBERFAN_SPEED || task.event_type == EVTSET_AUXILIARYFAN_SPEED) {
             //cj_2 使用固定小数点，避免欧洲等区域 Locale 下 wxFormat / stream 使用逗号导致下发脚本非法
             script += Slic3r::float_to_string_decimal_point(double(task.int_value) / 100.0, 2);
+        } else if (task.event_type == EVTSET_EXCLUDE_PRINT_OBJECT) {
+            // cj_4 Exclude print object: string_key contains object name
+            const std::string placeholder = "%s";
+            size_t pos = script.find(placeholder);
+            if (pos != std::string::npos && !task.string_key.empty()) {
+                script.replace(pos, placeholder.length(), task.string_key);
+            }
         }
 
-        task.local_commands.push_back(LocalCommand{ false, "script", script, "" });
         if (task.string_key == "type") {
             int type_index = task.int_value;
             std::vector<std::string> types{ "pause", "resume", "cancel" };
             if (type_index < 0 || type_index > 2)
                 type_index = 0;
             task.local_action_type = types[type_index];
+            script = types[type_index];
         }
+        task.local_commands.push_back(LocalCommand{ false, "script", script, "" });
         return { true, PrinterTaskErrorCode::None, "" };
     }
 
@@ -158,6 +185,7 @@ PrinterTaskResult PrinterTaskDispatcher::build_local_task(PrinterTask& task) con
     }
 
     if (task.type == PrinterTaskType::DeletePrinterFiles) {
+        normalize_delete_task_paths_to_unicode_utf8(task);
         for (const std::string& file_path : task.file_paths) {
             LocalCommand cmd;
             cmd.use_custom_method = true;
@@ -208,7 +236,9 @@ PrinterTaskResult PrinterTaskDispatcher::build_cloud_task(PrinterTask& task) con
             {EVTSET_PRINT_CONTROL, "/set/print/control"},
             {EVTSET_INSERT_READ, "/ams/insert/filament/read/enable"},
             {EVTSET_BOOT_READ, "/ams/boot/read/enable"},
-            {EVTSET_AUTO_FILAMENT, "/ams/auto/filament/enable"}
+            {EVTSET_AUTO_FILAMENT, "/ams/auto/filament/enable"},
+            // cj_4 Exclude print object uses common control param one interface
+            {EVTSET_EXCLUDE_PRINT_OBJECT, "/common/control/param/one"}
         };
 
         auto it = cloud_event_to_path.find(task.event_type);
@@ -216,16 +246,27 @@ PrinterTaskResult PrinterTaskDispatcher::build_cloud_task(PrinterTask& task) con
             return { false, PrinterTaskErrorCode::UnsupportedEvent, "unsupported status-panel cloud event" };
 
         task.cloud_task_path = it->second;
-        if (task.string_key == "value") {
-            body_json["value"] = task.int_value;
-        } else if (task.string_key == "enable") {
-            body_json["enable"] = bool(task.int_value);
-        } else if (task.string_key == "type") {
-            int type_index = task.int_value;
-            std::vector<std::string> types{ "pause", "resume", "cancel" };
-            if (type_index < 0 || type_index > 2)
-                type_index = 0;
-            body_json["type"] = types[type_index];
+        
+        // cj_4 Special handling for exclude print object
+        if (task.event_type == EVTSET_EXCLUDE_PRINT_OBJECT) {
+            // paramValue from string_key (object name)
+            body_json["paramValue"] = task.string_key;
+            // command fixed to exclude_print_object
+            body_json["command"] = "exclude_print_object";
+            // serialNumber already set above
+        } else {
+            // Original handling for other events
+            if (task.string_key == "value") {
+                body_json["value"] = task.int_value;
+            } else if (task.string_key == "enable") {
+                body_json["enable"] = bool(task.int_value);
+            } else if (task.string_key == "type") {
+                int type_index = task.int_value;
+                std::vector<std::string> types{ "pause", "resume", "cancel" };
+                if (type_index < 0 || type_index > 2)
+                    type_index = 0;
+                body_json["type"] = types[type_index];
+            }
         }
 
         task.cloud_body = task.string_key.empty() ? "{}" : body_json.dump();
@@ -274,6 +315,7 @@ PrinterTaskResult PrinterTaskDispatcher::build_cloud_task(PrinterTask& task) con
 
     if (task.type == PrinterTaskType::DeletePrinterFiles) {
         task.cloud_task_path = "/delete/file/batch";
+        normalize_delete_task_paths_to_unicode_utf8(task);
         body_json["files"] = task.file_paths;
         task.cloud_body = body_json.dump();
         return { true, PrinterTaskErrorCode::None, "" };
@@ -296,7 +338,8 @@ PrinterTaskResult PrinterTaskDispatcher::dispatch_local(const PrinterTask& task)
             continue;
 
         if (cmd.use_custom_method) {
-            m_device_manager->sendCommand(task.device_id, cmd.script_name, cmd.script, cmd.method);
+            if (!m_device_manager->sendCommand(task.device_id, cmd.script_name, cmd.script, cmd.method))
+                return { false, PrinterTaskErrorCode::SendFailed, "failed to send printer command" };
         } else {
             m_device_manager->sendCommand(task.device_id, cmd.script);
         }

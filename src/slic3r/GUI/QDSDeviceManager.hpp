@@ -149,7 +149,11 @@ public:
     std::string     m_print_state;
 	int m_print_cur_layer{ 0 };
 	int m_print_total_layer{ 0 };
-	double m_print_progress_float{ 0 };         // cj_1
+	//cj_4
+	// Current plate index from Klipper print_stats/plateindex,
+	// parsed as int from JSON string. Default 1.
+	int m_plate_index{1};
+	double m_print_progress_float{ 0 };         // cj_1 当前进度百分比 0.16代表 16%
 
     std::vector<Filament> m_boxData;
 	std::vector<int> m_boxTemperature;
@@ -175,7 +179,6 @@ public:
 
 
 	// common data
-    std::atomic<bool>            has_box{false};
 	std::atomic<bool>            is_selected{ false };
 	std::atomic<bool>            is_update{ false };
     //cj_3
@@ -187,6 +190,10 @@ public:
 
     std::vector<GCodeFileInfo>    file_info {};
     bool m_fresh_file_info{ false };
+
+    //cj_4
+    // Excluded object names pushed from Klipper (exclude_object/excluded_objects).
+    std::vector<std::string> m_excluded_objects;
 
     //cj_3
     std::vector<TimelapseFileInfo> timelapse_file_info {};
@@ -226,6 +233,10 @@ public:
     void reconnectDevice(const std::string& device_id);
     std::shared_ptr<QDSDevice> getDevice(const std::string& device_id);
 
+    //y80
+    std::string getNetDeviceIDByIp(const std::string& ip);
+    std::string getLocalDeviceIDByIp(const std::string& ip);
+
     void setConnectionEventCallback(ConnectionEventCallback cb) { 
         std::lock_guard<std::mutex> lock(callback_mutex_);
         connection_event_callback_ = std::move(cb); 
@@ -252,7 +263,8 @@ public:
     bool        getDeviceCaseLight(const std::string& deviceId);
 
     //cj_2
-    void sendCommand(const std::string& device_id, const std::string& scriptName,const std::string& script, const std::string& method);
+    //cj_3 Returns false if the device has no connection or the WebSocket send failed.
+    bool sendCommand(const std::string& device_id, const std::string& scriptName,const std::string& script, const std::string& method);
 
     void sendCommand(const std::string& device_id, const std::string& script);
     void sendActionCommand(const std::string& device_id, const std::string& action_type);

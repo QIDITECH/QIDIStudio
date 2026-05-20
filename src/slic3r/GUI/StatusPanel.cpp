@@ -39,6 +39,7 @@
 #include "DeviceCore/DevCtrl.h"
 #include "DeviceCore/DevFan.h"
 #include "DeviceCore/DevFilaSystem.h"
+#include "DeviceCore/DevFilaSwitch.h"
 #include "DeviceCore/DevLamp.h"
 #include "DeviceCore/DevNozzleSystem.h"
 #include "DeviceCore/DevStorage.h"
@@ -46,14 +47,16 @@
 #include "DeviceCore/DevStatus.h"
 
 #include "DeviceCore/DevConfig.h"
+#include "DeviceCore/DevConfigUtil.h"
 #include "DeviceCore/DevInfo.h"
 #include "DeviceCore/DevManager.h"
 #include "DeviceCore/DevPrintTaskInfo.h"
 #include "DeviceCore/DevPrintOptions.h"
 #include "DeviceTab/wgtDeviceNozzleRack.h"
 //cj_2
-#include "Widgets/DeviceModelList.hpp"
+#include "Widgets/ModelFileListView.hpp"
 #include "Widgets/TimelapseFileList.hpp"
+#include "Widgets/TimelapsePanelHost.hpp"
 
 
 #include "PrintOptionsDialog.hpp"
@@ -268,10 +271,19 @@ void RoundedToolButton::onLeftUp(wxMouseEvent& e)
     wxDEFINE_EVENT(EVTSET_FILAMENT_EJECT, wxCommandEvent); ///set/filament/unload
 	wxDEFINE_EVENT(EVTSET_DEL_PRINTER_FILE, wxCommandEvent); ///del printer file cj_2
     //cj_3
-    wxDEFINE_EVENT(EVTSET_DEL_TIMELAPSE_FILE, wxCommandEvent);
 	wxDEFINE_EVENT(EVTSET_DOWNLOAD_PRINTER_FILE, wxCommandEvent); //cj_2
     //cj_3
     wxDEFINE_EVENT(EVTSET_DOWNLOAD_TIMELAPSE_FILE, wxCommandEvent);
+    
+    // cj_4 Define exclude print object event
+    wxDEFINE_EVENT(EVTSET_EXCLUDE_PRINT_OBJECT, wxCommandEvent);
+
+//cj_4
+wxDEFINE_EVENT(EVT_TIMELAPSE_PLAY_FILE, wxCommandEvent);
+wxDEFINE_EVENT(EVT_TIMELAPSE_REVEAL_FILE, wxCommandEvent);
+wxDEFINE_EVENT(EVT_TIMELAPSE_DOWNLOAD_ONE, wxCommandEvent);
+wxDEFINE_EVENT(EVT_TIMELAPSE_REQUEST_DELETE, wxCommandEvent);
+wxDEFINE_EVENT(EVT_TIMELAPSE_DELETE_UI, wxCommandEvent);
 
 namespace {
 const int (&k_print_speed_percents)[4] = DEV_PRINT_SPEED_PERCENT_TIERS;
@@ -315,8 +327,10 @@ static wxColour TEXT_LIGHT_FONT_COL  = wxColour(107, 107, 107);
 static wxImage fail_image;
 
 //cj_3
+/* PAGE_TITLE_HEIGHT_DIP is a logical DIP constant; call FromDIP only once at the outer level to avoid double-scaling FromDIP(PAGE_TITLE_HEIGHT). */
 #define PAGE_TITLE_HEIGHT_DIP 36
 #define PAGE_TITLE_HEIGHT FromDIP(PAGE_TITLE_HEIGHT_DIP)
+/* Control-page title row: three tab buttons + model/timelapse toolbar margins. */
 #define CONTROL_TAB_BTN_WIDTH_DIP 100
 #define CONTROL_TAB_BTN_HEIGHT_DIP 28
 //cj_3 RoundedToolButton corner radius (DIP) for file-list toolbar tiles; capped below half of 28 DIP side.
@@ -820,7 +834,7 @@ void PrintingTaskPanel::create_panel(wxWindow *parent)
                         std::pair<wxColour, int>(wxColour(255, 255, 255), StateColor::Hovered), std::pair<wxColour, int>(wxColour(255, 255, 255), StateColor::Enabled),
                         std::pair<wxColour, int>(wxColour(255, 255, 255), StateColor::Normal));
 
-    std::vector<std::string> list{ "ams_rfid_1", "ams_rfid_2", "ams_rfid_3", "ams_rfid_4" };
+    std::vector<std::string> list{ "box_rfid_1", "box_rfid_2", "box_rfid_3", "box_rfid_4" };
     m_pausing_icon = new AnimaIcon(progress_lr_panel, wxID_ANY, list, "refresh_printer", 100);
     m_pausing_icon->SetMinSize(wxSize(FromDIP(20), FromDIP(20)));
     m_pausing_icon->SetToolTip(_L("Pausing"));
@@ -830,11 +844,16 @@ void PrintingTaskPanel::create_panel(wxWindow *parent)
     m_stopping_icon->SetToolTip(_L("Stopping"));
     m_stopping_icon->Hide();
 
-    m_button_partskip = new Button(progress_lr_panel, wxEmptyString, "print_control_partskip_disable", 0, 20, wxID_ANY);
-    m_button_partskip->Enable(false);
-    m_button_partskip->Hide();
+    //cj_4
+    // Parts-skip button is permanently visible and clickable in this phase.
+    // The MachineObject-based gating (Hide/Enable(false) + disabled icon by
+    // default, then toggled via update_partskip_button / enable_partskip_button
+    // when a MachineObject reports is_support_partskip) has been removed.
+    m_button_partskip = new Button(progress_lr_panel, wxEmptyString, "print_control_partskip", 0, 20, wxID_ANY);
+    m_button_partskip->Enable(true);
+    m_button_partskip->Show();
     m_button_partskip->SetBackgroundColor(white_bg);
-    m_button_partskip->SetIcon("print_control_partskip_disable");
+    m_button_partskip->SetIcon("print_control_partskip");
     m_button_partskip->SetBorderColor(*wxWHITE);
     m_button_partskip->SetFont(Label::Body_12);
     m_button_partskip->SetCornerRadius(0);
@@ -1231,6 +1250,8 @@ static wxString get_qdt_time_dhms(float time_in_secs)
 
 void PrintingTaskPanel::paint(wxPaintEvent &)
 {
+    if (!m_bitmap_thumbnail)
+        return;
     wxPaintDC dc(m_bitmap_thumbnail);
     if (wxGetApp().dark_mode()) {
         if (m_brightness_value > 0 && m_brightness_value < SHOW_BACKGROUND_BITMAP_PIXEL_THRESHOLD) {
@@ -1240,7 +1261,8 @@ void PrintingTaskPanel::paint(wxPaintEvent &)
             dc.SetTextForeground(*wxWHITE);
     } else
         dc.SetTextForeground(*wxBLACK);
-    if (m_thumbnail_bmp_display.IsOk()) { dc.DrawBitmap(m_thumbnail_bmp_display, wxPoint(0, 0)); }
+    wxBitmap bmp = m_thumbnail_bmp_display;
+    if (bmp.IsOk()) { dc.DrawBitmap(bmp, wxPoint(0, 0)); }
     dc.SetFont(Label::Body_12);
 
     if (m_plate_index >= 0) {
@@ -1330,15 +1352,12 @@ void PrintingTaskPanel::reset_printing_value()
 
 void PrintingTaskPanel::enable_partskip_button(MachineObject *obj, bool enable)
 {
-    int  stage               = 0;
-    bool in_calibration_mode = false;
-    if (obj && (obj->print_type == "system" || CalibUtils::get_calib_mode_by_name(obj->subtask_name, stage) != CalibMode::Calib_None)) { in_calibration_mode = true; }
-
-    if (!enable || in_calibration_mode) {
+    
+    if (!m_button_partskip) return;
+    if (!enable) {
         m_button_partskip->Enable(false);
-        m_button_partskip->SetLabel("");
         m_button_partskip->SetIcon("print_control_partskip_disable");
-    } else if (obj && obj->is_support_brtc) {
+    } else {
         m_button_partskip->Enable(true);
         m_button_partskip->SetIcon("print_control_partskip");
     }
@@ -1499,8 +1518,9 @@ void PrintingTaskPanel::update_left_time(int mc_left_time)
     wxString    left_time_text = NA_STR;
 
     try {
-        left_time  = get_qdt_time_dhms(mc_left_time);
-        right_time = get_qdt_finish_time_dhm(mc_left_time);
+        bool use_12h_format = wxGetApp().app_config->get("use_12h_time_format") == "true";
+        left_time  = get_qdt_monitor_time_dhm(mc_left_time);
+        right_time = get_qdt_finish_time_dhm(mc_left_time, use_12h_format);
     } catch (...) {
         ;
     }
@@ -1825,9 +1845,9 @@ wxBoxSizer *StatusBasePanel::create_monitoring_page()
 	
     // test_panel->SetStreamUrl("http://192.168.110.17/webcam/?action=snapshot");
     // test_panel->Play();
-// 	if (!m_media_ctrl->Create(this, wxID_ANY))  // Windows �Ƽ�ʹ�� WMP10
+// 	if (!m_media_ctrl->Create(this, wxID_ANY))  // Windows: WMP10 recommended
 // 	{
-// 		wxLogError("�޷�����ý��ؼ���");
+// 		wxLogError("Failed to create media control.");
 // 	}
 // 
 //     m_media_ctrl->Load(wxURI("http://2k2m4y94k1bwd4d3mf86.aliyun.qidi3dprinter.com:7680/webcam"));
@@ -1945,19 +1965,19 @@ wxBoxSizer *StatusBasePanel::create_machine_control_page(wxWindow *parent)
     bSizer_control->Add(0, 0, 0, wxTOP, FromDIP(4));
 
     
-	//cj_2
-    m_model_panel = new DeviceModelListCtrl(parent);
-    m_timelapse_file_panel = new TimelapseFileListCtrl(parent);
+	//cj_3
+    m_model_panel = new ModelFileListView(parent, this);
+    //cj_4
+    m_timelapse_host = new TimelapsePanelHost(parent, this);
 
 	bSizer_right->Add(m_control_panel, 0, wxEXPAND | wxALL, 0);
 	bSizer_right->Add(m_model_panel, 0, wxEXPAND | wxALL, 0);
-	bSizer_right->Add(m_timelapse_file_panel, 0, wxEXPAND | wxALL, 0);
+	bSizer_right->Add(m_timelapse_host, 0, wxEXPAND | wxALL, 0);
 
     m_model_panel->sync_file_list_surface_colours();
-    m_timelapse_file_panel->sync_file_list_surface_colours();
-    m_model_panel->Bind(wxEVT_CHECKBOX, &StatusBasePanel::on_model_checkchange, this);
-    m_timelapse_file_panel->Hide();
-    m_timelapse_file_panel->Bind(wxEVT_CHECKBOX, &StatusBasePanel::on_timelapse_checkchange, this);
+    m_timelapse_host->GetFileList()->sync_file_list_surface_colours();
+    m_timelapse_host->Hide();
+    m_timelapse_host->GetFileList()->Bind(wxEVT_CHECKBOX, &StatusBasePanel::on_timelapse_checkchange, this);
     return bSizer_right;
 }
 
@@ -2022,30 +2042,22 @@ wxPanel* StatusBasePanel::create_tab_page(wxWindow* parent)
 wxPanel* StatusBasePanel::create_model_fun(wxWindow* parent)
 {
     const wxColour k_tool_blue(68, 121, 251);
-    const wxColour k_tool_disabled(196, 196, 196);
 
     m_model_button_panel = new wxPanel(parent);
     wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
     m_model_button_panel->SetSizer(sizer);
 
-    const int icon_px = m_model_button_panel->FromDIP(16);
     const int icon_px_refresh = m_model_button_panel->FromDIP(16);
-    const int icon_px_open = m_model_button_panel->FromDIP(14);
-    const int icon_px_download = m_model_button_panel->FromDIP(20);
-    const int icon_px_delete = m_model_button_panel->FromDIP(18);
     const int btn_side = m_model_button_panel->FromDIP(28);
     const wxSize btn_sz(btn_side, btn_side);
     const int corner = m_model_button_panel->FromDIP(MONITOR_FILE_LIST_TOOL_BTN_CORNER_DIP);
     auto make_tool = [&](const char* bmp, bool always_blue, int icon_px_override = 0) -> RoundedToolButton* {
-        const int ipx = icon_px_override > 0 ? icon_px_override : icon_px;
+        const int ipx = icon_px_override > 0 ? icon_px_override : m_model_button_panel->FromDIP(16);
         RoundedToolButton* b = new RoundedToolButton(m_model_button_panel,
             create_scaled_bitmap(bmp, m_model_button_panel, ipx), btn_sz, corner);
         if (always_blue) {
             b->SetToolBg(k_tool_blue);
             b->Enable(true);
-        } else {
-            b->SetToolBg(k_tool_disabled);
-            b->Enable(false);
         }
         b->SetCanFocus(false);
         return b;
@@ -2055,25 +2067,8 @@ wxPanel* StatusBasePanel::create_model_fun(wxWindow* parent)
     m_model_flash_btn->SetToolTip(_L("Refresh"));
     m_model_flash_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { request_refresh_file_lists(); });
 
-    m_model_print_btn = make_tool("file_print", false);
-    m_model_print_btn->SetToolTip(_L("Print"));
-
-    m_model_download_btn = make_tool("file_download", false, icon_px_download);
-    m_model_download_btn->SetToolTip(_L("Download"));
-
-    m_model_open_btn = make_tool("file_open", true, icon_px_open);
-    m_model_open_btn->SetToolTip(_L("Open download folder"));
-    m_model_open_btn->Bind(wxEVT_BUTTON, &StatusBasePanel::open_monitor_download_folder, this);
-
-    m_model_delete_btn = make_tool("file_delete", false, icon_px_delete);
-    m_model_delete_btn->SetToolTip(_L("Delete"));
-
     const int gap = m_model_button_panel->FromDIP(14);
     sizer->Add(m_model_flash_btn, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, FromDIP(12));
-    sizer->Add(m_model_print_btn, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, gap);
-    sizer->Add(m_model_download_btn, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, gap);
-    sizer->Add(m_model_open_btn, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, gap);
-    sizer->Add(m_model_delete_btn, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, gap);
     m_model_button_panel->SetBackgroundColour(StateColor::themed_surface_f8(wxGetApp().dark_mode()));
 
     return m_model_button_panel;
@@ -2091,8 +2086,6 @@ wxPanel* StatusBasePanel::create_timelapse_fun(wxWindow* parent)
 
     const int icon_px = m_timelapse_button_panel->FromDIP(16);
     const int icon_px_refresh = m_timelapse_button_panel->FromDIP(16);
-    const int icon_px_open = m_timelapse_button_panel->FromDIP(14);
-    const int icon_px_download = m_timelapse_button_panel->FromDIP(20);
     const int icon_px_delete = m_timelapse_button_panel->FromDIP(18);
     const int btn_side = m_timelapse_button_panel->FromDIP(28);
     const wxSize btn_sz(btn_side, btn_side);
@@ -2116,20 +2109,13 @@ wxPanel* StatusBasePanel::create_timelapse_fun(wxWindow* parent)
     m_timelapse_flash_btn->SetToolTip(_L("Refresh"));
     m_timelapse_flash_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { request_refresh_file_lists(); });
 
-    m_timelapse_download_btn = make_tool("file_download", false, icon_px_download);
-    m_timelapse_download_btn->SetToolTip(_L("Download"));
-
-    m_timelapse_open_btn = make_tool("file_open", true, icon_px_open);
-    m_timelapse_open_btn->SetToolTip(_L("Open download folder"));
-    m_timelapse_open_btn->Bind(wxEVT_BUTTON, &StatusBasePanel::open_monitor_download_folder, this);
-
     m_timelapse_delete_btn = make_tool("file_delete", false, icon_px_delete);
     m_timelapse_delete_btn->SetToolTip(_L("Delete"));
+    //cj_4
+    m_timelapse_delete_btn->Hide();
 
     const int gap = m_timelapse_button_panel->FromDIP(14);
     sizer->Add(m_timelapse_flash_btn, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, FromDIP(12));
-    sizer->Add(m_timelapse_download_btn, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, gap);
-    sizer->Add(m_timelapse_open_btn, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, gap);
     sizer->Add(m_timelapse_delete_btn, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, gap);
     m_timelapse_button_panel->SetBackgroundColour(StateColor::themed_surface_f8(wxGetApp().dark_mode()));
     return m_timelapse_button_panel;
@@ -2599,8 +2585,6 @@ wxBoxSizer *StatusBasePanel::create_filament_group(wxWindow *parent)
 
     m_filament_step = new FilamentLoad(m_filament_load_box, wxID_ANY);
     m_filament_step->SetDoubleBuffered(true);
-    m_filament_step->set_min_size(wxSize(wxSize(FromDIP(300), FromDIP(215))));
-    m_filament_step->set_max_size(wxSize(wxSize(FromDIP(300), FromDIP(215))));
     m_filament_step->SetBackgroundColour(*wxWHITE);
 
     m_filament_load_img = new wxStaticBitmap(m_filament_load_box, wxID_ANY, wxNullBitmap);
@@ -2632,7 +2616,7 @@ wxBoxSizer *StatusBasePanel::create_filament_group(wxWindow *parent)
         if (obj) { obj->command_ams_control("resume"); }
     });
 
-    m_fila_change_abort = new Button(m_filament_load_box, _L("Abort"));
+    m_fila_change_abort = new Button(m_filament_load_box, _L("Stop"));
     m_fila_change_abort->SetFont(Label::Body_13);
     m_fila_change_abort->SetBorderColor(btn_bd_white);
     m_fila_change_abort->SetTextColor(btn_text_white);
@@ -2673,34 +2657,21 @@ void StatusBasePanel::expand_filament_loading(wxMouseEvent &e)
 
     if (obj) {
         static int load_img_size = 215;
-        if (obj->is_series_n()) {
-            m_filament_load_img->SetBitmap(create_scaled_bitmap("filament_load_n_series", this, load_img_size));
-        } else if (obj->is_series_x()) {
-            m_filament_load_img->SetBitmap(create_scaled_bitmap("filament_load_x_series", this, load_img_size));
-        } else if (obj->is_series_p()) {
-            m_filament_load_img->SetBitmap(create_scaled_bitmap("filament_load_p_series", this, load_img_size));
-        } else if (obj->is_series_o()) {
-            const auto &ext_system = obj->GetExtderSystem();
-            if (ext_system->GetTotalExtderCount() == 2) {
-                int cur_extder_id = ext_system->GetCurrentExtderId();
-                if (cur_extder_id == MAIN_EXTRUDER_ID) {
-                    if (obj->GetNozzleSystem()->GetNozzleRack()->IsSupported())
-                      m_filament_load_img->SetBitmap(create_scaled_bitmap("filament_load_o1c_series_right", this, load_img_size));
-                    else
-                      m_filament_load_img->SetBitmap(create_scaled_bitmap("filament_load_o_series_right", this, load_img_size));
-                } else if (cur_extder_id == DEPUTY_EXTRUDER_ID) {
-                    if (obj->GetNozzleSystem()->GetNozzleRack()->IsSupported())
-                      m_filament_load_img->SetBitmap(create_scaled_bitmap("filament_load_o1c_series_left", this, load_img_size));
-                    else
-                      m_filament_load_img->SetBitmap(create_scaled_bitmap("filament_load_o_series_left", this, load_img_size));
-                }
-            }
+        const auto &ext_system    = obj->GetExtderSystem();
+        int cur_ext_id = (ext_system && ext_system->GetTotalExtderCount() > 1) ? ext_system->GetCurrentExtderId() : 0;
+        bool has_nozzle_rack = obj->GetNozzleSystem()->GetNozzleRack()->IsSupported();
+        std::string img_name = DevPrinterConfigUtil::get_filament_load_img(obj->printer_type, cur_ext_id, has_nozzle_rack);
 
-            else {
-                m_filament_load_img->SetBitmap(create_scaled_bitmap("filament_load_o_series", this, load_img_size));
+        if (!img_name.empty()) {
+            try {
+                m_filament_load_img->SetBitmap(create_scaled_bitmap(img_name, this, load_img_size));
+            } catch (const std::exception& e) {
+                BOOST_LOG_TRIVIAL(error) << "Failed to load filament image: error";
+            } catch (...) {
+                BOOST_LOG_TRIVIAL(error) << "Failed to load filament image: unknown error";
             }
         }
-        m_fila_change_abort->Show(obj->is_support_fila_change_abort);
+        m_fila_change_abort->Show(obj->is_support_fila_change_abort || DevPrinterConfigUtil::support_ams_fila_change_abort(obj->printer_type));
     }
 
     m_filament_load_box->Show(tag_show);
@@ -2748,7 +2719,7 @@ void StatusBasePanel::show_filament_load_group(bool show)
         if (!show && m_filament_load_box->IsShown()) { m_filament_load_box->Show(false); }
 
         auto cur_ext = obj->GetExtderSystem()->GetCurrentExtder();
-        m_filament_step->SetupSteps(cur_ext ? cur_ext->HasFilamentInExt() : false);
+        m_filament_step->SetupSteps(obj, cur_ext ? cur_ext->HasFilamentInExt() : false);
 
         Layout();
         Fit();
@@ -2797,37 +2768,22 @@ void StatusBasePanel::on_model_tab(wxCommandEvent& event)
 
 void StatusBasePanel::on_timelapse_tab(wxCommandEvent& event)
 {
-	tabSiwtch(m_timelapse_tab, m_timelapse_file_panel);
+	tabSiwtch(m_timelapse_tab, m_timelapse_host);
     Layout();
 }
 
 //cj_3
 void StatusBasePanel::sync_model_file_toolbar(int select_num)
 {
+    (void)select_num;
     const wxColour k_tool_blue(68, 121, 251);
     const wxColour k_tool_disabled(196, 196, 196);
-    const wxColour k_tool_delete_red(255, 77, 77);
 
-    const bool has_sel = select_num > 0;
-
-    if (m_model_download_btn) {
-        m_model_download_btn->SetToolBg(has_sel ? k_tool_blue : k_tool_disabled);
-        m_model_download_btn->Enable(has_sel);
-    }
-    if (m_model_delete_btn) {
-        m_model_delete_btn->SetToolBg(has_sel ? k_tool_delete_red : k_tool_disabled);
-        m_model_delete_btn->Enable(has_sel);
-    }
-    const bool print_on = has_sel && select_num != 2;
-    if (m_model_print_btn) {
-        m_model_print_btn->SetToolBg(print_on ? k_tool_blue : k_tool_disabled);
-        m_model_print_btn->Enable(print_on);
-    }
     //cj_3
     // Disable both refresh tools while either file list has an active download.
     const bool any_file_list_downloading =
         (m_model_panel && m_model_panel->HasActiveFileDownload()) ||
-        (m_timelapse_file_panel && m_timelapse_file_panel->HasActiveFileDownload());
+        (m_timelapse_host && m_timelapse_host->HasActiveFileDownload());
     if (m_model_flash_btn) {
         m_model_flash_btn->SetToolBg(any_file_list_downloading ? k_tool_disabled : k_tool_blue);
         m_model_flash_btn->Enable(!any_file_list_downloading);
@@ -2835,10 +2791,6 @@ void StatusBasePanel::sync_model_file_toolbar(int select_num)
     if (m_timelapse_flash_btn) {
         m_timelapse_flash_btn->SetToolBg(any_file_list_downloading ? k_tool_disabled : k_tool_blue);
         m_timelapse_flash_btn->Enable(!any_file_list_downloading);
-    }
-    if (m_model_open_btn) {
-        m_model_open_btn->SetToolBg(k_tool_blue);
-        m_model_open_btn->Enable(true);
     }
 }
 
@@ -2850,18 +2802,18 @@ void StatusBasePanel::sync_timelapse_file_toolbar(int select_num)
     const wxColour k_tool_disabled(196, 196, 196);
     const wxColour k_tool_delete_red(255, 77, 77);
 
-    if (m_timelapse_download_btn) {
-        m_timelapse_download_btn->SetToolBg(has ? k_tool_blue : k_tool_disabled);
-        m_timelapse_download_btn->Enable(has);
+    //cj_4
+    if (m_timelapse_flash_btn) {
+        m_timelapse_flash_btn->Show(!has);
     }
     if (m_timelapse_delete_btn) {
+        m_timelapse_delete_btn->Show(has);
         m_timelapse_delete_btn->SetToolBg(has ? k_tool_delete_red : k_tool_disabled);
         m_timelapse_delete_btn->Enable(has);
     }
-    //cj_3
     const bool any_file_list_downloading =
         (m_model_panel && m_model_panel->HasActiveFileDownload()) ||
-        (m_timelapse_file_panel && m_timelapse_file_panel->HasActiveFileDownload());
+        (m_timelapse_host && m_timelapse_host->HasActiveFileDownload());
     if (m_model_flash_btn) {
         m_model_flash_btn->SetToolBg(any_file_list_downloading ? k_tool_disabled : k_tool_blue);
         m_model_flash_btn->Enable(!any_file_list_downloading);
@@ -2870,15 +2822,8 @@ void StatusBasePanel::sync_timelapse_file_toolbar(int select_num)
         m_timelapse_flash_btn->SetToolBg(any_file_list_downloading ? k_tool_disabled : k_tool_blue);
         m_timelapse_flash_btn->Enable(!any_file_list_downloading);
     }
-    if (m_timelapse_open_btn) {
-        m_timelapse_open_btn->SetToolBg(k_tool_blue);
-        m_timelapse_open_btn->Enable(true);
-    }
-}
-
-void StatusBasePanel::on_model_checkchange(wxCommandEvent& event)
-{
-    sync_model_file_toolbar(event.GetInt());
+    if (m_timelapse_button_panel)
+        m_timelapse_button_panel->Layout();
 }
 
 void StatusBasePanel::on_timelapse_checkchange(wxCommandEvent& event)
@@ -2901,7 +2846,7 @@ void StatusBasePanel::tabSiwtch(Button* button, wxPanel* panel)
 
 	setButtonNormal(m_control_tab, m_control_panel);
 	setButtonNormal(m_model_tab, m_model_panel);
-	setButtonNormal(m_timelapse_tab, m_timelapse_file_panel);
+	setButtonNormal(m_timelapse_tab, m_timelapse_host);
 
 	button->SetBackgroundColorNormal(wxColour(68, 121, 251));
 	button->SetTextColorNormal(wxColour(255, 255, 255));
@@ -2909,7 +2854,7 @@ void StatusBasePanel::tabSiwtch(Button* button, wxPanel* panel)
 
     if (panel == m_model_panel) {
         m_model_button_panel->Show(true);
-    } else if (panel == m_timelapse_file_panel) {
+    } else if (panel == m_timelapse_host) {
         m_timelapse_button_panel->Show(true);
     }
 
@@ -3118,11 +3063,9 @@ StatusPanel::StatusPanel(wxWindow *parent, wxWindowID id, const wxPoint &pos, co
     m_bpButton_e_down_10->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(StatusPanel::on_axis_ctrl_e_down_10), NULL, this);
     m_nozzle_btn_panel->Connect(wxCUSTOMEVT_SWITCH_POS, wxCommandEventHandler(StatusPanel::on_nozzle_selected), NULL, this);
 
-	m_model_print_btn->Bind(wxEVT_BUTTON, &StatusPanel::on_print_model, this);
-	m_model_download_btn->Bind(wxEVT_BUTTON, &StatusPanel::on_download_model, this);
-	m_model_delete_btn->Bind(wxEVT_BUTTON, &StatusPanel::on_del_model, this);
-    m_timelapse_download_btn->Bind(wxEVT_BUTTON, &StatusPanel::on_download_timelapse, this);
     m_timelapse_delete_btn->Bind(wxEVT_BUTTON, &StatusPanel::on_del_timelapse, this);
+    //cj_4
+    Bind(EVT_TIMELAPSE_REQUEST_DELETE, &StatusPanel::on_timelapse_request_delete_ui, this);
 
     Bind(EVT_AMS_EXTRUSION_CALI, &StatusPanel::on_filament_extrusion_cali, this);
     Bind(EVT_AMS_LOAD, &StatusPanel::on_ams_load, this);
@@ -3147,7 +3090,7 @@ StatusPanel::StatusPanel(wxWindow *parent, wxWindowID id, const wxPoint &pos, co
     Bind(EVT_SET_COLOR, [this](wxCommandEvent& e) {
         
         e.SetInt(curSelectSlotIndex);
-        e.Skip();
+        e.Skip();  // Also let parent handlers run
         });
     //cj_1
 	Bind(EVT_SET_TYPE, [this](wxCommandEvent& e) {
@@ -3257,10 +3200,11 @@ void StatusPanel::update_progress(std::string fileName, std::string layer, std::
     
     m_project_task_panel->update_layers_num(true,layer);
     if (remainingTime - 0.0 > 0.00001) {
-        m_project_task_panel->update_left_time(remainingTime);
+		m_project_task_panel->update_left_time(remainingTime);
     }
     else {
         m_project_task_panel->update_left_time("N/A");
+        m_project_task_panel->update_finish_time(NA_STR);
     }
     if (progress - 0.0 > 0.00001) {
         m_project_task_panel->update_progress_percent(wxString::Format(wxT("%d"), (int)(progress * 100)), "%");
@@ -3293,16 +3237,20 @@ void StatusPanel::update_print_status(std::string status)
     // printing   paused  standby (Moonraker print_stats.state; compare case-insensitive)
     if (s == "standby") {
         m_project_task_panel->enable_pause_resume_button(false, "resume_disable");
-        m_project_task_panel->enable_abort_button(false);
+		m_project_task_panel->enable_abort_button(false);
+		m_project_task_panel->enable_partskip_button(nullptr,false);
     }
     if (s == "printing") {
         m_project_task_panel->enable_pause_resume_button(true, "pause");
 		m_project_task_panel->enable_abort_button(true);
+		m_project_task_panel->enable_partskip_button(nullptr, true);
 
     }
 	if (s == "paused") {
 		m_project_task_panel->enable_pause_resume_button(true, "resume");
 		m_project_task_panel->enable_abort_button(true);
+		m_project_task_panel->enable_partskip_button(nullptr, true);
+
 	}
 
 	//cj_3
@@ -3345,11 +3293,11 @@ void StatusPanel::update_boxs(std::vector<AMSinfo> boxS, std::vector<AMSinfo> ex
     //m_ams
     m_boxS = boxS;
     m_ext_info = ext_info;
-    int total_ext_count = 1;
+    int total_ext_count = 1; // e.g. single toolhead
     std::string dev_id = "device-1234";
     std::string series_name = "QIDI-X";
-    std::string printer_type = "X-Max 4";
-    m_ams_control->SetAmsModel(AMSModel::N3S_AMS, AMSModel::EXT_AMS);
+    std::string printer_type = "X-Max 4";   // Printer art variant for external spool
+    m_ams_control->SetAmsModel(DevAmsType::AMS, DevAmsType::EXT_SPOOL);
     m_ams_control->SetData(boxS, ext_info, total_ext_count, dev_id, series_name, printer_type);
     //m_ams_control->Hide();
     m_ams_control->Show();
@@ -3367,6 +3315,7 @@ void StatusPanel::update_cur_slot(int curSlotSyncIndex)
 {
     m_curSlotSync = curSlotSyncIndex;
     //cj_3
+    // Web/box sync: refresh filament path colors and nozzle extrusion UI from the printer-reported slot (same idea as DevExtder in update_ams).
     if (!m_ams_control) {
         return;
     }
@@ -3399,15 +3348,15 @@ void StatusPanel::update_cur_slot(int curSlotSyncIndex)
 
     if (ams_id == std::to_string(VIRTUAL_TRAY_MAIN_ID) || ams_id == std::to_string(VIRTUAL_TRAY_DEPUTY_ID)) {
         if (has_filament) {
-            m_ams_control->SetAmsStep(ams_id, "0", AMSPassRoadType::AMS_ROAD_TYPE_LOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP3);
+            m_ams_control->SetAmsStep(ams_id, "0", MAIN_EXTRUDER_ID, AMSPassRoadType::AMS_ROAD_TYPE_LOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP3);
         } else {
-            m_ams_control->SetAmsStep(ams_id, slot_id, AMSPassRoadType::AMS_ROAD_TYPE_UNLOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_NONE);
+            m_ams_control->SetAmsStep(ams_id, slot_id, MAIN_EXTRUDER_ID, AMSPassRoadType::AMS_ROAD_TYPE_UNLOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_NONE);
         }
     } else {
         if (has_filament) {
-            m_ams_control->SetAmsStep(ams_id, slot_id, AMSPassRoadType::AMS_ROAD_TYPE_LOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP2);
+            m_ams_control->SetAmsStep(ams_id, slot_id, MAIN_EXTRUDER_ID, AMSPassRoadType::AMS_ROAD_TYPE_LOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP2);
         } else {
-            m_ams_control->SetAmsStep(ams_id, slot_id, AMSPassRoadType::AMS_ROAD_TYPE_UNLOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_NONE);
+            m_ams_control->SetAmsStep(ams_id, slot_id, MAIN_EXTRUDER_ID, AMSPassRoadType::AMS_ROAD_TYPE_UNLOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_NONE);
         }
     }
     m_ams_control->SetExtruder(has_filament, MAIN_EXTRUDER_ID, ams_id, slot_id);
@@ -3436,6 +3385,7 @@ bool StatusPanel::is_camera_monitoring() const
 
 //cj_1
 void StatusPanel::update_AMSSettingData(bool autoRead, bool initDetect, bool autoReload)
+
 {
     m_auto_read_rfid = autoRead;
     m_init_detect = initDetect;
@@ -3548,35 +3498,54 @@ void StatusPanel::on_market_retry(wxCommandEvent &event)
 
 void StatusPanel::update_partskip_button(MachineObject *obj)
 {
-    if (!obj) return;
-
+    //cj_4
+    // Display-only phase: the parts-skip button is always visible. Capability
+    // gating on MachineObject::is_support_partskip has been dropped per the
+    // new requirement; visibility/clickability is driven solely by the layout.
     auto partskip_button = m_project_task_panel->get_partskip_button();
-    if (obj->is_support_partskip) {
-        partskip_button->Show();
-    } else {
-        partskip_button->Hide();
-    }
-    BOOST_LOG_TRIVIAL(info) << "part skip: is_support_partskip: " << obj->is_support_partskip;
+    if (partskip_button) partskip_button->Show();
 }
 
 void StatusPanel::on_subtask_partskip(wxCommandEvent &event)
 {
     if (m_partskip_dlg == nullptr) { m_partskip_dlg = new PartSkipDialog(this->GetParent()); }
 
-    auto dm = GUI::wxGetApp().getDeviceManager();
-    m_partskip_dlg->InitSchedule(dm->get_selected_machine());
-    BOOST_LOG_TRIVIAL(info) << "part skip: initial part skip dialog.";
+    //cj_4
+    // Fetch the selected QDSDevice to resolve the FRP base URL, the live
+    // excluded-objects list, and the current plate index.
+    std::string frp_url;
+    std::string dev_id;
+    std::vector<std::string> excluded_objects;
+    int plate_index = 1;
+    if (auto qds_mgr = wxGetApp().qdsdevmanager) {
+        if (auto qds_dev = qds_mgr->getSelectedDevice()) {
+            frp_url = qds_dev->m_frp_url;
+            dev_id  = qds_dev->m_id;
+            excluded_objects = qds_dev->m_excluded_objects;
+            plate_index = qds_dev->m_plate_index;
+        }
+    }
+    m_partskip_dlg->InitSchedule(frp_url, dev_id, excluded_objects, plate_index);
+    BOOST_LOG_TRIVIAL(info) << "part skip: initial part skip dialog, frp=" << frp_url
+                            << ", dev_id=" << dev_id << ", plate_index=" << plate_index;
     if (m_partskip_dlg->ShowModal() == wxID_OK) {
         int cnt = m_partskip_dlg->GetAllSkippedPartsNum();
         m_project_task_panel->set_part_skipped_count(cnt);
         m_project_task_panel->set_part_skipped_dirty(5);
         BOOST_LOG_TRIVIAL(info) << "part skip: prepare to filter printer dirty data.";
+        
+        // cj_4 Send exclude object events for each skipped object
+        std::vector<std::string> skipped_names = m_partskip_dlg->GetSkippedObjectNames();
+        for (const auto &object_name : skipped_names) {
+            BOOST_LOG_TRIVIAL(info) << "part skip: sending exclude event for object: " << object_name;
+            postEventValueAndEnable(EVTSET_EXCLUDE_PRINT_OBJECT, 1, object_name);
+        }
     }
 }
 
 void StatusPanel::on_subtask_pause_resume(wxCommandEvent &event)
 {
-    //cj_1
+    //cj_1 0 = pause, 1 = resume, 2 = cancel
     int type = 0;
     if (m_project_task_panel->get_pause_resume_button()->GetToolTipText() == _L("Resume")) {
         type = 1;
@@ -3598,7 +3567,7 @@ void StatusPanel::on_subtask_abort(wxCommandEvent &event)
     if (abort_dlg == nullptr) {
         abort_dlg = new SecondaryCheckDialog(this->GetParent(), wxID_ANY, _L("Cancel print"));
         abort_dlg->Bind(EVT_SECONDARY_CHECK_CONFIRM, [this](wxCommandEvent &e) {
-            //cj_1
+            //cj_1 0 = pause, 1 = resume, 2 = cancel
             postEventValueAndEnable(EVTSET_PRINT_CONTROL, 2, "type");
             
 
@@ -3819,6 +3788,7 @@ void StatusPanel::update(MachineObject *obj)
     update_camera_state(obj);
 
     // m_machine_ctrl_panel->Thaw();
+    Layout();
 }
 
 void StatusPanel::show_recenter_dialog()
@@ -4242,6 +4212,9 @@ void StatusPanel::update_misc_ctrl(MachineObject *obj)
         m_extruder_book->SetSelection(m_nozzle_num);
 
         /*style*/
+        m_nozzle_btn_panel->SetLabels(
+            _L(DevPrinterConfigUtil::get_toolhead_display_name(obj->printer_type, DEPUTY_EXTRUDER_ID, ToolHeadComponent::Extruder, ToolHeadNameCase::TitleCase, true)),
+            _L(DevPrinterConfigUtil::get_toolhead_display_name(obj->printer_type, MAIN_EXTRUDER_ID, ToolHeadComponent::Extruder, ToolHeadNameCase::TitleCase, true)));
         m_nozzle_btn_panel->Show();
         m_extruderImage[select_index]->setExtruderCount(m_nozzle_num);
 
@@ -4327,7 +4300,7 @@ void StatusPanel::update_misc_ctrl(MachineObject *obj)
     if (speed_lvl_timeout > 0)
         speed_lvl_timeout--;
     else {
-        // update speed
+        // update speed: main button shows device-reported snapped percent; EVTSET_PRINT_SPEED uses 50/100/124/166
         this->speed_lvl     = obj->GetPrintingSpeedLevel();
         wxString text_speed = wxString::Format("%d%%", obj->printing_speed_mag);
         m_switch_speed->SetLabels(text_speed, text_speed);
@@ -4361,16 +4334,13 @@ void StatusPanel::update_ams(MachineObject *obj)
         CalibUtils::emit_get_PA_calib_infos(cali_info);
     }
 
-    bool is_support_virtual_tray    = obj->ams_support_virtual_tray;
-    bool is_support_filament_backup = obj->is_support_filament_backup;
-
     if (obj && obj->is_security_control_ready()) { obj->check_ams_filament_valid(); }
 
-    AMSModel ams_mode = AMSModel::GENERIC_AMS;
+    DevAmsType ams_mode = DevAmsType::AMS;
     if ((obj->is_enable_np || obj->is_enable_ams_np) && obj->GetFilaSystem()->GetAmsList().size() > 0) {
-        ams_mode = AMSModel(obj->GetFilaSystem()->GetAmsList().begin()->second->GetAmsType());
+        ams_mode = obj->GetFilaSystem()->GetAmsList().begin()->second->GetAmsType();
     } else if (obj->get_printer_ams_type() == "f1") {
-        ams_mode = AMSModel::AMS_LITE; // STUDIO-14066
+        ams_mode = DevAmsType::AMS_LITE; // STUDIO-14066
     }
 
     if (!obj || !obj->is_connected()) {
@@ -4382,7 +4352,7 @@ void StatusPanel::update_ams(MachineObject *obj)
         last_ams_version      = -1;
         // BOOST_LOG_TRIVIAL(trace) << "machine object" << QDTCrossTalk::Crosstalk_DevName(obj->get_dev_name()) << " was disconnected, set show_ams_group is false";
 
-        m_ams_control->SetAmsModel(AMSModel::EXT_AMS, ams_mode);
+        m_ams_control->SetAmsModel(DevAmsType::EXT_SPOOL, ams_mode);
         show_ams_group(false);
         show_filament_load_group(false);
         m_ams_control->show_auto_refill(false);
@@ -4399,7 +4369,6 @@ void StatusPanel::update_ams(MachineObject *obj)
         }
     }
 
-    // if (is_support_virtual_tray) m_ams_control->update_vams_kn_value(obj->vt_slot[0], obj);
     if (m_filament_setting_dlg) m_filament_setting_dlg->update();
 
     std::vector<AMSinfo> ams_info;
@@ -4417,7 +4386,7 @@ void StatusPanel::update_ams(MachineObject *obj)
     for (auto slot : obj->vt_slot) {
         AMSinfo info;
         info.parse_ext_info(obj, slot);
-        if (ams_mode == AMSModel::AMS_LITE) info.ext_type = AMSModelOriginType::LITE_EXT;
+        if (ams_mode == DevAmsType::AMS_LITE) info.ext_type = AMSModelOriginType::LITE_EXT;
         ext_info.push_back(info);
     }
 
@@ -4432,63 +4401,29 @@ void StatusPanel::update_ams(MachineObject *obj)
     last_reading_bits     = obj->tray_reading_bits;
     last_ams_version      = obj->ams_version;
 
-    std::string curr_ams_id = m_ams_control->GetCurentAms();
-    std::string curr_can_id = m_ams_control->GetCurrentCan(curr_ams_id);
-    bool        is_vt_tray  = false;
-    if (obj->GetExtderSystem()->GetCurrentAmsId() == std::to_string(VIRTUAL_TRAY_MAIN_ID)) is_vt_tray = true;
-
-    // set segment 1, 2
-    // if (!obj->is_enable_np) {
-    //    if (obj->m_tray_now == std::to_string(255) || obj->m_tray_now == std::to_string(254)) {
-    //        m_ams_control->SetAmsStep(obj->m_extder_data.extders[MAIN_NOZZLE_ID].snow.ams_id, obj->m_extder_data.extders[MAIN_NOZZLE_ID].snow.slot_id,
-    //        AMSPassRoadType::AMS_ROAD_TYPE_UNLOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_NONE);
-    //    } else {
-    //        /*if (obj->m_tray_now != "255" && obj->is_filament_at_extruder() && !obj->m_tray_id.empty()) {
-    //            m_ams_control->SetAmsStep(obj->m_extder_data.extders[MAIN_NOZZLE_ID].snow.ams_id, obj->m_extder_data.extders[MAIN_NOZZLE_ID].snow.slot_id,
-    //                                      AMSPassRoadType::AMS_ROAD_TYPE_LOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP2);
-    //        } else if (obj->m_tray_now != "255") {
-    //            m_ams_control->SetAmsStep(obj->m_extder_data.extders[MAIN_NOZZLE_ID].snow.ams_id, obj->m_extder_data.extders[MAIN_NOZZLE_ID].snow.slot_id,
-    //                                      AMSPassRoadType::AMS_ROAD_TYPE_LOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP1);
-    //        } else {
-    //            m_ams_control->SetAmsStep(obj->m_extder_data.extders[MAIN_NOZZLE_ID].snow.ams_id, obj->m_extder_data.extders[MAIN_NOZZLE_ID].snow.slot_id,
-    //                                      AMSPassRoadType::AMS_ROAD_TYPE_UNLOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_NONE);
-    //        }*/
-    //        if () {
-
-    //        }
-    //    }
-
-    //    m_ams_control->SetExtruder(obj->is_filament_at_extruder(), obj->m_extder_data.extders[MAIN_NOZZLE_ID].snow.ams_id, obj->m_extder_data.extders[MAIN_NOZZLE_ID].snow.slot_id);
-    //} else {
     /*right*/
-    if (obj->GetExtderSystem()->GetTotalExtderCount() > 0) {
-        auto ext = obj->GetExtderSystem()->GetExtderById(MAIN_EXTRUDER_ID);
+    if (auto ext = obj->GetExtderSystem()->GetExtderById(MAIN_EXTRUDER_ID); ext.has_value()) {
         if (ext->HasFilamentInExt()) {
-            if (ext->GetSlotNow().ams_id == std::to_string(VIRTUAL_TRAY_MAIN_ID) || ext->GetSlotNow().ams_id == std::to_string(VIRTUAL_TRAY_DEPUTY_ID)) {
-                m_ams_control->SetAmsStep(ext->GetSlotNow().ams_id, "0", AMSPassRoadType::AMS_ROAD_TYPE_LOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP3);
-            } else {
-                m_ams_control->SetAmsStep(ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id, AMSPassRoadType::AMS_ROAD_TYPE_LOAD,
-                                          AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP2);
-            }
+            m_ams_control->SetAmsStep(ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id, MAIN_EXTRUDER_ID,
+                                      AMSPassRoadType::AMS_ROAD_TYPE_LOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP2);
         } else {
-            m_ams_control->SetAmsStep(ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id, AMSPassRoadType::AMS_ROAD_TYPE_UNLOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_NONE);
+            m_ams_control->SetAmsStep(ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id, MAIN_EXTRUDER_ID,
+                                      AMSPassRoadType::AMS_ROAD_TYPE_UNLOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_NONE);
         }
+
         m_ams_control->SetExtruder(ext->HasFilamentInExt(), MAIN_EXTRUDER_ID, ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id);
     }
 
     /*left*/
-    if (obj->GetExtderSystem()->GetTotalExtderCount() > 1) {
-        auto ext = obj->GetExtderSystem()->GetExtderById(DEPUTY_EXTRUDER_ID);
+    if(auto ext = obj->GetExtderSystem()->GetExtderById(DEPUTY_EXTRUDER_ID); ext.has_value()){
         if (ext->HasFilamentInExt()) {
-            if (ext->GetSlotNow().ams_id == std::to_string(VIRTUAL_TRAY_MAIN_ID) || ext->GetSlotNow().ams_id == std::to_string(VIRTUAL_TRAY_DEPUTY_ID)) {
-                m_ams_control->SetAmsStep(ext->GetSlotNow().ams_id, "0", AMSPassRoadType::AMS_ROAD_TYPE_LOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP3);
-            } else {
-                m_ams_control->SetAmsStep(ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id, AMSPassRoadType::AMS_ROAD_TYPE_LOAD,
-                                          AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP2);
-            }
+            m_ams_control->SetAmsStep(ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id, DEPUTY_EXTRUDER_ID,
+                                      AMSPassRoadType::AMS_ROAD_TYPE_LOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP2);
         } else {
-            m_ams_control->SetAmsStep(ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id, AMSPassRoadType::AMS_ROAD_TYPE_UNLOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_NONE);
+            m_ams_control->SetAmsStep(ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id, DEPUTY_EXTRUDER_ID,
+                                      AMSPassRoadType::AMS_ROAD_TYPE_UNLOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_NONE);
         }
+
         m_ams_control->SetExtruder(ext->HasFilamentInExt(), DEPUTY_EXTRUDER_ID, ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id);
     }
 
@@ -4521,6 +4456,8 @@ void StatusPanel::update_ams(MachineObject *obj)
         } catch (...) {}
     }
 
+    const std::string& curr_ams_id = m_ams_control->GetCurentAms();
+    const std::string& curr_can_id = m_ams_control->GetCurrentCan(curr_ams_id);
     update_ams_control_state(curr_ams_id, curr_can_id);
 }
 
@@ -4576,8 +4513,27 @@ void sGetSwitchInfo(MachineObject* obj,
         return;
     }
 
+    if (obj->GetFilaSwitch()->IsInstalled()) {
+        if (devPrinterUtil::IsVirtualSlot(ams_id)) {
+            const auto& err_info = _L("\"Load\" or \"Unload\" is not supported for external spool while using Filament Track Switch.");
+            load_error_info = err_info;
+            unload_error_info = err_info;
+            return;
+        }
+
+        if (!obj->GetFilaSwitch()->IsReady()) {
+            const auto& err_info = _L("The Filament Track Switch has not been setup. Please setup on printer.");
+            load_error_info = err_info;
+            unload_error_info = err_info;
+            return;
+        }
+    }
+
     for (auto ext : obj->GetExtderSystem()->GetExtruders()) {
-        if (ext.GetSlotNow().ams_id == ams_id && ext.GetSlotNow().slot_id == slot_id) {
+        if (obj->GetFilaSwitch()->IsInstalled()) {
+            continue;
+        }
+        if (ext.GetSlotNow().ams_id == ams_id && ext.GetSlotNow().slot_id == slot_id && ext.HasFilamentInExt()) {
             load_error_info = _L("Current slot has alread been loaded");
         }
     }
@@ -4585,17 +4541,21 @@ void sGetSwitchInfo(MachineObject* obj,
         load_error_info = _L("The selected slot is empty.");
     }
 
-    auto extder = obj->GetExtderSystem()->GetExtderById(obj->GetFilaSystem()->GetExtruderIdByAmsId(ams_id));
-    if (!extder) {
-        unload_error_info = _L("No extruder found for the selected slot.");
-    }
-
-    if (!devPrinterUtil::IsVirtualSlot(ams_id)) {
-        if (!extder->HasFilamentInExt() ||
-            extder->GetSlotNow().ams_id != ams_id ||
-            extder->GetSlotNow().slot_id != slot_id) {
-            unload_error_info = _L("The selected slot is not loaded in the extruder.");
-        };
+    auto ams_item = obj->GetFilaSystem()->GetAmsById(ams_id);
+    if (ams_item) {
+        if (auto extder_id_opt = ams_item->GetCurrentExtruderId(); extder_id_opt.has_value()) {
+            auto extder = obj->GetExtderSystem()->GetExtderById(extder_id_opt.value());
+            if (extder && !extder->HasFilamentInExt() ||
+                (extder->GetSlotNow().ams_id != ams_id || extder->GetSlotNow().slot_id != slot_id)) {
+                unload_error_info = _L("The selected slot is not loaded in the extruder.");
+            };
+        } else {
+            if (obj->GetFilaSwitch()->IsInstalled()) {
+                unload_error_info = _L("The selected slot is not loaded in the extruder.");
+            } else {
+                unload_error_info = _L("No extruder found for the selected slot.");
+            }
+        }
     }
 };
 
@@ -4814,7 +4774,7 @@ void StatusPanel::update_subtask(MachineObject *obj)
             if (obj->gcode_file_prepare_percent >= 0 && obj->gcode_file_prepare_percent <= 100 && show_percent)
                 prepare_text += wxString::Format("(%d%%)", obj->gcode_file_prepare_percent);
 
-            m_project_task_panel->update_stage_value_with_machine(prepare_text, 0, obj);
+            m_project_task_panel->update_stage_value_with_machine(obj->get_curr_stage().IsEmpty()? prepare_text : obj->get_curr_stage(), 0, obj);
             m_project_task_panel->update_progress_percent(NA_STR, wxEmptyString);
             m_project_task_panel->update_left_time(NA_STR);
             m_project_task_panel->update_layers_num(true, wxString::Format(_L("Layer: %s"), NA_STR));
@@ -4909,6 +4869,11 @@ void StatusPanel::update_subtask(MachineObject *obj)
 
 void StatusPanel::update_partskip_subtask(MachineObject *obj)
 {
+    //cj_4
+    // Display-only phase. MachineObject::m_partskip_ids is no longer consulted
+    // because skipped state is read straight out of slice_info.config every
+    // time the dialog is opened. The button label only reflects the last
+    // "apply" performed from this session (held by the project task panel).
     if (!obj) return;
     if (!obj->subtask_) return;
 
@@ -4918,18 +4883,16 @@ void StatusPanel::update_partskip_subtask(MachineObject *obj)
         if (m_project_task_panel->get_part_skipped_dirty() > 0) {
             m_project_task_panel->set_part_skipped_dirty(m_project_task_panel->get_part_skipped_dirty() - 1);
             part_cnt = m_project_task_panel->get_part_skipped_count();
-            BOOST_LOG_TRIVIAL(info) << "part skip: stop recv printer dirty data.";
-        } else {
-            part_cnt = obj->m_partskip_ids.size();
-            BOOST_LOG_TRIVIAL(info) << "part skip: recv printer normal data.";
         }
         if (part_cnt > 0)
             partskip_button->SetLabel(wxString::Format(_L("(%d)"), part_cnt));
         else
             partskip_button->SetLabel("");
     }
-
-    if (m_partskip_dlg && m_partskip_dlg->IsShown()) { m_partskip_dlg->UpdatePartsStateFromPrinter(obj); }
+    //cj_4
+    // PartSkipDialog::UpdatePartsStateFromPrinter was removed: the dialog now
+    // sources skipped state from slice_info.config on open/retry and does not
+    // expose a push-style update API.
 }
 
 void StatusPanel::update_cloud_subtask(MachineObject *obj)
@@ -4992,7 +4955,6 @@ void StatusPanel::update_sdcard_subtask(MachineObject *obj)
     if (!m_load_sdcard_thumbnail) {
         update_calib_bitmap();
         if (m_current_print_mode != PrintingTaskType::CALIBRATION) {
-            m_project_task_panel->get_bitmap_thumbnail()->SetBitmap(m_thumbnail_sdcard.bmp());
             m_project_task_panel->set_thumbnail_img(m_thumbnail_sdcard.bmp(), m_thumbnail_sdcard.name());
         }
         task_thumbnail_state    = ThumbnailState::SDCARD_THUMBNAIL;
@@ -5241,6 +5203,7 @@ void StatusPanel::on_axis_ctrl_e_down_10(wxCommandEvent& event)
 void StatusPanel::on_set_bed_temp()
 {
 //cj_1
+    // Maker control signal EVTSET_HEATERBED_TEMPERATURE
     wxString str = m_tempCtrl_bed->GetTextCtrl()->GetValue();
     long temp = 0;
     str.ToLong(&temp);
@@ -5412,11 +5375,64 @@ void StatusPanel::update_load_with_temp()
     }
 }
 
+wxString StatusPanel::getTrayName(const std::string amsID, const std::string slotID)
+{
+    if (!amsID.empty() && !slotID.empty())
+    {
+        std::shared_ptr<DevFilaSystem> filaSys = obj->GetFilaSystem();
+        if (filaSys != nullptr)
+        {
+            DevAms* ams = filaSys->GetAmsById(amsID);
+            if (ams != nullptr)
+            {
+               int tray_id = ams->GetTrayId(atoi(slotID.c_str()));
+               return wxGetApp().transition_tridid(tray_id);
+            }
+        }
+    }
+    return wxString();
+}
+
 void StatusPanel::on_ams_load_curr()
 {
     if (obj) {
         std::string curr_ams_id = m_ams_control->GetCurentAms();
         std::string curr_can_id = m_ams_control->GetCurrentCan(curr_ams_id);
+
+        std::optional<int> extruder_id = std::nullopt;
+        if (obj->GetFilaSwitch() && obj->GetFilaSwitch()->IsInstalled()) {
+            if (!obj->GetFilaSwitch()->IsReady()) {
+                MessageDialog msg_dlg(nullptr, _L("The Filament Track Switch has not been setup. Please setup on printer."), wxEmptyString, wxICON_WARNING | wxOK);
+                msg_dlg.ShowModal();
+                return;
+            }
+
+            std::vector<std::pair<std::string, std::string>> extruderSlots(2, {"", ""});
+            if (auto ext = obj->GetExtderSystem()->GetExtderById(MAIN_EXTRUDER_ID); ext.has_value())
+            {
+                if (ext->HasFilamentInExt())
+                {
+                    extruderSlots[MAIN_EXTRUDER_ID] = {ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id};
+                }
+            }
+            if (auto ext = obj->GetExtderSystem()->GetExtderById(DEPUTY_EXTRUDER_ID); ext.has_value())
+            {
+                if (ext->HasFilamentInExt())
+                {
+                    extruderSlots[DEPUTY_EXTRUDER_ID] = {ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id};
+                }
+            }
+
+            FeedDirectionDialog dialog(nullptr, 2);
+            dialog.SetExtruderMapping(obj, curr_ams_id, curr_can_id, extruderSlots);
+            auto rtn = dialog.ShowModal();
+
+            if (rtn != wxID_OK)
+            {
+                return;
+            }
+            extruder_id = dialog.GetExtruderID();
+        }
 
         update_load_with_temp();
         // virtual tray
@@ -5441,10 +5457,10 @@ void StatusPanel::on_ams_load_curr()
 
             if (obj->is_enable_np || obj->is_enable_ams_np) {
                 try {
-                    if (!curr_ams_id.empty() && !curr_can_id.empty()) { obj->command_ams_change_filament(true, curr_ams_id, "0", old_temp, new_temp); }
+                    if (!curr_ams_id.empty() && !curr_can_id.empty()) { obj->command_ams_change_filament(true, curr_ams_id, "0", old_temp, new_temp, extruder_id); }
                 } catch (...) {}
             } else {
-                obj->command_ams_change_filament(true, "254", "0", old_temp, new_temp);
+                obj->command_ams_change_filament(true, "254", "0", old_temp, new_temp, extruder_id);
             }
         }
 
@@ -5479,10 +5495,10 @@ void StatusPanel::on_ams_load_curr()
 
         if (obj->is_enable_np) {
             try {
-                if (!curr_ams_id.empty() && !curr_can_id.empty()) { obj->command_ams_change_filament(true, curr_ams_id, curr_can_id, old_temp, new_temp); }
+                if (!curr_ams_id.empty() && !curr_can_id.empty()) { obj->command_ams_change_filament(true, curr_ams_id, curr_can_id, old_temp, new_temp, extruder_id); }
             } catch (...) {}
         } else {
-            obj->command_ams_change_filament(true, curr_ams_id, curr_can_id, old_temp, new_temp);
+            obj->command_ams_change_filament(true, curr_ams_id, curr_can_id, old_temp, new_temp, extruder_id);
         }
     }
 }
@@ -5499,35 +5515,29 @@ void StatusPanel::on_ams_switch(SimpleEvent &event)
 {
     if (obj) {
         /*right*/
-        if (obj->GetExtderSystem()->GetTotalExtderCount() > 0) {
-            auto ext = obj->GetExtderSystem()->GetExtderById(MAIN_EXTRUDER_ID);
+        if (auto ext = obj->GetExtderSystem()->GetExtderById(MAIN_EXTRUDER_ID); ext.has_value()) {
             if (ext->HasFilamentInExt()) {
-                if (ext->GetSlotNow().ams_id == std::to_string(VIRTUAL_TRAY_MAIN_ID) || ext->GetSlotNow().ams_id == std::to_string(VIRTUAL_TRAY_DEPUTY_ID)) {
-                    m_ams_control->SetAmsStep(ext->GetSlotNow().ams_id, "0", AMSPassRoadType::AMS_ROAD_TYPE_LOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP3);
-                } else {
-                    m_ams_control->SetAmsStep(ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id, AMSPassRoadType::AMS_ROAD_TYPE_LOAD,
-                                              AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP2);
-                }
+                m_ams_control->SetAmsStep(ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id, MAIN_EXTRUDER_ID,
+                                          AMSPassRoadType::AMS_ROAD_TYPE_LOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP2);
             } else {
-                m_ams_control->SetAmsStep(ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id, AMSPassRoadType::AMS_ROAD_TYPE_UNLOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_NONE);
+                m_ams_control->SetAmsStep(ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id, MAIN_EXTRUDER_ID,
+                                          AMSPassRoadType::AMS_ROAD_TYPE_UNLOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_NONE);
             }
+
             m_ams_control->SetExtruder(ext->HasFilamentInExt(), MAIN_EXTRUDER_ID, ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id);
         }
 
         /*left*/
-        if (obj->GetExtderSystem()->GetTotalExtderCount() > 1) {
-            auto ext = obj->GetExtderSystem()->GetExtruders()[DEPUTY_EXTRUDER_ID];
-            if (ext.HasFilamentInExt()) {
-                if (ext.GetSlotNow().ams_id == std::to_string(VIRTUAL_TRAY_MAIN_ID) || ext.GetSlotNow().ams_id == std::to_string(VIRTUAL_TRAY_DEPUTY_ID)) {
-                    m_ams_control->SetAmsStep(ext.GetSlotNow().ams_id, "0", AMSPassRoadType::AMS_ROAD_TYPE_LOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP3);
-                } else {
-                    m_ams_control->SetAmsStep(ext.GetSlotNow().ams_id, ext.GetSlotNow().slot_id, AMSPassRoadType::AMS_ROAD_TYPE_LOAD,
-                                              AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP2);
-                }
+        if (auto ext = obj->GetExtderSystem()->GetExtderById(DEPUTY_EXTRUDER_ID); ext.has_value()) {
+            if (ext->HasFilamentInExt()) {
+                m_ams_control->SetAmsStep(ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id, DEPUTY_EXTRUDER_ID,
+                                          AMSPassRoadType::AMS_ROAD_TYPE_LOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_COMBO_LOAD_STEP2);
             } else {
-                m_ams_control->SetAmsStep(ext.GetSlotNow().ams_id, ext.GetSlotNow().slot_id, AMSPassRoadType::AMS_ROAD_TYPE_UNLOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_NONE);
+                m_ams_control->SetAmsStep(ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id, DEPUTY_EXTRUDER_ID,
+                                          AMSPassRoadType::AMS_ROAD_TYPE_UNLOAD, AMSPassRoadSTEP::AMS_ROAD_STEP_NONE);
             }
-            m_ams_control->SetExtruder(ext.HasFilamentInExt(), DEPUTY_EXTRUDER_ID, ext.GetSlotNow().ams_id, ext.GetSlotNow().slot_id);
+
+            m_ams_control->SetExtruder(ext->HasFilamentInExt(), DEPUTY_EXTRUDER_ID, ext->GetSlotNow().ams_id, ext->GetSlotNow().slot_id);
         }
     }
     //cj_3
@@ -5580,8 +5590,8 @@ void StatusPanel::on_ams_filament_backup(SimpleEvent &event)
        
         //cj_1
         std::map<
-            std::tuple<int, std::string , std::string>,
-            std::vector<std::string>
+            std::tuple<int, std::string , std::string>,// type, type name, color hex code
+            std::vector<std::string>  // group display name
         >colorGroups;
         int goupPre = 1;
         for (AMSinfo box : m_boxS) {
@@ -5655,15 +5665,14 @@ void StatusPanel::on_filament_extrusion_cali(wxCommandEvent &event)
 
 
         // set ams_filament id is is qdt filament
-        if (ams_id.compare(std::to_string(VIRTUAL_TRAY_MAIN_ID)) == 0) {
-            tray_id_int                           = VIRTUAL_TRAY_MAIN_ID;
+        if (devPrinterUtil::IsVirtualSlot(ams_id)) {
+            // tray_id_int                           = VIRTUAL_TRAY_MAIN_ID;
             m_extrusion_cali_dlg->ams_filament_id = "";
         } else {
             ams_id_int  = atoi(ams_id.c_str());
             tray_id_int = atoi(tray_id.c_str());
 
-            auto tray = obj->GetFilaSystem()->GetAmsTray(ams_id, tray_id);
-            if (tray) {
+            if (auto tray = obj->GetFilaSystem()->GetAmsTray(ams_id, tray_id)) {
                 if (DevFilaSystem::IsQDT_Filament(tray->tag_uid))
                     m_extrusion_cali_dlg->ams_filament_id = tray->setting_id;
                 else
@@ -5672,8 +5681,8 @@ void StatusPanel::on_filament_extrusion_cali(wxCommandEvent &event)
         }
 
         try {
-            m_extrusion_cali_dlg->ams_id  = ams_id_int;
-            m_extrusion_cali_dlg->tray_id = tray_id_int;
+            m_extrusion_cali_dlg->m_ams_id  = ams_id_int;
+            m_extrusion_cali_dlg->m_slot_id = tray_id_int;
             m_extrusion_cali_dlg->SetPosition(m_staticText_control->GetScreenPosition());
             m_extrusion_cali_dlg->Popup();
         } catch (...) {
@@ -5758,15 +5767,17 @@ void StatusPanel::on_ext_spool_edit(wxCommandEvent &event)
     //cj_1
     long canInfoIndex = -1;
     event.GetString().ToLong(&canInfoIndex);
+
+    int amsIndex = event.GetInt();
     if (canInfoIndex>=0 && canInfoIndex<=16) {
-        curSelectSlotIndex = canInfoIndex;
+        curSelectSlotIndex = amsIndex * 4 + canInfoIndex;
         Caninfo can;
         if (canInfoIndex == 16) {
             can = m_ext_info[0].cans[0];
+            curSelectSlotIndex = canInfoIndex;
         }
         else {
 
-            int amsIndex = canInfoIndex / 4;
             int canIndexInAms = canInfoIndex % 4;
             can  = m_boxS[amsIndex].cans[canIndexInAms];
         }
@@ -5885,15 +5896,16 @@ void StatusPanel::on_ams_refresh_rfid(wxCommandEvent &event)
 
         if (obj->is_enable_np || obj->is_enable_ams_np) {
             use_new_command = true;
-            if (it->second->GetExtruderId() < obj->GetExtderSystem()->GetTotalExtderSize()) {
-                has_filament_at_extruder = obj->GetExtderSystem()->HasFilamentInExt(it->second->GetExtruderId());
+            auto current_extruder_id = it->second->GetCurrentExtruderId();
+            if (current_extruder_id.has_value()) {
+                has_filament_at_extruder = obj->GetExtderSystem()->HasFilamentInExt(current_extruder_id.value());
             }
         } else {
             has_filament_at_extruder = obj->is_filament_at_extruder();
         }
 
         if (has_filament_at_extruder) {
-            MessageDialog msg_dlg(nullptr, _L("Cannot read filament info: the filament is loaded to the tool head,please unload the filament and try again."), wxEmptyString,
+            MessageDialog msg_dlg(nullptr, _L("Cannot read filament info: the filament is loaded to the toolhead, please unload the filament and try again."), wxEmptyString,
                                   wxICON_WARNING | wxYES);
             msg_dlg.ShowModal();
             return;
@@ -5919,11 +5931,13 @@ void StatusPanel::on_ams_selected(wxCommandEvent &event)
     std::string slotId = event.GetString().ToStdString();
 	long canInfoIndex = -1;
 	event.GetString().ToLong(&canInfoIndex); 
+    int amsIndex = event.GetInt();
     if (canInfoIndex >= 0 && canInfoIndex <= 16) {
-        curSelectSlotIndex = canInfoIndex;
+        curSelectSlotIndex = amsIndex*4+canInfoIndex;
 		Caninfo can;
 		if (canInfoIndex == 16) {
 			can = m_ext_info[0].cans[0];
+            curSelectSlotIndex = canInfoIndex;
 			m_ams_control->EnableLoadFilamentBtn(false, "", "", "");
 			m_ams_control->EnableUnLoadFilamentBtn(false, "", "", "");
             //cj_3
@@ -5933,7 +5947,6 @@ void StatusPanel::on_ams_selected(wxCommandEvent &event)
 		else {
 
 
-			int amsIndex = canInfoIndex / 4;
 			int canIndexInAms = canInfoIndex % 4;
 			can = m_boxS[amsIndex].cans[canIndexInAms];
 		}
@@ -5994,9 +6007,9 @@ void StatusPanel::on_ams_selected(wxCommandEvent &event)
 void StatusPanel::on_ams_guide(wxCommandEvent &event)
 {
     wxString ams_wiki_url;
-    if (m_ams_control && m_ams_control->m_is_none_ams_mode == AMSModel::GENERIC_AMS) {
+    if (m_ams_control && m_ams_control->m_is_none_ams_mode == DevAmsType::AMS) {
         ams_wiki_url = "https://wiki.qidi3d.com/en/QIDIBOX";
-    } else if (m_ams_control && m_ams_control->m_is_none_ams_mode == AMSModel::AMS_LITE) {
+    } else if (m_ams_control && m_ams_control->m_is_none_ams_mode == DevAmsType::AMS_LITE) {
         ams_wiki_url = "https://wiki.qidi3d.com/en/QIDIBOX";
     } else {
         ams_wiki_url = "https://wiki.qidi3d.com/en/QIDIBOX";
@@ -6252,6 +6265,7 @@ void StatusPanel::on_nozzle_fan_switch(wxCommandEvent &event)
 void StatusPanel::on_lamp_switch(wxCommandEvent &event)
 {
 //cj_1
+	// Maker control signal EVTSET_HEATERBED_TEMPERATURE
 	bool value1 = m_switch_lamp->GetValue();
 	wxCommandEvent event1(EVTSET_CASE_LIGHT);
     event1.SetInt(value1);
@@ -6329,6 +6343,12 @@ void StatusPanel::on_nozzle_selected(wxCommandEvent &event)
         /*Enable switch head while printing is paused STUDIO-9789*/
         if ((obj->is_in_printing() && !obj->is_in_printing_pause()) || obj->ams_status_main == AMS_STATUS_MAIN_FILAMENT_CHANGE) {
             MessageDialog dlg(nullptr, _L("The printer is busy on other print job"), _L("Error"), wxICON_WARNING | wxOK);
+            dlg.ShowModal();
+            return;
+        }
+
+        if (!obj->GetInfo()->IsFdmMode()) {
+            MessageDialog dlg(nullptr, _L("Cannot switch extruder when the printer is not at FDM mode"), _L("Warning"), wxICON_WARNING | wxOK);
             dlg.ShowModal();
             return;
         }
@@ -6460,35 +6480,7 @@ void StatusPanel::on_selected_type(wxCommandEvent& event)
 	}
 }
 
-std::vector<DeviceModelItem* > StatusPanel::getModelSelectItems()
-{
-	if (m_model_panel != nullptr) {
-		return m_model_panel->GetSelectedItems();
-	}
-	return std::vector<DeviceModelItem*>();
-}
-
-void StatusPanel::removeSelectModelItems()
-{
-    m_model_panel->RemoveSelectedItems();
-}
-
-//cj_3
-std::vector<TimelapseFileItem*> StatusPanel::getTimelapseSelectItems()
-{
-    if (m_timelapse_file_panel != nullptr)
-        return m_timelapse_file_panel->GetSelectedItems();
-    return std::vector<TimelapseFileItem*>();
-}
-
-//cj_3
-void StatusPanel::removeSelectTimelapseItems()
-{
-    if (m_timelapse_file_panel != nullptr)
-        m_timelapse_file_panel->RemoveSelectedItems();
-}
-
-void StatusPanel::on_print_model(wxCommandEvent& event)
+void StatusPanel::print_model_for_storage_path(const wxString& storage_path)
 {
     Slic3r::DynamicPrintConfig config;
     Slic3r::Model              model;
@@ -6504,11 +6496,7 @@ void StatusPanel::on_print_model(wxCommandEvent& event)
 
     std::vector<GCodeFileInfo> file_infos = obj->file_info;
 
-    std::vector<DeviceModelItem*> m_model_items = m_model_panel->GetSelectedItems();
-    if (m_model_items.empty())
-        return;
-
-    std::string selected_items_name = into_u8(m_model_items[0]->GetName());
+    std::string selected_items_name = into_u8(storage_path);
     std::vector<PlateInfo> plates_info;
 
     for (auto file_info : file_infos) {
@@ -6570,67 +6558,79 @@ void StatusPanel::on_print_model(wxCommandEvent& event)
         MessageDialog dlg(this, _L("The .gcode.3mf file contains no G-code data.Please slice it whth QIDI Studio and export a new .gcode.3mf file."), wxEmptyString, wxICON_WARNING | wxOK);
         dlg.ShowModal();
     }
-    event.Skip();
 }
 
-void StatusPanel::on_download_model(wxCommandEvent& event)
+void StatusPanel::remove_model_row_by_storage_path(const wxString& path)
 {
-    std::string downloadPath = wxGetApp().app_config->get("download_path");
-    if (downloadPath.empty()) {
-        show_monitor_download_notice(GetParent(), _L("Download Failed"),
-            _L("Download path is not set. Please configure it in Preferences."));
-        return;
-    }
-
-	wxCommandEvent downloadEvent;
-    downloadEvent.SetEventType(EVTSET_DOWNLOAD_PRINTER_FILE);
-	wxPostEvent(this, downloadEvent);
+    if (m_model_panel)
+        m_model_panel->RemoveItemByStoragePath(path);
 }
 
-void StatusPanel::on_del_model(wxCommandEvent& event)
+void StatusPanel::refresh_model_file_local_exist_state()
 {
-    auto selected_items = getModelSelectItems();
-    if (selected_items.empty()) {
-        return;
-    }
+    if (m_model_panel)
+        m_model_panel->refresh_local_exist_flags_from_disk();
+}
 
+//cj_3
+void StatusPanel::refresh_timelapse_local_exist_state()
+{
+    if (m_timelapse_host)
+        m_timelapse_host->GetFileList()->refresh_local_exist_flags_from_disk();
+}
+
+void StatusPanel::begin_model_file_download_ui(const wxString& storage_path, const std::string& task_id)
+{
+    if (m_model_panel)
+        m_model_panel->begin_file_download_for_path(storage_path, task_id);
     //cj_3
-    if (delete_model_dlg == nullptr) {
-        delete_model_dlg = new SecondaryCheckDialog(this->GetParent(), wxID_ANY, _L("Delete file"));
-        delete_model_dlg->Bind(EVT_SECONDARY_CHECK_CONFIRM, [this](wxCommandEvent& e) {
-            wxCommandEvent delEvent;
-            delEvent.SetEventType(EVTSET_DEL_PRINTER_FILE);
-            wxPostEvent(this, delEvent);
-        });
-        delete_model_dlg->m_button_ok->SetLabel(_L("Delete"));
-        delete_model_dlg->m_button_cancel->SetLabel(_L("Cancel"));
-    }
+    // When no matching row exists, AfterRowDownloadUiChanged is not called; keep toolbar in sync.
+    sync_model_file_toolbar(0);
+}
 
-    wxString confirm_text;
-    const size_t selected_count = selected_items.size();
-    if (selected_count == 1) {
-        confirm_text = wxString::Format(_L("Are you sure you want to delete this file?\n\n%s"), selected_items[0]->GetName());
-    } else {
-        wxString preview_names;
-        const size_t preview_count = std::min<size_t>(3, selected_count);
-        for (size_t i = 0; i < preview_count; ++i) {
-            preview_names += selected_items[i]->GetName();
-            if (i + 1 < preview_count) {
-                preview_names += "\n";
-            }
-        }
-        if (selected_count > preview_count) {
-            preview_names += "\n...";
-        }
+void StatusPanel::set_model_file_download_progress(const wxString& storage_path, float fraction01)
+{
+    if (m_model_panel)
+        m_model_panel->set_download_progress_for_path(storage_path, fraction01);
+}
 
-        confirm_text = wxString::Format(_L("Are you sure you want to delete %d files?\n\n%s"), static_cast<int>(selected_count), preview_names);
-    }
-
-    delete_model_dlg->update_text(confirm_text);
+void StatusPanel::end_model_file_download_ui(const wxString& storage_path, bool failed)
+{
+    if (m_model_panel)
+        m_model_panel->end_file_download_for_path(storage_path, failed);
     //cj_3
-    delete_model_dlg->set_message_area_width(600);
-    delete_model_dlg->on_show();
-    delete_model_dlg->Raise();
+    // When no matching row exists, AfterRowDownloadUiChanged is not called; keep toolbar in sync.
+    sync_model_file_toolbar(0);
+}
+
+//cj_3
+std::vector<TimelapseFileItem*> StatusPanel::getTimelapseSelectItems()
+{
+    if (m_timelapse_host != nullptr)
+        return m_timelapse_host->GetFileList()->GetSelectedItems();
+    return std::vector<TimelapseFileItem*>();
+}
+
+//cj_4
+TimelapseFileItem* StatusPanel::find_timelapse_item_by_name(const wxString& name)
+{
+    if (!m_timelapse_host)
+        return nullptr;
+    return m_timelapse_host->GetFileList()->FindItemByName(name);
+}
+
+//cj_3
+void StatusPanel::removeSelectTimelapseItems()
+{
+    if (m_timelapse_host != nullptr)
+        m_timelapse_host->GetFileList()->RemoveSelectedItems();
+}
+
+//cj_3
+void StatusPanel::remove_timelapse_file_rows(const std::vector<TimelapseFileItem*>& rows)
+{
+    if (m_timelapse_host != nullptr)
+        m_timelapse_host->GetFileList()->RemoveItems(rows);
 }
 
 void StatusPanel::after_timelapse_tab_shown()
@@ -6641,19 +6641,17 @@ void StatusPanel::after_timelapse_tab_shown()
 //cj_3
 void StatusPanel::clear_timelapse_file_list()
 {
-    if (m_timelapse_file_panel == nullptr)
+    if (m_timelapse_host == nullptr)
         return;
-    m_timelapse_file_panel->ClearAll();
-    m_timelapse_file_panel->Refresh();
+    m_timelapse_host->GetFileList()->ClearAll();
+    m_timelapse_host->GetFileList()->Refresh();
     const wxColour k_tool_disabled(196, 196, 196);
-    if (m_timelapse_download_btn) {
-        m_timelapse_download_btn->Enable(false);
-        m_timelapse_download_btn->SetToolBg(k_tool_disabled);
-    }
     if (m_timelapse_delete_btn) {
         m_timelapse_delete_btn->Enable(false);
         m_timelapse_delete_btn->SetToolBg(k_tool_disabled);
     }
+    //cj_4
+    sync_timelapse_file_toolbar(0);
 }
 
 //cj_3
@@ -6662,12 +6660,12 @@ void StatusPanel::add_timelapse_file_item(const std::string& file_name,
     const std::string& modified_time,
     const std::string& thumb_url)
 {
-    if (m_timelapse_file_panel == nullptr)
+    if (m_timelapse_host == nullptr)
         return;
 	
     //cj_3
     const wxBitmap placeholder = ScalableBitmap(this, "monitor_placeholder", 18).bmp();
-    m_timelapse_file_panel->AddItem(
+    m_timelapse_host->GetFileList()->AddItem(
         from_u8(file_name),
         placeholder,
         from_u8(file_size),
@@ -6678,7 +6676,7 @@ void StatusPanel::add_timelapse_file_item(const std::string& file_name,
             thumb_url,
             file_name,
             [this](ThumbnailResult result) {
-                if (!result.success || m_timelapse_file_panel == nullptr)
+                if (!result.success || m_timelapse_host == nullptr)
                     return;
                 wxMemoryInputStream stream(result.png_data.data(), result.png_data.size());
                 wxImage image(stream, wxBITMAP_TYPE_JPEG);
@@ -6688,12 +6686,12 @@ void StatusPanel::add_timelapse_file_item(const std::string& file_name,
                 // Stretch to list thumb cell (18x18 DIP); do not preserve aspect ratio.
                 const int thumb_px = FromDIP(18);
                 wxImage resized = image.Scale(thumb_px, thumb_px, wxIMAGE_QUALITY_HIGH);
-                m_timelapse_file_panel->UpdateItemThumbnail(from_u8(result.file_name), wxBitmap(resized));
-                m_timelapse_file_panel->Refresh();
+                m_timelapse_host->GetFileList()->UpdateItemThumbnail(from_u8(result.file_name), wxBitmap(resized));
+                m_timelapse_host->GetFileList()->Refresh();
             });
     }
 
-    m_timelapse_file_panel->Refresh();
+    m_timelapse_host->GetFileList()->Refresh();
 }
 
 void StatusPanel::fill_timelapse_test_data()
@@ -6702,66 +6700,19 @@ void StatusPanel::fill_timelapse_test_data()
 }
 
 //cj_3
-void StatusPanel::on_download_timelapse(wxCommandEvent& event)
+//cj_4
+void StatusPanel::on_timelapse_request_delete_ui(wxCommandEvent& event)
 {
-    boost::ignore_unused(event);
-    std::string downloadPath = wxGetApp().app_config->get("download_path");
-    if (downloadPath.empty()) {
-        show_monitor_download_notice(GetParent(), _L("Download Failed"),
-            _L("Download path is not set. Please configure it in Preferences."));
-        return;
-    }
-
-    wxCommandEvent downloadEvent;
-    downloadEvent.SetEventType(EVTSET_DOWNLOAD_TIMELAPSE_FILE);
-    wxPostEvent(this, downloadEvent);
+    wxCommandEvent e(EVT_TIMELAPSE_DELETE_UI);
+    e.SetString(event.GetString());
+    wxPostEvent(this, e);
 }
 
 void StatusPanel::on_del_timelapse(wxCommandEvent& event)
 {
     boost::ignore_unused(event);
-    auto selected_items = getTimelapseSelectItems();
-    if (selected_items.empty()) {
-        return;
-    }
-
-    //cj_3
-    if (delete_timelapse_dlg == nullptr) {
-        delete_timelapse_dlg = new SecondaryCheckDialog(this->GetParent(), wxID_ANY, _L("Delete file"));
-        delete_timelapse_dlg->Bind(EVT_SECONDARY_CHECK_CONFIRM, [this](wxCommandEvent& e) {
-            wxCommandEvent delEvent;
-            delEvent.SetEventType(EVTSET_DEL_TIMELAPSE_FILE);
-            wxPostEvent(this, delEvent);
-        });
-        delete_timelapse_dlg->m_button_ok->SetLabel(_L("Delete"));
-        delete_timelapse_dlg->m_button_cancel->SetLabel(_L("Cancel"));
-    }
-
-    wxString confirm_text;
-    const size_t selected_count = selected_items.size();
-    if (selected_count == 1) {
-        confirm_text = wxString::Format(_L("Are you sure you want to delete this file?\n\n%s"), selected_items[0]->GetName());
-    } else {
-        wxString preview_names;
-        const size_t preview_count = std::min<size_t>(3, selected_count);
-        for (size_t i = 0; i < preview_count; ++i) {
-            preview_names += selected_items[i]->GetName();
-            if (i + 1 < preview_count) {
-                preview_names += "\n";
-            }
-        }
-        if (selected_count > preview_count) {
-            preview_names += "\n...";
-        }
-
-        confirm_text = wxString::Format(_L("Are you sure you want to delete %d files?\n\n%s"), static_cast<int>(selected_count), preview_names);
-    }
-
-    delete_timelapse_dlg->update_text(confirm_text);
-    //cj_3
-    delete_timelapse_dlg->set_message_area_width(600);
-    delete_timelapse_dlg->on_show();
-    delete_timelapse_dlg->Raise();
+    wxCommandEvent e(EVT_TIMELAPSE_DELETE_UI);
+    wxPostEvent(this, e);
 }
 
 
@@ -7063,88 +7014,88 @@ void StatusPanel::update_filament_loading_panel(MachineObject *obj)
         if (busy_for_vt_loading) {
             // wait to heat hotend
             if (ams_status_sub == 0x02) {
-                m_filament_step->SetFilamentStep(FilamentStep::STEP_HEAT_NOZZLE, FilamentStepType::STEP_TYPE_VT_LOAD);
+                m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_HEAT_NOZZLE, FilamentStepType::STEP_TYPE_VT_LOAD);
             } else if (ams_status_sub == 0x05) {
-                m_filament_step->SetFilamentStep(FilamentStep::STEP_PUSH_NEW_FILAMENT, FilamentStepType::STEP_TYPE_VT_LOAD);
+                m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_PUSH_NEW_FILAMENT, FilamentStepType::STEP_TYPE_VT_LOAD);
             } else if (ams_status_sub == 0x06) {
-                m_filament_step->SetFilamentStep(FilamentStep::STEP_CONFIRM_EXTRUDED, FilamentStepType::STEP_TYPE_VT_LOAD);
+                m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_CONFIRM_EXTRUDED, FilamentStepType::STEP_TYPE_VT_LOAD);
             } else if (ams_status_sub == 0x07) {
-                m_filament_step->SetFilamentStep(FilamentStep::STEP_PURGE_OLD_FILAMENT, FilamentStepType::STEP_TYPE_VT_LOAD);
+                m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_PURGE_OLD_FILAMENT, FilamentStepType::STEP_TYPE_VT_LOAD);
             } else {
-                m_filament_step->SetFilamentStep(FilamentStep::STEP_IDLE, FilamentStepType::STEP_TYPE_VT_LOAD);
+                m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_IDLE, FilamentStepType::STEP_TYPE_VT_LOAD);
                 ams_loading_state = false;
             }
         } else {
             // wait to heat hotend
             if (ams_status_sub == 0x02) {
                 if (!obj->is_target_slot_unload()) {
-                    m_filament_step->SetFilamentStep(FilamentStep::STEP_HEAT_NOZZLE, FilamentStepType::STEP_TYPE_LOAD);
+                    m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_HEAT_NOZZLE, FilamentStepType::STEP_TYPE_LOAD);
                 } else {
-                    m_filament_step->SetFilamentStep(FilamentStep::STEP_HEAT_NOZZLE, FilamentStepType::STEP_TYPE_UNLOAD);
+                    m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_HEAT_NOZZLE, FilamentStepType::STEP_TYPE_UNLOAD);
                 }
             } else if (ams_status_sub == 0x03) {
                 if (!obj->is_target_slot_unload()) {
-                    m_filament_step->SetFilamentStep(FilamentStep::STEP_CUT_FILAMENT, FilamentStepType::STEP_TYPE_LOAD);
+                    m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_CUT_FILAMENT, FilamentStepType::STEP_TYPE_LOAD);
                 } else {
-                    m_filament_step->SetFilamentStep(FilamentStep::STEP_CUT_FILAMENT, FilamentStepType::STEP_TYPE_UNLOAD);
+                    m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_CUT_FILAMENT, FilamentStepType::STEP_TYPE_UNLOAD);
                 }
             } else if (ams_status_sub == 0x04) {
                 if (!obj->is_target_slot_unload()) {
-                    m_filament_step->SetFilamentStep(FilamentStep::STEP_PULL_CURR_FILAMENT, FilamentStepType::STEP_TYPE_LOAD);
+                    m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_PULL_CURR_FILAMENT, FilamentStepType::STEP_TYPE_LOAD);
                 } else {
-                    m_filament_step->SetFilamentStep(FilamentStep::STEP_PULL_CURR_FILAMENT, FilamentStepType::STEP_TYPE_UNLOAD);
+                    m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_PULL_CURR_FILAMENT, FilamentStepType::STEP_TYPE_UNLOAD);
                 }
             } else if (ams_status_sub == 0x05) {
                 if (!obj->is_target_slot_unload()) {
                     if (m_is_load_with_temp) {
-                        m_filament_step->SetFilamentStep(FilamentStep::STEP_CUT_FILAMENT, FilamentStepType::STEP_TYPE_LOAD);
+                        m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_CUT_FILAMENT, FilamentStepType::STEP_TYPE_LOAD);
                     } else {
-                        m_filament_step->SetFilamentStep(FilamentStep::STEP_PUSH_NEW_FILAMENT, FilamentStepType::STEP_TYPE_LOAD);
+                        m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_PUSH_NEW_FILAMENT, FilamentStepType::STEP_TYPE_LOAD);
                     }
 
                 } else {
-                    m_filament_step->SetFilamentStep(FilamentStep::STEP_PUSH_NEW_FILAMENT, FilamentStepType::STEP_TYPE_UNLOAD);
+                    m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_PUSH_NEW_FILAMENT, FilamentStepType::STEP_TYPE_UNLOAD);
                 }
             } else if (ams_status_sub == 0x06) {
                 if (!obj->is_target_slot_unload()) {
-                    m_filament_step->SetFilamentStep(FilamentStep::STEP_PUSH_NEW_FILAMENT, FilamentStepType::STEP_TYPE_LOAD);
+                    m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_PUSH_NEW_FILAMENT, FilamentStepType::STEP_TYPE_LOAD);
                 } else {
-                    m_filament_step->SetFilamentStep(FilamentStep::STEP_PUSH_NEW_FILAMENT, FilamentStepType::STEP_TYPE_UNLOAD);
+                    m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_PUSH_NEW_FILAMENT, FilamentStepType::STEP_TYPE_UNLOAD);
                 }
             } else if (ams_status_sub == 0x07) {
                 if (!obj->is_target_slot_unload()) {
                     if (m_is_load_with_temp) {
-                        m_filament_step->SetFilamentStep(FilamentStep::STEP_PULL_CURR_FILAMENT, FilamentStepType::STEP_TYPE_LOAD);
+                        m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_PULL_CURR_FILAMENT, FilamentStepType::STEP_TYPE_LOAD);
                     } else {
-                        m_filament_step->SetFilamentStep(FilamentStep::STEP_PURGE_OLD_FILAMENT, FilamentStepType::STEP_TYPE_LOAD);
+                        m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_PURGE_OLD_FILAMENT, FilamentStepType::STEP_TYPE_LOAD);
                     }
                 } else {
-                    m_filament_step->SetFilamentStep(FilamentStep::STEP_PURGE_OLD_FILAMENT, FilamentStepType::STEP_TYPE_UNLOAD);
+                    m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_PURGE_OLD_FILAMENT, FilamentStepType::STEP_TYPE_UNLOAD);
                 }
             } else if (ams_status_sub == 0x08) {
                 if (!obj->is_target_slot_unload()) {
-                    m_filament_step->SetFilamentStep(FilamentStep::STEP_CHECK_POSITION, FilamentStepType::STEP_TYPE_LOAD);
+                    m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_CHECK_POSITION, FilamentStepType::STEP_TYPE_LOAD);
                 } else {
-                    m_filament_step->SetFilamentStep(FilamentStep::STEP_CHECK_POSITION, FilamentStepType::STEP_TYPE_UNLOAD);
+                    m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_CHECK_POSITION, FilamentStepType::STEP_TYPE_UNLOAD);
                 }
             } else if (ams_status_sub == 0x09) {
                 // just wait
             } else if (ams_status_sub == 0x0B) {
                 if (!obj->is_target_slot_unload()) {
-                    m_filament_step->SetFilamentStep(FilamentStep::STEP_CHECK_POSITION, FilamentStepType::STEP_TYPE_LOAD);
+                    m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_CHECK_POSITION, FilamentStepType::STEP_TYPE_LOAD);
                 } else {
-                    m_filament_step->SetFilamentStep(FilamentStep::STEP_CHECK_POSITION, FilamentStepType::STEP_TYPE_UNLOAD);
+                    m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_CHECK_POSITION, FilamentStepType::STEP_TYPE_UNLOAD);
                 }
             } else {
-                m_filament_step->SetFilamentStep(FilamentStep::STEP_IDLE, FilamentStepType::STEP_TYPE_UNLOAD);
+                m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_IDLE, FilamentStepType::STEP_TYPE_UNLOAD);
                 ams_loading_state = false;
             }
         }
     } else if (obj->ams_status_main == AMS_STATUS_MAIN_ASSIST) {
-        m_filament_step->SetFilamentStep(FilamentStep::STEP_IDLE, FilamentStepType::STEP_TYPE_LOAD);
+        m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_IDLE, FilamentStepType::STEP_TYPE_LOAD);
         ams_loading_state = false;
     } else {
-        m_filament_step->SetFilamentStep(FilamentStep::STEP_IDLE, FilamentStepType::STEP_TYPE_LOAD);
+        m_filament_step->SetFilamentStep(obj, DevFilamentStep::STEP_IDLE, FilamentStepType::STEP_TYPE_LOAD);
         ams_loading_state = false;
     }
 
