@@ -17,6 +17,7 @@
 
 //wxDEFINE_EVENT(EVT_MEDIA_CTRL_STAT, wxCommandEvent);
 
+#ifdef __WIN32__
 BEGIN_EVENT_TABLE(wxMediaCtrl3, wxWindow)
 
 // catch paint events
@@ -384,7 +385,6 @@ void wxMediaCtrl3::PlayThread()
                     }
 
                     m_frame_buffer.enqueue(bm);
-                    m_frame = bm;
                 }
             }
         }
@@ -407,7 +407,6 @@ void wxMediaCtrl3::PlayThread()
         m_video_size = wxDefaultSize;
         NotifyStopped();
     }
-
 }
 
 void wxMediaCtrl3::NotifyStopped()
@@ -468,6 +467,7 @@ void wxMediaCtrl3::OnRenderTimer(wxTimerEvent &evt)
         m_need_refresh.store(false);
     }
 }
+#endif
 
 //y76
 wxBEGIN_EVENT_TABLE(VideoPanel, wxPanel)
@@ -566,7 +566,7 @@ void VideoPanel::Stop()
         Refresh(); 
     });
 }
-    // 空实现，避免背景闪烁
+
 void VideoPanel::SetIdleImage(wxString const &image)
 {
 
@@ -652,7 +652,7 @@ void VideoPanel::paintEvent(wxPaintEvent& evt)
     
     double scaleX = (double)size.x / frameSize.x;
     double scaleY = (double)size.y / frameSize.y;
-    double scale = std::min(scaleX, scaleY);  // 保持宽高比的最小缩放
+    double scale = std::min(scaleX, scaleY);
     
     wxSize scaledSize(frameSize.x * scale, frameSize.y * scale);
     wxPoint pos((size.x - scaledSize.x) / 2, (size.y - scaledSize.y) / 2);
@@ -715,7 +715,6 @@ void VideoPanel::PlayThread()
             ResetPlaybackState();
             
             m_state = wxMEDIASTATE_PLAYING;
-            // // 发送状态事件
             wxMediaEvent stateEvent(wxEVT_MEDIA_STATECHANGED);
             stateEvent.SetId(GetId());
             stateEvent.SetEventObject(this);
@@ -850,7 +849,7 @@ void VideoPanel::UpdateFrameStatistics()
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(
         now - m_lastSecondTime).count();
     
-    if (elapsedTime >= 1000) { // 每秒统计一次
+    if (elapsedTime >= 1000) {
         int fps = static_cast<int>(m_frameCount * 1000 / elapsedTime);
         wxLogMessage("VideoPanel: Decode Rate: %d FPS", fps);
         m_frameCount = 0;

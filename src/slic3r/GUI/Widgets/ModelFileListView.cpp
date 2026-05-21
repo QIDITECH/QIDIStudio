@@ -43,7 +43,7 @@ static bool model_file_list_path_is_usb(const wxString& storage_path)
         return false;
     wxString s(storage_path);
     s.Replace("\\", "/");
-    return s.StartsWith("USB/", false);
+    return s.StartsWith("USB/");
 }
 
 static wxColour file_list_row_separator_colour()
