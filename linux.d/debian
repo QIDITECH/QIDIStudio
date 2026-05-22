@@ -36,11 +36,11 @@ REQUIRED_DEV_PACKAGES=(
 if [[ -n "$UPDATE_LIB" ]]
 then
     # for ubuntu 22+ and 23+:
-    ubu_major_version="$(grep VERSION_ID /etc/os-release | cut -d "=" -f 2 | cut -d "." -f 1 | tr -d /\"/)"
-    if [ $ubu_major_version = "22" ] || [ $ubu_major_version = "23" ]
+   ubu_major_version="$(grep UBUNTU_CODENAME /etc/os-release | cut -d "=" -f 2 | tr -d /\"/)"
+    if [ $ubu_major_version = "jammy" ] || [ $ubu_major_version = "lunar" ]
     then
         REQUIRED_DEV_PACKAGES+=(libwebkit2gtk-4.0-dev curl libfuse-dev libssl-dev libcurl4-openssl-dev m4)
-    elif [ $ubu_major_version = "24" ]
+    elif [ $ubu_major_version = "noble" ]
     then
         REQUIRED_DEV_PACKAGES+=(libwebkit2gtk-4.1-dev)
     else
