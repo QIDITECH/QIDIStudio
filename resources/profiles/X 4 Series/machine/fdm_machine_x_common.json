@@ -17,7 +17,7 @@
     "fan_direction": "right",
     "gcode_flavor": "klipper",
     "group_algo_with_time": "0",
-    "is_support_3mf" : "1",
+    "is_support_3mf" : "0",
     "is_support_mqtt" : "1",
     "is_support_multi_box": "1",
     "is_support_polar_cooler" : "1",
