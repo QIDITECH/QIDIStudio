@@ -1,6 +1,6 @@
 {
     "name": "X-3-Series",
-    "version": "02.06.00.51",
+    "version": "02.06.00.55",
     "force_update": "0",
     "description": "X-3-Series configurations",
     "machine_model_list": [
@@ -1445,31 +1445,31 @@
             "sub_path": "filament/QIDI PLA Rapido Metal @Qidi X-Smart 3 0.8 nozzle.json"
         },
         {
-            "name": "QIDI PLA Rapido Silk@X3",
+            "name": "QIDI PLA Silk@X3",
             "sub_path": "filament/QIDI PLA Rapido Silk.json"
         },
         {
-            "name": "QIDI PLA Rapido Silk @Qidi X-Max 3 0.4 nozzle",
+            "name": "QIDI PLA Silk @Qidi X-Max 3 0.4 nozzle",
             "sub_path": "filament/QIDI PLA Rapido Silk @Qidi X-Max 3 0.4 nozzle.json"
         },
         {
-            "name": "QIDI PLA Rapido Silk @Qidi X-Plus 3 0.4 nozzle",
+            "name": "QIDI PLA Silk @Qidi X-Plus 3 0.4 nozzle",
             "sub_path": "filament/QIDI PLA Rapido Silk @Qidi X-Plus 3 0.4 nozzle.json"
         },
         {
-            "name": "QIDI PLA Rapido Silk @Qidi X-Smart 3 0.4 nozzle",
+            "name": "QIDI PLA Silk @Qidi X-Smart 3 0.4 nozzle",
             "sub_path": "filament/QIDI PLA Rapido Silk @Qidi X-Smart 3 0.4 nozzle.json"
         },
         {
-            "name": "QIDI PLA Rapido Silk @Qidi X-Max 3 0.6 nozzle",
+            "name": "QIDI PLA Silk @Qidi X-Max 3 0.6 nozzle",
             "sub_path": "filament/QIDI PLA Rapido Silk @Qidi X-Max 3 0.6 nozzle.json"
         },
         {
-            "name": "QIDI PLA Rapido Silk @Qidi X-Plus 3 0.6 nozzle",
+            "name": "QIDI PLA Silk @Qidi X-Plus 3 0.6 nozzle",
             "sub_path": "filament/QIDI PLA Rapido Silk @Qidi X-Plus 3 0.6 nozzle.json"
         },
         {
-            "name": "QIDI PLA Rapido Silk @Qidi X-Smart 3 0.6 nozzle",
+            "name": "QIDI PLA Silk @Qidi X-Smart 3 0.6 nozzle",
             "sub_path": "filament/QIDI PLA Rapido Silk @Qidi X-Smart 3 0.6 nozzle.json"
         },
         {
