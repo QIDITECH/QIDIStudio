@@ -117,10 +117,10 @@ src/slic3r/GUI/Jobs/Job.cpp
 src/slic3r/GUI/Jobs/PlaterJob.cpp
 src/slic3r/GUI/Jobs/RotoptimizeJob.cpp
 src/slic3r/GUI/Jobs/BindJob.cpp
-src/slic3r/GUI/Jobs/PrintJob.cpp
 src/slic3r/GUI/Jobs/SendJob.cpp
 src/slic3r/GUI/ThermalPreconditioningDialog.cpp
 src/slic3r/GUI/ThermalPreconditioningDialog.hpp
+src/slic3r/GUI/TextureImportDialog.cpp
 src/slic3r/GUI/Jobs/SLAImportJob.cpp
 src/slic3r/GUI/Jobs/UpgradeNetworkJob.cpp
 src/slic3r/GUI/AboutDialog.cpp
@@ -194,7 +194,6 @@ src/slic3r/GUI/Tab.hpp
 src/slic3r/GUI/UnsavedChangesDialog.cpp
 src/slic3r/GUI/Auxiliary.cpp
 src/slic3r/GUI/UpdateDialogs.cpp
-src/slic3r/GUI/UnsavedChangesDialog.cpp
 src/slic3r/GUI/ObjColorDialog.cpp
 src/slic3r/GUI/SyncAmsInfoDialog.cpp
 src/slic3r/GUI/WipeTowerDialog.cpp
@@ -208,6 +207,8 @@ src/slic3r/GUI/ReleaseNote.cpp
 src/slic3r/GUI/ReleaseNote.hpp
 src/slic3r/GUI/HelioReleaseNote.cpp
 src/slic3r/GUI/HelioReleaseNote.hpp
+src/slic3r/GUI/BetaVersionDialog.cpp
+src/slic3r/GUI/BetaVersionDialog.hpp
 src/slic3r/GUI/UpgradePanel.cpp
 src/slic3r/GUI/Project.cpp
 src/slic3r/Utils/FixModelByWin10.cpp
@@ -242,7 +243,6 @@ src/slic3r/GUI/CalibrationWizardCaliPage.cpp
 src/slic3r/GUI/CaliHistoryDialog.cpp
 src/slic3r/GUI/calib_dlg.cpp
 src/slic3r/GUI/BonjourDialog.cpp
-src/slic3r/GUI/calib_dlg.cpp
 src/slic3r/GUI/PrintHostDialogs.cpp
 src/slic3r/GUI/Gizmos/GLGizmoMeshBoolean.cpp
 src/slic3r/GUI/UIHelpers/MeshBooleanUI.cpp
@@ -288,3 +288,5 @@ src/slic3r/GUI/HelioHistoryDialog.hpp
 src/slic3r/GUI/HelioHistoryDialog.cpp
 src/slic3r/GUI/MixedFilamentDialog.cpp
 src/slic3r/GUI/MixedFilamentDialog.hpp
+src/slic3r/GUI/GradientCurveEditor.cpp
+src/slic3r/GUI/GradientCurveEditor.hpp
