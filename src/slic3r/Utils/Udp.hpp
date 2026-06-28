@@ -28,6 +28,14 @@ struct UdpReply
 	uint16_t port;
 	std::string service_name;
 	std::string hostname;
+	//cj_5
+	std::string model_name;
+	//cj_5
+	std::string serial_number;
+	//cj_5
+	std::string raw_payload;
+	//cj_5
+	bool legacy_device{ false };
 	std::string full_address;
 
 	//TxtData txt_data;
@@ -36,7 +44,11 @@ struct UdpReply
 	UdpReply(boost::asio::ip::address ip,
 		uint16_t port,
 		std::string service_name,
-		std::string hostname);
+		std::string hostname,
+		std::string model_name = {},
+		std::string serial_number = {},
+		std::string raw_payload = {},
+		bool legacy_device = false);
 
 	std::string path() const;
 

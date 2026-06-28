@@ -559,7 +559,12 @@ bool PresetComboBox::add_ams_filaments(std::string selected, bool alias_name)
             const_cast<Preset&>(*iter).is_visible = true;
             auto color = tray.opt_string("filament_colour", 0u);
             auto multi_color = tray.opt<ConfigOptionStrings>("filament_multi_colour")->values;
-            wxBitmap bmp(*get_extruder_color_icon(color, name, icon_width, 16));
+            auto ctype_str   = tray.opt_string("filament_colour_type", 0u);
+            wxBitmap *ams_bmp = (multi_color.size() > 1)
+                ? get_extruder_color_icon(multi_color, ctype_str == "0", name, icon_width, 16)
+                : get_extruder_color_icon(color, name, icon_width, 16);
+            if (!ams_bmp) continue;
+            wxBitmap bmp(*ams_bmp);
             auto text = get_preset_name(*iter);
             int      item_id = Append(text, bmp.ConvertToImage(), &m_first_ams_filament + entry.first);
             SetFlag(GetCount() - 1, (int) FilamentAMSType::FROM_AMS);
@@ -765,9 +770,19 @@ wxBitmap *PresetComboBox::get_bmp(Preset const &preset)
     if (m_type == Preset::TYPE_FILAMENT) {
         Preset const & preset2 = &m_collection->get_selected_preset() == &preset ? m_collection->get_edited_preset() : preset;
         wxString color = preset2.config.opt_string("default_filament_colour", 0);
+        // // If this preset is the one currently assigned to this combo box's filament slot,
+        // // use the per-slot color from project_config so the dropdown matches the closed-combo swatch.
+        // if (m_preset_bundle && m_filament_idx >= 0 &&
+        //     m_filament_idx < (int)m_preset_bundle->filament_presets.size() &&
+        //     m_preset_bundle->filament_presets[m_filament_idx] == preset.name) {
+        //     if (const auto *colours_opt = m_preset_bundle->project_config.option<ConfigOptionStrings>("filament_colour")) {
+        //         if (m_filament_idx < (int)colours_opt->values.size() && !colours_opt->values[m_filament_idx].empty())
+        //             color = from_u8(colours_opt->values[m_filament_idx]);
+        //     }
+        // }
         wxColour clr(color);
         if (clr.IsOk()) {
-            std::string bitmap_key = "default_filament_colour_" + color.ToStdString();
+            std::string bitmap_key = "filament_colour_" + color.ToStdString();
             wxBitmap *bmp        = bitmap_cache().find(bitmap_key);
             if (bmp == nullptr) {
                 wxImage img(16, 16);
@@ -1338,19 +1353,11 @@ void PlaterPresetComboBox::update()
         selected_in_box = add_box_filaments(into_u8(selected_user_preset.empty() ? selected_system_preset : selected_user_preset), true);
     }
 
-    //y79
-    std::vector<std::string> filament_orders = {"QIDI PLA Basic", "QIDI PLA Matte", "QIDI PLA Rapido", "QIDI PLA Lite", "QIDI PLA Tough+", "QIDI PETG Basic", "QIDI PETG Rapido", "QIDI ABS Rapido",
-                                                "QIDI ASA", "QIDI PLA Silk+", "QIDI PLA Silk", "QIDI PLA-CF", "QIDI PLA Marble", "QIDI PLA Metal", "QIDI PLA Sparkle",
-                                                "QIDI PLA Galaxy", "QIDI PLA Glow", "QIDI PLA Wood", "QIDI PLA Translucent", "QIDI PETG Translucent", "QIDI PC",
-                                                "QIDI PC FR", "QIDI PETG-CF", "QIDI ABS-GF", "QIDI ASA-CF", "QIDI PA6-CF", "QIDI PA6-GF", "QIDI PAHT-CF", "QIDI PET-CF",
-                                                "QIDI PPA-CF", "QIDI PPS-CF", "QIDI PLA Aero", "QIDI ASA-Aero", "QIDI TPU for AMS", "QIDI TPU 95A HF", "QIDI TPU 90A",
-                                                "QIDI TPU 85A", "QIDI Support For PLA", "QIDI Support For PLA/PETG", "QIDI Support for ABS", "QIDI PVA", "QIDI Support For PA/PET",
-                                                "QIDI TPU 95A", "QIDI PA-CF", "QIDI PLA Tough", "QIDI PLA Dynamic", "QIDI Support W", "QIDI Support G"};
     //w38
     std::vector<std::string> first_vendors     = {"QIDI", "Generic","Bambu Lab","HATCHBOX","Overture","Polymaker"};
     std::vector<std::string> first_types     = {"PLA", "PETG", "ABS", "TPU"};
     std::vector<std::string>    polymaker_priority = {"PolyLite PLA", "PolyTerra PLA", "PolyLite PETG"};
-    auto  add_presets       = [this, &preset_descriptions, &filament_orders, &preset_filament_vendors, &first_vendors, &preset_filament_types, &first_types, &selected_in_box, &polymaker_priority]
+    auto  add_presets       = [this, &preset_descriptions, &preset_filament_vendors, &first_vendors, &preset_filament_types, &first_types, &selected_in_box, &polymaker_priority]
             (std::map<wxString, wxBitmap *> const &presets, wxString const &selected, std::string const &group, wxString const &groupName) {
         if (!presets.empty()) {
             set_label_marker(Append(_L(group), wxNullBitmap, DD_ITEM_STYLE_SPLIT_ITEM));
@@ -1363,8 +1370,9 @@ void PlaterPresetComboBox::update()
                 //    else SetString(GetCount() - 1, "");
                 //}
                 if (group == "System presets" || group == "Unsupported presets")
-                    std::sort(list.begin(), list.end(), [&filament_orders, &preset_filament_vendors, &first_vendors, &preset_filament_types, &first_types, &polymaker_priority](auto *l, auto *r) {
+                    std::sort(list.begin(), list.end(), [&preset_filament_vendors, &first_vendors, &preset_filament_types, &first_types, &polymaker_priority](auto *l, auto *r) {
                         { // Compare order
+                            const auto &filament_orders = get_filament_orders();
                             auto iter1 = std::find(filament_orders.begin(), filament_orders.end(), l->first);
                             auto iter2 = std::find(filament_orders.begin(), filament_orders.end(), r->first);
                             if (iter1 != iter2)

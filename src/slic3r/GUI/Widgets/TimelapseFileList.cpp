@@ -674,7 +674,7 @@ TimelapseFileListCtrl::TimelapseFileListCtrl(wxWindow* parent, wxWindowID id)
     m_mainSizer->Add(m_header_panel, 0, wxEXPAND);
     SetSizer(m_mainSizer);
     //cj_4
-    SetScrollRate(10, 30);
+    SetScrollRate(10,  90);
     //cj_3
     EnableScrolling(false, true);
     //cj_3 Hide bottom horizontal scrollbar when virtual width slightly exceeds client (wx still reserves it otherwise).

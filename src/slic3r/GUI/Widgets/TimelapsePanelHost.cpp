@@ -75,11 +75,24 @@ TimelapseContextMenuPopup::TimelapseContextMenuPopup(
     , m_file_name(file_name)
 {
     SetCursor(wxCURSOR_HAND);
-    const wxColour bg     = file_list_panel_background();
+    const wxColour border_color = wxGetApp().dark_mode() ? wxColour(90, 90, 98) : wxColour(205, 205, 212);
+    const wxColour bg     = wxGetApp().dark_mode() ? wxColour(50, 50, 55) : wxColour(243, 243, 247);
     const wxColour fg     = file_list_primary_text_colour();
     const wxColour fg_dis = file_list_context_menu_disabled_text_colour();
-    SetBackgroundColour(bg);
+    SetBackgroundColour(border_color);
+    SetBackgroundStyle(wxBG_STYLE_PAINT);
+    const int border_w   = FromDIP(1);
     Bind(wxEVT_CHAR_HOOK, &TimelapseContextMenuPopup::on_escape, this);
+    Bind(wxEVT_PAINT, [this, border_color](wxPaintEvent&) {
+        wxPaintDC dc(this);
+        const wxSize sz = GetSize();
+        dc.SetPen(*wxTRANSPARENT_PEN);
+        dc.SetBrush(wxBrush(border_color));
+        dc.DrawRectangle(0, 0, sz.x, sz.y);
+    });
+
+    auto* content = new wxPanel(this);
+    content->SetBackgroundColour(bg);
 
     auto* vs        = new wxBoxSizer(wxVERTICAL);
     const int row_h = FromDIP(30);
@@ -87,7 +100,7 @@ TimelapseContextMenuPopup::TimelapseContextMenuPopup(
     const int min_w = FromDIP(200);
 
     auto add_row = [&](const wxString& text, bool enabled, const std::function<void()>& on_activate) {
-        auto* row = new wxPanel(this);
+        auto* row = new wxPanel(content);
         row->SetBackgroundColour(bg);
         row->SetMinSize(wxSize(min_w, row_h));
         auto* st = new wxStaticText(row, wxID_ANY, text);
@@ -175,7 +188,11 @@ TimelapseContextMenuPopup::TimelapseContextMenuPopup(
         });
     }
 
-    SetSizer(vs);
+    content->SetSizer(vs);
+
+    auto* outer_sizer = new wxBoxSizer(wxVERTICAL);
+    outer_sizer->Add(content, 1, wxALL | wxEXPAND, border_w);
+    SetSizer(outer_sizer);
     Fit();
 }
 

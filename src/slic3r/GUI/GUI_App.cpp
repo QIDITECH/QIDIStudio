@@ -3,6 +3,7 @@
 #include "GUI_Init.hpp"
 #include "GUI_ObjectList.hpp"
 #include "GUI_Factories.hpp"
+#include "slic3r/GUI/DeviceWeb/DeviceWebPage.hpp"
 #include "slic3r/GUI/UserManager.hpp"
 #include "slic3r/GUI/TaskManager.hpp"
 #include "slic3r/GUI/OpenGLManager.hpp"
@@ -21,6 +22,7 @@
 #include <iterator>
 #include <exception>
 #include <cstdlib>
+#include <chrono>
 #include <regex>
 #include <thread>
 #include <string_view>
@@ -55,6 +57,7 @@
 #include <wx/glcanvas.h>
 
 #include "libslic3r/Utils.hpp"
+#include "libslic3r/Debounce.hpp"
 #include "libslic3r/Model.hpp"
 #include "libslic3r/I18N.hpp"
 #include "libslic3r/LogSink.hpp"
@@ -109,6 +112,7 @@
 #include "WebDownPluginDlg.hpp"
 #include "WebGuideDialog.hpp"
 #include "ReleaseNote.hpp"
+#include "BetaVersionDialog.hpp"
 #include "PrivacyUpdateDialog.hpp"
 #include "ModelMall.hpp"
 #include "HintNotification.hpp"
@@ -813,10 +817,10 @@ static const FileWildcards file_wildcards_by_type[FT_SIZE] = {
     /* FT_GCODE */   { "G-code files"sv,    { ".gcode"sv } },
 #ifdef __APPLE__
     /* FT_MODEL */
-    {"Supported files"sv, {".3mf"sv, ".stl"sv, ".oltp"sv, ".stp"sv, ".step"sv, ".svg"sv, ".amf"sv, ".obj"sv, ".usd"sv, ".usda"sv, ".usdc"sv, ".usdz"sv, ".abc"sv, ".ply"sv}},
+    {"Supported files"sv, {".3mf"sv, ".stl"sv, ".oltp"sv, ".stp"sv, ".step"sv, ".svg"sv, ".amf"sv, ".obj"sv, ".gltf"sv, ".glb"sv, ".fbx"sv, ".usd"sv, ".usda"sv, ".usdc"sv, ".usdz"sv, ".abc"sv, ".ply"sv}},
 #else
     /* FT_MODEL */
-    {"Supported files"sv, {".3mf"sv, ".stl"sv, ".oltp"sv, ".stp"sv, ".step"sv, ".svg"sv, ".amf"sv, ".obj"sv}},
+    {"Supported files"sv, {".3mf"sv, ".stl"sv, ".oltp"sv, ".stp"sv, ".step"sv, ".svg"sv, ".amf"sv, ".obj"sv, ".gltf"sv, ".glb"sv, ".fbx"sv}},
 #endif
     /* FT_PROJECT */ { "Project files"sv,   { ".3mf"sv} },
     /* FT_GALLERY */ { "Known files"sv,     { ".stl"sv, ".obj"sv } },
@@ -1090,7 +1094,11 @@ void GUI_App::post_init()
         throw Slic3r::RuntimeError("Calling post_init() while not yet initialized");
 
     if (app_config->get("sync_user_preset") == "true") {
-        if (m_agent) { start_sync_user_preset(); }
+        //cj_5 UserPresetSyncManager does not depend on m_agent.
+        //if (m_agent) { start_sync_user_preset(); }
+#if QDT_RELEASE_TO_PUBLIC
+        UserPresetSyncManager::instance().start();
+#endif
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " sync_user_preset: true";
     } else {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " sync_user_preset: false";
@@ -1152,13 +1160,7 @@ void GUI_App::post_init()
                 download_url = input_str;
             }
 #endif
-            try
-            {
-                //filter relative directories
-                std::regex pattern("\\.\\.[\\/\\\\]|\\.\\.[\\/\\\\][\\/\\\\]|\\.\\/[\\/\\\\]|\\.[\\/\\\\]");
-                download_url = std::regex_replace(download_url, pattern, "");
-            }
-            catch (...){}
+            download_url = sanitize_download_url(download_url);
             
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", download_url %1%") % PathSanitizer::sanitize(download_url);
 
@@ -1962,10 +1964,11 @@ void GUI_App::restart_networking()
         if (plater_)
             plater_->get_notification_manager()->qdt_close_plugin_install_notification();
 
-        if (m_agent->is_user_login()) {
+        //cj_5 Use token-based check instead of deprecated m_agent DLL.
+        if (is_user_login()) {
             remove_user_presets();
             enable_user_preset_folder(true);
-            preset_bundle->load_user_presets(m_agent->get_user_id(), ForwardCompatibilitySubstitutionRule::Enable);
+            preset_bundle->load_user_presets(get_current_user_id(), ForwardCompatibilitySubstitutionRule::Enable);
             mainframe->update_side_preset_ui();
         }
 
@@ -2075,6 +2078,7 @@ void GUI_App::init_networking_callbacks()
             }
             if (return_code == 5) {
                 GUI::wxGetApp().CallAfter([this] {
+                    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "set_on_server_connected_fn";
                     this->request_user_logout();
                     MessageDialog msg_dlg(nullptr, _L("Login information expired. Please login again."), "", wxAPPLY | wxOK);
                     if (msg_dlg.ShowModal() == wxOK) {
@@ -2253,6 +2257,8 @@ void GUI_App::init_networking_callbacks()
                     if (sel && sel->get_dev_id() == dev_id) {
                         obj->parse_json("cloud", msg);
                         GUI::wxGetApp().sidebar().load_ams_list(obj);
+                        // STUDIO-18155: AMS 状态变化驱动耗材同步（本地 store + 节流后云端）
+                        if (auto* sync = wxGetApp().fila_manager_sync()) sync->on_device_update(obj);
                     } else {
                         obj->parse_json("cloud", msg, true);
                     }
@@ -2300,6 +2306,8 @@ void GUI_App::init_networking_callbacks()
                     obj->parse_json("lan", msg);
                     if (this->m_device_manager->get_selected_machine() == obj) {
                         GUI::wxGetApp().sidebar().load_ams_list(obj);
+                        // STUDIO-18155: AMS 状态变化驱动耗材同步（本地 store + 节流后云端）
+                        if (auto* sync = wxGetApp().fila_manager_sync()) sync->on_device_update(obj);
                     }
                 }
 
@@ -2539,7 +2547,7 @@ void GUI_App::init_app_config()
     } else {
         m_datadir_redefined = true;
     }
-
+    
     // start log here
     const auto& enc_opts = s_get_log_enc_opts();
     const auto& log_filename = LogSinkUtil::get_log_filaname_format(enc_opts);
@@ -2569,6 +2577,9 @@ void GUI_App::init_app_config()
         }
         // Save orig_version here, so its empty if no app_config existed before this run.
         m_last_config_version = app_config->orig_version();//parse_semver_from_ini(app_config->config_path());
+
+        auto loglevel = wxGetApp().app_config->get("severity_level");
+        Slic3r::set_logging_level(Slic3r::level_string_to_boost(loglevel));
     }
     else {
 #ifdef _WIN32
@@ -2779,6 +2790,32 @@ int GUI_App::OnExit()
 
     stop_sync_user_preset();
 
+    if (m_fila_manager_cloud_disp) {
+        delete m_fila_manager_cloud_disp;
+        m_fila_manager_cloud_disp = nullptr;
+    }
+
+    if (m_fila_manager_cloud_sync) {
+        delete m_fila_manager_cloud_sync;
+        m_fila_manager_cloud_sync = nullptr;
+    }
+
+    if (m_fila_manager_cloud_client) {
+        delete m_fila_manager_cloud_client;
+        m_fila_manager_cloud_client = nullptr;
+    }
+
+    if (m_fila_manager_sync) {
+        delete m_fila_manager_sync;
+        m_fila_manager_sync = nullptr;
+    }
+
+    if (m_fila_manager_store) {
+        m_fila_manager_store->save();
+        delete m_fila_manager_store;
+        m_fila_manager_store = nullptr;
+    }
+
     if (m_device_manager) {
         delete m_device_manager;
         m_device_manager = nullptr;
@@ -2798,7 +2835,45 @@ int GUI_App::OnExit()
         m_agent = nullptr;
     }
 
+#if !QDT_RELEASE_TO_PUBLIC
+    m_fila_debug_sink = nullptr;
+#endif
+
+    // Flush any config changes that were deferred by the idle-handler debounce.
+    if (app_config && app_config->dirty())
+        app_config->save();
+
     return wxApp::OnExit();
+}
+
+void GUI_App::emit_fila_debug_log(const std::string& category,
+                                  const std::string& level,
+                                  const std::string& title,
+                                  const std::string& summary,
+                                  const nlohmann::json& detail)
+{
+#if !QDT_RELEASE_TO_PUBLIC
+    if (!m_fila_debug_sink)
+        return;
+
+    nlohmann::json payload = {
+        {"category", category},
+        {"level",    level},
+        {"title",    title},
+        {"summary",  summary},
+        {"detail",   detail},
+        {"ts",       static_cast<std::uint64_t>(
+                         std::chrono::duration_cast<std::chrono::milliseconds>(
+                             std::chrono::system_clock::now().time_since_epoch()).count())}
+    };
+    m_fila_debug_sink(payload);
+#else
+    (void)category;
+    (void)level;
+    (void)title;
+    (void)summary;
+    (void)detail;
+#endif
 }
 
 class wxBoostLog : public wxLog
@@ -3211,7 +3286,8 @@ bool GUI_App::on_init_inner()
     copy_network_if_available();
     on_init_network();
 
-    if (m_agent && m_agent->is_user_login()) {
+    //cj_5 Use token-based check instead of deprecated m_agent DLL.
+    if (is_user_login()) {
         m_load_last_machine.is_list_ok = false;
         m_load_last_machine.is_mqtt_ok = false;
         enable_user_preset_folder(true);
@@ -3244,6 +3320,32 @@ bool GUI_App::on_init_inner()
 
     // Let the libslic3r know the callback, which will translate messages on demand.
     Slic3r::I18N::set_translate_callback(libslic3r_translate_callback);
+
+    // Initialize Filament Manager store & sync
+    if (!m_fila_manager_store) {
+        m_fila_manager_store = new wgtFilaManagerStore();
+        m_fila_manager_store->load();
+        BOOST_LOG_TRIVIAL(info) << "Filament Manager store initialized";
+    }
+    if (!m_fila_manager_sync) {
+        m_fila_manager_sync = new wgtFilaManagerSync(m_fila_manager_store);
+        BOOST_LOG_TRIVIAL(info) << "Filament Manager sync initialized";
+    }
+    // Cloud layer — owns HTTP client, high-level sync and the serialization dispatcher.
+    if (!m_fila_manager_cloud_client) {
+        m_fila_manager_cloud_client = new wgtFilaManagerCloudClient();
+        BOOST_LOG_TRIVIAL(info) << "Filament Manager cloud client initialized";
+    }
+    if (!m_fila_manager_cloud_sync) {
+        m_fila_manager_cloud_sync = new wgtFilaManagerCloudSync(m_fila_manager_store,
+                                                                m_fila_manager_cloud_client);
+        BOOST_LOG_TRIVIAL(info) << "Filament Manager cloud sync initialized";
+    }
+    if (!m_fila_manager_cloud_disp) {
+        m_fila_manager_cloud_disp = new wgtFilaManagerCloudDispatcher(m_fila_manager_cloud_sync,
+                                                                     m_fila_manager_cloud_client);
+        BOOST_LOG_TRIVIAL(info) << "Filament Manager cloud dispatcher initialized";
+    }
 
     BOOST_LOG_TRIVIAL(info) << "create the main window";
     mainframe = new MainFrame();
@@ -3342,8 +3444,13 @@ bool GUI_App::on_init_inner()
         if (! plater_)
             return;
 
-        if (app_config->dirty())
-            app_config->save();
+        if (app_config->dirty()) {
+            // Debounce: avoid synchronous disk writes on every idle event.
+            // Save at most once per 5 seconds; OnExit() flushes any remaining dirty state.
+            static auto s_last_config_save = std::chrono::steady_clock::time_point{};
+            if (Slic3r::debounce_elapsed(s_last_config_save, std::chrono::seconds(5)))
+                app_config->save();
+        }
 
         // QDS
         //this->obj_manipul()->update_if_dirty();
@@ -3534,6 +3641,9 @@ __retry:
             m_agent->set_country_code(country_code);
             m_agent->start();
             m_load_last_machine.InnerLoad(m_agent, getDeviceManager());
+            if (auto dev = getDeviceManager()) {
+                dev->restore_local_machines_from_user_access_config();
+            }
         }
     }
     else {
@@ -4147,7 +4257,10 @@ void GUI_App::ShowUserLogin(bool show)
 // 10
 void GUI_App::SetOnlineLogin(bool status)
 {
-    get_login_info();
+    BOOST_LOG_TRIVIAL(info) << "SetOnlineLogin " << status << "  " << __FUNCTION__;
+    //cj_5 If user actively clicked login, show sync dialog; otherwise skip (auto login).
+    int online_login = m_pending_manual_login ? 1 : 0;
+    get_login_info(online_login);
     mainframe->m_printer_view->SetLoginStatus(status);
 }
 
@@ -4349,9 +4462,9 @@ void GUI_App::import_model(wxWindow *parent, wxArrayString& input_files) const
     input_files.Clear();
     wxFileDialog dialog(parent ? parent : GetTopWindow(),
 #ifdef __APPLE__
-        _L("Choose one or more files (3mf/step/stl/svg/obj/amf/usd*/abc/ply):"),
+        _L("Choose one or more files (3mf/step/stl/svg/obj/amf/gltf/glb/fbx/usd*/abc/ply):"),
 #else
-        _L("Choose one or more files (3mf/step/stl/svg/obj/amf):"),
+        _L("Choose one or more files (3mf/step/stl/svg/obj/amf/gltf/glb/fbx):"),
 #endif
         from_u8(app_config->get_last_dir()), "",
         file_wildcards(FT_MODEL), wxFD_OPEN | wxFD_MULTIPLE | wxFD_FILE_MUST_EXIST);
@@ -4398,6 +4511,11 @@ wxString GUI_App::transition_tridid(int trid_id, std::optional<int> total_extrud
         prefix.append(base);
         return prefix;
     }
+    else if (trid_id >= 24 && trid_id <= 27 )
+    {
+        int id_suffix = trid_id - 24 + 1;//ams lite for n9 trid_id start from 24
+        return wxString::Format("Q%d", id_suffix);
+    }
     else {
         //y75
         // int id_index = std::clamp((int)ceil(trid_id / 4), 0, 25);
@@ -4413,87 +4531,123 @@ wxString GUI_App::transition_tridid(int trid_id, std::optional<int> total_extrud
 void GUI_App::request_login(bool show_user_info)
 {
 #if QDT_RELEASE_TO_PUBLIC  
-    ShowUserLogin();
-
+    //cj_5 Set BEFORE ShowUserLogin because login completes inside its modal loop.
     if (show_user_info) {
-        get_login_info();
+        m_pending_manual_login = true;
+    }
+    ShowUserLogin();
+	BOOST_LOG_TRIVIAL(info) << "request_login " << show_user_info <<"  " << __FUNCTION__;
+    if (show_user_info) {
+        get_login_info(1);
     }
 #endif
 }
 
-void GUI_App::get_login_info()
+//cj_5 online_login: 1 = manual login (show sync dialog), 0 = auto login (skip dialog).
+void GUI_App::get_login_info(int online_login)
 {
 #if QDT_RELEASE_TO_PUBLIC
-    // if (m_agent) {
-    //     if (m_agent->is_user_login()) {
-    //         std::string login_cmd = m_agent->build_login_cmd();
-    //         wxString strJS = wxString::Format("window.postMessage(%s)", login_cmd);
-    //         GUI::wxGetApp().run_script_left(strJS);
-    //     }
-    //     else {
-    //         m_agent->user_logout(true);
-    //         std::string logout_cmd = m_agent->build_logout_cmd();
-    //         wxString strJS = wxString::Format("window.postMessage(%s)", logout_cmd);
-    //         GUI::wxGetApp().run_script_left(strJS);
-    //     }
-    // }
-    //y77
-    bool has_token = (wxGetApp().app_config->get("user_token") != "");
-    if (has_token) {
-        if (m_qidi_login)
-            return;
-       std::string head_name = wxGetApp().app_config->get("user_head_name");
-       bool is_link = app_config->get("login_method") != "Maker";
-       if(is_link){
-           wxString    msg;
-           QIDINetwork m_qidinetwork;
-           m_user_name = m_qidinetwork.user_info(msg);
-       }
-       else{
-           m_user_name = MakerHttpHandle::getInstance().get_maker_user_name();
-       }
+	//y77
+	bool has_token = (wxGetApp().app_config->get("user_token") != "");
+    BOOST_LOG_TRIVIAL(trace) << "[login] get_login_info: has_token=" << has_token
+        << " login_method=" << wxGetApp().app_config->get("login_method")
+        << " preset_folder=" << wxGetApp().app_config->get("preset_folder");
+	if (has_token) {
+        BOOST_LOG_TRIVIAL(info) << "user token msg: login method is " << wxGetApp().app_config->get("login_method") << __FUNCTION__;
+			if (m_qidi_login) {
+				m_pending_manual_login = false;
+				return;
+			}
+		//cj_5 Save old user ID before login overwrites preset_folder, used to decide if we need to clear old presets.
+			//cj_5 Save old user ID before login overwrites preset_folder. Fallback to persisted value.
+				m_last_login_user_id = app_config->get("preset_folder");
+				if (m_last_login_user_id.empty())
+					m_last_login_user_id = app_config->get("last_login_user_id");
+			bool is_link = app_config->get("login_method") != "Maker";
+		if (is_link) {
+			wxString    msg;
+			QIDINetwork m_qidinetwork;
+			m_user_name = m_qidinetwork.user_info(msg);
+		}
+		else {
+			m_user_name = MakerHttpHandle::getInstance().get_maker_user_name();
+		}
 
-       if(!m_user_name.empty()){
-           wxString user_head_path;
-           if (!head_name.empty()) {
-               user_head_path = (boost::filesystem::path(Slic3r::data_dir()) / "user" / head_name).make_preferred().string();
-               std::replace(user_head_path.begin(), user_head_path.end(), '\\', '/');
-           }
-           else
-               user_head_path = "";
-           wxString strJS = wxString::Format("SetLoginInfo('%s', '%s');", user_head_path, from_u8(m_user_name));
-           GUI::wxGetApp().run_script_left(strJS);
-           m_qidi_login = true;
-       }
-       else if(!is_link) {
-               std::string new_token = MakerHttpHandle::getInstance().refresh_token();
-               wxGetApp().app_config->set("user_token", new_token);
-           }
-        else {
-            wxGetApp().app_config->set("user_token", "");
-        }
+		std::string head_name = wxGetApp().app_config->get("user_head_name");
+		if (!m_user_name.empty()) {
+			wxString user_head_path;
+			if (!head_name.empty()) {
+				//cj_5 Maker avatars are stored under user/{preset_folder}/ subfolder.
+				boost::filesystem::path head_dir = boost::filesystem::path(Slic3r::data_dir()) / "user";
+				if (!is_link) {
+					std::string maker_id = app_config->get("preset_folder");
+					if (!maker_id.empty())
+						head_dir = head_dir / maker_id;
+				}
+				user_head_path = (head_dir / head_name).make_preferred().string();
+				std::replace(user_head_path.begin(), user_head_path.end(), '\\', '/');
+			}
+			else {
+				user_head_path = "";
+			}
+			wxString strJS = wxString::Format("SetLoginInfo('%s', '%s');", user_head_path, from_u8(m_user_name));
+			BOOST_LOG_TRIVIAL(info) << strJS << "   " << __FUNCTION__;
+			GUI::wxGetApp().run_script_left(strJS);
+			m_qidi_login = true;
+			//cj_5 Trigger preset loading after login (replaces deprecated m_agent callback).
+			app_config->set("last_login_user_id", app_config->get("preset_folder"));
+			request_user_handle(online_login);
+			m_pending_manual_login = false;
+		}
+		else if (!is_link) {
+			BOOST_LOG_TRIVIAL(info) << "user_token is out of date" << "  " << __FUNCTION__;
+			std::string new_token = MakerHttpHandle::getInstance().refresh_token();
+			wxGetApp().app_config->set("user_token", new_token);
+		}
+		else {
+            BOOST_LOG_TRIVIAL(trace) << "user's name is empty" << "   " << __FUNCTION__;
+			wxGetApp().app_config->set("user_token", "");
+		}
 
-        if(wxGetApp().app_config->get("user_token") == ""){
-            request_user_logout();
-        }
-    }
-    else 
-    {
-       m_user_name = "";
-       wxGetApp().app_config->set("user_token", "");
-       wxString strJS = wxString::Format("SetUserOffline()");
-       GUI::wxGetApp().run_script_left(strJS);
-       m_qidi_login = false;
+		if (wxGetApp().app_config->get("user_token") == "") {
+            BOOST_LOG_TRIVIAL(info) << "user_token is empty, request_user_logout" << "  " << __FUNCTION__;
+			request_user_logout();
+		}
+	}
+	else
+	{
+        BOOST_LOG_TRIVIAL(error) << "user_token is empty, SetUserOffline" << "  " << __FUNCTION__;
+		m_user_name = "";
+		wxGetApp().app_config->set("user_token", "");
+		wxString strJS = wxString::Format("SetUserOffline()");
+		GUI::wxGetApp().run_script_left(strJS);
+		m_qidi_login = false;
+	}
+#endif
+}
+
+//cj_5 Get current user ID: prefer maker_user_id (Maker login), fall back to default.
+std::string GUI_App::get_current_user_id() const
+{
+#if QDT_RELEASE_TO_PUBLIC
+    if (app_config) {
+        std::string maker_id = app_config->get("preset_folder");
+        BOOST_LOG_TRIVIAL(trace) << "[login] get_current_user_id: preset_folder=" << maker_id;
+        if (!maker_id.empty()) return maker_id;
     }
 #endif
+    BOOST_LOG_TRIVIAL(trace) << "[login] get_current_user_id: fallback to default";
+    return DEFAULT_USER_FOLDER_NAME;
 }
 
 bool GUI_App::is_user_login()
 {
 #if QDT_RELEASE_TO_PUBLIC
-    if (m_agent) {
+    // cj_5 Check token-based login (Maker) — no longer depends on deprecated m_agent DLL.
+    if (app_config && !app_config->get("user_token").empty())
+        return true;
+    if (m_agent)
         return m_agent->is_user_login();
-    }
 #endif
     return false;
 }
@@ -4501,12 +4655,9 @@ bool GUI_App::is_user_login()
 
 bool GUI_App::check_login()
 {
-    bool result = false;
+    //cj_5 Use token-based check instead of deprecated m_agent DLL.
+    bool result = is_user_login();
 #if QDT_RELEASE_TO_PUBLIC
-    if (m_agent) {
-        result = m_agent->is_user_login();
-    }
-
     if (!result) {
         ShowUserLogin();
     }
@@ -4530,34 +4681,71 @@ void GUI_App::request_user_login(int online_login)
 
 void GUI_App::request_user_logout()
 {
-    // if (m_agent && m_agent->is_user_login()) {
-    //    // Update data first before showing dialogs
-    //    m_agent->user_logout();
-        // if (auto obj = m_device_manager->get_selected_machine();
-        //     obj && obj->is_cloud_mode_printer()) {
-        //     m_device_manager->record_user_last_machine("");
-        // }
+	//cj_5 Reload default presets after logout (replaces deprecated m_agent code in #if 0).
+	remove_user_presets();
+	enable_user_preset_folder(false);
+	mainframe->update_side_preset_ui();
 
-    //    /* delete old user settings */
-    //    bool     transfer_preset_changes = false;
-    //    wxString header = _L("Some presets are modified.") + "\n" +
-    //        _L("You can keep the modified presets for the new project, discard or save changes as new presets.");
-    //    using ab        = UnsavedChangesDialog::ActionButtons;
-    //    wxGetApp().check_and_keep_current_preset_changes(_L("User logged out"), header, ab::KEEP | ab::SAVE, &transfer_preset_changes);
-
-    //    m_device_manager->clean_user_info();
-    //    remove_user_presets();
-    //    enable_user_preset_folder(false);
-    //    preset_bundle->load_user_presets(DEFAULT_USER_FOLDER_NAME, ForwardCompatibilitySubstitutionRule::Enable);
-    //    mainframe->update_side_preset_ui();
-
-    //    GUI::wxGetApp().stop_sync_user_preset();
-    // }
     // y15
     wxString strJS = wxString::Format("SetUserOffline()");
     GUI::wxGetApp().run_script_left(strJS);
     wxGetApp().app_config->set("user_token", "");
+    //cj_5 Clear preset_folder on logout and reload default presets.
+    //cj_5 Persist last login user ID so re-login can detect same user after restart.
+    app_config->set("last_login_user_id", m_last_login_user_id);
+
+#if QDT_RELEASE_TO_PUBLIC
+    UserPresetSyncManager::instance().stop();
+#endif
+
+    m_last_login_user_id.clear();
+    app_config->set("preset_folder", "");
+	app_config->set("user_head_name", "");
+	app_config->set("user_head_url", "");
     mainframe->m_printer_view->SetLoginStatus(false);
+
+    
+
+#if 0
+    if (m_agent && m_agent->is_user_login()) {
+        m_load_last_machine.is_list_ok = false;
+        m_load_last_machine.is_mqtt_ok = false;
+        // Update data first before showing dialogs
+        m_agent->user_logout(true);
+        if (auto obj = m_device_manager->get_selected_machine();
+            obj && obj->is_cloud_mode_printer()) {
+            m_device_manager->record_user_last_machine("");
+        }
+
+        /* delete old user settings */
+        bool     transfer_preset_changes = false;
+        wxString header = _L("Some presets are modified.") + "\n" +
+            _L("You can keep the modified presets for the new project, discard or save changes as new presets.");
+        using ab        = UnsavedChangesDialog::ActionButtons;
+        wxGetApp().check_and_keep_current_preset_changes(_L("User logged out"), header, ab::KEEP | ab::SAVE, &transfer_preset_changes);
+
+        m_device_manager->clean_user_info();
+        remove_user_presets();
+        enable_user_preset_folder(false);
+        preset_bundle->load_user_presets(DEFAULT_USER_FOLDER_NAME, ForwardCompatibilitySubstitutionRule::Enable);
+        mainframe->update_side_preset_ui();
+
+        GUI::wxGetApp().stop_sync_user_preset();
+
+        // Drop queued cloud ops so they don't fire against a stale user.
+        if (m_fila_manager_cloud_disp) {
+            m_fila_manager_cloud_disp->clear_pending();
+        }
+        // STUDIO-18155: 清 AMS auto-push 节流账本，避免账号 A 的 cooldown
+        // 影响登入账号 B 后第一次 sync 触发 push 的时机。
+        if (m_fila_manager_cloud_sync) {
+            m_fila_manager_cloud_sync->throttle().clear_all();
+        }
+        if (mainframe && mainframe->web_device()) {
+            mainframe->web_device()->NotifyFilamentSessionState();
+        }
+    }
+#endif
 }
 
 int GUI_App::request_user_unbind(std::string dev_id)
@@ -5002,6 +5190,15 @@ void GUI_App::request_model_download(wxString url)
     }
 }
 
+std::string GUI_App::sanitize_download_url(const std::string &url)
+{
+    try {
+        std::regex pattern("\\.\\.[\\/\\\\]|\\.\\.[\\/\\\\][\\/\\\\]|\\.\\/[\\/\\\\]|\\.[\\/\\\\]");
+        return std::regex_replace(url, pattern, "");
+    } catch (...) {}
+    return url;
+}
+
 //QDS download project by project id
 void GUI_App::download_project(std::string project_id)
 {
@@ -5126,12 +5323,11 @@ void GUI_App::on_http_error(wxCommandEvent &evt)
 void GUI_App::enable_user_preset_folder(bool enable)
 {
     if (enable) {
-        std::string user_id = m_agent->get_user_id();
-        app_config->set("preset_folder", user_id);
+        //cj_5 Use maker_user_id first, fall back to DLL.
+		std::string user_id = get_current_user_id();
         GUI::wxGetApp().preset_bundle->update_user_presets_directory(user_id);
     } else {
         BOOST_LOG_TRIVIAL(info) << "preset_folder: set to empty";
-        app_config->set("preset_folder", "");
         GUI::wxGetApp().preset_bundle->update_user_presets_directory(DEFAULT_USER_FOLDER_NAME);
     }
 }
@@ -5187,29 +5383,65 @@ void GUI_App::on_update_machine_list(wxCommandEvent &evt)
 
 void GUI_App::on_user_login_handle(wxCommandEvent &evt)
 {
-    if (!m_agent) { return; }
+    //if (!m_agent) { return; }
 
     int online_login = evt.GetInt();
-    m_agent->connect_server();
+    BOOST_LOG_TRIVIAL(trace) << "[login] on_user_login_handle: online_login=" << online_login
+        << " preset_folder=" << (app_config ? app_config->get("preset_folder") : "null");
+    //m_agent->connect_server();
 
     // get machine list
     DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
     if (!dev) return;
 
-    boost::thread update_thread = boost::thread([this, dev] {
-        dev->update_user_machine_list_info();
-        CallAfter([this, dev]() {
-            m_load_last_machine.TryLoadFromHttpCB(m_agent, dev);
-        });
-    });
+//     boost::thread update_thread = boost::thread([this, dev] {
+//         dev->update_user_machine_list_info();
+//         CallAfter([this, dev]() {
+//             m_load_last_machine.TryLoadFromHttpCB(m_agent, dev);
+//             dev->restore_local_machines_from_user_access_config();
+//         });
+//     });
 
-    if (online_login) {
-        remove_user_presets();
+    //cj_5 Load user presets and optionally start cloud sync.
+    // online_login=1: manual login — show sync dialog for first-time config.
+    // online_login=0: auto login  — load presets silently, sync if already enabled.
+    {
+        std::string new_user_id = get_current_user_id();
+
+        //cj_5 Get old user ID: try memory first, fall back to persisted config.
+        std::string old_user_id = m_last_login_user_id;
+        if (old_user_id.empty())
+            old_user_id = app_config->get("last_login_user_id");
+
+        // Only remove old presets when user ID actually changed.
+        if (new_user_id != old_user_id) {
+            remove_user_presets();
+        }
         enable_user_preset_folder(true);
-        preset_bundle->load_user_presets(m_agent->get_user_id(), ForwardCompatibilitySubstitutionRule::Enable);
+        preset_bundle->load_user_presets(new_user_id, ForwardCompatibilitySubstitutionRule::Enable);
         mainframe->update_side_preset_ui();
 
-        GUI::wxGetApp().mainframe->show_sync_dialog();
+        if (online_login) {
+            // Manual login: ask user whether to enable sync.
+            GUI::wxGetApp().mainframe->show_sync_dialog();
+        } else {
+            //cj_5 Auto login: start sync silently if already enabled in config.
+            if (app_config->get("sync_user_preset") == "true") {
+#if QDT_RELEASE_TO_PUBLIC
+                UserPresetSyncManager::instance().start();
+#endif
+                ;
+            }
+        }
+
+        // Trigger filament-manager cloud pull on the dispatcher queue; no-op if
+        // already pulling.  Runs after login so auth token is available.
+        if (m_fila_manager_cloud_disp) {
+            m_fila_manager_cloud_disp->enqueue_pull();
+        }
+        if (mainframe && mainframe->web_device()) {
+            mainframe->web_device()->NotifyFilamentSessionState();
+        }
     }
 }
 
@@ -5293,11 +5525,15 @@ void GUI_App::check_update(bool show_tips, int by_user)
     } else {
         wxGetApp().app_config->set("upgrade", "force_upgrade", false);
 
-        if (show_tips) {
+        // When the beta channel is enabled, defer the "newest version" toast to
+        // check_beta_version(): the stable channel says no, but GitHub may still have
+        // a newer beta. Showing the toast now would contradict the beta dialog that
+        // pops up moments later from the async GitHub check.
+        if (show_tips && app_config->get("enable_beta_version_update") != "true") {
             this->no_new_version();
+        } else {
+            check_beta_version(show_tips);
         }
-
-        check_beta_version();
     }
 }
 //B y41
@@ -5307,6 +5543,77 @@ void GUI_App::check_new_version(bool show_tips, int by_user)
     QIDINetwork qidi;
     qidi.check_new_version(show_tips, by_user);
 #endif
+
+#if 0
+    std::string platform = "windows";
+
+#ifdef __WINDOWS__
+    platform = "windows";
+#endif
+#ifdef __APPLE__
+    platform = "macos";
+#endif
+#ifdef __LINUX__
+    platform = "linux";
+#endif
+    std::string query_params = (boost::format("?name=slicer&version=%1%&guide_version=%2%")
+        % VersionInfo::convert_full_version(SLIC3R_VERSION)
+        % VersionInfo::convert_full_version("0.0.0.1")
+        ).str();
+
+    std::string url = get_http_url(app_config->get_country_code()) + query_params;
+    Slic3r::Http http = Slic3r::Http::get(url);
+
+    http.header("accept", "application/json")
+        .timeout_connect(TIMEOUT_CONNECT)
+        .timeout_max(TIMEOUT_RESPONSE)
+        .on_complete([this, show_tips, by_user](std::string body, unsigned) {
+        try {
+            json j = json::parse(body);
+            if (j.contains("message")) {
+                if (j["message"].get<std::string>() == "success") {
+                    if (j.contains("software")) {
+                        if (j["software"].empty()) {
+                            // Same reasoning as in check_update(): suppress the toast when
+                            // the beta channel is enabled so it cannot contradict the beta
+                            // release dialog raised by the async GitHub check below.
+                            if (show_tips && app_config->get("enable_beta_version_update") != "true") {
+                                this->no_new_version();
+                            } else {
+                                check_beta_version(show_tips);
+                            }
+                        }
+                        else {
+                            if (j["software"].contains("url")
+                                && j["software"].contains("version")
+                                && j["software"].contains("description")) {
+                                version_info.url = j["software"]["url"].get<std::string>();
+                                version_info.version_str = j["software"]["version"].get<std::string>();
+                                version_info.description = j["software"]["description"].get<std::string>();
+
+                                wxGetApp().app_config->set_str("app", "cloud_software_url", version_info.url);
+                            }
+                            if (j["software"].contains("force_update")) {
+                                version_info.force_upgrade = j["software"]["force_update"].get<bool>();
+                            }
+                            CallAfter([this, show_tips, by_user](){
+                                this->check_update(show_tips, by_user);
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        catch (...) {
+            ;
+        }
+            })
+        .on_error([this](std::string body, std::string error, unsigned int status) {
+            handle_http_error(status, body);
+            BOOST_LOG_TRIVIAL(error) << "check new version error" << body;
+    }).perform();
+#endif
+
 }
 
 #if QDT_RELEASE_TO_PUBLIC
@@ -5478,8 +5785,10 @@ void GUI_App::report_consent(std::string expand)
         .perform();
 }
 
-void GUI_App::check_beta_version()
+void GUI_App::check_beta_version(bool show_tips_when_no_beta)
 {
+    // When the beta channel is off the stable callers have already shown the toast
+    // (see check_update / check_new_version), so we just bail out here.
     if (app_config->get("enable_beta_version_update") != "true") {
         return;
     }
@@ -5506,7 +5815,7 @@ void GUI_App::check_beta_version()
     http.header("accept", "application/json")
         .timeout_connect(TIMEOUT_CONNECT)
         .timeout_max(TIMEOUT_RESPONSE)
-        .on_complete([this, platform](std::string body, unsigned) {
+        .on_complete([this, platform, show_tips_when_no_beta](std::string body, unsigned) {
         try {
             json versions = json::parse(body, nullptr, false);
             for (auto version : versions){
@@ -5532,7 +5841,12 @@ void GUI_App::check_beta_version()
                                     version_info.url = url;
                                     version_info.description = "###" + std::string(version["html_url"]) + "###";
                                     version_info.force_upgrade = false;
-                                    CallAfter([this]() {
+                                    CallAfter([this, show_tips_when_no_beta]() {
+                                        auto fallback_tips = [this, show_tips_when_no_beta]() {
+                                            if (show_tips_when_no_beta) {
+                                                this->no_new_version();
+                                            }
+                                        };
 
                                         if (version_info.version_str.empty() || version_info.url.empty()) {
                                             return;
@@ -5541,7 +5855,40 @@ void GUI_App::check_beta_version()
                                         auto curr_version   = Semver::parse(SLIC3R_VERSION);
                                         auto remote_version = Semver::parse(version_info.version_str);
                                         if (curr_version && remote_version && (*remote_version > *curr_version)) {
-                                            GUI::wxGetApp().request_new_version(false);
+                                            std::string skip_ver = app_config->get("app", "skip_version");
+                                            if (!skip_ver.empty() && version_info.version_str <= skip_ver) {
+                                                fallback_tips();
+                                                return;
+                                            }
+
+                                            BetaVersionDialog beta_dlg(this->mainframe);
+                                            beta_dlg.updateContent(
+                                                wxString::FromUTF8(version_info.version_str),
+                                                wxString::FromUTF8(SLIC3R_VERSION));
+
+                                            switch (beta_dlg.ShowModal()) {
+                                            case wxID_YES:
+                                                GUI::wxGetApp().request_new_version(2);
+                                                break;
+                                            case wxID_CANCEL:
+                                                // Triggered only by the explicit
+                                                // "Don't show me Beta updates again" button.
+                                                app_config->set("enable_beta_version_update", "false");
+                                                break;
+                                            case wxID_NO:
+                                                wxGetApp().set_skip_version(true);
+                                                break;
+                                            case wxID_CLOSE:
+                                                // Window close (X): dismiss the dialog without
+                                                // touching the beta-channel preference or
+                                                // skip_version. Same as default, listed
+                                                // explicitly to document the intent.
+                                                break;
+                                            default:
+                                                break;
+                                            }
+                                        } else {
+                                            fallback_tips();
                                         }
                                     });
                                 }
@@ -5780,7 +6127,7 @@ void GUI_App::reload_settings()
 //QDS reload when logout
 void GUI_App::remove_user_presets()
 {
-    if (preset_bundle && m_agent) {
+    if (preset_bundle/* && m_agent*/) {
         preset_bundle->remove_users_preset(*app_config);
 
         // Not remove user preset cache
@@ -5935,149 +6282,162 @@ void GUI_App::sync_preset(Preset* preset)
 //B
 void GUI_App::start_sync_user_preset(bool with_progress_dlg)
 {
-    // if (!m_agent || !m_agent->is_user_login()) return;
+#if QDT_RELEASE_TO_PUBLIC
+	UserPresetSyncManager::instance().start(with_progress_dlg);
+	return;
+#endif
+	if (!m_agent || !m_agent->is_user_login()) return;
 
-    // // has already start sync
-    // if (m_user_sync_token) return;
+	// has already start sync
+	if (m_user_sync_token) return;
 
-    // ProgressFn progressFn;
-    // WasCancelledFn cancelFn;
-    // std::function<void(bool)> finishFn;
+	ProgressFn progressFn;
+	WasCancelledFn cancelFn;
+	std::function<void(bool)> finishFn;
 
-    // BOOST_LOG_TRIVIAL(info) << "start_sync_service...";
-    // // QDS
-    // m_user_sync_token.reset(new int(0));
-    // if (with_progress_dlg) {
-    //     auto dlg = new ProgressDialog(_L("Loading"), "", 100, this->mainframe, wxPD_AUTO_HIDE | wxPD_APP_MODAL | wxPD_CAN_ABORT);
-    //     dlg->Update(0, _L("Loading user preset"));
-    //     progressFn = [this, dlg](int percent) {
-    //         CallAfter([=]{
-    //             dlg->Update(percent, _L("Loading user preset"));
-    //         });
-    //     };
-    //     cancelFn = [this, dlg]() {
-    //         return is_closing() || dlg->WasCanceled();
-    //     };
-    //     finishFn = [this, userid = m_agent->get_user_id(), dlg, t = std::weak_ptr(m_user_sync_token)](bool ok) {
-    //         CallAfter([=]{
-    //             dlg->Destroy();
-    //             if (ok && m_agent && t.lock() == m_user_sync_token && userid == m_agent->get_user_id()) reload_settings();
-    //         });
-    //     };
-    // }
-    // else {
-    //     finishFn = [this, userid = m_agent->get_user_id(), t = std::weak_ptr(m_user_sync_token)](bool ok) {
-    //         CallAfter([=] {
-    //             if (ok && m_agent && t.lock() == m_user_sync_token && userid == m_agent->get_user_id()) reload_settings();
-    //         });
-    //     };
-        // cancelFn = [this]() {
-        //     return is_closing();
-        // };
-    // }
+	BOOST_LOG_TRIVIAL(info) << "start_sync_service...";
+	// QDS
+	m_user_sync_token.reset(new int(0));
+	if (with_progress_dlg) {
+		auto dlg = new ProgressDialog(_L("Loading"), "", 100, this->mainframe, wxPD_AUTO_HIDE | wxPD_APP_MODAL | wxPD_CAN_ABORT);
+		dlg->EnableYield(false);
+		dlg->Update(0, _L("Loading user preset"));
+		progressFn = [this, dlg](int percent) {
+			CallAfter([=] {
+				dlg->Update(percent, _L("Loading user preset"));
+				});
+		};
+		cancelFn = [this, dlg]() {
+			 return is_closing() || dlg->WasCanceled();
+		};
+		finishFn = [this, userid = m_agent->get_user_id(), dlg, t = std::weak_ptr(m_user_sync_token)](bool ok) {
+			CallAfter([=] {
+				dlg->Destroy();
+				if (ok && m_agent && t.lock() == m_user_sync_token && userid == m_agent->get_user_id()) reload_settings();
+				});
+		};
+	}
+	else {
+		finishFn = [this, userid = m_agent->get_user_id(), t = std::weak_ptr(m_user_sync_token)](bool ok) {
+			CallAfter([=] {
+				if (ok && m_agent && t.lock() == m_user_sync_token && userid == m_agent->get_user_id()) reload_settings();
+				});
+		};
+		// cancelFn = [this]() {
+		//     return is_closing();
+		// };
+	}
 
-    // m_sync_update_thread = Slic3r::create_thread(
-    //     [this, progressFn, cancelFn, finishFn, t = std::weak_ptr(m_user_sync_token)] {
-    //         // get setting list, update setting list
-    //         std::string version = preset_bundle->get_vendor_profile_version(PresetBundle::QDT_BUNDLE).to_string();
-    //         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << __LINE__ << " start sync user preset, m_is_closing = " << m_is_closing;
-    //         int ret = m_agent->get_setting_list2(version, [this](auto info) {
-    //             auto type = info[QDT_JSON_KEY_TYPE];
-    //             auto name = info[QDT_JSON_KEY_NAME];
-    //             auto setting_id = info[QDT_JSON_KEY_SETTING_ID];
-    //             auto update_time_str = info[QDT_JSON_KEY_UPDATE_TIME];
-    //             long long update_time = 0;
-    //             if (!update_time_str.empty())
-    //                 update_time = std::atoll(update_time_str.c_str());
-    //             if (type == "filament") {
-    //                 return preset_bundle->filaments.need_sync(name, setting_id, update_time);
-    //             } else if (type == "print") {
-    //                 return preset_bundle->prints.need_sync(name, setting_id, update_time);
-    //             } else if (type == "printer") {
-    //                 return preset_bundle->printers.need_sync(name, setting_id, update_time);
-    //             } else {
-    //                 return true;
-    //             }
-    //         }, progressFn, cancelFn);
-            // BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << __LINE__ << " get_setting_list2 ret = " << ret << " m_is_closing = " << m_is_closing;    
-    //         finishFn(ret == 0);
+	m_sync_update_thread = Slic3r::create_thread(
+		[this, progressFn, cancelFn, finishFn, t = std::weak_ptr(m_user_sync_token)]{
+			// get setting list, update setting list
+			std::string version = preset_bundle->get_vendor_profile_version(PresetBundle::QDT_BUNDLE).to_string();
+			BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << __LINE__ << " start sync user preset, m_is_closing = " << m_is_closing;
+			int ret = m_agent->get_setting_list2(version, [this](auto info) {
+				auto type = info[QDT_JSON_KEY_TYPE];
+				auto name = info[QDT_JSON_KEY_NAME];
+				auto setting_id = info[QDT_JSON_KEY_SETTING_ID];
+				auto update_time_str = info[QDT_JSON_KEY_UPDATE_TIME];
+				long long update_time = 0;
+				if (!update_time_str.empty())
+					update_time = std::atoll(update_time_str.c_str());
+				if (type == "filament") {
+					return preset_bundle->filaments.need_sync(name, setting_id, update_time);
+				}
+else if (type == "print") {
+ return preset_bundle->prints.need_sync(name, setting_id, update_time);
+}
+else if (type == "printer") {
+ return preset_bundle->printers.need_sync(name, setting_id, update_time);
+}
+else {
+ return true;
+}
+}, progressFn, cancelFn);
+			// BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << __LINE__ << " get_setting_list2 ret = " << ret << " m_is_closing = " << m_is_closing;    
+			   finishFn(ret == 0);
 
-    //         int count = 0, sync_count = 0;
-    //         std::vector<Preset> presets_to_sync;
-    //         while (!t.expired()) {
-    //             count++;
-    //             if (count % 20 == 0) {
-    //                 if (m_agent) {
-    //                     if (!m_agent->is_user_login()) {
-    //                         continue;
-    //                     }
-    //                     //sync preset
-    //                     if (!preset_bundle) continue;
+			   int count = 0, sync_count = 0;
+			   std::vector<Preset> presets_to_sync;
+			   while (!t.expired()) {
+				   count++;
+				   if (count % 20 == 0) {
+					   if (m_agent) {
+						   if (!m_agent->is_user_login()) {
+							   continue;
+						   }
+						   //sync preset
+						   if (!preset_bundle) continue;
 
-    //                     int total_count = 0;
-    //                     sync_count = preset_bundle->prints.get_user_presets(preset_bundle, presets_to_sync);
-    //                     if (sync_count > 0) {
-    //                         for (Preset& preset : presets_to_sync) {
-    //                             sync_preset(&preset);
-    //                             boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
-    //                         }
-    //                     }
-    //                     total_count += sync_count;
+						   int total_count = 0;
+						   sync_count = preset_bundle->prints.get_user_presets(preset_bundle, presets_to_sync);
+						   if (sync_count > 0) {
+							   for (Preset& preset : presets_to_sync) {
+								   sync_preset(&preset);
+								   boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
+							   }
+						   }
+						   total_count += sync_count;
 
-    //                     sync_count = preset_bundle->filaments.get_user_presets(preset_bundle, presets_to_sync);
-    //                     if (sync_count > 0) {
-    //                         for (Preset& preset : presets_to_sync) {
-    //                             sync_preset(&preset);
-    //                             boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
-    //                         }
-    //                     }
-    //                     total_count += sync_count;
+						   sync_count = preset_bundle->filaments.get_user_presets(preset_bundle, presets_to_sync);
+						   if (sync_count > 0) {
+							   for (Preset& preset : presets_to_sync) {
+								   sync_preset(&preset);
+								   boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
+							   }
+						   }
+						   total_count += sync_count;
 
-    //                     sync_count = preset_bundle->printers.get_user_presets(preset_bundle, presets_to_sync);
-    //                     if (sync_count > 0) {
-    //                         for (Preset& preset : presets_to_sync) {
-    //                             sync_preset(&preset);
-    //                             boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
-    //                         }
-    //                     }
-    //                     total_count += sync_count;
+						   sync_count = preset_bundle->printers.get_user_presets(preset_bundle, presets_to_sync);
+						   if (sync_count > 0) {
+							   for (Preset& preset : presets_to_sync) {
+								   sync_preset(&preset);
+								   boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
+							   }
+						   }
+						   total_count += sync_count;
 
-    //                     if (total_count == 0) {
-    //                         CallAfter([this] {
-    //                             if (!is_closing())
-    //                                 plater()->get_notification_manager()->close_notification_of_type(NotificationType::QDTUserPresetExceedLimit);
-    //                         });
-    //                     }
+						   if (total_count == 0) {
+							   CallAfter([this] {
+								   if (!is_closing())
+									   plater()->get_notification_manager()->close_notification_of_type(NotificationType::QDTUserPresetExceedLimit);
+							   });
+						   }
 
-    //                     unsigned int http_code = 200;
+						   unsigned int http_code = 200;
 
-    //                     /* get list witch need to be deleted*/
-    //                     std::vector<string> delete_cache_presets = get_delete_cache_presets_lock();
-    //                     for (auto it = delete_cache_presets.begin(); it != delete_cache_presets.end();) {
-    //                         if ((*it).empty()) continue;
-    //                         std::string del_setting_id = *it;
-    //                         int result = m_agent->delete_setting(del_setting_id);
-    //                         if (result == 0) {
-    //                             preset_deleted_from_cloud(del_setting_id);
-    //                             it = delete_cache_presets.erase(it);
-    //                             m_create_preset_blocked = { false, false, false, false, false, false };
-    //                             // BOOST_LOG_TRIVIAL(trace) << "sync_preset: sync operation: delete success! setting id = " << del_setting_id;
-    //                         }
-    //                         else {
-    //                             BOOST_LOG_TRIVIAL(info) << "delete setting = " <<del_setting_id << " failed";
-    //                             it++;
-    //                         }
-    //                     }
-    //                 }
-    //             } else {
-    //                 boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
-    //             }
-    //         }
-    //     });
+						   /* get list witch need to be deleted*/
+						   std::vector<string> delete_cache_presets = get_delete_cache_presets_lock();
+						   for (auto it = delete_cache_presets.begin(); it != delete_cache_presets.end();) {
+							   if ((*it).empty()) continue;
+							   std::string del_setting_id = *it;
+							   int result = m_agent->delete_setting(del_setting_id);
+							   if (result == 0) {
+								   preset_deleted_from_cloud(del_setting_id);
+								   it = delete_cache_presets.erase(it);
+								   m_create_preset_blocked = { false, false, false, false, false, false };
+								   // BOOST_LOG_TRIVIAL(trace) << "sync_preset: sync operation: delete success! setting id = " << del_setting_id;
+							   }
+							   else {
+								   BOOST_LOG_TRIVIAL(info) << "delete setting = " << del_setting_id << " failed";
+								   it++;
+							   }
+						   }
+					   }
+				   }
+   else {
+	boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
+}
+}
+		});
 }
 
 void GUI_App::stop_sync_user_preset()
 {
+#if QDT_RELEASE_TO_PUBLIC
+    UserPresetSyncManager::instance().stop();
+    return;
+#endif
     if (!m_user_sync_token)
         return;
 
@@ -7220,7 +7580,21 @@ void GUI_App::MacOpenURL(const wxString& url)
             if (!input_str.empty()) download_origin_url = input_str;
         }
 
-        std::string download_file_url = url_decode(download_origin_url);
+        std::string decoded_url = url_decode(download_origin_url);
+        std::string download_file_url;
+#if QDT_RELEASE_TO_PUBLIC
+        if (boost::starts_with(decoded_url, "http://makerworld") || boost::starts_with(decoded_url, "https://makerworld") ||
+            boost::starts_with(decoded_url, "http://public-cdn.bblmw.com") || boost::starts_with(decoded_url, "https://public-cdn.bblmw.com") ||
+            boost::algorithm::contains(decoded_url, "amazonaws.com") || boost::algorithm::contains(decoded_url, "aliyuncs.com")) {
+            download_file_url = decoded_url;
+        } else {
+            MessageDialog msg_dlg(nullptr, _L("This file is not from a trusted site, do you want to open it anyway?"), "", wxAPPLY | wxYES_NO);
+            if (msg_dlg.ShowModal() == wxID_YES) download_file_url = decoded_url;
+        }
+#else
+        download_file_url = decoded_url;
+#endif
+        download_file_url = sanitize_download_url(download_file_url);
 
 #if !QDT_RELEASE_TO_PUBLIC
         // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << download_file_url;

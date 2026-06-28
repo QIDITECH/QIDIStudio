@@ -84,6 +84,44 @@ int get_tray_id_by_ams_id_and_slot_id(int ams_id, int slot_id)
     }
 }
 
+namespace {
+
+// Stringing-prone filament IDs per nozzle-diameter bucket.
+// Mirrors the printer firmware tables (see g_leak_pron_idx_for_0_4 / _0_6_0_8).
+// Keep these in sync with firmware when new stringing-prone filaments are added.
+const std::unordered_set<std::string> g_stringing_prone_for_0_4 = {
+    "GFA11", // QIDI PLA Aero
+    "GFU90", // QIDI TPU 90A
+    "GFU00", // QIDI TPU 95A HF
+    "GFU02", // Generic TPU for AMS
+    "GFU98", // QIDI TPU for AMS
+};
+
+const std::unordered_set<std::string> g_stringing_prone_for_0_6_0_8 = {
+    "GFA11", // QIDI PLA Aero
+    "GFU00", // QIDI TPU 95A HF
+};
+
+// Pick the right table for the given nozzle diameter; returns nullptr if the
+// nozzle bucket has no entries (e.g. 0.2 mm) or the diameter is invalid.
+const std::unordered_set<std::string>* pick_stringing_set(float nozzle_diameter)
+{
+    if (!(nozzle_diameter > 0.f)) return nullptr;
+    if (nozzle_diameter < 0.3f) return nullptr;            // 0.2 nozzle: empty
+    if (nozzle_diameter < 0.5f) return &g_stringing_prone_for_0_4;
+    return &g_stringing_prone_for_0_6_0_8;                 // 0.6 / 0.8 nozzles
+}
+
+} // namespace
+
+bool Slic3r::is_stringing_prone_filament(const std::string& filament_id, float nozzle_diameter)
+{
+    if (filament_id.empty()) return false;
+    const auto* set = pick_stringing_set(nozzle_diameter);
+    if (!set) return false;
+    return set->count(filament_id) > 0;
+}
+
 wxString Slic3r::get_stage_string(int stage)
 {
     switch(stage) {
@@ -784,6 +822,33 @@ std::string MachineObject::get_filament_type(const std::string& ams_id, const st
 std::string MachineObject::get_filament_display_type(const std::string& ams_id, const std::string& tray_id) const {
     const auto& tray = this->get_tray(ams_id, tray_id);
     return tray.has_value() ? tray->get_display_filament_type() : "";
+}
+
+bool MachineObject::any_loaded_filament_is_stringing_prone() const
+{
+    if (print_job_filament_mapping.empty()) return false;
+
+    std::vector<float> nozzle_diameters;
+    if (m_extder_system) {
+        for (const auto& ext : m_extder_system->GetExtruders()) {
+            const float d = ext.GetNozzleDiameter();
+            if (d > 0.f) nozzle_diameters.push_back(d);
+        }
+    }
+    if (nozzle_diameters.empty()) return false;
+
+    for (uint16_t v : print_job_filament_mapping) {
+        if (v == 0xFFFF) continue;
+        const int ams_id  = (v >> 8) & 0xFF;
+        const int slot_id = v & 0xFF;
+        const std::string fid = this->get_filament_id(std::to_string(ams_id), std::to_string(slot_id));
+        if (fid.empty()) continue;
+        for (float d : nozzle_diameters) {
+            if (Slic3r::is_stringing_prone_filament(fid, d))
+                return true;
+        }
+    }
+    return false;
 }
 
 void MachineObject::_parse_ams_status(int ams_status)
@@ -2878,6 +2943,12 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
                     }
                 }
 
+                if (jj.contains("timelapse_slow_down")) {
+                    if (jj["timelapse_slow_down"].is_boolean()) {
+                        is_timelapse_slow_down = jj["timelapse_slow_down"].get<bool>();
+                    }
+                }
+
                 if (jj.contains("support_user_preset")) {
                     if (jj["support_user_preset"].is_boolean()) {
                         is_support_user_preset = jj["support_user_preset"].get<bool>();
@@ -3023,6 +3094,7 @@ int MachineObject::parse_json(std::string tunnel, std::string payload, bool key_
                             is_enable_ams_np =  get_flag_bits(flag3, 9);
                             is_support_fila_change_abort = get_flag_bits(flag3, 13);
                             is_support_ext_change_assist_old = get_flag_bits(flag3, 16);
+                            is_support_filament_32_colors = get_flag_bits(flag3, 17);
                         }
                     }
                     if (!key_field_only) {
@@ -4066,8 +4138,23 @@ DevAmsTray MachineObject::parse_vt_tray(json vtray)
     auto vt_tray = DevAmsTray(std::to_string(VIRTUAL_TRAY_MAIN_ID));
     vt_tray.ams_type = DevAmsType::EXT_SPOOL;
 
-    if (vtray.contains("id"))
-        vt_tray.id = vtray["id"].get<std::string>();
+    if (vtray.contains("id")) {
+        std::string id = vtray["id"].get<std::string>();
+
+        int id_int = 0;
+        try{
+            id_int = std::stoi(id);
+        } catch(...){
+            BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ <<"invaild tray id"<< std::endl;
+        }
+        // bit0~7 slot_id   bit8~15 ams_id
+        if ((id_int >> 8) > 0 && (id_int & 0xff) >= 0) {
+            vt_tray.id = std::to_string((id_int >> 8) + (id_int & 0xff));
+        } else {
+            vt_tray.id = id;
+        }
+    }
+
     auto curr_time = std::chrono::system_clock::now();
     auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(curr_time - extrusion_cali_set_hold_start);
     if (diff.count() > HOLD_TIMEOUT || diff.count() < 0
@@ -4246,6 +4333,14 @@ bool MachineObject::check_enable_np(const json& print) const
     return false;
 }
 
+int MachineObject::get_max_filament_color_count() const
+{
+    if (is_support_filament_32_colors) return 32;
+    if (is_enable_ams_np && !is_series_x())              return 20;
+    if (!is_series_x() && !is_series_o()) return 16;
+    return 0;
+}
+
 void MachineObject::parse_new_info(json print)
 {
     is_enable_np = check_enable_np(print);
@@ -4361,11 +4456,23 @@ void MachineObject::parse_new_info(json print)
         is_support_update_remain_hide_display = (get_flag_bits_no_border(fun2, 6) == 1);
         is_support_remote_dry = (get_flag_bits_no_border(fun2, 5) == 1);
         is_support_active_arc_fitting = (get_flag_bits_no_border(fun2, 8) == 1);
+        is_support_model_internal_storage = (get_flag_bits_no_border(fun2, 17) == 1);
         is_support_check_track_switch_match_slice_printer = (get_flag_bits_no_border(fun2, 19) == 1);
+        ams_preload_version = static_cast<int>(get_flag_bits_no_border(fun2, 21, 2));
 
         if (DevPrinterConfigUtil::support_print_check_firmware_for_tpu_left(printer_type)) {
             m_firmware_support_print_tpu_left = DevUtil::get_flag_bits_no_border(fun2, 7) == 1;
         }
+    }
+
+    /* mapping: per-filament-index AMS slot mapping (task-level state). */
+    if (print.contains("mapping") && print["mapping"].is_array()) {
+        std::vector<uint16_t> new_mapping;
+        new_mapping.reserve(print["mapping"].size());
+        for (const auto& v : print["mapping"]) {
+            new_mapping.push_back(static_cast<uint16_t>(v.get<unsigned>()));
+        }
+        print_job_filament_mapping = std::move(new_mapping);
     }
 
     /*aux*/
@@ -4572,7 +4679,7 @@ void MachineObject::update_filament_list()
 
         for (auto it = filament_list.begin(); it != filament_list.end(); it++) {
             if (m_filament_list.find(it->first) != m_filament_list.end()) {
-                assert(it->first.size() == 8 && it->first[0] == 'P');
+                //assert(it->first.size() == 8 && it->first[0] == 'P');
 
                 if (it->second.first != m_filament_list[it->first].first) {
                     BOOST_LOG_TRIVIAL(info) << "old min temp is not equal to new min temp and filament id: " << it->first;

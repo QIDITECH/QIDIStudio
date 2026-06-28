@@ -61,6 +61,7 @@ class Plater;
 class MainFrame;
 class ParamsDialog;
 class FilamentGroupPopup;
+class DeviceWebPage;
 class PrinterWebView;
 
 
@@ -148,6 +149,8 @@ class MainFrame : public DPIFrame
     //bool can_eject() const;
     bool can_slice() const;
     bool can_change_view() const;
+    bool can_toggle_camera_fullscreen() const;
+    void toggle_camera_fullscreen();
     bool can_select() const;
     bool can_deselect() const;
     bool can_clone() const;
@@ -224,6 +227,7 @@ public:
 #ifdef __APPLE__
     bool get_mac_full_screen() { return m_mac_fullscreen; }
 #endif
+    DeviceWebPage* web_device() const { return m_web_device; }
 
     //QDS GUI refactor
     enum TabPosition
@@ -234,9 +238,11 @@ public:
         tpMonitor       = 3,
         tpMultiDevice   = 4,
         tpProject       = 5,
-        tpCalibration   = 6,
-        tpAuxiliary     = 7,
-        toDebugTool     = 8,
+        tpCalibration      = 6,
+        tpAuxiliary        = 7,
+        toDebugTool        = 8,
+        tpFilamentManager  = 9,
+        tpWebDevice        = 10,
     };
 
     //QDS: add slice&&print status update logic
@@ -345,6 +351,7 @@ public:
     void        request_select_tab(TabPosition pos);
     int         get_calibration_curr_tab();
     void        select_view(const std::string& direction);
+    void        view_zoom_to_fit() const;
     // Propagate changed configuration from the Tab to the Plater and save changes to the AppConfig
     void        on_config_changed(DynamicPrintConfig* cfg) const ;
     void        set_print_button_to_default(PrintSelectType select_type);
@@ -393,6 +400,7 @@ public:
     ProjectPanel*         m_project{ nullptr };
 
     CalibrationPanel*     m_calibration{ nullptr };
+    DeviceWebPage*        m_web_device{ nullptr };
     //w
     FilamentPanel*        m_filament{nullptr};
     WebViewPanel*         m_webview { nullptr };

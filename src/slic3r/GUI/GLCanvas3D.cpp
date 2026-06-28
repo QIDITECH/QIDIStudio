@@ -29,6 +29,7 @@
 #include "slic3r/GUI/Gizmos/GLGizmoPainterBase.hpp"
 #include "slic3r/GUI/BitmapCache.hpp"
 #include "slic3r/Utils/MacDarkMode.hpp"
+#include "slic3r/GUI/GuiColor.hpp"
 
 #include "WipeTowerDialog.hpp"
 #include "GLToolbar.hpp"
@@ -219,12 +220,6 @@ std::string& get_high_temp_wrapping_warning_text()
     return high_temp_wrapping_warning_text;
 }
 
-std::string& get_high_shrinkage_warning_text()
-{
-    static std::string high_shrinkage_warning_text;
-    return high_shrinkage_warning_text;
-}
-
 static std::string& get_single_extruder_mixed_filament_warning_text()
 {
     static std::string text;
@@ -279,6 +274,7 @@ void GLCanvas3D::LayersEditing::set_config(const DynamicPrintConfig* config)
     m_slicing_parameters = nullptr;
     m_layers_texture.valid = false;
     m_layer_height_profile.clear();
+    m_profile_dirty = true;
 }
 
 void GLCanvas3D::LayersEditing::select_object(const Model& model, int object_id)
@@ -795,7 +791,13 @@ void GLCanvas3D::LayersEditing::render_volumes(const GLCanvas3D & canvas, const 
 void GLCanvas3D::LayersEditing::adjust_layer_height_profile()
 {
     this->update_slicing_parameters();
-    PrintObject::update_layer_height_profile(*m_model_object, *m_slicing_parameters, m_layer_height_profile);
+    bool nozzle_range_reset = false;
+    PrintObject::update_layer_height_profile(*m_model_object, *m_slicing_parameters, m_layer_height_profile, nozzle_range_reset);
+    if (nozzle_range_reset) {
+        wxGetApp().plater()->get_notification_manager()->push_plater_warning_notification(
+            _u8L("The variable layer height profile has been reset because some layer heights "
+                 "exceed the allowed range of the current nozzle."));
+    }
     Slic3r::adjust_layer_height_profile(*m_slicing_parameters, m_layer_height_profile, this->last_z, this->strength, this->band_width, this->last_action);
     m_layers_texture.valid = false;
     m_profile_dirty = true;
@@ -838,9 +840,16 @@ void GLCanvas3D::LayersEditing::generate_layer_height_texture()
     this->update_slicing_parameters();
     // Always try to update the layer height profile.
     bool update = !m_layers_texture.valid;
-    if (PrintObject::update_layer_height_profile(*m_model_object, *m_slicing_parameters, m_layer_height_profile)) {
+    bool nozzle_range_reset = false;
+    if (PrintObject::update_layer_height_profile(*m_model_object, *m_slicing_parameters, m_layer_height_profile, nozzle_range_reset)) {
         // Initialized to the default value.
         update = true;
+        m_profile_dirty = true;
+    }
+    if (nozzle_range_reset) {
+        wxGetApp().plater()->get_notification_manager()->push_plater_warning_notification(
+            _u8L("The variable layer height profile has been reset because some layer heights "
+                 "exceed the allowed range of the current nozzle."));
     }
     // Update if the layer height profile was changed, or when the texture is not valid.
     if (!update && !m_layers_texture.data.empty() && m_layers_texture.cells > 0)
@@ -2343,6 +2352,23 @@ void GLCanvas3D::zoom_to_plate(int plate_idx)
     }
 }
 
+void GLCanvas3D::zoom_to_fit()
+{
+    if (!can_show_3d_navigator())
+        return;
+
+    select_view("plate");
+    if (m_selection.is_empty()) {
+        if (m_canvas_type == ECanvasType::CanvasAssembleView)
+            zoom_to_volumes();
+        else
+            zoom_to_bed();
+    }
+    else {
+        zoom_to_selection();
+    }
+}
+
 void GLCanvas3D::select_view(const std::string& direction)
 {
     get_active_camera().select_view(direction);
@@ -3681,7 +3707,6 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
            _set_warning_notification(EWarning::MixtureFilamentIncompatible,false);
            _set_warning_notification(EWarning::TpuNozzleMultipleFilaments, false);
            _set_warning_notification(EWarning::HighTempNeedWrappingDetection, false);
-           _set_warning_notification(EWarning::HighShrinkageFilament, false);
            _set_warning_notification(EWarning::SingleExtruderMixedFilament, false);
 
            post_event(Event<bool>(EVT_GLCANVAS_ENABLE_ACTION_BUTTONS, false));
@@ -4038,6 +4063,13 @@ void GLCanvas3D::on_char(wxKeyEvent& evt)
                 }
                 return;
             }
+            case 'e':
+            case 'E':
+            case WXK_CONTROL_E: {
+                m_labels.show_object_labels(!m_labels.are_object_labels_shown());
+                m_dirty = true;
+                return;
+            }
             }
         }
         // CTRL is pressed
@@ -4203,17 +4235,6 @@ void GLCanvas3D::on_char(wxKeyEvent& evt)
         case WXK_BACK: { post_event(SimpleEvent(EVT_GLTOOLBAR_DELETE)); break; }
 #endif
         case WXK_ESCAPE: { deselect_all(); break; }
-        // Shift+E to toggle object labels
-        case 'E':
-        case 'e': {
-            if ((evt.GetModifiers() & shiftMask) != 0) {
-                m_labels.show_object_labels(!m_labels.are_object_labels_shown());
-                m_dirty = true;
-                break;
-            }
-            evt.Skip();
-            break;
-        }
         //case WXK_F5: {
         //    if ((wxGetApp().is_editor() && !wxGetApp().plater()->model().objects.empty()) ||
         //        (wxGetApp().is_gcode_viewer() && !wxGetApp().plater()->get_last_loaded_gcode().empty()))
@@ -4328,18 +4349,6 @@ void GLCanvas3D::on_char(wxKeyEvent& evt)
             break;
         }
 #endif // ENABLE_RENDER_PICKING_PASS
-        //case 'Z':
-        //case 'z': {
-        //    if (!m_selection.is_empty())
-        //        zoom_to_selection();
-        //    else {
-        //        if (!m_volumes.empty())
-        //            zoom_to_volumes();
-        //        else
-        //            _zoom_to_box(m_gcode_viewer.get_paths_bounding_box());
-        //    }
-        //    break;
-        //}
         default:  { evt.Skip(); break; }
         }
     }
@@ -6416,13 +6425,18 @@ void GLCanvas3D::update_sequential_clearance()
     // the results are then cached for following displacements
     if (m_sequential_print_clearance_first_displacement) {
         m_sequential_print_clearance.m_hull_2d_cache.clear();
-        bool all_objects_are_short = std::all_of(fff_print()->objects().begin(), fff_print()->objects().end(), \
-            [&](PrintObject* obj) { return obj->height() < scale_(fff_print()->config().nozzle_height.value - MARGIN_HEIGHT); });
+        bool all_objects_are_short = fff_print()->is_all_objects_are_short();
         float shrink_factor;
         if (all_objects_are_short)
             shrink_factor = scale_(0.5 * MAX_OUTER_NOZZLE_RADIUS - 0.1);
         else
             shrink_factor = static_cast<float>(scale_(0.5 * fff_print()->config().extruder_clearance_max_radius.value - EPSILON));
+
+        if (fff_print()->is_sequential_print()) {
+            float skirt_extra = get_real_skirt_dist(fff_print()->config());
+            shrink_factor += scale_(0.5f * skirt_extra);
+            shrink_factor = std::max(shrink_factor, static_cast<float>(scale_(skirt_extra)));
+        }
 
         double mitter_limit = scale_(0.1);
         m_sequential_print_clearance.m_hull_2d_cache.reserve(m_model->objects.size());
@@ -7074,6 +7088,7 @@ void GLCanvas3D::_update_slice_error_status()
     _set_warning_notification_if_needed(EWarning::MultiExtruderPrintableError);
     _set_warning_notification_if_needed(EWarning::MultiExtruderHeightOutside);
     _set_warning_notification_if_needed(EWarning::FilamentUnPrintableOnFirstLayer);
+    _set_warning_notification_if_needed(EWarning::PrintedWeightOverLimitWarn);
 }
 
 void GLCanvas3D::_switch_toolbars_icon_filename()
@@ -9569,18 +9584,7 @@ void GLCanvas3D::_render_fit_camera_toolbar()
 
     if (ImGui::ImageButton3(normal_id, hover_id, button_icon_size, ImVec2(0, 0), ImVec2(1, 1),  -1,
                            ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 1), ImVec2(10, 0))) {
-        select_view("plate");
-        if (m_selection.is_empty()) {
-            if (m_canvas_type == ECanvasType::CanvasAssembleView) {
-                zoom_to_volumes();
-            }
-            else {
-                zoom_to_bed();
-            }
-        }
-        else {
-            zoom_to_selection();
-        }
+        zoom_to_fit();
     }
     if (ImGui::IsItemHovered()) {
         auto temp_tooltip = _L("Fit camera to scene or selected object.");
@@ -9619,148 +9623,160 @@ void GLCanvas3D::_render_paint_toolbar() const
 
     std::vector<std::string> colors = wxGetApp().plater()->get_extruder_colors_from_plater_config();
     int extruder_num = colors.size();
-    std::vector<std::string> filament_text_first_line;
-    std::vector<std::string> filament_text_second_line;
+    std::vector<std::string> filament_display_names;
     {
         auto preset_bundle = wxGetApp().preset_bundle;
-        for (auto filament_name : preset_bundle->filament_presets) {
-            for (auto iter = preset_bundle->filaments.lbegin(); iter != preset_bundle->filaments.end(); iter++) {
-                if (filament_name.compare(iter->name) == 0) {
-                    std::string display_filament_type;
-                    iter->config.get_filament_type(display_filament_type);
-                    auto pos = display_filament_type.find(' ');
-                    if (pos != std::string::npos) {
-                        filament_text_first_line.push_back(display_filament_type.substr(0, pos));
-                        filament_text_second_line.push_back(display_filament_type.substr(pos + 1));
-                    }
-                    else {
-                        filament_text_first_line.push_back(display_filament_type);
-                        filament_text_second_line.push_back("");
-                    }
-                }
-            }
+        for (const auto& filament_name : preset_bundle->filament_presets) {
+            std::string display_filament_type;
+            if (Preset* preset = preset_bundle->filaments.find_preset(filament_name))
+                preset->config.get_filament_type(display_filament_type);
+            filament_display_names.push_back(std::move(display_filament_type));
         }
-        while ((int)filament_text_first_line.size() < extruder_num) {
-            filament_text_first_line.push_back("");
-            filament_text_second_line.push_back("");
-        }
+        while ((int)filament_display_names.size() < extruder_num)
+            filament_display_names.push_back("");
     }
 
     ImGuiWrapper& imgui = *wxGetApp().imgui();
     const float canvas_w = float(get_canvas_size().get_width());
-    const ImVec2 button_size = ImVec2(64.0f, 48.0f) * f_scale * em_unit;
-    const float spacing = 4.0f * em_unit * f_scale;
+    // Match sidebar filament swatch size (PresetComboBoxes: FromDIP(20)).
+    const float paint_btn_side = 20.0f * f_scale * em_unit;
+    const ImVec2 button_size(paint_btn_side, paint_btn_side);
+    const float spacing = paint_btn_side * 0.22f;
+    const float paint_btn_rounding = paint_btn_side * 0.18f;
     const float return_button_margin = 130.0f * em_unit * f_scale;
+    const float paint_to_toolbar_offset = 50.0f * em_unit * f_scale; // gap to main toolbar; reserve uses offset/2
+
+    const float scrollbar_size = 0.375f * button_size.x;
+    const ImVec4 window_bg = m_is_dark ? ImGuiWrapper::COL_WINDOW_BG_DARK : ImGuiWrapper::COL_WINDOW_BG;
+    const ImU32 border_col = m_is_dark ? IM_COL32(207, 207, 207, 255) : IM_COL32(130, 130, 128, 255);
+
+    constexpr float kPaintSwatchBorderDeltaE = 12.f;
+    constexpr float kPaintSwatchBorderWidth  = 1.f;
+    const auto check_swatch_close_to_bg = [&](const unsigned char rgb[3],
+                                              const RGBA *color_from, const RGBA *color_to)
+    {
+        const RGBA paintbar_bg = { window_bg.x, window_bg.y, window_bg.z, window_bg.w };
+        if (color_from && color_to) {
+            const float d0 = Slic3r::GUI::calc_color_distance(*color_from, paintbar_bg);
+            const float d1 = Slic3r::GUI::calc_color_distance(*color_to, paintbar_bg);
+            return std::min(d0, d1) < kPaintSwatchBorderDeltaE;
+        }
+        const RGBA swatch_rgb = { rgb[0] / 255.f, rgb[1] / 255.f, rgb[2] / 255.f, 1.f };
+        return Slic3r::GUI::calc_color_distance(swatch_rgb, paintbar_bg) < kPaintSwatchBorderDeltaE;
+    };
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(spacing, spacing));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(spacing, 0));
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.f, 0.f, 0.f, 0.4f });
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(spacing, spacing));
+    ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, scrollbar_size);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, window_bg);
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, window_bg);
+    const ImVec4 scrollbar_grab = ImVec4(0.42f, 0.42f, 0.42f, 1.00f);
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, scrollbar_grab);
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, scrollbar_grab);
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, scrollbar_grab);
 
     imgui.set_next_window_pos(0.5f * canvas_w, 0, ImGuiCond_Always, 0.5f, 0.0f);
-    float constraint_window_width = canvas_w - 2 * return_button_margin;
-    ImGui::SetNextWindowSizeConstraints({ 0, 0 }, { constraint_window_width, FLT_MAX });
-    imgui.begin(_L("Paint Toolbar"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+    const float main_toolbar_reserve = (float)get_main_toolbar_width() + paint_to_toolbar_offset / 2.f;
+    const float min_paint_toolbar_width = 2 * spacing + button_size.x;
+    const float side_margin = std::max(return_button_margin, main_toolbar_reserve);
+    float constraint_window_width = std::max(min_paint_toolbar_width, canvas_w - 2 * side_margin);
 
-    const float cursor_y = ImGui::GetCursorPosY();
-    const ImVec2 arrow_button_size = ImVec2(0.375f * button_size.x, ImGui::GetWindowHeight());
-    const ImRect left_arrow_button = ImRect(ImGui::GetCurrentWindow()->Pos, ImGui::GetCurrentWindow()->Pos + arrow_button_size);
-    const ImRect right_arrow_button = ImRect(ImGui::GetCurrentWindow()->Pos + ImGui::GetWindowSize() - arrow_button_size, ImGui::GetCurrentWindow()->Pos + ImGui::GetWindowSize());
-    ImU32 left_arrow_button_color = IM_COL32(0, 0, 0, 0.4f * 255);
-    ImU32 right_arrow_button_color = IM_COL32(0, 0, 0, 0.4f * 255);
-    ImU32 arrow_color = IM_COL32(255, 255, 255, 255);
+    const float btn_stride_x = button_size.x + spacing;
+    int max_per_row = std::max(1, (int)std::floor((constraint_window_width - spacing) / btn_stride_x));
+    int row_count = (extruder_num + max_per_row - 1) / max_per_row;
+    if (row_count > 2) {
+        max_per_row = std::max(1, (int) std::floor((constraint_window_width - scrollbar_size - spacing) / btn_stride_x));
+        row_count = (extruder_num + max_per_row - 1) / max_per_row;
+    }
+    const float constraint_window_height = 2.f * button_size.y + 2.85f * spacing;
+    ImGui::SetNextWindowSizeConstraints({ 0, 0 }, { constraint_window_width, constraint_window_height });
+
+    int window_flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollWithMouse;
+    if (row_count <= 2)
+        window_flags |= ImGuiWindowFlags_NoScrollbar;
+    imgui.begin(_L("Paint Toolbar"), window_flags);
+
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
-    ImGuiContext& context = *GImGui;
     bool disabled = !wxGetApp().plater()->can_fillcolor();
     unsigned char rgb[3];
 
     auto gradient_info = wxGetApp().plater()->get_filament_gradient_info();
 
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, paint_btn_rounding);
     for (int i = 0; i < extruder_num; i++) {
-        if (i > 0)
+        if ((i % max_per_row) > 0)
             ImGui::SameLine();
         Slic3r::GUI::BitmapCache::parse_color(colors[i], rgb);
+        const std::string num_str = std::to_string(i + 1);
         ImGui::PushStyleColor(ImGuiCol_Button, ImColor(rgb[0], rgb[1], rgb[2]).Value);
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor(rgb[0], rgb[1], rgb[2]).Value);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor(rgb[0], rgb[1], rgb[2]).Value);
         if (disabled)
             ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-        if (ImGui::Button(("##filament_button" + std::to_string(i)).c_str(), button_size)) {
-            if (!ImGui::IsMouseHoveringRect(left_arrow_button.Min, left_arrow_button.Max) && !ImGui::IsMouseHoveringRect(right_arrow_button.Min, right_arrow_button.Max))
-                wxPostEvent(m_canvas, IntEvent(EVT_GLTOOLBAR_FILLCOLOR, i + 1));
-        }
-        if (i < (int)gradient_info.size() && gradient_info[i].is_gradient) {
-            ImVec2 r_min = ImGui::GetItemRectMin();
-            ImVec2 r_max = ImGui::GetItemRectMax();
+        if (ImGui::Button(("##filament_button" + num_str).c_str(), button_size))
+            wxPostEvent(m_canvas, IntEvent(EVT_GLTOOLBAR_FILLCOLOR, i + 1));
+
+        ImVec2 r_min = ImGui::GetItemRectMin();
+        ImVec2 r_max = ImGui::GetItemRectMax();
+        const bool is_gradient = i < (int) gradient_info.size() && gradient_info[i].is_gradient;
+        if (is_gradient) {
             auto& gf = gradient_info[i].color_from;
             auto& gt = gradient_info[i].color_to;
             ImU32 col_from = IM_COL32(uint8_t(gf[0]*255.f), uint8_t(gf[1]*255.f), uint8_t(gf[2]*255.f), 255);
             ImU32 col_to   = IM_COL32(uint8_t(gt[0]*255.f), uint8_t(gt[1]*255.f), uint8_t(gt[2]*255.f), 255);
-            draw_list->AddRectFilledMultiColor(r_min, r_max, col_from, col_to, col_to, col_from);
+            const int vert_start_idx = draw_list->VtxBuffer.Size;
+            draw_list->PathRect(r_min, r_max, paint_btn_rounding);
+            draw_list->PathFillConvex(col_from);
+            const int vert_end_idx = draw_list->VtxBuffer.Size;
+            ImGui::ShadeVertsLinearColorGradientKeepAlpha(draw_list, vert_start_idx, vert_end_idx, r_min, ImVec2(r_max.x, r_min.y), col_from, col_to);
         }
-        if (ImGui::IsItemHovered() && i < 9) {
-            if (!ImGui::IsMouseHoveringRect(left_arrow_button.Min, left_arrow_button.Max) && !ImGui::IsMouseHoveringRect(right_arrow_button.Min, right_arrow_button.Max)) {
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 20.0f * f_scale, 10.0f * f_scale });
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 3.0f * f_scale);
-                imgui.tooltip(_L("Shortcut Key ") + std::to_string(i + 1), ImGui::GetFontSize() * 20.0f);
-                ImGui::PopStyleVar(2);
+
+        const bool is_close_to_bg = check_swatch_close_to_bg(rgb,
+                                    is_gradient ? &gradient_info[i].color_from : nullptr,
+                                    is_gradient ? &gradient_info[i].color_to   : nullptr);
+
+        {
+            float gray = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2];
+            ImU32 text_color = gray < 80 ? IM_COL32(255, 255, 255, 255) : IM_COL32(0, 0, 0, 255);
+            const float number_font_size = button_size.y * 0.8f;
+            ImFont* font = ImGui::GetFont();
+            ImVec2 num_size = font->CalcTextSizeA(number_font_size, FLT_MAX, 0.0f, num_str.c_str());
+            ImVec2 num_pos(
+                r_min.x + (r_max.x - r_min.x - num_size.x) * 0.5f,
+                r_min.y + (r_max.y - r_min.y - num_size.y) * 0.5f);
+            draw_list->AddText(font, number_font_size, num_pos, text_color, num_str.c_str());
+        }
+
+        if (is_close_to_bg)
+            draw_list->AddRect(r_min, r_max, border_col, paint_btn_rounding, 0, kPaintSwatchBorderWidth);
+
+        if (ImGui::IsItemHovered()) {
+            wxString tooltip_text;
+            if (!filament_display_names[i].empty())
+                tooltip_text = wxString(filament_display_names[i].c_str(), wxConvUTF8);
+            if (!tooltip_text.empty())
+                tooltip_text += "\n";
+            tooltip_text += _L("Shortcut Key ") + std::to_string(i + 1);
+            if (is_close_to_bg) {
+                tooltip_text += "\n";
+                tooltip_text += _L("This border is used to distinguish it from the background");
             }
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 10.0f * f_scale, 6.0f * f_scale });
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 3.0f * f_scale);
+            imgui.tooltip(tooltip_text, ImGui::GetFontSize() * 20.0f);
+            ImGui::PopStyleVar(2);
         }
         ImGui::PopStyleColor(3);
         if (disabled)
             ImGui::PopItemFlag();
     }
+    ImGui::PopStyleVar();
 
-    const float text_offset_y = 4.0f * em_unit * f_scale;
-    for (int i = 0; i < extruder_num; i++){
-        Slic3r::GUI::BitmapCache::parse_color(colors[i], rgb);
-        float gray = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2];
-        ImVec4 text_color = gray < 80 ? ImVec4(1.0f, 1.0f, 1.0f, 1.0f) : ImVec4(0, 0, 0, 1.0f);
-
-        imgui.push_bold_font();
-        ImVec2 number_label_size = ImGui::CalcTextSize(std::to_string(i + 1).c_str());
-        ImGui::SetCursorPosY(cursor_y + text_offset_y);
-        ImGui::SetCursorPosX(spacing + i * (spacing + button_size.x) + (button_size.x - number_label_size.x) / 2);
-        ImGui::TextColored(text_color, std::to_string(i + 1).c_str());
-        imgui.pop_bold_font();
-
-        ImVec2 filament_first_line_label_size = ImGui::CalcTextSize(filament_text_first_line[i].c_str());
-        ImGui::SetCursorPosY(cursor_y + text_offset_y + number_label_size.y);
-        ImGui::SetCursorPosX(spacing + i * (spacing + button_size.x) + (button_size.x - filament_first_line_label_size.x) / 2);
-        ImGui::TextColored(text_color, filament_text_first_line[i].c_str());
-
-        ImVec2 filament_second_line_label_size = ImGui::CalcTextSize(filament_text_second_line[i].c_str());
-        ImGui::SetCursorPosY(cursor_y + text_offset_y + number_label_size.y + filament_first_line_label_size.y);
-        ImGui::SetCursorPosX(spacing + i * (spacing + button_size.x) + (button_size.x - filament_second_line_label_size.x) / 2);
-        ImGui::TextColored(text_color, filament_text_second_line[i].c_str());
-    }
-
-    if (ImGui::GetWindowWidth() == constraint_window_width) {
-        if (ImGui::IsMouseHoveringRect(left_arrow_button.Min, left_arrow_button.Max)) {
-            left_arrow_button_color = IM_COL32(0, 0, 0, 0.64f * 255);
-            if (context.IO.MouseClicked[ImGuiMouseButton_Left]) {
-                ImGui::SetScrollX(ImGui::GetScrollX() - button_size.x);
-                imgui.set_requires_extra_frame();
-            }
-        }
-        draw_list->AddRectFilled(left_arrow_button.Min, left_arrow_button.Max, left_arrow_button_color);
-        ImGui::QDTRenderArrow(draw_list, left_arrow_button.GetCenter() - ImVec2(draw_list->_Data->FontSize, draw_list->_Data->FontSize) * 0.5f, arrow_color, ImGuiDir_Left, 2.0f);
-
-        if (ImGui::IsMouseHoveringRect(right_arrow_button.Min, right_arrow_button.Max)) {
-            right_arrow_button_color = IM_COL32(0, 0, 0, 0.64f * 255);
-            if (context.IO.MouseClicked[ImGuiMouseButton_Left]) {
-                ImGui::SetScrollX(ImGui::GetScrollX() + button_size.x);
-                imgui.set_requires_extra_frame();
-            }
-        }
-        draw_list->AddRectFilled(right_arrow_button.Min, right_arrow_button.Max, right_arrow_button_color);
-        ImGui::QDTRenderArrow(draw_list, right_arrow_button.GetCenter() - ImVec2(draw_list->_Data->FontSize, draw_list->_Data->FontSize) * 0.5f, arrow_color, ImGuiDir_Right, 2.0f);
-    }
-
-    m_paint_toolbar_width = (ImGui::GetWindowWidth() + 50.0f * em_unit * f_scale);
+    m_paint_toolbar_width = ImGui::GetWindowWidth() + paint_to_toolbar_offset;
     imgui.end();
-    ImGui::PopStyleVar(3);
-    ImGui::PopStyleColor();
+    ImGui::PopStyleVar(4);
+    ImGui::PopStyleColor(5);
 }
 
 float GLCanvas3D::_show_assembly_tooltip_information(float caption_max, float x, float y) const
@@ -10935,6 +10951,8 @@ void GLCanvas3D::_set_warning_notification_if_needed(EWarning warning)
                     show = t_gcode_viewer.has_data() && (t_gcode_viewer.get_gcode_check_result().error_code & (1 << 1));
                 else if (warning == EWarning::FilamentUnPrintableOnFirstLayer)
                     show = t_gcode_viewer.has_data() && t_gcode_viewer.get_filament_printable_result().has_value();
+                else if (warning == EWarning::PrintedWeightOverLimitWarn)
+                    show = t_gcode_viewer.has_data() && (t_gcode_viewer.get_gcode_check_result().error_code & (1 << 11));
             }
         }
     }
@@ -12720,6 +12738,11 @@ void GLCanvas3D::_set_warning_notification(EWarning warning, bool state)
         error = ErrorType::SLICING_ERROR;
         break;
     }
+    case EWarning::PrintedWeightOverLimitWarn: {
+        text  = _u8L("The total printed weight exceeds this printer's recommended capacity and may cause slower printing or print defects.");
+        error = ErrorType::PLATER_WARNING;
+        break;
+    }
     case EWarning::LeftExtruderPrintableError:
     case EWarning::RightExtruderPrintableError: {
         error = ErrorType::PLATER_ERROR;
@@ -12887,10 +12910,6 @@ void GLCanvas3D::_set_warning_notification(EWarning warning, bool state)
         text = _u8L(get_high_temp_wrapping_warning_text());
         break;
     }
-    case EWarning::HighShrinkageFilament: {
-        text = _u8L(get_high_shrinkage_warning_text());
-        break;
-    }
     case EWarning::SingleExtruderMixedFilament: {
         text = _u8L(get_single_extruder_mixed_filament_warning_text());
         break;
@@ -12948,6 +12967,12 @@ void GLCanvas3D::_set_warning_notification(EWarning warning, bool state)
             } else {
                 notification_manager.close_slicing_customize_error_notification(NotificationType::QDTTpuNozzleHasMultiFilament, NotificationLevel::WarningNotificationLevel);
             }
+        } else if (warning == EWarning::PrintedWeightOverLimitWarn) {
+            if (state) {
+                notification_manager.push_slicing_customize_error_notification(NotificationType::QDTPrintedWeightOverLimitWarn, NotificationLevel::WarningNotificationLevel, text);
+            } else {
+                notification_manager.close_slicing_customize_error_notification(NotificationType::QDTPrintedWeightOverLimitWarn, NotificationLevel::WarningNotificationLevel);
+            }
         }
         else if (warning == EWarning::HighTempNeedWrappingDetection) {
             if (state) {
@@ -12965,28 +12990,6 @@ void GLCanvas3D::_set_warning_notification(EWarning warning, bool state)
                     });
             } else {
                 notification_manager.close_slicing_customize_error_notification(NotificationType::QDTHighTempNeedWrappingDetection, NotificationLevel::WarningNotificationLevel);
-            }
-        }
-        else if (warning == EWarning::HighShrinkageFilament) {
-            if (state) {
-                notification_manager.push_slicing_customize_error_notification(
-                    NotificationType::QDTHighShrinkageFilament,
-                    NotificationLevel::WarningNotificationLevel,
-                    text,
-                    _u8L("Click Wiki for help."),
-                    [](wxEvtHandler*) {
-                        std::string language = wxGetApp().app_config->get("language");
-                        wxString    region = L"en";
-                        if (language.find("zh") == 0)
-                            region = L"zh";
-                        // wxGetApp().open_browser_with_warning_dialog(
-                        //     wxString::Format(L"https://wiki.bambulab.com/%s/knowledge-sharing/3d-prints-shrinkage", region));
-                        return false;
-                    });
-            } else {
-                notification_manager.close_slicing_customize_error_notification(
-                    NotificationType::QDTHighShrinkageFilament,
-                    NotificationLevel::WarningNotificationLevel);
             }
         }
         else if (warning == EWarning::SingleExtruderMixedFilament) {
@@ -13129,7 +13132,8 @@ bool GLCanvas3D::is_flushing_matrix_error() {
 
     const auto                &project_config = wxGetApp().preset_bundle->project_config;
     const std::vector<double> &config_matrix  = (project_config.option<ConfigOptionFloats>("flush_volumes_matrix"))->values;
-    const std::vector<double> &config_multiplier = (project_config.option<ConfigOptionFloats>("flush_multiplier"))->values;
+    bool                       use_fast          = project_config.option<ConfigOptionEnum<PrimeVolumeMode>>("prime_volume_mode")->value == PrimeVolumeMode::pvmFast;
+    const std::vector<double> &config_multiplier = (project_config.option<ConfigOptionFloats>(use_fast ? "flush_multiplier_fast" : "flush_multiplier"))->values;
 
     for (auto multiplier : config_multiplier) {
         if (multiplier == 0 && config_matrix.size() >= config_multiplier.size() * 4) return true;

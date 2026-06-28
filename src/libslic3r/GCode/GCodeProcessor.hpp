@@ -140,7 +140,7 @@ namespace Slic3r {
     {
         int error_code = 0;   // 0 means succeed, 0b 0001 multi extruder printable area error, 0b 0010 multi extruder printable height error,
         // 0b 0100 plate printable area error, 0b 1000 plate printable height error, 0b 10000 wrapping detection area error
-        // (1<<10) filament map error
+        // (1<<10) filament map error , (1<<11) printing mass ouver limit
         std::map<int, std::vector<std::pair<int, int>>> print_area_error_infos;   // printable_area  extruder_id to <filament_id - object_label_id> which cannot printed in this extruder
         std::map<int, std::vector<std::pair<int, int>>> print_height_error_infos;   // printable_height extruder_id to <filament_id - object_label_id> which cannot printed in this extruder
         void reset() {
@@ -207,7 +207,8 @@ namespace Slic3r {
             float width{ 0.0f }; // mm
             float height{ 0.0f }; // mm
             float mm3_per_mm{ 0.0f };
-            float fan_speed{ 0.0f }; // percentage
+            float fan_speed{ 0.0f }; // percentage (part cooling fan, M106 / M106 P1)
+            float additional_fan_speed{ 0.0f }; // percentage (auxiliary/side fan, M106 P2)
             float temperature{ 0.0f }; // Celsius degrees
             float layer_duration{ 0.0f }; // s (layer id before finalize)
             float thermal_index_min{0.0f};
@@ -221,6 +222,7 @@ namespace Slic3r {
             std::vector<Vec3f> interpolation_points;     // interpolation points of arc for drawing
             int  object_label_id{-1};
             float print_z{0.0f};
+            bool is_pa_line_calibration{false};
 
             float volumetric_rate() const { return feedrate * mm3_per_mm; }
             //QDS: new function to support arc move
@@ -754,7 +756,8 @@ namespace Slic3r {
             size_t total_layer_num;
             std::vector<double> cooling_rate{ 2.f }; // Celsius degree per second
             std::vector<double> heating_rate{ 2.f }; // Celsius degree per second
-            std::vector<double> filament_cooling_before_tower {10.f}; // temperature drop before entering wipe tower
+            std::vector<double> filament_preheat_temperature_delta{0.f}; // temperature delta applied during pre-heating
+            std::vector<double> filament_max_temperature_drop_when_ec {0.f}; // max temperature drop when extruder change
             std::vector<int> pre_cooling_temp{ 0 };
             float inject_time_threshold{ 30.f }; // only active pre cooling & heating if time gap is bigger than threshold
             bool enable_pre_heating{ false };
@@ -780,7 +783,7 @@ namespace Slic3r {
                 const bool handle_hotend_as_extruder_,
                 const bool has_filament_switcher_,
                 const std::vector<int>& extruder_max_nozzle_count_,
-                const std::vector<double>& filament_cooling_before_tower_,
+                const std::vector<double>& filament_preheat_temperature_delta_,
                 const std::vector<ExtruderType>& extruder_types_,
                 const std::vector<double>& nozzle_diameter_
             ) :
@@ -799,7 +802,7 @@ namespace Slic3r {
                 has_filament_switcher(has_filament_switcher_),
                 inject_time_threshold(inject_time_threshold_),
                 extruder_max_nozzle_count(extruder_max_nozzle_count_),
-                filament_cooling_before_tower(filament_cooling_before_tower_),
+                filament_preheat_temperature_delta(filament_preheat_temperature_delta_),
                 extruder_types(extruder_types_),
                 nozzle_diameter(nozzle_diameter_)
             {
@@ -904,7 +907,8 @@ namespace Slic3r {
                 const std::vector<double>& heating_rate_,
                 const std::vector<std::pair<unsigned int,unsigned int>>& skippable_blocks_,
                 const std::vector<int>& extruder_max_nozzle_count_,
-                const std::vector<double>& filament_cooling_before_tower_,
+                const std::vector<double>& filament_preheat_temperature_delta_,
+                const std::vector<double>& filament_max_temperature_drop_when_ec_,
                 unsigned int machine_start_gcode_end_id_,
                 unsigned int machine_end_gcode_start_id_,
                 const std::vector<ExtruderType>& extruder_types_,
@@ -925,7 +929,8 @@ namespace Slic3r {
                 heating_rate(heating_rate_),
                 skippable_blocks(skippable_blocks_),
                 extruder_max_nozzle_count(extruder_max_nozzle_count_),
-                filament_cooling_before_tower(filament_cooling_before_tower_),
+                filament_preheat_temperature_delta(filament_preheat_temperature_delta_),
+                filament_max_temperature_drop_when_ec(filament_max_temperature_drop_when_ec_),
                 machine_start_gcode_end_id(machine_start_gcode_end_id_),
                 machine_end_gcode_start_id(machine_end_gcode_start_id_),
                 extruder_types(extruder_types_),
@@ -950,7 +955,8 @@ namespace Slic3r {
             const std::vector<int>& filament_pre_cooling_temps; // target cooling temp during post extrusion
             const std::vector<std::pair<unsigned int, unsigned int>>& skippable_blocks;
             const std::vector<int>& extruder_max_nozzle_count;
-            const std::vector<double>& filament_cooling_before_tower;
+            const std::vector<double>& filament_preheat_temperature_delta;
+            const std::vector<double>& filament_max_temperature_drop_when_ec;
             const unsigned int machine_start_gcode_end_id;
             const unsigned int machine_end_gcode_start_id;
             const std::vector<ExtruderType>& extruder_types;
@@ -1128,12 +1134,12 @@ namespace Slic3r {
         std::vector<double> m_hotend_cooling_rate{ 2.f };
         std::vector<double> m_hotend_heating_rate{ 2.f };
         std::vector<int> m_filament_pre_cooling_temp{ 0 };
+        std::vector<double> m_filament_preheat_temperature_delta;
         bool m_enable_pre_heating{ false };
         bool m_handle_hotend_as_extruder { false };
         bool m_has_filament_switcher{ false };
         std::vector<int> m_physical_extruder_map;
         std::vector<int> m_extruder_max_nozzle_count;
-        std::vector<double> m_filament_cooling_before_tower;
 
         //QDS: x, y offset for gcode generated
         double          m_x_offset{ 0 };
@@ -1151,7 +1157,8 @@ namespace Slic3r {
         float m_forced_width; // mm
         float m_forced_height; // mm
         float m_mm3_per_mm;
-        float m_fan_speed; // percentage
+        float m_fan_speed; // percentage (part cooling fan)
+        float m_additional_fan_speed; // percentage (auxiliary/side fan, M106 P2)
         ExtrusionRole m_extrusion_role;
         std::vector<int> m_filament_maps;
         std::vector<unsigned char> m_last_filament_id;
@@ -1166,6 +1173,7 @@ namespace Slic3r {
         float m_first_layer_height; // mm
         float m_zero_layer_height; // mm
         bool m_processing_start_custom_gcode;
+        bool m_pa_line_calibration;
         unsigned int m_g1_line_id;
         unsigned int m_layer_id;
         CpColor m_cp_color;

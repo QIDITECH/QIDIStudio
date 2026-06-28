@@ -282,6 +282,7 @@ public:
     void  update_fan_data(AIR_FUN id, int speed);
     void  update_fan_data(MachineObject *obj);
     //cj_3
+    /// 与 QDSDevice::m_polar_cooler（output_pin polar_cooler 实际状态）对齐（派发由 on_cooler_switch_left_down 的 EVTSET_COOLER_SWITCH 负责）
     void  sync_polar_cooler_from_device(bool on);
     
     void  msw_rescale();

@@ -169,19 +169,21 @@ public:
 
 public:
     DevAms(std::shared_ptr<DevFilaSystem> owner, const std::string& ams_id, const std::set<int>& binded_extruder_set, DevAmsType type);
-    DevAms(std::shared_ptr<DevFilaSystem> owner, const std::string& ams_id, const std::set<int>& binded_extruder_set, int type);
     ~DevAms();
 
 public:
     std::string GetAmsId() const { return m_ams_id; }
     wxString    GetDisplayName() const; // display
 
-    void     SetAmsType(int type) { m_ams_type = (DevAmsType) type; }
-    void     SetAmsType(DevAmsType type) { m_ams_type = type; }
-    DevAmsType  GetAmsType() const { return m_ams_type;}
+    void       SetAmsType(int type) { m_ams_type = (DevAmsType) type; }
+    void       SetAmsType(DevAmsType type) { m_ams_type = type; }
+    DevAmsType GetAmsType() const { return m_ams_type == DevAmsType::AMS_LITE_MIXED ? DevAmsType::AMS_LITE : m_ams_type; }
 
     // exist or not
     bool  IsExist() const { return m_exist; }
+
+    // mixed ams lite for N9
+    bool IsAmsLiteMixed() const { return m_ams_type == DevAmsType::AMS_LITE_MIXED; }
 
     // slots
     int   GetSlotCount() const;
@@ -282,6 +284,7 @@ public:
 
     std::map<int, DevAmsSlotId> GetTrayIndexMap();
     int GetTrayIdByAmsSlotId(int ams_id, int slot_id);
+    std::string GetTrayNameByTrayId(int tray_id);
 
     // extruder
     int  GetExtruderIdByAmsId(const std::string& ams_id) const;

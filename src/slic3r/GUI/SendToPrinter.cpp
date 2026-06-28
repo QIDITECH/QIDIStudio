@@ -973,6 +973,8 @@ void SendToPrinterDialog::on_ok(wxCommandEvent &event)
 
     Enable_Send_Button(false);
     m_is_canceled = false;
+    //cj_5
+    m_export_3mf_cancel = false;
     fs::path output_path(m_plater->model().get_backup_path());
     show_status(PrintDialogStatus::PrintStatusSending);
     output_path += "/temp_file";
@@ -997,21 +999,43 @@ void SendToPrinterDialog::on_ok(wxCommandEvent &event)
     m_status_bar->update_status(msg, m_is_canceled, 0, true);
 
     if (qidi_3mf) {
-        if (boost::iends_with(output_path.string(), ".gcode")) {
-            std::wstring temp_path = output_path.wstring();
-            temp_path = temp_path.substr(0, temp_path.size() - 6);
-            output_path = temp_path + L".gcode.3mf";
-        }
-        else if (boost::iends_with(output_path.string(), ".gcode.gcode.3mf")) {//for mac
-            std::wstring temp_path = output_path.wstring();
-            temp_path = temp_path.substr(0, temp_path.size() - 16);
-            output_path = temp_path + L".gcode.3mf";
-        }
-        else if (!boost::iends_with(output_path.string(), ".gcode.3mf")) {
-            output_path = output_path.replace_extension(".gcode.3mf");
-        }
         upload_file_name += ".gcode.3mf";
-        int result = m_plater->export_3mf(output_path, SaveStrategy::Silence | SaveStrategy::SplitModel | SaveStrategy::WithGcode | SaveStrategy::SkipModel, m_print_plate_idx);
+        //cj_5
+        // Reuse Plater packaging so imported gcode 3mf files keep their original slice info.
+        int result = m_plater->send_gcode(m_print_plate_idx, [this](int export_stage, int current, int total, bool& cancel) {
+            if (this->m_is_canceled)
+                return;
+
+            bool cancelled = false;
+            wxString msg = _L("Preparing print job");
+            m_status_bar->update_status(msg, cancelled, 10, true);
+            m_export_3mf_cancel = cancel = cancelled;
+        });
+
+        //cj_5
+        if (m_is_canceled || m_export_3mf_cancel) {
+            BOOST_LOG_TRIVIAL(info) << "send_job: m_export_3mf_cancel or m_is_canceled";
+            return;
+        }
+
+        //cj_5
+        if (result < 0) {
+            wxString msg = _L("Abnormal print file data. Please slice again");
+            m_status_bar->set_status_text(msg);
+            return;
+        }
+
+        //cj_5
+        PrintPrepareData print_data;
+        m_plater->get_print_job_data(&print_data);
+        output_path = print_data._3mf_path;
+
+        //cj_5
+        if (output_path.empty()) {
+            wxString msg = _L("Abnormal print file data. Please slice again");
+            m_status_bar->set_status_text(msg);
+            return;
+        }
     }
     else {
         if (!boost::iends_with(output_path.string(), ".gcode"))

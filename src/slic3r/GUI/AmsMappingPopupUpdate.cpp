@@ -610,11 +610,11 @@ void AmsMapingPopup::update_ams_tips(MachineObject* obj)
 
         //y80
         m_ams_tips_msg_panel->AddMessage(_L("To learn about the filaments matching rules."),
-            "#FF6F00", "https://e.bambulab.com/t?c=v4Q4e7Rm2dR0dWkw");
+            "#FF6F00", "https://e.qidi3d.com/t?c=v4Q4e7Rm2dR0dWkw");
 
         if (nozzle_nums == 2 && m_show_type != ShowType::LEFT_AND_RIGHT) {
             m_ams_tips_msg_panel->AddMessage(_L("To learn about the filaments matching rules."),
-                                             "#FF6F00", "https://e.bambulab.com/t?c=v4Q4e7Rm2dR0dWkw");
+                                             "#FF6F00", "https://e.qidi3d.com/t?c=v4Q4e7Rm2dR0dWkw");
         }
 
         // if (obj && obj->GetFilaSwitch()->IsInstalled()) {

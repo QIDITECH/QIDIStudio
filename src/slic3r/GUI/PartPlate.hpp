@@ -346,7 +346,7 @@ public:
     bool check_flow_compatible_of_nozzle_and_filament(const DynamicPrintConfig & config, const std::vector<std::string>& filament_presets, std::string& error_msg);
     bool check_tpu_nozzle_has_multiple_filaments(const DynamicPrintConfig &config, std::string &error_msg);
     bool check_high_temp_need_wrapping_detection(const DynamicPrintConfig &config, std::string &warning_text) const;
-    bool check_high_shrinkage_filament(const DynamicPrintConfig &config, std::string &warning_text) const;
+    bool check_high_shrinkage_filament(const DynamicPrintConfig &config, std::string &filament_names) const;
     bool check_single_extruder_mixed_filament_risk(const DynamicPrintConfig &config, std::string &warning_text) const;
 
     /* instance related operations*/
@@ -484,10 +484,11 @@ public:
     bool is_slice_result_ready_for_print() const
     {
         bool result = m_slice_result_valid;
+        int  WARNING_BIT = (1<<11);
         if (result)
-            result = m_gcode_result ?
-            (!m_gcode_result->toolpath_outside && m_gcode_result->gcode_check_result.error_code == 0 && !m_gcode_result->filament_printable_reuslt.has_value()) :
-            false;// && !m_gcode_result->conflict_result.has_value()  gcode conflict can also print
+            result = m_gcode_result ? (!m_gcode_result->toolpath_outside && (m_gcode_result->gcode_check_result.error_code & ~WARNING_BIT) == 0 &&
+                                       !m_gcode_result->filament_printable_reuslt.has_value()) :
+                                      false; // && !m_gcode_result->conflict_result.has_value()  gcode conflict can also print
         return result;
     }
 
@@ -821,6 +822,9 @@ public:
     int get_curr_plate_index() const { return m_current_plate; }
     PartPlate* get_curr_plate() { return m_plate_list[m_current_plate]; }
     const PartPlate *get_curr_plate() const { return m_plate_list[m_current_plate]; }
+    // Accessor for the virtual (unprintable) plate used to park off-bed instances.
+    PartPlate&       get_unprintable_plate() { return unprintable_plate; }
+    const PartPlate& get_unprintable_plate() const { return unprintable_plate; }
     ThumbnailData &get_thumbnail_assembly_view_data() { return m_thumbnail_assembly_view_data; }
     const ThumbnailData &get_thumbnail_assembly_view_data() const { return m_thumbnail_assembly_view_data; }
     void reset_thumbnail_assembly_view_data() { m_thumbnail_assembly_view_data.reset(); }
@@ -832,7 +836,12 @@ public:
     std::vector<PartPlate*> get_nonempty_plate_list();
 
     std::vector<const GCodeProcessorResult*> get_nonempty_plates_slice_results();
-    void set_default_wipe_tower_pos_for_plate(int plate_idx, bool init_pos = false);
+    // keep_existing=true keeps the saved wipe_tower_x/y[plate_idx] and only clamps
+    // it back when it falls outside the current plate. Used after loading 3mf to
+    // preserve valid user-adjusted positions while sanitising values whose original
+    // plate size differs from the active one (e.g. STUDIO-15720: 256x256 project
+    // reopened on A1 mini 180x180).
+    void set_default_wipe_tower_pos_for_plate(int plate_idx, bool init_pos = false, bool keep_existing = false);
 
     //compute the origin for printable plate with index i
     Vec3d get_current_plate_origin() { return compute_origin(m_current_plate, m_plate_cols); }

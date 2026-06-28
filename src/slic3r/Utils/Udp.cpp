@@ -1,8 +1,10 @@
 #include "Udp.hpp"
 
 #include <cstdint>
+#include <cctype>
 #include <algorithm>
 #include <array>
+#include <cstring>
 #include <vector>
 #include <string>
 #include <map>
@@ -614,6 +616,49 @@ std::string strip_service_dn(const std::string& service_name, const std::string&
 		return std::string();
 	}
 }
+
+//cj_5
+std::string trim_udp_field(std::string value)
+{
+	const size_t line_end = value.find_first_of("\r\n");
+	if (line_end != std::string::npos) {
+		value = value.substr(0, line_end);
+	}
+	value.erase(value.begin(), std::find_if(value.begin(), value.end(), [](unsigned char ch) {
+		return !std::isspace(ch);
+	}));
+	value.erase(std::find_if(value.rbegin(), value.rend(), [](unsigned char ch) {
+		return !std::isspace(ch);
+	}).base(), value.end());
+	return value;
+}
+
+//cj_5
+std::vector<std::string> split_udp_fields(const std::string& data)
+{
+	std::vector<std::string> fields;
+	size_t start = 0;
+	while (start <= data.size()) {
+		const size_t comma = data.find(',', start);
+		const size_t end = comma == std::string::npos ? data.size() : comma;
+		fields.push_back(trim_udp_field(data.substr(start, end - start)));
+		if (comma == std::string::npos) {
+			break;
+		}
+		start = comma + 1;
+	}
+	return fields;
+}
+
+//cj_5
+std::string parse_udp_device_identity(const std::string& first_field)
+{
+	const size_t colon = first_field.find(':');
+	if (colon == std::string::npos) {
+		return trim_udp_field(first_field);
+	}
+	return trim_udp_field(first_field.substr(colon + 1));
+}
 } // namespace
 
 UdpUdpSession::UdpUdpSession(Udp::ReplyFn rfn) : replyfn(rfn)
@@ -691,9 +736,10 @@ void UdpUdpSocket::send()
   //          BOOST_LOG_TRIVIAL(error) << "Data: " << mcast_endpoint;
   //          socket.send_to(asio::buffer(request.m_data), mcast_endpoint);
 		//}
-        char *pBuffer = (char *) GET_HOST_COMMAND;
-        int   nBufferSize = 72;
-        socket.send_to(boost::asio::buffer(pBuffer, nBufferSize), mcast_endpoint);
+        //cj_5
+        // Send only the command bytes. The previous fixed size leaked bytes after the string literal.
+        const char* pBuffer = GET_HOST_COMMAND;
+        socket.send_to(boost::asio::buffer(pBuffer, std::strlen(pBuffer)), mcast_endpoint);
 		// Should we care if this is called while already receiving? (async_receive call from receive_handler)
 		async_receive();
 	}
@@ -722,7 +768,9 @@ void UdpUdpSocket::receive_handler(SharedUdpSession session, const boost::system
 	// let io_service to handle the datagram on session
 	// from boost documentation io_service::post:
 	// The io_service guarantees that the handler will only be called in a thread in which the run(), run_one(), poll() or poll_one() member functions is currently being invoked.
-    std::string pData = m_recvBuf.data();
+    //cj_5
+    // UDP payloads are not null-terminated; keep only bytes from this datagram.
+    std::string pData(m_recvBuf.data(), bytes);
     io_service->post(boost::bind(&UdpUdpSession::handle_receive, session, error, bytes, pData));
 	// immediately accept new datagrams
     //BOOST_LOG_TRIVIAL(error) << m_recvBuf.data();
@@ -747,7 +795,6 @@ SharedUdpSession LookupUdpSocket::create_session() const { return std::shared_pt
 void LookupUdpSession::handle_receive(const error_code &error, size_t bytes, std::string pData)
 {
 	assert(socket);
-
 	if (error) {
 		BOOST_LOG_TRIVIAL(error) << error.message();
 		return;
@@ -755,16 +802,38 @@ void LookupUdpSession::handle_receive(const error_code &error, size_t bytes, std
 	if (bytes == 0 || !replyfn) {
 		return;
 	}
-	//B63
-    std::string delimiter = ",";
-    
-    size_t first_d = pData.find(delimiter);
-    size_t second_d = pData.find(delimiter, first_d + 1); 
-    size_t third_d = pData.find(delimiter, second_d + 1); 
-    std::string ip = pData.substr(second_d + 1, third_d - second_d - 1);
-    asio::ip::address addr = asio::ip::address::from_string("127.0.0.1");
-    UdpReply      reply(addr, 80, std::move(ip),
-                       pData.substr(pData.find("mkswifi:") + 8, pData.find(",") - 8));
+	//cj_5
+	const std::vector<std::string> fields = split_udp_fields(pData);
+	if (fields.size() < 3) {
+		return;
+	}
+
+	std::string ip = trim_udp_field(fields[2]);
+	std::string model;
+	std::string name;
+	const std::string identity = parse_udp_device_identity(fields[0]);
+	const size_t legacy_separator = identity.find('@');
+	//cj_5
+	const bool legacy_device = legacy_separator != std::string::npos;
+	if (legacy_separator != std::string::npos) {
+		name = trim_udp_field(identity.substr(0, legacy_separator));
+		model = trim_udp_field(identity.substr(legacy_separator + 1));
+	}
+	else {
+		model = identity;
+		name = fields.empty() ? std::string() : trim_udp_field(fields.back());
+	}
+	//cj_5
+	const std::string serial_number = fields.size() > 7 ? trim_udp_field(fields[7]) : std::string();
+
+	boost::system::error_code addr_error;
+	asio::ip::address addr = asio::ip::address::from_string(ip, addr_error);
+	if (addr_error) {
+		return;
+	}
+
+	//cj_5
+	UdpReply reply(addr, 80, std::move(ip), std::move(name), std::move(model), serial_number, pData, legacy_device);
 	replyfn(std::move(reply));
 
 	//buffer.resize(bytes);
@@ -1081,11 +1150,18 @@ void Udp::priv::resolve_perform()
 
 // API - public part
 
-UdpReply::UdpReply(boost::asio::ip::address ip, uint16_t port, std::string service_name, std::string hostname)
+UdpReply::UdpReply(boost::asio::ip::address ip, uint16_t port, std::string service_name, std::string hostname, std::string model_name, std::string serial_number, std::string raw_payload, bool legacy_device)
 	: ip(std::move(ip))
 	, port(port)
 	, service_name(std::move(service_name))
 	, hostname(std::move(hostname))
+	, model_name(std::move(model_name))
+	//cj_5
+	, serial_number(std::move(serial_number))
+	//cj_5
+	, raw_payload(std::move(raw_payload))
+	//cj_5
+	, legacy_device(legacy_device)
 {
 	std::string proto;
 	std::string port_suffix;

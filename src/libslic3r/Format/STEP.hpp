@@ -111,6 +111,7 @@ enum class Step_Status {
 
     std::atomic<bool> m_stop_mesh;
     void update_process(int load_stage, int current, int total, bool& cancel);
+    const std::vector<std::string>& get_unclosed_shells() const { return m_unclosed_shells; }
 private:
     std::string m_path;
     ImportStepProgressFn m_stepFn;
@@ -119,6 +120,7 @@ private:
     Handle(TDocStd_Document) m_doc;
     Handle(XCAFDoc_ShapeTool) m_shape_tool;
     std::vector<NamedSolid> m_name_solids;
+    std::vector<std::string> m_unclosed_shells;
 };
 
 

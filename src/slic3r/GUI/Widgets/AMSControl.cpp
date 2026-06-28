@@ -1,6 +1,5 @@
 #include "AMSControl.hpp"
 #include "Label.hpp"
-#include "../BitmapCache.hpp"
 #include "../I18N.hpp"
 #include "../GUI_App.hpp"
 
@@ -16,12 +15,13 @@
 
 #include <boost/log/trivial.hpp>
 
-#include "CalibUtils.hpp"
 
 namespace Slic3r { namespace GUI {
 
 #define AMS_CANS_SIZE wxSize(FromDIP(284), -1)
 #define AMS_CANS_WINDOW_SIZE wxSize(FromDIP(264), -1)
+#define AMS_CANS_ARROW_LEFT_WINDOW_SIZE wxSize(FromDIP(197), -1)
+#define AMS_CANS_ARROW_RIGHT_WINDOW_SIZE wxSize(FromDIP(60), -1)
 #define SINGLE_SLOT_AMS_PANEL_SIZE wxSize(FromDIP(264), FromDIP(160))
 
 
@@ -37,7 +37,7 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     // we no longer perform that automatic query here. Callers should inject data via
     // `SetData(...)` (added) after constructing the control.
     
-    // cj_1
+    // cj_1 ÑÕÉ«
 	StateColor btn_bg_blue(std::pair<wxColour, int>(AMS_CONTROL_DISABLE_COLOUR, StateColor::Disabled),
 		std::pair<wxColour, int>(wxColour(54, 97, 201), StateColor::Pressed),
 		std::pair<wxColour, int>(wxColour(78, 133, 255), StateColor::Hovered),
@@ -96,14 +96,40 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
         //m_sizer_items_right->Fit(m_panel_prv_right);
     }
     
+    // note: origin right split to arrow left & right
+    // origin left      |        origin right
+    // origin left      | arrow_left  |    arrow_right
+
+    m_sizer_prv_arrow_left = new wxBoxSizer(wxHORIZONTAL);
+    m_panel_prv_arrow_left = new wxScrolledWindow(m_amswin, wxID_ANY);
+    m_panel_prv_arrow_left->SetScrollRate(10, 0);
+    m_panel_prv_arrow_left->SetSize(AMS_ITEMS_ARROW_LEFT_PANEL_SIZE);
+    m_panel_prv_arrow_left->SetMinSize(AMS_ITEMS_ARROW_LEFT_PANEL_SIZE);
+    m_panel_prv_arrow_left->SetBackgroundColour(AMS_CONTROL_DEF_BLOCK_BK_COLOUR);
+    m_panel_prv_arrow_left->SetSizer(m_sizer_prv_arrow_left);
+    m_panel_prv_arrow_left->Layout();
+
+    m_sizer_prv_arrow_right = new wxBoxSizer(wxHORIZONTAL);
+    m_panel_prv_arrow_right = new wxScrolledWindow(m_amswin, wxID_ANY);
+    m_panel_prv_arrow_right->SetScrollRate(10, 0);
+    m_panel_prv_arrow_right->SetSize(AMS_ITEMS_ARROW_RIGHT_PANEL_SIZE);
+    m_panel_prv_arrow_right->SetMinSize(AMS_ITEMS_ARROW_RIGHT_PANEL_SIZE);
+    m_panel_prv_arrow_right->SetBackgroundColour(AMS_CONTROL_DEF_BLOCK_BK_COLOUR);
+    m_panel_prv_arrow_right->SetSizer(m_sizer_prv_arrow_right);
+    m_panel_prv_arrow_right->Layout();
+
     m_sizer_ams_items->Add(m_panel_prv_left, 0, wxLEFT | wxRIGHT, FromDIP(5));
     m_sizer_ams_items->Add(m_panel_prv_right, 0, wxLEFT | wxRIGHT, FromDIP(5));
+    m_sizer_ams_items->Add(m_panel_prv_arrow_left, 0, wxLEFT | wxRIGHT, FromDIP(5));
+    m_sizer_ams_items->Add(m_panel_prv_arrow_right, 0, wxLEFT | wxRIGHT, FromDIP(5));
     
     m_sizer_ams_body = new wxBoxSizer(wxHORIZONTAL);
 
     //ams area
     m_sizer_ams_area_left = new wxBoxSizer(wxHORIZONTAL);
     m_sizer_ams_area_right = new wxBoxSizer(wxHORIZONTAL);
+    m_sizer_ams_area_arrow_left = new wxBoxSizer(wxHORIZONTAL);
+    m_sizer_ams_area_arrow_right = new wxBoxSizer(wxHORIZONTAL);
     m_sizer_down_road = new wxBoxSizer(wxHORIZONTAL);
 
     m_simplebook_ams_left = new wxSimplebook(m_amswin, wxID_ANY, wxDefaultPosition, AMS_CANS_WINDOW_SIZE, 0);
@@ -116,15 +142,26 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     //m_sizer_ams_area_right->Add(m_simplebook_ams_right, 0, wxLEFT | wxRIGHT, FromDIP(5));
     m_sizer_ams_area_right->Add(m_simplebook_ams_right, 0, wxALIGN_CENTER, 0);
 
+    m_simplebook_ams_arrow_left = new wxSimplebook(m_amswin, wxID_ANY, wxDefaultPosition, AMS_CANS_ARROW_LEFT_WINDOW_SIZE, 0);
+    m_simplebook_ams_arrow_left->SetBackgroundColour(AMS_CONTROL_DEF_BLOCK_BK_COLOUR);
+    //m_sizer_ams_arearrow_leftht->Add(m_simplebook_ams_right, 0, wxLEFT | wxRIGHT, FromDIP(5));
+    m_sizer_ams_area_arrow_left->Add(m_simplebook_ams_arrow_left, 0, wxALIGN_CENTER, 0);
+
+    m_simplebook_ams_arrow_right = new wxSimplebook(m_amswin, wxID_ANY, wxDefaultPosition, AMS_CANS_ARROW_RIGHT_WINDOW_SIZE, 0);
+    m_simplebook_ams_arrow_right->SetBackgroundColour(AMS_CONTROL_DEF_BLOCK_BK_COLOUR);
+    //m_sizer_ams_area_right->Add(m_simplebook_ams_right, 0, wxLEFT | wxRIGHT, FromDIP(5));
+    m_sizer_ams_area_arrow_right->Add(m_simplebook_ams_arrow_right, 0, wxALIGN_CENTER, 0);
+
     m_down_road = new AMSRoadDownPart(m_amswin, wxID_ANY, wxDefaultPosition, AMS_DOWN_ROAD_SIZE);
     m_sizer_down_road->Add(m_down_road, 0, wxTOP, 0);
-
     // ams mode
     //
-    m_simplebook_ams_right->SetBackgroundColour(AMS_CONTROL_DEF_BLOCK_BK_COLOUR);
+    // m_simplebook_ams_right->SetBackgroundColour(AMS_CONTROL_DEF_BLOCK_BK_COLOUR);
 
     m_sizer_ams_area_left->Layout();
     m_sizer_ams_area_right->Layout();
+    m_sizer_ams_area_arrow_left->Layout();
+    m_sizer_ams_area_arrow_right->Layout();
 
 
     m_sizer_ams_option = new wxBoxSizer(wxHORIZONTAL);
@@ -191,8 +228,8 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     m_button_extruder_feed->SetBackgroundColor(btn_bg_blue);
     m_button_extruder_feed->SetBorderColor(btn_bd_blue);
     m_button_extruder_feed->SetTextColor(btn_text_blue);
-    m_button_extruder_feed->SetMinSize(wxSize(FromDIP(80),FromDIP(34)));
-    m_button_extruder_feed->SetMaxSize(wxSize(FromDIP(80),FromDIP(34)));
+    m_button_extruder_feed->SetMinSize(wxSize(FromDIP(65),FromDIP(34)));
+    m_button_extruder_feed->SetMaxSize(wxSize(FromDIP(65),FromDIP(34)));
     m_button_extruder_feed->EnableTooltipEvenDisabled();
     
 
@@ -212,8 +249,8 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
         m_button_extruder_back->SetBorderColor(btn_bd_white);
         m_button_extruder_back->SetTextColor(btn_text_white);
         m_button_extruder_back->SetFont(Label::Body_13);
-        m_button_extruder_back->SetMinSize(wxSize(FromDIP(80), FromDIP(34)));
-        m_button_extruder_back->SetMaxSize(wxSize(FromDIP(80), FromDIP(34)));
+        m_button_extruder_back->SetMinSize(wxSize(FromDIP(65), FromDIP(34)));
+        m_button_extruder_back->SetMaxSize(wxSize(FromDIP(65), FromDIP(34)));
         m_button_extruder_back->EnableTooltipEvenDisabled();
         
         if (wxGetApp().app_config->get("language") == "de_DE") m_button_extruder_back->SetFont(Label::Body_9);
@@ -234,8 +271,8 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
         m_button_extruder_eject->SetBorderColor(btn_bd_white);
         m_button_extruder_eject->SetTextColor(btn_text_white);
         m_button_extruder_eject->SetFont(Label::Body_13);
-        m_button_extruder_eject->SetMinSize(wxSize(FromDIP(80), FromDIP(34)));
-        m_button_extruder_eject->SetMaxSize(wxSize(FromDIP(80), FromDIP(34)));
+        m_button_extruder_eject->SetMinSize(wxSize(FromDIP(65), FromDIP(34)));
+        m_button_extruder_eject->SetMaxSize(wxSize(FromDIP(65), FromDIP(34)));
         m_button_extruder_eject->EnableTooltipEvenDisabled();
 
         if (wxGetApp().app_config->get("language") == "de_DE") m_button_extruder_eject->SetFont(Label::Body_9);
@@ -248,6 +285,8 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
         if (wxGetApp().app_config->get("language") == "uk_UA") m_button_extruder_eject->SetFont(Label::Body_9);
     }
 
+    //cj_4 Right-align the three action buttons inside the option panel.
+    m_sizer_option_right->AddStretchSpacer(1);
     m_sizer_option_right->Add(m_button_extruder_eject, 0, wxLEFT, FromDIP(0));
     m_sizer_option_right->Add(m_button_extruder_back, 0, wxLEFT, FromDIP(20));
     m_sizer_option_right->Add(m_button_extruder_feed, 0, wxLEFT, FromDIP(20));
@@ -261,9 +300,12 @@ AMSControl::AMSControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, cons
     m_sizer_ams_option->Add(m_panel_option_right, 0, wxALIGN_TOP, 0);
 
 
-    m_sizer_ams_body->Add(m_sizer_ams_area_left, wxALIGN_CENTER, 0);
-    m_sizer_ams_body->AddSpacer(FromDIP(10));
-    m_sizer_ams_body->Add(m_sizer_ams_area_right, wxALIGN_CENTER, 0);
+    m_sizer_ams_body->Add(m_sizer_ams_area_left, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, FromDIP(5));
+    m_sizer_ams_body->Add(m_sizer_ams_area_right, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, FromDIP(5));
+    m_item_ams_area_arrow_left = m_sizer_ams_body->Add(m_sizer_ams_area_arrow_left, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, FromDIP(4));
+    m_item_ams_area_arrow_right = m_sizer_ams_body->Add(m_sizer_ams_area_arrow_right, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, FromDIP(5));
+    m_sizer_ams_body->Show(m_sizer_ams_area_arrow_left, false);
+    m_sizer_ams_body->Show(m_sizer_ams_area_arrow_right, false);
 
     m_sizer_body->Add(m_sizer_ams_items, 0, wxALIGN_CENTER, 0);
     m_sizer_body->Add(0, 0, 1, wxEXPAND | wxTOP, FromDIP(10));
@@ -351,7 +393,7 @@ void AMSControl::on_retry()
     post_event(wxCommandEvent(EVT_AMS_RETRY));
 }
 
-AMSControl::~AMSControl() 
+AMSControl::~AMSControl()
 {
     if (m_ams_dry_ctr_win) {
         delete m_ams_dry_ctr_win;
@@ -399,6 +441,30 @@ std::tuple<bool, bool> AMSControl::isFilaSwitchReady()
         return {filaSwitch->IsInstalled(), filaSwitch->IsReady()};
     }
     return {false, false};
+}
+
+bool AMSControl::isFilaSwitchInstalled() const
+{
+    DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
+    if (!dev) return false;
+    MachineObject* obj = dev->get_selected_machine();
+    if (!obj) return false;
+    std::shared_ptr<Slic3r::DevFilaSwitch> filaSwitch = obj->GetFilaSwitch();
+    if (filaSwitch) {
+        return filaSwitch->IsInstalled();
+    }
+    return false;
+}
+
+bool AMSControl::IsAmsMixed(const std::vector<AMSinfo> &ams_info)
+{
+    std::set<DevAmsType> ams_kind;
+
+    for (auto info : ams_info) {
+        ams_kind.insert(info.ams_type);
+    }
+
+    return ams_kind.size() > 1 && ams_kind.find(DevAmsType::AMS_LITE) != ams_kind.end();
 }
 
 void AMSControl::AmsSelectedSwitch(wxCommandEvent& event) {
@@ -567,10 +633,13 @@ void AMSControl::msw_rescale()
 
     m_extruder->msw_rescale();
 
-    if (m_button_extruder_feed) m_button_extruder_feed->SetMinSize(wxSize(FromDIP(80), FromDIP(34)));
-    if (m_button_extruder_feed) m_button_extruder_feed->SetMaxSize(wxSize(FromDIP(80), FromDIP(34)));
-    if (m_button_extruder_back) m_button_extruder_back->SetMinSize(wxSize(FromDIP(80), FromDIP(34)));
-    if (m_button_extruder_back) m_button_extruder_back->SetMaxSize(wxSize(FromDIP(80), FromDIP(34)));
+    //cj_4 Keep load / unload / eject buttons the same consistent width.
+    if (m_button_extruder_feed) m_button_extruder_feed->SetMinSize(wxSize(FromDIP(65), FromDIP(34)));
+    if (m_button_extruder_feed) m_button_extruder_feed->SetMaxSize(wxSize(FromDIP(65), FromDIP(34)));
+    if (m_button_extruder_back) m_button_extruder_back->SetMinSize(wxSize(FromDIP(65), FromDIP(34)));
+    if (m_button_extruder_back) m_button_extruder_back->SetMaxSize(wxSize(FromDIP(65), FromDIP(34)));
+    if (m_button_extruder_eject) m_button_extruder_eject->SetMinSize(wxSize(FromDIP(65), FromDIP(34)));
+    if (m_button_extruder_eject) m_button_extruder_eject->SetMaxSize(wxSize(FromDIP(65), FromDIP(34)));
     if (m_button_auto_refill) m_button_auto_refill->SetMinSize(wxSize(FromDIP(80), FromDIP(34)));
     if (m_button_auto_refill) m_button_auto_refill->SetMaxSize(wxSize(FromDIP(80), FromDIP(34)));
     if (m_button_ams_setting) m_button_ams_setting->SetMinSize(wxSize(FromDIP(25), FromDIP(24)));
@@ -612,12 +681,20 @@ void AMSControl::msw_rescale()
 void AMSControl::ClearAms() {
     m_simplebook_ams_right->DeleteAllPages();
     m_simplebook_ams_left->DeleteAllPages();
+    m_simplebook_ams_arrow_left->DeleteAllPages();
+    m_simplebook_ams_arrow_right->DeleteAllPages();
     m_simplebook_ams_right->DestroyChildren();
     m_simplebook_ams_left->DestroyChildren();
+    m_simplebook_ams_arrow_left->DestroyChildren();
+    m_simplebook_ams_arrow_right->DestroyChildren();
     m_simplebook_ams_right->Layout();
     m_simplebook_ams_left->Layout();
+    m_simplebook_ams_arrow_left->Layout();
+    m_simplebook_ams_arrow_right->Layout();
     m_simplebook_ams_right->Refresh();
     m_simplebook_ams_left->Refresh();
+    m_simplebook_ams_arrow_left->Refresh();
+    m_simplebook_ams_arrow_right->Refresh();
 
     for (auto it : m_ams_preview_list) {
         delete it.second;
@@ -627,10 +704,14 @@ void AMSControl::ClearAms() {
 
     m_left_page_index = 0;
     m_right_page_index = 0;
+    m_arrow_left_page_index = 0;
+    m_arrow_right_page_index = 0;
 
     m_ams_item_list.clear();
     m_sizer_prv_right->Clear();
     m_sizer_prv_left->Clear();
+    m_sizer_prv_arrow_left->Clear();
+    m_sizer_prv_arrow_right->Clear();
     m_item_ids = { {}, {} };
     pair_id.clear();
 }
@@ -745,11 +826,21 @@ void AMSControl::CreateAmsDoubleNozzle(const std::string &series_name, const std
         m_panel_prv_left->Hide();
         m_panel_prv_right->Hide();
     }
+    m_panel_prv_arrow_left->Hide();
+    m_panel_prv_arrow_right->Hide();
+    m_simplebook_ams_arrow_left->Hide();
+    m_simplebook_ams_arrow_right->Hide();
+
     m_simplebook_ams_left->SetSelection(0);
     m_simplebook_ams_right->SetSelection(0);
 
     m_down_road->UpdateLeft(2, findFirstMode(AMSPanelPos::LEFT_PANEL));
     m_down_road->UpdateRight(2, findFirstMode(AMSPanelPos::RIGHT_PANEL));
+
+
+    m_down_road->UpdateLeft(2, findFirstMode(AMSPanelPos::LEFT_PANEL));
+    m_down_road->UpdateRight(2, findFirstMode(AMSPanelPos::RIGHT_PANEL));
+    m_down_road->UpdateCenter(2, AMSRoadShowMode::AMS_ROAD_MODE_NONE);
 
     m_extruder->updateNozzleNum(2);
 
@@ -775,29 +866,33 @@ void AMSControl::CreateAmsSingleNozzle(const std::string &series_name, const std
 
     std::vector<int>m_item_nums{0,0};
     std::vector<AMSinfo> single_info;
-
+    std::vector<std::string> center_ids;
     //Freeze();
+    if (m_ams_mixed) {
+        m_sizer_ams_body->Show(m_sizer_ams_area_arrow_left, true);
+        m_sizer_ams_body->Show(m_sizer_ams_area_arrow_right, true);
+    } else {
+        m_sizer_ams_body->Show(m_sizer_ams_area_arrow_left, false);
+        m_sizer_ams_body->Show(m_sizer_ams_area_arrow_right, false);
+    }
 
     //add ams data
     for (auto ams_info = m_ams_info.begin(); ams_info != m_ams_info.end(); ams_info++) {
         auto panel_pos = ams_info->GetDefaultPanelPos(s_extruder_count_single);
+        if (m_ams_mixed && ams_info->ams_type == DevAmsType::AMS_LITE) {
+            panel_pos = AMSPanelPos::RIGHT_PANEL;
+        }
         if (ams_info->cans.size() == GENERIC_AMS_SLOT_NUM) {
             m_item_ids[DEPUTY_EXTRUDER_ID].push_back(ams_info->ams_id);
             AddAmsPreview(*ams_info, panel_pos);
             AddAms(*ams_info, panel_pos);
+            if (m_ams_mixed && ams_info->ams_type == DevAmsType::AMS_LITE) center_ids.emplace_back(ams_info->ams_id);
         }
         else if (ams_info->cans.size() == 1) {
             m_item_ids[DEPUTY_EXTRUDER_ID].push_back(ams_info->ams_id);
             AddAmsPreview(*ams_info, panel_pos);
             AddAms(*ams_info, panel_pos);
         }
-    }
-    if (single_info.size() > 0){
-        m_item_ids[DEPUTY_EXTRUDER_ID].push_back(single_info[0].ams_id);
-        m_item_nums[DEPUTY_EXTRUDER_ID]++;
-        AddAms(single_info, series_name, printer_type, AMSPanelPos::LEFT_PANEL);
-        AddAmsPreview(single_info, AMSPanelPos::LEFT_PANEL);
-        single_info.clear();
     }
 
     // data ext data
@@ -806,10 +901,27 @@ void AMSControl::CreateAmsSingleNozzle(const std::string &series_name, const std
         return;
     }
 
-    single_info.push_back(m_ext_info[0]);
-    m_item_ids[MAIN_EXTRUDER_ID].push_back(single_info[0].ams_id);
-    AddAms(single_info, series_name, printer_type, AMSPanelPos::RIGHT_PANEL);
-    AddAmsPreview(single_info, AMSPanelPos::RIGHT_PANEL);
+    if (m_ams_mixed) {
+        AddAmsPreview(m_ext_info[0], AMSPanelPos::RIGHT_PANEL);
+        AddAms(m_ext_info[0], AMSPanelPos::RIGHT_PANEL);
+    } else {
+        for (const auto &info : m_ext_info) {
+            single_info.push_back(info);
+            if (single_info.size() == 2) {
+                AddAms(single_info, series_name, printer_type, AMSPanelPos::RIGHT_PANEL);
+                AddAmsPreview(single_info, AMSPanelPos::RIGHT_PANEL);
+                pair_id.push_back(std::make_pair(single_info[0].ams_id, single_info[1].ams_id));
+                single_info.clear();
+            }
+        }
+
+        if (single_info.size() > 0) {
+            AddAms(single_info, series_name, printer_type, AMSPanelPos::RIGHT_PANEL);
+            AddAmsPreview(single_info, AMSPanelPos::RIGHT_PANEL);
+            single_info.clear();
+        }
+    }
+
     auto left_init_mode = findFirstMode(AMSPanelPos::LEFT_PANEL);
     auto right_init_mode = findFirstMode(AMSPanelPos::RIGHT_PANEL);
 
@@ -820,14 +932,41 @@ void AMSControl::CreateAmsSingleNozzle(const std::string &series_name, const std
         m_panel_prv_left->Hide();
     }
 
-    if (right_init_mode != AMSRoadShowMode::AMS_ROAD_MODE_NONE && !m_ams_info.empty()) {
+    if (m_panel_prv_right->GetChildren().size() > 1) {
         m_panel_prv_right->Layout();
         m_panel_prv_right->Show();
     } else {
         m_panel_prv_right->Hide();
     }
 
-    if (m_ams_info.size() > 0){
+    m_panel_prv_arrow_left->Hide();
+    m_panel_prv_arrow_right->Hide();
+
+    // ams pro + lite
+    if (m_ams_mixed) {
+        m_sizer_prv_left->Layout();
+        m_sizer_prv_arrow_left->Layout();
+        m_sizer_prv_arrow_right->Layout();
+
+        m_panel_prv_left->Show();
+        m_panel_prv_arrow_left->Show();
+        m_panel_prv_arrow_right->Show();
+
+        m_simplebook_ams_left->Show();
+        m_simplebook_ams_right->Hide();
+        m_simplebook_ams_arrow_left->Show();
+        m_simplebook_ams_arrow_right->Show();
+
+        m_simplebook_ams_left->SetSelection(0);
+        m_simplebook_ams_arrow_left->SetSelection(0);
+        m_simplebook_ams_arrow_right->SetSelection(0);
+
+        m_down_road->UpdateLeft(1, left_init_mode);
+        m_down_road->UpdateRight(1, AMSRoadShowMode::AMS_ROAD_MODE_ARROW);
+        m_down_road->UpdateCenter(1, AMSRoadShowMode::AMS_ROAD_MODE_ARROW);
+    }
+    // ams pro or lite
+    else if (m_ams_info.size() > 0) {
         m_simplebook_ams_left->Show();
         m_simplebook_ams_right->Show();
         m_simplebook_ams_left->SetSelection(0);
@@ -843,10 +982,12 @@ void AMSControl::CreateAmsSingleNozzle(const std::string &series_name, const std
         m_simplebook_ams_right->SetSelection(0);
         m_down_road->UpdateLeft(1, left_init_mode);
         m_down_road->UpdateRight(1, right_init_mode);
+        m_down_road->UpdateCenter(1, AMSRoadShowMode::AMS_ROAD_MODE_NONE);
     }
     m_current_show_ams_left = m_item_ids[DEPUTY_EXTRUDER_ID].size() > 0 ? m_item_ids[DEPUTY_EXTRUDER_ID][0] : "";
     m_current_show_ams_right = m_item_ids[MAIN_EXTRUDER_ID].size() > 0 ? m_item_ids[MAIN_EXTRUDER_ID][0] : "";
-    m_current_ams = "";
+    m_current_show_ams_center = center_ids.size() > 0 ? center_ids[0] : "";
+    UpdateAmsPreviewSelection();
 
     m_down_road->UpdatePassRoad(AMSPanelPos::LEFT_PANEL, -1, AMSPassRoadSTEP::AMS_ROAD_STEP_NONE);
     m_down_road->UpdatePassRoad(AMSPanelPos::RIGHT_PANEL, -1, AMSPassRoadSTEP::AMS_ROAD_STEP_NONE);
@@ -862,6 +1003,7 @@ void AMSControl::CreateAmsSingleNozzle(const std::string &series_name, const std
 
 void AMSControl::Reset()
 {
+    m_ams_mixed = false;
     m_ams_info.clear();
     m_ext_info.clear();
     m_dev_id.clear();
@@ -953,6 +1095,7 @@ void AMSControl::UpdateAms(const std::string   &series_name,
                            std::vector<AMSinfo> ext_info,
                            DevExtderSystem           data,
                            std::string          dev_id,
+                           MachineObject*       obj,
                            bool                 is_reset,
                            bool                 test)
 {
@@ -979,6 +1122,7 @@ void AMSControl::UpdateAms(const std::string   &series_name,
 
         m_ams_info.clear();
         m_ams_info = ams_info;
+        m_ams_mixed = IsAmsMixed(ams_info);
         m_total_ext_count = data.GetTotalExtderCount();
         m_ext_info.clear();
         m_ext_info = ext_info;
@@ -1075,6 +1219,34 @@ void AMSControl::UpdateAms(const std::string   &series_name,
         this->Refresh(true);
         this->Update();
     }
+
+    /*update ext road visibility when fila switch installed*/
+    bool road_visibility_changed = false;
+    for (auto& [ams_id, ams_item] : m_ams_item_list) {
+        if (!ams_item) continue;
+        const bool should_show_road = !(install && ams_item->get_ams_model() == DevAmsType::EXT_SPOOL);
+        if (ams_item->ShowRoad(should_show_road)) {
+            road_visibility_changed = true;
+        }
+    }
+    if (road_visibility_changed) {
+        m_amswin->Layout();
+    }
+
+    /*distribute device info to road components*/
+    std::weak_ptr<DevFilaSystem> fila_sys_weak;
+    if (obj) fila_sys_weak = obj->GetFilaSystem();
+    for (auto& [id, item] : m_ams_item_list) {
+        if (item) item->UpdateDeviceInfo(fila_sys_weak);
+    }
+    if (m_vams_road) m_vams_road->UpdateDeviceInfo(fila_sys_weak);
+    if (m_down_road) m_down_road->UpdateDeviceInfo(fila_sys_weak);
+
+    //cj_4 Hide eject button when only external spool (no AMS boxes).
+    const bool only_ext_spool = m_ams_info.empty() && !m_ext_info.empty();
+    m_button_extruder_eject->Show(!only_ext_spool);
+    m_sizer_option_right->Show(m_button_extruder_eject, !only_ext_spool);
+    m_amswin->Layout();
 }
 
 // cj_1
@@ -1110,6 +1282,12 @@ void AMSControl::SetData(const std::vector<AMSinfo>& ams_info,
     restore_ams_tab_selection_after_rebuild(prev_show_ams_left, prev_show_ams_right);
     SetSize(wxSize(FromDIP(578), -1));
     SetMinSize(wxSize(FromDIP(578), -1));
+
+    //cj_4 Hide eject button when only external spool (no AMS boxes).
+    const bool only_ext = m_ams_info.empty() && !m_ext_info.empty();
+    m_button_extruder_eject->Show(!only_ext);
+    m_sizer_option_right->Show(m_button_extruder_eject, !only_ext);
+    m_amswin->Layout();
     //Layout();
 }
 
@@ -1154,8 +1332,27 @@ void AMSControl::AddAmsPreview(AMSinfo info, AMSPanelPos pos)
 
     if (pos == AMSPanelPos::RIGHT_PANEL)
     {
-        ams_prv = new AMSPreview(m_panel_prv_right, wxID_ANY, info);
-        m_sizer_prv_right->Add(ams_prv, 0, wxALIGN_CENTER | wxLEFT, FromDIP(6));
+        if(m_ams_mixed)
+        {
+            if(info.ams_type == DevAmsType::AMS_LITE)
+            {
+                ams_prv = new AMSPreview(m_panel_prv_arrow_left, wxID_ANY, info);
+                m_sizer_prv_arrow_left->Add(ams_prv, 0, wxALIGN_CENTER | wxLEFT, FromDIP(6));
+            }
+            else if(info.ams_type == DevAmsType::EXT_SPOOL)
+            {
+                ams_prv = new AMSPreview(m_panel_prv_arrow_right, wxID_ANY, info);
+                m_sizer_prv_arrow_right->Add(ams_prv, 0, wxALIGN_CENTER | wxLEFT, FromDIP(6));
+            }
+            else{
+                ams_prv = new AMSPreview(m_panel_prv_left, wxID_ANY, info);
+                m_sizer_prv_left->Add(ams_prv, 0, wxALIGN_CENTER | wxLEFT, FromDIP(6));
+            }
+        }
+        else{
+            ams_prv = new AMSPreview(m_panel_prv_right, wxID_ANY, info);
+            m_sizer_prv_right->Add(ams_prv, 0, wxALIGN_CENTER | wxLEFT, FromDIP(6));
+        }
     }
     else if (pos == AMSPanelPos::LEFT_PANEL)
     {
@@ -1187,29 +1384,67 @@ void AMSControl::createAms(wxSimplebook* parent, int& idx, AMSinfo info, AMSPane
 
 AMSRoadShowMode AMSControl::findFirstMode(AMSPanelPos pos) {
     auto init_mode = AMSRoadShowMode::AMS_ROAD_MODE_NONE;
+    const bool fila_switch_installed = isFilaSwitchInstalled();
 
-    std::string ams_id = "";
+    if (m_ams_mixed && pos == AMSPanelPos::LEFT_PANEL ) {
+        auto &item_ids = m_item_ids[DEPUTY_EXTRUDER_ID];
+
+        for (auto &ams_id : item_ids) {
+            auto item = m_ams_item_list.find(ams_id);
+
+            if (ams_id.empty() || item == m_ams_item_list.end()) continue;
+
+            if (item->second->get_ams_model() == DevAmsType::AMS_LITE || (item->second->get_ams_model() == DevAmsType::EXT_SPOOL && item->second->get_ext_type() == LITE_EXT)) {
+                continue;
+            }
+
+            if (fila_switch_installed && item->second->get_ams_model() == DevAmsType::EXT_SPOOL) {
+                continue;
+            }
+
+            if (item->second->get_can_count() == GENERIC_AMS_SLOT_NUM)
+                return AMSRoadShowMode::AMS_ROAD_MODE_FOUR;
+            else {
+                for (auto ids : pair_id) {
+                    if (ids.first == ams_id || ids.second == ams_id) {
+                        AMSRoadShowMode replaced = AMSRoadShowMode::AMS_ROAD_MODE_DOUBLE;
+                        if (GetExtPairedDoubleMode(ams_id, pos, replaced)) {
+                            return replaced;
+                        }
+                        return AMSRoadShowMode::AMS_ROAD_MODE_DOUBLE;
+                    }
+                }
+                if (item->second->get_ams_model() == DevAmsType::N3S) return AMSRoadShowMode::AMS_ROAD_MODE_SINGLE_N3S;
+                return AMSRoadShowMode::AMS_ROAD_MODE_SINGLE;
+            }
+        }
+        return init_mode;
+    }
+
     for (const auto& [idx, ams_item] : m_ams_item_list) {
-        if(ams_item->get_panel_pos() == pos){
-            ams_id = idx;
-            break;
+        if (ams_item->get_panel_pos() != pos) continue;
+        if (fila_switch_installed && ams_item->get_ams_model() == DevAmsType::EXT_SPOOL) continue;
+
+        const std::string& ams_id = idx;
+        if (ams_item->get_can_count() == GENERIC_AMS_SLOT_NUM) {
+            if (ams_item->get_ams_model() == DevAmsType::AMS_LITE) return AMSRoadShowMode::AMS_ROAD_MODE_AMS_LITE;
+            if (ams_item->get_ams_model() == DevAmsType::EXT_SPOOL && ams_item->get_ext_type() == AMSModelOriginType::LITE_EXT) return AMSRoadShowMode::AMS_ROAD_MODE_AMS_LITE;
+            return AMSRoadShowMode::AMS_ROAD_MODE_FOUR;
+        }
+        else {
+            if (IsInSlotPair(ams_id)) {
+                AMSRoadShowMode replaced = AMSRoadShowMode::AMS_ROAD_MODE_DOUBLE;
+                if (GetExtPairedDoubleMode(ams_id, pos, replaced)) {
+                    return replaced;
+                }
+                return AMSRoadShowMode::AMS_ROAD_MODE_DOUBLE;
+            }
+            if (ams_item->get_ams_model() == DevAmsType::EXT_SPOOL && ams_item->get_ext_type() == AMSModelOriginType::LITE_EXT) return AMSRoadShowMode::AMS_ROAD_MODE_AMS_LITE;
+            if (ams_item->get_ams_model() == DevAmsType::N3S) return AMSRoadShowMode::AMS_ROAD_MODE_SINGLE_N3S;
+            return AMSRoadShowMode::AMS_ROAD_MODE_SINGLE;
         }
     }
-
-    auto item = m_ams_item_list.find(ams_id);
-    if (ams_id.empty() || item == m_ams_item_list.end()) return init_mode;
-
-    if (item->second->get_can_count() == GENERIC_AMS_SLOT_NUM) {
-        if (item->second->get_ams_model() == DevAmsType::AMS_LITE) return AMSRoadShowMode::AMS_ROAD_MODE_AMS_LITE;
-        if (item->second->get_ams_model() == DevAmsType::EXT_SPOOL && item->second->get_ext_type() == AMSModelOriginType::LITE_EXT) return AMSRoadShowMode::AMS_ROAD_MODE_AMS_LITE;
-        return AMSRoadShowMode::AMS_ROAD_MODE_FOUR;
-    }
-    else{
-        if (IsInSlotPair(ams_id)) return AMSRoadShowMode::AMS_ROAD_MODE_DOUBLE;
-        if (item->second->get_ams_model() == DevAmsType::EXT_SPOOL && item->second->get_ext_type() == AMSModelOriginType::LITE_EXT) return AMSRoadShowMode::AMS_ROAD_MODE_AMS_LITE;
-        if (item->second->get_ams_model() == DevAmsType::N3S) return AMSRoadShowMode::AMS_ROAD_MODE_SINGLE_N3S;
-        return AMSRoadShowMode::AMS_ROAD_MODE_SINGLE;
-    }
+    return init_mode;
 }
 
 void AMSControl::createAmsPanel(wxSimplebook *parent, int &idx, std::vector<AMSinfo> infos, const std::string &series_name, const std::string &printer_type, AMSPanelPos pos, int total_ext_num)
@@ -1245,7 +1480,13 @@ void AMSControl::createAmsPanel(wxSimplebook *parent, int &idx, std::vector<AMSi
         }
     } else { // only an ext in a panel
         if (ams1->get_ams_model() == DevAmsType::EXT_SPOOL) {
-            book_sizer->Add(ams1, 0, wxLEFT, (book_panel->GetSize().x - ams1->GetSize().x) / 2);
+            int left_margin = (book_panel->GetSize().x - ams1->GetSize().x) / 2;
+            // When no AMS boxes present (single external spool alone), shift right
+            // to align the spool outlet with the road line and nozzle below
+            if (m_ams_info.empty()) {
+                left_margin += FromDIP(5);
+            }
+            book_sizer->Add(ams1, 0, wxLEFT, left_margin);
         }
     }
 
@@ -1267,12 +1508,26 @@ void AMSControl::AddAms(AMSinfo info, AMSPanelPos pos)
         }
     }
     else if (m_total_ext_count == 1){
-        createAms(m_simplebook_ams_left, m_left_page_index, info, AMSPanelPos::LEFT_PANEL);
+        if(m_ams_mixed ) {
+            if(info.ams_type == DevAmsType::AMS_LITE)
+                createAms(m_simplebook_ams_arrow_left, m_arrow_left_page_index, info, AMSPanelPos::LEFT_PANEL);
+            else if (info.ams_type == DevAmsType::EXT_SPOOL)
+                createAms(m_simplebook_ams_arrow_right, m_arrow_right_page_index, info, AMSPanelPos::RIGHT_PANEL);
+            else
+                createAms(m_simplebook_ams_left, m_left_page_index, info, AMSPanelPos::LEFT_PANEL);
+        } else {
+            createAms(m_simplebook_ams_left, m_left_page_index, info, AMSPanelPos::LEFT_PANEL);
+        }
     }
     m_simplebook_ams_left->Layout();
     m_simplebook_ams_right->Layout();
+    m_simplebook_ams_arrow_left->Layout();
+    m_simplebook_ams_arrow_right->Layout();
+
     m_simplebook_ams_left->Refresh();
     m_simplebook_ams_right->Refresh();
+    m_simplebook_ams_arrow_left->Refresh();
+    m_simplebook_ams_arrow_right->Refresh();
 
 }
 
@@ -1404,6 +1659,10 @@ void AMSControl::SwitchAms(std::string ams_id)
         return;
     }
 
+    if (m_ams_mixed && ams_id == m_current_show_ams_center) {
+        return;
+    }
+
     const auto& iter = m_ams_item_list.find(ams_id);
     if (iter == m_ams_item_list.end()) {
         return;
@@ -1434,28 +1693,69 @@ void AMSControl::SwitchAms(std::string ams_id)
         }
 
         const auto& panel_pos = ams_item->get_panel_pos();
-        if (ams_item->get_can_count() == GENERIC_AMS_SLOT_NUM) {
-            if (ams_item->get_ams_model() == DevAmsType::AMS_LITE) {
-                if (panel_pos == AMSPanelPos::LEFT_PANEL) {
-                    m_down_road->UpdateLeft(m_total_ext_count, AMSRoadShowMode::AMS_ROAD_MODE_AMS_LITE);
+        const bool fila_switch_installed = isFilaSwitchInstalled();
+
+        // When fila switch is installed and the clicked preview is an EXT_SPOOL paired
+        // with an AMS in the same book page, both previews share the same down-road view.
+        // Drive the mode computation from the paired AMS item so switching between
+        // the two previews renders identical lines.
+        std::string effective_ams_id = ams_id;
+        AmsItem* effective_item = ams_item;
+        if (fila_switch_installed && ams_item->get_ams_model() == DevAmsType::EXT_SPOOL) {
+            for (const auto& p : pair_id) {
+                const std::string* other = nullptr;
+                if (p.first == ams_id) other = &p.second;
+                else if (p.second == ams_id) other = &p.first;
+                else continue;
+                const auto other_it = m_ams_item_list.find(*other);
+                if (other_it == m_ams_item_list.end() || !other_it->second) continue;
+                if (other_it->second->get_ams_model() == DevAmsType::EXT_SPOOL) continue;
+                effective_ams_id = *other;
+                effective_item = other_it->second;
+                break;
+            }
+        }
+
+        const bool hide_ext_road = fila_switch_installed && effective_item->get_ams_model() == DevAmsType::EXT_SPOOL;
+
+        if (effective_item->get_can_count() == GENERIC_AMS_SLOT_NUM) {
+            if (m_ams_mixed) {
+                if (effective_item->get_ams_model() == DevAmsType::AMS_LITE) {
+                    m_down_road->UpdateCenter(m_total_ext_count, AMSRoadShowMode::AMS_ROAD_MODE_ARROW);
+                } else if (effective_item->get_ams_model() == DevAmsType::EXT_SPOOL) {
+                    AMSRoadShowMode mode = hide_ext_road ? AMSRoadShowMode::AMS_ROAD_MODE_NONE : AMSRoadShowMode::AMS_ROAD_MODE_ARROW;
+                    m_down_road->UpdateRight(m_total_ext_count, mode);
                 } else {
-                    m_down_road->UpdateRight(m_total_ext_count, AMSRoadShowMode::AMS_ROAD_MODE_AMS_LITE);
+                    m_down_road->UpdateLeft(m_total_ext_count, AMSRoadShowMode::AMS_ROAD_MODE_FOUR);
                 }
             } else {
-                if (panel_pos == AMSPanelPos::LEFT_PANEL) {
-                    m_down_road->UpdateLeft(m_total_ext_count, AMSRoadShowMode::AMS_ROAD_MODE_FOUR);
+                AMSRoadShowMode mode;
+                if (effective_item->get_ams_model() == DevAmsType::AMS_LITE) {
+                    mode = AMSRoadShowMode::AMS_ROAD_MODE_AMS_LITE;
                 } else {
-                    m_down_road->UpdateRight(m_total_ext_count, AMSRoadShowMode::AMS_ROAD_MODE_FOUR);
+                    mode = AMSRoadShowMode::AMS_ROAD_MODE_FOUR;
+                }
+                if (hide_ext_road) mode = AMSRoadShowMode::AMS_ROAD_MODE_NONE;
+
+                if (panel_pos == AMSPanelPos::LEFT_PANEL) {
+                    m_down_road->UpdateLeft(m_total_ext_count, mode);
+                } else {
+                    m_down_road->UpdateRight(m_total_ext_count, mode);
                 }
             }
 
         } else {
             AMSRoadShowMode mode = AMSRoadShowMode::AMS_ROAD_MODE_SINGLE;
-            if (IsInSlotPair(ams_id)) {
+            if (IsInSlotPair(effective_ams_id)) {
                 mode = AMSRoadShowMode::AMS_ROAD_MODE_DOUBLE;
-            } else if(ams_item->get_ams_model() == DevAmsType::N3S){
+                AMSRoadShowMode replaced = AMSRoadShowMode::AMS_ROAD_MODE_DOUBLE;
+                if (GetExtPairedDoubleMode(effective_ams_id, panel_pos, replaced)) {
+                    mode = replaced;
+                }
+            } else if(effective_item->get_ams_model() == DevAmsType::N3S){
                 mode = AMSRoadShowMode::AMS_ROAD_MODE_SINGLE_N3S;
-            } 
+            }
+            if (hide_ext_road) mode = AMSRoadShowMode::AMS_ROAD_MODE_NONE;
 
             if (panel_pos == AMSPanelPos::LEFT_PANEL) {
                 m_down_road->UpdateLeft(m_total_ext_count, mode);
@@ -1587,6 +1887,16 @@ void AMSControl::SetAmsStep(std::string ams_id, std::string canid, int extruder_
             } else {
                 length = left ? 129 : 145;
             }
+        }
+    }
+
+    if (m_ams_mixed) {
+        if (model == DevAmsType::EXT_SPOOL) {
+            length = 249;
+            in_same_page = true;
+        } else if (model == DevAmsType::AMS_LITE) {
+            length = 206;
+            in_same_page = true;
         }
     }
 
@@ -1782,6 +2092,38 @@ bool AMSControl::IsInSlotPair(const std::string& ams_id) const
         }
     }
 
+    return false;
+}
+
+bool AMSControl::GetExtPairedDoubleMode(const std::string& ams_id, AMSPanelPos panel_pos, AMSRoadShowMode& out_mode) const
+{
+    if (!isFilaSwitchInstalled()) return false;
+
+    for (const auto& p : pair_id) {
+        const std::string* other_id = nullptr;
+        bool ams_is_first = false;
+        if (p.first == ams_id) {
+            other_id = &p.second;
+            ams_is_first = true;
+        } else if (p.second == ams_id) {
+            other_id = &p.first;
+            ams_is_first = false;
+        } else {
+            continue;
+        }
+
+        const auto it = m_ams_item_list.find(*other_id);
+        if (it == m_ams_item_list.end() || !it->second) continue;
+        if (it->second->get_ams_model() != DevAmsType::EXT_SPOOL) continue;
+
+        // Position mapping (see AmsItem length in UpdateAms/OnAmsLoading):
+        //   LEFT_PANEL : pair.first => FAR  (-218), pair.second => NEAR (-110)
+        //   RIGHT_PANEL: pair.first => NEAR (+110), pair.second => FAR  (+218)
+        const bool ams_at_far = (panel_pos == AMSPanelPos::LEFT_PANEL) ? ams_is_first : !ams_is_first;
+        out_mode = ams_at_far ? AMSRoadShowMode::AMS_ROAD_MODE_DOUBLE_FAR_ONLY
+                              : AMSRoadShowMode::AMS_ROAD_MODE_DOUBLE_NEAR_ONLY;
+        return true;
+    }
     return false;
 }
 

@@ -29,6 +29,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <cstdlib>
 #include <unordered_map>
 #include <iostream>
 
@@ -68,7 +69,7 @@
 namespace pt = boost::property_tree;
 
 namespace {
-//cj_4
+//cj_4 Legacy cloud devices: normalize link_url into a Moonraker request base.
 std::string trim_ws(std::string s)
 {
     while (!s.empty() && (static_cast<unsigned char>(s.back()) <= ' '))
@@ -213,12 +214,569 @@ static void show_printer_webview_download_notice(wxWindow* parent, const wxStrin
 	dlg->on_show();
 	dlg->Raise();
 }
+
+//cj_5
+// Parse display weight text to grams for model file ordering.
+double parse_display_weight_grams(const std::string& text)
+{
+    std::string s = trim_ws(text);
+    char* end = nullptr;
+    const double value = std::strtod(s.c_str(), &end);
+    if (end == s.c_str()) {
+        return 0.0;
+    }
+
+    std::string unit = trim_ws(end != nullptr ? std::string(end) : std::string());
+    for (char& c : unit) {
+        c = static_cast<char>(::tolower(static_cast<unsigned char>(c)));
+    }
+
+    if (unit.find("kg") != std::string::npos) {
+        return value * 1000.0;
+    }
+    if (unit.find("mg") != std::string::npos) {
+        return value / 1000.0;
+    }
+    return value;
+}
 } // namespace
 
 namespace Slic3r {
     namespace GUI {
 
 wxDEFINE_EVENT(EVT_PRINTER_TASK_RESULT, wxCommandEvent);
+
+MonitorConnectionPhase PrinterWebView::GetConnectionPhase() const
+{
+    switch (webisNetMode) {
+    case isLocalWeb:
+        return MonitorConnectionPhase::LocalPrinter;
+    case isNetWeb:
+        return MonitorConnectionPhase::CloudPrinter;
+    case isDisconnect:
+    default:
+        return MonitorConnectionPhase::Disconnected;
+    }
+}
+
+void PrinterWebView::SetConnectionPhase(MonitorConnectionPhase phase)
+{
+    switch (phase) {
+    case MonitorConnectionPhase::LocalPrinter:
+        webisNetMode = isLocalWeb;
+        break;
+    case MonitorConnectionPhase::CloudPrinter:
+        webisNetMode = isNetWeb;
+        break;
+    case MonitorConnectionPhase::Disconnected:
+    default:
+        webisNetMode = isDisconnect;
+        break;
+    }
+}
+
+//cj_5
+wxString PrinterWebView::BuildDisconnectUrl() const
+{
+    wxString strlang = wxGetApp().current_language_code_safe();
+    wxString url;
+    if (m_isNetMode) {
+        url = wxString::Format("file://%s/web/qidi/link_missing_connection.html", from_u8(resources_dir()));
+        if (strlang != "") {
+            url = wxString::Format("file://%s/web/qidi/link_missing_connection.html?lang=%s", from_u8(resources_dir()), strlang);
+        }
+    }
+    else {
+        url = wxString::Format("file://%s/web/qidi/missing_connection.html", from_u8(resources_dir()));
+        if (strlang != "") {
+            url = wxString::Format("file://%s/web/qidi/missing_connection.html?lang=%s", from_u8(resources_dir()), strlang);
+        }
+    }
+    return url;
+}
+
+//cj_5
+wxString PrinterWebView::BuildLocalUrl(const std::string& link_url) const
+{
+    wxString m_link_url = from_u8(link_url);
+    wxString url;
+
+    if (m_link_url.find(":") == wxString::npos) {
+        url = wxString::Format("%s:10088", m_link_url);
+    }
+    else {
+        url = m_link_url;
+    }
+
+    if (!url.Lower().starts_with("http")) {
+        url = wxString::Format("http://%s", url);
+    }
+
+    return url;
+}
+
+//cj_5
+wxString PrinterWebView::BuildNetUrl(const std::string& link_url, bool isSpecialMachine)
+{
+    std::string formattedHost;
+    if (isSpecialMachine) {
+        if (wxGetApp().app_config->get("dark_color_mode") == "1") {
+            formattedHost = link_url + "&theme=dark";
+        }
+        else {
+            formattedHost = link_url + "&theme=light";
+        }
+
+        std::string formattedHost1 = "http://fluidd_" + formattedHost;
+        std::string formattedHost2 = "http://fluidd2_" + formattedHost;
+        if (formattedHost1 == m_web || formattedHost2 == m_web) {
+            // Always reload even for the same fluid URL.
+        }
+
+        if (m_isfluidd_1) {
+            formattedHost = "http://fluidd_" + formattedHost;
+            m_isfluidd_1 = false;
+        }
+        else {
+            formattedHost = "http://fluidd2_" + formattedHost;
+            m_isfluidd_1 = true;
+        }
+    }
+    else {
+        formattedHost = "http://" + link_url;
+    }
+
+    return from_u8(formattedHost);
+}
+
+//cj_5
+void PrinterWebView::LoadDisconnectPageOnly()
+{
+    m_web = BuildDisconnectUrl();
+    m_ip = "";
+    if (m_browser) {
+        m_browser->LoadURL(m_web);
+    }
+
+    if (wxGetApp().mainframe != nullptr) {
+        wxGetApp().mainframe->is_webview = true;
+        wxGetApp().mainframe->is_net_url = false;
+    }
+}
+
+//cj_5
+bool PrinterWebView::LoadLocalUrlOnly(wxString& url)
+{
+    if (m_browser == nullptr) {
+        return false;
+    }
+
+    m_web = url;
+    m_browser->LoadURL(url);
+
+    if (url.Lower().starts_with("http")) {
+        url.Remove(0, 7);
+    }
+    if (url.Lower().ends_with("10088")) {
+        url.Remove(url.length() - 6);
+    }
+    m_ip = url;
+    for (DeviceButton* button : m_net_buttons) {
+        button->SetIsSelected(false);
+    }
+
+    for (DeviceButton* button : m_buttons) {
+        wxString button_ip = button->getIPLabel();
+        if (button_ip.Lower().starts_with("http")) {
+            button_ip.Remove(0, 7);
+        }
+        if (button_ip.Lower().ends_with("10088")) {
+            button_ip.Remove(button_ip.length() - 6);
+        }
+        if (button_ip == m_ip) {
+            button->SetIsSelected(true);
+        }
+        else {
+            button->SetIsSelected(false);
+        }
+    }
+
+    if (wxGetApp().mainframe != nullptr) {
+        wxGetApp().mainframe->is_webview = true;
+        wxGetApp().mainframe->is_net_url = false;
+        wxGetApp().mainframe->printer_view_ip = m_ip;
+        wxGetApp().mainframe->printer_view_url = m_web;
+    }
+
+    return true;
+}
+
+//cj_5
+bool PrinterWebView::LoadNetUrlOnly(wxString& url, wxString& ip)
+{
+    if (m_browser == nullptr) {
+        return false;
+    }
+
+    m_web = url;
+    m_ip = ip;
+    m_browser->LoadURL(m_web);
+
+    for (DeviceButton* button : m_buttons) {
+        button->SetIsSelected(false);
+    }
+
+    for (DeviceButton* button : m_net_buttons) {
+        wxString button_ip = button->getIPLabel();
+        if (button_ip.Lower().starts_with("http")) {
+            button_ip.Remove(0, 7);
+        }
+        if (button_ip.Lower().ends_with("10088")) {
+            button_ip.Remove(button_ip.length() - 6);
+        }
+        if (m_ip == button_ip) {
+            button->SetIsSelected(true);
+        }
+        else {
+            button->SetIsSelected(false);
+        }
+    }
+
+    if (wxGetApp().mainframe != nullptr) {
+        wxGetApp().mainframe->is_webview = true;
+        wxGetApp().mainframe->is_net_url = true;
+        wxGetApp().mainframe->printer_view_ip = m_ip;
+        wxGetApp().mainframe->printer_view_url = m_web;
+    }
+
+    return true;
+}
+
+//cj_5
+void PrinterWebView::TransitionToDisconnected(const DisconnectTransitionOptions& options)
+{
+    if (options.clear_button_selection) {
+        cancelAllDevButtonSelect();
+    }
+    if (options.clear_status_panel) {
+        clearStatusPanelData();
+    }
+    if (options.clear_device_selection && m_device_manager) {
+        m_device_manager->unSelected();
+    }
+    if (options.clear_current_target) {
+        m_cur_deviceId.clear();
+        m_ip.clear();
+        m_web.Clear();
+    }
+    if (options.clear_persisted_selection) {
+        wxGetApp().app_config->set("last_selected_machine", "");
+        wxGetApp().app_config->set_bool("last_sel_machine_is_net", false);
+        wxGetApp().app_config->set("machine_list_net", "0");
+    }
+    if (options.blank_browser && m_browser) {
+        WebView::LoadUrl(m_browser, "about:blank");
+        m_web.Clear();
+    }
+    if ((options.blank_browser || options.load_placeholder) && m_status_book) {
+        m_status_book->ChangeSelection(0);
+    }
+    if (options.reset_mainframe_context && wxGetApp().mainframe) {
+        wxGetApp().mainframe->is_net_url = false;
+        wxGetApp().mainframe->printer_view_ip = "";
+        wxGetApp().mainframe->printer_view_url = "";
+        if (options.set_mainframe_not_webview) {
+            wxGetApp().mainframe->is_webview = false;
+        }
+    }
+
+    SetConnectionPhase(MonitorConnectionPhase::Disconnected);
+    if (options.load_placeholder) {
+        LoadDisconnectPageOnly();
+    }
+    UpdateState();
+}
+
+void PrinterWebView::TransitionToLocalDevice(DeviceButton* machine_button, const wxString& ip)
+{
+    if (machine_button == nullptr) {
+        return;
+    }
+
+#if QDT_RELEASE_TO_PUBLIC
+    if (wxGetApp().app_config->get_bool("last_sel_machine_is_net") && !wxGetApp().is_link_connect()) {
+        MakerHttpHandle::getInstance().closeSSEClient();
+    }
+#endif
+
+    cancelAllDevButtonSelect();
+    machine_button->SetIsSelected(true);
+
+    bool expert_mode = true;
+    std::string device_id = m_cur_deviceId;
+    for (auto it = m_device_id_to_button.begin(); it != m_device_id_to_button.end(); ++it) {
+        if (it->second == machine_button) {
+            device_id = it->first;
+            auto mode_it = m_device_id_to_expert_mode.find(device_id);
+            if (mode_it != m_device_id_to_expert_mode.end()) {
+                expert_mode = mode_it->second;
+            }
+            break;
+        }
+    }
+    m_cur_deviceId = device_id;
+
+    //cj_5
+    ApplyStatusContext(m_cur_deviceId, MonitorConnectionPhase::LocalPrinter);
+    UpdateState();
+
+    if (expert_mode) {
+        m_device_manager->setSelected(m_cur_deviceId);
+        m_device_manager->reconnectDevice(m_cur_deviceId);
+        m_status_book->ChangeSelection(0);
+        allsizer->Layout();
+        FormatUrl(into_u8(ip));
+    }
+    else {
+        m_device_manager->setSelected(m_cur_deviceId);
+        m_device_manager->reconnectDevice(m_cur_deviceId);
+        m_device_manager->getFileInfo(m_cur_deviceId);
+
+        auto device = m_device_manager->getDevice(m_cur_deviceId);
+        if (device != nullptr) {
+            device->box_is_update = true;
+        }
+
+        m_status_book->ChangeSelection(1);
+        LoadDisconnectPageOnly();
+        allsizer->Layout();
+        if (wxGetApp().mainframe != nullptr) {
+            wxGetApp().mainframe->is_webview = false;
+        }
+        m_ip = ip;
+    }
+
+    SetConnectionPhase(MonitorConnectionPhase::LocalPrinter);
+    wxGetApp().app_config->set("machine_list_net", "0");
+    wxGetApp().app_config->set("last_selected_machine", into_u8(machine_button->getIPLabel()));
+    wxGetApp().app_config->set_bool("last_sel_machine_is_net", false);
+    wxGetApp().plater()->update_machine_sync_status();
+}
+
+#if QDT_RELEASE_TO_PUBLIC
+void PrinterWebView::TransitionToCloudDevice(const NetDevice& device, DeviceButton* machine_button)
+{
+    if (machine_button == nullptr) {
+        return;
+    }
+
+    if (!wxGetApp().is_link_connect()) {
+        showLoadingOverlay();
+    }
+
+    cancelAllDevButtonSelect();
+    machine_button->SetIsSelected(true);
+    //cj_5
+    ApplyStatusContext(device.mac_address, MonitorConnectionPhase::CloudPrinter);
+
+    if (wxGetApp().is_link_connect()) {
+        hideLoadingOverlay();
+        m_status_book->ChangeSelection(0);
+        //m_device_manager->unSelected();
+        //cj_5
+        m_cur_deviceId = device.mac_address;
+        //cj_5
+        m_device_manager->setSelected(m_cur_deviceId);
+        allsizer->Layout();
+        FormatNetUrl(device.link_url, device.local_ip, device.isSpecialMachine);
+    }
+    else {
+        MakerHttpHandle::getInstance().setSSEHandle([this](const std::string& event, const std::string& data) {
+            this->onSSEMessageHandle(event, data);
+        });
+
+        new std::thread([this]() {
+            std::vector<NetDevice> netDevices = m_device_manager->getNetDevices();
+            for (NetDevice device : netDevices) {
+                HttpData httpData;
+                json bodyJson;
+                bodyJson["serialNumber"] = device.mac_address;
+                httpData.body = bodyJson.dump();
+                httpData.env = m_env;
+                httpData.target = PRINTERTYPE;
+
+                //y78
+                httpData.taskPath = "/get/database/config/all";
+
+                bool isSucceed = false;
+                std::string resultBody = MakerHttpHandle::getInstance().httpPostTask(httpData, isSucceed);
+                if (!isSucceed) {
+                    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "http error" << isSucceed << std::endl;
+                    continue;;
+                }
+
+                try {
+                    json resultJson = json::parse(resultBody);
+                    //y78
+                    if (resultJson.contains("data") && resultJson["data"].is_object()) {
+                        if (resultJson["data"].contains("printing.polar_cooler") && resultJson["data"]["printing.polar_cooler"].is_string()) {
+                            std::shared_ptr<QDSDevice> tempQdsDev = m_device_manager->getDevice(device.mac_address);
+                            tempQdsDev->m_enable_polar_cooler = resultJson["data"]["printing.polar_cooler"].get<std::string>() == "1";
+                        }
+
+                        if (resultJson["data"].contains("nozzle.diameter")) {
+                            std::shared_ptr<QDSDevice> tempQdsDev = m_device_manager->getDevice(device.mac_address);
+                            tempQdsDev->m_nozzle_diameter.clear();
+                            std::vector<float> nozzle_diameter_temp;
+                            if (resultJson["data"]["nozzle.diameter"].is_string()) {
+                                nozzle_diameter_temp.push_back(std::stof(resultJson["data"]["nozzle.diameter"].get<std::string>()));
+                                tempQdsDev->m_nozzle_diameter = nozzle_diameter_temp;
+                            }
+                            else if (resultJson["data"]["nozzle.diameter"].is_array()) {
+                                for (const auto& item : resultJson["data"]["nozzle.diameter"]) {
+                                    if (item.is_string()) {
+                                        nozzle_diameter_temp.push_back(std::stof(item.get<std::string>()));
+                                    }
+                                }
+                                tempQdsDev->m_nozzle_diameter = nozzle_diameter_temp;
+                            }
+                        }
+                    }
+                }
+                catch (...) {
+                }
+            }
+        });
+
+
+        if (!PhysicalPrinter::is_mqtt_ui_capable_preset_model(device.machine_type, &wxGetApp().preset_bundle->printers)) {
+			hideLoadingOverlay();
+			m_status_book->ChangeSelection(0);
+            LoadDisconnectPageOnly();
+            m_cur_deviceId = device.mac_address;
+			m_device_manager->setSelected(m_cur_deviceId);
+			allsizer->Layout();
+            FormatNetUrl(device.url, device.local_ip, device.isSpecialMachine);
+        }
+        else {
+            m_status_book->ChangeSelection(1);
+            LoadDisconnectPageOnly();
+            m_device_manager->setSelected(device.mac_address);
+            m_cur_deviceId = device.mac_address;
+            allsizer->Layout();
+            if (wxGetApp().mainframe != nullptr) {
+                wxGetApp().mainframe->is_webview = false;
+            }
+            m_ip = device.local_ip;
+        }
+    }
+
+    SetConnectionPhase(MonitorConnectionPhase::CloudPrinter);
+    UpdateState();
+
+    wxGetApp().app_config->set("last_selected_machine", into_u8(machine_button->getIPLabel()));
+    wxGetApp().app_config->set_bool("last_sel_machine_is_net", true);
+    wxGetApp().app_config->set("machine_list_net", "1");
+    wxGetApp().plater()->update_machine_sync_status();
+
+    m_device_manager->getFileInfo(device.mac_address);
+    std::shared_ptr<QDSDevice> tempDevice = m_device_manager->getDevice(device.mac_address);
+    if (tempDevice != nullptr) {
+        tempDevice->box_is_update = true;
+    }
+}
+
+//cj_5
+void PrinterWebView::TransitionToNetDeviceViaLocal(const NetDevice& net_device,
+                                                     const LocalDiscoveredDevice& local_device,
+                                                     DeviceButton* machine_button)
+{
+    if (machine_button == nullptr) {
+        return;
+    }
+
+    // Close cloud SSE client if it was active from a previous net device
+    if (wxGetApp().app_config->get_bool("last_sel_machine_is_net") && !wxGetApp().is_link_connect()) {
+        MakerHttpHandle::getInstance().closeSSEClient();
+    }
+
+    // Select this button, deselect others
+    cancelAllDevButtonSelect();
+    machine_button->SetIsSelected(true);
+
+    // Device ID is the cloud mac_address (serialNumber) — consistent with AddNetButton
+    const std::string device_id = net_device.mac_address;
+    m_cur_deviceId = device_id;
+
+    
+
+    // Update the existing QDSDevice with local connection info, but keep is_net_device = true
+	const std::string local_ip = local_device.ip;
+	std::shared_ptr<QDSDevice> device = m_device_manager->getDevice(device_id);
+    
+    if (device) {
+        device->m_url = "ws://" + local_ip + ":7125/websocket";
+        device->m_ip  = local_ip;
+        device->m_frp_url = "http://" + local_ip;
+        // Keep is_net_device = true — the button stays in the net section
+        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__
+            << " Updated net device " << device_id
+            << " to use local WebSocket at " << device->m_url << std::endl;
+    }
+
+    //cj_5
+    auto netDevices = wxGetApp().get_devices();
+    for (int i = 0; i < netDevices.size(); ++i) {
+        if (netDevices[i].id == net_device.id && netDevices[i].local_ip == net_device.local_ip) {
+            netDevices[i].url = local_ip;
+        }
+    }
+    wxGetApp().set_devices(netDevices);
+    // Apply status context as LocalPrinter (WebSocket-based communication)
+    ApplyStatusContext(device_id, MonitorConnectionPhase::LocalPrinter);
+    UpdateState();
+
+
+	// Determine expert mode from stored map
+	bool expert_mode = !PhysicalPrinter::is_mqtt_ui_capable_preset_model(net_device.machine_type, &wxGetApp().preset_bundle->printers);
+	
+    // Connect and show UI
+    if (expert_mode) {
+        m_device_manager->setSelected(device_id);
+        m_device_manager->reconnectDevice(device_id);
+        m_status_book->ChangeSelection(0);
+        allsizer->Layout();
+        FormatUrl(local_ip);
+    }
+    else {
+        m_device_manager->setSelected(device_id);
+        m_device_manager->reconnectDevice(device_id);
+        m_device_manager->getFileInfo(device_id);
+
+        if (device) {
+            device->box_is_update = true;
+        }
+
+        m_status_book->ChangeSelection(1);
+        LoadDisconnectPageOnly();
+        allsizer->Layout();
+        if (wxGetApp().mainframe != nullptr) {
+            wxGetApp().mainframe->is_webview = false;
+        }
+        m_ip = wxString::FromUTF8(local_ip);
+    }
+
+    // Set connection phase to LocalPrinter (WebSocket active)
+    SetConnectionPhase(MonitorConnectionPhase::LocalPrinter);
+    UpdateState();
+
+    // Persist selection: keep net section visible and marked as net
+    wxGetApp().app_config->set("last_selected_machine", into_u8(machine_button->getIPLabel()));
+    wxGetApp().app_config->set_bool("last_sel_machine_is_net", true);
+    wxGetApp().app_config->set("machine_list_net", "1");
+    wxGetApp().plater()->update_machine_sync_status();
+}
+#endif
 
         //cj_2
 class LoadingOverlayWithGif : public wxFrame
@@ -657,6 +1215,9 @@ PrinterWebView::PrinterWebView(wxWindow* parent) :
 		m_status_book->AddPage(t_status_panel, "", false);
     }
 
+	// TimedDisappearance hides itself after the timer expires.
+	// toast->call_start_gradual_disappearance() can also start it manually.
+
     //y74
     allsizer->Add(leftallsizer, wxSizerFlags(0).Expand());
     allsizer->Add(m_status_book, wxSizerFlags(1).Expand().Border(wxALL, 0));
@@ -723,7 +1284,7 @@ void PrinterWebView::showLoadingOverlay()
 {
 
 
-    //cj_3
+    //cj_4 Skip overlay during init_select_machine session restore.
     if (m_printer_view_bootstrap) {
         return;
     }
@@ -939,6 +1500,7 @@ wxBoxSizer* PrinterWebView::init_menu_bar(wxPanel* Panel)
 }
 
 void PrinterWebView::init_scroll_window(wxPanel* Panel) {
+    // Vertical scroll only; width is constrained by the columns and EXPAND layout.
     leftScrolledWindow = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL);
     leftScrolledWindow->SetBackgroundColour(wxColour(255, 255, 255));
     leftScrolledWindow->SetSizer(devicesizer);
@@ -1133,6 +1695,8 @@ void PrinterWebView::init_scroll_window(wxPanel* Panel) {
 					}
                     m_net_buttons.clear();
 #if QDT_RELEASE_TO_PUBLIC
+                    //cj_5 Refresh local device cache so net-button clicks can match LAN devices
+                    m_device_manager->refreshLocalDevices(false, {});
                     if (!wxGetApp().is_link_connect()) {
 
                         MakerHttpHandle::getInstance().get_maker_device_list();
@@ -1186,7 +1750,8 @@ void PrinterWebView::init_scroll_window(wxPanel* Panel) {
 #endif
     }
     //y40
-    if (webisNetMode == isNetWeb) {
+    const MonitorConnectionPhase connection_phase = GetConnectionPhase();
+    if (connection_phase == MonitorConnectionPhase::CloudPrinter) {
         for (DeviceButton* button : m_net_buttons) {
             wxString button_ip = button->getIPLabel();
             if (button_ip.Lower().starts_with("http"))
@@ -1206,7 +1771,7 @@ void PrinterWebView::init_scroll_window(wxPanel* Panel) {
             }
         }
     }
-    else if (webisNetMode == isLocalWeb) {
+    else if (connection_phase == MonitorConnectionPhase::LocalPrinter) {
         for (DeviceButton* button : m_buttons) {
             //y79
             if (button->getIPLabel() == m_ip) {
@@ -1223,8 +1788,9 @@ void PrinterWebView::init_scroll_window(wxPanel* Panel) {
     }
     else
     {
-        m_status_book->ChangeSelection(0);
-        load_disconnect_url();
+        DisconnectTransitionOptions options;
+        options.load_placeholder = true;
+        TransitionToDisconnected(options);
     }
     if (status) {
         syncDeviceSectionExpandFromLastSelection();
@@ -1271,58 +1837,32 @@ void PrinterWebView::SetLoginStatus(bool status) {
 #if QDT_RELEASE_TO_PUBLIC
         std::vector<NetDevice> devices;
         wxGetApp().set_devices(devices);
-        if (!wxGetApp().is_link_connect())
+        if (!wxGetApp().is_link_connect())  // Close SSE when logging out from non-Link login.
         {
             MakerHttpHandle::getInstance().closeSSEClient();
         }
 #endif
-        //cj_4
-        // If the user was viewing an online (link / maker) device when the
-        // login session ends, the button stays selected and the browser keeps
-        // rendering the now-unauthenticated link page. Detect that case and
-        // drop every piece of "last selected online device" state so nothing
-        // of the previous session is left visible.
         const bool was_online_selected =
-            (webisNetMode == isNetWeb) ||
+            (GetConnectionPhase() == MonitorConnectionPhase::CloudPrinter) ||
             wxGetApp().app_config->get_bool("last_sel_machine_is_net");
         if (was_online_selected) {
-            cancelAllDevButtonSelect();
-            clearStatusPanelData();
-            if (m_device_manager) {
-                m_device_manager->unSelected();
-            }
-            m_cur_deviceId.clear();
-            m_ip.clear();
-            wxGetApp().app_config->set("last_selected_machine", "");
-            wxGetApp().app_config->set_bool("last_sel_machine_is_net", false);
-            wxGetApp().app_config->set("machine_list_net", "0");
-
-            //cj_4
-            // Blank the embedded browser. A link device was rendered into
-            // m_browser via FormatNetUrl/load_net_url, so just switching the
-            // simplebook page is not enough: the WebView still keeps the old
-            // URL alive and a short flash of the previous device page shows
-            // up on the next login. Use the WebView helper to force an
-            // about:blank navigation and reset m_web so any later load_url /
-            // load_net_url call with the same URL is not deduplicated away.
-            if (m_browser) {
-                WebView::LoadUrl(m_browser, "about:blank");
-            }
-            m_web.Clear();
-            if (m_status_book) {
-                m_status_book->ChangeSelection(0);
-            }
-            if (wxGetApp().mainframe) {
-                wxGetApp().mainframe->is_webview     = false;
-                wxGetApp().mainframe->is_net_url     = false;
-                wxGetApp().mainframe->printer_view_ip  = "";
-                wxGetApp().mainframe->printer_view_url = "";
-            }
+            DisconnectTransitionOptions options;
+            options.clear_button_selection = true;
+            options.clear_status_panel = true;
+            options.clear_device_selection = true;
+            options.clear_current_target = true;
+            options.clear_persisted_selection = true;
+            options.reset_mainframe_context = true;
+            options.set_mainframe_not_webview = true;
+            options.blank_browser = true;
+            options.load_placeholder = false;
+            TransitionToDisconnected(options);
         }
-
-        // y28
-        if(webisNetMode == isNetWeb)
-            webisNetMode = isDisconnect;
+        else if (GetConnectionPhase() == MonitorConnectionPhase::CloudPrinter) {
+            DisconnectTransitionOptions options;
+            options.load_placeholder = false;
+            TransitionToDisconnected(options);
+        }
         SetPresetChanged(true);
         UpdateState();
     }
@@ -1331,7 +1871,15 @@ void PrinterWebView::SetLoginStatus(bool status) {
 
 PrinterWebView::~PrinterWebView()
 {
-    //cj_4
+    //cj_4 Mark as destroying FIRST so any in-flight SSE / CallAfter can bail out.
+    m_isDestroying = true;
+
+    //cj_4 Stop SSE client before any other teardown, so no new SSE messages
+    // can CallAfter a partially-destroyed this.
+#if RELEASE_TO_PUBLIC
+    MakerHttpHandle::getInstance().closeSSEClient();
+#endif
+
     if (m_progress_watchdog_timer) {
         m_progress_watchdog_timer->Stop();
         Unbind(wxEVT_TIMER, &PrinterWebView::onProgressWatchdogTimer, this, m_progress_watchdog_timer->GetId());
@@ -1339,7 +1887,7 @@ PrinterWebView::~PrinterWebView()
         m_progress_watchdog_timer = nullptr;
     }
 
-    //cj_3
+    //cj_4 Stop polling before unbinding callbacks so stopAllConnection cannot CallAfter a destroyed object.
     stopLegacyStatusPolling();
     if (m_device_manager) {
         m_device_manager->setConnectionEventCallback({});
@@ -1349,7 +1897,6 @@ PrinterWebView::~PrinterWebView()
         m_device_manager->stopAllConnection();
     }
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " Start";
-
 
     SetEvtHandlerEnabled(false);
 
@@ -1397,6 +1944,7 @@ PrinterWebView::~PrinterWebView()
         if (ip_without_colon.Lower().ends_with("7125"))
             ip_without_colon.Remove(ip_without_colon.length() - 5);
 
+        // Register device information with the manager; addDevice starts the connection.
         std::string t_device_id = m_device_manager->addDevice(
             into_u8(device_name), 
             into_u8(ip), 
@@ -1421,63 +1969,8 @@ PrinterWebView::~PrinterWebView()
 
     //y76
     machine_button->Bind(wxEVT_BUTTON, [this, ip, machine_button](wxCommandEvent &event) {
-		t_status_page->clear_model_item();
-#if QDT_RELEASE_TO_PUBLIC
-        if (wxGetApp().app_config->get_bool("last_sel_machine_is_net") && !wxGetApp().is_link_connect()) {
-            MakerHttpHandle::getInstance().closeSSEClient();
-        }
-#endif
-        clearStatusPanelData();
-        cancelAllDevButtonSelect();
-        machine_button->SetIsSelected(true);
-
-        bool expert_mode = true;
-        for (auto it = m_device_id_to_button.begin(); it != m_device_id_to_button.end(); ++it) {
-            if (it->second == machine_button) {
-                m_cur_deviceId = it->first;
-                //cj_4_cursor
-                auto mode_it = m_device_id_to_expert_mode.find(m_cur_deviceId);
-                if (mode_it != m_device_id_to_expert_mode.end()) {
-                    expert_mode = mode_it->second;
-                }
-                break;
-            }
-        }
-
-        UpdateState();
-
-        if (expert_mode) {
-            m_device_manager->setSelected(m_cur_deviceId);
-            m_device_manager->reconnectDevice(m_cur_deviceId);
-            m_status_book->ChangeSelection(0);
-            allsizer->Layout();
-            FormatUrl(into_u8(ip));
-        }
-        else {
-            m_device_manager->setSelected(m_cur_deviceId);
-            m_device_manager->reconnectDevice(m_cur_deviceId);
-            m_device_manager->getFileInfo(m_cur_deviceId);
-
-            auto device = m_device_manager->getDevice(m_cur_deviceId);
-            if (device != nullptr) {
-                device->box_is_update = true;
-            }
-
-            m_status_book->ChangeSelection(1);
-            load_disconnect_url();
-            allsizer->Layout();
-            if (wxGetApp().mainframe != nullptr) {
-                wxGetApp().mainframe->is_webview = false;
-
-            }
-            m_ip = ip;
-        }
-		this->webisNetMode = isLocalWeb;
-        wxGetApp().app_config->set("machine_list_net", "0");
-        wxGetApp().app_config->set("last_selected_machine", into_u8(machine_button->getIPLabel()));
-        wxGetApp().app_config->set_bool("last_sel_machine_is_net", false);
-        //cj_4 clear sidebar sync status when switching to a different device
-        wxGetApp().plater()->update_machine_sync_status();
+        boost::ignore_unused(event);
+        TransitionToLocalDevice(machine_button, ip);
     });
     devicesizer->Add(machine_button, 0, wxEXPAND);
     devicesizer->Layout();
@@ -1591,127 +2084,20 @@ bool PrinterWebView::select_device_by_id(const std::string& device_id)
      machine_button->SetCanFocus(false); 
      machine_button->SetCornerRadius(0);
 
-     
-     machine_button->Bind(wxEVT_BUTTON, [this, device, machine_button](wxCommandEvent& event) {
-        t_status_page->clear_model_item();
-        if (machine_button == nullptr) {
-            return;
-        }
 
-        //cj_4
-        //wxGetApp().CallAfter([this]{
-			if (!wxGetApp().is_link_connect()) {
-				showLoadingOverlay();
-			}
-           // });
-            
-         
-        
-
-        // cj_1
-        cancelAllDevButtonSelect();
-        clearStatusPanelData();
-        machine_button->SetIsSelected(true);
-
-        if (wxGetApp().is_link_connect()) {
-            //cj_4
-            hideLoadingOverlay();
-            m_status_book->ChangeSelection(0);
-            m_device_manager->unSelected();
-            allsizer->Layout();
-            FormatNetUrl(device.link_url, device.local_ip, device.isSpecialMachine);
-        }
-        else {
-            
-			// cj_2
-			{
-				MakerHttpHandle::getInstance().setSSEHandle([this](const std::string& event, const std::string& data) {
-					this->onSSEMessageHandle(event, data);
-					});
-
-				//cj_2
-				new std::thread([this]() {
-					std::vector<NetDevice> netDevices = m_device_manager->getNetDevices();
-					for (NetDevice device : netDevices) {
-						HttpData httpData;
-						json bodyJson;
-						bodyJson["serialNumber"] = device.mac_address;
-						httpData.body = bodyJson.dump();
-						httpData.env = m_env;
-						httpData.target = PRINTERTYPE;
-
-						//y78
-						httpData.taskPath = "/get/database/config/all";
-
-						bool isSucceed = false;
-						std::string resultBody = MakerHttpHandle::getInstance().httpPostTask(httpData, isSucceed);
-						if (!isSucceed) {
-							BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "http error" << isSucceed << std::endl;
-							continue;;
-						}
-
-						try {
-							json resultJson = json::parse(resultBody);
-							//y78
-							if (resultJson.contains("data") && resultJson["data"].is_object()) {
-								if (resultJson["data"].contains("printing.polar_cooler") && resultJson["data"]["printing.polar_cooler"].is_string()) {
-									std::shared_ptr<QDSDevice> tempQdsDev = m_device_manager->getDevice(device.mac_address);
-									tempQdsDev->m_enable_polar_cooler = resultJson["data"]["printing.polar_cooler"].get<std::string>() == "1";
-								}
-
-								if (resultJson["data"].contains("nozzle.diameter")) {
-									std::shared_ptr<QDSDevice> tempQdsDev = m_device_manager->getDevice(device.mac_address);
-									tempQdsDev->m_nozzle_diameter.clear();
-									std::vector<float> nozzle_diameter_temp;
-									if (resultJson["data"]["nozzle.diameter"].is_string()) {
-										nozzle_diameter_temp.push_back(std::stof(resultJson["data"]["nozzle.diameter"].get<std::string>()));
-										tempQdsDev->m_nozzle_diameter = nozzle_diameter_temp;
-									}
-									else if (resultJson["data"]["nozzle.diameter"].is_array()) {
-										for (const auto& item : resultJson["data"]["nozzle.diameter"]) {
-											if (item.is_string()) {
-												nozzle_diameter_temp.push_back(std::stof(item.get<std::string>()));
-											}
-										}
-										tempQdsDev->m_nozzle_diameter = nozzle_diameter_temp;
-									}
-								}
-							}
-						}
-						catch (...) {
-
-						}
-
-					}
-					});
-			}
-            //device.
-            m_status_book->ChangeSelection(1);
-            load_disconnect_url();
-            m_device_manager->setSelected(device.mac_address);
-            m_cur_deviceId = device.mac_address;
-            allsizer->Layout();
-            if (wxGetApp().mainframe != nullptr) {
-                wxGetApp().mainframe->is_webview = false;
-            }
-            m_ip = device.local_ip;
-        }
-
-        this->webisNetMode = isNetWeb;
-        UpdateState();
-
-        wxGetApp().app_config->set("last_selected_machine", into_u8(machine_button->getIPLabel()));
-        wxGetApp().app_config->set_bool("last_sel_machine_is_net", true);
-        wxGetApp().app_config->set("machine_list_net", "1");
-        //cj_4 clear sidebar sync status when switching to a different device
-        wxGetApp().plater()->update_machine_sync_status();
-
-        m_device_manager->getFileInfo(device.mac_address);
-		std::shared_ptr<QDSDevice> tempDevice = m_device_manager->getDevice(device.mac_address);
-		if (tempDevice !=nullptr) {
-            tempDevice->box_is_update = true;
+      machine_button->Bind(wxEVT_BUTTON, [this, device, machine_button](wxCommandEvent& event) {
+        boost::ignore_unused(event);
+		//cj_5 Try local WebSocket first if the same device is on LAN (via SSDP).
+		LocalDiscoveredDevice local_dev;
+		auto* qds = wxGetApp().qdsdevmanager;
+        BOOST_LOG_TRIVIAL(trace) << (qds == nullptr);
+        BOOST_LOG_TRIVIAL(trace) << qds->findSSDPDeviceByIP(device.local_ip, local_dev);
+		if (qds && !device.local_ip.empty()
+		    && qds->findSSDPDeviceByIP(device.local_ip, local_dev)) {
+			TransitionToNetDeviceViaLocal(device, local_dev, machine_button);
+		} else {
+			TransitionToCloudDevice(device, machine_button);
 		}
-
         });
 
      devicesizer->Add(machine_button, 0, wxEXPAND);
@@ -1724,7 +2110,7 @@ bool PrinterWebView::select_device_by_id(const std::string& device_id)
  	 auto qdsDevice = std::make_shared<QDSDevice>(device.mac_address, device.device_name, "", "", t_device_type);
      qdsDevice->m_frp_url = device.url;// +"/webcam/?action=snapshot";
      qdsDevice->m_ip = device.local_ip;
-     //cj_4 线上旧：link_url；新（isSpecialMachine）：FRP
+     //cj_4 Legacy cloud: link_url; special machines: FRP.
      qdsDevice->m_net_link_url     = device.link_url;
      qdsDevice->m_net_poll_use_frp = !wxGetApp().is_link_connect();
      qdsDevice->updateFilamentConfig();
@@ -1900,26 +2286,13 @@ void PrinterWebView::OnDeleteButtonClick(wxCommandEvent &event)
 
                 preset_bundle.physical_printers.delete_selected_printer();
 
-                //cj_4
-                // The selected local (fluid) device is removed. Clear all
-                // persisted "current monitor target" fields so MainFrame will
-                // not restore the deleted URL when switching tabs back.
-                m_cur_deviceId.clear();
-                m_ip.clear();
-                m_web.Clear();
-                if (m_device_manager) {
-                    m_device_manager->unSelected();
-                }
-                wxGetApp().app_config->set("last_selected_machine", "");
-                wxGetApp().app_config->set_bool("last_sel_machine_is_net", false);
-                if (wxGetApp().mainframe) {
-                    wxGetApp().mainframe->printer_view_ip  = "";
-                    wxGetApp().mainframe->printer_view_url = "";
-                    wxGetApp().mainframe->is_net_url       = false;
-                }
-
-                webisNetMode = isDisconnect;
-                load_disconnect_url();
+                DisconnectTransitionOptions options;
+                options.clear_device_selection = true;
+                options.clear_current_target = true;
+                options.clear_persisted_selection = true;
+                options.reset_mainframe_context = true;
+                options.load_placeholder = true;
+                TransitionToDisconnected(options);
                 SetPresetChanged(true);
 
                 //cj_4 clear sidebar sync badges after deleting selected device
@@ -1970,26 +2343,13 @@ void PrinterWebView::OnDeleteButtonClick(wxCommandEvent &event)
                 }
 
 #endif         
-                //cj_4
-                // The selected online device is removed. Clear all persisted
-                // monitor target fields so tab switching cannot reload a stale
-                // page for a device that no longer exists.
-                m_cur_deviceId.clear();
-                m_ip.clear();
-                m_web.Clear();
-                if (m_device_manager) {
-                    m_device_manager->unSelected();
-                }
-                wxGetApp().app_config->set("last_selected_machine", "");
-                wxGetApp().app_config->set_bool("last_sel_machine_is_net", false);
-                if (wxGetApp().mainframe) {
-                    wxGetApp().mainframe->printer_view_ip  = "";
-                    wxGetApp().mainframe->printer_view_url = "";
-                    wxGetApp().mainframe->is_net_url       = false;
-                }
-
-                webisNetMode = isDisconnect;
-                load_disconnect_url();
+                DisconnectTransitionOptions options;
+                options.clear_device_selection = true;
+                options.clear_current_target = true;
+                options.clear_persisted_selection = true;
+                options.reset_mainframe_context = true;
+                options.load_placeholder = true;
+                TransitionToDisconnected(options);
                 SetPresetChanged(true);
 
                 //cj_4 clear sidebar sync badges after deleting selected device
@@ -2062,6 +2422,7 @@ void PrinterWebView::OnDeleteButtonClick(wxCommandEvent &event)
      if (client_w < 1) {
          client_w = leftScrolledWindow->GetSize().GetWidth();
      }
+     // Keep virtual width aligned with the visible area to avoid horizontal scrolling.
      leftScrolledWindow->SetVirtualSize(wxSize(std::max(client_w, 1), std::max(height, 1)));
      devicesizer->Layout();
 
@@ -2129,7 +2490,7 @@ void PrinterWebView::onStatusPanelTask(wxCommandEvent& event)
     task.int_value = event.GetInt();
     task.string_key = event.GetString().ToStdString();
 
-    if (webisNetMode == isLocalWeb) {
+    if (GetConnectionPhase() == MonitorConnectionPhase::LocalPrinter) {
         task.transport = PrinterTaskTransport::Local;
         PrinterTaskResult result = m_task_dispatcher->dispatch(task);
         emitTaskDispatchResult(task.type, result);
@@ -2179,7 +2540,7 @@ void PrinterWebView::onSetBoxTask(wxCommandEvent& event)
     }
     task.filament_index = index;
 
-    if (webisNetMode == isLocalWeb) {
+    if (GetConnectionPhase() == MonitorConnectionPhase::LocalPrinter) {
         task.transport = PrinterTaskTransport::Local;
         PrinterTaskResult result = m_task_dispatcher->dispatch(task);
         emitTaskDispatchResult(task.type, result);
@@ -2207,7 +2568,7 @@ void PrinterWebView::onRefreshRfid(wxCommandEvent& event)
     task.device_id = m_cur_deviceId;
     task.slot_index = static_cast<int>(canId);
 
-    if (webisNetMode == isLocalWeb) {
+    if (GetConnectionPhase() == MonitorConnectionPhase::LocalPrinter) {
         task.transport = PrinterTaskTransport::Local;
         PrinterTaskResult result = m_task_dispatcher->dispatch(task);
         emitTaskDispatchResult(task.type, result);
@@ -2230,7 +2591,7 @@ void PrinterWebView::onModelFileListCommand(wxCommandEvent& event)
     const wxString path = event.GetString();
     switch (cmd) {
     case ModelFileListCommandType::Print:
-        t_status_page->print_model_for_storage_path(path);
+        PrintStatusModelFile(path);
         break;
     case ModelFileListCommandType::Download:
         downloadSinglePrinterFile(path);
@@ -2252,7 +2613,7 @@ void PrinterWebView::downloadSinglePrinterFile(const wxString& wx_storage_path)
     std::string downloadPath = wxGetApp().app_config->get("download_path");
     if (downloadPath.empty()) {
         show_printer_webview_download_notice(
-            t_status_page ? t_status_page->GetParent() : nullptr,
+            GetStatusDialogParent(),
             _L("Download Failed"),
             _L("Please set the download path in Preferences first."));
         return;
@@ -2282,17 +2643,17 @@ void PrinterWebView::downloadSinglePrinterFile(const wxString& wx_storage_path)
         [this, wx_path_copy, fileName](FileDownloadProgress progress) {
             if (progress.state == FileDownloadProgress::State::Completed) {
                 BOOST_LOG_TRIVIAL(info) << "Downloaded: " << fileName;
-                t_status_page->end_model_file_download_ui(wx_path_copy, false);
+                EndStatusModelFileDownload(wx_path_copy, false);
             } else if (progress.state == FileDownloadProgress::State::Failed) {
                 show_printer_webview_download_notice(
-                    t_status_page ? t_status_page->GetParent() : nullptr,
+                    GetStatusDialogParent(),
                     _L("Download Error"),
                     wxString::Format(_L("Download failed: %s\n%s"),
                         wxString::FromUTF8(fileName),
                         wxString::FromUTF8(progress.error_msg)));
-                t_status_page->end_model_file_download_ui(wx_path_copy, true);
+                EndStatusModelFileDownload(wx_path_copy, true);
             }
-            t_status_page->refresh_model_file_local_exist_state();
+            RefreshStatusModelFileLocalState();
         },
         [this, wx_path_copy](FileDownloadProgress progress) {
             if (progress.state != FileDownloadProgress::State::Downloading) {
@@ -2310,10 +2671,10 @@ void PrinterWebView::downloadSinglePrinterFile(const wxString& wx_storage_path)
             if (f < 0.f) {
                 f = 0.f;
             }
-            t_status_page->set_model_file_download_progress(wx_path_copy, std::min(1.f, f));
+            SetStatusModelFileDownloadProgress(wx_path_copy, std::min(1.f, f));
         });
     if (!task_id.empty())
-        t_status_page->begin_model_file_download_ui(wx_path_copy, task_id);
+        BeginStatusModelFileDownload(wx_path_copy, task_id);
 }
 
 //cj_4
@@ -2321,7 +2682,7 @@ void PrinterWebView::deleteSinglePrinterFile(const wxString& storage_path)
 {
     if (t_status_page == nullptr)
         return;
-    wxWindow* dlg_parent = t_status_page->GetParent();
+    wxWindow* dlg_parent = GetStatusDialogParent();
     std::string downloadPath = wxGetApp().app_config->get("download_path");
     const bool local_copy_exists = !downloadPath.empty() && local_download_target_exists(downloadPath, storage_path);
 
@@ -2342,10 +2703,10 @@ void PrinterWebView::deleteSinglePrinterFile(const wxString& storage_path)
                 dlg->Destroy();
                 if (t_status_page) {
                     if (ok)
-                        t_status_page->refresh_model_file_local_exist_state();
+                        RefreshStatusModelFileLocalState();
                     else
                         show_printer_webview_download_notice(
-                            t_status_page->GetParent(),
+                            GetStatusDialogParent(),
                             _L("Delete local copy"),
                             _L("Could not delete the local file."));
                 }
@@ -2410,11 +2771,11 @@ void PrinterWebView::run_delete_printer_file_task(const wxString& storage_path, 
         if (result.success && result.code == PrinterTaskErrorCode::None) {
             if (also_remove_local_copy)
                 (void)remove_local_download_for_storage_path(storage_path);
-            t_status_page->remove_model_row_by_storage_path(storage_path);
+            RemoveStatusModelFileRow(storage_path);
         } else {
             const wxString msg = result.message.empty() ? _L("Delete failed.") : wxString::FromUTF8(result.message);
             show_printer_webview_download_notice(
-                t_status_page->GetParent(), _L("Delete failed"), msg);
+                GetStatusDialogParent(), _L("Delete failed"), msg);
         }
 #else
         boost::ignore_unused(storage_path);
@@ -2431,13 +2792,13 @@ void PrinterWebView::run_delete_printer_file_task(const wxString& storage_path, 
         if (result.success && result.code == PrinterTaskErrorCode::None) {
             if (also_remove_local_copy)
                 (void)remove_local_download_for_storage_path(storage_path);
-            t_status_page->remove_model_row_by_storage_path(storage_path);
+            RemoveStatusModelFileRow(storage_path);
         } else {
             const wxString msg = result.message.empty()
                 ? _L("Could not send delete command to the printer. Check the connection and try again.")
                 : wxString::FromUTF8(result.message);
             show_printer_webview_download_notice(
-                t_status_page->GetParent(), _L("Delete failed"), msg);
+                GetStatusDialogParent(), _L("Delete failed"), msg);
         }
     }
 }
@@ -2448,14 +2809,14 @@ void PrinterWebView::revealDownloadedPrinterFile(const wxString& storage_path)
     std::string downloadPath = wxGetApp().app_config->get("download_path");
     if (downloadPath.empty()) {
         show_printer_webview_download_notice(
-            t_status_page ? t_status_page->GetParent() : nullptr,
+            GetStatusDialogParent(),
             _L("Open Folder"),
             _L("Please set the download path in Preferences first."));
         return;
     }
     if (!local_download_target_exists(downloadPath, storage_path)) {
         show_printer_webview_download_notice(
-            t_status_page ? t_status_page->GetParent() : nullptr,
+            GetStatusDialogParent(),
             _L("Open Folder"),
             _L("The file is not present in the download folder yet."));
         return;
@@ -2472,7 +2833,7 @@ void PrinterWebView::revealDownloadedPrinterFile(const wxString& storage_path)
     target.Normalize();
     if (!target.FileExists()) {
         show_printer_webview_download_notice(
-            t_status_page ? t_status_page->GetParent() : nullptr,
+            GetStatusDialogParent(),
             _L("Open Folder"),
             _L("Could not find the file on disk."));
         return;
@@ -2513,10 +2874,10 @@ void PrinterWebView::run_delete_timelapse_files(const std::vector<TimelapseFileI
                 for (TimelapseFileItem* item : items)
                     (void)remove_local_download_for_storage_path(item->GetName());
             }
-            t_status_page->remove_timelapse_file_rows(items);
+            RemoveStatusTimelapseRows(items);
         } else {
             const wxString msg = result.message.empty() ? _L("Delete failed.") : wxString::FromUTF8(result.message);
-            show_printer_webview_download_notice(t_status_page->GetParent(), _L("Delete failed"), msg);
+            show_printer_webview_download_notice(GetStatusDialogParent(), _L("Delete failed"), msg);
         }
 #else
         boost::ignore_unused(also_remove_local_copy);
@@ -2530,12 +2891,12 @@ void PrinterWebView::run_delete_timelapse_files(const std::vector<TimelapseFileI
                 for (TimelapseFileItem* item : items)
                     (void)remove_local_download_for_storage_path(item->GetName());
             }
-            t_status_page->remove_timelapse_file_rows(items);
+            RemoveStatusTimelapseRows(items);
         } else {
             const wxString msg = result.message.empty()
                 ? _L("Could not send delete command to the printer. Check the connection and try again.")
                 : wxString::FromUTF8(result.message);
-            show_printer_webview_download_notice(t_status_page->GetParent(), _L("Delete failed"), msg);
+            show_printer_webview_download_notice(GetStatusDialogParent(), _L("Delete failed"), msg);
         }
     }
 }
@@ -2549,12 +2910,12 @@ void PrinterWebView::onTimelapseDeleteUi(wxCommandEvent& event)
     std::vector<TimelapseFileItem*> items;
     const wxString                   hint = event.GetString();
     if (!hint.empty()) {
-        TimelapseFileItem* hit = t_status_page->find_timelapse_item_by_name(hint);
+        TimelapseFileItem* hit = FindStatusTimelapseItem(hint);
         if (!hit)
             return;
         items.push_back(hit);
     } else {
-        items = t_status_page->getTimelapseSelectItems();
+        items = GetSelectedStatusTimelapseItems();
     }
     if (items.empty())
         return;
@@ -2570,7 +2931,7 @@ void PrinterWebView::onTimelapseDeleteUi(wxCommandEvent& event)
         }
     }
 
-    wxWindow* dlg_parent = t_status_page->GetParent();
+    wxWindow* dlg_parent = GetStatusDialogParent();
 
     //cj_3
     wxString confirm_text;
@@ -2615,10 +2976,10 @@ void PrinterWebView::onTimelapseDeleteUi(wxCommandEvent& event)
                 dlg->Destroy();
                 if (t_status_page) {
                     if (ok)
-                        t_status_page->refresh_timelapse_local_exist_state();
+                        RefreshStatusTimelapseLocalState();
                     else
                         show_printer_webview_download_notice(
-                            t_status_page->GetParent(),
+                            GetStatusDialogParent(),
                             _L("Delete local copy"),
                             _L("Could not delete the local file."));
                 }
@@ -2669,7 +3030,7 @@ void PrinterWebView::downloadTimelapseOne(wxCommandEvent& event)
 	const wxString name = event.GetString();
 	if (!t_status_page || name.empty())
 		return;
-	TimelapseFileItem* it = t_status_page->find_timelapse_item_by_name(name);
+	TimelapseFileItem* it = FindStatusTimelapseItem(name);
 	if (!it)
 		return;
 	std::vector<TimelapseFileItem*> one = { it };
@@ -2683,7 +3044,7 @@ void PrinterWebView::playTimelapseFile(wxCommandEvent& event)
 	std::string downloadPath = wxGetApp().app_config->get("download_path");
 	if (downloadPath.empty()) {
 		show_printer_webview_download_notice(
-			t_status_page ? t_status_page->GetParent() : nullptr,
+			GetStatusDialogParent(),
 			_L("Play"),
 			_L("Please set the download path in Preferences first."));
 		return;
@@ -2698,7 +3059,7 @@ void PrinterWebView::playTimelapseFile(wxCommandEvent& event)
 	}
 	if (!t_status_page)
 		return;
-	TimelapseFileItem* item = t_status_page->find_timelapse_item_by_name(name);
+	TimelapseFileItem* item = FindStatusTimelapseItem(name);
 	std::shared_ptr<QDSDevice> device = m_device_manager->getDevice(m_cur_deviceId);
 	if (!item || !device)
 		return;
@@ -2719,7 +3080,7 @@ void PrinterWebView::playTimelapseFile(wxCommandEvent& event)
 				wxLaunchDefaultApplication(openPath);
 			} else if (progress.state == FileDownloadProgress::State::Failed) {
 				show_printer_webview_download_notice(
-					t_status_page ? t_status_page->GetParent() : nullptr,
+					GetStatusDialogParent(),
 					_L("Download Error"),
 					wxString::Format(_L("Download failed: %s\n%s"),
 						wxString::FromUTF8(fileName),
@@ -2760,7 +3121,7 @@ void PrinterWebView::downloadTimelapseItems(const std::vector<TimelapseFileItem*
 	std::string downloadPath = wxGetApp().app_config->get("download_path");
 	if (downloadPath.empty()) {
 		show_printer_webview_download_notice(
-			t_status_page ? t_status_page->GetParent() : nullptr,
+			GetStatusDialogParent(),
 			_L("Download Failed"),
 			_L("Please set the download path in Preferences first."));
 		return;
@@ -2809,7 +3170,7 @@ void PrinterWebView::downloadTimelapseItems(const std::vector<TimelapseFileItem*
 					}
 					else if (progress.state == FileDownloadProgress::State::Failed) {
 						show_printer_webview_download_notice(
-							t_status_page ? t_status_page->GetParent() : nullptr,
+							GetStatusDialogParent(),
 							_L("Download Error"),
 							wxString::Format(_L("Download failed: %s\n%s"),
 								wxString::FromUTF8(fileName),
@@ -2845,7 +3206,7 @@ void PrinterWebView::downloadTimelapseItems(const std::vector<TimelapseFileItem*
 		const wxString msg = wxString::Format(
 			_L("The following file(s) already exist in the directory:\n\n%s"),
 			skipped_existing);
-		wxWindow* dlg_parent = t_status_page ? t_status_page->GetParent() : nullptr;
+		wxWindow* dlg_parent = GetStatusDialogParent();
 		auto* dlg = new SecondaryCheckDialog(dlg_parent, wxID_ANY, _L("Download"),
 			SecondaryCheckDialog::ButtonStyle::ONLY_CONFIRM);
 		dlg->m_button_ok->SetLabel(_L("OK"));
@@ -2872,7 +3233,7 @@ void PrinterWebView::downloadTimelapseFile(wxCommandEvent& event)
 	boost::ignore_unused(event);
 	if (!t_status_page)
 		return;
-	downloadTimelapseItems(t_status_page->getTimelapseSelectItems());
+	downloadTimelapseItems(GetSelectedStatusTimelapseItems());
 }
 
 void PrinterWebView::OnScroll(wxScrollWinEvent& event)
@@ -2884,111 +3245,51 @@ void PrinterWebView::OnScroll(wxScrollWinEvent& event)
 //y77
  void PrinterWebView::load_disconnect_url()
  {
-    wxString strlang = wxGetApp().current_language_code_safe();
-    wxString url;
-    if (m_isNetMode)
-    {
 
-        url = wxString::Format("file://%s/web/qidi/link_missing_connection.html", from_u8(resources_dir()));
-        if (strlang != "")
-            url = wxString::Format("file://%s/web/qidi/link_missing_connection.html?lang=%s", from_u8(resources_dir()), strlang);
-    }
-    else
-    {
-
-        url = wxString::Format("file://%s/web/qidi/missing_connection.html", from_u8(resources_dir()));
-        if (strlang != "")
-            url = wxString::Format("file://%s/web/qidi/missing_connection.html?lang=%s", from_u8(resources_dir()), strlang);
-    }
-    webisNetMode = isDisconnect;
-    m_web = url;
-    m_ip = "";
-    m_browser->LoadURL(m_web);
-
+    //cj_5
+    // Preserve the selected device navigation state while the tab temporarily unloads the webview.
+    wxString saved_ip = m_ip;
+    wxString saved_web = m_web;
+    bool saved_is_webview = false;
+    bool saved_is_net_url = false;
+    wxString saved_printer_view_ip;
+    wxString saved_printer_view_url;
     if (wxGetApp().mainframe != nullptr) {
-        wxGetApp().mainframe->is_webview = true;
-        wxGetApp().mainframe->is_net_url = false;
+        saved_is_webview = wxGetApp().mainframe->is_webview;
+        saved_is_net_url = wxGetApp().mainframe->is_net_url;
+        saved_printer_view_ip = wxGetApp().mainframe->printer_view_ip;
+        saved_printer_view_url = wxGetApp().mainframe->printer_view_url;
     }
-    UpdateState();
- }
+
+    LoadDisconnectPageOnly();
+
+    //cj_5
+    m_ip = saved_ip;
+    m_web = saved_web;
+    if (wxGetApp().mainframe != nullptr) {
+        wxGetApp().mainframe->is_webview = saved_is_webview;
+        wxGetApp().mainframe->is_net_url = saved_is_net_url;
+        wxGetApp().mainframe->printer_view_ip = saved_printer_view_ip;
+        wxGetApp().mainframe->printer_view_url = saved_printer_view_url;
+    }
+  }
 
  void PrinterWebView::load_url(wxString &url)
  {
-     if (m_browser == nullptr)
-         return;
-     m_web = url;
-     m_browser->LoadURL(url);
-     //y28
-     webisNetMode = isLocalWeb;
-     // B55
-     if (url.Lower().starts_with("http"))
-         url.Remove(0, 7);
-     if (url.Lower().ends_with("10088"))
-         url.Remove(url.length() - 6);
-     m_ip = url;
-     for (DeviceButton *button : m_net_buttons) {
-         button->SetIsSelected(false);
+     //cj_5
+     if (LoadLocalUrlOnly(url)) {
+         SetConnectionPhase(MonitorConnectionPhase::LocalPrinter);
+         UpdateState();
      }
-
-     for (DeviceButton *button : m_buttons) {
-        //y31
-        wxString button_ip = button->getIPLabel();
-         if (button_ip.Lower().starts_with("http"))
-             button_ip.Remove(0, 7);
-        if (button_ip.Lower().ends_with("10088"))
-            button_ip.Remove(button_ip.length() - 6);
-         if (button_ip == m_ip)
-             button->SetIsSelected(true);
-         else
-             button->SetIsSelected(false);
-     }
-     if (wxGetApp().mainframe != nullptr) {
-         wxGetApp().mainframe->is_webview = true;
-         wxGetApp().mainframe->is_net_url = false;
-         wxGetApp().mainframe->printer_view_ip = m_ip;
-         wxGetApp().mainframe->printer_view_url = m_web;
-     }
-     UpdateState();
- }
+  }
  void PrinterWebView::load_net_url(wxString& url, wxString& ip)
  {
-     //cj_4 always reload even if the URL is the same
-    if (m_browser == nullptr)
-        return;
-    // y13
-    m_web = url;
-    m_ip = ip;
-    m_browser->LoadURL(m_web);
-    //y28
-    webisNetMode = isNetWeb;
-    //cj_4
-    // When switching back to monitor from another tab, MainFrame restores the
-    // browser URL through load_net_url(). Keep the left device list selection
-    // consistent with that restored URL/IP so the previously selected Link
-    // device remains highlighted.
-    for (DeviceButton *button : m_buttons) {
-        button->SetIsSelected(false);
+    //cj_5
+    if (LoadNetUrlOnly(url, ip)) {
+        SetConnectionPhase(MonitorConnectionPhase::CloudPrinter);
+        UpdateState();
     }
-
-    for (DeviceButton *button : m_net_buttons) {
-        wxString button_ip = button->getIPLabel();
-         if (button_ip.Lower().starts_with("http"))
-             button_ip.Remove(0, 7);
-        if (button_ip.Lower().ends_with("10088"))
-            button_ip.Remove(button_ip.length() - 6);
-        if (m_ip == button_ip)
-            button->SetIsSelected(true);
-        else
-            button->SetIsSelected(false);
-    }
-    if (wxGetApp().mainframe != nullptr) {
-        wxGetApp().mainframe->is_webview = true;
-        wxGetApp().mainframe->is_net_url = true;
-        wxGetApp().mainframe->printer_view_ip = m_ip;
-        wxGetApp().mainframe->printer_view_url = m_web;
-    }
-    UpdateState();
- }
+  }
  void PrinterWebView::UpdateState()
  {
      StateColor add_btn_bg(std::pair<wxColour, int>(wxColour(57, 57, 61), StateColor::Disabled),
@@ -3053,56 +3354,18 @@ void PrinterWebView::OnScroll(wxScrollWinEvent& event)
 
  void PrinterWebView::FormatNetUrl(std::string link_url, std::string local_ip, bool isSpecialMachine)
  {
-     std::string formattedHost;
-     if (isSpecialMachine)
-     {
-         if (wxGetApp().app_config->get("dark_color_mode") == "1")
-             formattedHost = link_url + "&theme=dark";
-         else
-             formattedHost = link_url + "&theme=light";
-
-         std::string formattedHost1 = "http://fluidd_" + formattedHost;
-         std::string formattedHost2 = "http://fluidd2_" + formattedHost;
-         if (formattedHost1 == m_web || formattedHost2 == m_web)
-             //cj_4 always reload even for the same fluid URL, skip return
-             ;
-
-         if (m_isfluidd_1)
-         {
-             formattedHost = "http://fluidd_" + formattedHost;
-             m_isfluidd_1 = false;
-         }
-         else
-         {
-             formattedHost = "http://fluidd2_" + formattedHost;
-             m_isfluidd_1 = true;
-         }
-     }
-     else
-     {
-         formattedHost = "http://" + link_url;
-     }
-     wxString host = from_u8(formattedHost);
+     //cj_5
+     wxString host = BuildNetUrl(link_url, isSpecialMachine);
      wxString ip = from_u8(local_ip);
      load_net_url(host, ip);
- }
+  }
 
  void PrinterWebView::FormatUrl(std::string link_url) 
  {
-    //y52
-    wxString m_link_url = from_u8(link_url);
-    wxString url;
-    
-    if(m_link_url.find(":") == wxString::npos)
-        url = wxString::Format("%s:10088", m_link_url);
-    else
-        url = m_link_url;
-
-    if (!url.Lower().starts_with("http"))
-        url = wxString::Format("http://%s", url);
-
+    //cj_5
+    wxString url = BuildLocalUrl(link_url);
     load_url(url);
- }
+  }
 
  std::string extractBetweenMarkers(const std::string& path) {
 	 size_t startPos = path.find("/gcodes");
@@ -3122,6 +3385,10 @@ void PrinterWebView::OnScroll(wxScrollWinEvent& event)
 
  void PrinterWebView::onSSEMessageHandle(const std::string& event, const std::string& data)
  {
+	 //cj_4 Bail out if we're being destroyed — SSE thread may still deliver messages
+	 // while ~PrinterWebView() is shutting down connections.
+	 if (m_isDestroying) return;
+
 	 try
 	 {
 		 json msgJson = json::parse(data);
@@ -3134,149 +3401,93 @@ void PrinterWebView::OnScroll(wxScrollWinEvent& event)
 			 return;
 		 }
 		 std::string device_id = msgJson["serialNumber"];
-		 auto device = m_device_manager->getDevice(device_id);
-		 if (device == nullptr) {
-			 return;
-		 }
-         string dataStr = msgJson["data"].get<std::string>();
-         json dataJson;
-         try {
-             dataJson = json::parse(msgJson["data"].get<std::string>());
-         }
-         catch (...){
-             BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "sse data parse fail: " << dataStr << std::endl;
-         }
-		 json status;
 
-		 if (dataJson.contains("result") && dataJson["result"].contains("status")) {
-			 status = dataJson["result"]["status"];
-		 }
-		 else if (dataJson.contains("status")) {
-			 status = dataJson["status"];
-        //y79
-		 } else {
-            if(dataJson.contains("jobState") && dataJson.contains("progress")){
-                status = dataJson;
-                device->updatePrinterStatusData(status);
-                return;
-            }
-         }
+		string dataStr = msgJson["data"].get<std::string>();
+		json   dataJson;
+		try {
+			dataJson = json::parse(dataStr);
+		} catch (...) {
+			BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "sse data parse fail: " << dataStr << std::endl;
+		}
 
-		 {
-             std::string oldPrintFileName = device->m_print_filename;
-			 device->updateByJsonData(status);
-			 device->last_update = std::chrono::steady_clock::now();
-             //cj_1 
-             if (oldPrintFileName != device->m_print_filename) {
-				 
+		json status;
+		if (dataJson.contains("result") && dataJson["result"].contains("status")) {
+			status = dataJson["result"]["status"];
+		} else if (dataJson.contains("status")) {
+			status = dataJson["status"];
+		}
+
+		CallAfter([this, device_id, status, dataJson]() mutable {
+			//cj_4 Guard against CallAfter firing after ~PrinterWebView() started.
+			if (m_isDestroying) return;
+			auto device = m_device_manager->getDevice(device_id);
+			if (device == nullptr)
+				return;
+
+			if (status.empty() || status.is_null()) {
+				if (dataJson.contains("jobState") && dataJson.contains("progress")) {
+					device->updatePrinterStatusData(dataJson);
+				}
+				return;
+			}
+
+			std::string oldPrintFileName = device->m_print_filename;
+			device->updateByJsonData(status);
+			device->last_update = std::chrono::steady_clock::now();
+
+			if (oldPrintFileName != device->m_print_filename) {
+				auto dev_sp = std::shared_ptr<QDSDevice>(device);
 				std::string url = device->m_frp_url + "/api/qidiclient/files/list";
-				Slic3r::Http httpPost = Slic3r::Http::get(url);
-				std::string resultBody;
-				bool su = false;
-				httpPost.timeout_max(5)
+				auto http = Slic3r::Http::get(url);
+				http.timeout_max(5)
 					.header("accept", "application/json")
 					.header("Content-Type", "application/json")
-					.on_complete(
-						[&resultBody, &su](std::string body, unsigned status) {
-							
-							resultBody = body;
-							su = true;
-						}
-					)
-					.on_error(
-						[this](std::string body, std::string error, unsigned status) {
-
-						}
-						).perform_sync();
-
-				try {
-					json bodyJson = json::parse(resultBody);
-					if (!bodyJson.is_object()) {
-						return ;
-					}
-					if (!bodyJson.contains("result")) {
-						return ;
-					}
-					json resultJson = bodyJson["result"];
-					if (resultJson.is_array()) {
-						for (json printfFileData : resultJson) {
-							if (!printfFileData.is_object()) {
-								continue;
-							}
-
-							//filepath
-							if (printfFileData.contains("filepath") && printfFileData["filepath"].is_string()) {
-								if (printfFileData["filepath"].get<std::string>().find("/.cache/") != std::string::npos) {
-									continue;
+					.on_complete([this, dev_sp](std::string body, unsigned) {
+						CallAfter([this, dev_sp, body]() {
+							try {
+								json bodyJson = json::parse(body);
+								if (!bodyJson.is_object() || !bodyJson.contains("result")) return;
+								json resultJson = bodyJson["result"];
+								if (!resultJson.is_array()) return;
+								for (json fileData : resultJson) {
+									if (!fileData.is_object()) continue;
+									if (fileData.contains("filepath") && fileData["filepath"].is_string()) {
+										if (fileData["filepath"].get<std::string>().find("/.cache/") != std::string::npos)
+											continue;
+									} else continue;
+									if (fileData.contains("filename") && fileData["filename"].is_string()) {
+										std::string jsonFileName = from_u8(fileData["filename"].get<std::string>()).ToStdString();
+										if (jsonFileName != dev_sp->m_print_filename) continue;
+									} else continue;
+									if (fileData.contains("show_filament_weight") && fileData["show_filament_weight"].is_string())
+										dev_sp->m_filament_weight = fileData["show_filament_weight"].get<std::string>();
+									if (fileData.contains("show_print_time") && fileData["show_print_time"].is_string())
+										dev_sp->m_print_total_time = fileData["show_print_time"].get<std::string>();
+									std::string plateIndex = "1";
+									if (fileData.contains("plates") && fileData["plates"].is_array()
+										&& fileData["plates"].size() > 0
+										&& fileData["plates"][0].contains("plate_index")
+										&& fileData["plates"][0]["plate_index"].is_string())
+										plateIndex = fileData["plates"][0]["plate_index"].get<std::string>();
+									std::string pngUrl = dev_sp->m_frp_url + "/server/files/gcodes/.thumbs"
+										+ from_u8(extractBetweenMarkers(fileData["filepath"].get<std::string>())).ToStdString();
+									pngUrl = "http://" + pngUrl + "/plate_" + plateIndex + ".png";
+									dev_sp->m_print_png_url = pngUrl;
 								}
-                            }
-                            else {
-                                continue;
-                            }
+							} catch (...) {}
+						});
+					})
+					.on_error([](std::string, std::string, unsigned) {})
+					.perform();
+			}
 
-							if (printfFileData.contains("filename") && printfFileData["filename"].is_string()) {
-                                std::string jsonFileName = from_u8(printfFileData["filename"].get<std::string>()).ToStdString();
-                                
-								if (jsonFileName != device->m_print_filename) {
-									continue;
-								}
-											 
-                            }
-                            else {
-                                continue;
-                            }
-
-							if (printfFileData.contains("show_filament_weight") && printfFileData["show_filament_weight"].is_string())
-							{
-                                device->m_filament_weight = printfFileData["show_filament_weight"].get<std::string>();
-							}
-
-							if (printfFileData.contains("show_print_time") && printfFileData["show_print_time"].is_string())
-							{
-                                device->m_print_total_time = printfFileData["show_print_time"].get<std::string>();
-							}
-
-                            std::string plateIndex = "1";
-							if (printfFileData.contains("plates") && printfFileData["plates"].is_array())
-							{
-                                if (printfFileData["plates"].size() > 0 && printfFileData["plates"][0].contains("plate_index")
-                                    && printfFileData["plates"][0]["plate_index"].is_string())
-                                {
-                                    plateIndex = printfFileData["plates"][0]["plate_index"].get<std::string>();
-                                }
-							}
-
-                            std::string pngUrl = "";
-                            pngUrl = device->m_frp_url + "/server/files/gcodes/.thumbs";
-                            pngUrl = pngUrl + from_u8( extractBetweenMarkers(printfFileData["filepath"].get<std::string>())).ToStdString();
-                            pngUrl = "http://" +  pngUrl + "/plate_"+ plateIndex +".png";
-                            device->m_print_png_url = pngUrl;
-
-						}
-					}
+			if (m_cur_deviceId == device_id && device->is_update) {
+				if (!m_isUpdating) {
+					this->updateDeviceParameter(device_id);
 				}
-				catch (...) {
-
-				}
-
-
-				 
-
-             }
-		 }
-
-		 if (m_cur_deviceId == device_id && device->is_update) {
-
-			 CallAfter([this, device_id]() {
-                 if (m_isUpdating){
-                     return;
-                   }
-				 this->updateDeviceParameter(device_id);
-				 });
-			        device->is_update = false;
-			 
-
-		 }
+				device->is_update = false;
+			}
+		});
 
 	 }
 	 catch (...)
@@ -3416,7 +3627,29 @@ void PrinterWebView::cancelAllDevButtonSelect()
 // cj_1
 void PrinterWebView::clearStatusPanelData()
 {
+    ResetStatusPanel();
+}
+
+//cj_5
+void PrinterWebView::ApplyStatusContext(const std::string& device_id, MonitorConnectionPhase phase)
+{
+    if (phase == MonitorConnectionPhase::Disconnected || device_id.empty()) {
+        ResetStatusPanel();
+        return;
+    }
+
+    ResetStatusPanel();
+}
+
+//cj_5
+void PrinterWebView::ResetStatusPanel()
+{
     DownloadManager::getInstance().cancelAllDownloads();
+
+    if (t_status_page == nullptr) {
+        resetProgressWatchdogHeartbeat();
+        return;
+    }
 
     t_status_page->update_temp_data("_", "_", "_");
 	t_status_page->update_temp_target("_", "_", "_");
@@ -3428,6 +3661,265 @@ void PrinterWebView::clearStatusPanelData()
     t_status_page->clear_model_item();
     //cj_4
     resetProgressWatchdogHeartbeat();
+}
+
+//cj_5
+std::string extractEndNumbers(const std::string& str);
+
+//cj_5
+void PrinterWebView::ApplyDeviceDataToStatusPanel(const std::string& device_id, std::shared_ptr<QDSDevice> device)
+{
+    if (t_status_page == nullptr || device == nullptr) {
+        return;
+    }
+
+    t_status_page->update_temp_data(
+        m_device_manager->getDeviceTempNozzle(device_id),
+        m_device_manager->getDeviceTempBed(device_id),
+        m_device_manager->getDeviceTempChamber(device_id)
+    );
+
+    if (device->m_print_cur_layer != 0 && device->m_print_cur_layer != device->m_print_total_layer) {
+        m_last_progress_heartbeat = std::chrono::steady_clock::now();
+    }
+
+    t_status_page->update_temp_target(device->m_target_extruder, device->m_target_bed, device->m_target_chamber);
+    t_status_page->update_temp_ctrl(device);
+
+    int duration = 1;
+    if (!device->m_print_duration.empty()) {
+        duration = std::stoi(device->m_print_duration);
+    }
+    float progress = device->m_print_progress_float;
+    int totalTime = 0;
+    int remainTime = 0;
+    if (progress > 0 && progress < 1 && duration > 0) {
+        totalTime = static_cast<double>(duration) / device->m_print_progress_float;
+        remainTime = totalTime - duration;
+    }
+    std::string layer = _L("Layer: N/A").ToStdString();
+    if (device->m_print_total_layer != 0) {
+        layer = "Layer: " + std::to_string(device->m_print_cur_layer) + "/" + std::to_string(device->m_print_total_layer);
+    }
+
+    t_status_page->update_progress(device->m_print_filename, layer, device->m_print_total_time,
+        device->m_filament_weight, remainTime, progress);
+    t_status_page->update_print_status(device->m_status);
+    t_status_page->update_camera_url(device->m_frp_url + "/webcam/?action=snapshot");
+    t_status_page->update_thumbnail(device->m_print_png_url);
+    t_status_page->update_light_status(device->m_case_light);
+    t_status_page->update_fan_speed(AIR_FUN::FAN_COOLING_0_AIRDOOR, device->m_cooling_fan_speed * 10.0);
+    t_status_page->update_fan_speed(AIR_FUN::FAN_REMOTE_COOLING_0_IDX, device->m_auxiliary_fan_speed * 10.0);
+    t_status_page->update_fan_speed(AIR_FUN::FAN_CHAMBER_0_IDX, device->m_chamber_fan_speed * 10.0);
+    if (device->m_polar_cooler_dirty_for_ui.exchange(false)) {
+        t_status_page->update_polar_cooler(device->m_polar_cooler.load());
+    }
+    t_status_page->update_print_speed_display_for_qds(device->m_print_speed_display_percent);
+    t_status_page->update_homed_axes(device->m_home_axes);
+    t_status_page->update_extruder_filament(device->m_extruder_filament);
+
+    if (device->box_is_update) {
+        std::vector<Slic3r::GUI::Caninfo> cans(17);
+        for (int i = 0; i < 17; ++i) {
+            cans[i].can_id = std::to_string(i);
+            if (device->m_boxData[i].hasMaterial) {
+                cans[i].material_colour = wxColour(device->m_boxData[i].colorHexCode);
+                cans[i].material_name = device->m_boxData[i].name;
+                cans[i].material_state = AMSCanType::AMS_CAN_TYPE_VIRTUAL;
+                cans[i].ctype = device->m_boxData[i].vendor == "Generic" ? 0 : 1;
+            }
+            else {
+                cans[i].material_colour = *wxWHITE;
+                cans[i].material_state = AMSCanType::AMS_CAN_TYPE_EMPTY;
+            }
+        }
+
+        Slic3r::GUI::AMSinfo amsExt;
+        amsExt.ams_id = "11";
+        amsExt.ams_type = DevAmsType::EXT_SPOOL;
+        amsExt.current_step = AMSPassRoadSTEP::AMS_ROAD_STEP_NONE;
+        amsExt.cans = std::vector<Slic3r::GUI::Caninfo>{ cans[16] };
+        std::vector<AMSinfo> ext_info{ amsExt };
+
+        std::vector<AMSinfo> boxS;
+        for (int i = 0; i < device->m_box_count; ++i) {
+            AMSinfo ams;
+            ams.ams_id = std::to_string(i);
+            ams.ams_humidity_percent = device->m_boxHumidity[i];
+            ams.current_temperature = device->m_boxTemperature[i];
+            ams.ams_type = DevAmsType::N3F;
+            ams.current_step = AMSPassRoadSTEP::AMS_ROAD_STEP_NONE;
+            for (int j = i * 4; j < (i + 1) * 4; ++j) {
+                Slic3r::GUI::Caninfo local_can = cans[j];
+                local_can.can_id = std::to_string(j - i * 4);
+                ams.cans.push_back(local_can);
+            }
+            boxS.push_back(ams);
+        }
+
+        t_status_page->update_boxs(boxS, ext_info);
+        if (GetConnectionPhase() == MonitorConnectionPhase::LocalPrinter) {
+            t_status_page->set_filament_config(device->m_general_filamentConfig);
+        }
+        else {
+            t_status_page->set_filament_config(device->m_filamentConfig);
+        }
+
+        std::string slotNumSyncStr = extractEndNumbers(device->m_cur_slot);
+        if (slotNumSyncStr != "") {
+            t_status_page->update_cur_slot(std::stoi(slotNumSyncStr));
+        }
+        t_status_page->update_AMSSettingData(device->m_auto_read_rfid, device->m_init_detect, device->m_auto_reload_detect);
+
+        PresetBundle* preset_bundle = wxGetApp().preset_bundle;
+        if (preset_bundle) {
+            std::string cur_preset_name = wxGetApp().get_tab(Preset::TYPE_PRINTER)->get_presets()->get_edited_preset().name;
+            if (cur_preset_name.find(device->m_type) != std::string::npos) {
+                wxGetApp().qdsdevmanager->upBoxInfoToBoxMsg(device);
+            }
+        }
+
+        device->box_is_update = false;
+    }
+
+    if (device->m_is_update_box_temp) {
+        for (int i = 0; i < device->m_boxTemperature.size(); ++i) {
+            t_status_page->update_AMS_temp(i, device->m_boxTemperature[i]);
+        }
+        for (int i = 0; i < device->m_boxHumidity.size(); ++i) {
+            t_status_page->update_AMS_humidity(i, device->m_boxHumidity[i]);
+        }
+        device->m_is_update_box_temp = false;
+    }
+
+    RefreshStatusFileLists(device);
+}
+
+//cj_5
+void PrinterWebView::RefreshStatusFileLists(const std::shared_ptr<QDSDevice>& device)
+{
+    if (t_status_page == nullptr || device == nullptr) {
+        return;
+    }
+
+    if (device->m_fresh_file_info) {
+        t_status_page->clear_model_items_only();
+        //cj_5
+        // Show model files from heavier to lighter.
+        std::stable_sort(device->file_info.begin(), device->file_info.end(), [](const GCodeFileInfo& lhs, const GCodeFileInfo& rhs) {
+            const double lhs_weight = parse_display_weight_grams(lhs.show_filament_weight);
+            const double rhs_weight = parse_display_weight_grams(rhs.show_filament_weight);
+            if (lhs_weight != rhs_weight) {
+                return lhs_weight > rhs_weight;
+            }
+            return lhs.file_name < rhs.file_name;
+        });
+
+        for (const GCodeFileInfo& fileInfo : device->file_info) {
+            t_status_page->add_model_item(fileInfo.file_name, fileInfo.show_filament_weight, fileInfo.show_print_time,
+                fileInfo.show_thumb_url, fileInfo.thumbnailsSize);
+        }
+        device->m_fresh_file_info = false;
+    }
+
+    if (device->m_fresh_timelapse_file_info) {
+        t_status_page->clear_timelapse_file_list();
+        //cj_5
+        // Show timelapse files from newest to oldest.
+        std::stable_sort(device->timelapse_file_info.begin(), device->timelapse_file_info.end(), [](const TimelapseFileInfo& lhs, const TimelapseFileInfo& rhs) {
+            if (lhs.modified_time != rhs.modified_time) {
+                return lhs.modified_time > rhs.modified_time;
+            }
+            return lhs.file_name < rhs.file_name;
+        });
+
+        for (const auto& info : device->timelapse_file_info) {
+            t_status_page->add_timelapse_file_item(info.file_name, info.file_size, info.modified_time, info.thumb_url);
+        }
+        device->m_fresh_timelapse_file_info = false;
+    }
+}
+
+//cj_5
+wxWindow* PrinterWebView::GetStatusDialogParent() const
+{
+    return t_status_page ? t_status_page->GetParent() : nullptr;
+}
+
+//cj_5
+void PrinterWebView::PrintStatusModelFile(const wxString& storage_path)
+{
+    if (t_status_page != nullptr) {
+        t_status_page->print_model_for_storage_path(storage_path);
+    }
+}
+
+//cj_5
+void PrinterWebView::BeginStatusModelFileDownload(const wxString& storage_path, const std::string& task_id)
+{
+    if (t_status_page != nullptr) {
+        t_status_page->begin_model_file_download_ui(storage_path, task_id);
+    }
+}
+
+//cj_5
+void PrinterWebView::EndStatusModelFileDownload(const wxString& storage_path, bool failed)
+{
+    if (t_status_page != nullptr) {
+        t_status_page->end_model_file_download_ui(storage_path, failed);
+    }
+}
+
+//cj_5
+void PrinterWebView::SetStatusModelFileDownloadProgress(const wxString& storage_path, float progress)
+{
+    if (t_status_page != nullptr) {
+        t_status_page->set_model_file_download_progress(storage_path, progress);
+    }
+}
+
+//cj_5
+void PrinterWebView::RefreshStatusModelFileLocalState()
+{
+    if (t_status_page != nullptr) {
+        t_status_page->refresh_model_file_local_exist_state();
+    }
+}
+
+//cj_5
+void PrinterWebView::RemoveStatusModelFileRow(const wxString& storage_path)
+{
+    if (t_status_page != nullptr) {
+        t_status_page->remove_model_row_by_storage_path(storage_path);
+    }
+}
+
+//cj_5
+TimelapseFileItem* PrinterWebView::FindStatusTimelapseItem(const wxString& name) const
+{
+    return t_status_page ? t_status_page->find_timelapse_item_by_name(name) : nullptr;
+}
+
+//cj_5
+std::vector<TimelapseFileItem*> PrinterWebView::GetSelectedStatusTimelapseItems() const
+{
+    return t_status_page ? t_status_page->getTimelapseSelectItems() : std::vector<TimelapseFileItem*>{};
+}
+
+//cj_5
+void PrinterWebView::RefreshStatusTimelapseLocalState()
+{
+    if (t_status_page != nullptr) {
+        t_status_page->refresh_timelapse_local_exist_state();
+    }
+}
+
+//cj_5
+void PrinterWebView::RemoveStatusTimelapseRows(const std::vector<TimelapseFileItem*>& items)
+{
+    if (t_status_page != nullptr) {
+        t_status_page->remove_timelapse_file_rows(items);
+    }
 }
 
 //y76
@@ -3456,7 +3948,7 @@ void PrinterWebView::ShowDeviceButtons(std::vector<DeviceButton*>& buttons, bool
 
 
 //y74
-//cj_3
+//cj_4 Local and cloud devices refresh the left button state through m_device_id_to_button.
 void PrinterWebView::updateDeviceButton(const std::string& device_id, std::string new_status){
     DeviceButton* t_button = nullptr;
     {
@@ -3510,184 +4002,23 @@ void PrinterWebView::updateDeviceParameter(const std::string& device_id) {
                 t_button = it->second;
             }
         }
-        
+
         if (m_cur_deviceId == device_id) {
-            //cj_4
             hideLoadingOverlay();
 
-            t_status_page->update_temp_data(
-                m_device_manager->getDeviceTempNozzle(device_id),
-                m_device_manager->getDeviceTempBed(device_id),
-                m_device_manager->getDeviceTempChamber(device_id)
-            );
-
-			auto device = m_device_manager->getDevice(device_id);
+            auto device = m_device_manager->getDevice(device_id);
             if (device == nullptr) {
                 m_isUpdating = false;
                 return;
             }
-            //cj_4
-            if (device->m_print_cur_layer!=0 && device->m_print_cur_layer != device->m_print_total_layer) {
-                //m_last_progress_signature = progress_signature;
-                m_last_progress_heartbeat = std::chrono::steady_clock::now();
-            }    
 
-            t_status_page->update_temp_target(device->m_target_extruder, device->m_target_bed, device->m_target_chamber);
-
-            
-            t_status_page->update_temp_ctrl(device);
-
-			int duration = 1;
-			if (!device->m_print_duration.empty()) {
-				duration = std::stoi(device->m_print_duration);
-			}
-			float progress = device->m_print_progress_float;
-			int totalTime = 0;
-			int remainTime = 0;
-			if (progress > 0 && progress < 1 && duration>0) {
-				totalTime = (double)duration / device->m_print_progress_float;
-				remainTime = totalTime - duration;
-			}
-			string layer = _L("Layer: N/A").ToStdString();
-			if (device->m_print_total_layer != 0) {
-				layer = "Layer: " + std::to_string(device->m_print_cur_layer) + "/" + std::to_string(device->m_print_total_layer);
-			}
-
-			std::string totalTimeStr = device->m_print_total_time;
-            std::string weight = device->m_filament_weight;
-			t_status_page->update_progress(device->m_print_filename, layer, totalTimeStr, weight, remainTime, progress);
-			t_status_page->update_print_status(device->m_status);
-            t_status_page->update_camera_url(device->m_frp_url + "/webcam/?action=snapshot");
-            t_status_page->update_thumbnail(device->m_print_png_url);
-            t_status_page->update_light_status(device->m_case_light);
-
-			/*FAN_COOLING_0_AIRDOOR     = 1,
-	        FAN_REMOTE_COOLING_0_IDX  = 2,
-	        FAN_CHAMBER_0_IDX         = 3,*/
-
-            t_status_page->update_fan_speed(AIR_FUN::FAN_COOLING_0_AIRDOOR, device->m_cooling_fan_speed * 10.0);
-			t_status_page->update_fan_speed(AIR_FUN::FAN_REMOTE_COOLING_0_IDX, device->m_auxiliary_fan_speed * 10.0);
-            t_status_page->update_fan_speed(AIR_FUN::FAN_CHAMBER_0_IDX, device->m_chamber_fan_speed * 10.0);
-            //cj_4
-            if (device->m_polar_cooler_dirty_for_ui.exchange(false)) {
-                t_status_page->update_polar_cooler(device->m_polar_cooler.load());
-            }
-            t_status_page->update_print_speed_display_for_qds(device->m_print_speed_display_percent);
-
-			//cj_1
-			t_status_page->update_homed_axes(device->m_home_axes);
-			//cj_2
-			t_status_page->update_extruder_filament(device->m_extruder_filament);
-
-            if(device->box_is_update){
-				vector< Slic3r::GUI::Caninfo> cans(17);
-                for (int i = 0; i < 17; ++i) {
-                    cans[i].can_id = std::to_string(i);
-                    if (device->m_boxData[i].hasMaterial) {
-                        cans[i].material_colour = wxColour(device->m_boxData[i].colorHexCode);
-                        cans[i].material_name = device->m_boxData[i].name;
-                        cans[i].material_state = AMSCanType::AMS_CAN_TYPE_VIRTUAL;
-                        cans[i].ctype = device->m_boxData[i].vendor == "Generic" ? 0 : 1;
-                    }
-                    else {
-                        cans[i].material_colour = *wxWHITE;
-                        cans[i].material_state = AMSCanType::AMS_CAN_TYPE_EMPTY;
-                    }
-				}
-
-				Slic3r::GUI::AMSinfo amsExt; {
-					amsExt.ams_id = "11";
-					amsExt.ams_type = DevAmsType::EXT_SPOOL;
-					amsExt.current_step = AMSPassRoadSTEP::AMS_ROAD_STEP_NONE;
-					amsExt.cans = std::vector<Slic3r::GUI::Caninfo>{ cans[16] };
-				}
-				std::vector<AMSinfo> ext_info;
-				ext_info = std::vector<AMSinfo>{ amsExt };
-
-
-				std::vector<AMSinfo> boxS;
-				for (int i = 0; i < device->m_box_count; ++i) {
-					AMSinfo ams;
-					ams.ams_id = std::to_string(i);
-                    ams.ams_humidity_percent = device->m_boxHumidity[i];
-                    ams.current_temperature = device->m_boxTemperature[i];
-                    //cj_4
-                    // QDS boxes report percentage humidity from aht20_f
-                    // heater_box*. Use a percent-capable AMS type so the
-                    // humidity widget renders the numeric value instead of
-                    // the legacy 1-5 level icon.
-					ams.ams_type = DevAmsType::N3F;
-					ams.current_step = AMSPassRoadSTEP::AMS_ROAD_STEP_NONE;
-					for (int j = i * 4; j < (i + 1) * 4; ++j) {
-                        //cj_4
-                        // AMS widgets expect slot ids local to a box (0-3).
-                        // Device data is indexed globally (0-16), so copy the
-                        // global slot data and remap only the UI can_id here.
-                        Caninfo local_can = cans[j];
-                        local_can.can_id = std::to_string(j - i * 4);
-					    ams.cans.push_back(local_can);
-					}
-					boxS.push_back(ams);
-				}
-
-                t_status_page->update_boxs(boxS, ext_info);
-                if(webisNetMode == isLocalWeb)
-                    t_status_page->set_filament_config(device->m_general_filamentConfig);
-                else
-                    t_status_page->set_filament_config(device->m_filamentConfig);
-
-                
-                std::string slotNumSyncStr = extractEndNumbers(device->m_cur_slot);
-                if (slotNumSyncStr != "") {
-                    t_status_page->update_cur_slot(std::stoi(slotNumSyncStr));
-                }
-                t_status_page->update_AMSSettingData(device->m_auto_read_rfid, device->m_init_detect, device->m_auto_reload_detect);
-                
-                
-                PresetBundle *preset_bundle = wxGetApp().preset_bundle;
-                if(preset_bundle){
-                    std::string cur_preset_name = wxGetApp().get_tab(Preset::TYPE_PRINTER)->get_presets()->get_edited_preset().name;
-                    //y78
-                    if(cur_preset_name.find(device->m_type) != std::string::npos){
-                        wxGetApp().qdsdevmanager->upBoxInfoToBoxMsg(device);
-                    }
-                }
-
-                device->box_is_update = false;
-            }
-
-            if (device->m_is_update_box_temp){
-                for (int i = 0; i < device->m_boxTemperature.size(); ++i) {
-                    t_status_page->update_AMS_temp(i, device->m_boxTemperature[i]);
-                }
-				for (int i = 0; i < device->m_boxHumidity.size(); ++i) {
-					t_status_page->update_AMS_humidity(i, device->m_boxHumidity[i]);
-				}
-                device->m_is_update_box_temp = false;
-            }
-
-            if (device->m_fresh_file_info) {
-                t_status_page->clear_model_items_only();
-                for (GCodeFileInfo fileInfo : device->file_info) {
-                    t_status_page->add_model_item(fileInfo.file_name, fileInfo.show_filament_weight, fileInfo.show_print_time, fileInfo.show_thumb_url,fileInfo.thumbnailsSize);
-                }
-                device->m_fresh_file_info = false;
-            }
-
-            //cj_4
-            if (device->m_fresh_timelapse_file_info) {
-                t_status_page->clear_timelapse_file_list();
-                for (const auto& info : device->timelapse_file_info)
-                    t_status_page->add_timelapse_file_item(
-                        info.file_name, info.file_size, info.modified_time, info.thumb_url);
-                device->m_fresh_timelapse_file_info = false;
-            }
+            //cj_5
+            ApplyDeviceDataToStatusPanel(device_id, device);
         }
 
         m_isUpdating = false;
     }
 }
-
 void PrinterWebView::syncDeviceSectionExpandFromLastSelection()
 {
     if (m_localDeviceExpand == nullptr || m_netDeviceExpand == nullptr)
@@ -3738,7 +4069,9 @@ void PrinterWebView::syncDeviceSectionExpandFromLastSelection()
 void PrinterWebView::init_select_machine() {
     std::string last_select_machine = wxGetApp().app_config->get("last_selected_machine");
     if (last_select_machine.empty()) {
-        load_disconnect_url();
+        DisconnectTransitionOptions options;
+        options.load_placeholder = true;
+        TransitionToDisconnected(options);
         syncDeviceSectionExpandFromLastSelection();
         return;
     }

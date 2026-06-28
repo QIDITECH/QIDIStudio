@@ -15,9 +15,9 @@
 #include "wxExtensions.hpp"
 
 
+#ifdef __WIN32__
 //wxDEFINE_EVENT(EVT_MEDIA_CTRL_STAT, wxCommandEvent);
 
-#ifdef __WIN32__
 BEGIN_EVENT_TABLE(wxMediaCtrl3, wxWindow)
 
 // catch paint events
@@ -55,11 +55,12 @@ wxMediaCtrl3::~wxMediaCtrl3()
     m_thread.join();
 }
 
-void wxMediaCtrl3::Load(wxURI url)
+void wxMediaCtrl3::Load(wxURI url, std::chrono::system_clock::time_point play_start_time)
 {
     std::unique_lock<std::mutex> lk(m_mutex);
     m_video_size = wxDefaultSize;
     m_error = 0;
+    m_play_start_time = play_start_time;
     m_url.reset(new wxURI(url));
     m_cond.notify_all();
 }
@@ -288,10 +289,14 @@ void wxMediaCtrl3::PlayThread()
 
         lk.unlock();
         QIDI_Tunnel tunnel = nullptr;
+        auto t0 = std::chrono::steady_clock::now();
         int error = QIDI_Create(&tunnel, m_url->BuildURI().ToUTF8());
         if (error == 0) {
             QIDI_SetLogger(tunnel, &wxMediaCtrl3::qidi_log, this);
             error = QIDI_Open(tunnel);
+            auto t1 = std::chrono::steady_clock::now();
+            BOOST_LOG_TRIVIAL(info) << "wxMediaCtrl3: QIDI_Open took "
+                                    << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() << "ms, error=" << error;
             if (error == 0)
                 error = QIDI_would_block;
 
@@ -305,6 +310,7 @@ void wxMediaCtrl3::PlayThread()
             }
         }
         lk.lock();
+        auto t_stream_start = std::chrono::steady_clock::now();
         while (error == int(QIDI_would_block)) {
             m_cond.wait_for(lk, 100ms);
             if (m_url != url) {
@@ -314,6 +320,12 @@ void wxMediaCtrl3::PlayThread()
             lk.unlock();
             error = QIDI_StartStream(tunnel, true);
             lk.lock();
+        }
+        {
+            auto t_stream_end = std::chrono::steady_clock::now();
+            BOOST_LOG_TRIVIAL(info) << "wxMediaCtrl3: QIDI_StartStream loop took "
+                                    << std::chrono::duration_cast<std::chrono::milliseconds>(t_stream_end - t_stream_start).count()
+                                    << "ms, error=" << error;
         }
         QIDI_StreamInfo info;
         if (error == 0)
@@ -385,6 +397,7 @@ void wxMediaCtrl3::PlayThread()
                     }
 
                     m_frame_buffer.enqueue(bm);
+                    m_frame = bm;
                 }
             }
         }
@@ -395,8 +408,16 @@ void wxMediaCtrl3::PlayThread()
         m_frame_buffer.reset();
         if (tunnel) {
             lk.unlock();
+            auto t_close_start = std::chrono::steady_clock::now();
             QIDI_Close(tunnel);
             QIDI_Destroy(tunnel);
+            auto t_close_end = std::chrono::steady_clock::now();
+            auto close_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_close_end - t_close_start).count();
+            if (close_ms > 3000) {
+                BOOST_LOG_TRIVIAL(warning) << "wxMediaCtrl3: QIDI_Close+Destroy took " << close_ms << "ms (>3s, potential hang source)";
+            } else {
+                BOOST_LOG_TRIVIAL(info) << "wxMediaCtrl3: QIDI_Close+Destroy took " << close_ms << "ms";
+            }
             tunnel = nullptr;
             lk.lock();
         }
@@ -407,6 +428,7 @@ void wxMediaCtrl3::PlayThread()
         m_video_size = wxDefaultSize;
         NotifyStopped();
     }
+
 }
 
 void wxMediaCtrl3::NotifyStopped()
@@ -438,6 +460,16 @@ void wxMediaCtrl3::GetFrameThread(int frame_rate)
                 first_frame_time = std::chrono::system_clock::now();
                 pop_success = true;
                 frame_count = 0;
+                auto play_start = m_play_start_time;
+                if (play_start != std::chrono::system_clock::time_point{}) {
+                    int ms = (int) std::chrono::duration_cast<std::chrono::milliseconds>(first_frame_time - play_start).count();
+                    CallAfter([this, ms] {
+                        wxCommandEvent evt(EVT_MEDIA_CTRL_FIRST_FRAME);
+                        evt.SetEventObject(this);
+                        evt.SetInt(ms);
+                        wxPostEvent(this, evt);
+                    });
+                }
             }
             ++frame_count;
             long long  pts_gap = (frame_count * 1000) / frame_rate;
@@ -614,7 +646,7 @@ void VideoPanel::OnPaint(wxPaintEvent& event)
 
 void VideoPanel::OnEraseBackground(wxEraseEvent& event)
 {
-
+    // 空实现，避免背景闪烁
 }
 
 void VideoPanel::OnSize(wxSizeEvent& event)
@@ -652,7 +684,7 @@ void VideoPanel::paintEvent(wxPaintEvent& evt)
     
     double scaleX = (double)size.x / frameSize.x;
     double scaleY = (double)size.y / frameSize.y;
-    double scale = std::min(scaleX, scaleY);
+    double scale = std::min(scaleX, scaleY);  // 保持宽高比的最小缩放
     
     wxSize scaledSize(frameSize.x * scale, frameSize.y * scale);
     wxPoint pos((size.x - scaledSize.x) / 2, (size.y - scaledSize.y) / 2);
@@ -715,6 +747,7 @@ void VideoPanel::PlayThread()
             ResetPlaybackState();
             
             m_state = wxMEDIASTATE_PLAYING;
+
             wxMediaEvent stateEvent(wxEVT_MEDIA_STATECHANGED);
             stateEvent.SetId(GetId());
             stateEvent.SetEventObject(this);

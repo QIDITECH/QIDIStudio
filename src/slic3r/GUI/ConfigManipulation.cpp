@@ -507,6 +507,7 @@ void ConfigManipulation::update_print_fff_config(DynamicPrintConfig* config, con
                     new_conf.set_key_value("enforce_support_layers", new ConfigOptionInt(0));
                     new_conf.set_key_value("ensure_vertical_shell_thickness", new ConfigOptionEnum<EnsureVerticalThicknessLevel>(EnsureVerticalThicknessLevel::evtEnabled));
                     new_conf.set_key_value("detect_thin_wall", new ConfigOptionBool(false));
+                    new_conf.set_key_value("alternate_extra_wall", new ConfigOptionBool(false));
             }
 
             timelapse_type = TimelapseType::tlTraditional;
@@ -683,22 +684,11 @@ void ConfigManipulation::update_print_fff_config(DynamicPrintConfig* config, con
             s_mixed_sublayer_warned = false;
     }
 
-    // Check "enable_support" and "overhangs" relations only on global settings level
-    if (is_global_config && config->opt_bool("enable_support")) {
-        // Ask only once.
-        if (!m_support_material_overhangs_queried) {
-            m_support_material_overhangs_queried = true;
-            if (!config->opt_bool("detect_overhang_wall")/* != 1*/) {
-                //QDS: detect_overhang_wall is setting in develop mode. Enable it directly.
-                DynamicPrintConfig new_conf = *config;
-                new_conf.set_key_value("detect_overhang_wall", new ConfigOptionBool(true));
-                apply(config, &new_conf);
-            }
-        }
-    }
-    else {
-        m_support_material_overhangs_queried = false;
-    }
+    // Removed: legacy "develop mode" auto-restore that forced detect_overhang_wall back
+    // to true whenever enable_support was on. It silently overrode user intent across
+    // project save/reopen (e.g. system preset + enable_support => detect_overhang_wall
+    // came back checked after reopening the 3MF). User toggles for detect_overhang_wall
+    // must be respected.
 
     if (config->opt_bool("enable_support")) {
         auto   support_type = config->opt_enum<SupportType>("support_type");
@@ -797,6 +787,85 @@ void ConfigManipulation::update_print_fff_config(DynamicPrintConfig* config, con
         new_conf.set_key_value("infill_lock_depth", new ConfigOptionFloat(skin_depth / 2));
         apply(config, &new_conf);
         is_msg_dlg_already_exist = false;
+    }
+
+    if (config->opt_bool("alternate_extra_wall") && config->opt_bool("spiral_mode") && applying_keys().empty()) {
+        const wxString msg_text = _L("Alternate extra wall is incompatible with spiral vase mode. To enable alternate extra wall, the following adjustments are recommended:")
+                                  + wxString("\n  - ") + _L("Set ensure vertical shell thickness to Partial.")
+                                  + wxString("\n  - ") + wxString::Format(_L("Set wall loops to %d."), 2)
+                                  + wxString("\n  - ") + wxString::Format(_L("Set sparse infill density to %d%%."), 15)
+                                  + wxString("\n  - ") + _L("Disable spiral vase mode.")
+                                  + "\n\n"
+                                  + _L("Change these settings automatically?\n"
+                                       "Yes - Apply and keep alternate extra wall enabled\n"
+                                       "No  - Don't use alternate extra wall");
+        MessageDialog dialog(wxGetApp().plater(), msg_text, "", wxICON_WARNING | wxYES | wxNO);
+        is_msg_dlg_already_exist = true;
+        auto answer = dialog.ShowModal();
+        is_msg_dlg_already_exist = false;
+        if (answer == wxID_YES) {
+            DynamicPrintConfig new_conf = *config;
+            new_conf.set_key_value("ensure_vertical_shell_thickness",
+                                   new ConfigOptionEnum<EnsureVerticalThicknessLevel>(EnsureVerticalThicknessLevel::evtPartial));
+            new_conf.set_key_value("wall_loops", new ConfigOptionInt(2));
+            new_conf.set_key_value("sparse_infill_density", new ConfigOptionPercent(15));
+            new_conf.set_key_value("spiral_mode", new ConfigOptionBool(false));
+            apply(config, &new_conf);
+        } else {
+            DynamicPrintConfig new_conf = *config;
+            new_conf.set_key_value("alternate_extra_wall", new ConfigOptionBool(false));
+            apply(config, &new_conf);
+        }
+    }
+
+    // Single consolidated prompt for non-optimal companion settings when alternate extra wall
+    // is on: EVT == Enabled, wall_loops != 2, sparse_infill_density == 0. Skip during apply()
+    // cascades so density sync (Tab::on_value_change skeleton/skin) does not double-prompt.
+    {
+        const bool alt_on       = config->opt_bool("alternate_extra_wall");
+        const auto evt          = config->opt_enum<EnsureVerticalThicknessLevel>("ensure_vertical_shell_thickness");
+        const int  wall_loops   = config->opt_int("wall_loops");
+        const int  density      = config->option<ConfigOptionPercent>("sparse_infill_density")->value;
+        const bool evt_enabled  = evt == EnsureVerticalThicknessLevel::evtEnabled;
+        const bool walls_not_rec = wall_loops != 2;
+        const bool density_zero = density == 0;
+        const bool suboptimal   = evt_enabled || walls_not_rec || density_zero;
+
+        if (!alt_on || !suboptimal)
+            m_alt_suboptimal_acknowledged = false;
+
+        if (alt_on && !config->opt_bool("spiral_mode") && suboptimal && !m_alt_suboptimal_acknowledged && applying_keys().empty()) {
+            wxString adjustments;
+            if (evt_enabled)
+                adjustments += wxString("\n  - ") + _L("Set ensure vertical shell thickness to Partial.");
+            if (walls_not_rec)
+                adjustments += "\n  - " + wxString::Format(_L("Set wall loops to %d."), 2);
+            if (density_zero)
+                adjustments += "\n  - " + wxString::Format(_L("Set sparse infill density to %d%%."), 15);
+
+            const wxString msg_text = _L("For alternate extra wall to work properly, the following adjustments are recommended:")
+                                      + adjustments + "\n\n"
+                                      + _L("Apply these adjustments?\n"
+                                           "Yes - Apply and keep alternate extra wall enabled\n"
+                                           "No  - Keep current settings and alternate extra wall enabled");
+            MessageDialog dialog(wxGetApp().plater(), msg_text, "", wxICON_WARNING | wxYES | wxNO);
+            is_msg_dlg_already_exist = true;
+            auto answer = dialog.ShowModal();
+            is_msg_dlg_already_exist = false;
+            if (answer == wxID_YES) {
+                DynamicPrintConfig new_conf = *config;
+                if (evt_enabled)
+                    new_conf.set_key_value("ensure_vertical_shell_thickness",
+                                           new ConfigOptionEnum<EnsureVerticalThicknessLevel>(EnsureVerticalThicknessLevel::evtPartial));
+                if (walls_not_rec)
+                    new_conf.set_key_value("wall_loops", new ConfigOptionInt(2));
+                if (density_zero)
+                    new_conf.set_key_value("sparse_infill_density", new ConfigOptionPercent(15));
+                apply(config, &new_conf);
+            } else {
+                m_alt_suboptimal_acknowledged = true;
+            }
+        }
     }
 }
 
@@ -1173,7 +1242,7 @@ void ConfigManipulation::toggle_print_sla_options(DynamicPrintConfig* config)
 
 int ConfigManipulation::show_spiral_mode_settings_dialog(bool is_object_config)
 {
-    wxString msg_text = _(L("Spiral mode only works when wall loops is 1, support is disabled, clumping detection by probing is disabled, top shell layers is 0, sparse infill density is 0, timelapse type is traditional and smoothing wall speed in z direction is false."));
+    wxString msg_text = _(L("Spiral mode only works when wall loops is 1, support is disabled, clumping detection by probing is disabled, top shell layers is 0, sparse infill density is 0, timelapse type is traditional, smoothing wall speed in z direction is false and alternate extra wall is disabled."));
     auto printer_structure_opt = wxGetApp().preset_bundle->printers.get_edited_preset().config.option<ConfigOptionEnum<PrinterStructure>>("printer_structure");
     if (printer_structure_opt && printer_structure_opt->value == PrinterStructure::psI3) {
         msg_text += _(L(" But machines with I3 structure will not generate timelapse videos."));
@@ -1257,10 +1326,7 @@ bool build_support_recommended_config(const std::string& support_material, const
 
     const auto& rec_params = rec_params_opt.value();
 
-    // Iterate all recommended params and set to config
-    for (const auto &[key, value] : rec_params.params.params) {
-        // Copy key to local variable for lambda capture (required for some compilers)
-        const std::string param_key = key;
+    for (const auto &[param_key, value] : rec_params.params.params) {
 
         auto opt_def_it = print_config_def.options.find(param_key);
         if (opt_def_it == print_config_def.options.end()) {
@@ -1268,55 +1334,35 @@ bool build_support_recommended_config(const std::string& support_material, const
             continue;
         }
 
-        const ConfigOptionDef &opt_def = opt_def_it->second;
+        const ConfigOptionDef& opt_def = opt_def_it->second;
 
-        std::visit([&](auto &&val) {
+        std::string serialized = std::visit([](auto &&val) -> std::string {
             using T = std::decay_t<decltype(val)>;
-
-            if constexpr (std::is_same_v<T, double>) {
-                if (opt_def.type == coFloat || opt_def.type == coFloatOrPercent) {
-                    out_config.set_key_value(param_key, new ConfigOptionFloat(val));
-                } else if (opt_def.type == coPercent) {
-                    out_config.set_key_value(param_key, new ConfigOptionPercent(val));
-                } else if (opt_def.type == coInt) {
-                    out_config.set_key_value(param_key, new ConfigOptionInt(static_cast<int>(val)));
-                }
+            if constexpr (std::is_same_v<T, std::string>) {
+                return val;
             } else if constexpr (std::is_same_v<T, bool>) {
-                if (opt_def.type == coBool) {
-                    out_config.set_key_value(param_key, new ConfigOptionBool(val));
-                }
-            } else if constexpr (std::is_same_v<T, std::string>) {
-                if (opt_def.type == coString) {
-                    out_config.set_key_value(param_key, new ConfigOptionString(val));
-                } else if (opt_def.type == coEnum) {
-                    ConfigOption *opt = opt_def.create_default_option();
-                    if (opt && opt->deserialize(val)) {
-                        out_config.set_key_value(param_key, opt);
-                    } else {
-                        delete opt;
-                        BOOST_LOG_TRIVIAL(warning) << "Failed to deserialize enum value for " << param_key << ": " << val;
-                    }
-                }
-            } else if constexpr (std::is_same_v<T, int>) {
-                if (opt_def.type == coInt) {
-                    out_config.set_key_value(param_key, new ConfigOptionInt(val));
-                } else if (opt_def.type == coFloat) {
-                    out_config.set_key_value(param_key, new ConfigOptionFloat(static_cast<double>(val)));
-                }
+                return val ? "1" : "0";
             } else if constexpr (std::is_same_v<T, std::vector<double>>) {
-                if (opt_def.type == coFloats) {
-                    out_config.set_key_value(param_key, new ConfigOptionFloats(val));
-                } else if (opt_def.type == coFloatsOrPercents) {
-                    std::vector<FloatOrPercent> fop_vec;
-                    for (double v : val) {
-                        fop_vec.push_back(FloatOrPercent{v, false});
-                    }
-                    out_config.set_key_value(param_key, new ConfigOptionFloatsOrPercents(fop_vec));
-                } else if (opt_def.type == coPercents) {
-                    out_config.set_key_value(param_key, new ConfigOptionPercents(val));
+                std::ostringstream ss;
+                for (size_t i = 0; i < val.size(); ++i) {
+                    if (i > 0) ss << ",";
+                    ss << val[i];
                 }
+                return ss.str();
+            } else {
+                std::ostringstream ss;
+                ss << val;
+                return ss.str();
             }
         }, value);
+
+        ConfigOption *opt = opt_def.create_default_option();
+        if (opt && opt->deserialize(serialized)) {
+            out_config.set_key_value(param_key, opt);
+        }else {
+            delete opt;
+            BOOST_LOG_TRIVIAL(warning) << "Failed to deserialize recommended param " << param_key << ": " << serialized;
+        }
     }
 
     return true;

@@ -67,6 +67,8 @@ namespace GUI {
 
 //cj_4
 class TimelapseFileItem;
+//cj_5 Forward declaration for TransitionToNetDeviceViaLocal parameter
+struct LocalDiscoveredDevice;
 
 wxDECLARE_EVENT(EVT_PRINTER_TASK_RESULT, wxCommandEvent);
 
@@ -77,10 +79,19 @@ enum WebState
     isLocalWeb,
 	isNetWeb
 };
+
+enum class MonitorConnectionPhase
+{
+    Disconnected,
+    LocalPrinter,
+    CloudPrinter
+};
 //cj_2
 class StatusPanel;
 //cj_2
 class QDSDeviceManager;
+//cj_5
+class QDSDevice;
 //cj_3
 class LoadingOverlayWithGif;
 
@@ -167,7 +178,8 @@ public:
 
     //y53
     wxString GetWebIp(){return m_ip;};
-    bool IsNetUrl() {return webisNetMode == isNetWeb;};
+    MonitorConnectionPhase GetConnectionPhase() const;
+    bool IsNetUrl() const {return GetConnectionPhase() == MonitorConnectionPhase::CloudPrinter;};
     void load_disconnect_url();
     void FormatNetUrl(std::string link_url, std::string local_ip, bool isSpecialMachine);
     void FormatUrl(std::string link_url);
@@ -190,8 +202,48 @@ public:
     void pauseCamera();
 
 private:
+    //cj_5
+    struct DisconnectTransitionOptions {
+        bool clear_button_selection { false };
+        bool clear_status_panel { false };
+        bool clear_device_selection { false };
+        bool clear_current_target { false };
+        bool clear_persisted_selection { false };
+        bool reset_mainframe_context { false };
+        bool set_mainframe_not_webview { false };
+        bool blank_browser { false };
+        bool load_placeholder { true };
+    };
+
     // cj_1
     // 
+    //cj_5
+    void SetConnectionPhase(MonitorConnectionPhase phase);
+    //cj_5
+    wxString BuildDisconnectUrl() const;
+    //cj_5
+    wxString BuildLocalUrl(const std::string& link_url) const;
+    //cj_5
+    wxString BuildNetUrl(const std::string& link_url, bool isSpecialMachine);
+    //cj_5
+    void LoadDisconnectPageOnly();
+    //cj_5
+    bool LoadLocalUrlOnly(wxString& url);
+    //cj_5
+    bool LoadNetUrlOnly(wxString& url, wxString& ip);
+    //cj_5
+    void TransitionToDisconnected(const DisconnectTransitionOptions& options);
+    //cj_5
+    void TransitionToLocalDevice(DeviceButton* machine_button, const wxString& ip);
+#if QDT_RELEASE_TO_PUBLIC
+    //cj_5
+    void TransitionToCloudDevice(const NetDevice& device, DeviceButton* machine_button);
+    //cj_5 Transition a Maker net device to local WebSocket when LAN match found.
+    // Button stays in net section; connection uses ws://<local_ip>:7125/websocket
+    void TransitionToNetDeviceViaLocal(const NetDevice& net_device,
+                                        const LocalDiscoveredDevice& local_device,
+                                        DeviceButton* machine_button);
+#endif
 	void HideDeviceButtons(std::vector<DeviceButton*>& buttons);
 	void HideAllDeviceButtons();
 
@@ -201,17 +253,49 @@ private:
     // cj_1 
     void clearStatusPanelData();
 
+    //cj_5
+    void ApplyStatusContext(const std::string& device_id, MonitorConnectionPhase phase);
+    //cj_5
+    void ResetStatusPanel();
+    //cj_5
+    void ApplyDeviceDataToStatusPanel(const std::string& device_id, std::shared_ptr<QDSDevice> device);
+    //cj_5
+    void RefreshStatusFileLists(const std::shared_ptr<QDSDevice>& device);
+    //cj_5
+    wxWindow* GetStatusDialogParent() const;
+    //cj_5
+    void PrintStatusModelFile(const wxString& storage_path);
+    //cj_5
+    void BeginStatusModelFileDownload(const wxString& storage_path, const std::string& task_id);
+    //cj_5
+    void EndStatusModelFileDownload(const wxString& storage_path, bool failed);
+    //cj_5
+    void SetStatusModelFileDownloadProgress(const wxString& storage_path, float progress);
+    //cj_5
+    void RefreshStatusModelFileLocalState();
+    //cj_5
+    void RemoveStatusModelFileRow(const wxString& storage_path);
+    //cj_5
+    TimelapseFileItem* FindStatusTimelapseItem(const wxString& name) const;
+    //cj_5
+    std::vector<TimelapseFileItem*> GetSelectedStatusTimelapseItems() const;
+    //cj_5
+    void RefreshStatusTimelapseLocalState();
+    //cj_5
+    void RemoveStatusTimelapseRows(const std::vector<TimelapseFileItem*>& items);
+
     void ShowDeviceButtons(std::vector<DeviceButton*>& buttons, bool isShow = true);
 
 
 	void updateDeviceButton(const std::string& device_id, std::string new_status);
-	//cj_3
+	//cj_3 删除线上按钮前从 m_device_id_to_button 移除，避免悬空指针
 	void removeDeviceButtonMapEntriesForButtons(const std::vector<DeviceButton*>& buttons);
 	void updateDeviceParameter(const std::string& device_id);
 	void InitDeviceManager();
 	void initEventToTaskPath();
 	void bindTaskHandle();
     void init_select_machine();
+    /** 本地/线上分区仅展开一侧：有上次选中则展开对应分区，否则展开本地。 */
     void syncDeviceSectionExpandFromLastSelection();
     void emitTaskDispatchResult(PrinterTaskType task_type, const PrinterTaskResult& result);
     //cj_3
@@ -250,7 +334,7 @@ private:
     wxWebView* m_browser;
     long m_zoomFactor;
 
-    DeviceButton *                        add_button;
+    DeviceButton*                         add_button{ nullptr };
     DeviceButton *                        delete_button;
     DeviceButton *                        edit_button;
     DeviceButton *                        refresh_button;
@@ -283,17 +367,18 @@ private:
 
 #endif
     std::atomic<bool> m_isloginin{false};
+    std::atomic<bool> m_isDestroying{false};  //cj_4 guard SSE CallAfter during destruction
     std::unique_ptr<PrinterTaskDispatcher> m_task_dispatcher;
     
 
     //cj_2
     wxPanel* m_localPanel;
-    DeviceButton* m_localDeviceExpand;
-    wxStaticText* m_localTabel;
+    DeviceButton* m_localDeviceExpand{ nullptr };
+    wxStaticText* m_localTabel{ nullptr };
     bool m_localIsExpand{ true };
 
 	wxPanel* m_netPanel;
-    DeviceButton* m_netDeviceExpand;
+    DeviceButton* m_netDeviceExpand{ nullptr };
     wxStaticText* m_netTable;
 	bool m_netIsExpand{ true };
 

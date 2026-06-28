@@ -1,10 +1,12 @@
 #include "QDSDeviceManager.hpp"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
+#include <boost/asio.hpp>
 #include <random>
 #include "libslic3r/Utils.hpp"
 #include "GUI_App.hpp"
 #include "slic3r/Utils/Http.hpp"
+#include "slic3r/Utils/Udp.hpp"
 #include "DownloadManager.hpp"
 #include "GUI_Utils.hpp"
 #include "DeviceCore/DevDefs.h"
@@ -74,6 +76,440 @@ std::string format_timelapse_file_size_b_kb_mb(std::uint64_t bytes)
 } // namespace
 
 namespace pt = boost::property_tree;
+
+//cj_5
+LocalDeviceDiscovery::Snapshot LocalDeviceDiscovery::snapshot() const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    Snapshot devices;
+    devices.reserve(m_by_ip.size());
+    for (const auto& item : m_by_ip) {
+        devices.push_back(item.second);
+    }
+    return devices;
+}
+
+//cj_5
+bool LocalDeviceDiscovery::findBySerial(const std::string& serial, LocalDiscoveredDevice& out) const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    const auto it = m_by_serial.find(serial);
+    if (it == m_by_serial.end()) {
+        return false;
+    }
+    out = it->second;
+    return true;
+}
+
+//cj_5
+bool LocalDeviceDiscovery::isCacheFresh(std::chrono::seconds ttl) const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_last_refresh == std::chrono::steady_clock::time_point{}) {
+        return false;
+    }
+    return std::chrono::steady_clock::now() - m_last_refresh <= ttl;
+}
+
+//cj_5
+void LocalDeviceDiscovery::refresh(bool force, RefreshCallback callback)
+{
+    Snapshot cached_devices;
+    bool use_cache = false;
+    bool start_lookup = false;
+
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        const bool fresh = m_last_refresh != std::chrono::steady_clock::time_point{} &&
+            std::chrono::steady_clock::now() - m_last_refresh <= m_cache_ttl;
+
+        if (!force && fresh && !m_refreshing) {
+            cached_devices.reserve(m_by_ip.size());
+            for (const auto& item : m_by_ip) {
+                cached_devices.push_back(item.second);
+            }
+            use_cache = true;
+        }
+        else {
+            if (callback) {
+                m_pending_callbacks.push_back(std::move(callback));
+            }
+            if (!m_refreshing) {
+                m_refreshing = true;
+                start_lookup = true;
+                m_by_serial.clear();
+                m_by_ip.clear();
+            }
+        }
+    }
+
+    if (use_cache) {
+        if (callback) {
+            callback(std::move(cached_devices));
+        }
+        return;
+    }
+
+    if (!start_lookup) {
+        return;
+    }
+
+    Udp::TxtKeys udp_txt_keys{ "version", "model" };
+    Udp::Ptr udp = Udp("octoprint")
+        .set_txt_keys(std::move(udp_txt_keys))
+        .set_retries(3)
+        .set_timeout(4)
+        .on_udp_reply([this](UdpReply&& reply) {
+            LocalDiscoveredDevice device;
+            device.serial_number = reply.serial_number;
+            device.ip = reply.service_name;
+            device.name = reply.hostname;
+            device.model = reply.model_name;
+            device.raw_payload = reply.raw_payload;
+            device.legacy_device = reply.legacy_device;
+            device.last_seen = std::chrono::steady_clock::now();
+
+            mergeDevice(std::move(device));
+        })
+        .on_complete([this]() {
+            finishRefresh();
+        })
+        .lookup();
+
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_udp = std::move(udp);
+    }
+}
+
+//cj_5
+void LocalDeviceDiscovery::mergeDevice(LocalDiscoveredDevice device)
+{
+    if (device.ip.empty()) {
+        return;
+    }
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+    device.last_seen = std::chrono::steady_clock::now();
+    if (!device.serial_number.empty()) {
+        m_by_serial[device.serial_number] = device;
+    }
+    m_by_ip[device.ip] = std::move(device);
+}
+
+//cj_5
+void LocalDeviceDiscovery::finishRefresh()
+{
+    std::vector<RefreshCallback> callbacks;
+    Snapshot devices;
+
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_refreshing = false;
+        m_last_refresh = std::chrono::steady_clock::now();
+        callbacks = std::move(m_pending_callbacks);
+        m_pending_callbacks.clear();
+
+        devices.reserve(m_by_ip.size());
+        for (const auto& item : m_by_ip) {
+            devices.push_back(item.second);
+        }
+    }
+
+    for (auto& callback : callbacks) {
+        if (callback) {
+            callback(devices);
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// SSDPDiscovery implementation                                     //cj_5
+// ─────────────────────────────────────────────────────────────────
+namespace asio = boost::asio;
+using asio::ip::udp;
+
+namespace {
+
+const char*            SSDP_MCAST_ADDR   = "239.255.255.250";
+const unsigned short   SSDP_MCAST_PORT   = 5863;
+const int              SSDP_TIMEOUT_SEC  = 10;
+const int              SSDP_RETRIES      = 2;
+
+std::string build_msearch()
+{
+    std::ostringstream oss;
+    oss << "M-SEARCH * HTTP/1.1\r\n"
+        << "HOST: " << SSDP_MCAST_ADDR << ":" << SSDP_MCAST_PORT << "\r\n"
+        << "MAN: \"ssdp:discover\"\r\n"
+        << "ST: ssdp:all\r\n"
+        << "MX: " << SSDP_TIMEOUT_SEC << "\r\n"
+        << "\r\n";
+    return oss.str();
+}
+
+bool parse_ssdp_notify(const std::string& raw, LocalDiscoveredDevice& out)
+{
+    std::istringstream stream(raw);
+    std::string line;
+    std::unordered_map<std::string, std::string> headers;
+
+    if (!std::getline(stream, line))
+        return false;
+
+    while (std::getline(stream, line)) {
+        if (!line.empty() && line.back() == '\r')
+            line.pop_back();
+        if (line.empty()) continue;
+
+        const size_t colon = line.find(':');
+        if (colon == std::string::npos) continue;
+
+        std::string key = line.substr(0, colon);
+        std::string val = line.substr(colon + 1);
+        if (!val.empty() && val.front() == ' ') val.erase(0, 1);
+        if (!val.empty() && val.back() == '\r') val.pop_back();
+        headers[key] = val;
+    }
+
+    auto usn_it = headers.find("USN");
+    auto loc_it = headers.find("Location");
+    if (usn_it == headers.end() || loc_it == headers.end())
+        return false;
+
+    out.serial_number = usn_it->second;
+
+    std::string loc = loc_it->second;
+    if (loc.find("http://") == 0)      loc = loc.substr(7);
+    else if (loc.find("https://") == 0) loc = loc.substr(8);
+    const size_t slash = loc.find('/');
+    if (slash != std::string::npos) loc = loc.substr(0, slash);
+    const size_t colon2 = loc.find(':');
+    if (colon2 != std::string::npos) loc = loc.substr(0, colon2);
+    out.ip = loc;
+
+    auto model_it = headers.find("DevModel.qidi.com");
+    if (model_it != headers.end()) out.model = model_it->second;
+
+    auto name_it = headers.find("DevName.qidi.com");
+    if (name_it != headers.end()) out.name = name_it->second;
+
+    out.raw_payload = raw;
+    out.last_seen    = std::chrono::steady_clock::now();
+    out.legacy_device = false;
+    return true;
+}
+
+} // anonymous namespace
+
+struct SSDPDiscovery::priv
+{
+    std::shared_ptr<asio::io_context> io_ctx;
+    std::unique_ptr<std::thread>       io_thread;
+    std::atomic<bool>                  stopping{ false };
+
+    priv() : io_ctx(std::make_shared<asio::io_context>()) {}
+};
+
+SSDPDiscovery::SSDPDiscovery()
+    : p(std::make_unique<priv>())
+{
+}
+
+SSDPDiscovery::~SSDPDiscovery()
+{
+    stop();
+}
+
+void SSDPDiscovery::stop()
+{
+    p->stopping = true;
+    if (p->io_ctx) p->io_ctx->stop();
+    if (p->io_thread && p->io_thread->joinable())
+        p->io_thread->join();
+}
+
+bool SSDPDiscovery::isCacheFresh(std::chrono::seconds ttl) const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_last_refresh == std::chrono::steady_clock::time_point{})
+        return false;
+    return std::chrono::steady_clock::now() - m_last_refresh <= ttl;
+}
+
+SSDPDiscovery::Snapshot SSDPDiscovery::snapshot() const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    Snapshot devices;
+    devices.reserve(m_by_ip.size());
+    for (const auto& item : m_by_ip)
+        devices.push_back(item.second);
+    return devices;
+}
+
+bool SSDPDiscovery::findBySerial(const std::string& serial,
+                                 LocalDiscoveredDevice& out) const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    const auto it = m_by_serial.find(serial);
+    if (it == m_by_serial.end()) return false;
+    out = it->second;
+    return true;
+}
+
+//cj_5
+bool SSDPDiscovery::findByIP(const std::string& ip,
+                              LocalDiscoveredDevice& out) const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    const auto it = m_by_ip.find(ip);
+    if (it != m_by_ip.end()) {
+        out = it->second;
+        return true;
+    }
+    
+    return false;
+}
+
+void SSDPDiscovery::mergeDevice(LocalDiscoveredDevice device)
+{
+    if (device.ip.empty()) return;
+    std::lock_guard<std::mutex> lock(m_mutex);
+    device.last_seen = std::chrono::steady_clock::now();
+    if (!device.serial_number.empty())
+        m_by_serial[device.serial_number] = device;
+    m_by_ip[device.ip] = std::move(device);
+}
+
+void SSDPDiscovery::finishRefresh()
+{
+    std::vector<RefreshCallback> callbacks;
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_refreshing = false;
+        m_last_refresh = std::chrono::steady_clock::now();
+        callbacks = std::move(m_pending_callbacks);
+        m_pending_callbacks.clear();
+    }
+    Snapshot devices = snapshot();
+    BOOST_LOG_TRIVIAL(trace)
+        << "[SSDP] discovery finished, found " << devices.size() << " device(s)";
+    for (auto& cb : callbacks) {
+        if (cb) cb(devices);
+    }
+}
+
+void SSDPDiscovery::refresh(bool force, RefreshCallback callback)
+{
+    
+    Snapshot cached_devices;
+    bool use_cache = false;
+    bool start_lookup = false;
+
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        const bool fresh = m_last_refresh != std::chrono::steady_clock::time_point{} &&
+            std::chrono::steady_clock::now() - m_last_refresh <= m_cache_ttl;
+
+        if (!force && fresh && !m_refreshing) {
+            cached_devices.reserve(m_by_ip.size());
+            for (const auto& item : m_by_ip)
+                cached_devices.push_back(item.second);
+            use_cache = true;
+        } else {
+            if (callback) m_pending_callbacks.push_back(std::move(callback));
+            if (!m_refreshing) {
+                m_refreshing  = true;
+                start_lookup  = true;
+                m_by_serial.clear();
+                m_by_ip.clear();
+            }
+        }
+    }
+
+    if (use_cache) {
+        if (callback) callback(std::move(cached_devices));
+        return;
+    }
+    if (!start_lookup) return;
+
+    //cj_5 Stop previous lookup thread before starting a new one, otherwise
+    // std::thread destructor will call std::terminate on a joinable thread.
+    stop();
+    p->stopping = false;
+
+    p->io_thread = std::make_unique<std::thread>([this]() {
+        try {
+            //cj_5 Re-create io_context each refresh so previous async ops are
+            // fully cancelled after stop().
+            p->io_ctx = std::make_shared<asio::io_context>();
+            auto& io = *p->io_ctx;
+
+            auto recv_buf = std::make_shared<std::vector<char>>(8192);
+            const std::string msearch = build_msearch();
+
+            // Receive loop – re-arms until error or stopping.
+            std::function<void(udp::socket*)> start_receive;
+            start_receive = [this, recv_buf, &start_receive](udp::socket* sock) {
+                sock->async_receive(
+                    asio::buffer(*recv_buf),
+                    [this, recv_buf, sock, &start_receive](const boost::system::error_code& err, size_t bytes) {
+                        if (err || bytes == 0 || p->stopping) {
+                            if (!p->stopping) start_receive(sock);
+                            return;
+                        }
+                        LocalDiscoveredDevice dev;
+                        if (parse_ssdp_notify(std::string(recv_buf->data(), bytes), dev)) {
+                            BOOST_LOG_TRIVIAL(trace)
+                                << "[SSDP] discovered device: serial="
+                                << dev.serial_number << " ip=" << dev.ip
+                                << " model=" << dev.model
+                                << " name=" << dev.name;
+                            mergeDevice(std::move(dev));
+                        }
+                        start_receive(sock);
+                    });
+            };
+
+            // Bind to SSDP port, join multicast, send M-SEARCH.
+            auto sock = std::make_unique<udp::socket>(io);
+            sock->open(udp::v4());
+            sock->set_option(asio::socket_base::reuse_address(true));
+            sock->bind(udp::endpoint(asio::ip::address_v4::any(), SSDP_MCAST_PORT));
+            try {
+                sock->set_option(asio::ip::multicast::join_group(
+                    asio::ip::make_address(SSDP_MCAST_ADDR).to_v4()));
+            } catch (const std::exception& e) {
+                BOOST_LOG_TRIVIAL(error)
+                    << "[SSDP] multicast join_group failed: " << e.what();
+            }
+
+            start_receive(sock.get());
+
+            boost::system::error_code ec;
+            sock->send_to(asio::buffer(msearch),
+                udp::endpoint(asio::ip::make_address(SSDP_MCAST_ADDR), SSDP_MCAST_PORT), 0, ec);
+
+            // Retry loop
+            for (int retry = 0; retry < SSDP_RETRIES && !p->stopping; ++retry) {
+                if (retry > 0) {
+                    sock->send_to(asio::buffer(msearch),
+                        udp::endpoint(asio::ip::make_address(SSDP_MCAST_ADDR), SSDP_MCAST_PORT), 0, ec);
+                }
+                asio::steady_timer timer(io);
+                timer.expires_after(std::chrono::seconds(SSDP_TIMEOUT_SEC));
+                timer.async_wait([&io](const boost::system::error_code&) { io.stop(); });
+                io.run();
+                if (p->stopping) break;
+                io.restart();
+            }
+        } catch (const std::exception& e) {
+            BOOST_LOG_TRIVIAL(error) << "[SSDP] lookup exception: " << e.what();
+        }
+        finishRefresh();
+    });
+}
+
 std::vector<QDSDevice::Filament> QDSDevice::m_general_filamentConfig;
 bool QDSDevice::m_is_init_general = false;
 std::mutex QDSDevice::m_general_mtx;
@@ -99,7 +535,7 @@ bool is_json_type(const json& j)
 		return j.is_string();
 	}
 	else if constexpr (std::is_same_v<T, json>) {
-		return true;
+		return true;  // 任何 JSON 对象都匹配
 	}
 	else {
 		return false;
@@ -132,7 +568,7 @@ QDSDevice::QDSDevice(const std::string dev_id, const std::string& dev_name, cons
     m_filamentConfig = m_general_filamentConfig;
 }
 
-void QDSDevice::updateByJsonData(json& status)
+void QDSDevice::updateByJsonData(const json& status)
 {
 	if (status.contains("print_stats") && status["print_stats"].contains("state")) {
 
@@ -172,9 +608,27 @@ void QDSDevice::updateByJsonData(json& status)
 		}
 	}
 
+	//cj_4
+	if (status.contains("print_stats") && status["print_stats"].contains("plateindex")) {
+		int plate_idx = std::stoi(status["print_stats"]["plateindex"].get<std::string>());
+		if (m_plate_index != plate_idx) {
+			is_update = true;
+			m_plate_index = plate_idx;
+		}
+	}
+	if (status.contains("print_stats") && status["print_stats"].contains("filename")) {
+
+		if (m_print_filename != status["print_stats"]["filename"].get<std::string>()) {
+			is_update = true;
+			m_print_filename = status["print_stats"]["filename"].get<std::string>();
+            
+		}
+
+	}
 
 	twoStageParseIntToString(status, m_print_total_duration, "print_stats", "total_duration");
 	twoStageParseIntToString(status, m_print_duration, "print_stats", "print_duration");
+
 	twoStageParseIntToString(status, m_bed_temperature, "heater_bed", "temperature");
 	twoStageParseIntToString(status, m_target_bed, "heater_bed", "target");
 	twoStageParseIntToString(status, m_extruder_temperature, "extruder", "temperature");
@@ -183,16 +637,6 @@ void QDSDevice::updateByJsonData(json& status)
 	twoStageParseIntToString(status, m_target_chamber, "heater_generic chamber", "target");
 
 
-	if (status.contains("print_stats") && status["print_stats"].contains("filename")) {
-
-		if (m_print_filename != status["print_stats"]["filename"].get<std::string>()) {
-			is_update = true;
-			m_print_filename = status["print_stats"]["filename"].get<std::string>();
-            m_print_filename = wxString::FromUTF8(m_print_filename.c_str()).ToStdString();
-            
-		}
-
-	}
 
 	if (status.contains("display_status") && status["display_status"].contains("progress")) {
 
@@ -200,8 +644,13 @@ void QDSDevice::updateByJsonData(json& status)
 			is_update = true;
 			m_print_progress_float = status["display_status"]["progress"].get<float>();
 		}
+			//cj_4
+			std::string progress_str = std::to_string(status["display_status"]["progress"].get<int>());
+			if (m_print_progress != progress_str) {
+				is_update = true;
+				m_print_progress = progress_str;
+			}
 	}
-
     if (status.contains("save_variables") && status["save_variables"].is_object()) {
         updateBoxDataByJson(status);
     }
@@ -224,7 +673,6 @@ void QDSDevice::updateByJsonData(json& status)
 			m_polar_cooler_dirty_for_ui = true;
 		}
 	}
-
 	twoStageParse(status, m_auxiliary_fan_speed, "fan_generic auxiliary_cooling_fan", "speed");
 	twoStageParse(status, m_chamber_fan_speed, "fan_generic chamber_circulation_fan", "speed");
 	twoStageParse(status, m_cooling_fan_speed, "fan_generic cooling_fan", "speed");
@@ -251,6 +699,21 @@ void QDSDevice::updateByJsonData(json& status)
 			}
 		}
     }
+	//cj_4
+	if (status.contains("exclude_object") && status["exclude_object"].is_object()) {
+		const auto& eo = status["exclude_object"];
+		if (eo.contains("excluded_objects") && eo["excluded_objects"].is_array()) {
+			std::vector<std::string> new_list;
+			for (const auto& obj : eo["excluded_objects"]) {
+				if (obj.is_string())
+					new_list.push_back(obj.get<std::string>());
+			}
+			if (m_excluded_objects != new_list) {
+				is_update = true;
+				m_excluded_objects = std::move(new_list);
+			}
+		}
+	}
 }
 
 void QDSDevice::updateBoxDataByJson(const json status)
@@ -774,6 +1237,65 @@ std::vector<std::pair<std::string, std::shared_ptr<QDSDevice>>> QDSDeviceManager
     return out;
 }
 
+//cj_5
+void QDSDeviceManager::refreshLocalDevices(bool force, LocalDeviceDiscovery::RefreshCallback callback)
+{
+    m_local_discovery.refresh(force, std::move(callback));
+    //cj_5 Trigger SSDP discovery alongside UDP so both run together.
+    m_ssdp_discovery.refresh(force, nullptr);
+}
+
+//cj_5
+bool QDSDeviceManager::findLocalDeviceBySerial(const std::string& serial, LocalDiscoveredDevice& out) const
+{
+    return m_local_discovery.findBySerial(serial, out);
+}
+
+//cj_5
+LocalDeviceDiscovery::Snapshot QDSDeviceManager::snapshotLocalDevices() const
+{
+    return m_local_discovery.snapshot();
+}
+
+//cj_5 SSDP discovery API
+void QDSDeviceManager::refreshSSDPDevices(bool force, SSDPDiscovery::RefreshCallback callback)
+{
+    m_ssdp_discovery.refresh(force, std::move(callback));
+}
+
+bool QDSDeviceManager::findSSDPDeviceBySerial(const std::string& serial, LocalDiscoveredDevice& out) const
+{
+    return m_ssdp_discovery.findBySerial(serial, out);
+}
+
+bool QDSDeviceManager::findSSDPDeviceByIP(const std::string& ip, LocalDiscoveredDevice& out) const
+{
+    return m_ssdp_discovery.findByIP(ip, out);
+}
+
+SSDPDiscovery::Snapshot QDSDeviceManager::snapshotSSDPDevices() const
+{
+    return m_ssdp_discovery.snapshot();
+}
+
+//cj_5
+#if QDT_RELEASE_TO_PUBLIC
+bool QDSDeviceManager::findLocalForNetDevice(const NetDevice& net_dev, LocalDiscoveredDevice& out) const
+{
+    // Primary match: serial number (cloud serialNumber == UDP field 7 serial)
+    if (findLocalDeviceBySerial(net_dev.mac_address, out)) {
+        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__
+            << " Found local match by serial: " << net_dev.mac_address
+            << " at IP " << out.ip << std::endl;
+        return true;
+    }
+
+    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__
+        << " No local match for net device: " << net_dev.mac_address << std::endl;
+    return false;
+}
+#endif
+
 std::shared_ptr<QDSDevice> QDSDeviceManager::getSelectedDevice(){
     std::lock_guard<std::mutex> lock(manager_mutex_);
     for(const auto& [device_id, device] : devices_){
@@ -955,7 +1477,7 @@ bool QDSDeviceManager::removeDevice(const std::string& device_id) {
 bool QDSDeviceManager::connectDevice(const std::string device_id) {
     std::shared_ptr<QDSDevice> dev = getDevice(device_id);
     if (!dev) {
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Connect] Error: Device " << device_id << " not found." << std::endl;
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << "[Connect] Error: Device " << device_id << " not found." << std::endl;
         return false;
     }
 
@@ -1006,11 +1528,11 @@ bool QDSDeviceManager::connectDevice(const std::string device_id) {
         auto conn = weak_conn.lock();
         if (conn) {
             conn->last_activity = std::chrono::steady_clock::now();
-            BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[DEBUG] WebSocket closed for device: " << device_id << std::endl;
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "[DEBUG] WebSocket closed for device: " << device_id << std::endl;
             auto ws_conn = conn->client.get_con_from_hdl(hdl);
             if (ws_conn) {
-                BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[DEBUG] Close code: " << ws_conn->get_remote_close_code() << std::endl;
-                BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[DEBUG] Close reason: " << ws_conn->get_remote_close_reason() << std::endl;
+                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "[DEBUG] Close code: " << ws_conn->get_remote_close_code() << std::endl;
+                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "[DEBUG] Close reason: " << ws_conn->get_remote_close_reason() << std::endl;
             }
         }
 
@@ -1029,7 +1551,7 @@ bool QDSDeviceManager::connectDevice(const std::string device_id) {
         websocketpp::lib::error_code ec;
         auto con = connection->client.get_connection(dev->m_url, ec);
         if (ec) {
-            BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Connect] Connection error for device " << device_id 
+            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << "[Connect] Connection error for device " << device_id 
                       << ": " << ec.message() << std::endl;
             updateDeviceStatus(device_id, "offline");
             
@@ -1047,21 +1569,21 @@ bool QDSDeviceManager::connectDevice(const std::string device_id) {
             try {
                 connection->client.run();
             } catch (const websocketpp::exception& e) {
-                BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[WebSocket] Exception in client thread: " 
+                BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << "[WebSocket] Exception in client thread: " 
                           << e.what() << std::endl;
             } catch (const std::exception& e) {
-                BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[WebSocket] Exception in client thread: " 
+                BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << "[WebSocket] Exception in client thread: "
                           << e.what() << std::endl;
             }
             connection->running = false;
         });
         
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Connect] Connecting to device " << device_id 
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "[Connect] Connecting to device " << device_id 
                   << " (" << dev->m_name << ")..." << std::endl;
         return true;
         
     } catch (const std::exception& e) {
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Connect] Exception while connecting to device " << device_id
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << "[Connect] Exception while connecting to device " << device_id
                   << ": " << e.what() << std::endl;
         updateDeviceStatus(device_id, "error");
         
@@ -1509,7 +2031,7 @@ void QDSDeviceManager::updateDeviceMsg(const std::string& device_id, const json&
         
         // if(!device->is_selected.load())
         //     return;
-
+        //BOOST_LOG_TRIVIAL(trace) << device << " : " << message;
 		if (message.contains("method") && message.contains("params") 
             ) {
             if (message.at("method").get<std::string>() == "notify_proc_stat_update" && message.at("params").is_array()) {
@@ -1545,6 +2067,7 @@ void QDSDeviceManager::updateDeviceMsg(const std::string& device_id, const json&
             }
             if(message.at("result").contains("status")){
                 const json& result = message.at("result").at("status");
+                
                 updateDeviceData(device, result, new_status, is_update);
             }
         }
@@ -1606,170 +2129,35 @@ void QDSDeviceManager::updateDeviceMsg(const std::string& device_id, const json&
     }
 }
 
-void QDSDeviceManager::updateDeviceData(std::shared_ptr<QDSDevice>& device, 
-                                        const json& result, 
-                                        std::string& new_status, 
+void QDSDeviceManager::updateDeviceData(std::shared_ptr<QDSDevice>& device,
+                                        const json& result,
+                                        std::string& new_status,
                                         bool& is_update) {
 
-
-    if (result.contains("print_stats") &&
-        result["print_stats"].contains("state")) {
-        std::string status = result["print_stats"]["state"].get<std::string>();
-        if (status != device->m_status) {
-            device->m_status = status;
-            new_status = status;
-            //cj_4 reset progress fields when print finishes
-            if (status == "standby") {
-                device->m_print_progress = "N/A";
-                device->m_print_filename = "";
-                device->m_print_png_url = "";
-                device->m_print_cur_layer = 0;
-                device->m_print_total_layer = 0;
-                device->m_print_progress_float = 0.0;
-                device->m_print_duration = "";
-                device->m_print_total_time = "";
-                device->m_filament_weight = "";
-            }
-        }
-    }
-   
-    if(result.contains("save_variables")){
-        device->updateBoxDataByJson(result);
-    }
-    
-    if (result.contains("heater_bed")){
-        if(result["heater_bed"].contains("temperature")) {
-            device->m_bed_temperature = std::to_string(
-                result["heater_bed"]["temperature"].get<int>());
-            is_update = true;
-        }
-        if(result["heater_bed"].contains("target")) {
-            device->m_target_bed = std::to_string(
-                result["heater_bed"]["target"].get<int>());
-            is_update = true;
-        }
-    }
-    
-    if (result.contains("extruder")){
-        if(result["extruder"].contains("temperature")) {
-            device->m_extruder_temperature = std::to_string(
-                result["extruder"]["temperature"].get<int>());
-            is_update = true;
-        }
-        if(result["extruder"].contains("target")) {
-            device->m_target_extruder = std::to_string(
-                result["extruder"]["target"].get<int>());
-            is_update = true;
-        }
-    }
-    
-    if (result.contains("heater_generic chamber")){ 
-        if(result["heater_generic chamber"].contains("temperature")) {
-            device->m_chamber_temperature = std::to_string(
-                result["heater_generic chamber"]["temperature"].get<int>());
-            is_update = true;
-        }
-        if(result["heater_generic chamber"].contains("target")) {
-            device->m_target_chamber = std::to_string(
-                result["heater_generic chamber"]["target"].get<int>());
-            is_update = true;
-        }
-    }
-    
-    if (result.contains("display_status") && 
-        result["display_status"].contains("progress")) {
-        device->m_print_progress = std::to_string(
-            result["display_status"]["progress"].get<int>());
-        is_update = true;
-    }
-
-    if(result.contains("output_pin caselight")){
-        device->m_case_light = result["output_pin caselight"]["value"].get<double>() > 0 ? true : false;
-        is_update = true;
-    }
-
-	//cj_3
-	if (result.contains("output_pin polar_cooler") && result["output_pin polar_cooler"].contains("value")) {
-        const bool pin_on = result["output_pin polar_cooler"]["value"].get<double>() > 0.0;
-        if (device->m_polar_cooler.load() != pin_on) {
-            device->m_polar_cooler = pin_on;
-            is_update = true;
-            //cj_4
-            device->m_polar_cooler_dirty_for_ui = true;
-        }
-	}
-
-	for (int i = 0; i < 4; ++i) {
-		std::string key = "aht20_f heater_box" + std::to_string(i + 1);
-		if (result.contains(key)) {
-			if (result[key].contains("temperature")) {
-
-				if (device->m_boxTemperature[i] != int(result[key]["temperature"].get<float>())) {
-					device->m_is_update_box_temp = true;
-					device->m_boxTemperature[i] = int(result[key]["temperature"].get<float>());
-				}
-			}
-			if (result[key].contains("humidity")) {
-				if (device->m_boxHumidity[i] != result[key]["humidity"].get<int>()) {
-					device->m_is_update_box_temp = true;
-					device->m_boxHumidity[i] = result[key]["humidity"].get<int>();
-
-				}
-			}
-		}
-	}
-
-	twoStageParse1(result, device->m_auxiliary_fan_speed, "fan_generic auxiliary_cooling_fan", "speed",is_update);
-	twoStageParse1(result, device->m_chamber_fan_speed, "fan_generic chamber_circulation_fan", "speed", is_update);
-	twoStageParse1(result, device->m_cooling_fan_speed, "fan_generic cooling_fan", "speed", is_update);
-    twoStageParse1(result, device->m_home_axes, "toolhead", "homed_axes", is_update); 
-	twoStageParse1(result, device->m_extruder_filament, "filament_switch_sensor filament_switch_sensor", "filament_detected",is_update);
-
-    apply_gcode_move_speed_percent(*device, result, &is_update);
-
-    twoStageParse1(result, device->m_print_filename, "print_stats", "filename", is_update);
-    twoStageParse1(result, device->m_print_progress_float, "display_status", "progress", is_update);
-    twoStageParse1(result, device->m_print_total_duration, "print_stats", "total_duration", is_update);
-
-    if (result.contains("print_stats")) {
-        twoStageParse1(result["print_stats"], device->m_print_total_layer, "info", "total_layer", is_update);
-        twoStageParse1(result["print_stats"], device->m_print_cur_layer, "info", "current_layer", is_update);
-        //cj_4
-        // Parse plate index from print_stats/plateindex.
-        // JSON value is a string, but represents an int.
-        if (result["print_stats"].contains("plateindex")) {
-            int plate_idx = std::stoi(result["print_stats"]["plateindex"].get<std::string>());
-            if (device->m_plate_index != plate_idx) {
-                device->m_plate_index = plate_idx;
-                is_update = true;
-            }
-        }
-        if (result["print_stats"].contains("print_duration")) {
-            if (device->m_print_duration != std::to_string(result["print_stats"]["print_duration"].get<int>())) {
-                is_update = true;
-                device->m_print_duration = std::to_string(result["print_stats"]["print_duration"].get<int>());
-                if (device->m_print_png_url.empty())
-                    updatePrintThumbUrlWithOutMsg(device);
-            }
-        }
-
-    }
-
     //cj_4
-    // Parse Klipper exclude_object/excluded_objects list.
-    if (result.contains("exclude_object") && result["exclude_object"].is_object()) {
-        const auto& eo = result["exclude_object"];
-        if (eo.contains("excluded_objects") && eo["excluded_objects"].is_array()) {
-            std::vector<std::string> new_list;
-            for (const auto& obj : eo["excluded_objects"]) {
-                if (obj.is_string())
-                    new_list.push_back(obj.get<std::string>());
-            }
-            if (device->m_excluded_objects != new_list) {
-                device->m_excluded_objects = std::move(new_list);
-                is_update = true;
-            }
-        }
+    // Capture pre-call state for diff detection.
+    std::string old_status = device->m_status;
+    std::string old_print_duration = device->m_print_duration;
+
+    // Delegate all Klipper status field parsing to device.
+    device->updateByJsonData(result);
+
+    // --- Post-processing that belongs to manager, not device ---
+
+    // Status transition → report via connection callback.
+    if (device->m_status != old_status) {
+        new_status = device->m_status;
+    }
+
+    // Propagate device update flag to caller.
+    if (device->is_update) {
+        is_update = true;
+    }
+
+    // When print_duration changes, refresh thumb URL if not already loaded.e
+    if (device->m_print_duration != old_print_duration
+        /*&& device->m_print_png_url.empty()*/) {
+        updatePrintThumbUrlWithOutMsg(device);
     }
 }
 
@@ -1818,13 +2206,15 @@ void QDSDeviceManager::updateDeviceFileInfo(std::shared_ptr<QDSDevice>& device, 
                 plate_info.print_time = plate_item["print_time"].get<std::string>();
                 plate_info.nozzle_diameter = plate_item["nozzle_diameter"].get<std::string>();
 
-                size_t last_dot = file_info.file_name.find_last_of('.');
-                std::string name_without_extension;
-                if (last_dot != std::string::npos) {
-                    name_without_extension = file_info.file_name.substr(0, last_dot);
-                }
-                else {
-                    name_without_extension = file_info.file_name;
+                // Only strip .3mf extension; keep other extensions intact
+                std::string name_without_extension = file_info.file_name;
+                const std::string ext_3mf = ".3mf";
+                if (name_without_extension.size() > ext_3mf.size()) {
+                    std::string suffix = name_without_extension.substr(name_without_extension.size() - ext_3mf.size());
+                    std::transform(suffix.begin(), suffix.end(), suffix.begin(), ::tolower);
+                    if (suffix == ext_3mf) {
+                        name_without_extension = name_without_extension.substr(0, name_without_extension.size() - ext_3mf.size());
+                    }
                 }
 
 				plate_info.thumb_url = device->m_frp_url + "/server/files/gcodes/.thumbs/" + name_without_extension + "/plate_" + plate_info.index + ".png";
@@ -1881,6 +2271,7 @@ void QDSDeviceManager::updateDeviceFileInfo(std::shared_ptr<QDSDevice>& device, 
 void QDSDeviceManager::updatePrintThumbUrl(std::shared_ptr<QDSDevice>& device, const json& message){
     const json& result = message.at("params")[0];
     if(result["action"] == "added"){
+        BOOST_LOG_TRIVIAL(trace) << result;
 		device->m_print_filename = result["job"]["filename"];
 		std::string thumb_path = result["job"]["metadata"]["thumbnails"]["relative_path"];
 		device->m_print_png_url = device->m_frp_url + "/server/files/gcodes/" + thumb_path;
@@ -1892,12 +2283,15 @@ void QDSDeviceManager::updatePrintThumbUrl(std::shared_ptr<QDSDevice>& device, c
 }
 
 void QDSDeviceManager::updatePrintThumbUrlWithOutMsg(std::shared_ptr<QDSDevice>& device){
-    if(!device->file_info.empty() && device->m_print_png_url.empty()){
+        if(!device->file_info.empty() /*&& device->m_print_png_url.empty()*/){
         std::string print_file_name = device->m_print_filename;
         std::vector<GCodeFileInfo> files_info = device->file_info;
         for(auto file_ : files_info){
-            if(file_.file_name == print_file_name)
-                device->m_print_png_url = file_.show_thumb_url;
+			if (file_.file_name == print_file_name)
+            {
+                
+                device->m_print_png_url = UrlEncodeForFilename(file_.show_thumb_url);
+            }
         }
     }
 }
@@ -2116,20 +2510,20 @@ void QDSDeviceManager::getFileInfo(const std::string& device_id){
                 })
                 .perform_sync();
 
-                //cj_3
-                const std::string timelapse_dir_url =
-                    device->m_frp_url + "/server/files/directory?root=timelapse&path=timelapse&extended=true";
-                auto http_timelapse = Http::get(timelapse_dir_url);
-                http_timelapse
-                    .on_error([&](std::string body, std::string error, unsigned status) {
-                    (void)body;
-                    (void)error;
-                    (void)status;
-                        })
-                    .on_complete([&, this](std::string body, unsigned) {
-                            updateDeviceTimelapseFileInfo(device, body);
-                        })
-                            .perform_sync();
+        //cj_3
+        const std::string timelapse_dir_url =
+            device->m_frp_url + "/server/files/directory?root=timelapse&path=timelapse&extended=true";
+        auto http_timelapse = Http::get(timelapse_dir_url);
+        http_timelapse
+            .on_error([&](std::string body, std::string error, unsigned status) {
+            (void)body;
+            (void)error;
+            (void)status;
+                })
+            .on_complete([&, this](std::string body, unsigned) {
+                    updateDeviceTimelapseFileInfo(device, body);
+                })
+                    .perform_sync();
 
         auto file_cb = getFileInfoUpdateCallback();
         if (file_cb) {

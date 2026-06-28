@@ -10,6 +10,7 @@
 #include <wx/sizer.h>
 #include <wx/menu.h>
 #include <wx/progdlg.h>
+#include <wx/textentry.h>
 #include <wx/tooltip.h>
 //#include <wx/glcanvas.h>
 #include <wx/filename.h>
@@ -23,6 +24,7 @@
 #include "libslic3r/Polygon.hpp"
 #include "libslic3r/SLAPrint.hpp"
 #include "libslic3r/PresetBundle.hpp"
+#include "libslic3r/AppConfig.hpp"
 
 #include "Tab.hpp"
 #include "ProgressStatusBar.hpp"
@@ -69,6 +71,7 @@
 #include "QDSDeviceManager.hpp"
 
 #include "DeviceCore/DevManager.h"
+#include "slic3r/GUI/DeviceWeb/DeviceWebPage.hpp"
 
 #ifdef _WIN32
 #include <dbt.h>
@@ -102,6 +105,35 @@ wxDEFINE_EVENT(EVT_UPDATE_PRESET_CB, SimpleEvent);
 wxDEFINE_EVENT(EVT_BACKUP_POST, wxCommandEvent);
 wxDEFINE_EVENT(EVT_LOAD_URL, wxCommandEvent);
 wxDEFINE_EVENT(EVT_LOAD_PRINTER_URL, wxCommandEvent);
+
+static bool is_text_entry_focused()
+{
+    for (wxWindow *window = wxWindow::FindFocus(); window != nullptr; window = window->GetParent())
+        if (dynamic_cast<wxTextEntry *>(window) != nullptr)
+            return true;
+
+    return false;
+}
+
+static bool should_skip_fit_camera_shortcut(Plater *plater)
+{
+    if (is_text_entry_focused())
+        return true;
+
+    if (wxGetApp().imgui()->want_text_input())
+        return true;
+
+    if (!plater)
+        return false;
+
+    auto is_gizmo_running = [](GLCanvas3D *canvas) {
+        return canvas && canvas->get_gizmos_manager().is_running();
+    };
+
+    return is_gizmo_running(plater->get_view3D_canvas3D()) ||
+           is_gizmo_running(plater->get_assmeble_canvas3D()) ||
+           is_gizmo_running(plater->get_current_canvas3D());
+}
 
 enum class ERescaleTarget
 {
@@ -218,7 +250,6 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
 
     //reset log level
     auto loglevel = wxGetApp().app_config->get("severity_level");
-    Slic3r::set_logging_level(Slic3r::level_string_to_boost(loglevel));
     std::map<std::string, int> wx_log_levels{{"fatal", wxLOG_FatalError}, {"error", wxLOG_FatalError}, {"warning", wxLOG_Warning},
                                              {"info", wxLOG_Info},        {"debug", wxLOG_Debug},      {"trace", wxLOG_Trace}};
     wxLog::SetLogLevel(wx_log_levels[loglevel]);
@@ -658,10 +689,14 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
             });
 ;    }
     this->Bind(wxEVT_CHAR_HOOK, [this](wxKeyEvent &evt) {
+        const int key_code = evt.GetKeyCode();
 #ifdef __APPLE__
         if (evt.CmdDown() && (evt.GetKeyCode() == 'H')) {
-            //call parent_menu hide behavior
-            return;}
+            // Pass Cmd+H through to the macOS application menu so the
+            // wxEVT_CHAR_HOOK consumes the event and macOS never sees it.
+            evt.Skip();
+            return;
+        }
         if (evt.CmdDown() && !evt.ShiftDown() && (evt.GetKeyCode() == 'M')) {
             this->Iconize();
             return;
@@ -729,6 +764,28 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
             if (m_plater) { m_plater->add_file(); }
             return;
         }
+
+        if (!evt.HasAnyModifiers() && (evt.GetKeyCode() == 'Z' || evt.GetKeyCode() == 'z')) {
+            if (!should_skip_fit_camera_shortcut(m_plater))
+                view_zoom_to_fit();
+            else
+                evt.Skip();
+            return;
+        }
+
+        // Pass 3D view preset shortcuts directly to the current canvas. (Only 0-7 currently used but reserve 8 & 9 anyway.)
+        if (evt.CmdDown() && ((key_code >= '0' && key_code <= '9') || (key_code >= WXK_NUMPAD0 && key_code <= WXK_NUMPAD9)) && m_plater) {
+            if (auto *canvas = m_plater->canvas3D()) {
+                if (auto *target = (wxWindow*)canvas->get_wxglcanvas()) {
+                    wxKeyEvent e(evt);
+                    e.SetEventType(wxEVT_KEY_UP);
+                    e.SetEventObject(target);
+                    wxPostEvent(target, e);
+                }
+            }
+            return;
+        }
+
         evt.Skip();
     });
 
@@ -760,8 +817,8 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
                 m_printer_view->load_disconnect_url();
             }
             else {
-                if (!printer_view_ip.empty() && new_sel == tpMonitor) {
-                if (is_net_url)
+                if (!printer_view_ip.empty() && m_tabpanel->GetSelection() == tpMonitor) {
+                    if (is_net_url)
                         m_printer_view->load_net_url(printer_view_url, printer_view_ip);
                     else
                         m_printer_view->load_url(printer_view_url);
@@ -1130,13 +1187,31 @@ void MainFrame::show_calibration_button(bool show, bool is_QDT)
     topbar()->ShowCalibrationButton(false);
 #endif
     show = is_QDT;
-    auto shown2 = m_tabpanel->FindPage(m_calibration) != wxNOT_FOUND;
+    // STUDIO-18116: locate the Calibration tab by its page pointer instead of relying on
+    // the hardcoded `tpCalibration` enum index. The enum value (6) is calibrated for the
+    // multi_machine-enabled layout (8 pages); when multi_machine is disabled the actual
+    // notebook only has 7 pages and Calibration sits at index 5 while the Filament Manager
+    // tab sits at index 6. Calling RemovePage(tpCalibration=6) in that situation removes
+    // the Filament Manager tab instead, which is exactly the "no Filament Manager tab on
+    // first launch" symptom users hit when no QDT preset is selected yet.
+    int cal_page_id = m_tabpanel->FindPage(m_calibration);
+    auto shown2 = cal_page_id != wxNOT_FOUND;
     if (shown2 == show)
         ;
-    else if (show)
-        m_tabpanel->InsertPage(tpCalibration, m_calibration, _L("Calibration"), std::string("tab_monitor_active"), std::string("tab_monitor_active"), false);
-    else
-        m_tabpanel->RemovePage(tpCalibration);
+    else if (show) {
+        // Insert right before the Filament Manager tab (or append if it isn't there) so
+        // the visual order stays Project / Calibration / Filament Manager regardless of
+        // how many leading plater pages update_layout() has inserted.
+        int fm_page_id = m_web_device ? m_tabpanel->FindPage(m_web_device) : wxNOT_FOUND;
+        size_t insert_at = (fm_page_id != wxNOT_FOUND)
+                               ? static_cast<size_t>(fm_page_id)
+                               : m_tabpanel->GetPageCount();
+        m_tabpanel->InsertPage(insert_at, m_calibration, _L("Calibration"),
+                               std::string("tab_monitor_active"),
+                               std::string("tab_monitor_active"), false);
+    } else {
+        m_tabpanel->RemovePage(static_cast<size_t>(cal_page_id));
+    }
 }
 
 void MainFrame::update_title_colour_after_set_title()
@@ -1190,6 +1265,9 @@ void MainFrame::init_tabpanel()
     m_settings_dialog.set_tabpanel(m_tabpanel);
 
     m_tabpanel->Bind(wxEVT_NOTEBOOK_PAGE_CHANGING, [this](wxBookCtrlEvent& e) {
+        int old_sel = e.GetOldSelection();
+        int new_sel = e.GetSelection();
+
         //if (bool test = false) {
         //    SupportRecommendDialog* dialog = new SupportRecommendDialog(nullptr, _L("Notice"));;
 
@@ -1225,10 +1303,6 @@ void MainFrame::init_tabpanel()
             e.Skip();
             return;
         }
-
-        int old_sel = e.GetOldSelection();
-        //y53
-        new_sel = e.GetSelection();
 
         if (old_sel != wxNOT_FOUND &&
             new_sel != old_sel &&
@@ -1332,6 +1406,17 @@ void MainFrame::init_tabpanel()
             if (agent)
                 agent->track_update_property("select_device_page", std::to_string(++select_device_page_count));
         }
+        else if (panel == m_web_device) {
+#if defined(__WXOSX__)
+            // Defer hash navigation until after the notebook paints (macOS + WKWebView).
+            CallAfter([this]() {
+                if (m_web_device && m_tabpanel && m_tabpanel->GetCurrentPage() == m_web_device)
+                    m_web_device->NavigateTo("/filament_manager");
+            });
+#else
+            m_web_device->NavigateTo("/filament_manager");
+#endif
+        }
 
         
 #ifndef __APPLE__
@@ -1343,7 +1428,12 @@ void MainFrame::init_tabpanel()
         }
 #endif
 #ifndef __WXGTK__
-        if (panel)
+        // macOS: avoid moving first responder into WKWebView on Filament Manager (STUDIO-18111).
+        if (panel
+#if defined(__WXOSX__)
+            && panel != m_web_device
+#endif
+        )
             panel->SetFocus();
 #endif
         /*switch (sel) {
@@ -1395,6 +1485,8 @@ void MainFrame::init_tabpanel()
 
     //y76
     wxGetApp().qdsdevmanager = new QDSDeviceManager();
+    //cj_5
+    wxGetApp().qdsdevmanager->refreshLocalDevices(true, {});
 
     m_printer_view = new PrinterWebView(m_tabpanel);
     // y3
@@ -1427,9 +1519,13 @@ void MainFrame::init_tabpanel()
      m_calibration->SetBackgroundColour(*wxWHITE);
      m_tabpanel->AddPage(m_calibration, _L("Calibration"), std::string("tab_calibration_active"), std::string("tab_calibration_active"), false);
 
-     m_filament = new FilamentPanel(m_tabpanel, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-     m_filament->SetBackgroundColour(*wxWHITE);
-     m_tabpanel->AddPage(m_filament, _L("Filament"), std::string("model_weight"), std::string("model_weight"), false);
+     //y81
+    // m_web_device = new DeviceWebPage(m_tabpanel);
+    //m_tabpanel->AddPage(m_web_device, _L("Filament Manager"), std::string("tab_filament_active"), std::string("tab_filament_active"), false);
+
+    //  m_filament = new FilamentPanel(m_tabpanel, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+    //  m_filament->SetBackgroundColour(*wxWHITE);
+    //  m_tabpanel->AddPage(m_filament, _L("Filament"), std::string("model_weight"), std::string("model_weight"), false);
 
     if (m_plater) {
         // load initial config
@@ -1791,6 +1887,25 @@ bool MainFrame::can_change_view() const
     }
 }
 
+bool MainFrame::can_toggle_camera_fullscreen() const
+{
+    StatusPanel *status_panel = m_monitor ? m_monitor->get_status_panel() : nullptr;
+    if (!status_panel) return false;
+    //y
+    // if (status_panel->is_camera_fullscreen()) return true;
+    // return m_tabpanel && m_tabpanel->GetSelection() == TabPosition::tpMonitor && status_panel->can_show_camera_fullscreen();
+    return false;
+}
+
+void MainFrame::toggle_camera_fullscreen()
+{
+#if 0
+    StatusPanel *status_panel = m_monitor ? m_monitor->get_status_panel() : nullptr;
+    if (!status_panel || !can_toggle_camera_fullscreen()) return;
+    status_panel->toggle_camera_fullscreen();
+#endif
+}
+
 bool MainFrame::can_clone() const {
     return can_select() && !m_plater->is_selection_empty();
 }
@@ -1971,14 +2086,16 @@ wxBoxSizer* MainFrame::create_side_tools()
                 int extruder_count = wxGetApp().preset_bundle->get_printer_extruder_count();
                 //if (extruder_count > 1 && printer_models.count(printer_model)) {
                 if (extruder_count > 1) {
-                    if (wxGetApp().app_config->get("play_slicing_video") == "true") {
+                    const std::string slice_video_key = dual_extruder_first_slice_video_app_config_key(printer_model);
+                    const std::string slice_video_val = wxGetApp().app_config->get(slice_video_key);
+                    if (slice_video_val.empty() || slice_video_val == "true" || slice_video_val == "1") {
                         MessageDialog dlg(this, _L("This is your first time slicing with the dual extruder machine.\nWould you like to watch a quick tutorial video?"), _L("First Guide"), wxYES_NO);
                         auto  res = dlg.ShowModal();
                         if (res == wxID_YES) {
                             play_dual_extruder_slice_video();
                             slice = false;
                         }
-                        wxGetApp().app_config->set("play_slicing_video", "false");
+                        wxGetApp().app_config->set(slice_video_key, "false");
                     }
 
                     if ((wxGetApp().app_config->get("play_tpu_printing_video") == "true")) {
@@ -2570,6 +2687,8 @@ void MainFrame::on_dpi_changed(const wxRect& suggested_rect)
     */
     // y5
     // m_calibration->msw_rescale();
+    // if (m_web_device)
+    //     m_web_device->msw_rescale();
 
     // QDS
 #if 0
@@ -2630,6 +2749,7 @@ void MainFrame::on_sys_color_changed()
     // y5
     // m_monitor->on_sys_color_changed();
     // m_calibration->on_sys_color_changed();
+    // if (m_web_device) m_web_device->on_sys_color_changed();
     // update Tabs
     for (auto tab : wxGetApp().tabs_list)
         tab->sys_color_changed();
@@ -2839,6 +2959,13 @@ static void add_common_view_menu_items(wxMenu* view_menu, MainFrame* mainFrame, 
     append_menu_item(view_menu, wxID_ANY, _CTX(L_CONTEXT("Isometric", "Camera"), "Camera") + " 3", _L("Isometric View") + " 3",
         [mainFrame](wxCommandEvent &) { mainFrame->select_view("iso_3"); }, "", nullptr, [can_change_view]() { return can_change_view(); }, mainFrame);
 #endif
+#ifdef __APPLE__//In the macOS menu, single-key shortcuts are not supported, so this option is hidden temporarily. The actual functionality still works normally.
+    append_menu_item(view_menu, wxID_ANY, _L("Fit Camera"), _L("Fit camera to scene or selected object."),
+        [mainFrame](wxCommandEvent &) { mainFrame->view_zoom_to_fit(); }, "", nullptr, [can_change_view]() { return can_change_view(); }, mainFrame);
+#else
+    append_menu_item(view_menu, wxID_ANY, _L("Fit Camera") + "\t" "Z", _L("Fit camera to scene or selected object."),
+        [mainFrame](wxCommandEvent &) { mainFrame->view_zoom_to_fit(); }, "", nullptr, [can_change_view]() { return can_change_view(); }, mainFrame);
+#endif
 }
 
 void MainFrame::init_menubar_as_editor()
@@ -2905,11 +3032,11 @@ void MainFrame::init_menubar_as_editor()
 
 
 #ifndef __APPLE__
-        append_menu_item(fileMenu, wxID_ANY, _L("Save Project as") + dots + "\t" + ctrl + _L("Shift+") + "S", _L("Save current project as"),
+        append_menu_item(fileMenu, wxID_ANY, _L("Save Project as") + dots + "\t" + ctrl + "Shift+" + "S", _L("Save current project as"),
             [this](wxCommandEvent&) { if (m_plater) m_plater->save_project(true); }, "menu_save", nullptr,
             [this](){return m_plater != nullptr && can_save_as(); }, this);
 #else
-        append_menu_item(fileMenu, wxID_ANY, _L("Save Project as") + dots + "\t" + ctrl + _L("Shift+") + "S", _L("Save current project as"),
+        append_menu_item(fileMenu, wxID_ANY, _L("Save Project as") + dots + "\t" + ctrl + "Shift+" + "S", _L("Save current project as"),
             [this](wxCommandEvent&) { if (m_plater) m_plater->save_project(true); }, "", nullptr,
             [this](){return m_plater != nullptr && can_save_as(); }, this);
 #endif
@@ -3054,7 +3181,7 @@ void MainFrame::init_menubar_as_editor()
             _L("Deletes the current selection"),[this](wxCommandEvent&) { m_plater->remove_selected(); },
             "menu_remove", nullptr, [this](){return can_delete(); }, this);
         //QDS: delete all
-        append_menu_item(editMenu, wxID_ANY, _L("Delete all") + "\t" + ctrl + _L("Shift+") + "D",
+        append_menu_item(editMenu, wxID_ANY, _L("Delete all") + "\t" + ctrl + "Shift+" + "D",
             _L("Deletes all objects"),[this](wxCommandEvent&) { m_plater->delete_all_objects_from_model(); },
             "menu_remove", nullptr, [this](){return can_delete_all(); }, this);
         editMenu->AppendSeparator();
@@ -3136,7 +3263,7 @@ void MainFrame::init_menubar_as_editor()
             "", nullptr, [this](){return can_delete(); }, this);
 #endif
         //QDS: delete all
-        append_menu_item(editMenu, wxID_ANY, _L("Delete all") + "\t" + ctrl + _L("Shift+") + "D",
+        append_menu_item(editMenu, wxID_ANY, _L("Delete all") + "\t" + ctrl + "Shift+" + "D",
             _L("Deletes all objects"),[this, handle_key_event](wxCommandEvent&) {
                 wxKeyEvent e;
                 e.SetEventType(wxEVT_KEY_DOWN);
@@ -3221,6 +3348,18 @@ void MainFrame::init_menubar_as_editor()
         add_common_view_menu_items(viewMenu, this, std::bind(&MainFrame::can_change_view, this));
         viewMenu->AppendSeparator();
 
+        wxMenuItem *camera_fullscreen_item = append_menu_item(
+            viewMenu, wxID_ANY, _L("Enter Camera Full Screen"), _L("Show the Device camera in full screen"),
+            [this](wxCommandEvent &) { toggle_camera_fullscreen(); }, "", nullptr);
+        Bind(wxEVT_UPDATE_UI, [this, camera_fullscreen_item](wxUpdateUIEvent &evt) {
+            StatusPanel *status_panel = m_monitor ? m_monitor->get_status_panel() : nullptr;
+            // const bool active = status_panel && status_panel->is_camera_fullscreen();
+            const bool active = false;
+            camera_fullscreen_item->SetItemLabel(active ? _L("Exit Camera Full Screen") : _L("Enter Camera Full Screen"));
+            evt.Enable(can_toggle_camera_fullscreen());
+        }, camera_fullscreen_item->GetId());
+        viewMenu->AppendSeparator();
+
         //QDS perspective view
         wxWindowID camera_id_base = wxWindow::NewControlId(int(wxID_CAMERA_COUNT));
         auto perspective_item = append_menu_radio_item(viewMenu, wxID_CAMERA_PERSPECTIVE + camera_id_base, _L("Use Perspective View"), _L("Use Perspective View"),
@@ -3256,7 +3395,7 @@ void MainFrame::init_menubar_as_editor()
         append_menu_check_item(viewMenu, wxID_ANY, _L("Show Labels by Layer") + "\t" + ctrl + "E", _L("Show Labels of printing by layer in 3D scene"),
             [this](wxCommandEvent&) { m_plater->show_view3D_layer_labels(!m_plater->are_view3D_layer_labels_shown()); m_plater->get_current_canvas3D()->post_event(SimpleEvent(wxEVT_PAINT)); }, this,
             [this]() { return m_plater->is_view3D_shown(); }, [this]() { return m_plater->are_view3D_layer_labels_shown(); }, this);
-        append_menu_check_item(viewMenu, wxID_ANY, _L("Show Labels by Object") + "\t" + _L("Shift+") + "E", _L("Show Labels of printing by object in 3D scene"),
+        append_menu_check_item(viewMenu, wxID_ANY, _L("Show Labels by Object") + "\t" + ctrl + "Shift+" + "E", _L("Show Labels of printing by object in 3D scene"),
             [this](wxCommandEvent&) { m_plater->show_view3D_object_labels(!m_plater->are_view3D_object_labels_shown()); m_plater->get_current_canvas3D()->post_event(SimpleEvent(wxEVT_PAINT)); }, this,
             [this]() { return m_plater->is_view3D_shown(); }, [this]() { return m_plater->are_view3D_object_labels_shown(); }, this);
 
@@ -3493,10 +3632,10 @@ void MainFrame::init_menubar_as_editor()
             [this]() {return m_plater->is_view3D_shown();; }, this);
         auto flowrate_menu = new wxMenu();
         append_menu_item(
-            flowrate_menu, wxID_ANY, _L("Pass 1"), _L("Flow rate test - Pass 1"),
+            flowrate_menu, wxID_ANY, _L("Coarse"), _L("Flow rate test - Coarse"),
             [this](wxCommandEvent&) { if (m_plater) m_plater->calib_flowrate(1); }, "", nullptr,
             [this]() {return m_plater->is_view3D_shown();; }, this);
-        append_menu_item(flowrate_menu, wxID_ANY, _L("Pass 2"), _L("Flow rate test - Pass 2"),
+        append_menu_item(flowrate_menu, wxID_ANY, _L("Fine"), _L("Flow rate test - Fine"),
             [this](wxCommandEvent&) { if (m_plater) m_plater->calib_flowrate(2); }, "", nullptr,
             [this]() {return m_plater->is_view3D_shown();; }, this);
         m_topbar->GetCalibMenu()->AppendSubMenu(flowrate_menu, _L("Flow rate"));
@@ -3590,7 +3729,7 @@ void MainFrame::init_menubar_as_editor()
     // Flowrate
     auto flowrate_menu = new wxMenu();
     append_menu_item(
-        flowrate_menu, wxID_ANY, _L("Pass 1"), _L("Flow rate test - Pass 1"),
+        flowrate_menu, wxID_ANY, _L("Coarse"), _L("Flow rate test - Coarse"),
         [this](wxCommandEvent &) {
             if (m_plater) m_plater->calib_flowrate(1);
         },
@@ -3601,7 +3740,7 @@ void MainFrame::init_menubar_as_editor()
         },
         this);
     append_menu_item(
-        flowrate_menu, wxID_ANY, _L("Pass 2"), _L("Flow rate test - Pass 2"),
+        flowrate_menu, wxID_ANY, _L("Fine"), _L("Flow rate test - Fine"),
         [this](wxCommandEvent &) {
             if (m_plater) m_plater->calib_flowrate(2);
         },
@@ -4171,6 +4310,12 @@ void MainFrame::select_view(const std::string& direction)
          m_plater->select_view(direction);
 }
 
+void MainFrame::view_zoom_to_fit() const
+{
+    if (GLCanvas3D *canvas = m_plater ? m_plater->canvas3D() : nullptr)
+        canvas->zoom_to_fit();
+}
+
 // #ys_FIXME_to_delete
 void MainFrame::on_presets_changed(SimpleEvent &event)
 {
@@ -4457,6 +4602,7 @@ void MainFrame::RunScript(wxString js)
 
 void MainFrame::RunScriptLeft(wxString js)
 {
+    BOOST_LOG_TRIVIAL(info) << "RunScriptLeft: " << js;
     if (m_webview != nullptr)
         m_webview->RunScriptLeft(js);
 }

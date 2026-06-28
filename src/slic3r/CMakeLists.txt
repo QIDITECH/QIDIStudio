@@ -38,10 +38,6 @@ set(SLIC3R_GUI_SOURCES
     GUI/Widgets/Label.hpp
     GUI/Widgets/LinkLabel.cpp
     GUI/Widgets/LinkLabel.hpp
-    GUI/Widgets/Scrollbar.cpp
-    GUI/Widgets/Scrollbar.hpp
-    GUI/Widgets/ScrolledWindow.cpp
-    GUI/Widgets/ScrolledWindow.hpp
     GUI/Widgets/StaticBox.cpp
     GUI/Widgets/StaticBox.hpp
     GUI/Widgets/StaticGroup.cpp
@@ -103,6 +99,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/Widgets/MultiNozzleSync.cpp
     GUI/MixedFilamentDialog.cpp
     GUI/MixedFilamentDialog.hpp
+    GUI/GradientCurveEditor.cpp
+    GUI/GradientCurveEditor.hpp
     GUI/AboutDialog.cpp
     GUI/AboutDialog.hpp
     GUI/NetworkTestDialog.cpp
@@ -243,6 +241,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/DownloadManager.hpp
     GUI/QDSDeviceManager.cpp
     GUI/QDSDeviceManager.hpp
+    QIDI/UserPresetSyncManager.cpp
+    QIDI/UserPresetSyncManager.hpp
     GUI/BedShapeDialog.cpp
     GUI/BedShapeDialog.hpp
     GUI/Plater.cpp
@@ -357,6 +357,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/wxExtensions.hpp
     GUI/ObjColorDialog.cpp
     GUI/ObjColorDialog.hpp
+    GUI/TextureImportDialog.hpp
+    GUI/TextureImportDialog.cpp
     GUI/FilamentPickerDialog.cpp
     GUI/FilamentPickerDialog.hpp
     GUI/FilamentBitmapUtils.cpp
@@ -533,6 +535,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/HelioReleaseNote.cpp
     GUI/HelioHistoryDialog.hpp
     GUI/HelioHistoryDialog.cpp
+    GUI/BetaVersionDialog.hpp
+    GUI/BetaVersionDialog.cpp
     GUI/SingleChoiceDialog.hpp
     GUI/SingleChoiceDialog.cpp
     GUI/CaliHistoryDialog.hpp
@@ -663,6 +667,8 @@ set(SLIC3R_GUI_SOURCES
 
 add_subdirectory(GUI/DeviceCore)
 add_subdirectory(GUI/DeviceTab)
+add_subdirectory(GUI/fila_manager)
+add_subdirectory(GUI/DeviceWeb)
 
 if(QDT_RELEASE_TO_PUBLIC)
 	list(APPEND SLIC3R_GUI_SOURCES
@@ -694,6 +700,8 @@ if (APPLE)
             GUI/Mouse3DHandlerMac.mm
             GUI/InstanceCheckMac.mm
             GUI/InstanceCheckMac.h
+            GUI/CameraFullscreenMac.mm
+            GUI/CameraFullscreenMac.hpp
             GUI/wxMediaCtrl2.mm
             GUI/wxMediaCtrl2.h
             GUI/wxMediaCtrl3.h
@@ -718,6 +726,13 @@ if (UNIX AND NOT APPLE)
 endif ()
 
 add_library(libslic3r_gui STATIC ${SLIC3R_GUI_SOURCES})
+
+#if (MSVC)
+#    target_compile_options(libslic3r_gui PRIVATE /Od /Zi)
+#else ()
+#    target_compile_options(libslic3r_gui PRIVATE -O0 -g)
+#endif ()
+
 target_include_directories(libslic3r_gui PRIVATE Utils)
 
 #set(WEBSOCKETPP_INSTALL_DIR ${CMAKE_PREFIX_PATH})
@@ -783,6 +798,18 @@ if (UNIX AND NOT APPLE)
     find_package(GTK${SLIC3R_GTK} REQUIRED)
     target_include_directories(libslic3r_gui PRIVATE ${GTK${SLIC3R_GTK}_INCLUDE_DIRS})
     target_link_libraries(libslic3r_gui ${GTK${SLIC3R_GTK}_LIBRARIES})
+
+    pkg_check_modules(WEBKIT2GTK_4_1 QUIET webkit2gtk-4.1)
+    if (WEBKIT2GTK_4_1_FOUND)
+        target_compile_definitions(libslic3r_gui PRIVATE QDT_WEBKITGTK_4_1)
+    else ()
+        pkg_check_modules(WEBKIT2GTK_4_0 QUIET webkit2gtk-4.0)
+        if (WEBKIT2GTK_4_0_FOUND)
+            target_compile_definitions(libslic3r_gui PRIVATE QDT_WEBKITGTK_4_0)
+        else ()
+            message(FATAL_ERROR "Neither webkit2gtk-4.1 nor webkit2gtk-4.0 was found.")
+        endif ()
+    endif ()
 
     # We add GStreamer for qidi:/// support.
     pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)

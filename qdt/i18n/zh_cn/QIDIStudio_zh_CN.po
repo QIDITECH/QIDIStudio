@@ -25875,7 +25875,7 @@ msgid "Format of G-code thumbnails: PNG for best quality, JPG for smallest size"
 msgstr "G代码缩略图的格式：PNG表示最佳质量，JPG表示最小尺寸"
 
 msgid "QIDI Studio is based on Bambu Studio by Bambu Lab."
-msgstr "QIDI Studio是基于Bambu Tech的Bambu Studio开发的。"
+msgstr "QIDI Studio是基于Bambu Lab的Bambu Studio开发的。"
 
 msgid "Seal"
 msgstr "封箱"

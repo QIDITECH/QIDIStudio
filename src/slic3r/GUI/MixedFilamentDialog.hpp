@@ -2,15 +2,18 @@
 #define slic3r_MixedFilamentDialog_hpp_
 
 #include <string>
+#include <utility>
 #include <vector>
 #include <wx/bitmap.h>
 #include <wx/panel.h>
-#include <wx/checkbox.h>
+#include <wx/tglbtn.h>
 #include <wx/stattext.h>
 
 #include "GUI_Utils.hpp"
+#include "libslic3r/FilamentMixer.hpp"
 
 class Button;
+class CheckBox;
 class ComboBox;
 class wxScrolledWindow;
 class wxWrapSizer;
@@ -18,11 +21,18 @@ class wxWrapSizer;
 namespace Slic3r {
 namespace GUI {
 
+class GradientCurveEditor;
+
 struct MixedFilamentResult {
     std::vector<unsigned int> components;   // 1-based physical filament indices
     std::vector<int>          ratios;       // percentages, sum = 100
-    bool gradient_enabled  = false;
+    bool gradient_enabled   = false;
     int  gradient_direction = 0;            // 0 = A→B, 1 = B→A  (only for 2-color)
+    bool per_part_gradient  = false;        // valid only when gradient_enabled == true
+    // Optional Photoshop-style custom curve overriding the linear A→B gradient.
+    // Empty -> use linear (gradient_direction). Non-empty -> cubic Hermite over [0,1]^2
+    // with optional per-anchor tangent overrides (see GradientAnchor).
+    std::vector<GradientAnchor> gradient_curve;
 };
 
 class MixedFilamentDialog : public DPIDialog
@@ -58,6 +68,8 @@ private:
     void on_ratio_changed(int new_ratio_a);
     void on_gradient_toggled();
     void on_gradient_direction_changed();
+    void on_gradient_curve_changed();
+    void on_per_part_gradient_toggled();
     void on_add_material();
     void on_remove_material();
     void on_recommendation_clicked(unsigned int comp_a, unsigned int comp_b);
@@ -66,8 +78,12 @@ private:
     void update_ok_button_state();
     void update_gradient_direction_items();
     void update_component_count_ui();
+    // Picks dialog (width, height) based on current state so the gradient curve
+    // editor and the recommendation list stay visible at the same time.
+    wxSize compute_dialog_size() const;
     void rebuild_all_combos();
     void rebuild_recommendation_items();
+    void refresh_curve_editor_colors();
     void paint_warning_panel(wxPaintEvent& evt);
 
     wxBitmap make_swatch_bitmap(size_t idx);
@@ -97,9 +113,15 @@ private:
     wxPanel*                    m_triangle_panel{nullptr};
     wxStaticText*               m_label_ratio_a{nullptr};
     wxStaticText*               m_label_ratio_b{nullptr};
-    wxCheckBox*                 m_chk_gradient{nullptr};
+    CheckBox*                   m_chk_gradient{nullptr};
+    wxStaticText*               m_label_gradient{nullptr};
     ComboBox*                   m_combo_gradient_dir{nullptr};
     wxBoxSizer*                 m_gradient_sizer{nullptr};
+    GradientCurveEditor*        m_curve_editor{nullptr};
+    wxBoxSizer*                 m_curve_sizer{nullptr};
+    CheckBox*                   m_chk_per_part_gradient{nullptr};
+    wxStaticText*               m_label_per_part_gradient{nullptr};
+    wxBoxSizer*                 m_per_part_gradient_sizer{nullptr};
     Button*                     m_btn_add_material{nullptr};
     Button*                     m_btn_remove_material{nullptr};
     Button*                     m_btn_ok{nullptr};
@@ -122,6 +144,11 @@ private:
     bool   m_dragging{false};
     // Triangle picker drag point (barycentric weights)
     double m_tri_wx{0.333}, m_tri_wy{0.333}, m_tri_wz{0.334};
+
+    // Cached triangle color bitmap (invalidated when colors or size change)
+    wxBitmap m_tri_cache_bmp;
+    wxColour m_tri_cache_c0, m_tri_cache_c1, m_tri_cache_c2;
+    wxSize   m_tri_cache_size;
 };
 
 } // namespace GUI

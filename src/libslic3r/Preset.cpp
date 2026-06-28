@@ -55,6 +55,61 @@ using boost::property_tree::ptree;
 
 namespace Slic3r {
 
+    const std::vector<std::string> &get_filament_orders()
+{
+    static std::vector<std::string> orders = {"QIDI PLA Basic",
+                                              "QIDI PLA Matte",
+                                              "QIDI PLA Pure",
+                                              "QIDI PLA Lite",
+                                              "QIDI PLA Tough+",
+                                              "QIDI PETG Basic",
+                                              "QIDI PETG Matte",
+                                              "QIDI PETG HF",
+                                              "QIDI ABS",
+                                              "QIDI ASA",
+                                              "QIDI PLA Silk+",
+                                              "QIDI PLA Silk",
+                                              "QIDI PLA-CF",
+                                              "QIDI PLA Marble",
+                                              "QIDI PLA Metal",
+                                              "QIDI PLA Sparkle",
+                                              "QIDI PLA Galaxy",
+                                              "QIDI PLA Glow",
+                                              "QIDI PLA Wood",
+                                              "QIDI PLA Translucent",
+                                              "QIDI PETG Translucent",
+                                              "QIDI PC",
+                                              "QIDI PC FR",
+                                              "QIDI PETG-CF",
+                                              "QIDI ABS-GF",
+                                              "QIDI ASA-CF",
+                                              "QIDI PA6-CF",
+                                              "QIDI PA6-GF",
+                                              "QIDI PAHT-CF",
+                                              "QIDI PET-CF",
+                                              "QIDI PPA-CF",
+                                              "QIDI PPS-CF",
+                                              "QIDI PLA Aero",
+                                              "QIDI ASA-Aero",
+                                              "QIDI TPU for AMS",
+                                              "QIDI TPU 95A HF",
+                                              "QIDI TPU 90A",
+                                              "QIDI TPU 85A",
+                                              "QIDI Support For PLA",
+                                              "QIDI Support For PLA/PETG",
+                                              "QIDI Support for ABS",
+                                              "QIDI PVA",
+                                              "QIDI Support For PA/PET",
+                                              "QIDI TPU 95A",
+                                              "QIDI PA-CF",
+                                              "QIDI PLA Tough",
+                                              "QIDI PLA Dynamic",
+                                              "QIDI Support W",
+                                              "QIDI Support G"};
+
+    return orders;
+}
+
 //QDS: add a function to load the version from xxx.json
 Semver get_version_from_json(std::string file_path)
 {
@@ -837,7 +892,7 @@ std::string Preset::get_current_printer_type(PresetBundle *preset_bundle)
     if (preset_bundle) {
         auto config = &(this->config);
         std::string vendor_name;
-        for (auto vendor_profile : preset_bundle->vendors) {
+        for (const auto& vendor_profile : preset_bundle->vendors) {
             for (auto vendor_model : vendor_profile.second.models)
                 if (vendor_model.name == config->opt_string("printer_model")) {
                     vendor_name = vendor_profile.first;
@@ -981,7 +1036,7 @@ static std::vector<std::string> s_Preset_print_options {
     "bridge_speed", "gap_infill_speed", "travel_speed", "travel_speed_z", "initial_layer_speed", "outer_wall_acceleration",
     "initial_layer_acceleration", "top_surface_acceleration", "default_acceleration", "travel_acceleration", "travel_short_distance_acceleration", "initial_layer_travel_acceleration", "inner_wall_acceleration", "sparse_infill_acceleration",
     "accel_to_decel_enable", "accel_to_decel_factor", "skirt_loops", "skirt_distance",
-    "skirt_height", "draft_shield",
+    "skirt_per_object", "skirt_height", "draft_shield",
     "brim_width", "brim_object_gap", "brim_type", "enable_support", "support_type", "support_threshold_angle", "enforce_support_layers",
     "raft_layers", "raft_first_layer_density", "raft_first_layer_expansion", "raft_contact_distance", "raft_expansion",
     "support_base_pattern", "support_base_pattern_spacing", "support_expansion", "support_style",
@@ -1019,14 +1074,14 @@ static std::vector<std::string> s_Preset_print_options {
     "default_jerk", "outer_wall_jerk", "inner_wall_jerk", "infill_jerk", "top_surface_jerk", "initial_layer_jerk", "travel_jerk",
     "filter_out_gap_fill", "mmu_segmented_region_max_width", "mmu_segmented_region_interlocking_depth",
     "small_perimeter_speed", "small_perimeter_threshold", "z_direction_outwall_speed_continuous",
-    "vertical_shell_speed","detect_floating_vertical_shell", "enable_wrapping_detection",
+    "vertical_shell_speed","detect_floating_vertical_shell", "enable_wrapping_detection", "enable_order_independent_overlap_carving",
      // calib
     "print_flow_ratio",
     //Orca
     "exclude_object", "override_filament_scarf_seam_setting", "seam_slope_type", "seam_slope_conditional", "scarf_angle_threshold",
     "seam_slope_start_height", "seam_slope_entire_loop", "seam_slope_min_length",
     "seam_slope_steps", "seam_slope_inner_walls", "role_base_wipe_speed", "seam_slope_gap", "precise_outer_wall",
-    "interlocking_beam", "interlocking_orientation", "interlocking_beam_layer_count", "interlocking_depth", "interlocking_boundary_avoidance", "interlocking_beam_width", "embedding_wall_into_infill"
+    "interlocking_beam", "interlocking_orientation", "interlocking_beam_layer_count", "interlocking_depth", "interlocking_boundary_avoidance", "interlocking_beam_width", "embedding_wall_into_infill", "alternate_extra_wall"
     //w16
     ,"resonance_avoidance", "min_resonance_avoidance_speed", "max_resonance_avoidance_speed"
     //w13
@@ -1064,7 +1119,7 @@ static std::vector<std::string> s_Preset_filament_options {/*"filament_colour", 
     "enable_pressure_advance", "pressure_advance", "chamber_temperatures","filament_notes",
     "filament_long_retractions_when_cut","filament_retraction_distances_when_cut","filament_shrink", "filament_velocity_adaptation_factor",
     //QDS filament change length while the extruder color
-    "filament_change_length","filament_change_length_nc","filament_prime_volume","filament_prime_volume_nc","filament_flush_volumetric_speed","filament_flush_temp",
+    "filament_change_length","filament_change_length_nc","filament_prime_volume","filament_prime_volume_nc","filament_flush_volumetric_speed","filament_flush_temp","filament_flush_temp_fast",
     "long_retractions_when_ec", "retraction_distances_when_ec",
     "filament_enable_overhang_speed",
     "filament_bridge_speed",
@@ -1074,6 +1129,7 @@ static std::vector<std::string> s_Preset_filament_options {/*"filament_colour", 
     "filament_overhang_4_4_speed",
     "filament_overhang_totally_speed",
     "override_process_overhang_speed",
+    "filament_preheat_temperature_delta",
     "filament_cooling_before_tower",
     "filament_tower_interface_pre_extrusion_dist",
     "filament_tower_interface_pre_extrusion_length",
@@ -1096,6 +1152,7 @@ static std::vector<std::string> s_Preset_machine_limits_options {
     "machine_max_speed_x", "machine_max_speed_y", "machine_max_speed_z", "machine_max_speed_e",
     "machine_min_extruding_rate", "machine_min_travel_rate",
     "machine_max_jerk_x", "machine_max_jerk_y", "machine_max_jerk_z", "machine_max_jerk_e",
+    "machine_max_force_Y", "machine_bed_mass_Y","machine_max_printed_mass",
 };
 
 static std::vector<std::string> s_Preset_printer_options {
@@ -1122,7 +1179,7 @@ static std::vector<std::string> s_Preset_printer_options {
     "use_relative_e_distances", "extruder_type","use_firmware_retraction",
     "grab_length","machine_switch_extruder_time","hotend_cooling_rate","hotend_heating_rate","enable_pre_heating", "support_object_skip_flush","physical_extruder_map",
     "bed_temperature_formula","machine_prepare_compensation_time", "nozzle_flush_dataset",
-    "group_algo_with_time","extruder_max_nozzle_count"
+    "group_algo_with_time","extruder_max_nozzle_count","support_fast_purge_mode"
     //w34
     ,"support_multi_bed_types"
     //y58
@@ -1606,8 +1663,12 @@ int PresetCollection::get_differed_values_to_update(Preset& preset, std::map<std
             key_values[QDT_JSON_KEY_FILAMENT_ID] = preset.filament_id;
         }
     }
+    if (!preset.setting_id.empty()) {
+        key_values[QDT_JSON_KEY_SETTING_ID] = preset.setting_id;
+    }
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " uploading user preset name is: " << preset.name << "and create filament_id is: " << preset.filament_id
-                            << " and base_id is: " << preset.base_id;
+                            << " and base_id is: " << preset.base_id
+                            << " and setting_id is: " << preset.setting_id;
     key_values[QDT_JSON_KEY_UPDATE_TIME] = std::to_string(preset.updated_time);
     key_values[QDT_JSON_KEY_TYPE] = Preset::get_iot_type_string(preset.type);
 
@@ -3356,8 +3417,7 @@ void PresetCollection::set_printer_hold_alias(const std::string &alias, Preset &
                 }
             }
         }
-        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " " << " preset name : " << preset.name << " remove action: " << remove << " insert success: "
-                                << insert_success << " remove success: " << remove_success << " alias: " << alias;
+    
     }
 }
 
@@ -3515,10 +3575,24 @@ std::string PhysicalPrinter::separator()
 namespace {
 
 //cj_4 check all matching presets, return true if any has is_support_mqtt=1
+// Strip non-alphanumeric characters for fuzzy model name comparison
+static std::string normalize_model_token(const std::string& s)
+{
+    std::string out;
+    out.reserve(s.size());
+    for (char c : s) {
+        if (std::isalnum(static_cast<unsigned char>(c))) {
+            out.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+        }
+    }
+    return out;
+}
+
 bool mqtt_ui_capable_from_printers(const std::string& token, const PrinterPresetCollection& printers)
 {
     if (token.empty())
         return false;
+    const std::string token_norm = normalize_model_token(token);
     if (const Preset* p = printers.find_preset(token, false))
         return p->config.opt_bool("is_support_mqtt");
     for (const Preset& preset : printers.get_presets()) {
@@ -3528,8 +3602,10 @@ bool mqtt_ui_capable_from_printers(const std::string& token, const PrinterPreset
         boost::trim(pm);
         if (pm.empty())
             continue;
-        if (boost::iequals(pm, token) && preset.config.opt_bool("is_support_mqtt"))
+        if (normalize_model_token(pm) == token_norm && preset.config.opt_bool("is_support_mqtt"))
+        {
             return true;
+        }
     }
     return false;
 }
@@ -3571,7 +3647,10 @@ bool PhysicalPrinter::is_mqtt_ui_capable_preset_model(const std::string& preset_
     if (token.empty())
         return false;
     if (printer_presets != nullptr)
-        return mqtt_ui_capable_from_printers(token, *printer_presets);
+    {
+        bool result = mqtt_ui_capable_from_printers(token, *printer_presets);
+        return result;
+    }
     return false;
 }
 

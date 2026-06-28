@@ -35,6 +35,9 @@
 //y76
 #include <wx/dcbuffer.h> 
 
+wxDEFINE_EVENT(EVT_MEDIA_CTRL_FIRST_FRAME, wxCommandEvent);
+
+
 static std::map<int, std::string> error_messages = {
     {1, L("The device cannot handle more conversations. Please retry later.")},
     {2, L("Player is malfunctioning. Please reinstall the system player.")},
@@ -57,8 +60,20 @@ MediaPlayCtrl::MediaPlayCtrl(wxWindow *parent, VideoPanel *media_ctrl, const wxP
     SetLabel("MediaPlayCtrl");
     SetBackgroundColour(*wxWHITE);
     m_media_ctrl->Bind(wxEVT_MEDIA_STATECHANGED, &MediaPlayCtrl::onStateChanged, this);
-    //y77
-    m_media_ctrl->SetIdleImage("live_stream_default");
+    m_media_ctrl->Bind(EVT_MEDIA_CTRL_FIRST_FRAME, [this](wxCommandEvent &e) {
+        if (!m_pending_start_liveview_json.empty()) {
+            try {
+                auto j = json::parse(m_pending_start_liveview_json);
+                j["first_frame_time"] = e.GetInt();
+                NetworkAgent *agent = wxGetApp().getAgent();
+                if (agent)
+                    agent->track_event("start_liveview", j.dump());
+            } catch (...) {}
+            m_pending_start_liveview_json.clear();
+        }
+    });
+    //cj_5
+	m_media_ctrl->SetIdleImage( "live_stream_default");
 
     m_button_play = new Button(this, "", "media_play", wxBORDER_NONE);
     m_button_play->SetCanFocus(false);
@@ -191,6 +206,17 @@ void MediaPlayCtrl::SetMachineObject(MachineObject* obj)
     if (machine == m_machine) {
         if (m_last_state == MEDIASTATE_IDLE && IsEnabled())
             Play();
+        // if (m_last_state == MEDIASTATE_LOADING || m_last_state == MEDIASTATE_INITIALIZING) {
+        //     auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+        //         std::chrono::system_clock::now() - m_play_timer).count();
+        //     if (elapsed >= 15) {
+        //         BOOST_LOG_TRIVIAL(error) << "MediaPlayCtrl: loading/initializing timeout after " << elapsed
+        //                                  << "s, forcing stop";
+        //         m_failed_code = 2;
+        //         Stop(_L("Loading failed. Please check the network and try again."));
+        //         return;
+        //     }
+        // }
         if (m_last_state == wxMediaState::wxMEDIASTATE_PLAYING) {
             auto now = std::chrono::system_clock::now();
             if (m_play_timer <= now) {
@@ -438,6 +464,7 @@ void MediaPlayCtrl::Stop(wxString const &msg, wxString const &msg2)
 
     //y76
     if (m_last_state != wxMEDIASTATE_STOPPED) {
+        m_pending_start_liveview_json.clear();
         m_media_ctrl->InvalidateBestSize();
         m_button_play->SetIcon("media_play");
         boost::unique_lock lock(m_mutex);
@@ -526,8 +553,7 @@ void MediaPlayCtrl::Stop(wxString const &msg, wxString const &msg2)
     ++m_failed_retry;
 
     // Set idle image after video stops
-    m_media_ctrl->SetIdleImage(from_u8(resources_dir() + "/images/live_stream_default.png"));
-
+    m_media_ctrl->SetIdleImage("live_stream_default");
     bool local = tunnel == "local" || tunnel == "rtsp" ||
                  tunnel == "rtsps";
     if (m_failed_code < 0 && last_state != wxMEDIASTATE_PLAYING && local && (m_failed_retry > 1 || m_user_triggered)) {
@@ -750,7 +776,7 @@ void MediaPlayCtrl::RequestFileSystemUrl(std::function<void(std::string url)> cb
 void MediaPlayCtrl::start_device_image_flow()
 {
     if (!m_support_liveview_preview) {
-        m_media_ctrl->SetIdleImage(from_u8(resources_dir() + "/images/live_stream_default.png"));
+        m_media_ctrl->SetIdleImage("live_stream_default");
         BOOST_LOG_TRIVIAL(info) << "DeviceImageFlow: skipped, liveview preview not supported";
         return;
     }
@@ -775,7 +801,7 @@ void MediaPlayCtrl::start_device_image_flow()
 
     // Only reset to default image if we don't have a cached preview for this machine
     if (m_image_last_machine != m_machine) {
-        m_media_ctrl->SetIdleImage(from_u8(resources_dir() + "/images/live_stream_default.png"));
+        m_media_ctrl->SetIdleImage("live_stream_default");
     }
 
     // Reset transfer object completely to avoid stale state after CancelAll
@@ -942,26 +968,23 @@ void MediaPlayCtrl::onStateChanged(wxMediaEvent &event)
     //         m_load_duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_play_timer).count();
     //         m_play_timer    = now + 1min;
 
-    //         // track event
-    //         json j;
-    //         j["stage"] =  std::to_string(m_last_state);
-    //         //j["dev_id"] = m_machine;
-    //         j["dev_id"] = "";
-    //         j["dev_ip"] = "";
-    //         j["result"] = "success";
-    //         j["code"] = 0;
-    //         auto tunnel = into_u8(wxURI(m_url).GetPath()).substr(1);
-    //         if (auto n = tunnel.find_first_of("/_"); n != std::string::npos)
-    //             tunnel = tunnel.substr(0, n);
-    //         j["tunnel"]         = tunnel;
-    //         if (tunnel == "tutk") {
-    //             if (m_url.size() > 38)
-    //                 j["tutk_id"] = m_url.substr(18, 20).c_str();
-    //             j["tutk_state"] = m_tutk_state;
-    //         }
-    //         NetworkAgent *agent = wxGetApp().getAgent();
-    //         if (agent)
-    //             agent->track_event("start_liveview", j.dump());
+            // // track event ¡ª deferred to first frame (EVT_MEDIA_CTRL_FIRST_FRAME)
+            // {
+            //     json j;
+            //     j["stage"] = std::to_string(m_last_state);
+            //     // j["dev_id"] = m_machine;
+            //     j["dev_id"] = "";
+            //     j["dev_ip"] = "";
+            //     j["result"] = "success";
+            //     j["code"]   = 0;
+            //     auto tunnel = into_u8(wxURI(m_url).GetPath()).substr(1);
+            //     if (auto n = tunnel.find_first_of("/_"); n != std::string::npos) tunnel = tunnel.substr(0, n);
+            //     j["tunnel"] = tunnel;
+            //     if (tunnel == "tutk") {
+            //         if (m_url.size() > 38) j["tutk_id"] = m_url.substr(18, 20).c_str();
+            //         j["tutk_state"] = m_tutk_state;
+            //     }
+            //     m_pending_start_liveview_json = j.dump();
 
     //         m_failed_retry = 0;
     //         m_disable_lan = false;
@@ -974,6 +997,12 @@ void MediaPlayCtrl::onStateChanged(wxMediaEvent &event)
     //         else if (m_failed_code == -2)
     //             SetStatus(_L("DLL load error"));
     //         Stop();
+        // } else {
+        //     // GetId()==0: media_proc synthetic event. PlayThread may still be connecting or
+        //     // stuck in QIDI_Close. Timeout enforced by SetMachineObject periodic polling.
+        //     BOOST_LOG_TRIVIAL(warning) << "MediaPlayCtrl: synthetic stateChanged with no valid frame, "
+        //                                << "state=" << state << " size=" << size.x << "x" << size.y
+        //                                << " failed_code=" << m_failed_code;
     //     }
     // } else {
     //     m_last_state = state;
@@ -1113,6 +1142,7 @@ void MediaPlayCtrl::media_proc()
         // }
         else {
             BOOST_LOG_TRIVIAL(info) <<  "MediaPlayCtrl: start load";
+            //m_media_ctrl->Load(wxURI(url), m_play_timer);
             m_media_ctrl->Load(url.ToUTF8().data());    //y76
             BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl: end load";
         }
@@ -1243,6 +1273,14 @@ static int SecondsSinceLastInput()
 
 void wxMediaCtrl_OnSize(wxWindow * ctrl, wxSize const & videoSize, int width, int height)
 {
+    if (auto *media3 = dynamic_cast<wxMediaCtrl3 *>(ctrl)) {
+        if (!media3->GetConstrainByAspectRatio()) return;
+    }
+#ifndef __WXMAC__
+    else if (auto *media2 = dynamic_cast<wxMediaCtrl2 *>(ctrl)) {
+        if (!media2->GetConstrainByAspectRatio()) return;
+    }
+#endif
     wxSize size = videoSize;
     if (!size.IsFullySpecified()) size = {16, 9};
     int maxHeight = (width * size.GetHeight() + size.GetHeight() - 1) / size.GetWidth();

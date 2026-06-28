@@ -115,21 +115,23 @@ void set_logging_level(unsigned int level)
 {
     logSeverity = level_to_boost(level);
 
-    boost::log::core::get()->set_filter(
-        [level](const boost::log::attribute_value_set& attr_set)
-        {
-            // 获取日志等级
-            auto severity = attr_set[boost::log::trivial::severity].get();
-            
-            // 如果是trace等级，始终输出到控制台
-            if (severity == boost::log::trivial::trace) {
-                return true;  // trace等级始终通过过滤器
-            }
-            
-            // 其他等级按原逻辑过滤
-            return severity >= logSeverity;
-        }
-    );
+//     boost::log::core::get()->set_filter(
+//         [level](const boost::log::attribute_value_set& attr_set)
+//         {
+//             // 获取日志等级
+//             auto severity = attr_set[boost::log::trivial::severity].get();
+//             
+//             // 如果是trace等级，始终输出到控制台
+//             if (severity == boost::log::trivial::trace) {
+//                 return true;  // trace等级始终通过过滤器
+//             }
+//             
+//             // 其他等级按原逻辑过滤
+//             return severity >= logSeverity;
+//         }
+//     );
+
+
 }
 
 unsigned int level_string_to_boost(std::string level)
@@ -336,7 +338,7 @@ void set_log_path_and_level(const std::string& file, unsigned int level, const L
 	//TODO: need to be fixed
 	if (!is_macos_support_boost_add_file_log()) {
 		setup_console_sink();
-        set_logging_level(level);
+        
 		return;
 	}
 #endif
@@ -355,7 +357,12 @@ void set_log_path_and_level(const std::string& file, unsigned int level, const L
 
 	logging::add_common_attributes();
 
+	//cj_5  
 	set_logging_level(level);
+	g_log_sink->set_filter(
+		boost::log::trivial::severity >= logSeverity
+	);
+
 	return;
 }
 

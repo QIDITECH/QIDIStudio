@@ -5,13 +5,16 @@
 
 #include "../libslic3r.h"
 
+#include <functional>
 #include <map>
 #include <utility>
 
 #include <boost/container/small_vector.hpp>
 #include "../FilamentGroup.hpp"
+#include "../FilamentMixer.hpp"
 #include "../ExtrusionEntity.hpp"
 #include "../PrintConfig.hpp"
+#include "../ObjectID.hpp"
 
 namespace Slic3r {
 
@@ -141,6 +144,7 @@ using FlushMatrix = std::vector<std::vector<float>>;
 std::vector<MultiNozzleUtils::NozzleInfo>      build_default_nozzle_list(const PrintConfig &config, size_t extruder_nums);
 std::vector<MultiNozzleUtils::NozzleGroupInfo> build_nozzle_groups(const PrintConfig &config, size_t extruder_nums);
 
+// 分组相关的函数
 std::vector<FlushMatrix> prepare_flush_matrices(const PrintConfig &print_config);
 
 FilamentGroupContext build_filament_group_context(Print                                           *print,
@@ -198,6 +202,7 @@ public:
     // Custom G-code (color change, extruder switch, pause) to be performed before this layer starts to print.
     const CustomGCode::Item    *custom_gcode = nullptr;
 
+    // 0-based mixed filament slot → 0-based resolved physical filament for this layer.
     // Populated by ToolOrdering::resolve_mixed_filaments(). Empty when no mixed filaments.
     std::map<unsigned int, unsigned int> mixed_filament_resolution;
 
@@ -209,17 +214,39 @@ public:
     struct MixedSubLayerGroup {
         unsigned int              mixed_slot_0based;
         std::vector<unsigned int> components_0based;
-        std::vector<double>       sub_heights;       
+        std::vector<double>       sub_heights;       // per-component, sum ≈ layer_height
+        double                    layer_height = 0.;  // the actual lh used to compute sub_heights
         bool                      is_gradient = false;
         int                       gradient_first_sorted_idx = 0; // index of "first" config component after sorting
 
         struct ObjectGradient {
-            size_t total_layers;
-            size_t current_idx;
-            double gradient_start;
-            double gradient_end;
+            size_t        total_layers;
+            size_t        current_idx;
+            double        gradient_start;
+            double        gradient_end;
+            GradientCurve curve;    // empty -> linear fallback (start, end); non-empty wins
         };
         std::map<const PrintObject*, ObjectGradient> per_object_gradient;
+
+        // Per-volume gradient: same metadata layout as ObjectGradient but keyed by
+        // (PrintObject*, ModelVolume id). Populated only when filament_mixed_gradient_per_part is
+        // enabled for this slot AND the corresponding ModelObject contains >=2 model-part volumes
+        // using this slot. When non-empty for a given (PrintObject*), GCode emission takes the
+        // per-volume path for tagged regions; untagged regions (modifier/painted/fuzzy_skin) still
+        // use per_object_gradient. Both maps are populated in parallel to keep run states correct.
+        struct VolumeKey {
+            const PrintObject* obj;
+            ObjectID           volume_id;
+            bool operator<(const VolumeKey &o) const {
+                if (obj != o.obj) return std::less<const PrintObject*>{}(obj, o.obj);
+                return volume_id < o.volume_id;
+            }
+            bool operator==(const VolumeKey &o) const {
+                return obj == o.obj && volume_id == o.volume_id;
+            }
+        };
+        using VolumeGradient = ObjectGradient;
+        std::map<VolumeKey, VolumeGradient> per_volume_gradient;
     };
     std::vector<MixedSubLayerGroup> mixed_sub_layer_groups;
 
@@ -364,6 +391,9 @@ public:
 
     bool                has_non_support_filament(const PrintConfig &config);
 
+    const MultiNozzleUtils::NozzleStatusRecorder& get_nozzle_status() const { return m_nozzle_status; }
+    void set_nozzle_status(const MultiNozzleUtils::NozzleStatusRecorder& status) { m_initial_nozzle_status = status; m_nozzle_status = status; }
+
 private:
     void                calc_most_used_extruder(const PrintConfig &config);
     void				initialize_layers(std::vector<coordf_t> &zs);
@@ -391,6 +421,19 @@ private:
     // Per-object gradient tracking: slot(0-based) -> PrintObject* -> list of layer indices
     // where that object uses the slot. Populated by collect_extruders, consumed by resolve_mixed_filaments.
     std::map<unsigned int, std::map<const PrintObject*, std::vector<size_t>>> m_gradient_object_layers;
+
+    // All layer indices (in m_layer_tools) where each object has any layer.
+    // Used by gradient run detection to distinguish real gaps (object has a layer
+    // that doesn't use the slot) from spurious gaps (another object's layer).
+    std::map<const PrintObject*, std::vector<size_t>> m_object_all_layer_indices;
+
+    // Per-volume gradient tracking: slot(0-based) -> (PrintObject*, ModelVolume id) -> list of
+    // layer indices where the given volume contributes to the slot. Populated by collect_extruders
+    // alongside m_gradient_object_layers when per_part gradient is enabled for the slot AND the
+    // ModelObject has >=2 model-part volumes using the slot. Empty for all other configurations,
+    // which keeps every legacy per-object code path bit-identical (loops over an empty map are
+    // no-ops; downstream emission falls through to the per-object branch).
+    std::map<unsigned int, std::map<LayerTools::MixedSubLayerGroup::VolumeKey, std::vector<size_t>>> m_gradient_volume_layers;
     const PrintObject*         m_print_object_ptr = nullptr;
     Print*                     m_print;
     bool                       m_sorted = false;
@@ -399,6 +442,8 @@ private:
     FilamentChangeStats        m_stats_by_multi_extruder_curr;
     FilamentChangeStats        m_stats_by_multi_extruder_best;
     MultiNozzleUtils::LayeredNozzleGroupResult m_nozzle_group_result;
+    MultiNozzleUtils::NozzleStatusRecorder m_initial_nozzle_status;  // 本 object 开始时的喷嘴状态
+    MultiNozzleUtils::NozzleStatusRecorder m_nozzle_status;          // 本 object 结束后的喷嘴状态
 
     int               m_most_used_extruder;
 };

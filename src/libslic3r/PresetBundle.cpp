@@ -53,6 +53,7 @@ static std::vector<std::string> s_project_options {
     "wipe_tower_rotation_angle",
     "curr_bed_type",
     "flush_multiplier",
+    "flush_multiplier_fast",
     "nozzle_volume_type",
     "filament_map_mode",
     "filament_map",
@@ -931,8 +932,11 @@ PresetsConfigSubstitutions PresetBundle::load_user_presets(std::string user, For
         errors_cummulative += err.what();
     }
     // y4
+    // cj_5 physical_printer is always loaded from default — device IP/credentials
+    // are shared across users, not per-user.
     try {
-        this->physical_printers.load_printers(dir_user_presets, PHYSICAL_PRINTER, substitutions, substitution_rule, &this->printers);
+        std::string dir_default = data_dir() + "/" + PRESET_USER_DIR + "/" + DEFAULT_USER_FOLDER_NAME;
+        this->physical_printers.load_printers(dir_default, PHYSICAL_PRINTER, substitutions, substitution_rule, &this->printers);
     } catch (const std::runtime_error &err) {
         errors_cummulative += err.what();
     }
@@ -1348,7 +1352,9 @@ std::vector<std::vector<std::vector<float>>> PresetBundle::get_full_flush_matrix
     }
 
     if(with_multiplier){
-        auto flush_multiplies = project_config.option<ConfigOptionFloats>("flush_multiplier")->values;
+        bool use_fast         = project_config.option<ConfigOptionEnum<PrimeVolumeMode>>("prime_volume_mode")->value == PrimeVolumeMode::pvmFast;
+        auto flush_multiplies = use_fast ? project_config.option<ConfigOptionFloats>("flush_multiplier_fast")->values :
+                                           project_config.option<ConfigOptionFloats>("flush_multiplier")->values;
         flush_multiplies.resize(extruder_nums, 1);
         for (size_t extruder_id = 0; extruder_id < extruder_nums; ++extruder_id) {
             for (auto& vec : matrix[extruder_id]) {
@@ -2125,6 +2131,11 @@ void PresetBundle::load_selections(AppConfig &config, const PresetPreferences& p
         auto flush_multipliers = matrix | boost::adaptors::transformed(boost::lexical_cast<double, std::string>);
         project_config.option<ConfigOptionFloats>("flush_multiplier")->values = std::vector<double>(flush_multipliers.begin(), flush_multipliers.end());
     }
+    if (config.has("app", "flush_multiplier_fast")) {
+        boost::algorithm::split(matrix, config.get("app", "flush_multiplier_fast"), boost::algorithm::is_any_of("|"));
+        auto flush_multipliers_fast                                                = matrix | boost::adaptors::transformed(boost::lexical_cast<double, std::string>);
+        project_config.option<ConfigOptionFloats>("flush_multiplier_fast")->values = std::vector<double>(flush_multipliers_fast.begin(), flush_multipliers_fast.end());
+    }
 
     // Mixed filament metadata
     size_t n_filaments = filament_presets.size();
@@ -2275,6 +2286,10 @@ void PresetBundle::export_selections(AppConfig &config)
                                                                   boost::adaptors::transformed(static_cast<std::string (*)(double)>(std::to_string)),
                                                               "|");
     config.set("flush_multiplier", flush_multiplier_str);
+    std::string flush_multiplier_fast_str = boost::algorithm::join(project_config.option<ConfigOptionFloats>("flush_multiplier_fast")->values |
+                                                                       boost::adaptors::transformed(static_cast<std::string (*)(double)>(std::to_string)),
+                                                                   "|");
+    config.set("flush_multiplier_fast", flush_multiplier_fast_str);
 
     // Mixed filament metadata
     if (auto* opt = project_config.option<ConfigOptionBools>("filament_is_mixed")) {
@@ -2625,6 +2640,7 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
                                                         L("The filament model is unknown. A random filament preset will be used.")));
             filament_id = iter->filament_id;
         }
+        BOOST_LOG_TRIVIAL(info) <<"sync filamentname: " << iter->name << "  filament_color: " << filament_color << " " << iter->filament_id;
         ams_filament_presets.push_back(iter->name);
         ams_filament_colors.push_back(filament_color);
         ams_filament_color_types.push_back(filament_color_type);
@@ -5569,6 +5585,8 @@ void PresetBundle::update_multi_material_filament_presets(size_t to_delete_filam
     if (old_nozzle_nums != nozzle_nums) {
         std::vector<double>& f_multiplier = this->project_config.option<ConfigOptionFloats>("flush_multiplier")->values;
         f_multiplier.resize(nozzle_nums, 1.f);
+        std::vector<double> &f_multiplier_fast = this->project_config.option<ConfigOptionFloats>("flush_multiplier_fast")->values;
+        f_multiplier_fast.resize(nozzle_nums, 1.2f);
     }
 
     if ( (num_filaments * num_filaments) != size_t(old_matrix.size() / old_nozzle_nums) ) {

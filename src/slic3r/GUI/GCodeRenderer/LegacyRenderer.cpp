@@ -1,15 +1,12 @@
 #include "slic3r/GUI/GCodeRenderer/LegacyRenderer.hpp"
 #include "libslic3r/libslic3r.h"
 #include "libslic3r/BuildVolume.hpp"
-#include "libslic3r/ClipperUtils.hpp"
 #include "libslic3r/Print.hpp"
 #include "libslic3r/Geometry.hpp"
 #include "libslic3r/Model.hpp"
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/LocalesUtils.hpp"
 #include "libslic3r/PresetBundle.hpp"
-//QDS: add convex hull logic for toolpath check
-#include "libslic3r/Geometry/ConvexHull.hpp"
 #include "slic3r/GUI/OpenGLManager.hpp"
 #include "slic3r/GUI/GUI_App.hpp"
 #include "slic3r/GUI/MainFrame.hpp"
@@ -181,6 +178,7 @@ namespace Slic3r {
                     // use rounding to reduce the number of generated paths
                     return type == move.type && extruder_id == move.extruder_id && cp_color_id == move.cp_color_id && role == move.extrusion_role &&
                         move.position.z() <= sub_paths.front().first.position.z() && feedrate == move.feedrate && fan_speed == move.fan_speed &&
+                        additional_fan_speed == move.additional_fan_speed &&
                         height == round_to_bin(move.height) && width == round_to_bin(move.width) &&
                         matches_percent(volumetric_rate, move.volumetric_rate(), 0.05f) && layer_time == move.layer_duration &&
                         thermal_index_mean == move.thermal_index_mean && thermal_index_min == move.thermal_index_min && thermal_index_max == move.thermal_index_max;
@@ -217,6 +215,7 @@ namespace Slic3r {
                      round_to_bin(move.width),
                      move.feedrate,
                      move.fan_speed,
+                     move.additional_fan_speed,
                      move.temperature,
                      move.thermal_index_min,
                      move.thermal_index_max,
@@ -1324,28 +1323,7 @@ namespace Slic3r {
                     % m_paths_bounding_box.min.x() % m_paths_bounding_box.min.y() % m_paths_bounding_box.max.x() % m_paths_bounding_box.max.y();
                 //if (wxGetApp().is_editor())
                 {
-                    //QDS: use convex_hull for toolpath outside check
-                    m_contained_in_bed = build_volume.all_paths_inside(gcode_result, m_paths_bounding_box);
-                    if (m_contained_in_bed) {
-                        //PartPlateList& partplate_list = wxGetApp().plater()->get_partplate_list();
-                        //PartPlate* plate = partplate_list.get_curr_plate();
-                        //const std::vector<BoundingBoxf3>& exclude_bounding_box = plate->get_exclude_areas();
-                        if (exclude_bounding_box.size() > 0)
-                        {
-                            int index;
-                            Slic3r::Polygon convex_hull_2d = Slic3r::Geometry::convex_hull(std::move(pts));
-                            for (index = 0; index < exclude_bounding_box.size(); index++)
-                            {
-                                Slic3r::Polygon p = exclude_bounding_box[index].polygon(true);  // instance convex hull is scaled, so we need to scale here
-                                if (intersection({ p }, { convex_hull_2d }).empty() == false)
-                                {
-                                    m_contained_in_bed = false;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    (const_cast<GCodeProcessorResult&>(gcode_result)).toolpath_outside = !m_contained_in_bed;
+                    update_toolpath_outside_state(gcode_result, build_volume, exclude_bounding_box, std::move(pts));
                 }
                 if (p_sequential_view) {
                     p_sequential_view->gcode_ids.clear();
@@ -1781,6 +1759,7 @@ namespace Slic3r {
                     case EViewType::Width: { color = m_p_extrusions->ranges.width.get_color_at(path.width); break; }
                     case EViewType::Feedrate: { color = m_p_extrusions->ranges.feedrate.get_color_at(path.feedrate); break; }
                     case EViewType::FanSpeed: { color = m_p_extrusions->ranges.fan_speed.get_color_at(path.fan_speed); break; }
+                    case EViewType::AdditionalFanSpeed: { color = m_p_extrusions->ranges.additional_fan_speed.get_color_at(path.additional_fan_speed); break; }
                     case EViewType::Temperature: { color = m_p_extrusions->ranges.temperature.get_color_at(path.temperature); break; }
                     case EViewType::LayerTime: { color = m_p_extrusions->ranges.layer_duration.get_color_at(path.layer_time, Range::EType::Logarithmic); break; }
                     case EViewType::VolumetricRate: { color = m_p_extrusions->ranges.volumetric_rate.get_color_at(path.volumetric_rate); break; }
@@ -1904,7 +1883,9 @@ namespace Slic3r {
                             }
                             if (path.type == EMoveType::Extrude && !is_visible(path))
                                 continue;
-                            if (m_view_type == EViewType::ColorPrint && !m_tools.m_tool_visibles[path.extruder_id])
+                            if (m_view_type == EViewType::ColorPrint
+                                && path.extruder_id < m_tools.m_tool_visibles.size()
+                                && !m_tools.m_tool_visibles[path.extruder_id])
                                 continue;
                             // store valid path
                             for (size_t j = 0; j < path.sub_paths.size(); ++j) {

@@ -96,6 +96,7 @@ namespace GUI {
 // Previous definitions
 class MessageDialog;
 class wgtDeviceNozzleRack;
+class CameraFullscreenFrame;
 
 enum CameraRecordingStatus {
     RECORDING_NONE,
@@ -475,8 +476,11 @@ protected:
     CameraRecordingStatus m_state_recording{CameraRecordingStatus::RECORDING_NONE};
     CameraTimelapseStatus m_state_timelapse{CameraTimelapseStatus::TIMELAPSE_NONE};
 
-
     CameraItem *m_setting_button;
+    CameraItem *m_camera_fullscreen_button{ nullptr };
+    wxBoxSizer *m_camera_media_sizer{ nullptr };
+    CameraFullscreenFrame *m_camera_fullscreen_frame{ nullptr };
+    wxPanel *m_camera_placeholder{ nullptr };
 
     wxBitmap m_bitmap_camera;
     ScalableBitmap m_bitmap_sdcard_state_normal;
@@ -713,6 +717,12 @@ public:
 
     void jump_to_Rack();
 
+    bool can_show_camera_fullscreen() const;
+    bool is_camera_fullscreen() const;
+    void toggle_camera_fullscreen();
+    void close_camera_fullscreen();
+    void on_camera_fullscreen(wxMouseEvent& event);
+
     //cj1
 	void update_temp_data(std::string nozzle, std::string bed, std::string chamber);
 	void update_temp_target(std::string nozzle, std::string bed, std::string chamber);
@@ -736,6 +746,7 @@ protected:
 
 private:
     void on_ams_rack_switch(wxCommandEvent& event);
+    void show_camera_fullscreen();
 
     //cj_2
 	void on_control_tab(wxCommandEvent& event);
@@ -956,7 +967,7 @@ protected:
     void on_thumbnail_enter(wxMouseEvent &event);
     void on_thumbnail_leave(wxMouseEvent &event);
     void refresh_thumbnail_webrequest(wxMouseEvent& event);
-    void on_switch_vcamera(wxMouseEvent &event);
+    void on_switch_vcamera(wxCommandEvent &event);
     void on_camera_enter(wxMouseEvent &event);
     void on_camera_leave(wxMouseEvent& event);
 

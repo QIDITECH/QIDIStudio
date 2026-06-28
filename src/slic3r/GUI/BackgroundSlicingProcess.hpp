@@ -76,7 +76,7 @@ public:
 	void 		rethrow_exception() const { assert(this->error()); assert(m_exception); std::rethrow_exception(m_exception); }
 	// Produce a human readable message to be displayed by a notification or a message box.
 	// 2nd parameter defines whether the output should be displayed with a monospace font.
-    std::pair<std::string, std::vector<size_t>> format_error_message() const;
+    std::pair<std::string, std::vector<size_t>> format_error_message(std::string *out_opt_key = nullptr) const;
 
 private:
 	StatusType 			m_status;
@@ -156,6 +156,9 @@ public:
 	// Apply config over the print. Returns false, if the new config values caused any of the already
 	// processed steps to be invalidated, therefore the task will need to be restarted.
     PrintBase::ApplyStatus apply(const Model &model, const DynamicPrintConfig &config);
+	// If set before the current slicing run reaches finalize_gcode(), external post-processing scripts are not run (user chose "Do not execute" in Plater). Cleared when consumed or when stop() runs.
+	// Guarded by m_mutex so the background slicing thread (finalize_gcode) and the UI thread (reslice) don't race on this flag.
+	void set_skip_post_process_once(bool skip);
 	// After calling the apply() function, set_task() may be called to limit the task to be processed by process().
 	// This is useful for calculating SLA supports for a single object only.
 	void 		set_task(const PrintBase::TaskParams &params);
@@ -301,6 +304,7 @@ private:
 	GUI::PartPlate* m_current_plate;
 	PrinterTechnology m_printer_tech = ptUnknown;
 	bool m_internal_cancelled = false;
+	bool m_skip_post_process_once = false;
 
     PrintState<BackgroundSlicingProcessStep, bspsCount>   	m_step_state;
 	bool                set_step_started(BackgroundSlicingProcessStep step);

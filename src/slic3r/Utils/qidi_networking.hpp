@@ -4,6 +4,7 @@
 #include <string>
 #include <functional>
 #include <map>
+#include <vector>
 
 extern std::string g_log_folder;
 extern std::string g_log_start_time;
@@ -37,6 +38,11 @@ namespace QDT {
 #define QIDI_NETWORK_ERR_NO_CORRESPONDING_BUCKET       -24
 #define QIDI_NETWORK_ERR_GET_INSTANCE_ID_FAILED        -25
 #define QIDI_NETWORK_SIGNED_ERROR                      -26
+#define QIDI_NETWORK_ERR_GET_FILAMENTS_FAILED          -27
+#define QIDI_NETWORK_ERR_CREATE_FILAMENT_FAILED        -28
+#define QIDI_NETWORK_ERR_UPDATE_FILAMENT_FAILED        -29
+#define QIDI_NETWORK_ERR_DELETE_FILAMENT_FAILED        -30
+#define QIDI_NETWORK_ERR_GET_FILAMENT_CONFIG_FAILED    -31
 
 //bind error
 #define QIDI_NETWORK_ERR_BIND_CREATE_SOCKET_FAILED          -1010 //failed to create socket
@@ -97,7 +103,7 @@ namespace QDT {
 #define QIDI_NETWORK_LIBRARY               "qidi_networking"
 #define QIDI_NETWORK_AGENT_NAME            "qidi_network_agent"
 
-#define QIDI_NETWORK_AGENT_VERSION         "02.06.00.50"
+#define QIDI_NETWORK_AGENT_VERSION         "02.07.01.51"
 
 //iot preset type strings
 #define IOT_PRINTER_TYPE_STRING     "printer"
@@ -242,6 +248,7 @@ struct PrintParams {
     
     bool            task_ext_change_assist;
     bool            try_emmc_print;
+    std::string     svc_context;
 };
 
 struct TaskQueryParams
@@ -250,6 +257,22 @@ struct TaskQueryParams
     int status = 0;
     int offset = 0;
     int limit = 20;
+};
+
+struct FilamentQueryParams
+{
+    std::string category;
+    std::string status;
+    std::string spool_id;
+    std::string rfid;
+    int offset = 0;
+    int limit = 20;
+};
+
+struct FilamentDeleteParams
+{
+    std::vector<std::string> ids;
+    std::vector<std::string> rfids;
 };
 
 struct PublishParams {

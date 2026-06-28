@@ -24,6 +24,7 @@
 //QDS: add stl
 #include "Format/STL.hpp"
 #include "Format/OBJ.hpp"
+#include "TexturePainting.hpp"
 
 #include "Calib.hpp"
 
@@ -436,7 +437,7 @@ public:
     // This bounding box is approximate and not snug.
     // This bounding box is being cached.
     const BoundingBoxf3& bounding_box() const;
-    const BoundingBoxf3& bounding_box_in_assembly_view() const;
+    const BoundingBoxf3 &bounding_box_in_assembly_view() const;
     void invalidate_bounding_box() { m_bounding_box_valid = false; m_raw_bounding_box_valid = false; m_raw_mesh_bounding_box_valid = false; }
 
     // A mesh containing all transformed instances of this object.
@@ -1610,6 +1611,9 @@ public:
     std::shared_ptr<ModelInfo> model_info = nullptr;
     std::shared_ptr<ModelProfileInfo> profile_info = nullptr;
 
+    // Textured mesh data for texture-to-painting import
+    std::shared_ptr<TexturedMesh> texture_mesh;
+
     //makerlab information
     std::string mk_name;
     std::string mk_version;
@@ -1659,7 +1663,8 @@ public:
                                 std::function<int(Slic3r::Step&, double&, double&, bool&)>     step_mesh_fn,
                                 double                                                  linear_defletion,
                                 double                                                  angle_defletion,
-                                bool                                                    is_split_compound);
+                                bool                                                    is_split_compound,
+                                std::function<void(const std::vector<std::string>&)>    open_shell_warn_fn = nullptr);
 
 
     //QDS: add part plate related logic
@@ -1720,7 +1725,7 @@ public:
     bool          add_default_instances();
     // Returns approximate axis aligned bounding box of this model
     BoundingBoxf3 bounding_box() const;
-    BoundingBoxf3 bounding_box_in_assembly_view() const;
+    BoundingBoxf3 bounding_box_in_assembly_view(ModelObject *model_object = nullptr) const;
     // Set the print_volume_state of PrintObject::instances,
     // return total number of printable objects.
     unsigned int  update_print_volume_state(const BuildVolume &build_volume);

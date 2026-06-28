@@ -10,6 +10,7 @@
 #include <wx/sizer.h>
 #include <wx/button.h>
 #include <wx/listctrl.h>
+#include <wx/itemattr.h>
 #include <wx/stattext.h>
 #include <wx/timer.h>
 #include <wx/wupdlock.h>
@@ -17,10 +18,14 @@
 #include "slic3r/GUI/GUI.hpp"
 #include "slic3r/GUI/GUI_App.hpp"
 #include "slic3r/GUI/I18N.hpp"
+#include "slic3r/GUI/QDSDeviceManager.hpp"
 #include "slic3r/GUI/format.hpp"
 #include "slic3r/Utils/Bonjour.hpp"
 #include "Widgets/Button.hpp"
 #include "slic3r/Utils/Udp.hpp"
+#ifdef _WIN32
+#include "dark_mode.hpp"
+#endif
 
 namespace Slic3r {
 
@@ -75,6 +80,29 @@ struct LifetimeGuard
 	LifetimeGuard(BonjourDialog *dialog) : dialog(dialog) {}
 };
 
+//cj_5
+static void apply_lookup_dialog_colours(wxListView* list, wxStaticText* label)
+{
+    const wxColour text_col = StateColor::darkModeColorFor(wxColour("#323A3C"));
+    const wxColour bg_col = StateColor::darkModeColorFor(wxColour("#FFFFFF"));
+    if (label != nullptr) {
+        label->SetForegroundColour(text_col);
+    }
+    if (list != nullptr) {
+        list->SetTextColour(text_col);
+        list->SetBackgroundColour(bg_col);
+        //cj_5
+        wxItemAttr header_attr;
+        header_attr.SetTextColour(text_col);
+        header_attr.SetBackgroundColour(bg_col);
+        header_attr.SetFont(GUI::wxGetApp().normal_font());
+        list->SetHeaderAttr(header_attr);
+#ifdef _WIN32
+        NppDarkMode::SetDarkListView(static_cast<HWND>(list->GetHWND()));
+#endif
+    }
+}
+
 // y3
 BonjourDialog::BonjourDialog(wxWindow *parent, Slic3r::PrinterTechnology tech)
 	: wxDialog(parent, wxID_ANY, _(L("Network lookup")), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER)
@@ -90,8 +118,8 @@ BonjourDialog::BonjourDialog(wxWindow *parent, Slic3r::PrinterTechnology tech)
 
 	const int em = GUI::wxGetApp().em_unit();
 	list->SetMinSize(wxSize(40 * em, 30 * em));
-	list->SetTextColour(StateColor::darkModeColorFor(wxColour("#323A3C")));
-	list->SetBackgroundColour(StateColor::darkModeColorFor(wxColour("#FFFFFF")));
+	//cj_5
+	apply_lookup_dialog_colours(list, label);
 	wxBoxSizer *vsizer = new wxBoxSizer(wxVERTICAL);
 
 	vsizer->Add(label, 0, wxEXPAND | wxTOP | wxLEFT | wxRIGHT, em);
@@ -100,7 +128,10 @@ BonjourDialog::BonjourDialog(wxWindow *parent, Slic3r::PrinterTechnology tech)
 	list->SetSingleStyle(wxLC_SORT_DESCENDING);
 	//B29
 	list->AppendColumn(_(L("Address")), wxLIST_FORMAT_LEFT);
-	list->AppendColumn(_(L("Hostname")), wxLIST_FORMAT_LEFT);
+	//cj_5
+	list->AppendColumn(_(L("Type")), wxLIST_FORMAT_LEFT);
+	//cj_5
+	list->AppendColumn(_(L("Name")), wxLIST_FORMAT_LEFT);
 
 	// list->AppendColumn(_(L("Service name")), wxLIST_FORMAT_LEFT, 20 * em);
 
@@ -129,6 +160,8 @@ BonjourDialog::BonjourDialog(wxWindow *parent, Slic3r::PrinterTechnology tech)
 
 	Bind(wxEVT_TIMER, &BonjourDialog::on_timer, this);
 	GUI::wxGetApp().UpdateDlgDarkUI(this);
+	//cj_5
+	apply_lookup_dialog_colours(list, label);
 }
 
 BonjourDialog::~BonjourDialog()
@@ -152,31 +185,60 @@ bool BonjourDialog::show_and_lookup()
 	// Here we put the pointer under a shared_ptr and protect it by a mutex,
 	// so that both threads can access it safely.
 	auto dguard = std::make_shared<LifetimeGuard>(this);
-    // y3
-	// B29
-	Udp::TxtKeys udp_txt_keys{"version", "model"};
+    //cj_5
+    if (GUI::wxGetApp().qdsdevmanager != nullptr) {
+        GUI::wxGetApp().qdsdevmanager->refreshLocalDevices(true, [dguard](GUI::LocalDeviceDiscovery::Snapshot devices) {
+            std::lock_guard<std::mutex> lock_guard(dguard->mutex);
+            auto                        dialog = dguard->dialog;
+            if (dialog == nullptr) return;
 
-    udp = Udp("octoprint")
-              .set_txt_keys(std::move(udp_txt_keys))
-                  .set_retries(3)
-                  .set_timeout(4)
-                  .on_udp_reply([dguard](UdpReply &&reply) {
-                      std::lock_guard<std::mutex> lock_guard(dguard->mutex);
-                      auto                        dialog = dguard->dialog;
-                      if (dialog != nullptr) {
-                          auto evt = new UdpReplyEvent(EVT_UDP_REPLY, dialog->GetId(), std::move(reply));
-                          wxQueueEvent(dialog, evt);
-                      }
-                  })
-                  .on_complete([dguard]() {
-                      std::lock_guard<std::mutex> lock_guard(dguard->mutex);
-                      auto                        dialog = dguard->dialog;
-                      if (dialog != nullptr) {
-                          auto evt = new wxCommandEvent(EVT_UDP_COMPLETE, dialog->GetId());
-                          wxQueueEvent(dialog, evt);
-                      }
-                  })
-                  .lookup();
+            auto add_device = [&](const GUI::LocalDiscoveredDevice& device) {
+                boost::system::error_code addr_error;
+                auto addr = boost::asio::ip::address::from_string(device.ip, addr_error);
+                if (addr_error) return;
+                UdpReply reply(addr, 80, device.ip, device.name, device.model, device.serial_number, device.raw_payload, device.legacy_device);
+                auto evt = new UdpReplyEvent(EVT_UDP_REPLY, dialog->GetId(), std::move(reply));
+                wxQueueEvent(dialog, evt);
+            };
+
+            for (const auto& device : devices)
+                add_device(device);
+
+            //cj_5 Collect SSDP results. refreshLocalDevices already triggered SSDP
+            // in parallel; snapshot what's available now.
+            auto ssdp_devices = GUI::wxGetApp().qdsdevmanager->snapshotSSDPDevices();
+            for (const auto& device : ssdp_devices)
+                add_device(device);
+
+            auto evt = new wxCommandEvent(EVT_UDP_COMPLETE, dialog->GetId());
+            wxQueueEvent(dialog, evt);
+        });
+    }
+    else {
+        //cj_5
+        Udp::TxtKeys udp_txt_keys{ "version", "model" };
+        udp = Udp("octoprint")
+            .set_txt_keys(std::move(udp_txt_keys))
+            .set_retries(3)
+            .set_timeout(4)
+            .on_udp_reply([dguard](UdpReply&& reply) {
+                std::lock_guard<std::mutex> lock_guard(dguard->mutex);
+                auto                        dialog = dguard->dialog;
+                if (dialog != nullptr) {
+                    auto evt = new UdpReplyEvent(EVT_UDP_REPLY, dialog->GetId(), std::move(reply));
+                    wxQueueEvent(dialog, evt);
+                }
+            })
+            .on_complete([dguard]() {
+                std::lock_guard<std::mutex> lock_guard(dguard->mutex);
+                auto                        dialog = dguard->dialog;
+                if (dialog != nullptr) {
+                    auto evt = new wxCommandEvent(EVT_UDP_COMPLETE, dialog->GetId());
+                    wxQueueEvent(dialog, evt);
+                }
+            })
+            .lookup();
+    }
 
 
 
@@ -250,15 +312,16 @@ void BonjourDialog::on_reply(BonjourReplyEvent &e)
 	// (And also because wxListView's sorting API is bananas.)
 	for (const auto &reply : *replies) {
 		auto item = list->InsertItem(0, reply.full_address);
-		list->SetItem(item, 1, reply.hostname);
-		list->SetItem(item, 2, reply.service_name);
-
+		//cj_5
+		wxString model_name;
 		if (tech == ptFFF) {
-			const auto it = reply.txt_data.find("version");
+			const auto it = reply.txt_data.find("model");
 			if (it != reply.txt_data.end()) {
-				list->SetItem(item, 3, GUI::from_u8(it->second));
+				model_name = GUI::from_u8(it->second);
 			}
 		}
+		list->SetItem(item, 1, model_name);
+		list->SetItem(item, 2, reply.hostname.empty() ? reply.service_name : reply.hostname);
 	}
 
 	const int em = GUI::wxGetApp().em_unit();
@@ -307,7 +370,10 @@ void BonjourDialog::on_udp_reply(UdpReplyEvent &e)
     // (And also because wxListView's sorting API is bananas.)
     for (const auto &reply : *udp_replies) {
         auto item = list->InsertItem(0, reply.service_name);
-        list->SetItem(item, 1, reply.hostname);
+        //cj_5
+        list->SetItem(item, 1, GUI::from_u8(reply.model_name));
+        //cj_5
+        list->SetItem(item, 2, GUI::from_u8(reply.hostname));
     }
 
     const int em = GUI::wxGetApp().em_unit();
@@ -348,11 +414,8 @@ void BonjourDialog::on_timer_process()
         label->SetLabel(search_str + ": " + _L("Finished") + ".");
         timer->Stop();
     }
-#ifdef WIN32
-	label->SetForegroundColour(wxColour("#323A3C"));
-#else
-	label->SetForegroundColour(StateColor::darkModeColorFor(wxColour("#323A3C")));
-#endif
+	//cj_5
+	apply_lookup_dialog_colours(list, label);
 }
 
 IPListDialog::IPListDialog(wxWindow* parent, const wxString& hostname, const std::vector<boost::asio::ip::address>& ips, size_t& selected_index)

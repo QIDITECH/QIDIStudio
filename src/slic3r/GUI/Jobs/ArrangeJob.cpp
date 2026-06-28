@@ -257,7 +257,8 @@ void ArrangeJob::prepare_all() {
     }
 
     const DynamicPrintConfig& current_config = wxGetApp().preset_bundle->prints.get_edited_preset().config;
-    bool   enable_wrapping = current_config.option<ConfigOptionBool>("enable_wrapping_detection")->value;
+    const auto* opt_enable_wrapping = current_config.option<ConfigOptionBool>("enable_wrapping_detection");
+    bool   enable_wrapping = opt_enable_wrapping ? opt_enable_wrapping->value : false;
 
     prepare_wipe_tower();
 
@@ -436,7 +437,8 @@ void ArrangeJob::prepare_partplate() {
     }
 
     const DynamicPrintConfig &current_config  = wxGetApp().preset_bundle->prints.get_edited_preset().config;
-    bool   enable_wrapping = current_config.option<ConfigOptionBool>("enable_wrapping_detection")->value;
+    const auto* opt_enable_wrapping = current_config.option<ConfigOptionBool>("enable_wrapping_detection");
+    bool   enable_wrapping = opt_enable_wrapping ? opt_enable_wrapping->value : false;
 
     // add the virtual object into unselect list if has
     plate_list.preprocess_exclude_areas(m_unselected, enable_wrapping, current_plate_index + 1);
@@ -530,7 +532,8 @@ void ArrangeJob::prepare_outside_plate() {
     prepare_wipe_tower(true);
 
     const DynamicPrintConfig &current_config  = wxGetApp().preset_bundle->prints.get_edited_preset().config;
-    bool enable_wrapping = current_config.option<ConfigOptionBool>("enable_wrapping_detection")->value;
+    const auto* opt_enable_wrapping = current_config.option<ConfigOptionBool>("enable_wrapping_detection");
+    bool enable_wrapping = opt_enable_wrapping ? opt_enable_wrapping->value : false;
 
     // add the virtual object into unselect list if has
     plate_list.preprocess_exclude_areas(m_unselected, enable_wrapping, current_plate_index + 1);
@@ -664,7 +667,8 @@ void ArrangeJob::process()
 
     Points      bedpts = get_shrink_bedpts(global_config,params);
 
-    bool   enable_wrapping = global_config.option<ConfigOptionBool>("enable_wrapping_detection")->value;
+    const auto* opt_enable_wrapping = global_config.option<ConfigOptionBool>("enable_wrapping_detection");
+    bool   enable_wrapping = opt_enable_wrapping ? opt_enable_wrapping->value : false;
     partplate_list.preprocess_exclude_areas(params.excluded_regions, enable_wrapping, 1, scale_(1));
 
     ARRANGE_LOG(debug) << "bedpts:" << bedpts[0].transpose() << ", " << bedpts[1].transpose() << ", " << bedpts[2].transpose() << ", " << bedpts[3].transpose();
@@ -830,6 +834,33 @@ void ArrangeJob::finalize()
         else {
             plate_list.rebuild_plates_after_arrangement(!only_on_partplate, true);
         }
+
+        // Re-place virtual-bed items against the post-rebuild plate count.
+        //   m_unprintable: must always sit on the current virtual bed (idx == plate_count).
+        //   m_selected:    only items overflowing the real plates (idx > plate_count) belong on the virtual bed.
+        // rotation = 0 because ModelInstance::apply_arrange_result prepends rotation incrementally;
+        // the first apply already wrote the arrange rotation, so the re-apply must add zero
+        // and only refresh translation (set absolutely). is_applied = 0 forces the second
+        // apply because ArrangePolygon::apply() is idempotent by design.
+        // NOTE: plate ownership is decided earlier by reload_all_objects() inside
+        // rebuild_plates_after_arrangement() and is recorded as (obj_id, instance_id) in
+        // PartPlate::obj_to_instance_set, NOT by bbox. The set_offset() done here only
+        // refreshes the visual position of items already attached to unprintable_plate;
+        // it cannot re-route a printable item back into a real plate.
+        const int plate_count = static_cast<int>(plate_list.get_plate_count());
+        auto reapply_virtual_bed = [&](ArrangePolygon& ap, bool always_to_virtual_bed) {
+            const bool need_reapply = always_to_virtual_bed
+                ? (ap.bed_idx != plate_count)
+                : (ap.bed_idx >  plate_count);
+            if (!need_reapply) return;
+            ap.bed_idx    = -1;
+            plate_list.postprocess_arrange_polygon(ap, true);
+            ap.rotation   = 0;
+            ap.is_applied = 0;
+            ap.apply();
+        };
+        for (ArrangePolygon& ap : m_selected)    reapply_virtual_bed(ap, /*always_to_virtual_bed=*/false);
+        for (ArrangePolygon& ap : m_unprintable) reapply_virtual_bed(ap, /*always_to_virtual_bed=*/true);
 
         // QDS: update slice context and gcode result.
         m_plater->update_slicing_context_to_current_partplate();

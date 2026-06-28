@@ -266,11 +266,24 @@ FileListContextMenuPopup::FileListContextMenuPopup(wxWindow* parent, ModelFileLi
     , m_storage_path(storage_path)
 {
     SetCursor(wxCURSOR_HAND);
-    const wxColour bg     = file_list_panel_background();
+    const wxColour border_color = wxGetApp().dark_mode() ? wxColour(90, 90, 98) : wxColour(205, 205, 212);
+    const wxColour bg     = wxGetApp().dark_mode() ? wxColour(50, 50, 55) : wxColour(243, 243, 247);
     const wxColour fg     = file_list_primary_text_colour();
     const wxColour fg_dis = file_list_context_menu_disabled_text_colour();
-    SetBackgroundColour(bg);
+    SetBackgroundColour(border_color);
+    SetBackgroundStyle(wxBG_STYLE_PAINT);
+    const int border_w   = FromDIP(1);
     Bind(wxEVT_CHAR_HOOK, &FileListContextMenuPopup::on_escape, this);
+    Bind(wxEVT_PAINT, [this, border_color](wxPaintEvent&) {
+        wxPaintDC dc(this);
+        const wxSize sz = GetSize();
+        dc.SetPen(*wxTRANSPARENT_PEN);
+        dc.SetBrush(wxBrush(border_color));
+        dc.DrawRectangle(0, 0, sz.x, sz.y);
+    });
+
+    auto* content = new wxPanel(this);
+    content->SetBackgroundColour(bg);
 
     auto* vs        = new wxBoxSizer(wxVERTICAL);
     const int row_h = FromDIP(30);
@@ -278,7 +291,7 @@ FileListContextMenuPopup::FileListContextMenuPopup(wxWindow* parent, ModelFileLi
     const int min_w = FromDIP(200);
 
     auto add_row = [&](const wxString& text, ModelFileListCommandType cmd, bool enabled) {
-        auto* row = new wxPanel(this);
+        auto* row = new wxPanel(content);
         row->SetBackgroundColour(bg);
         row->SetMinSize(wxSize(min_w, row_h));
         auto* st = new wxStaticText(row, wxID_ANY, text);
@@ -339,7 +352,11 @@ FileListContextMenuPopup::FileListContextMenuPopup(wxWindow* parent, ModelFileLi
     add_row(_L("Delete"), ModelFileListCommandType::Delete, !downloading);
     add_row(_L("Open Folder"), ModelFileListCommandType::RevealLocal, !downloading && reveal_enabled);
 
-    SetSizer(vs);
+    content->SetSizer(vs);
+
+    auto* outer_sizer = new wxBoxSizer(wxVERTICAL);
+    outer_sizer->Add(content, 1, wxALL | wxEXPAND, border_w);
+    SetSizer(outer_sizer);
     Fit();
 }
 
@@ -920,7 +937,7 @@ ModelFileListView::ModelFileListView(wxWindow* parent, wxWindow* event_target, w
     m_main_sizer->Add(m_header_panel, 0, wxEXPAND);
     SetSizer(m_main_sizer);
     //cj_4
-    SetScrollRate(10, 30);
+    SetScrollRate(10, 90);
     EnableScrolling(false, true);
 
     Bind(wxEVT_SYS_COLOUR_CHANGED, [this](wxSysColourChangedEvent& e) {

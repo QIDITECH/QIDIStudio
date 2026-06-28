@@ -22,7 +22,7 @@ wxString get_calibration_type_name(CalibMode cali_mode)
     switch (cali_mode) {
     case CalibMode::Calib_PA_Line:
         //w29
-        return _L("Pressure Advance");
+        return _L("Pressure advance");
     case CalibMode::Calib_Flow_Rate:
         return _L("Flow Rate");
     case CalibMode::Calib_Vol_speed_Tower:

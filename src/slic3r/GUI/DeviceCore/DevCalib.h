@@ -27,9 +27,9 @@ enum class ManualPaCaliMethod {
 class DevCalib
 {
 protected:
-    bool    m_support_new_auto_cali{false};
-    int     m_calib_version {-1};
-    int     m_last_calib_version {-1};
+    bool                    m_support_new_auto_cali{false};
+    int                     m_calib_version {-1};
+    std::optional<int>      m_last_calib_version;
 
 public:
     DevCalib(MachineObject *obj) : m_owner(obj){};
@@ -52,8 +52,8 @@ public:
     void ResetFlowRateResult();
 
     int  GetCalibVersion() const {return m_calib_version;}
-    void SyncCalibVersion() { m_last_calib_version = m_calib_version;}
-    void ResetCalibVersion() {m_last_calib_version = -1;}
+    void SyncCalibVersion() { if (IsVersionInited()) { m_last_calib_version = m_calib_version; } }
+    void ResetCalibVersion() {m_last_calib_version.reset();}
     bool IsVersionExpired() const;
     bool IsVersionInited() const { return m_calib_version > -1;}
 

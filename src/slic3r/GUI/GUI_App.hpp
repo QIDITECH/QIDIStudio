@@ -1,6 +1,7 @@
 #ifndef slic3r_GUI_App_hpp_
 #define slic3r_GUI_App_hpp_
 
+#include <functional>
 #include <memory>
 #include <string>
 #include "ImGuiWrapper.hpp"
@@ -15,6 +16,11 @@
 #include "slic3r/GUI/WebUserLoginDialog.hpp"
 #include "slic3r/GUI/BindDialog.hpp"
 #include "slic3r/GUI/HMS.hpp"
+#include "slic3r/GUI/fila_manager/wgtFilaManagerStore.h"
+#include "slic3r/GUI/fila_manager/wgtFilaManagerSync.h"
+#include "slic3r/GUI/fila_manager/wgtFilaManagerCloudClient.h"
+#include "slic3r/GUI/fila_manager/wgtFilaManagerCloudSync.h"
+#include "slic3r/GUI/fila_manager/wgtFilaManagerCloudDispatcher.h"
 #include "slic3r/GUI/Jobs/UpgradeNetworkJob.hpp"
 #include "slic3r/GUI/HttpServer.hpp"
 #include "slic3r/GUI/UnsavedChangesDialog.hpp"
@@ -40,6 +46,7 @@
 //cj_2
 #if QDT_RELEASE_TO_PUBLIC
 #include "../QIDI/QIDINetworkTypes.hpp"
+#include "../QIDI/UserPresetSyncManager.hpp"
 #endif
 
 #include "slic3r/GUI/WebUserLoginDialog.hpp"
@@ -333,6 +340,12 @@ private:
     Slic3r::UserManager* m_user_manager { nullptr };
     Slic3r::TaskManager* m_task_manager { nullptr };
     NetworkAgent* m_agent { nullptr };
+
+    wgtFilaManagerStore*            m_fila_manager_store        { nullptr };
+    wgtFilaManagerSync*             m_fila_manager_sync         { nullptr };
+    wgtFilaManagerCloudClient*      m_fila_manager_cloud_client { nullptr };
+    wgtFilaManagerCloudSync*        m_fila_manager_cloud_sync   { nullptr };
+    wgtFilaManagerCloudDispatcher*  m_fila_manager_cloud_disp   { nullptr };
     std::vector<std::string> need_delete_presets;   // store setting ids of preset
     std::vector<bool> m_create_preset_blocked { false, false, false, false, false, false }; // excceed limit
     bool m_networking_compatible { false };
@@ -358,6 +371,9 @@ private:
     wxString         m_info_dialog_content;
     wxString         m_install_preset_fail_text;
     HttpServer       m_http_server;
+#if !QDT_RELEASE_TO_PUBLIC
+    std::function<void(const nlohmann::json&)> m_fila_debug_sink;
+#endif
 
     boost::thread    m_check_cert_thread;
     TryLoadLastMachine m_load_last_machine;
@@ -388,6 +404,24 @@ public:
     Slic3r::DeviceManager* getDeviceManager() { return m_device_manager; }
     bool                   is_blocking_printing(MachineObject *obj_ = nullptr);
     Slic3r::TaskManager*   getTaskManager() { return m_task_manager; }
+    wgtFilaManagerStore*            fila_manager_store()        { return m_fila_manager_store; }
+    wgtFilaManagerSync*             fila_manager_sync()         { return m_fila_manager_sync; }
+    wgtFilaManagerCloudClient*      fila_manager_cloud_client() { return m_fila_manager_cloud_client; }
+    wgtFilaManagerCloudSync*        fila_manager_cloud_sync()   { return m_fila_manager_cloud_sync; }
+    wgtFilaManagerCloudDispatcher*  fila_manager_cloud_disp()   { return m_fila_manager_cloud_disp; }
+#if !QDT_RELEASE_TO_PUBLIC
+    void set_fila_debug_sink(std::function<void(const nlohmann::json&)> sink)
+    {
+        m_fila_debug_sink = std::move(sink);
+    }
+#else
+    void set_fila_debug_sink(std::function<void(const nlohmann::json&)> /*sink*/) {}
+#endif
+    void emit_fila_debug_log(const std::string& category,
+                             const std::string& level,
+                             const std::string& title,
+                             const std::string& summary,
+                             const nlohmann::json& detail = nlohmann::json::object());
     HMSQuery* get_hms_query() { return hms_query; }
     NetworkAgent* getAgent() { return m_agent; }
     FilamentColorCodeQuery* get_filament_color_code_query();
@@ -402,7 +436,7 @@ public:
     bool     show_3d_navigator() const { return app_config->get_bool("show_3d_navigator"); }
     void     toggle_show_3d_navigator() const { app_config->set_bool("show_3d_navigator", !show_3d_navigator()); }
 
-    // cj_1
+    // cj_1 判断登录后是link还是maker
     bool is_link_connect() { return app_config->get("login_method") == "Link"; }
 
     wxString get_inf_dialog_contect () {return m_info_dialog_content;};
@@ -506,7 +540,8 @@ public:
     //QDS
     void            request_login(bool show_user_info = false);
     bool            check_login();
-    void            get_login_info();
+    //cj_5 online_login: 1 = manual (show sync dialog), 0 = auto (skip dialog).
+    void            get_login_info(int online_login = 0);
     bool            is_user_login();
     // y21
     bool            is_QIDILogin() { return m_qidi_login; };
@@ -520,6 +555,7 @@ public:
     std::string     handle_web_request(std::string cmd);
     void            handle_script_message(std::string msg);
     void            request_model_download(wxString url);
+    std::string     sanitize_download_url(const std::string& url);
     void            download_project(std::string project_id);
     void            request_project_download(std::string project_id);
     void            request_open_project(std::string project_id);
@@ -530,6 +566,8 @@ public:
     void            on_update_machine_list(wxCommandEvent& evt);
     void            on_user_login(wxCommandEvent &evt);
     void            on_user_login_handle(wxCommandEvent& evt);
+    //cj_5 Get current user ID for preset folder.
+    std::string     get_current_user_id() const;
     void            enable_user_preset_folder(bool enable);
     void            save_privacy_policy_history(bool agree, std::string source = "");
 
@@ -543,7 +581,7 @@ public:
     void            check_new_version(bool show_tips = false, int by_user = 0);
     void            check_cert();
     bool            process_network_msg(std::string dev_id, std::string msg);
-    void            check_beta_version();
+    void            check_beta_version(bool show_tips_when_no_beta = false);
     void            request_new_version(int by_user);
     void            enter_force_upgrade();
     void            set_skip_version(bool skip = true);
@@ -817,6 +855,10 @@ private:
     //y
     std::string             m_user_name;
     bool                    m_qidi_login = false;
+    //cj_5 Track previous login user ID to avoid deleting same user's presets on re-login.
+    std::string             m_last_login_user_id;
+    //cj_5 Flag set when user actively clicks login (vs auto login on restart).
+    bool                    m_pending_manual_login = false;
 };
 
 DECLARE_APP(GUI_App)
@@ -830,6 +872,7 @@ bool has_filaments(const std::vector<string>& model_filaments);
 static std::vector<wxLanguage> s_supported_languages = {
     wxLANGUAGE_ENGLISH,
     wxLANGUAGE_CHINESE_SIMPLIFIED,
+    wxLANGUAGE_CHINESE_TRADITIONAL,
     wxLANGUAGE_GERMAN,
     wxLANGUAGE_FRENCH,
     wxLANGUAGE_SPANISH,

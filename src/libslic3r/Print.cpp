@@ -15,6 +15,7 @@
 #include "GCode/WipeTower.hpp"
 #include "Utils.hpp"
 #include "PrintConfig.hpp"
+#include "FilamentMixer.hpp"
 #include "Model.hpp"
 #include <float.h>
 
@@ -251,6 +252,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
             || opt_key == "skirt_height"
             || opt_key == "draft_shield"
             || opt_key == "skirt_distance"
+            || opt_key == "skirt_per_object"
             || opt_key == "ooze_prevention"
             || opt_key == "wipe_tower_x"
             || opt_key == "wipe_tower_y"
@@ -279,7 +281,8 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
             // Spiral Vase forces different kind of slicing than the normal model:
             // In Spiral Vase mode, holes are closed and only the largest area contour is kept at each layer.
             // Therefore toggling the Spiral Vase on / off requires complete reslicing.
-            || opt_key == "spiral_mode") {
+            || opt_key == "spiral_mode"
+            || opt_key == "enable_order_independent_overlap_carving") {
             osteps.emplace_back(posSlice);
         } else if (
                opt_key == "print_sequence"
@@ -386,7 +389,8 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
             || opt_key == "seam_slope_start_height"
             || opt_key == "seam_slope_gap"
             || opt_key == "seam_slope_min_length"
-            || opt_key == "embedding_wall_into_infill") {
+            || opt_key == "embedding_wall_into_infill"
+            || opt_key == "alternate_extra_wall") {
             osteps.emplace_back(posPerimeters);
             osteps.emplace_back(posInfill);
             osteps.emplace_back(posSupportMaterial);
@@ -637,6 +641,13 @@ StringObjectException Print::sequential_print_clearance_valid(const Print &print
 
     bool all_objects_are_short = print.is_all_objects_are_short();
     float obj_distance = all_objects_are_short ? scale_(0.5*MAX_OUTER_NOZZLE_RADIUS-0.1) : scale_(0.5*print.config().extruder_clearance_max_radius.value-0.1);
+    // QDS: Add skirt expansion for sequential print collision detection.
+    // Per side: max(0.5*clearance + 0.5*skirt_extra, skirt_extra), matching the arrange logic.
+    if (print.is_sequential_print()) {
+        float skirt_extra = get_real_skirt_dist(print.config());
+        obj_distance += scale_(0.5f * skirt_extra);
+        obj_distance = std::max(obj_distance, static_cast<float>(scale_(skirt_extra)));
+    }
     {
         // sequential_print_horizontal_clearance_valid
         Polygons convex_hulls_other;
@@ -1111,7 +1122,15 @@ int Print::get_compatible_filament_type(const std::set<int>& filament_types)
 
 bool Print::is_dynamic_group_reorder() const
 {
-    return config().enable_filament_dynamic_map && config().filament_map_mode == FilamentMapMode::fmmAutoForFlush && config().nozzle_diameter.size() > 1;
+    if (!config().enable_filament_dynamic_map || config().filament_map_mode != FilamentMapMode::fmmAutoForFlush || config().nozzle_diameter.size() <= 1)
+        return false;
+
+    const auto &is_mixed = config().filament_is_mixed.values;
+    for (unsigned int filament_id : extruders()) {
+        if (filament_id < is_mixed.size() && is_mixed[filament_id])
+            return false;
+    }
+    return true;
 }
 
 int Print::get_filament_config_indx(int filament_id, int layer_id)
@@ -1215,12 +1234,12 @@ StringObjectException Print::check_multi_filament_valid(const Print& print)
         bool enable_mix_printing = !print.need_check_multi_filaments_compatibility();
 
         for (const auto &objectID_t : print.print_object_ids()) {
-            std::set<int> obj_used_extruder_ids;
+            std::set<unsigned int> obj_used_extruder_ids;
             auto                     print_object = print.get_object(objectID_t);// current object
             if (print_object){
                 auto object_extruders_t = print_object->object_extruders(); // object used extruder
-                for (int extruder : object_extruders_t) {
-                    assert(extruder > 0);
+                for (unsigned int extruder : object_extruders_t) {
+                    // object_extruders() returns 0-based filament indexes; 0 is the first filament.
                     obj_used_extruder_ids.insert(extruder);
                 }
             }
@@ -1387,7 +1406,10 @@ StringObjectException Print::validate(StringObjectException *warning, Polygons* 
             layer_height_profiles.assign(m_objects.size(), std::vector<coordf_t>());
         std::vector<coordf_t>   &profile      = layer_height_profiles[print_object_idx];
         if (profile.empty())
-            PrintObject::update_layer_height_profile(*print_object.model_object(), print_object.slicing_parameters(), profile);
+        {
+            bool nozzle_range_reset = false;
+            PrintObject::update_layer_height_profile(*print_object.model_object(), print_object.slicing_parameters(), profile, nozzle_range_reset);
+        }
         return profile;
     };
 
@@ -2267,6 +2289,40 @@ void Print::process(std::unordered_map<std::string, long long>* slice_time, bool
         }
 
         auto objectExtruderMap = getObjectExtruderMap(*this);
+        // Resolve mixed filament virtual slots to physical components so brim
+        // extruder matching works correctly (mixed slot IDs are not present
+        // in printExtruders after ToolOrdering::resolve_mixed_filaments).
+        {
+            const LayerTools *first_lt = nullptr;
+            if (!is_sequential_print() && !tool_ordering.layer_tools().empty())
+                first_lt = &tool_ordering.layer_tools().front();
+
+            std::map<ObjectID, const PrintObject*> obj_by_id;
+            if (m_sequential_print_data) {
+                for (const PrintObject *obj : m_objects)
+                    obj_by_id[obj->id()] = obj;
+            }
+
+            for (auto &[obj_id, ext_1based] : objectExtruderMap) {
+                if (ext_1based == 0)
+                    continue;
+                const LayerTools *lt = first_lt;
+                if (!lt && m_sequential_print_data) {
+                    auto oid_it = obj_by_id.find(obj_id);
+                    if (oid_it != obj_by_id.end()) {
+                        auto it = m_sequential_print_data->object_tool_ordering_map.find(oid_it->second);
+                        if (it != m_sequential_print_data->object_tool_ordering_map.end()
+                            && !it->second.layer_tools().empty())
+                            lt = &it->second.layer_tools().front();
+                    }
+                }
+                if (lt) {
+                    auto it = lt->mixed_filament_resolution.find(ext_1based - 1);
+                    if (it != lt->mixed_filament_resolution.end())
+                        ext_1based = it->second + 1;
+                }
+            }
+        }
         std::vector<std::pair<ObjectID, unsigned int>> objPrintVec;
         for (const PrintInstance* instance : print_object_instances_ordering) {
             const ObjectID& print_object_ID = instance->print_object->id();
@@ -2482,7 +2538,7 @@ void Print::_make_skirt()
 
     // Initial offset of the brim inner edge from the object (possible with a support & raft).
     // The skirt will touch the brim if the brim is extruded.
-    auto   distance = float(scale_(m_config.skirt_distance.value) - spacing/2.);
+    auto   distance = float(scale_(m_config.skirt_distance.value - spacing / 2.f));
     // Draw outlines from outside to inside.
     // Loop while we have less skirts than required or any extruder hasn't reached the min length if any.
     std::vector<coordf_t> extruded_length(extruders.size(), 0.);
@@ -2537,10 +2593,10 @@ void Print::_make_skirt()
         append(m_skirt_convex_hull, std::move(poly.points));
 
     // QDS: per-object skirt. Sequential (ByObject + multi-object) uses config skirt_loops/skirt_distance; otherwise one loop at 1mm.
-    const bool by_object = is_sequential_print();
+    const bool by_object = is_sequential_print() && m_config.skirt_per_object.value;
     const size_t n_object_skirts = by_object ? std::max(size_t(1), size_t(m_config.skirt_loops.value)) : 1;
     const float object_skirt_initial_offset = by_object
-        ? (float(scale_(m_config.skirt_distance.value)) - spacing / 2.f)
+        ? float(scale_(m_config.skirt_distance.value - spacing / 2.f))
         : float(scale_(1.0));
     for (auto obj_cvx_hull : object_convex_hulls) {
         PrintObject* object = obj_cvx_hull.first;
@@ -2803,7 +2859,8 @@ void Print::update_filament_maps_to_config(std::vector<int> f_maps, std::vector<
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(", Line %1%:  extruder_count %2%, extruder_volume_type_count %3%")%__LINE__ %extruder_count %extruder_volume_type_count;
         std::set<std::string> filament_keys = filament_options_with_variant;
         filament_keys.insert("filament_self_index");
-        m_full_print_config.update_values_to_printer_extruders_for_multiple_filaments(m_full_print_config, extruder_count, extruder_volume_type_count, filament_keys,  "filament_self_index", "filament_extruder_variant");
+        if ((extruder_count > 1) || support_multi)
+            m_full_print_config.update_values_to_printer_extruders_for_multiple_filaments(m_full_print_config, extruder_count, extruder_volume_type_count, filament_keys,  "filament_self_index", "filament_extruder_variant");
 
         const std::vector<std::string> &extruder_retract_keys = print_config_def.extruder_retract_keys();
         const std::string               filament_prefix       = "filament_";
@@ -2819,9 +2876,11 @@ void Print::update_filament_maps_to_config(std::vector<int> f_maps, std::vector<
                 compute_filament_override_value(opt_key, opt_old_machine, opt_new_machine, opt_new_filament, m_full_print_config, print_diff, filament_overrides, m_config.filament_map_2.values);
         }
 
-        t_config_option_keys keys(filament_options_with_variant.begin(), filament_options_with_variant.end());
-        keys.push_back("filament_self_index");
-        m_config.apply_only(m_full_print_config, keys, true);
+        if ((extruder_count > 1) || support_multi) {
+            t_config_option_keys keys(filament_options_with_variant.begin(), filament_options_with_variant.end());
+            keys.push_back("filament_self_index");
+            m_config.apply_only(m_full_print_config, keys, true);
+        }
         if (!print_diff.empty()) {
             m_placeholder_parser.apply_config(filament_overrides);
             m_config.apply(filament_overrides);
@@ -3323,7 +3382,9 @@ void Print::_make_wipe_tower()
 
                 if(!nozzle_recorder.is_nozzle_empty(nozzle_id) && filament_id != prev_nozzle_filament){
                     volume_to_purge = multi_extruder_flush[extruder_id][prev_nozzle_filament][filament_id];
-                    volume_to_purge *= m_config.flush_multiplier.get_at(extruder_id);
+                    float multiplier = (m_config.prime_volume_mode == PrimeVolumeMode::pvmFast) ? m_config.flush_multiplier_fast.get_at(extruder_id) :
+                                                                                                  m_config.flush_multiplier.get_at(extruder_id);
+                    volume_to_purge *= multiplier;
                     volume_to_purge = layer_tools.wiping_extrusions().mark_wiping_extrusions(*this, old_filament_id, filament_id, volume_to_purge);
                 }
 

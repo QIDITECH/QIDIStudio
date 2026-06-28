@@ -2274,7 +2274,7 @@ void InputIpAddressDialog::on_text(wxCommandEvent &evt)
     }
 
     if (current_input_index == 1){
-        if (str_sn.length() == 15) {
+        if (str_sn.length() == 15 || str_sn.length() == 18) {
             m_button_ok->Enable(true);
             StateColor btn_bg_blue(std::pair<wxColour, int>(wxColour(0, 66, 255), StateColor::Pressed), std::pair<wxColour, int>(wxColour(116, 168, 255), StateColor::Hovered),
                                     std::pair<wxColour, int>(wxColour(68, 121, 251), StateColor::Normal));

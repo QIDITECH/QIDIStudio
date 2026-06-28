@@ -24,6 +24,7 @@
 using namespace nlohmann;
 
 namespace Slic3r {
+class Udp;
 namespace GUI{
 
 struct PlateInfo {
@@ -57,6 +58,78 @@ struct TimelapseFileInfo {
     std::string thumb_url;
 };
 
+//cj_5
+struct LocalDiscoveredDevice {
+    std::string serial_number;
+    std::string ip;
+    std::string name;
+    std::string model;
+    std::string raw_payload;
+    bool legacy_device{ false };
+    std::chrono::steady_clock::time_point last_seen;
+};
+
+//cj_5
+class LocalDeviceDiscovery {
+public:
+    using Snapshot = std::vector<LocalDiscoveredDevice>;
+    using RefreshCallback = std::function<void(Snapshot)>;
+
+    void refresh(bool force, RefreshCallback callback);
+    Snapshot snapshot() const;
+    bool findBySerial(const std::string& serial, LocalDiscoveredDevice& out) const;
+    bool isCacheFresh(std::chrono::seconds ttl) const;
+
+private:
+    void mergeDevice(LocalDiscoveredDevice device);
+    void finishRefresh();
+
+private:
+    mutable std::mutex m_mutex;
+    std::unordered_map<std::string, LocalDiscoveredDevice> m_by_serial;
+    std::unordered_map<std::string, LocalDiscoveredDevice> m_by_ip;
+    std::shared_ptr<Udp> m_udp;
+    std::vector<RefreshCallback> m_pending_callbacks;
+    bool m_refreshing{ false };
+    std::chrono::steady_clock::time_point m_last_refresh{};
+    std::chrono::seconds m_cache_ttl{ 15 };
+};
+
+//cj_5 SSDP-based device discovery. Sends M-SEARCH to 239.255.255.250:5863
+// and parses QIDI-custom NOTIFY responses. Same snapshot type as LocalDeviceDiscovery.
+//cj_5
+class SSDPDiscovery {
+public:
+    using Snapshot = std::vector<LocalDiscoveredDevice>;
+    using RefreshCallback = std::function<void(Snapshot)>;
+
+    SSDPDiscovery();
+    ~SSDPDiscovery();
+
+    void refresh(bool force, RefreshCallback callback);
+    Snapshot snapshot() const;
+    bool findBySerial(const std::string& serial, LocalDiscoveredDevice& out) const;
+    //cj_5
+    bool findByIP(const std::string& ip, LocalDiscoveredDevice& out) const;
+    bool isCacheFresh(std::chrono::seconds ttl) const;
+    void stop();
+
+private:
+    void mergeDevice(LocalDiscoveredDevice device);
+    void finishRefresh();
+
+private:
+    struct priv;
+    mutable std::mutex m_mutex;
+    std::unordered_map<std::string, LocalDiscoveredDevice> m_by_serial;
+    std::unordered_map<std::string, LocalDiscoveredDevice> m_by_ip;
+    std::vector<RefreshCallback> m_pending_callbacks;
+    bool m_refreshing{ false };
+    std::chrono::steady_clock::time_point m_last_refresh{};
+    std::chrono::seconds m_cache_ttl{ 30 };
+    std::unique_ptr<priv> p;
+};
+
 class QDSDevice{
 public:
     struct Filament {
@@ -76,7 +149,7 @@ public:
     ~QDSDevice() {};
 
 	// cj_1 
-	void updateByJsonData(json& status);
+	void updateByJsonData(const json& status);
     bool is_online();
     void updateFilamentConfig();    //When "m_frp_url" is updated, update the config file.
 
@@ -117,7 +190,7 @@ public:
 	std::string                  m_target_chamber{ "0" };
 	std::string                  m_target_extruder{ "0" };
 	std::string                  m_target_bed{ "0" };
-    std::atomic<bool>            m_case_light{ false };
+    bool                         m_case_light{ false };
     bool                         m_extruder_filament{ false };   // 
 
     std::string                  m_home_axes;
@@ -280,6 +353,26 @@ public:
     void getFileInfo(const std::string& device_id);
     void resetBoxUpdateStatus(const std::string& device_id);
 
+    //cj_5
+    void refreshLocalDevices(bool force, LocalDeviceDiscovery::RefreshCallback callback);
+    //cj_5
+    bool findLocalDeviceBySerial(const std::string& serial, LocalDiscoveredDevice& out) const;
+    //cj_5
+    LocalDeviceDiscovery::Snapshot snapshotLocalDevices() const;
+    //cj_5 SSDP discovery API.
+    void refreshSSDPDevices(bool force, SSDPDiscovery::RefreshCallback callback);
+    bool findSSDPDeviceBySerial(const std::string& serial, LocalDiscoveredDevice& out) const;
+    //cj_5
+    bool findSSDPDeviceByIP(const std::string& ip, LocalDiscoveredDevice& out) const;
+    SSDPDiscovery::Snapshot snapshotSSDPDevices() const;
+#if QDT_RELEASE_TO_PUBLIC
+    //cj_5 Match a NetDevice to a locally-discovered device.
+    // Primary: NetDevice.mac_address == LocalDiscoveredDevice.serial_number
+    // Fallback: NetDevice.local_ip == LocalDiscoveredDevice.ip
+    bool findLocalForNetDevice(const NetDevice& net_dev, LocalDiscoveredDevice& out) const;
+#endif
+
+    //cj_3 供后台线程枚举设备做 HTTP 状态轮询（拷贝 shared_ptr，持锁时间短）
     std::vector<std::pair<std::string, std::shared_ptr<QDSDevice>>> snapshotDevices();
 
 private:
@@ -306,6 +399,11 @@ private:
 #if QDT_RELEASE_TO_PUBLIC
     std::vector<NetDevice> net_devices;
 #endif
+
+    //cj_5
+    LocalDeviceDiscovery m_local_discovery;
+    //cj_5
+    SSDPDiscovery         m_ssdp_discovery;
 
 
     // WebSocket

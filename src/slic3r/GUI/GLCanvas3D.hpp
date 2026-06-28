@@ -405,6 +405,7 @@ class GLCanvas3D
         ToolHeightOutside,
         TPUPrintableError,
         FilamentPrintableError,
+        PrintedWeightOverLimitWarn,
         LeftExtruderPrintableError, // before slice
         RightExtruderPrintableError, // before slice
         MultiExtruderPrintableError,      // after slice
@@ -420,7 +421,6 @@ class GLCanvas3D
         FilamentNozzleFlowIncompatible,
         TpuNozzleMultipleFilaments,
         HighTempNeedWrappingDetection,
-        HighShrinkageFilament,
         SingleExtruderMixedFilament
     };
 
@@ -947,6 +947,7 @@ public:
     void zoom_to_gcode();
     //QDS -1 for current plate
     void zoom_to_plate(int plate_idx = -1);
+    void zoom_to_fit();
     void select_view(const std::string& direction);
     //QDS: add part plate related logic
     void select_plate();

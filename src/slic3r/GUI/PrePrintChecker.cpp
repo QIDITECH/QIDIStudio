@@ -9,6 +9,7 @@
 #include "DeviceManager.hpp"
 #include "slic3r/GUI/DeviceCore/DevNozzleSystem.h"
 #include "slic3r/GUI/DeviceCore/DevNozzleRack.h"
+#include "slic3r/GUI/DeviceCore/DevPrintOptions.h"
 #include "slic3r/GUI/DeviceCore/DevUpgrade.h"
 
 #include <set>
@@ -74,6 +75,7 @@ std::string PrePrintChecker::get_print_status_info(PrintDialogStatus status)
     case PrintStatusFilamentWarningHighChamberTempSoft: return "PrintStatusFilamentWarningHighChamberTempSoft";
     case PrintStatusFilamentWarningUnknownHighChamberTempSoft: return "PrintStatusFilamentWarningUnknownHighChamberTempSoft";
     case PrintStatusFilamentWarningRemainNotEnough: return "PrintStatusFilamentWarningRemainNotEnough";    
+    case PrintStatusSmartNozzleBlobNeedAuto: return "PrintStatusSmartNozzleBlobNeedAuto";
     case PrintStatusReadingFinished: return "PrintStatusReadingFinished";
     case PrintStatusSendingCanceled: return "PrintStatusSendingCanceled";
     case PrintStatusAmsMappingSuccess: return "PrintStatusAmsMappingSuccess";
@@ -117,8 +119,8 @@ wxString PrePrintChecker::get_pre_state_msg(PrintDialogStatus status)
                   "If 'Dynamic Flow Calibration' is set to auto/on, the system will use the previous calibration value and skip the flow calibration process.");
     case PrintStatusWarningKvalueNotUsed: return _L("Set dynamic flow calibration to 'OFF' to enable custom dynamic flow value.");
     case PrintStatusNotSupportedPrintAll: return _L("This printer does not support printing all plates");
-    case PrintStatusColorQuantityExceed: return _L("The current firmware supports a maximum of 16 materials. You can either reduce the number of materials to 16 or fewer on the Preparation Page, or try updating the firmware. If you are still restricted after the update, please wait for subsequent firmware support.");
     case PrintStatusHasUnreliableNozzleWarning: return _L("Please check if the required nozzle diameter and flow rate match the current display.");
+    case PrintStatusColorQuantityExceed: return _L("The current firmware supports a maximum of %s materials. You can either reduce the number of materials to %s or fewer on the Preparation Page, or try updating the firmware. If you are still restricted after the update, please wait for subsequent firmware support.");
     }
     return wxEmptyString;
 }
@@ -250,7 +252,19 @@ bool PrinterMsgPanel::UpdateInfos(const std::vector<prePrintInfo>& infos)
             label->SetFont(::Label::Body_13);
             label->SetForegroundColour(_GetLabelColour(info));
 
-            if (!info.link_callback && info.wiki_url.empty())
+            if (info.testStyle(prePrintInfoStyle::BtnSwitchNozzleBlobAuto))
+            {
+                label->SetLabel(info.msg + " " + _L("Switch"));
+                label->Bind(wxEVT_ENTER_WINDOW, [this](auto& e) { SetCursor(wxCURSOR_HAND); });
+                label->Bind(wxEVT_LEAVE_WINDOW, [this](auto& e) { SetCursor(wxCURSOR_ARROW); });
+                label->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& event) {
+                    auto obj_ = m_select_dialog ? m_select_dialog->get_current_machine() : nullptr;
+                    if (obj_ && obj_->GetPrintOptions()) {
+                        obj_->GetPrintOptions()->command_smart_nozzle_blob_detect_mode(2);
+                    }
+                });
+            }
+            else if (!info.link_callback && info.wiki_url.empty())
             {
                 // plain text, no link
                 label->SetLabel(info.msg);

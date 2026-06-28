@@ -37,6 +37,7 @@ struct VolumeColorInfo;
 #define QDT_DESIGNER_PROFILE_ID_TAG      "DesignProfileId"
 #define QDT_DESIGNER_PROFILE_TITLE_TAG   "ProfileTitle"
 #define QDT_DESIGNER_MODEL_ID_TAG        "DesignModelId"
+#define QDT_SVC_CONTEXT_TAG              "SvcContext"
 
 
 //QDS: define assistant struct to store temporary variable during exporting 3mf

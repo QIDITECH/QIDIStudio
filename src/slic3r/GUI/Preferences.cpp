@@ -144,6 +144,9 @@ wxBoxSizer *PreferencesDialog::create_item_language_combobox(
         if (vlist[i] == wxLocale::GetLanguageInfo(wxLANGUAGE_CHINESE_SIMPLIFIED)) {
             language_name = wxString::FromUTF8("\xe4\xb8\xad\xe6\x96\x87\x28\xe7\xae\x80\xe4\xbd\x93\x29");
         }
+        else if (vlist[i] == wxLocale::GetLanguageInfo(wxLANGUAGE_CHINESE_TRADITIONAL)) {
+            language_name = wxString::FromUTF8("\xe4\xb8\xad\xe6\x96\x87\x28\xe7\xb9\x81\xe9\xab\x94\x29");
+        }
         else if (vlist[i] == wxLocale::GetLanguageInfo(wxLANGUAGE_SPANISH)) {
             language_name = wxString::FromUTF8("\x45\x73\x70\x61\xc3\xb1\x6f\x6c");
         }
@@ -1284,17 +1287,18 @@ wxWindow* PreferencesDialog::create_general_page()
 
     auto title_general_settings = create_item_title(_L("General Settings"), page, _L("General Settings"));
 
-    auto translations = wxTranslations::Get()->GetAvailableTranslations(SLIC3R_APP_KEY);
+    auto available_translations = wxTranslations::Get()->GetAvailableTranslations(SLIC3R_APP_KEY);
     std::vector<const wxLanguageInfo *> language_infos;
     language_infos.emplace_back(wxLocale::GetLanguageInfo(wxLANGUAGE_ENGLISH));
-    for (size_t i = 0; i < translations.GetCount(); ++i) {
-        const wxLanguageInfo *langinfo = wxLocale::FindLanguageInfo(translations[i]);
-
-        if (langinfo == nullptr) continue;
+    for (size_t i = 0; i < available_translations.GetCount(); ++i) {
+        const wxLanguageInfo *available_lan = wxLocale::FindLanguageInfo(available_translations[i]);
+        if (available_lan == nullptr) continue;
 
         for (auto si = 0; si < s_supported_languages.size(); si++) {
-            if (langinfo == wxLocale::GetLanguageInfo(s_supported_languages[si])) {
-                language_infos.emplace_back(langinfo);
+            auto* supported_lan = wxLocale::GetLanguageInfo(s_supported_languages[si]);
+            if (available_lan->CanonicalName == supported_lan->CanonicalName) {
+                language_infos.emplace_back(supported_lan);
+                break;
             }
         }
         //if (langinfo != nullptr) language_infos.emplace_back(langinfo);
@@ -1330,13 +1334,21 @@ wxWindow* PreferencesDialog::create_general_page()
     auto item_step_mesh_setting = create_item_checkbox(_L("Show the step mesh parameter setting dialog."), page, _L("If enabled,a parameter settings dialog will appear during STEP file import."), 50, "enable_step_mesh_setting");
     auto item_beta_version_update = create_item_checkbox(_L("Support beta version update."), page, _L("With this option enabled, you can receive beta version updates."), 50, "enable_beta_version_update");
     auto item_mix_print_high_low_temperature = create_item_checkbox(_L("Remove the restriction on mixed printing of high and low temperature filaments."), page, _L("With this option enabled, you can print materials with a large temperature difference together."), 50, "enable_high_low_temp_mixed_printing");
+    auto item_camera_fullscreen_active_monitor_only = create_item_checkbox(_L("Open full screen camera view on active monitor only."), page, _L("When enabled, the camera full screen view opens only on the monitor that contains QIDI Studio."), 50, "camera_fullscreen_active_monitor_only");
     auto item_restore_hide_pop_ups = create_item_button(_L("Clear my choice for synchronizing printer preset after loading the file."), _L("Clear"), page, {}, []() {
         wxGetApp().app_config->erase("app", "sync_after_load_file_show_flag");
     });
     auto  item_restore_hide_3mf_info = create_item_button(_L("Clear my choice for Load 3mf dialog settings."), _L("Clear"), page, {}, []() {
         wxGetApp().app_config->erase("app", "skip_non_qidi_3mf_warning");
     });
-
+    auto item_restore_post_process_script_choice = create_item_button(_L("Clear my choice for executing post-processing scripts."), _L("Clear"), page, _L("Show the security warning dialog again before slicing when post-processing scripts are configured."), []() {
+        wxGetApp().app_config->erase("app", "post_process_script_choice");
+        if (wxGetApp().plater())
+            wxGetApp().plater()->reset_post_process_script_choice();
+    });
+    auto  item_restore_support_recommend_dlg = create_item_button(_L("Clear my choice for disabling support parameter recommendation."), _L("Clear"), page, {}, []() {
+        wxGetApp().app_config->set("show_support_recommend_dialog", "true");
+    });
     auto _3d_settings    = create_item_title(_L("3D Settings"), page, _L("3D Settings"));
     auto item_mouse_zoom_settings  = create_item_checkbox(_L("Zoom to mouse position"), page,
                                                          _L("Zoom in towards the mouse pointer's position in the 3D view, rather than the 2D window center."), 50,
@@ -1403,8 +1415,9 @@ wxWindow* PreferencesDialog::create_general_page()
                                                                   std::to_string(range_max) + "]",
                                                                          "3d_middle_tooltip_offset_x", "3d_middle_tooltip_offset_y", range_min, range_max, 1, nullptr, nullptr);
     auto title_presets = create_item_title(_L("Presets"), page, _L("Presets"));
-    // y9
-    // auto item_user_sync        = create_item_checkbox(_L("Auto sync user presets(Printer/Filament/Process)"), page, _L("If enabled, auto sync user presets with cloud after QIDI Studio startup or presets modified."), 50, "sync_user_preset");
+#if QDT_RELEASE_TO_PUBLIC
+    auto item_user_sync          = create_item_checkbox(_L("Auto sync user presets(Printer/Filament/Process)"), page, _L("If enabled, auto sync user presets with cloud after QIDI Studio startup or presets modified."), 50, "sync_user_preset");
+#endif
     auto item_system_sync        = create_item_checkbox(_L("Auto check for system presets updates"), page, _L("If enabled, auto check whether there are system presets updates after QIDI Studio startup."), 50, "sync_system_preset");
 
 
@@ -1501,8 +1514,11 @@ wxWindow* PreferencesDialog::create_general_page()
     sizer_page->Add(item_beta_version_update, 0, wxTOP, FromDIP(3));
     sizer_page->Add(item_auto_transfer_when_switch_preset, 0, wxTOP, FromDIP(3));
     sizer_page->Add(item_mix_print_high_low_temperature, 0, wxTOP, FromDIP(3));
+    sizer_page->Add(item_camera_fullscreen_active_monitor_only, 0, wxTOP, FromDIP(3));
     sizer_page->Add(item_restore_hide_pop_ups, 0, wxTOP, FromDIP(3));
     sizer_page->Add(item_restore_hide_3mf_info, 0, wxTOP, FromDIP(3));
+    sizer_page->Add(item_restore_support_recommend_dlg, 0, wxTOP, FromDIP(3));
+    sizer_page->Add(item_restore_post_process_script_choice, 0, wxTOP, FromDIP(3));
     sizer_page->Add(_3d_settings, 0, wxTOP | wxEXPAND, FromDIP(20));
     sizer_page->Add(item_mouse_zoom_settings, 0, wxTOP, FromDIP(3));
     sizer_page->Add(item_show_shells_in_preview_settings, 0, wxTOP, FromDIP(3));
@@ -1520,8 +1536,9 @@ wxWindow* PreferencesDialog::create_general_page()
     sizer_page->Add(item_grabber_size_settings, 0, wxTOP, FromDIP(3));
     sizer_page->Add(item_tooltip_offset_size_settings, 0, wxTOP, FromDIP(3));
     sizer_page->Add(title_presets, 0, wxTOP | wxEXPAND, FromDIP(20));
-    // y9
-    // sizer_page->Add(item_user_sync, 0, wxTOP, FromDIP(3));
+#if QDT_RELEASE_TO_PUBLIC
+    sizer_page->Add(item_user_sync, 0, wxTOP, FromDIP(3));
+#endif
     sizer_page->Add(item_system_sync, 0, wxTOP, FromDIP(3));
 #ifdef _WIN32
     sizer_page->Add(title_associate_file, 0, wxTOP| wxEXPAND, FromDIP(20));

@@ -231,7 +231,7 @@ void ZUserLogin::OnFullScreenChanged(wxWebViewEvent& evt)
 void ZUserLogin::OnScriptMessage(wxWebViewEvent& evt)
 {
     wxString str_input = evt.GetString();
-    BOOST_LOG_TRIVIAL(error) << evt.GetString();
+    BOOST_LOG_TRIVIAL(info) << "login web msg: " << evt.GetString() << "  " << __FUNCTION__;
     std::string token;
     try {
         json j = json::parse(into_u8(str_input));
@@ -241,7 +241,7 @@ void ZUserLogin::OnScriptMessage(wxWebViewEvent& evt)
         wxMessageBox(e.what(), "parse json failed", wxICON_WARNING);
         Close();
     }
-    BOOST_LOG_TRIVIAL(error) << token;
+    BOOST_LOG_TRIVIAL(info) << "get user_token: " << token << "  " << __FUNCTION__;;
     wxGetApp().app_config->set("user_token", token);
     Close();
     wxGetApp().SetOnlineLogin((token != ""));

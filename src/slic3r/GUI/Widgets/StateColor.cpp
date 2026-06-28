@@ -43,6 +43,7 @@ static std::map<wxColour, wxColour> gDarkColors{
     {"#ABABAB", "#ABABAB"},
     {"#D9D9D9", "#2D2D32"},
     {"#EBF9F0", "#293F34"},
+    {"#DBFDE7", "#1F3529"},
     {"#e0ffff", "#0078d7"},
     {"#afeeff", "#4479fb"},
     //{"#F0F0F0", "#4C4C54"},
