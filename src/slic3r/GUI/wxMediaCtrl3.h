@@ -32,9 +32,12 @@ void wxMediaCtrl_OnSize(wxWindow * ctrl, wxSize const & videoSize, int width, in
 #define QIDI_DYNAMIC
 #include <condition_variable>
 #include <thread>
-#ifndef _WIN32
+//y82
+// #ifndef _WIN32
+// #include <wx/image.h>
+// #endif
 #include <wx/image.h>
-#endif
+//y82
 #include "Printer/QIDITunnel.h"
 
 #ifdef _WIN32

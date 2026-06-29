@@ -15,7 +15,7 @@
 #include "wxExtensions.hpp"
 
 
-#ifdef __WIN32__
+#if defined(__linux__) || defined(_WIN32)
 //wxDEFINE_EVENT(EVT_MEDIA_CTRL_STAT, wxCommandEvent);
 
 BEGIN_EVENT_TABLE(wxMediaCtrl3, wxWindow)
@@ -646,7 +646,7 @@ void VideoPanel::OnPaint(wxPaintEvent& event)
 
 void VideoPanel::OnEraseBackground(wxEraseEvent& event)
 {
-    // ¿ÕÊµÏÖ£¬±ÜÃâ±³¾°ÉÁË¸
+    // ï¿½ï¿½Êµï¿½Ö£ï¿½ï¿½ï¿½ï¿½â±³ï¿½ï¿½ï¿½ï¿½Ë¸
 }
 
 void VideoPanel::OnSize(wxSizeEvent& event)
@@ -684,7 +684,7 @@ void VideoPanel::paintEvent(wxPaintEvent& evt)
     
     double scaleX = (double)size.x / frameSize.x;
     double scaleY = (double)size.y / frameSize.y;
-    double scale = std::min(scaleX, scaleY);  // ±£³Ö¿í¸ß±ÈµÄ×îÐ¡Ëõ·Å
+    double scale = std::min(scaleX, scaleY);
     
     wxSize scaledSize(frameSize.x * scale, frameSize.y * scale);
     wxPoint pos((size.x - scaledSize.x) / 2, (size.y - scaledSize.y) / 2);
