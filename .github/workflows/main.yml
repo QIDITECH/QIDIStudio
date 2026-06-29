@@ -6,7 +6,7 @@ jobs:
   main:    
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-2022, macos-15-intel]
+        os: [ubuntu-latest, windows-2022, macos-15]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -42,14 +42,11 @@ jobs:
     - name: Setup libraries on Mac
       if: startsWith(matrix.os, 'macos-')    
       run: |
+          brew update-reset
           brew update
-          export HOMEBREW_NO_INSTALL_FROM_API=1
-          sed -i '' -e 's/disable!/#disable!/' /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/i/icu4c@74.rb
-          curl https://raw.githubusercontent.com/Homebrew/homebrew-core/aba405a30fa1a608a12adeb56bea8e1c5975a42d/Formula/b/boost%401.76.rb > /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/b/boost@1.76.rb       
-          sed -i '' -e 's#https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.tar.bz2#https://archives.boost.io/release/1.76.0/source/boost_1_76_0.tar.bz2#' /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/b/boost@1.76.rb
           brew install \
-          icu4c@74 \
-          boost@1.76 \
+          icu4c \
+          boost \
           automake \
           git \
           nasm \
@@ -104,21 +101,24 @@ jobs:
           ./BuildLinux.sh -dsi
 
     - name: Build QIDI Studio on MacOS 
-      if: startsWith(matrix.os, 'macos-')
-      run: |
-          export CMAKE_TLS_VERIFY=0
-          export PATH="/usr/local/opt/curl/bin:$PATH"
-          export PATH="/usr/local/opt/icu4c@78/bin:$PATH"
-          export PATH="/usr/local/opt/icu4c@78/sbin:$PATH"       
-          export LDFLAGS="-L/usr/local/opt/curl/lib -L/usr/local/opt/boost@1.76/lib -L/usr/local/opt/icu4c@78/lib -L/usr/local/opt/zlib/lib -L/usr/local/opt/zstd/lib"
-          export CPPFLAGS="-I/usr/local/opt/curl/include -I/usr/local/opt/boost@1.76/include -I/usr/local/opt/icu4c@78/include -I/usr/local/opt/zlib/include -I/usr/local/opt/zstd/include"
-          export PKG_CONFIG_PATH="/usr/local/opt/curl/lib/pkgconfig:/usr/local/opt/boost@1.76/lib/pkgconfig:/usr/local/opt/icu4c@78/lib/pkgconfig:/usr/local/opt/zlib/lib/pkgconfig://usr/local/opt/zstd/lib/pkgconfig"
-          export CMAKE_PREFIX_PATH="/usr/local/opt/boost@1.76;/usr/local/opt/curl;/usr/local/opt/icu4c@78"
-          sed -i '' -e 's/-DCMAKE_PREFIX_PATH="$DEPS/-DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH;$DEPS/' BuildMac.sh
-          sed -i '' -e 's/-DQDT_INTERNAL_TESTING=0/-DQDT_INTERNAL_TESTING=1/' BuildMac.sh 
-          sed -i '' -e 's/-DQDT_RELEASE_TO_PUBLIC=1/-DQDT_RELEASE_TO_PUBLIC=0/' BuildMac.sh
-          chmod +x BuildMac.sh
-          ./BuildMac.sh -t 14.0 -x
+          if: startsWith(matrix.os, 'macos-')
+          run: |
+              export CMAKE_TLS_VERIFY=0
+              export ICU_PATH=$(brew --prefix icu4c)
+              export BOOST_PATH=$(brew --prefix boost)
+              export CURL_PATH=$(brew --prefix curl)
+              export ZLIB_PATH=$(brew --prefix zlib)
+              export ZSTD_PATH=$(brew --prefix zstd)
+              export PATH="$CURL_PATH/bin:$ICU_PATH/bin:$ICU_PATH/sbin:$PATH"
+              export LDFLAGS="-L$CURL_PATH/lib -L$BOOST_PATH/lib -L$ICU_PATH/lib -L$ZLIB_PATH/lib -L$ZSTD_PATH/lib"
+              export CPPFLAGS="-I$CURL_PATH/include -I$BOOST_PATH/include -I$ICU_PATH/include -I$ZLIB_PATH/include -I$ZSTD_PATH/include"
+              export PKG_CONFIG_PATH="$CURL_PATH/lib/pkgconfig:$BOOST_PATH/lib/pkgconfig:$ICU_PATH/lib/pkgconfig:$ZLIB_PATH/lib/pkgconfig:$ZSTD_PATH/lib/pkgconfig"
+              export CMAKE_PREFIX_PATH="$BOOST_PATH;$CURL_PATH;$ICU_PATH"
+              sed -i '' -e 's/-DCMAKE_PREFIX_PATH="$DEPS/-DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH;$DEPS/' BuildMac.sh
+              sed -i '' -e 's/-DQDT_INTERNAL_TESTING=0/-DQDT_INTERNAL_TESTING=1/' BuildMac.sh 
+              sed -i '' -e 's/-DQDT_RELEASE_TO_PUBLIC=1/-DQDT_RELEASE_TO_PUBLIC=0/' BuildMac.sh
+              chmod +x BuildMac.sh
+              ./BuildMac.sh -t 14.0 -x
 
     - name: Upload Artifacts on Windows
       if: startsWith(matrix.os, 'windows-')
