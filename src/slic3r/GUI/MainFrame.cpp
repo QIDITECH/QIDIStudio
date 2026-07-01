@@ -1272,15 +1272,6 @@ void MainFrame::init_tabpanel()
         //    SupportRecommendDialog* dialog = new SupportRecommendDialog(nullptr, _L("Notice"));;
 
         //    wxArrayString params;
-        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
-        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
-        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
-        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
-        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
-        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
-        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
-        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
-        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
 
         //    std::vector<wxString> objects;
         //    for (int i = 0; i < 10; i++) {
@@ -1523,9 +1514,9 @@ void MainFrame::init_tabpanel()
     // m_web_device = new DeviceWebPage(m_tabpanel);
     //m_tabpanel->AddPage(m_web_device, _L("Filament Manager"), std::string("tab_filament_active"), std::string("tab_filament_active"), false);
 
-    //  m_filament = new FilamentPanel(m_tabpanel, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-    //  m_filament->SetBackgroundColour(*wxWHITE);
-    //  m_tabpanel->AddPage(m_filament, _L("Filament"), std::string("model_weight"), std::string("model_weight"), false);
+     m_filament = new FilamentPanel(m_tabpanel, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+     m_filament->SetBackgroundColour(*wxWHITE);
+     m_tabpanel->AddPage(m_filament, _L("Filament"), std::string("model_weight"), std::string("model_weight"), false);
 
     if (m_plater) {
         // load initial config
