@@ -5413,7 +5413,7 @@ void GUI_App::on_user_login_handle(wxCommandEvent &evt)
         preset_bundle->load_user_presets(new_user_id, ForwardCompatibilitySubstitutionRule::Enable);
         mainframe->update_side_preset_ui();
 
-        if (online_login) {
+        if (online_login && !wxGetApp().is_link_connect()) {
             // Manual login: ask user whether to enable sync.
             GUI::wxGetApp().mainframe->show_sync_dialog();
         } else {
