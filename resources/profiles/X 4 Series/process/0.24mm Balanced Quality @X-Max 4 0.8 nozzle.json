@@ -37,6 +37,6 @@
     "top_surface_line_width": "0.82",
     "top_surface_pattern": "monotonic",
     "top_surface_speed": ["150"],
-    "travel_speed": ["1000"],
+    "travel_speed": ["500"],
     "compatible_printers": ["X-Max 4 0.8 nozzle"]
 }
