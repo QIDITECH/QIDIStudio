@@ -7665,6 +7665,12 @@ void GLCanvas3D::_resize(unsigned int w, unsigned int h)
     font_size *= 1.5f;
 #endif
 
+    // Ensure this canvas' GL context is current before set_scaling() below, which can
+    // destroy/recreate the (app-wide, shared-context) ImGui font texture via raw GL calls.
+    // Without this, the shared wxGLContext may still be bound to a different canvas' device
+    // context, causing a GL call issued against the wrong context.
+    _set_current(true);
+
 #if ENABLE_RETINA_GL
     imgui->set_scaling(font_size, 1.0f, m_retina_helper->get_scale_factor());
 #else
@@ -7672,9 +7678,6 @@ void GLCanvas3D::_resize(unsigned int w, unsigned int h)
 #endif
 
     this->request_extra_frame();
-
-    // ensures that this canvas is current
-    _set_current(true);
 }
 
 BoundingBoxf3 GLCanvas3D::_max_bounding_box(bool include_gizmos, bool include_bed_model, bool include_plates, bool volumes_limit_to_expand_plate) const
