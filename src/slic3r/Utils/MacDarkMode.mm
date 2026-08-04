@@ -100,6 +100,31 @@ void WKWebView_setTransparentBackground(void * web)
     [webView registerForDraggedTypes: @[NSFilenamesPboardType]];
 }
 
+//y83: Set an HttpOnly cookie on the web view before navigating (macOS: WKHTTPCookieStore; Linux: WebKitGTK CookieManager/libsoup).
+void WKWebView_setTokenCookie(void * web, const char * name, const char * value,
+                              const char * domain, const char * path,
+                              bool secure, bool httpOnly, double expires)
+{
+    WKWebView * webView = (WKWebView*)web;
+    if (webView == nil)
+        return;
+
+    NSMutableDictionary * props = [NSMutableDictionary dictionary];
+    props[NSHTTPCookieName]    = [NSString stringWithUTF8String:name];
+    props[NSHTTPCookieValue]   = [NSString stringWithUTF8String:value];
+    props[NSHTTPCookieDomain]  = [NSString stringWithUTF8String:domain];
+    props[NSHTTPCookiePath]    = [NSString stringWithUTF8String:path];
+    if (secure)
+        props[NSHTTPCookieSecure] = @"TRUE";
+    if (expires > 0)
+        props[NSHTTPCookieExpires] = [NSDate dateWithTimeIntervalSince1970:expires];
+
+    NSHTTPCookie * cookie = [NSHTTPCookie cookieWithProperties:props];
+    if (cookie) {
+        [webView.configuration.websiteDataStore.httpCookieStore setCookie:cookie completionHandler:nil];
+    }
+}
+
 void openFolderForFile(wxString const & file)
 {
     NSArray *fileURLs = [NSArray arrayWithObjects:wxCFStringRef(file).AsNSString(), /* ... */ nil];

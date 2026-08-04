@@ -299,6 +299,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/HintNotification.cpp
     GUI/HMSPanel.hpp
     GUI/HMSPanel.cpp
+    GUI/HMSDialog.hpp
+    GUI/HMSDialog.cpp
     GUI/MonitorPage.cpp
     GUI/MonitorPage.hpp
     GUI/StatusPanel.cpp
@@ -315,6 +317,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/Monitor.hpp
     GUI/WebViewDialog.cpp
     GUI/WebViewDialog.hpp
+    GUI/QDSPrinterWebView.cpp
+    GUI/QDSPrinterWebView.hpp
     GUI/PrinterWebView.cpp
     GUI/PrinterWebView.hpp
     GUI/PrinterTaskDispatcher.cpp
@@ -677,6 +681,8 @@ if(QDT_RELEASE_TO_PUBLIC)
 			QIDI/QIDINetworkTypes.hpp
 			QIDI/QIDISSEClientV2.cpp
 			QIDI/QIDISSEClientV2.hpp
+            QIDI/P2PManager.cpp
+		    QIDI/P2PManager.hpp
 		)
 endif ()
 
@@ -738,6 +744,9 @@ target_include_directories(libslic3r_gui PRIVATE Utils)
 #set(WEBSOCKETPP_INSTALL_DIR ${CMAKE_PREFIX_PATH})
 #target_include_directories(libslic3r_gui ${CMAKE_PREFIX_PATH}/include)
 
+# pgLibConnect 头文件平台无关，三平台均提供（Windows/MacOSX/Ubuntu）
+target_include_directories(libslic3r_gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../deps/pgLibConnect/Include)
+
 if (WIN32)
     target_include_directories(libslic3r_gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../deps/WebView2/include)
 endif()
@@ -747,6 +756,22 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SLIC3R_GUI_SOURCES})
 encoding_check(libslic3r_gui)
 
 target_link_libraries(libslic3r_gui libslic3r cereal imgui imguizmo minilzo GLEW::GLEW OpenGL::GL hidapi ${wxWidgets_LIBRARIES} glfw libcurl OpenSSL::SSL OpenSSL::Crypto)
+# pgLibConnect 按平台链接（Windows: 导入库；macOS/Linux: 静态库）
+if (WIN32)
+    target_link_libraries(libslic3r_gui ${CMAKE_CURRENT_SOURCE_DIR}/../../deps/pgLibConnect/Lib/Windows/pgDllConnect.lib)
+elseif (APPLE)
+    target_link_libraries(libslic3r_gui ${CMAKE_CURRENT_SOURCE_DIR}/../../deps/pgLibConnect/Lib/MacOSX/libconnect.a)
+    # libconnect.a 内部依赖 DNS 解析（res_9_init 等），需链接系统 libresolv
+    target_link_libraries(libslic3r_gui resolv)
+elseif (UNIX)
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+        target_link_libraries(libslic3r_gui ${CMAKE_CURRENT_SOURCE_DIR}/../../deps/pgLibConnect/Lib/Ubuntu/x64/libconnect.a)
+    else ()
+        target_link_libraries(libslic3r_gui ${CMAKE_CURRENT_SOURCE_DIR}/../../deps/pgLibConnect/Lib/Ubuntu/x32/libconnect.a)
+    endif ()
+    # libconnect.a 内部依赖 DNS 解析（res_9_init 等），需链接系统 libresolv
+    target_link_libraries(libslic3r_gui resolv)
+endif ()
 #target_link_libraries(libslic3r_gui libslic3r cereal imgui imguizmo minilzo GLEW::GLEW OpenGL::GL hidapi libcurl OpenSSL::SSL OpenSSL::Crypto ${wxWidgets_LIBRARIES} glfw)
 
 if (MSVC)

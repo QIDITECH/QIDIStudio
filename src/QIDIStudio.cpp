@@ -1337,6 +1337,15 @@ static bool is_preset_compatible_with_printer(const std::vector<std::string> &co
     return std::find(compatible_printers.begin(), compatible_printers.end(), printer_system_name) != compatible_printers.end();
 }
 
+// todo: temp modify: P1P/P1S share filament presets loosely; skip compatible_printers validation for them.
+static bool is_p1p_or_p1s_printer(const std::string &printer_model_name, const std::string &printer_system_name)
+{
+    if (printer_model_name == "Bambu Lab P1P" || printer_model_name == "Bambu Lab P1S")
+        return true;
+    return printer_system_name.find("P1P") != std::string::npos
+        || printer_system_name.find("P1S") != std::string::npos;
+}
+
 // Returns the resolved filament preset name, or empty string if not found.
 // Resolution order:
 //   2. Scan filament_full_dir for any file starting with "<base> @" whose compatible_printers contains new_printer_system_name
@@ -3165,30 +3174,33 @@ int CLI::run(int argc, char **argv)
     }
 
     // Validate compatible_printers for externally loaded filament presets.
-    {
-        std::string effective_printer_system_name;
-        if (!new_printer_system_name.empty())
-            effective_printer_system_name = new_printer_system_name;
-        else
-            effective_printer_system_name = current_printer_system_name;
-
-        if (!effective_printer_system_name.empty()) {
-            for (size_t index = 0; index < load_filaments_config.size(); ++index) {
-                const auto *compatible_printers_opt = load_filaments_config[index].option<ConfigOptionStrings>("compatible_printers");
-                if (!compatible_printers_opt)
-                    continue;
-                const std::vector<std::string> &compatible_printers = compatible_printers_opt->values;
-                if (is_preset_compatible_with_printer(compatible_printers, effective_printer_system_name))
-                    continue;
-
-                const std::string &filament_name = (index < load_filaments_name.size()) ? load_filaments_name[index] : "";
-                BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(" %1%: filament preset %2% (slot %3%) is not compatible with printer %4%.")
-                    % __LINE__ % filament_name % (index + 1) % effective_printer_system_name;
-                record_exit_reson(outfile_dir, CLI_CONFIG_FILE_ERROR, 0, cli_errors[CLI_CONFIG_FILE_ERROR], sliced_info);
-                flush_and_exit(CLI_CONFIG_FILE_ERROR);
-            }
-        }
-    }
+    // {
+    //     std::string effective_printer_system_name;
+    //     if (!new_printer_system_name.empty())
+    //         effective_printer_system_name = new_printer_system_name;
+    //     else
+    //         effective_printer_system_name = current_printer_system_name;
+    //
+    //     const std::string effective_printer_model = !printer_model.empty() ? printer_model : current_printer_model;
+    //
+    //     if (!is_p1p_or_p1s_printer(effective_printer_model, effective_printer_system_name)
+    //         && !effective_printer_system_name.empty()) {
+    //         for (size_t index = 0; index < load_filaments_config.size(); ++index) {
+    //             const auto *compatible_printers_opt = load_filaments_config[index].option<ConfigOptionStrings>("compatible_printers");
+    //             if (!compatible_printers_opt)
+    //                 continue;
+    //             const std::vector<std::string> &compatible_printers = compatible_printers_opt->values;
+    //             if (is_preset_compatible_with_printer(compatible_printers, effective_printer_system_name))
+    //                 continue;
+    //
+    //             const std::string &filament_name = (index < load_filaments_name.size()) ? load_filaments_name[index] : "";
+    //             BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(" %1%: filament preset %2% (slot %3%) is not compatible with printer %4%.")
+    //                 % __LINE__ % filament_name % (index + 1) % effective_printer_system_name;
+    //             record_exit_reson(outfile_dir, CLI_CONFIG_FILE_ERROR, 0, cli_errors[CLI_CONFIG_FILE_ERROR], sliced_info);
+    //             flush_and_exit(CLI_CONFIG_FILE_ERROR);
+    //         }
+    //     }
+    // }
 
     if (estimate_mode && (new_printer_name.empty() || current_printer_name.empty() || (new_printer_name == current_printer_name))) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(" %1%: estimate_mode requires a machine switch via --load_settings") % __LINE__;
