@@ -2220,11 +2220,14 @@ msgstr "Добавить SVG модификатор"
 msgid "Select settings"
 msgstr "Выберите параметры"
 
-msgid "Hide"
-msgstr "Скрыть"
+msgid "Add to New Step"
+msgstr ""
 
-msgid "Show"
-msgstr "Показать"
+msgid "Add to Current Step"
+msgstr ""
+
+msgid "Add to Existing Step"
+msgstr ""
 
 msgid "Delete the selected object"
 msgstr "Удаление выбранных моделей"
@@ -5164,6 +5167,9 @@ msgstr "Расположение модели %s или её размер вых
 msgid " Please check and adjust the part's position or size to fit the printable range:\n"
 msgstr " Отрегулируйте расположение модели на столе или её размер, чтобы она поместилась в область печати:\n"
 
+msgid "Unnamed"
+msgstr ""
+
 msgid "Mirror Object"
 msgstr "Отразить модель"
 
@@ -5302,6 +5308,12 @@ msgstr "Сфокусировать камеру"
 msgid "Fit camera to scene or selected object."
 msgstr "Сфокусировать камеру на всю сцену или выбранный объект."
 
+msgid "Unlock camera"
+msgstr ""
+
+msgid "Lock camera"
+msgstr ""
+
 msgid "Paint Toolbar"
 msgstr "Панель рисования"
 
@@ -5320,6 +5332,15 @@ msgstr "Управление сборкой"
 # ??? Выбор режима
 msgid "Selection Mode"
 msgstr "Режим выбора"
+
+msgid "OnlyCurrentStep"
+msgstr ""
+
+msgid "Highlight"
+msgstr ""
+
+msgid "Display Mode"
+msgstr ""
 
 msgid "Total Volume:"
 msgstr "Общий объём:"
@@ -5534,6 +5555,9 @@ msgid "Preview"
 msgstr "Предпросмотр нарезки"
 
 msgid "The current page has unsaved changes. You can continue editing or choose to save/discard before leaving."
+msgstr ""
+
+msgid "Home"
 msgstr ""
 
 msgid "Device"
@@ -7705,6 +7729,12 @@ msgstr ""
 msgid "Texture Import Warning"
 msgstr ""
 
+msgid ""
+"The imported STEP file is split by sub-assembly, so some objects may not be placed on the build plate at first.\n"
+"It is expected if they are placed on the build plate later after translation or similar operations.\n"
+"The overall assembly can be checked from the assembly thumbnail or by entering the assembly view."
+msgstr ""
+
 msgid "Load these files as a single object with multiple parts?\n"
 msgstr "Загрузить эти файлы как единую модель, состоящую из нескольких частей?\n"
 
@@ -8547,6 +8577,12 @@ msgstr "Управление несколькими устройствами (в
 
 msgid "With this option enabled, you can send a task to multiple devices at the same time and manage multiple devices."
 msgstr "Если включено, вы сможете управлять несколькими устройствами и отправлять задания на печать на несколько устройств одновременно."
+
+msgid "Take effect after restarting Studio"
+msgstr ""
+
+msgid "The Filament Manager is turned off by default on macOS because compatibility issues on some systems may cause the application to become unresponsive."
+msgstr ""
 
 msgid "Show the step mesh parameter setting dialog."
 msgstr "Показывать диалоговое окно настройки сетки при импорте STEP файла"
@@ -10177,6 +10213,12 @@ msgstr "Откат из прошивки"
 
 msgid "Detached"
 msgstr "Отсоединён"
+
+msgid "The current preset is a project preset and can't be used to create a new preset. Please select a system preset or user preset, then try again."
+msgstr ""
+
+msgid "Unable to save preset"
+msgstr ""
 
 #, c-format, boost-format
 msgid "%d Filament Preset and %d Process Preset is attached to this printer. Those presets would be deleted if the printer is deleted."
@@ -12042,6 +12084,9 @@ msgstr "Выберите последовательность печати «П�
 msgid "The spiral vase mode does not work when an object contains more than one materials."
 msgstr "Режим «Спиральная ваза» не работает, когда модель печатается несколькими материалами."
 
+msgid "The spiral vase mode does not work when an object contains regions with different print settings."
+msgstr ""
+
 msgid "Variable layer height is not supported with Organic supports."
 msgstr "Функция переменной высоты слоя не совместима с органическими поддержками."
 
@@ -12968,6 +13013,18 @@ msgid "Hotend change time"
 msgstr ""
 
 msgid "Time to change hotend."
+msgstr ""
+
+msgid "Cut and unload from extruder time"
+msgstr ""
+
+msgid "Time to cut filament and retract it out of the extruder, used when parallel feeding is supported. For statistics only"
+msgstr ""
+
+msgid "Extruder bite time after pre-feed"
+msgstr ""
+
+msgid "Time for the extruder to bite the filament once it has been pre-fed, used when parallel feeding is supported. For statistics only"
 msgstr ""
 
 # ???? Выбор темп. стола
@@ -14423,6 +14480,12 @@ msgstr "Если выбран плавный или обычный режим з
 msgid "Traditional"
 msgstr "Обычный"
 
+msgid "Farthest point timelapse"
+msgstr ""
+
+msgid "When enabled, the timelapse snapshot is taken at the farthest point from camera instead of traveling to the wipe tower or excess chute. Only effective in traditional timelapse mode on non-I3 printers."
+msgstr ""
+
 msgid "Temperature variation"
 msgstr "Разница температур"
 
@@ -14933,6 +14996,12 @@ msgid "Flush multiplier (Fast mode)"
 msgstr ""
 
 msgid "The flush multiplier used in fast purge mode."
+msgstr ""
+
+msgid "Alternate extruder printing"
+msgstr ""
+
+msgid "When the printer supports parallel (pre-)feeding, print the two extruders in an alternating order within a layer instead of finishing one extruder first. Only takes effect when the printer supports parallel feeding."
 msgstr ""
 
 msgid "Width of prime tower"
@@ -17903,6 +17972,12 @@ msgid ""
 "Less babysitting, more predictable output. Example: a small farm running PETG parts avoids 'fail at hour 6' surprises and keeps batches on schedule."
 msgstr ""
 
+#~ msgid "Hide"
+#~ msgstr "Скрыть"
+
+#~ msgid "Show"
+#~ msgstr "Показать"
+
 #~ msgid "Pass 1"
 #~ msgstr "Проход 1"
 
@@ -19257,3 +19332,27 @@ msgstr "Следующий файл(ы) уже существуют в ката�
 
 msgid "Only adjustable while printing or paused."
 msgstr "Настраивается только во время печати или паузы."
+
+msgid "tool_head_reset"
+msgstr "Возврат головки в центр"
+
+msgid "change_filament"
+msgstr "Замена филамента"
+
+msgid "flush_filament"
+msgstr "Промывка филамента"
+
+msgid "clear_nozzle"
+msgstr "Очистка сопла"
+
+msgid "wait_bed_temp"
+msgstr "Ожидание температуры стола"
+
+msgid "wait_chamber_temp"
+msgstr "Ожидание температуры камеры"
+
+msgid "z_tilt_adjust"
+msgstr "Коррекция наклона Z"
+
+msgid "auto_bed_adjust"
+msgstr "Автоматическая калибровка стола"

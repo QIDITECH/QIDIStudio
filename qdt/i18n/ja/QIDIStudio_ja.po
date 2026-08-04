@@ -2180,11 +2180,14 @@ msgstr "SVGモディファイアを追加"
 msgid "Select settings"
 msgstr "設定を選択"
 
-msgid "Hide"
-msgstr "非表示"
+msgid "Add to New Step"
+msgstr ""
 
-msgid "Show"
-msgstr "表示"
+msgid "Add to Current Step"
+msgstr ""
+
+msgid "Add to Existing Step"
+msgstr ""
 
 msgid "Delete the selected object"
 msgstr "選択したオブジェクトを削除"
@@ -4212,39 +4215,46 @@ msgstr ""
 "スキン深さの50%%にリセットされます。"
 
 msgid "Alternate extra wall is incompatible with spiral vase mode. To enable alternate extra wall, the following adjustments are recommended:"
-msgstr ""
+msgstr "交替追加壁は、スパイラル花瓶モードと互換性がありません。交替追加壁を有効にするには、以下の調整をお勧めします。"
 
 msgid "Set ensure vertical shell thickness to Partial."
-msgstr ""
+msgstr "垂直シェル厚の確保を「部分」に設定します。"
 
 #, c-format, boost-format
 msgid "Set wall loops to %d."
-msgstr ""
+msgstr "壁面層数を%dに設定します。"
 
 #, c-format, boost-format
 msgid "Set sparse infill density to %d%%."
-msgstr ""
+msgstr "疎充填密度を%d%%に設定します。"
 
 msgid "Disable spiral vase mode."
-msgstr ""
+msgstr "スパイラル花瓶モードを無効にします。"
 
 msgid ""
 "Change these settings automatically?\n"
 "Yes - Apply and keep alternate extra wall enabled\n"
 "No  - Don't use alternate extra wall"
 msgstr ""
+"これらの設定を自動的に変更しますか？\n"
+"はい - 適用して交替追加壁を有効のままにします\n"
+"いいえ - 交替追加壁を使用しません"
+
 
 msgid "For alternate extra wall to work properly, the following adjustments are recommended:"
-msgstr ""
+msgstr "交替追加壁を正しく機能させるには、以下の調整をお勧めします。"
 
 msgid ""
 "Apply these adjustments?\n"
 "Yes - Apply and keep alternate extra wall enabled\n"
 "No  - Keep current settings and alternate extra wall enabled"
 msgstr ""
+"これらの調整を適用しますか？\n"
+"はい - 適用して交替追加壁を有効のままにします\n"
+"いいえ - 現在の設定を維持し、交替追加壁を有効のままにします"
 
 msgid "Spiral mode only works when wall loops is 1, support is disabled, clumping detection by probing is disabled, top shell layers is 0, sparse infill density is 0, timelapse type is traditional, smoothing wall speed in z direction is false and alternate extra wall is disabled."
-msgstr ""
+msgstr "スパイラルモードは、壁面層数が1、サポートが無効、プロービングによるクランピング検出が無効、トップ面層数が0、疎充填密度が0、タイムラプスタイプが従来型、z方向の壁速度の平滑化が無効、および交替追加壁が無効の場合にのみ機能します。"
 
 msgid " But machines with I3 structure will not generate timelapse videos."
 msgstr "しかし、I3構造のマシンはタイムラプスビデオを生成しません。"
@@ -5071,6 +5081,9 @@ msgstr "モデル「%s」の位置またはサイズが、%s の造形可能範�
 msgid " Please check and adjust the part's position or size to fit the printable range:\n"
 msgstr "印刷可能な範囲に合わせて、パーツの位置やサイズをご確認の上、調整してください：\n"
 
+msgid "Unnamed"
+msgstr ""
+
 msgid "Mirror Object"
 msgstr "オブジェクトを反転"
 
@@ -5208,11 +5221,17 @@ msgstr "カメラを最適化"
 msgid "Fit camera to scene or selected object."
 msgstr "カメラをシーンまたは選択オブジェクトに合わせます。"
 
+msgid "Unlock camera"
+msgstr ""
+
+msgid "Lock camera"
+msgstr ""
+
 msgid "Paint Toolbar"
 msgstr "ペイント ツールバー"
 
 msgid "This border is used to distinguish it from the background"
-msgstr ""
+msgstr "この境界は、背景と区別するために使用されます。"
 
 msgid "Explosion Ratio"
 msgstr "分解比率"
@@ -5225,6 +5244,15 @@ msgstr "組み立て制御"
 
 msgid "Selection Mode"
 msgstr "選択モード"
+
+msgid "OnlyCurrentStep"
+msgstr ""
+
+msgid "Highlight"
+msgstr ""
+
+msgid "Display Mode"
+msgstr ""
 
 msgid "Total Volume:"
 msgstr "消費量"
@@ -5429,6 +5457,9 @@ msgstr "プレビュー"
 
 msgid "The current page has unsaved changes. You can continue editing or choose to save/discard before leaving."
 msgstr "現在のページには未保存の変更があります。編集を続けるか、保存／破棄してから移動してください。"
+
+msgid "Home"
+msgstr ""
 
 msgid "Device"
 msgstr "デバイス"
@@ -5974,7 +6005,7 @@ msgid "Plugin library failed to load. Click here to view the solution."
 msgstr "プラグインライブラリの読み込みに失敗しました。解決方法を確認するには、こちらをクリックしてください。"
 
 msgid "Loading failed. Please check the network and try again."
-msgstr ""
+msgstr "読み込みに失敗しました。ネットワーク接続を確認して、もう一度お試しください。"
 
 msgid "Temporarily closed because there is no operation for a while."
 msgstr "しばらく操作がなかったため、一時的に閉じられました。"
@@ -7108,13 +7139,13 @@ msgid "Automatically capture and upload print photos, showing defects during pri
 msgstr "造形中の不具合や最終結果を確認できるよう、造形写真を自動で撮影・アップロードし、リモートで閲覧できます。"
 
 msgid "Automatically match the corresponding switch strategy for leak-prone filaments (disable blob detection) and regular filaments (enable blob detection)."
-msgstr ""
+msgstr "漏れやすいフィラメント（ブロブ検出を無効にする）と通常のフィラメント（ブロブ検出を有効にする）に対して、対応するスイッチ戦略を自動的にマッチングさせます。"
 
 msgid "Detect whether the nozzle is wrapped by filament or other foreign matter."
-msgstr ""
+msgstr "ノズルにフィラメントやその他の異物が巻き付いているかどうかを検出します。"
 
 msgid "After disabling, nozzle wrapping cannot be detected, which may lead to print failure or nozzle damage."
-msgstr ""
+msgstr "無効にすると、ノズル巻き込みを検出できなくなるため、造形不良やノズル損傷につながる可能性があります。"
 
 msgctxt "Nozzle Type"
 msgid "Type"
@@ -7551,6 +7582,12 @@ msgstr "テクスチャの色を計算中：%s"
 
 msgid "Texture Import Warning"
 msgstr "テクスチャインポート警告"
+
+msgid ""
+"The imported STEP file is split by sub-assembly, so some objects may not be placed on the build plate at first.\n"
+"It is expected if they are placed on the build plate later after translation or similar operations.\n"
+"The overall assembly can be checked from the assembly thumbnail or by entering the assembly view."
+msgstr ""
 
 msgid "Load these files as a single object with multiple parts?\n"
 msgstr "これらのファイルを一つのオブジェクトとしてロードしますか？\n"
@@ -8392,6 +8429,12 @@ msgstr "複数デバイス管理（Studioを再起動後に適用されます）
 
 msgid "With this option enabled, you can send a task to multiple devices at the same time and manage multiple devices."
 msgstr "このオプションを有効にすると、複数のデバイスに同時にタスクを送信し、複数のデバイスを管理することができます。"
+
+msgid "Take effect after restarting Studio"
+msgstr ""
+
+msgid "The Filament Manager is turned off by default on macOS because compatibility issues on some systems may cause the application to become unresponsive."
+msgstr ""
 
 msgid "Show the step mesh parameter setting dialog."
 msgstr "ステップメッシュパラメータ設定ダイアログを表示"
@@ -9264,7 +9307,7 @@ msgid "The hardness of current material (%s) exceeds the hardness of %s (%s). It
 msgstr "現在の材料（%s）の硬度は、%s（%s）の硬度を上回っています。そのため、ノズルの摩耗が発生し、材料漏れや流量の不安定化を引き起こす可能性があります。使用時は十分ご注意ください。"
 
 msgid "If 'Dynamic Flow Calibration' is set to Auto/On, the system will use the manual calibration value or the default value and skip the flow calibration process. You can perform a manual flow calibration for TPU filament on the 'Calibration' page."
-msgstr ""
+msgstr "「動的フローキャリブレーション」が「自動/オン」に設定されている場合、システムは手動キャリブレーション値またはデフォルト値を使用し、フローキャリブレーションのプロセスをスキップします。TPUフィラメントの手動フローキャリブレーションは、「キャリブレーション」ページで実行できます。"
 
 msgid "Some filaments may switch between extruders during printing. Manual K-value calibration cannot be applied throughout the entire print, which may affect print quality. Enabling Flow Dynamics Calibration is recommended."
 msgstr ""
@@ -10008,6 +10051,12 @@ msgstr "ファームウェアリトラクション"
 
 msgid "Detached"
 msgstr "分離的"
+
+msgid "The current preset is a project preset and can't be used to create a new preset. Please select a system preset or user preset, then try again."
+msgstr ""
+
+msgid "Unable to save preset"
+msgstr ""
 
 #, c-format, boost-format
 msgid "%d Filament Preset and %d Process Preset is attached to this printer. Those presets would be deleted if the printer is deleted."
@@ -11847,6 +11896,9 @@ msgstr "スパイラルモードでは、[オブジェクト順]で複数のオ�
 msgid "The spiral vase mode does not work when an object contains more than one materials."
 msgstr "オブジェクトに複数の素材が含まれている場合、スパイラルベースモードは機能しません。"
 
+msgid "The spiral vase mode does not work when an object contains regions with different print settings."
+msgstr ""
+
 msgid "Variable layer height is not supported with Organic supports."
 msgstr "オーガニックサポートでは可変積層ピッチはサポートされていません。"
 
@@ -12719,7 +12771,7 @@ msgid "temperature when flushing filament. 0 indicates the upper bound of the re
 msgstr "フィラメントをフラッシュする際の温度です。0を指定すると、ノズルの推奨温度範囲の上限が使用されます。"
 
 msgid "Flush temperature used in fast purge mode."
-msgstr ""
+msgstr "高速パージモードで使用されるフラッシュ温度。"
 
 msgid "Flush volumetric speed"
 msgstr "フラッシュの体積速度"
@@ -12774,6 +12826,18 @@ msgstr "ホットエンド交換時間"
 
 msgid "Time to change hotend."
 msgstr "ホットエンドの切り替えにかかる時間です。"
+
+msgid "Cut and unload from extruder time"
+msgstr ""
+
+msgid "Time to cut filament and retract it out of the extruder, used when parallel feeding is supported. For statistics only"
+msgstr ""
+
+msgid "Extruder bite time after pre-feed"
+msgstr ""
+
+msgid "Time for the extruder to bite the filament once it has been pre-fed, used when parallel feeding is supported. For statistics only"
+msgstr ""
 
 msgid "Bed temperature type"
 msgstr "ベッド温度タイプ"
@@ -12927,10 +12991,10 @@ msgid "Start and end ratios for the first component in gradient mode. Comma-sepa
 msgstr "グラデーションモードにおける第1構成要素の開始比率と終了比率を指定します。カンマ区切りで指定します（例：\"0.10,0.90\" は 10% から 90%を意味します）。"
 
 msgid "Mixed filament gradient curve"
-msgstr ""
+msgstr "混合フィラメント勾配曲線"
 
 msgid "Optional Photoshop-style custom curve mapping Z progress to the first component ratio. Encoded as pipe-separated control points, either \"x,y\" (legacy) or \"x,y,m_in,m_out\" when a tangent override is needed (empty token or \"nan\" means use PCHIP default). x in [0,1]; y is clamped to the configured ratio range, e.g. \"0,0.15|0.5,0.50|1,0.85\". When empty, the linear gradient_range is used instead."
-msgstr ""
+msgstr "Photoshopスタイルのオプションのカスタムカーブにより、Z方向の進行度を第1成分の比率にマッピングできます。パイプ区切りのコントロールポイントとしてエンコードされ、従来形式の「x,y」、または接線の上書きが必要な場合は「x,y,m_in,m_out」のいずれかを使用します（空のトークンまたは「nan」はPCHIPデフォルトを使用することを意味します）。xは[0,1]の範囲内であり、yは設定された比率範囲（例：「0,0.15|0.5,0.50|1,0.85」）にクランプされます。空の場合は、代わりに線形のgradient_rangeが使用されます。"
 
 msgid "Mixed filament per-part gradient"
 msgstr "パーツごとの混合フィラメントグラデーション"
@@ -13349,10 +13413,10 @@ msgid "Enable clumping detection"
 msgstr "クラミング検出を有効にする"
 
 msgid "Order-independent overlap carving"
-msgstr ""
+msgstr "順序に依存しない重なり部分の切り抜き"
 
 msgid "When enabled, overlapping model parts are carved by bounding-box size so smaller embedded parts are not removed by larger parts due to volume order."
-msgstr ""
+msgstr "有効にすると、重なっているモデル部分はバウンディングボックスのサイズに基づいて切り抜かれます。これにより、体積順の影響で小さな埋め込み部品が大きな部品に削除されるのを防げます。"
 
 msgid "Clumping detection layers"
 msgstr "クラミング検出レイヤー"
@@ -14226,6 +14290,12 @@ msgstr "スムーズモードまたは従来のモードが選択されると、
 msgid "Traditional"
 msgstr "通常"
 
+msgid "Farthest point timelapse"
+msgstr "最遠点タイムラプス"
+
+msgid "When enabled, the timelapse snapshot is taken at the farthest point from camera instead of traveling to the wipe tower or excess chute. Only effective in traditional timelapse mode on non-I3 printers."
+msgstr "有効にすると、タイムラプスのスナップショットはワイプタワーや排出シュートへ移動する代わりに、カメラから最遠点で撮影されます。I3以外のプリンターで、従来型のタイムラプスモード時にのみ有効です。"
+
 msgid "Temperature variation"
 msgstr "軟化温度"
 
@@ -14725,6 +14795,12 @@ msgstr "フラッシュ倍率（高速モード）"
 
 msgid "The flush multiplier used in fast purge mode."
 msgstr "高速パージモードで使用されるフラッシュ倍率。"
+
+msgid "Alternate extruder printing"
+msgstr ""
+
+msgid "When the printer supports parallel (pre-)feeding, print the two extruders in an alternating order within a layer instead of finishing one extruder first. Only takes effect when the printer supports parallel feeding."
+msgstr ""
 
 msgid "Width of prime tower"
 msgstr "プライムタワーの幅"
@@ -17378,10 +17454,10 @@ msgid "Remove the third material"
 msgstr "3つ目の材料を削除してください。"
 
 msgid "Material Ratio"
-msgstr ""
+msgstr "材料比率"
 
 msgid "Model Height"
-msgstr ""
+msgstr "モデルの高さ"
 
 #: resources/data/hints.ini: [hint:How to use keyboard shortcuts]
 msgid ""
@@ -17675,6 +17751,12 @@ msgid ""
 msgstr ""
 "一発成功の信頼性\n"
 "見守りの手間を減らし、より予測可能な造形を実現。例：PETG 部品を小規模ファームで運用する場合でも、「6時間目で失敗」といった不意打ちを避け、バッチを計画どおりに進められます。"
+
+#~ msgid "Hide"
+#~ msgstr "非表示"
+
+#~ msgid "Show"
+#~ msgstr "表示"
 
 #~ msgid "Spiral mode only works when wall loops is 1, support is disabled, clumping detection by probing is disabled, top shell layers is 0, sparse infill density is 0, timelapse type is traditional and smoothing wall speed in z direction is false."
 #~ msgstr "スパイラルモードが有効になるのは、以下の条件をすべて満たしている場合のみです：ウォールループが1、サポート無効、プロービングによるクラッピング検出が無効、トップシェル層が0、粗い充填密度が0、タイムラプスタイプが従来型、Z方向のウォール速度スムージングが無効であること。"
@@ -21984,3 +22066,27 @@ msgstr "以下のファイルは既にディレクトリ内に存在します：
 
 msgid "Only adjustable while printing or paused."
 msgstr "印刷中または一時停止中のみ調整可能。"
+
+msgid "tool_head_reset"
+msgstr "ツールヘッド原点復帰"
+
+msgid "change_filament"
+msgstr "フィラメント交換"
+
+msgid "flush_filament"
+msgstr "フィラメントフラッシュ"
+
+msgid "clear_nozzle"
+msgstr "ノズル清掃"
+
+msgid "wait_bed_temp"
+msgstr "ベッド温度待機"
+
+msgid "wait_chamber_temp"
+msgstr "チャンバー温度待機"
+
+msgid "z_tilt_adjust"
+msgstr "Z軸傾斜調整"
+
+msgid "auto_bed_adjust"
+msgstr "自動ベッドレベリング"

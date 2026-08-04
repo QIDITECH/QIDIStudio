@@ -2182,11 +2182,14 @@ msgstr "SVG-módosító hozzáadása"
 msgid "Select settings"
 msgstr "Beállítások kiválasztása"
 
-msgid "Hide"
-msgstr "Elrejtés"
+msgid "Add to New Step"
+msgstr ""
 
-msgid "Show"
-msgstr "Megjelenítés"
+msgid "Add to Current Step"
+msgstr ""
+
+msgid "Add to Existing Step"
+msgstr ""
 
 msgid "Delete the selected object"
 msgstr "Kiválasztott objektum törlése"
@@ -4234,39 +4237,45 @@ msgstr ""
 "Visszaállítás 50%% mélységre"
 
 msgid "Alternate extra wall is incompatible with spiral vase mode. To enable alternate extra wall, the following adjustments are recommended:"
-msgstr ""
+msgstr "Az alternatív extra fal nem kompatibilis a spirál (váza) móddal. Az alternatív extra fal engedélyezéséhez a következő beállítások ajánlottak:"
 
 msgid "Set ensure vertical shell thickness to Partial."
-msgstr ""
+msgstr "A függőleges héjvastagság biztosítását állítsa részlegesre."
 
 #, c-format, boost-format
 msgid "Set wall loops to %d."
-msgstr ""
+msgstr "Falak száma beállítása erre: %d."
 
 #, c-format, boost-format
 msgid "Set sparse infill density to %d%%."
-msgstr ""
+msgstr "Ritka kitöltési sűrűség beállítása erre: %d%%."
 
 msgid "Disable spiral vase mode."
-msgstr ""
+msgstr "Spirális (váza) mód letiltása."
 
 msgid ""
 "Change these settings automatically?\n"
 "Yes - Apply and keep alternate extra wall enabled\n"
 "No  - Don't use alternate extra wall"
 msgstr ""
+"Automatikusan módosítja ezeket a beállításokat?\n"
+"Igen – Alkalmazza és hagyja engedélyezve az alternatív extra falat\n"
+"Nem – Ne használjon alternatív extra falat"
 
 msgid "For alternate extra wall to work properly, the following adjustments are recommended:"
-msgstr ""
+msgstr "Az alternatív extra fal megfelelő működéséhez a következő beállítások ajánlottak:"
 
 msgid ""
 "Apply these adjustments?\n"
 "Yes - Apply and keep alternate extra wall enabled\n"
 "No  - Keep current settings and alternate extra wall enabled"
 msgstr ""
+"Alkalmazza ezeket a módosításokat?\n"
+"Igen – Alkalmazza és hagyja engedélyezve az alternatív extra falat\n"
+"Nem – Tartsa meg az aktuális beállításokat és hagyja engedélyezve az alternatív extra falat"
 
 msgid "Spiral mode only works when wall loops is 1, support is disabled, clumping detection by probing is disabled, top shell layers is 0, sparse infill density is 0, timelapse type is traditional, smoothing wall speed in z direction is false and alternate extra wall is disabled."
-msgstr ""
+msgstr "A spirál mód csak akkor működik, ha a falhurkok értéke 1, a megtámasztás le van tiltva, a szondázással történő csomósodásérzékelés le van tiltva, a felső héjrétegek értéke 0, a ritka kitöltési sűrűség 0, a timelapse típusa hagyományos, a falsebesség z irányú simítása hamis, és az alternatív extra fal le van tiltva."
 
 msgid " But machines with I3 structure will not generate timelapse videos."
 msgstr " Az I3-szerkezetű gépek azonban nem fognak timelapse videókat készíteni."
@@ -5094,6 +5103,9 @@ msgstr "A(z) %s modell pozíciója vagy mérete meghaladja a(z) %s által nyomta
 msgid " Please check and adjust the part's position or size to fit the printable range:\n"
 msgstr " Kérjük, ellenőrizd és igazítsd a tárgy pozícióját vagy méretét a nyomtatható tartományhoz:\n"
 
+msgid "Unnamed"
+msgstr ""
+
 msgid "Mirror Object"
 msgstr "Objektum tükrözése"
 
@@ -5231,11 +5243,17 @@ msgstr "Kamera illesztése"
 msgid "Fit camera to scene or selected object."
 msgstr "A kamera jelenethez vagy a kiválasztott objektumhoz illesztése."
 
+msgid "Unlock camera"
+msgstr ""
+
+msgid "Lock camera"
+msgstr ""
+
 msgid "Paint Toolbar"
 msgstr "Festés eszköztár"
 
 msgid "This border is used to distinguish it from the background"
-msgstr ""
+msgstr "Ez a szegély megkülönbözteti a háttértől"
 
 msgid "Explosion Ratio"
 msgstr "Robbantási arány"
@@ -5248,6 +5266,15 @@ msgstr "Összeszerelés vezérlői"
 
 msgid "Selection Mode"
 msgstr "Kijelölési mód"
+
+msgid "OnlyCurrentStep"
+msgstr ""
+
+msgid "Highlight"
+msgstr ""
+
+msgid "Display Mode"
+msgstr ""
 
 msgid "Total Volume:"
 msgstr "Teljes térfogat:"
@@ -5458,6 +5485,9 @@ msgstr "Előnézet"
 
 msgid "The current page has unsaved changes. You can continue editing or choose to save/discard before leaving."
 msgstr "A jelenlegi oldalon mentetlen változtatások vannak. Folytathatod a szerkesztést, vagy elmentheted/elvetheted a módosításokat kilépés előtt."
+
+msgid "Home"
+msgstr ""
 
 msgid "Device"
 msgstr "Nyomtató"
@@ -6005,7 +6035,7 @@ msgid "Plugin library failed to load. Click here to view the solution."
 msgstr "A bővítménykönyvtár betöltése sikertelen. Kattints ide a megoldás megtekintéséhez."
 
 msgid "Loading failed. Please check the network and try again."
-msgstr ""
+msgstr "A betöltés sikertelen. Ellenőrizze a hálózatot, és próbálja újra."
 
 msgid "Temporarily closed because there is no operation for a while."
 msgstr "Ideiglenesen bezárult, mert egy ideig nem volt tevékenység."
@@ -7153,13 +7183,13 @@ msgid "Automatically capture and upload print photos, showing defects during pri
 msgstr "Automatikusan képet rögzít és tölt fel a nyomtatás során, amelyek a hibákat és a végső eredményt mutatják távoli eléréshez."
 
 msgid "Automatically match the corresponding switch strategy for leak-prone filaments (disable blob detection) and regular filaments (enable blob detection)."
-msgstr ""
+msgstr "Automatikusan illeszti a megfelelő kapcsolási stratégiát a szivárgásra hajlamos filamentekhez (foltészlelés letiltása) és a normál filamentekhez (foltészlelés engedélyezése)."
 
 msgid "Detect whether the nozzle is wrapped by filament or other foreign matter."
-msgstr ""
+msgstr "Ellenőrizze, hogy a fúvókát nem tekerte-e be a filament vagy más idegen anyag."
 
 msgid "After disabling, nozzle wrapping cannot be detected, which may lead to print failure or nozzle damage."
-msgstr ""
+msgstr "Letiltás után a fúvókák tekeredését nem lehet észlelni, ami nyomtatási hibához vagy a fúvókák károsodásához vezethet."
 
 msgctxt "Nozzle Type"
 msgid "Type"
@@ -7596,6 +7626,12 @@ msgstr "Textúraszínek kiszámítása: %s"
 
 msgid "Texture Import Warning"
 msgstr "Textúra importálása figyelmeztetés"
+
+msgid ""
+"The imported STEP file is split by sub-assembly, so some objects may not be placed on the build plate at first.\n"
+"It is expected if they are placed on the build plate later after translation or similar operations.\n"
+"The overall assembly can be checked from the assembly thumbnail or by entering the assembly view."
+msgstr ""
 
 msgid "Load these files as a single object with multiple parts?\n"
 msgstr "Betöltöd ezeket a fájlokat több részből álló egyetlen objektumként?\n"
@@ -8439,6 +8475,12 @@ msgstr "Többeszközös felügyelet (Studio újraindítása szükséges)."
 
 msgid "With this option enabled, you can send a task to multiple devices at the same time and manage multiple devices."
 msgstr "Ha ez az opció engedélyezve van, egyszerre több eszközre is küldhetsz nyomtatási feladatot, és kezelheted mindegyiket."
+
+msgid "Take effect after restarting Studio"
+msgstr ""
+
+msgid "The Filament Manager is turned off by default on macOS because compatibility issues on some systems may cause the application to become unresponsive."
+msgstr ""
 
 msgid "Show the step mesh parameter setting dialog."
 msgstr "STEP-háló paraméterbeállítási párbeszédpaneljének megjelenítése."
@@ -9313,7 +9355,7 @@ msgid "The hardness of current material (%s) exceeds the hardness of %s (%s). It
 msgstr "A jelenlegi anyag keménysége (%s) meghaladja a(z) %s (%s) keménységét. Ez fúvókakopást okozhat, ami anyagszivárgáshoz és instabil anyagáramláshoz vezethet."
 
 msgid "If 'Dynamic Flow Calibration' is set to Auto/On, the system will use the manual calibration value or the default value and skip the flow calibration process. You can perform a manual flow calibration for TPU filament on the 'Calibration' page."
-msgstr ""
+msgstr "Ha a „Dinamikus áramláskalibrálás” beállítása Automatikus/Be, a rendszer a manuális kalibrálási értéket vagy az alapértelmezett értéket használja, és kihagyja az áramláskalibrálási folyamatot. A TPU filament manuális áramláskalibrálását a „Kalibrálás” oldalon végezheti el."
 
 msgid "Some filaments may switch between extruders during printing. Manual K-value calibration cannot be applied throughout the entire print, which may affect print quality. Enabling Flow Dynamics Calibration is recommended."
 msgstr "Előfordulhat, hogy nyomtatás közben egyes filamentek váltanak az extruderek között. A manuális K-érték kalibrálás nem alkalmazható a teljes nyomtatás során, ami befolyásolhatja a nyomtatási minőséget. Az áramlásdinamikai kalibrálás engedélyezése ajánlott."
@@ -10053,6 +10095,12 @@ msgstr "Firmware-ben megadott visszahúzás"
 
 msgid "Detached"
 msgstr "Különálló"
+
+msgid "The current preset is a project preset and can't be used to create a new preset. Please select a system preset or user preset, then try again."
+msgstr ""
+
+msgid "Unable to save preset"
+msgstr ""
 
 #, c-format, boost-format
 msgid "%d Filament Preset and %d Process Preset is attached to this printer. Those presets would be deleted if the printer is deleted."
@@ -11903,6 +11951,9 @@ msgstr "Kérjük, válaszd a \"Tárgyanként\" nyomtatási sorrendet több tárg
 msgid "The spiral vase mode does not work when an object contains more than one materials."
 msgstr "A spirál (váza) mód nem működik, ha egy objektum egynél több anyagot tartalmaz."
 
+msgid "The spiral vase mode does not work when an object contains regions with different print settings."
+msgstr ""
+
 msgid "Variable layer height is not supported with Organic supports."
 msgstr "A változó rétegmagasság nem működik az organikus támaszokkal."
 
@@ -12773,7 +12824,7 @@ msgid "temperature when flushing filament. 0 indicates the upper bound of the re
 msgstr "hőmérséklet a filament öblítésekor. 0 az ajánlott fúvókahőmérséklet-tartomány felső határát jelzi"
 
 msgid "Flush temperature used in fast purge mode."
-msgstr ""
+msgstr "Gyors tisztítási módban használt öblítési hőmérséklet."
 
 msgid "Flush volumetric speed"
 msgstr "Öblítési térfogatsebesség"
@@ -12828,6 +12879,18 @@ msgstr "Hotendváltás ideje"
 
 msgid "Time to change hotend."
 msgstr "A hotendváltás ideje."
+
+msgid "Cut and unload from extruder time"
+msgstr ""
+
+msgid "Time to cut filament and retract it out of the extruder, used when parallel feeding is supported. For statistics only"
+msgstr ""
+
+msgid "Extruder bite time after pre-feed"
+msgstr ""
+
+msgid "Time for the extruder to bite the filament once it has been pre-fed, used when parallel feeding is supported. For statistics only"
+msgstr ""
 
 msgid "Bed temperature type"
 msgstr "Asztalhőmérséklet típusa"
@@ -12976,10 +13039,10 @@ msgid "Start and end ratios for the first component in gradient mode. Comma-sepa
 msgstr "Az első komponens kezdő és befejező arányai átmenet módban. Vesszővel elválasztott pár, pl. \"0,10,0,90\" 10%-tól 90%-ig terjedő értéket jelent."
 
 msgid "Mixed filament gradient curve"
-msgstr ""
+msgstr "Vegyes filament gradiensgörbe"
 
 msgid "Optional Photoshop-style custom curve mapping Z progress to the first component ratio. Encoded as pipe-separated control points, either \"x,y\" (legacy) or \"x,y,m_in,m_out\" when a tangent override is needed (empty token or \"nan\" means use PCHIP default). x in [0,1]; y is clamped to the configured ratio range, e.g. \"0,0.15|0.5,0.50|1,0.85\". When empty, the linear gradient_range is used instead."
-msgstr ""
+msgstr "Opcionális Photoshop stílusú egyéni görbeleképezés a Z tengely haladását az első komponens arányáig. Pipeline elválasztott vezérlőpontokként kódolva, \"x,y\" (hagyományos) vagy \"x,y,m_in,m_out\", ha érintő felülírásra van szükség (üres token vagy \"nan\" a PCHIP alapértelmezett értékét jelenti). x in [0,1]; y a konfigurált aránytartományhoz van rögzítve, pl. \"0,0.15|0.5,0.50|1,0.85\". Ha üres, akkor a lineáris gradient_range kerül felhasználásra."
 
 msgid "Mixed filament per-part gradient"
 msgstr "Vegyes filament/alkatrész gradiens"
@@ -13393,10 +13456,10 @@ msgid "Enable clumping detection"
 msgstr "Filament fúvókára való tapadásának észlelése"
 
 msgid "Order-independent overlap carving"
-msgstr ""
+msgstr "Sorrendtől független átfedő faragás"
 
 msgid "When enabled, overlapping model parts are carved by bounding-box size so smaller embedded parts are not removed by larger parts due to volume order."
-msgstr ""
+msgstr "Ha engedélyezve van, az átfedő modellalkatrészek határolókeret méret szerint kerülnek kivágásra, így a kisebb beágyazott alkatrészeket nem távolítják el a nagyobb alkatrészek a térfogat sorrendje miatt."
 
 msgid "Clumping detection layers"
 msgstr "Feltapadásészlelési rétegek"
@@ -14264,6 +14327,12 @@ msgstr "Ha a sima vagy a hagyományos mód van kiválasztva, minden nyomtatásn�
 msgid "Traditional"
 msgstr "Hagyományos"
 
+msgid "Farthest point timelapse"
+msgstr "Legtávolabbi pont timelapse"
+
+msgid "When enabled, the timelapse snapshot is taken at the farthest point from camera instead of traveling to the wipe tower or excess chute. Only effective in traditional timelapse mode on non-I3 printers."
+msgstr "Ha engedélyezve van, a timelapse pillanatfelvétel a kamerától legtávolabbi ponton készül, ahelyett, hogy a törlőtoronyba vagy a külső csúszdára vándorolna. Csak hagyományos timelapse módban hatásos nem I3-as nyomtatókon."
+
 msgid "Temperature variation"
 msgstr "Hőmérséklet változás"
 
@@ -14759,6 +14828,12 @@ msgstr "Öblítési szorzó (Gyors mód)"
 
 msgid "The flush multiplier used in fast purge mode."
 msgstr "A gyors tisztítási módban használt öblítési szorzó."
+
+msgid "Alternate extruder printing"
+msgstr ""
+
+msgid "When the printer supports parallel (pre-)feeding, print the two extruders in an alternating order within a layer instead of finishing one extruder first. Only takes effect when the printer supports parallel feeding."
+msgstr ""
 
 msgid "Width of prime tower"
 msgstr "Törlőtorony szélessége"
@@ -17416,10 +17491,10 @@ msgid "Remove the third material"
 msgstr "Harmadik anyag eltávolítása"
 
 msgid "Material Ratio"
-msgstr ""
+msgstr "Anyagarány"
 
 msgid "Model Height"
-msgstr ""
+msgstr "Modellmagasság"
 
 #: resources/data/hints.ini: [hint:How to use keyboard shortcuts]
 msgid ""
@@ -17717,6 +17792,12 @@ msgid ""
 msgstr ""
 "Elsőre megbízható\n"
 "Kevesebb figyelem, kiszámíthatóbb eredmények. Példa: egy kis műhely, amely PETG tárgyakat gyárt, elkerülheti a „6. órában le kell állítani“ meglepetéseket, és tartani tudja a határidőket."
+
+#~ msgid "Hide"
+#~ msgstr "Elrejtés"
+
+#~ msgid "Show"
+#~ msgstr "Megjelenítés"
 
 #~ msgid "Spiral mode only works when wall loops is 1, support is disabled, clumping detection by probing is disabled, top shell layers is 0, sparse infill density is 0, timelapse type is traditional and smoothing wall speed in z direction is false."
 #~ msgstr "A spirál mód csak akkor működik, ha a falak száma 1, a támasz le van tiltva, a tapintással történő anyagfelhalmozódás észlelése ki van kapcsolva, a felső héjrétegek száma 0, a ritkás kitöltés sűrűsége 0, a timelapse típusa hagyományos és a fal sebességének z irányban történő simítása ki van kapcsolva."
@@ -21957,3 +22038,27 @@ msgstr "A következő fájl(ok) már léteznek a könyvtárban:\n\n%s"
 
 msgid "Only adjustable while printing or paused."
 msgstr "Csak nyomtatás vagy szünetelés közben állítható."
+
+msgid "tool_head_reset"
+msgstr "Szerszámfej visszaállítás"
+
+msgid "change_filament"
+msgstr "Filament csere"
+
+msgid "flush_filament"
+msgstr "Filament átöblítés"
+
+msgid "clear_nozzle"
+msgstr "Fúvóka tisztítás"
+
+msgid "wait_bed_temp"
+msgstr "Várakozás az ágynemű hőmérsékletére"
+
+msgid "wait_chamber_temp"
+msgstr "Várakozás a kamra hőmérsékletére"
+
+msgid "z_tilt_adjust"
+msgstr "Z dőlés beállítás"
+
+msgid "auto_bed_adjust"
+msgstr "Automatikus ágynemű szintezés"

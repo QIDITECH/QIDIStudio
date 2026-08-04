@@ -2180,11 +2180,14 @@ msgstr "Додати модифікатор SVG"
 msgid "Select settings"
 msgstr "Виберіть налаштування"
 
-msgid "Hide"
-msgstr "Приховати"
+msgid "Add to New Step"
+msgstr ""
 
-msgid "Show"
-msgstr "Показати"
+msgid "Add to Current Step"
+msgstr ""
+
+msgid "Add to Existing Step"
+msgstr ""
 
 msgid "Delete the selected object"
 msgstr "Видалити вибраний об'єкт"
@@ -5077,6 +5080,9 @@ msgstr ""
 msgid " Please check and adjust the part's position or size to fit the printable range:\n"
 msgstr ""
 
+msgid "Unnamed"
+msgstr ""
+
 msgid "Mirror Object"
 msgstr "Дзеркальний об'єкт"
 
@@ -5214,6 +5220,12 @@ msgstr ""
 msgid "Fit camera to scene or selected object."
 msgstr ""
 
+msgid "Unlock camera"
+msgstr ""
+
+msgid "Lock camera"
+msgstr ""
+
 msgid "Paint Toolbar"
 msgstr "Панель інструментів малювання"
 
@@ -5231,6 +5243,15 @@ msgstr "Складання керування"
 
 msgid "Selection Mode"
 msgstr "Режим вибору"
+
+msgid "OnlyCurrentStep"
+msgstr ""
+
+msgid "Highlight"
+msgstr ""
+
+msgid "Display Mode"
+msgstr ""
 
 msgid "Total Volume:"
 msgstr "Загальний обсяг:"
@@ -5436,6 +5457,9 @@ msgid "Preview"
 msgstr "Попередній перегляд"
 
 msgid "The current page has unsaved changes. You can continue editing or choose to save/discard before leaving."
+msgstr ""
+
+msgid "Home"
 msgstr ""
 
 msgid "Device"
@@ -7572,6 +7596,12 @@ msgstr ""
 msgid "Texture Import Warning"
 msgstr ""
 
+msgid ""
+"The imported STEP file is split by sub-assembly, so some objects may not be placed on the build plate at first.\n"
+"It is expected if they are placed on the build plate later after translation or similar operations.\n"
+"The overall assembly can be checked from the assembly thumbnail or by entering the assembly view."
+msgstr ""
+
 msgid "Load these files as a single object with multiple parts?\n"
 msgstr "Завантажити ці файли як єдиний об'єкт з кількома частинами?\n"
 
@@ -8377,6 +8407,12 @@ msgstr "Керування багато пристроями (набуде чи�
 
 msgid "With this option enabled, you can send a task to multiple devices at the same time and manage multiple devices."
 msgstr "З цією опцією ввімкненою, ви можете відправляти завдання на кілька пристроїв одночасно та керувати декількома пристроями."
+
+msgid "Take effect after restarting Studio"
+msgstr ""
+
+msgid "The Filament Manager is turned off by default on macOS because compatibility issues on some systems may cause the application to become unresponsive."
+msgstr ""
 
 msgid "Show the step mesh parameter setting dialog."
 msgstr ""
@@ -9970,6 +10006,12 @@ msgstr "Апаратне витягування"
 
 msgid "Detached"
 msgstr "Окремий"
+
+msgid "The current preset is a project preset and can't be used to create a new preset. Please select a system preset or user preset, then try again."
+msgstr ""
+
+msgid "Unable to save preset"
+msgstr ""
 
 #, c-format, boost-format
 msgid "%d Filament Preset and %d Process Preset is attached to this printer. Those presets would be deleted if the printer is deleted."
@@ -11791,6 +11833,9 @@ msgstr "Будь ласка, виберіть послідовність дру�
 msgid "The spiral vase mode does not work when an object contains more than one materials."
 msgstr "Режим спіральної вази не працює, якщо об'єкт містить більше одногоматеріалу."
 
+msgid "The spiral vase mode does not work when an object contains regions with different print settings."
+msgstr ""
+
 msgid "Variable layer height is not supported with Organic supports."
 msgstr "Змінна висота шару не підтримується з органічними підтримками."
 
@@ -12707,6 +12752,18 @@ msgid "Hotend change time"
 msgstr ""
 
 msgid "Time to change hotend."
+msgstr ""
+
+msgid "Cut and unload from extruder time"
+msgstr ""
+
+msgid "Time to cut filament and retract it out of the extruder, used when parallel feeding is supported. For statistics only"
+msgstr ""
+
+msgid "Extruder bite time after pre-feed"
+msgstr ""
+
+msgid "Time for the extruder to bite the filament once it has been pre-fed, used when parallel feeding is supported. For statistics only"
 msgstr ""
 
 msgid "Bed temperature type"
@@ -14134,6 +14191,12 @@ msgstr "Якщо вибрано плавний або традиційний р�
 msgid "Traditional"
 msgstr "Традиційний"
 
+msgid "Farthest point timelapse"
+msgstr ""
+
+msgid "When enabled, the timelapse snapshot is taken at the farthest point from camera instead of traveling to the wipe tower or excess chute. Only effective in traditional timelapse mode on non-I3 printers."
+msgstr ""
+
 msgid "Temperature variation"
 msgstr "Зміна температури"
 
@@ -14626,6 +14689,12 @@ msgid "Flush multiplier (Fast mode)"
 msgstr ""
 
 msgid "The flush multiplier used in fast purge mode."
+msgstr ""
+
+msgid "Alternate extruder printing"
+msgstr ""
+
+msgid "When the printer supports parallel (pre-)feeding, print the two extruders in an alternating order within a layer instead of finishing one extruder first. Only takes effect when the printer supports parallel feeding."
 msgstr ""
 
 msgid "Width of prime tower"
@@ -17531,6 +17600,12 @@ msgid ""
 "First-Time-Right Reliability\n"
 "Less babysitting, more predictable output. Example: a small farm running PETG parts avoids 'fail at hour 6' surprises and keeps batches on schedule."
 msgstr ""
+
+#~ msgid "Hide"
+#~ msgstr "Приховати"
+
+#~ msgid "Show"
+#~ msgstr "Показати"
 
 #~ msgid "Pass 1"
 #~ msgstr "Прохід 1"
@@ -21105,3 +21180,27 @@ msgstr "Наступний файл(и) вже існують у каталоз�
 
 msgid "Only adjustable while printing or paused."
 msgstr "Налаштовується лише під час друку або паузи."
+
+msgid "tool_head_reset"
+msgstr "Повернення головки в центр"
+
+msgid "change_filament"
+msgstr "Заміна філаменту"
+
+msgid "flush_filament"
+msgstr "Промивання філаменту"
+
+msgid "clear_nozzle"
+msgstr "Очищення сопла"
+
+msgid "wait_bed_temp"
+msgstr "Очікування температури столу"
+
+msgid "wait_chamber_temp"
+msgstr "Очікування температури камери"
+
+msgid "z_tilt_adjust"
+msgstr "Корекція нахилу Z"
+
+msgid "auto_bed_adjust"
+msgstr "Автоматичне вирівнювання столу"

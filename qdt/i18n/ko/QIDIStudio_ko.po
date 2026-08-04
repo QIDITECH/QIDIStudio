@@ -2182,11 +2182,14 @@ msgstr "SVG 수정자 추가"
 msgid "Select settings"
 msgstr "설정 선택"
 
-msgid "Hide"
-msgstr "숨기기"
+msgid "Add to New Step"
+msgstr ""
 
-msgid "Show"
-msgstr "표시"
+msgid "Add to Current Step"
+msgstr ""
+
+msgid "Add to Existing Step"
+msgstr ""
 
 msgid "Delete the selected object"
 msgstr "선택한 객체 삭제"
@@ -4228,39 +4231,45 @@ msgstr ""
 "표면 깊이의 50%%으로 재설정"
 
 msgid "Alternate extra wall is incompatible with spiral vase mode. To enable alternate extra wall, the following adjustments are recommended:"
-msgstr ""
+msgstr "대체 추가 벽은 나선형 꽃병 모드와 호환되지 않습니다. 대체 추가 벽을 활성화하려면 다음 조정을 권장합니다."
 
 msgid "Set ensure vertical shell thickness to Partial."
-msgstr ""
+msgstr "수직 쉘 두께를 부분으로 설정합니다."
 
 #, c-format, boost-format
 msgid "Set wall loops to %d."
-msgstr ""
+msgstr "벽 수를 %d(으)로 설정합니다."
 
 #, c-format, boost-format
 msgid "Set sparse infill density to %d%%."
-msgstr ""
+msgstr "자이로이드 인필 밀도를 %d%%(으)로 설정합니다."
 
 msgid "Disable spiral vase mode."
-msgstr ""
+msgstr "나선형 꽃병 모드를 비활성화합니다."
 
 msgid ""
 "Change these settings automatically?\n"
 "Yes - Apply and keep alternate extra wall enabled\n"
 "No  - Don't use alternate extra wall"
 msgstr ""
+"이 설정을 자동으로 변경하시겠습니까?\n"
+"예 - 적용하고 대체 추가 벽을 활성화 상태로 유지합니다.\n"
+"아니요 - 대체 추가 벽을 사용하지 않습니다."
 
 msgid "For alternate extra wall to work properly, the following adjustments are recommended:"
-msgstr ""
+msgstr "대체 추가 벽이 제대로 작동하려면 다음과 같은 조정이 권장됩니다."
 
 msgid ""
 "Apply these adjustments?\n"
 "Yes - Apply and keep alternate extra wall enabled\n"
 "No  - Keep current settings and alternate extra wall enabled"
 msgstr ""
+"이러한 조정 사항을 적용하시겠습니까?\n"
+"예 - 적용하고 대체 추가 벽을 활성화 상태로 유지합니다.\n"
+"아니요 - 현재 설정 및 대체 추가 벽 활성화 상태를 유지합니다."
 
 msgid "Spiral mode only works when wall loops is 1, support is disabled, clumping detection by probing is disabled, top shell layers is 0, sparse infill density is 0, timelapse type is traditional, smoothing wall speed in z direction is false and alternate extra wall is disabled."
-msgstr ""
+msgstr "나선형 모드는 벽 루프가 1 이고, 지원이 비활성화되어 있고, 프로빙을 통한 뭉침 감지가 비활성화되어 있고, 상단 셸 레이어가 0 이고, 드믄 채우기 밀도가 0 이고, 타임랩스 유형이 기존이고 z 방향의 벽 속도 평활화가 거짓이며 대체 추가 벽이 비활성화된 경우에만 작동합니다."
 
 msgid " But machines with I3 structure will not generate timelapse videos."
 msgstr " 하지만 I3 구조의 기기는 타임랩스 영상을 생성할 수 없습니다."
@@ -5088,6 +5097,9 @@ msgstr "모델 %s의 위치 또는 크기가 %s의 출력 가능 범위를 초�
 msgid " Please check and adjust the part's position or size to fit the printable range:\n"
 msgstr " 부품의 위치 또는 크기를 확인하여 출력 가능한 범위에 맞게 조정하세요:\n"
 
+msgid "Unnamed"
+msgstr ""
+
 msgid "Mirror Object"
 msgstr "물체 대칭"
 
@@ -5225,11 +5237,17 @@ msgstr "카메라 맞춤"
 msgid "Fit camera to scene or selected object."
 msgstr "장면 또는 선택한 오브젝트에 카메라를 맞춥니다."
 
+msgid "Unlock camera"
+msgstr ""
+
+msgid "Lock camera"
+msgstr ""
+
 msgid "Paint Toolbar"
 msgstr "페인트 툴바"
 
 msgid "This border is used to distinguish it from the background"
-msgstr ""
+msgstr "이 테두리는 이를 배경과 구분하기 위해 사용됩니다."
 
 msgid "Explosion Ratio"
 msgstr "분해 비율"
@@ -5242,6 +5260,15 @@ msgstr "어셈블리 컨트롤"
 
 msgid "Selection Mode"
 msgstr "선택 모드"
+
+msgid "OnlyCurrentStep"
+msgstr ""
+
+msgid "Highlight"
+msgstr ""
+
+msgid "Display Mode"
+msgstr ""
 
 msgid "Total Volume:"
 msgstr "총 체적:"
@@ -5452,6 +5479,9 @@ msgstr "미리보기"
 
 msgid "The current page has unsaved changes. You can continue editing or choose to save/discard before leaving."
 msgstr "현재 페이지에 저장되지 않은 변경 사항이 있습니다. 계속 편집하거나, 나가기 전에 저장 또는 취소를 선택할 수 있습니다."
+
+msgid "Home"
+msgstr ""
 
 msgid "Device"
 msgstr "장치"
@@ -5997,7 +6027,7 @@ msgid "Plugin library failed to load. Click here to view the solution."
 msgstr "플러그인 라이브러리를 로드하지 못했습니다. 해결책을 보려면 여기를 클릭하세요."
 
 msgid "Loading failed. Please check the network and try again."
-msgstr ""
+msgstr "로드에 실패했습니다. 네트워크를 확인하고 다시 시도하세요."
 
 msgid "Temporarily closed because there is no operation for a while."
 msgstr "한동안 활동이 없어 일시적으로 폐쇄되었습니다."
@@ -7140,13 +7170,13 @@ msgid "Automatically capture and upload print photos, showing defects during pri
 msgstr "출력 중의 결함과 최종 결과를 원격으로 볼 수 있도록 출력 사진을 자동으로 촬영하고 업로드합니다."
 
 msgid "Automatically match the corresponding switch strategy for leak-prone filaments (disable blob detection) and regular filaments (enable blob detection)."
-msgstr ""
+msgstr "누출되기 쉬운 필라멘트(블롭 감지 비활성화)와 일반 필라멘트(블롭 감지 활성화)에 대한 해당 전환 전략을 자동으로 일치시킵니다."
 
 msgid "Detect whether the nozzle is wrapped by filament or other foreign matter."
-msgstr ""
+msgstr "노즐에 필라멘트나 기타 이물질이 감겨 있는지 감지합니다."
 
 msgid "After disabling, nozzle wrapping cannot be detected, which may lead to print failure or nozzle damage."
-msgstr ""
+msgstr "이 기능을 비활성화하면 노즐 감김을 감지할 수 없어 출력 오류 또는 노즐 손상이 발생할 수 있습니다."
 
 msgctxt "Nozzle Type"
 msgid "Type"
@@ -7588,6 +7618,12 @@ msgstr "텍스처 색상 계산:%s"
 
 msgid "Texture Import Warning"
 msgstr "텍스처 가져오기 경고"
+
+msgid ""
+"The imported STEP file is split by sub-assembly, so some objects may not be placed on the build plate at first.\n"
+"It is expected if they are placed on the build plate later after translation or similar operations.\n"
+"The overall assembly can be checked from the assembly thumbnail or by entering the assembly view."
+msgstr ""
 
 msgid "Load these files as a single object with multiple parts?\n"
 msgstr "이 파일들을 여러 부품을 지닌 단일 객체로 불러오시겠습니까?\n"
@@ -8435,6 +8471,12 @@ msgstr "멀티 디바이스 관리(Studio를 재시작한 후 적용)."
 
 msgid "With this option enabled, you can send a task to multiple devices at the same time and manage multiple devices."
 msgstr "이 옵션을 활성화하면 여러 장치에 동시에 작업을 전송하고 여러 장치를 관리할 수 있습니다."
+
+msgid "Take effect after restarting Studio"
+msgstr ""
+
+msgid "The Filament Manager is turned off by default on macOS because compatibility issues on some systems may cause the application to become unresponsive."
+msgstr ""
 
 msgid "Show the step mesh parameter setting dialog."
 msgstr "스텝 메시 매개변수 설정 대화 상자를 표시합니다."
@@ -9309,7 +9351,7 @@ msgid "The hardness of current material (%s) exceeds the hardness of %s (%s). It
 msgstr "현재 재료(%s)의 경도가 %s(%s)의 경도를 초과합니다. 이로 인해 노즐 마모가 발생하여 재료 누출 및 흐름 불안정이 발생할 수 있습니다. 사용할 때 주의해 주십시오."
 
 msgid "If 'Dynamic Flow Calibration' is set to Auto/On, the system will use the manual calibration value or the default value and skip the flow calibration process. You can perform a manual flow calibration for TPU filament on the 'Calibration' page."
-msgstr ""
+msgstr "'동적 유량 보정'이 '자동/켜짐'으로 설정된 경우, 시스템은 수동 보정값 또는 기본값을 사용하고 유량 보정 과정을 건너뜁니다. TPU 필라멘트에 대한 수동 유량 보정은 '보정' 페이지에서 수행할 수 있습니다."
 
 msgid "Some filaments may switch between extruders during printing. Manual K-value calibration cannot be applied throughout the entire print, which may affect print quality. Enabling Flow Dynamics Calibration is recommended."
 msgstr "일부 필라멘트는 출력 중에 압출기 간에 전환될 수 있습니다. 수동 K값 보정은 전체 출력 과정에 적용할 수 없으며, 이로 인해 출력 품질이 저하될 수 있습니다. 유동 역학 보정 기능을 활성화하는 것이 좋습니다."
@@ -10049,6 +10091,12 @@ msgstr "펌웨어 리트랙션"
 
 msgid "Detached"
 msgstr "분리됨"
+
+msgid "The current preset is a project preset and can't be used to create a new preset. Please select a system preset or user preset, then try again."
+msgstr ""
+
+msgid "Unable to save preset"
+msgstr ""
 
 #, c-format, boost-format
 msgid "%d Filament Preset and %d Process Preset is attached to this printer. Those presets would be deleted if the printer is deleted."
@@ -11897,6 +11945,9 @@ msgstr "나선형 꽃병 모드에서 여러 객체를 출력하려면 “객체
 msgid "The spiral vase mode does not work when an object contains more than one materials."
 msgstr "나선형 꽃병 모드는 물체에 두 개 이상의 재료가 포함된 경우 작동하지 않습니다."
 
+msgid "The spiral vase mode does not work when an object contains regions with different print settings."
+msgstr ""
+
 msgid "Variable layer height is not supported with Organic supports."
 msgstr "유기적 지원에서는 가변 레이어 높이가 지원되지 않습니다."
 
@@ -12767,7 +12818,7 @@ msgid "temperature when flushing filament. 0 indicates the upper bound of the re
 msgstr "필라멘트를 플러싱할 때의 온도. 0은 권장 노즐 온도 범위의 상한을 나타냅니다."
 
 msgid "Flush temperature used in fast purge mode."
-msgstr ""
+msgstr "고속 퍼지 모드에서 사용되는 플러시 온도."
 
 msgid "Flush volumetric speed"
 msgstr "플러시 체적 속도"
@@ -12822,6 +12873,18 @@ msgstr "핫엔드 교체 시간"
 
 msgid "Time to change hotend."
 msgstr "핫엔드를 교체할 시간입니다."
+
+msgid "Cut and unload from extruder time"
+msgstr ""
+
+msgid "Time to cut filament and retract it out of the extruder, used when parallel feeding is supported. For statistics only"
+msgstr ""
+
+msgid "Extruder bite time after pre-feed"
+msgstr ""
+
+msgid "Time for the extruder to bite the filament once it has been pre-fed, used when parallel feeding is supported. For statistics only"
+msgstr ""
 
 msgid "Bed temperature type"
 msgstr "베드 온도 유형"
@@ -12970,10 +13033,10 @@ msgid "Start and end ratios for the first component in gradient mode. Comma-sepa
 msgstr "그라데이션 모드에서 첫 번째 구성 요소의 시작 및 종료 비율. 쉼표로 구분된 쌍, 예: \"0.10,0.90\"은 10%에서 90%를 의미합니다."
 
 msgid "Mixed filament gradient curve"
-msgstr ""
+msgstr "혼합 필라멘트 그레디언트 곡선"
 
 msgid "Optional Photoshop-style custom curve mapping Z progress to the first component ratio. Encoded as pipe-separated control points, either \"x,y\" (legacy) or \"x,y,m_in,m_out\" when a tangent override is needed (empty token or \"nan\" means use PCHIP default). x in [0,1]; y is clamped to the configured ratio range, e.g. \"0,0.15|0.5,0.50|1,0.85\". When empty, the linear gradient_range is used instead."
-msgstr ""
+msgstr "옵션인 포토샵 스타일의 사용자 지정 곡선 매핑 Z는 첫 번째 구성 요소 비율로 진행됩니다. 제어점은 파이프(|)로 구분되며, \"x,y\"(기존 방식) 또는 탄젠트 재정의가 필요한 경우 \"x,y,m_in,m_out\" 형식으로 인코딩됩니다(빈 토큰 또는 \"nan\"은 PCHIP 기본값을 사용함을 의미합니다). x는 [0,1] 범위 내에 있으며, y는 구성된 비율 범위(예: \"0,0.15|0.5,0.50|1,0.85\")로 제한됩니다. 비어 있는 경우 선형 gradient_range가 대신 사용됩니다."
 
 msgid "Mixed filament per-part gradient"
 msgstr "혼합 필라멘트 파트별 그레이디언트"
@@ -13387,10 +13450,10 @@ msgid "Enable clumping detection"
 msgstr "뭉침 감지 활성화"
 
 msgid "Order-independent overlap carving"
-msgstr ""
+msgstr "순서에 관계없는 중첩 조각"
 
 msgid "When enabled, overlapping model parts are carved by bounding-box size so smaller embedded parts are not removed by larger parts due to volume order."
-msgstr ""
+msgstr "이를 활성화하면 중첩되는 모델 부분은 경계 상자 크기에 따라 조각되므로 부피 순서로 인해 더 큰 부분에 의해 더 작은 내포 부분이 제거되지 않습니다."
 
 msgid "Clumping detection layers"
 msgstr "뭉침 감지 레이어"
@@ -14258,6 +14321,12 @@ msgstr "smooth 또는 일반 모드를 선택한 경우 각 출력마다 타임�
 msgid "Traditional"
 msgstr "일반"
 
+msgid "Farthest point timelapse"
+msgstr "가장 먼 지점 타임랩스"
+
+msgid "When enabled, the timelapse snapshot is taken at the farthest point from camera instead of traveling to the wipe tower or excess chute. Only effective in traditional timelapse mode on non-I3 printers."
+msgstr "이를 활성화하면 타임랩스 스냅샷이 와이프 타워나 잉여물 배출구로 이동하는 대신 카메라에서 가장 먼 지점에서 촬영됩니다. 이 기능은 비 I3 프린터에서 기존 타임랩스 모드를 사용할 때만 작동합니다."
+
 msgid "Temperature variation"
 msgstr "온도 변화"
 
@@ -14753,6 +14822,12 @@ msgstr "플러시 승수(고속 모드)"
 
 msgid "The flush multiplier used in fast purge mode."
 msgstr "고속 퍼지 모드에서 사용되는 플러시 승수입니다."
+
+msgid "Alternate extruder printing"
+msgstr ""
+
+msgid "When the printer supports parallel (pre-)feeding, print the two extruders in an alternating order within a layer instead of finishing one extruder first. Only takes effect when the printer supports parallel feeding."
+msgstr ""
 
 msgid "Width of prime tower"
 msgstr "프라임타워의 폭입니다."
@@ -17413,10 +17488,10 @@ msgid "Remove the third material"
 msgstr "세 번째 재료를 제거하세요"
 
 msgid "Material Ratio"
-msgstr ""
+msgstr "재료 비율"
 
 msgid "Model Height"
-msgstr ""
+msgstr "모델 높이"
 
 #: resources/data/hints.ini: [hint:How to use keyboard shortcuts]
 msgid ""
@@ -17713,6 +17788,12 @@ msgid ""
 msgstr ""
 "첫 시도 성공 신뢰성\n"
 "관리 부담 감소, 예측 가능한 생산량 증가. 예: PETG 부품을 생산하는 소규모 농장은 '6시간 후 실패'와 같은 예상치 못한 문제 발생을 방지하고 생산 일정을 준수할 수 있습니다."
+
+#~ msgid "Hide"
+#~ msgstr "숨기기"
+
+#~ msgid "Show"
+#~ msgstr "표시"
 
 #~ msgid "Spiral mode only works when wall loops is 1, support is disabled, clumping detection by probing is disabled, top shell layers is 0, sparse infill density is 0, timelapse type is traditional and smoothing wall speed in z direction is false."
 #~ msgstr "나선형 모드는 벽 루프가 1 이고, 지원이 비활성화되어 있고, 프로빙을 통한 뭉침 감지가 비활성화되어 있고, 상단 셸 레이어가 0 이고, 드믄 채우기 밀도가 0 이고, 타임랩스 유형이 기존이고 z 방향의 벽 속도 평활화가 아니인 경우에만 작동합니다."
@@ -19893,3 +19974,27 @@ msgstr "다음 파일이 디렉토리에 이미 존재합니다:\n\n%s"
 
 msgid "Only adjustable while printing or paused."
 msgstr "인쇄 중 또는 일시 중지 중에만 조정 가능합니다."
+
+msgid "tool_head_reset"
+msgstr "툴 헤드 원점 복귀"
+
+msgid "change_filament"
+msgstr "필라멘트 교체"
+
+msgid "flush_filament"
+msgstr "필라멘트 플러시"
+
+msgid "clear_nozzle"
+msgstr "노즐 청소"
+
+msgid "wait_bed_temp"
+msgstr "베드 온도 대기"
+
+msgid "wait_chamber_temp"
+msgstr "챔버 온도 대기"
+
+msgid "z_tilt_adjust"
+msgstr "Z 틸트 조정"
+
+msgid "auto_bed_adjust"
+msgstr "자동 베드 레벨링"
