@@ -1671,13 +1671,6 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionString());
     def->cli = ConfigOptionDef::nocli;
 
-    //y80
-    def = this->add("model_id", coString);
-    def->label = L("Model ID");
-    def->tooltip = L("ID of the printer");
-    def->set_default_value(new ConfigOptionString());
-    def->cli = ConfigOptionDef::nocli;
-
     def = this->add("activate_air_filtration",coBools);
     def->label = L("Activate air filtration");
     def->tooltip = L("Activate for better air filtration");

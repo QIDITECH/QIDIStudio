@@ -1193,8 +1193,6 @@ static std::vector<std::string> s_Preset_printer_options {
     , "is_support_multi_box"
     , "is_support_mqtt"
     , "is_support_polar_cooler"
-    //y80
-    , "model_id"
 };
 
 static std::vector<std::string> s_Preset_sla_print_options {
