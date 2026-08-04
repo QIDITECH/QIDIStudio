@@ -14,6 +14,14 @@
 //y77
 #include "wxExtensions.hpp"
 
+#include "GUI_App.hpp"
+#include "QDSDeviceManager.hpp"
+
+// P2PManager
+#if QDT_RELEASE_TO_PUBLIC
+#include "../QIDI/P2PManager.hpp"
+#endif
+
 
 #if defined(__linux__) || defined(_WIN32)
 //wxDEFINE_EVENT(EVT_MEDIA_CTRL_STAT, wxCommandEvent);
@@ -556,6 +564,8 @@ void VideoPanel::Load(const std::string& url)
     
     m_video_size = wxDefaultSize;
     m_error = 0;
+    m_start_video_requested = true;  // 标记需要向设备请求视频流
+    m_stop_video_requested = false;
 
     m_url = std::make_shared<std::string>(url);
 
@@ -568,7 +578,9 @@ void VideoPanel::Play()
     
     if (m_state != wxMEDIASTATE_PLAYING && m_url) {
         m_state = wxMEDIASTATE_PLAYING;
-        
+        m_start_video_requested = true;  // 标记需要向设备请求视频流
+        m_stop_video_requested = false;
+
         wxMediaEvent event(wxEVT_MEDIA_STATECHANGED);
         event.SetId(GetId());
         event.SetEventObject(this);
@@ -583,6 +595,8 @@ void VideoPanel::Stop()
     std::unique_lock<std::mutex> lk(m_mutex);
     
     m_url.reset();
+    m_start_video_requested = false;
+    m_stop_video_requested = true;
     m_frame = m_idle_image;
     m_video_size = wxDefaultSize;
     m_frame_size = wxDefaultSize;
@@ -646,7 +660,6 @@ void VideoPanel::OnPaint(wxPaintEvent& event)
 
 void VideoPanel::OnEraseBackground(wxEraseEvent& event)
 {
-    // 锟斤拷实锟街ｏ拷锟斤拷锟解背锟斤拷锟斤拷烁
 }
 
 void VideoPanel::OnSize(wxSizeEvent& event)
@@ -663,6 +676,35 @@ void VideoPanel::OnSize(wxSizeEvent& event)
 
 void VideoPanel::paintEvent(wxPaintEvent& evt)
 {
+    wxPaintDC dc(this);
+    auto size = GetSize();
+
+    if (size.x <= 0 || size.y <= 0) {
+        return;
+    }
+    
+    std::unique_lock<std::mutex> lk(m_mutex);
+
+    dc.SetPen(*wxTRANSPARENT_PEN);
+    dc.SetBrush(*wxBLACK_BRUSH);
+    dc.DrawRectangle(0, 0, size.x, size.y);
+    
+    if (!m_frame.IsOk()) {
+        return;
+    }
+    
+    wxSize frameSize = m_frame.GetSize();
+    
+    double scaleX = (double)size.x / frameSize.x;
+    double scaleY = (double)size.y / frameSize.y;
+    double scale = std::min(scaleX, scaleY);  // 保持宽高比的最小缩放
+
+    wxSize scaledSize(frameSize.x * scale, frameSize.y * scale);
+    wxPoint pos((size.x - scaledSize.x) / 2, (size.y - scaledSize.y) / 2);
+    wxImage scaledImage = m_frame.Scale(scaledSize.x, scaledSize.y, wxIMAGE_QUALITY_HIGH);
+    dc.DrawBitmap(wxBitmap(scaledImage), pos.x, pos.y, true);
+
+#if 0
     wxPaintDC dc(this);
     auto size = GetSize();
     
@@ -685,11 +727,23 @@ void VideoPanel::paintEvent(wxPaintEvent& evt)
     double scaleX = (double)size.x / frameSize.x;
     double scaleY = (double)size.y / frameSize.y;
     double scale = std::min(scaleX, scaleY);
-    
+
+    // Use NORMAL quality for real-time video (HIGH is too slow for 100KB+ images)
     wxSize scaledSize(frameSize.x * scale, frameSize.y * scale);
     wxPoint pos((size.x - scaledSize.x) / 2, (size.y - scaledSize.y) / 2);
-    wxImage scaledImage = m_frame.Scale(scaledSize.x, scaledSize.y, wxIMAGE_QUALITY_HIGH);
-    dc.DrawBitmap(wxBitmap(scaledImage), pos.x, pos.y, true);
+    
+    // Use cached scaled bitmap when possible (avoid scaling on every paint event)
+    bool needRescale = !m_cached_scaled_bitmap.IsOk()
+        || m_frame.GetSize() != m_cached_scaled_bitmap.GetSize()
+        || size != m_last_window_size;
+    
+    if (needRescale) {
+        wxImage scaledImage = m_frame.Scale(scaledSize.x, scaledSize.y, wxIMAGE_QUALITY_NORMAL);
+        m_cached_scaled_bitmap = wxBitmap(scaledImage);
+        m_last_window_size = size;
+    }
+    dc.DrawBitmap(m_cached_scaled_bitmap, pos.x, pos.y, true);
+#endif
 }
 
 void VideoPanel::adjust_frame_size(wxSize& frame, const wxSize& video, const wxSize& window)
@@ -705,161 +759,183 @@ void VideoPanel::PlayThread()
 {
     using namespace std::chrono_literals;
 
-    std::shared_ptr<std::string> currentUrl;
-    CURL* curl = nullptr;
-
     while (!m_exit_flag) {
+        // 等待播放指令
         {
             std::unique_lock<std::mutex> lk(m_mutex);
-            m_cond.wait(lk, [this, &currentUrl] {
-            return m_exit_flag ||
-                (!m_url && currentUrl) ||
-                (m_url && !currentUrl) ||
-                (m_url && currentUrl && *m_url != *currentUrl);
+            m_cond.wait(lk, [this] {
+                return m_exit_flag || m_start_video_requested.load();
             });
-            
-            if (m_exit_flag) {
-                break;
-            }
+            if (m_exit_flag) break;
+            m_start_video_requested = false;
 
-            currentUrl = m_url;
-
-            if (!currentUrl) {
-                m_frame = m_idle_image;
-                m_state = wxMEDIASTATE_STOPPED;
-                
-                wxMediaEvent stateEvent(wxEVT_MEDIA_STATECHANGED);
-                stateEvent.SetId(GetId());
-                stateEvent.SetEventObject(this);
-                wxPostEvent(this, stateEvent);
-                
-                CallAfter([this] { 
-                    Refresh(); 
-                });
-                
-                continue;
-            }
-            
-            if (currentUrl->empty()) {
-                continue;
-            }
-            
             ResetPlaybackState();
-            
             m_state = wxMEDIASTATE_PLAYING;
-
             wxMediaEvent stateEvent(wxEVT_MEDIA_STATECHANGED);
             stateEvent.SetId(GetId());
             stateEvent.SetEventObject(this);
             wxPostEvent(this, stateEvent);
         }
 
-        if (curl) {
-            curl_easy_cleanup(curl);
-            curl = nullptr;
-        }
-
-        curl = curl_easy_init();
-        if (!curl) {
-            SetErrorAndNotify(-1, "Failed to initialize CURL");
-            continue;
-        }
-        
-        curl_easy_setopt(curl, CURLOPT_URL, currentUrl->c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);
-        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3L);
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, "VideoPanel/1.0");
-        curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
-        
         bool shouldContinue = true;
-        int consecutiveErrors = 0;
-        const int maxConsecutiveErrors = 3;
-        
-        while (shouldContinue) {
-            auto frameStartTime = std::chrono::steady_clock::now();
-            
-            wxMemoryOutputStream memStream;
-            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &memStream);
-            
-            CURLcode res = curl_easy_perform(curl);
-            
-            {
-                std::lock_guard<std::mutex> lock(m_mutex);
-                if (m_exit_flag || m_url != currentUrl) {
-                    shouldContinue = false;
+
+        auto qds_dev_obj = Slic3r::GUI::wxGetApp().qdsdevmanager->getSelectedDevice();
+        bool support_p2p = qds_dev_obj->active_p2p;
+
+        if(support_p2p){
+            // ============================================================
+            // 方式一：P2P 接收视频流
+            // ============================================================
+
+            // Receive VIDEO_FRAME (HTTP headers already stripped by P2PManager,
+            // but the 12-byte ptsUs+flags header is still present)
+            auto &p2p = P2PManager::instance();
+            int videoToken = p2p.onVideo([this, &shouldContinue](uint8_t type, int64_t,
+                                          int32_t, const uint8_t *data, size_t len) {
+                if (type != 0x02 || !data || len <= 12) return;
+
+                // Skip 12-byte header: [ptsUs(8)][flags(4)][JPEG]
+                const uint8_t *jpegData = data + 12;
+                size_t         jpegLen  = len - 12;
+
+                wxMemoryInputStream imgStream(jpegData, jpegLen);
+                wxImage newImage;
+                if (newImage.LoadFile(imgStream, wxBITMAP_TYPE_JPEG)) {
+                    {
+                        std::lock_guard<std::mutex> glk(m_mutex);
+                        if (shouldContinue)
+                            m_frame = newImage;
+                        else
+                            m_frame = m_idle_image;
+                        m_video_size = wxSize(newImage.GetWidth(), newImage.GetHeight());
+                        UpdateFrameStatistics();
+                    }
+                    CallAfter([this] { Refresh(); Update(); });
+                }
+            });
+
+            // Handle P2P state changes – send request_video on connect
+            int stateToken = p2p.on(0xFF, [&p2p](uint8_t type, int64_t, int32_t,
+                                                  const uint8_t *, size_t) {
+                // 0xFF is a pseudo-type we use to receive state change events
+                // For simplicity, keep using setStateCallback for state:
+            });
+            // Actually use setStateCallback for connection state (not packet-based)
+            // (state callback is not packet-based, so it remains as a legacy callback)
+            int64_t reqId = (int64_t)(std::chrono::system_clock::now().time_since_epoch().count());
+            std::string cmd = "{\"method\":\"request_video\"}";
+            const int maxRetries = 5;
+            for (int retry = 0; retry < maxRetries; retry++) {
+                int wrRet = p2p.sendTextCommand(cmd, reqId);
+                if (wrRet >= 0) {
+                    BOOST_LOG_TRIVIAL(trace) << "VideoPanel: Sent request_video (reqId=" << reqId << ")";
                     break;
+                } else {
+                    BOOST_LOG_TRIVIAL(trace) << "VideoPanel: Failed to send request_video (attempt " << (retry + 1) << "/" << maxRetries << "), ret=" << wrRet;
+                    if (retry < maxRetries - 1)
+                        std::this_thread::sleep_for(500ms);
                 }
             }
-            
-            if (res == CURLE_OK && memStream.GetSize() > 0) {
-                consecutiveErrors = 0;
-                    
-                wxMemoryInputStream imgStream(memStream);
-                wxImage newImage;
-                
 
-                if (newImage.LoadFile(imgStream, wxBITMAP_TYPE_JPEG)) {
-                    bool imageChanged = false;
-                    {
-                        std::lock_guard<std::mutex> lock(m_mutex);
-                        if (m_url == currentUrl && (!m_frame.IsOk() || !m_frame.IsSameAs(newImage))) {
-                            m_frame = newImage;
-                            imageChanged = true;
-
-                            UpdateFrameStatistics();
-
-                            if(imageChanged){
-                                CallAfter([this] { 
-                                    Refresh(); 
-                                });
-                            }
-                        }
-                    }
-                } else {
-                    wxLogWarning("VideoPanel: Failed to decode JPEG image");
-                    SetErrorAndNotify(-2, "Image decode failed");
-                }
-            } else {
-                consecutiveErrors++;
-                wxLogWarning("VideoPanel: Network error (attempt %d/%d): %s", 
-                        consecutiveErrors, maxConsecutiveErrors, curl_easy_strerror(res));
-                
-                if (consecutiveErrors >= maxConsecutiveErrors) {
-                    SetErrorAndNotify(res, "Too many consecutive network errors");
-                    shouldContinue = false;
-                    break;
-                }
-                
-                std::this_thread::sleep_for(500ms);
-                
+            // Wait loop – replaces the manual pgEvent loop
+            while (shouldContinue && !m_exit_flag) {
                 {
                     std::lock_guard<std::mutex> lock(m_mutex);
-                    if (m_exit_flag || m_url != currentUrl) {
-                        shouldContinue = false;
-                        break;
+                    if (m_exit_flag) { shouldContinue = false; break; }
+                    if (m_stop_video_requested.load()) {
+                        m_stop_video_requested = false;
+                        if (p2p.sessionId() != 0) {
+                            int64_t reqId = (int64_t)time(nullptr);
+                            std::string cmd = "{\"method\":\"stop_video\"}";
+                            int wrRet = p2p.sendTextCommand(cmd, reqId);
+                            if (wrRet >= 0)
+                                BOOST_LOG_TRIVIAL(info) << "VideoPanel: Sent stop_video (reqId=" << reqId << ")";
+                            else
+                                BOOST_LOG_TRIVIAL(error) << "VideoPanel: Failed to send stop_video, ret=" << wrRet;
+                        }
+                        shouldContinue = false; break;
                     }
                 }
-                
-                continue;
+
+                std::this_thread::sleep_for(100ms);
             }
-        }
-        if (shouldContinue) {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            if (m_url == currentUrl) {
+            //y83
+            if (shouldContinue) {
+                std::lock_guard<std::mutex> lock(m_mutex);
                 m_error = 0;
-                m_frame = wxImage();
-                m_video_size = wxDefaultSize;
-                m_frame_size = wxDefaultSize;
-                
                 NotifyStopped();
             }
-        }
-    }
+            p2p.off(videoToken);
+            p2p.off(stateToken);
+            m_frame = m_idle_image;
+        } else {
+            // ============================================================
+            // 方式二：URL 下载 JPEG 帧
+            // ============================================================
+            CURL* curl = nullptr;
+            if (curl) { curl_easy_cleanup(curl); curl = nullptr; }
+            curl = curl_easy_init();
+            if (!curl) { SetErrorAndNotify(-1, "Failed to init CURL"); continue; }
 
-    if (curl) {
-        curl_easy_cleanup(curl);
+            curl_easy_setopt(curl, CURLOPT_URL, m_url->c_str());
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+            curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);
+            curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3L);
+            curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+            curl_easy_setopt(curl, CURLOPT_USERAGENT, "VideoPanel/1.0");
+            curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+
+            bool shouldContinue = true;
+            int consecutiveErrors = 0;
+            const int maxConsecutiveErrors = 3;
+
+            while (shouldContinue && !m_exit_flag) {
+
+                wxMemoryOutputStream memStream;
+                curl_easy_setopt(curl, CURLOPT_WRITEDATA, &memStream);
+                CURLcode res = curl_easy_perform(curl);
+
+                {
+                    std::lock_guard<std::mutex> lock(m_mutex);
+                    //y83
+                    if (m_exit_flag || m_stop_video_requested.load()) { shouldContinue = false; break; }
+                }
+
+                if (res == CURLE_OK && memStream.GetSize() > 0) {
+                    consecutiveErrors = 0;
+                    wxMemoryInputStream imgStream(memStream);
+                    wxImage newImage;
+                    if (newImage.LoadFile(imgStream, wxBITMAP_TYPE_JPEG)) {
+                        std::lock_guard<std::mutex> lock(m_mutex);
+                        m_frame = newImage;
+                        m_video_size = wxSize(newImage.GetWidth(), newImage.GetHeight());
+                        adjust_frame_size(m_frame_size, m_video_size, GetSize());
+                        UpdateFrameStatistics();
+                        CallAfter([this] { Refresh(); });
+                    } else {
+                        wxLogWarning("VideoPanel: JPEG decode failed");
+                        SetErrorAndNotify(-2, "Image decode failed");
+                    }
+                } else {
+                    consecutiveErrors++;
+                    wxLogWarning("VideoPanel: Network error (%d/%d): %s",
+                        consecutiveErrors, maxConsecutiveErrors, curl_easy_strerror(res));
+                    if (consecutiveErrors >= maxConsecutiveErrors) {
+                        SetErrorAndNotify(res, "Too many network errors");
+                        shouldContinue = false; break;
+                    }
+                    std::this_thread::sleep_for(500ms);
+                }
+            }
+
+            if (shouldContinue) {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                m_error = 0;
+                NotifyStopped();
+            }
+            if (curl) curl_easy_cleanup(curl);
+            m_frame = m_idle_image;
+        }
     }
 }
 
@@ -882,9 +958,10 @@ void VideoPanel::UpdateFrameStatistics()
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(
         now - m_lastSecondTime).count();
     
-    if (elapsedTime >= 1000) {
+    if (elapsedTime >= 1000) { // 每秒统计一次
         int fps = static_cast<int>(m_frameCount * 1000 / elapsedTime);
-        wxLogMessage("VideoPanel: Decode Rate: %d FPS", fps);
+        BOOST_LOG_TRIVIAL(trace) << "VideoPanel: Decode FPS=" << fps
+            << " (" << m_frameCount << " frames in " << elapsedTime << "ms)";
         m_frameCount = 0;
         m_lastSecondTime = now;
     }

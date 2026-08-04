@@ -316,7 +316,7 @@ void MediaPlayCtrl::Play()
     //y76
     load();
     m_button_play->SetIcon("media_stop");
-    SetStatus(_L("Initializing..."));
+    SetStatus(_L("Playing..."), false);
     return;
 
     if (!m_next_retry.IsValid() || wxDateTime::Now() < m_next_retry)

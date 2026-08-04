@@ -1002,8 +1002,12 @@ void TimelapseFileListCtrl::AddItem(const wxString& name, const wxBitmap& image,
     item->SetMinSize(wxSize(-1, FromDIP(kFileListRowHeightDip) + FromDIP(kFileListRowSeparatorDip)));
     item->setLocalCopyExists(local_file_exists_in_download_dir(name));
     item->sync_row_surface_colours(file_list_panel_background(), timelapse_file_row_text_colour());
+    //cj_5 Layout / FitInside moved to FlushBatchAdd() to avoid per-row cost.
+}
+
+void TimelapseFileListCtrl::FlushBatchAdd()
+{
     m_mainSizer->Layout();
-    //cj_3
     FitInside();
 }
 

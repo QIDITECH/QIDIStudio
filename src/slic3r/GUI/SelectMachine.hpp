@@ -152,6 +152,7 @@ struct Machine_info {
     bool        enable_multi_box = false;
     bool        timelapse = true;
     bool        enable_polar_cooler = false;
+    bool        is_local_transitioned = false;
 };
 
 #define PRINT_OPT_WIDTH  FromDIP(44)
@@ -374,6 +375,8 @@ private:
     std::string                            machine_apikey;
     std::string                            machine_link_url = "";
     bool                                   machine_is_special = false;
+
+	bool                                   m_is_local_transitioned = false;
     SwitchButton*                          m_switch_button{ nullptr };
     Machine_info                           select_machine;
 

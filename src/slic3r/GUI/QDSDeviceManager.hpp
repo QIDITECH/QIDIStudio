@@ -56,6 +56,9 @@ struct TimelapseFileInfo {
     std::string file_size;
     std::string modified_time;
     std::string thumb_url;
+    //y83
+    std::string video_add;
+    ThumbnailData thumbnailData;
 };
 
 //cj_5
@@ -67,6 +70,17 @@ struct LocalDiscoveredDevice {
     std::string raw_payload;
     bool legacy_device{ false };
     std::chrono::steady_clock::time_point last_seen;
+};
+
+//cj_5
+struct QDSDeviceErrorData {
+    std::string event_value;
+    std::string error_code;
+    std::string error_message;
+    bool error_popup;
+    int error_type;
+    int error_weight;
+    std::string prossess_message;
 };
 
 //cj_5
@@ -165,6 +179,10 @@ public:
     std::string getMakerJobProgress();
     void setMakerJobIsUpdate(bool value);
 
+    //cj_5
+    void updateAllErrorData(json& jsonData);
+    void updateErrorDataForNotiry(json& jsonData);
+    void updateErrorDataSingle(json& jsonData, std::string event_value);
 private:
 	void twoStageParseIntToString(const json& status, std::string& target, std::string first, std::string second);
 	void twoStageParseStringToString(const json& status, std::string& target, std::string first, std::string second);
@@ -174,9 +192,13 @@ private:
 
     // cj_1
     int getJsonCurStageToInt(const json& jsonData, std::string jsonName);
-    static void initGeneralData();
+    
+    template<typename T>
+    bool parseJsonForPath(const json& jsonData, T& target, std::string path);
 
 public:
+
+    // 打印机数据
     std::string     m_name;
     std::string     m_id;
     std::string     m_ip;
@@ -217,9 +239,13 @@ public:
     std::string     m_print_progress{ "N/A" };
     std::string     m_filament_weight{ "0g" };
     std::string     m_print_total_time{ "0m" };
-    std::string     m_print_png_url{ "" };
-    std::string     m_status{ "standby" };
-    std::string     m_print_state;
+    std::string     m_print_png_url{ "" };      // 打印图标的url
+    std::string     m_status{ "standby" };      // 当前打印状态
+	std::string     m_print_state;              // 当前打印状态
+    std::string     m_print_msg{""};                // 当前打印状态信息 例如：清理打印头，校准
+    //y83
+    std::string     m_print_png_plate_index{""};
+    std::string     m_print_png_path_for_p2p{""};
 	int m_print_cur_layer{ 0 };
 	int m_print_total_layer{ 0 };
 	//cj_4
@@ -232,14 +258,15 @@ public:
 	std::vector<int> m_boxTemperature;
 	std::vector<int> m_boxHumidity;
     bool box_is_update;
-    bool m_is_auto_reload{ false };
-    std::string m_cur_slot;
-    int m_box_count{ 0 };
-    std::vector<Filament> m_filamentConfig;
-    static std::vector<Filament> m_general_filamentConfig;
-    bool m_auto_read_rfid{ false };
-    bool m_init_detect{ false };
-    bool m_auto_reload_detect{ false };
+    //y83
+    std::string m_box_signature;
+    bool m_is_auto_reload{ false };    // 
+    std::string m_cur_slot;            // 当前使用的槽，第一个槽为 slot-0  第四个为slot-3
+    int m_box_count{ 0 };              // 当前盒子的数量
+    std::vector<Filament> m_filamentConfig; // 所有的数据，index是filament的编号
+    bool m_auto_read_rfid{ false };             // 插入时自动更新
+    bool m_init_detect{ false };                // 开机时检测
+    bool m_auto_reload_detect{ false };         // 自动续料
 
     //y78
     std::vector<std::string> m_filament_colors;
@@ -273,12 +300,15 @@ public:
     bool m_fresh_timelapse_file_info{ false };
 
     bool m_is_init_filamentConfig{ false };
-    static bool m_is_init_general;
-	static std::mutex m_general_mtx;
 	std::mutex m_config_mtx;
     bool is_net_device{ false };
 
-    //cj_3
+    // Pending save_variables captured before m_filamentConfig is ready;
+    // processed as soon as updateFilamentConfig completes.
+    json m_pending_save_variables;
+    std::atomic<bool> m_has_pending_box_update{ false };
+
+    //cj_3 云端 legacy 轮询：新设备用 m_frp_url；旧设备用 m_net_link_url（NetDevice.link_url）
     std::string m_net_link_url;
     bool        m_net_poll_use_frp{ false };
 
@@ -286,7 +316,20 @@ public:
     std::string maker_job_state = "";
     std::string maker_job_progress = "";
     std::atomic<bool> maker_job_is_update{ false };
+
+    std::vector<QDSDeviceErrorData> m_errorData;
+    //y83
+    std::mutex m_errorData_mtx;
+    bool m_needUpdateErrorData{ false };
+
+    //y83 p2p
+    std::atomic<bool> p2p_enable{ false };
+    std::string p2p_license="";
+    std::string p2p_server="";
+    std::string p2p_relay_list="";
+    std::atomic<bool> active_p2p{false};
 };
+
 
 
 using ParameterUpdateCallback = std::function<void(const std::string& device_id)>;
@@ -375,6 +418,9 @@ public:
     //cj_3 供后台线程枚举设备做 HTTP 状态轮询（拷贝 shared_ptr，持锁时间短）
     std::vector<std::pair<std::string, std::shared_ptr<QDSDevice>>> snapshotDevices();
 
+    //y83
+    bool getFileInfoViaP2P();
+    bool getTimelapseInfoP2P();
 private:
     using WebSocketClient = websocketpp::client<websocketpp::config::asio_client>;
 
@@ -414,6 +460,7 @@ private:
     void onFail(const std::string& device_id, websocketpp::connection_hdl hdl);
 
     void sendSubscribeMessage(const std::string& device_id);
+    void getAllErrorList(const std::string& device_id);
     void handleDeviceMessage(const std::string& device_id, const json& message);
     void updateDeviceMsg(const std::string& device_id, const json& message);
     void updateDeviceStatus(const std::string& device_id, std::string new_status);
@@ -442,7 +489,8 @@ private:
                           std::string& new_status, bool& is_update);
     void processConnectionStatus(const std::string& device_id, const std::string& status);
     void safeCallbackInvoke();
-    void updateDeviceFileInfo(std::shared_ptr<QDSDevice>& device, const json& result);
+    //y83
+    void updateDeviceFileInfo(std::shared_ptr<QDSDevice>& device, const json& result, bool support_p2p=false);
 
     //cj_3
     void updateDeviceTimelapseFileInfo(std::shared_ptr<QDSDevice>& device, const std::string& response_body);
@@ -466,6 +514,11 @@ private:
         std::lock_guard<std::mutex> lock(callback_mutex_);
         return file_info_update_callback_;
     }
+
+    //y83
+    std::string m_text_from_p2p;
+    std::map<std::string, std::vector<char>> m_p2p_thumbnails;
+    std::map<std::string, std::vector<char>> m_p2p_timelapse_thumbnails;
 };
 
 

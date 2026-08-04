@@ -3,6 +3,7 @@
 
 #include "libslic3r/ProjectTask.hpp"
 #include "DeviceManager.hpp"
+#include "HMSDialog.hpp"
 #include "MonitorPage.hpp"
 #include "SliceInfoPanel.hpp"
 #include "CameraPopup.hpp"
@@ -645,6 +646,17 @@ protected:
     ModelFileListView* m_model_panel{ nullptr };
     wxPanel* m_model_button_panel{ nullptr };
     RoundedToolButton* m_model_flash_btn{ nullptr };
+    //cj_5 HMS notification indicator button.
+    HMSIndicatorButton* m_hms_btn{ nullptr };
+public:
+    //cj_5 HMS notification data — error list from QDSDevice, red dot logic.
+    void update_hms_data(const std::vector<QDSDeviceErrorData>& items, const std::string& device_id);
+    void clear_hms_unread();
+    std::vector<QDSDeviceErrorData> m_hms_items;
+    std::string m_hms_device_id;
+    bool m_hms_has_unread{ false };
+    class HMSDialog* m_hms_dlg{ nullptr };
+protected:
 
     //cj_4
     TimelapsePanelHost* m_timelapse_host{ nullptr };
@@ -732,7 +744,7 @@ public:
     void tabSiwtch(Button* button, wxPanel* panel);
     //cj_3
     void sync_model_file_toolbar_after_list_download_change() { sync_model_file_toolbar(0); }
-
+    //HMSIndicatorButton* m_hms_btn{ nullptr };
 protected:
     //cj_3
     virtual void after_timelapse_tab_shown() {}
@@ -762,7 +774,7 @@ class StatusPanel : public StatusBasePanel
 
 //cj_1
 public:
-    void update_progress(std::string fileName, std::string layer,std::string totalTime,std::string weight, float remainingTime, float progress);
+    void update_progress(std::string fileName, std::string layer,std::string totalTime,std::string weight, float remainingTime, float progress, std::string msg);
     
     void update_camera_url(std::string url);
 
@@ -802,8 +814,16 @@ public:
     void clear_model_item();
     //cj_3 Clear model list only; do not switch to Control tab (used when getFileInfo refreshes the list)
     void clear_model_items_only();
-    // cj_2 
-    void add_model_item(std::string itemName, std::string weight, std::string preTime, std::string imgPath,int imgSize = 0);
+    // cj_2 y83
+    void add_model_item(std::string itemName, std::string weight, std::string preTime, std::string imgPath,int imgSize = 0, std::string file_path="");
+    //cj_5 Call before batch add_model_item to freeze layout (avoid O(n²) sizer recalc).
+    void freeze_model_list();
+    //cj_5 Call after batch add_model_item to flush layout once instead of per-row.
+    void flush_model_batch();
+    //cj_5 Call after batch add_timelapse_file_item to flush layout once.
+    //cj_5 Call before batch add_timelapse_file_item to freeze layout.
+    void freeze_timelapse_list();
+    void flush_timelapse_batch();
     void refreshThumbnailItem(const std::string& file_name, const std::vector<uint8_t>& png_data);
     //cj_3 Model file list (context menu drives actions; no multi-select).
     void print_model_for_storage_path(const wxString& storage_path);
@@ -824,11 +844,9 @@ public:
     void remove_timelapse_file_rows(const std::vector<TimelapseFileItem*>& rows);
 	//cj_3
 	void clear_timelapse_file_list();
-	//cj_3
-	void add_timelapse_file_item(const std::string& file_name,
-		const std::string& file_size,
-		const std::string& modified_time,
-		const std::string& thumb_url);
+    //cj_5
+    	//cj_3 y83
+	void add_timelapse_file_item(const TimelapseFileInfo& timelapse_info);
     //cj_3
 protected:
     void after_timelapse_tab_shown() override;
@@ -1040,7 +1058,7 @@ private:
     //cj_1 Whether extrusion preconditions are met
     bool judgeAxis();
 public:
-    void update_error_message();
+    void update_error_message(std::string qds_error_msg = "");
 
 public:
     StatusPanel(wxWindow *      parent,

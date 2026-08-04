@@ -3011,7 +3011,6 @@ void TabPrint::build()
 
         optgroup = page->new_optgroup(L("Advanced"), L"param_advanced");
         optgroup->append_single_option_line("wall_sequence","print-settings/quality-advance-settings");
-        optgroup->append_single_option_line("monotonic_travel_into_wall");
         optgroup->append_single_option_line("is_infill_first","print-settings/quality-advance-settings");
         //y32   
         optgroup->append_single_option_line("bridge_flow","print-settings/bridge");
@@ -3083,6 +3082,8 @@ void TabPrint::build()
         optgroup = page->new_optgroup(L("Advanced"), L"param_advanced");
         //y32
         optgroup->append_single_option_line("infill_wall_overlap","print-settings/strength-advance-settings");
+        
+        optgroup->append_single_option_line("monotonic_travel_into_wall");
         optgroup->append_single_option_line("infill_direction","print-settings/strength-advance-settings");
         optgroup->append_single_option_line("bridge_angle","print-settings/strength-advance-settings");
         optgroup->append_single_option_line("minimum_sparse_infill_area","print-settings/strength-advance-settings");

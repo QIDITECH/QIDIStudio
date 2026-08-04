@@ -36,7 +36,7 @@
 #include "BitmapCache.hpp"
 #include "BonjourDialog.hpp"
 #include "MsgDialog.hpp"
-#include "PrinterWebView.hpp"
+#include "QDSPrinterWebView.hpp"
 
 namespace fs_path = std::filesystem;
 namespace Slic3r {

@@ -117,7 +117,9 @@
 #include "ModelMall.hpp"
 #include "HintNotification.hpp"
 #include "QDTUtil.hpp"
-#include "PrinterWebView.hpp"
+#include "fila_manager/wgtFilaManagerFeature.h"
+
+#include "QDSPrinterWebView.hpp"
 //cj_2
 #include "QDSDeviceManager.hpp"
 //#ifdef WIN32
@@ -1454,8 +1456,25 @@ GUI_App::GUI_App()
     }
     this->init_download_path();
 
+#if defined(__WXOSX__)
+    m_macos_pending_pump_timer.Bind(wxEVT_TIMER, &GUI_App::on_macos_pending_pump, this);
+#endif
+
     reset_to_active();
 }
+
+#if defined(__WXOSX__)
+void GUI_App::on_macos_pending_pump(wxTimerEvent& WXUNUSED(evt))
+{
+    // STUDIO-18472: drain wx pending events ourselves. After the Filament Manager
+    // WKWebView churn the macOS run loop no longer reliably wakes to call
+    // ProcessPendingEvents() from its observer, which strands deferred actions
+    // (project restore, tab-bar page switches posted via wxPostEvent). The
+    // HasPendingEvents() guard makes this a no-op on the common (healthy) path.
+    if (wxTheApp && wxTheApp->HasPendingEvents())
+        wxTheApp->ProcessPendingEvents();
+}
+#endif
 
 void GUI_App::shutdown()
 {
@@ -1488,6 +1507,14 @@ std::vector<Slic3r::GUI::NetDevice> GUI_App::get_devices()
 void GUI_App::set_devices(std::vector<NetDevice> devices)
 {
     qdsdevmanager->setNetDevices(devices);
+}
+
+//y83
+bool GUI_App::is_selected_device_support_p2p(){
+    auto qds_set = qdsdevmanager->getSelectedDevice();
+    if(qds_set)
+        return qds_set->active_p2p;
+    return false;
 }
 
 #endif
@@ -1533,10 +1560,10 @@ std::string GUI_App::get_model_http_url(std::string country_code)
 {
     std::string url;
     if (country_code == "US") {
-        url = "https://makerworld.com/";
+        url = "https://www.qidimaker.com/en/home/";
     }
     else if (country_code == "CN") {
-        url = "https://makerworld.com.cn/";
+        url = "https://www.qidimaker.com/zh/home/";
     }
     else if (country_code == "ENV_CN_DEV") {
         url = "https://makerhub-dev.qidi-lab.com/";
@@ -1560,7 +1587,7 @@ std::string GUI_App::get_model_http_url(std::string country_code)
         url = "https://makerhub-pre.qiditech.net/";
     }
     else {
-        url = "https://makerworld.com/";
+        url = "https://www.qidimaker.com/en/home/";
     }
 
     return url;
@@ -1964,6 +1991,7 @@ void GUI_App::restart_networking()
         if (plater_)
             plater_->get_notification_manager()->qdt_close_plugin_install_notification();
 
+        //if (m_agent->is_user_login()) {
         //cj_5 Use token-based check instead of deprecated m_agent DLL.
         if (is_user_login()) {
             remove_user_presets();
@@ -1976,9 +2004,9 @@ void GUI_App::restart_networking()
             start_sync_user_preset();
         }
 //ZY1
-        /*if (mainframe && this->app_config->get("staff_pick_switch") == "true") {
-            if (mainframe->m_webview) { mainframe->m_webview->SendDesignStaffpick(has_model_mall()); }
-        }*/
+//         if (mainframe && this->app_config->get("staff_pick_switch") == "true") {
+//             if (mainframe->m_webview) { mainframe->m_webview->SendDesignStaffpick(has_model_mall()); }
+//         }
     }
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< boost::format(" exit, m_agent=%1%")%m_agent;
 }
@@ -2257,6 +2285,7 @@ void GUI_App::init_networking_callbacks()
                     if (sel && sel->get_dev_id() == dev_id) {
                         obj->parse_json("cloud", msg);
                         GUI::wxGetApp().sidebar().load_ams_list(obj);
+                        // STUDIO-18155: AMS 状态变化驱动耗材同步（本地 store + 节流后云端）
                         if (auto* sync = wxGetApp().fila_manager_sync()) sync->on_device_update(obj);
                     } else {
                         obj->parse_json("cloud", msg, true);
@@ -2305,6 +2334,7 @@ void GUI_App::init_networking_callbacks()
                     obj->parse_json("lan", msg);
                     if (this->m_device_manager->get_selected_machine() == obj) {
                         GUI::wxGetApp().sidebar().load_ams_list(obj);
+                        // STUDIO-18155: AMS 状态变化驱动耗材同步（本地 store + 节流后云端）
                         if (auto* sync = wxGetApp().fila_manager_sync()) sync->on_device_update(obj);
                     }
                 }
@@ -2475,7 +2505,7 @@ static LogEncOptions s_get_log_enc_opts()
         std::string enc_key_host_env;
         if (!region_str.empty()) {
             if (region_str == "CHN" || region_str == "China" || region_str == "CN") {
-                enc_key_url = wxGetApp().get_http_url("CN", "v1/analysis-st/tag/");
+                //enc_key_url = wxGetApp().get_http_url("CN", "v1/analysis-st/tag/");
                 enc_key_host_env = "cn";
             } else {
                 enc_key_url = wxGetApp().get_http_url("US", "v1/analysis-st/tag/");
@@ -3284,6 +3314,7 @@ bool GUI_App::on_init_inner()
     copy_network_if_available();
     on_init_network();
 
+    //if (m_agent && m_agent->is_user_login()) {
     //cj_5 Use token-based check instead of deprecated m_agent DLL.
     if (is_user_login()) {
         m_load_last_machine.is_list_ok = false;
@@ -3319,29 +3350,41 @@ bool GUI_App::on_init_inner()
     // Let the libslic3r know the callback, which will translate messages on demand.
     Slic3r::I18N::set_translate_callback(libslic3r_translate_callback);
 
-    // Initialize Filament Manager store & sync
-    if (!m_fila_manager_store) {
-        m_fila_manager_store = new wgtFilaManagerStore();
-        m_fila_manager_store->load();
-        BOOST_LOG_TRIVIAL(info) << "Filament Manager store initialized";
-    }
-    if (!m_fila_manager_sync) {
-        m_fila_manager_sync = new wgtFilaManagerSync(m_fila_manager_store);
-        BOOST_LOG_TRIVIAL(info) << "Filament Manager sync initialized";
-    }
-    if (!m_fila_manager_cloud_client) {
-        m_fila_manager_cloud_client = new wgtFilaManagerCloudClient();
-        BOOST_LOG_TRIVIAL(info) << "Filament Manager cloud client initialized";
-    }
-    if (!m_fila_manager_cloud_sync) {
-        m_fila_manager_cloud_sync = new wgtFilaManagerCloudSync(m_fila_manager_store,
-                                                                m_fila_manager_cloud_client);
-        BOOST_LOG_TRIVIAL(info) << "Filament Manager cloud sync initialized";
-    }
-    if (!m_fila_manager_cloud_disp) {
-        m_fila_manager_cloud_disp = new wgtFilaManagerCloudDispatcher(m_fila_manager_cloud_sync,
-                                                                     m_fila_manager_cloud_client);
-        BOOST_LOG_TRIVIAL(info) << "Filament Manager cloud dispatcher initialized";
+#ifdef __APPLE__
+    constexpr bool is_macos = true;
+#else
+    constexpr bool is_macos = false;
+#endif
+    m_disable_fila_manager = is_fila_manager_disabled_by_config(
+        app_config->get(FilaManagerEnabledConfigKey), is_macos);
+    if (m_disable_fila_manager) {
+        BOOST_LOG_TRIVIAL(info) << "Filament Manager disabled by " << FilaManagerEnabledConfigKey;
+    } else {
+        // Initialize Filament Manager store & sync
+        if (!m_fila_manager_store) {
+            m_fila_manager_store = new wgtFilaManagerStore();
+            m_fila_manager_store->load();
+            BOOST_LOG_TRIVIAL(info) << "Filament Manager store initialized";
+        }
+        if (!m_fila_manager_sync) {
+            m_fila_manager_sync = new wgtFilaManagerSync(m_fila_manager_store);
+            BOOST_LOG_TRIVIAL(info) << "Filament Manager sync initialized";
+        }
+        // Cloud layer — owns HTTP client, high-level sync and the serialization dispatcher.
+        if (!m_fila_manager_cloud_client) {
+            m_fila_manager_cloud_client = new wgtFilaManagerCloudClient();
+            BOOST_LOG_TRIVIAL(info) << "Filament Manager cloud client initialized";
+        }
+        if (!m_fila_manager_cloud_sync) {
+            m_fila_manager_cloud_sync = new wgtFilaManagerCloudSync(m_fila_manager_store,
+                                                                    m_fila_manager_cloud_client);
+            BOOST_LOG_TRIVIAL(info) << "Filament Manager cloud sync initialized";
+        }
+        if (!m_fila_manager_cloud_disp) {
+            m_fila_manager_cloud_disp = new wgtFilaManagerCloudDispatcher(m_fila_manager_cloud_sync,
+                                                                         m_fila_manager_cloud_client);
+            BOOST_LOG_TRIVIAL(info) << "Filament Manager cloud dispatcher initialized";
+        }
     }
 
     BOOST_LOG_TRIVIAL(info) << "create the main window";
@@ -4118,6 +4161,21 @@ void GUI_App::recreate_GUI(const wxString &msg_name)
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "recreate_GUI enter";
     m_is_recreating_gui = true;
 
+#if defined(__WXOSX__)
+    // macOS root cause (STUDIO-18472): switching language rebuilds the MainFrame and
+    // defers destruction of the old one (old_main_frame->Destroy() below), which only
+    // completes once wxEVT_IDLE fires. If the old frame still hosts a live Filament
+    // Manager WKWebView (e.g. the language was changed while that tab was visible, or
+    // the asynchronous about:blank teardown from a tab switch had not finished yet),
+    // its React app keeps the CFRunLoop busy and starves idle app-wide, so the old
+    // frame is never collected and the new frame cannot render or switch tabs.
+    // Proactively suspend it here so the old frame is guaranteed quiet before its
+    // deferred destruction, independent of which tab was visible or how fast the user
+    // reached Preferences. No-op off macOS.
+    if (mainframe && mainframe->web_device())
+        mainframe->web_device()->Suspend();
+#endif
+
     update_http_extra_header();
     // y74
     mainframe->m_printer_view->m_device_manager->stopAllConnection();
@@ -4175,6 +4233,17 @@ void GUI_App::recreate_GUI(const wxString &msg_name)
     update_publish_status();
 
     m_is_recreating_gui = false;
+
+#if defined(__WXOSX__)
+    // STUDIO-18472: a GUI rebuild just happened (and trigger_restore_project()
+    // queued EVT_RESTORE_PROJECT). From here on the macOS run loop may fail to
+    // wake for wx pending events after the Filament Manager WKWebView churn, so
+    // arm the pending-event pump for the rest of the session. This dispatches
+    // the deferred restore promptly (prepare canvas no longer stays blank) and
+    // keeps later tab-bar page switches (posted via wxPostEvent) responsive.
+    if (!m_macos_pending_pump_timer.IsRunning())
+        m_macos_pending_pump_timer.Start(30);
+#endif
 
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "recreate_GUI exit";
 }
@@ -4540,20 +4609,39 @@ void GUI_App::request_login(bool show_user_info)
 #endif
 }
 
+//y83
+void GUI_App::set_login_info(){
+    bool has_token = (wxGetApp().app_config->get("user_token") != "");
+    if(has_token){
+        std::string head_name = wxGetApp().app_config->get("user_head_name");
+        bool is_link = app_config->get("login_method") != "Maker";
+        wxString user_head_path;
+        boost::filesystem::path head_dir = boost::filesystem::path(Slic3r::data_dir()) / "user";
+        if (!is_link) {
+            std::string maker_id = app_config->get("preset_folder");
+            if (!maker_id.empty())
+                head_dir = head_dir / maker_id;
+        }
+        user_head_path = (head_dir / head_name).make_preferred().string();
+        std::replace(user_head_path.begin(), user_head_path.end(), '\\', '/');
+
+        wxString strJS = wxString::Format("SetLoginInfo('%s', '%s');", user_head_path, from_u8(m_user_name));
+        BOOST_LOG_TRIVIAL(info) << strJS << "   " << __FUNCTION__;
+        GUI::wxGetApp().run_script_left(strJS);
+    }
+}
+
 //cj_5 online_login: 1 = manual login (show sync dialog), 0 = auto login (skip dialog).
 void GUI_App::get_login_info(int online_login)
 {
 #if QDT_RELEASE_TO_PUBLIC
 	//y77
 	bool has_token = (wxGetApp().app_config->get("user_token") != "");
-    BOOST_LOG_TRIVIAL(trace) << "[login] get_login_info: has_token=" << has_token
-        << " login_method=" << wxGetApp().app_config->get("login_method")
-        << " preset_folder=" << wxGetApp().app_config->get("preset_folder");
 	if (has_token) {
         BOOST_LOG_TRIVIAL(info) << "user token msg: login method is " << wxGetApp().app_config->get("login_method") << __FUNCTION__;
 			if (m_qidi_login) {
 				m_pending_manual_login = false;
-				return;
+                return;
 			}
 		//cj_5 Save old user ID before login overwrites preset_folder, used to decide if we need to clear old presets.
 			//cj_5 Save old user ID before login overwrites preset_folder. Fallback to persisted value.
@@ -4591,8 +4679,6 @@ void GUI_App::get_login_info(int online_login)
 			BOOST_LOG_TRIVIAL(info) << strJS << "   " << __FUNCTION__;
 			GUI::wxGetApp().run_script_left(strJS);
 			m_qidi_login = true;
-			//cj_5 Trigger preset loading after login (replaces deprecated m_agent callback).
-			app_config->set("last_login_user_id", app_config->get("preset_folder"));
 			request_user_handle(online_login);
 			m_pending_manual_login = false;
 		}
@@ -4640,6 +4726,7 @@ std::string GUI_App::get_current_user_id() const
 bool GUI_App::is_user_login()
 {
 #if QDT_RELEASE_TO_PUBLIC
+    // cj_5 Check token-based login (Maker) — no longer depends on deprecated m_agent DLL.
     if (app_config && !app_config->get("user_token").empty())
         return true;
     if (m_agent)
@@ -4680,6 +4767,7 @@ void GUI_App::request_user_logout()
 	//cj_5 Reload default presets after logout (replaces deprecated m_agent code in #if 0).
 	remove_user_presets();
 	enable_user_preset_folder(false);
+	preset_bundle->load_user_presets(DEFAULT_USER_FOLDER_NAME, ForwardCompatibilitySubstitutionRule::Enable);
 	mainframe->update_side_preset_ui();
 
     // y15
@@ -4688,19 +4776,28 @@ void GUI_App::request_user_logout()
     wxGetApp().app_config->set("user_token", "");
     //cj_5 Clear preset_folder on logout and reload default presets.
     //cj_5 Persist last login user ID so re-login can detect same user after restart.
-    app_config->set("last_login_user_id", m_last_login_user_id);
-
+    app_config->set("last_login_user_id", "");
 #if QDT_RELEASE_TO_PUBLIC
     UserPresetSyncManager::instance().stop();
 #endif
-
     m_last_login_user_id.clear();
     app_config->set("preset_folder", "");
 	app_config->set("user_head_name", "");
 	app_config->set("user_head_url", "");
     mainframe->m_printer_view->SetLoginStatus(false);
 
-    
+    //cj_5 Clear Plater sync status badges after logout only for cloud devices.
+    // Local (LAN) devices remain connected and synced regardless of login state.
+    if (auto qdsdev = wxGetApp().qdsdevmanager) {
+        auto selected = qdsdev->getSelectedDevice();
+        if (selected && selected->is_net_device)
+            wxGetApp().plater()->update_machine_sync_status();
+    }
+
+    //cj_5
+    if (mainframe && mainframe->m_webview) {
+        mainframe->m_webview->MWLoad();
+    }
 
 #if 0
     if (m_agent && m_agent->is_user_login()) {
@@ -4729,13 +4826,15 @@ void GUI_App::request_user_logout()
         GUI::wxGetApp().stop_sync_user_preset();
 
         // Drop queued cloud ops so they don't fire against a stale user.
-        if (m_fila_manager_cloud_disp) {
+        if (!m_disable_fila_manager && m_fila_manager_cloud_disp) {
             m_fila_manager_cloud_disp->clear_pending();
         }
-        if (m_fila_manager_cloud_sync) {
+        // STUDIO-18155: 清 AMS auto-push 节流账本，避免账号 A 的 cooldown
+        // 影响登入账号 B 后第一次 sync 触发 push 的时机。
+        if (!m_disable_fila_manager && m_fila_manager_cloud_sync) {
             m_fila_manager_cloud_sync->throttle().clear_all();
         }
-        if (mainframe && mainframe->web_device()) {
+        if (!m_disable_fila_manager && mainframe && mainframe->web_device()) {
             mainframe->web_device()->NotifyFilamentSessionState();
         }
     }
@@ -4789,16 +4888,16 @@ std::string GUI_App::handle_web_request(std::string cmd)
             }
             else if (command_str.compare("get_login_info") == 0) {
                 CallAfter([this] {
-                        get_login_info();
+                    get_login_info();
                     });
                 // TODO: Fix home page not emit get_recent_projects on macOS
-                #ifdef __WXOSX__
+#ifdef __WXOSX__
                 if (mainframe) {
                     if (mainframe->m_webview) {
                         mainframe->m_webview->SendRecentList(INT_MAX);
                     }
                 }
-                #endif
+#endif
             }
             else if (command_str.compare("homepage_login_or_register") == 0) {
                 ////Check Plugin
@@ -4809,41 +4908,41 @@ std::string GUI_App::handle_web_request(std::string cmd)
                 //    return "";
                 //}
                 // 
-				if (root.get_child_optional("makerworld_model_id") != boost::none) {
-					boost::optional<std::string> ModelID = root.get_optional<std::string>("makerworld_model_id");
-					if (ModelID.has_value()) {
-						if (mainframe) {
-							if (mainframe->m_webview)
-							{
-								mainframe->m_webview->SetMakerworldModelID(ModelID.value());
-							}
-						}
-					}
-				}
+                if (root.get_child_optional("makerworld_model_id") != boost::none) {
+                    boost::optional<std::string> ModelID = root.get_optional<std::string>("makerworld_model_id");
+                    if (ModelID.has_value()) {
+                        if (mainframe) {
+                            if (mainframe->m_webview)
+                            {
+                                mainframe->m_webview->SetMakerworldModelID(ModelID.value());
+                            }
+                        }
+                    }
+                }
                 // cj_1
-				CallAfter([this] {
-					if (mainframe && mainframe->m_webview)
-					{
-						mainframe->m_webview->SwitchWebContent("login", 1);
-					}
-					}
-				);
+                CallAfter([this] {
+                    if (mainframe && mainframe->m_webview)
+                    {
+                        mainframe->m_webview->ShowLoginOverlay();
+                    }
+                    }
+                );
 
-                
+
 
                 CallAfter([this] {
                     //this->request_login(true);
-                });
+                    });
             }
             else if (command_str.compare("homepage_logout") == 0) {
                 CallAfter([this] {
                     wxGetApp().request_user_logout();
-                });
+                    });
             }
             else if (command_str.compare("homepage_modeldepot") == 0) {
                 CallAfter([this] {
                     wxGetApp().open_mall_page_dialog();
-                });
+                    });
             }
             else if (command_str.compare("homepage_newproject") == 0) {
                 this->request_open_project("<new>");
@@ -4858,20 +4957,25 @@ std::string GUI_App::handle_web_request(std::string cmd)
                     }
                 }
             }
-//ZY1
-            /*else if (command_str.compare("modelmall_model_advise_get") == 0) {
-                CallAfter([this] {
-                if (mainframe && this->app_config->get("staff_pick_switch") == "true") {
-                    if (mainframe->m_webview) { mainframe->m_webview->SendDesignStaffpick(has_model_mall()); }
-                }                    
-                });
-            }*/
+            //ZY1
+                        /*else if (command_str.compare("modelmall_model_advise_get") == 0) {
+                            CallAfter([this] {
+                            if (mainframe && this->app_config->get("staff_pick_switch") == "true") {
+                                if (mainframe->m_webview) { mainframe->m_webview->SendDesignStaffpick(has_model_mall()); }
+                            }
+                            });
+                        }*/
             else if (command_str.compare("modelmall_model_open") == 0) {
                 if (root.get_child_optional("data") != boost::none) {
                     pt::ptree data_node = root.get_child("data");
                     boost::optional<std::string> id = data_node.get_optional<std::string>("id");
                     if (id.has_value() && mainframe && mainframe->m_webview) {
-                        mainframe->m_webview->OpenModelDetail(id.value(), m_agent);
+                        //cj_5
+                        //mainframe->m_webview->OpenModelDetail(id.value(), m_agent);
+                        //cj_5
+                        mainframe->m_webview->SetMakerworldModelID(id.value());
+                        mainframe->m_webview->SwitchLeftMenu("online");
+
                     }
                 }
             }
@@ -4887,7 +4991,7 @@ std::string GUI_App::handle_web_request(std::string cmd)
             else if (command_str.compare("homepage_delete_recentfile") == 0) {
                 if (root.get_child_optional("data") != boost::none) {
                     pt::ptree                    data_node = root.get_child("data");
-                    boost::optional<std::string> path      = data_node.get_optional<std::string>("path");
+                    boost::optional<std::string> path = data_node.get_optional<std::string>("path");
                     if (path.has_value()) {
                         this->request_remove_project(path.value());
                     }
@@ -4899,7 +5003,7 @@ std::string GUI_App::handle_web_request(std::string cmd)
             else if (command_str.compare("homepage_explore_recentfile") == 0) {
                 if (root.get_child_optional("data") != boost::none) {
                     pt::ptree                    data_node = root.get_child("data");
-                    boost::optional<std::string> path      = data_node.get_optional<std::string>("path");
+                    boost::optional<std::string> path = data_node.get_optional<std::string>("path");
                     if (path.has_value())
                     {
                         boost::filesystem::path NowFile(path.value());
@@ -4937,13 +5041,13 @@ std::string GUI_App::handle_web_request(std::string cmd)
                     e.SetControlDown(ctrlKey);
 #endif
                     e.SetShiftDown(shiftKey);
-                    keyCode     = keyCode == 188 ? ',' : keyCode;
+                    keyCode = keyCode == 188 ? ',' : keyCode;
                     e.m_keyCode = keyCode;
                     e.SetEventObject(mainframe);
                     wxPostEvent(mainframe, e);
                 }
             }
-            else if (command_str.compare("search_wiki") == 0){
+            else if (command_str.compare("search_wiki") == 0) {
                 if (mainframe && root.get_child_optional("data") != boost::none) {
                     pt::ptree data_node = root.get_child("data");
                     boost::optional<std::string> keyword = data_node.get_optional<std::string>("keyword");
@@ -4952,7 +5056,7 @@ std::string GUI_App::handle_web_request(std::string cmd)
                     }
                 }
             }
-            else if (command_str.compare("get_academy_list") == 0){
+            else if (command_str.compare("get_academy_list") == 0) {
                 if (mainframe) {
                     if (mainframe->m_webview) {
                         mainframe->m_webview->get_academy_list();
@@ -4962,7 +5066,7 @@ std::string GUI_App::handle_web_request(std::string cmd)
             else if (command_str.compare("userguide_wiki_open") == 0) {
                 if (root.get_child_optional("data") != boost::none) {
                     pt::ptree                    data_node = root.get_child("data");
-                    boost::optional<std::string> path      = data_node.get_optional<std::string>("url");
+                    boost::optional<std::string> path = data_node.get_optional<std::string>("url");
                     if (path.has_value()) {
                         wxLaunchDefaultBrowser(path.value());
                         if (m_agent) {
@@ -4974,27 +5078,35 @@ std::string GUI_App::handle_web_request(std::string cmd)
                 }
             }
             else if (command_str.compare("common_openurl") == 0) {
-                boost::optional<std::string> path      = root.get_optional<std::string>("url");
+                boost::optional<std::string> path = root.get_optional<std::string>("url");
                 if (path.has_value()) {
                     wxLaunchDefaultBrowser(path.value());
                 }
-            } 
+            }
             else if (command_str.compare("homepage_leftmenu_clicked") == 0) {
-                if (root.get_child_optional("menu") != boost::none) { 
+                if (root.get_child_optional("menu") != boost::none) {
                     std::string strMenu = root.get_optional<std::string>("menu").value();
                     int         nRefresh = root.get_child_optional("refresh") == boost::none ? 0 : root.get_optional<int>("refresh").value();
-                    
-                    
-                    
-                    CallAfter([this,strMenu, nRefresh] {
-                        if (mainframe && mainframe->m_webview) 
-                        { 
-                            mainframe->m_webview->SwitchWebContent(strMenu, nRefresh); 
+
+                    CallAfter([this, strMenu, nRefresh] {
+                        if (mainframe && mainframe->m_webview)
+                        {
+                            //cj_5
+                            // If login overlay is showing and user clicks the already-selected
+                            // menu, just dismiss the login overlay (don't reload the page).
+// 							BOOST_LOG_TRIVIAL(trace) << "---";
+// 							BOOST_LOG_TRIVIAL(trace) << "---";
+//                             if (mainframe->m_webview->IsLoginShowing() &&
+//                                 strMenu == mainframe->m_webview->m_pre_login_contentname) {
+//                                 mainframe->m_webview->HideLoginOverlay();
+//                                 return;
+//                             }z
+                            mainframe->m_webview->SwitchWebContent(strMenu, nRefresh);
                         }
-                    }
+                        }
                     );
                 }
-            } 
+            }
             else if (command_str.compare("homepage_leftmenu_switch") == 0) {
                 if (root.get_child_optional("menu") != boost::none) {
                     std::string strMenu = root.get_optional<std::string>("menu").value();
@@ -5004,16 +5116,17 @@ std::string GUI_App::handle_web_request(std::string cmd)
             }
             else if (command_str.compare("homepage_makerlab_get") == 0) {
                 CallAfter([this] {
-                if (mainframe && mainframe->m_webview) { mainframe->m_webview->SendMakerlabList(); }
-                });
+                    if (mainframe && mainframe->m_webview) { mainframe->m_webview->SendMakerlabList(); }
+                    });
             }
             else if (command_str.compare("homepage_makerlab_open") == 0) {
                 if (root.get_child_optional("url") != boost::none) {
-                    if(wxGetApp().is_user_login()) {
+                    if (wxGetApp().is_user_login()) {
                         std::string strUrl = root.get_optional<std::string>("url").value();
 
                         if (mainframe && mainframe->m_webview) { mainframe->m_webview->OpenOneMakerlab(strUrl); }
-                    }else {
+                    }
+                    else {
                         //Check Plugin
                         bool bValid = is_compatibility_version();
                         if (!bValid) {
@@ -5023,7 +5136,7 @@ std::string GUI_App::handle_web_request(std::string cmd)
                         }
                         CallAfter([this] {
                             this->request_login(true);
-                        });
+                            });
                     }
 
                 }
@@ -5060,7 +5173,7 @@ std::string GUI_App::handle_web_request(std::string cmd)
             {
                 if (root.get_child_optional("model") != boost::none) {
                     pt::ptree                    data_node = root.get_child("model");
-                    boost::optional<std::string> path      = data_node.get_optional<std::string>("url");
+                    boost::optional<std::string> path = data_node.get_optional<std::string>("url");
                     if (path.has_value())
                     {
                         wxString realurl = from_u8(url_decode(path.value()));
@@ -5090,10 +5203,10 @@ std::string GUI_App::handle_web_request(std::string cmd)
                     }
                 }
             }
-            else if (command_str.compare("homepage_printhistory_get")==0)
+            else if (command_str.compare("homepage_printhistory_get") == 0)
             {
                 CallAfter([this] {
-                    if (mainframe && mainframe->m_webview) { mainframe->m_webview->ShowUserPrintTask(true,true); }
+                    if (mainframe && mainframe->m_webview) { mainframe->m_webview->ShowUserPrintTask(true, true); }
                     });
             }
             else if (command_str.compare("homepage_leftmenu_change_width") == 0) {
@@ -5107,7 +5220,7 @@ std::string GUI_App::handle_web_request(std::string cmd)
                 }
             }
             else if (command_str.compare("homepage_makerlab_open_3mf_binary") == 0) {
-                 if (root.get_child_optional("3mf") != boost::none) {
+                if (root.get_child_optional("3mf") != boost::none) {
                     std::string str3MFBase64 = root.get_optional<std::string>("3mf").value();
 
                     std::string str3MFName = "makerlab";
@@ -5119,14 +5232,14 @@ std::string GUI_App::handle_web_request(std::string cmd)
 
                     if (mainframe && mainframe->m_webview)
                     {
-                        mainframe->m_webview->OpenMakerlab3mf(str3MFBase64,str3MFName);
+                        mainframe->m_webview->OpenMakerlab3mf(str3MFBase64, str3MFName);
                     }
                 }
             }
-            else if (command_str.compare("homepage_makerlab_stl_download")==0)
+            else if (command_str.compare("homepage_makerlab_stl_download") == 0)
             {
                 if (root.get_child_optional("file_data") != boost::none && root.get_child_optional("sequence_id") != boost::none) {
-                    int         SeqID        = root.get_optional<int>("sequence_id").value();
+                    int         SeqID = root.get_optional<int>("sequence_id").value();
                     std::string strSTLBase64 = root.get_optional<std::string>("file_data").value();
 
                     std::string strSTLName = "makerlab";
@@ -5135,7 +5248,41 @@ std::string GUI_App::handle_web_request(std::string cmd)
                         if (strTmp != "") strSTLName = strTmp;
                     }
 
-                    if (mainframe && mainframe->m_webview) { mainframe->m_webview->SaveMakerlabStl(SeqID,strSTLBase64, strSTLName); }
+                    if (mainframe && mainframe->m_webview) { mainframe->m_webview->SaveMakerlabStl(SeqID, strSTLBase64, strSTLName); }
+                }
+            }
+            //CJ_5
+            else if (command_str.compare("qidi_shouldLogin") == 0) {
+                if (mainframe && mainframe->m_webview) {
+                    pt::ptree data_node = root.get_child("data");
+                    boost::optional<std::string> modelId = data_node.get_optional<std::string>("modelId");
+                    if (mainframe && mainframe->m_webview) {
+                        mainframe->m_webview->SetMakerworldModelID(modelId.value());
+                        mainframe->m_webview->onLineToLogin();
+                    }
+                }
+            }
+            //CJ_5
+            else if (command_str.compare("qidi_download3mf") == 0) {
+                if (mainframe && mainframe->m_webview) {
+                    pt::ptree data_node = root.get_child("data");
+                    boost::optional<std::string> modelDownloadUrl = data_node.get_optional<std::string>("url");
+                    if (mainframe && mainframe->plater()) {
+                        //mainframe->m_webview->SetMakerworldModelID(modelDownloadUrl.value());
+                        mainframe->plater()->import_model_id(modelDownloadUrl.value());
+                    }
+                }
+            }
+
+            //cj_5
+            else if (command_str.compare("qidi_downloadSTL") == 0) {
+                if (mainframe && mainframe->m_webview) {
+                    pt::ptree data_node = root.get_child("data");
+                    boost::optional<std::string> modelDownloadUrl = data_node.get_optional<std::string>("url");
+                    if (mainframe && mainframe->m_webview) {
+                        mainframe->m_webview->downloadFile(modelDownloadUrl.value());
+                        //mainframe->plater()->import_model_id(modelDownloadUrl.value());
+                    }
                 }
             }
         }
@@ -5380,8 +5527,6 @@ void GUI_App::on_user_login_handle(wxCommandEvent &evt)
     //if (!m_agent) { return; }
 
     int online_login = evt.GetInt();
-    BOOST_LOG_TRIVIAL(trace) << "[login] on_user_login_handle: online_login=" << online_login
-        << " preset_folder=" << (app_config ? app_config->get("preset_folder") : "null");
     //m_agent->connect_server();
 
     // get machine list
@@ -5397,6 +5542,8 @@ void GUI_App::on_user_login_handle(wxCommandEvent &evt)
 //     });
 
     //cj_5 Load user presets and optionally start cloud sync.
+    // online_login=1: manual login — show sync dialog for first-time config.
+    // online_login=0: auto login  — load presets silently, sync if already enabled.
     {
         std::string new_user_id = get_current_user_id();
 
@@ -5407,12 +5554,16 @@ void GUI_App::on_user_login_handle(wxCommandEvent &evt)
 
         // Only remove old presets when user ID actually changed.
         if (new_user_id != old_user_id) {
+            app_config->set("preset_folder", old_user_id);
             remove_user_presets();
+			app_config->set("preset_folder", new_user_id);
+
         }
         enable_user_preset_folder(true);
         preset_bundle->load_user_presets(new_user_id, ForwardCompatibilitySubstitutionRule::Enable);
         mainframe->update_side_preset_ui();
 
+        //y83
         if (online_login && !wxGetApp().is_link_connect()) {
             // Manual login: ask user whether to enable sync.
             GUI::wxGetApp().mainframe->show_sync_dialog();
@@ -5428,11 +5579,18 @@ void GUI_App::on_user_login_handle(wxCommandEvent &evt)
 
         // Trigger filament-manager cloud pull on the dispatcher queue; no-op if
         // already pulling.  Runs after login so auth token is available.
-        if (m_fila_manager_cloud_disp) {
+        if (!m_disable_fila_manager && m_fila_manager_cloud_disp) {
             m_fila_manager_cloud_disp->enqueue_pull();
         }
-        if (mainframe && mainframe->web_device()) {
+        if (!m_disable_fila_manager && mainframe && mainframe->web_device()) {
             mainframe->web_device()->NotifyFilamentSessionState();
+        }
+    }
+
+    //cj_5 
+    {
+        if (mainframe && mainframe->m_webview) {
+            mainframe->m_webview->MWLoad();
         }
     }
 }
@@ -5747,7 +5905,8 @@ void GUI_App::check_privacy_version(int online_login)
             }
         })
         .on_error([this, online_login](std::string body, std::string error, unsigned int status) {
-            request_user_handle(online_login);
+            //cj_5
+            //request_user_handle(online_login);
             BOOST_LOG_TRIVIAL(error) << "check privacy version error" << body;
     }).perform();
 }
@@ -6302,7 +6461,7 @@ void GUI_App::start_sync_user_preset(bool with_progress_dlg)
 		cancelFn = [this, dlg]() {
 			 return is_closing() || dlg->WasCanceled();
 		};
-		finishFn = [this, userid = m_agent->get_user_id(), dlg, t = std::weak_ptr<int>(m_user_sync_token)](bool ok) {
+		finishFn = [this, userid = m_agent->get_user_id(), dlg, t = std::weak_ptr(m_user_sync_token)](bool ok) {
 			CallAfter([=] {
 				dlg->Destroy();
 				if (ok && m_agent && t.lock() == m_user_sync_token && userid == m_agent->get_user_id()) reload_settings();
@@ -6310,7 +6469,7 @@ void GUI_App::start_sync_user_preset(bool with_progress_dlg)
 		};
 	}
 	else {
-		finishFn = [this, userid = m_agent->get_user_id(), t = std::weak_ptr<int>(m_user_sync_token)](bool ok) {
+		finishFn = [this, userid = m_agent->get_user_id(), t = std::weak_ptr(m_user_sync_token)](bool ok) {
 			CallAfter([=] {
 				if (ok && m_agent && t.lock() == m_user_sync_token && userid == m_agent->get_user_id()) reload_settings();
 				});
@@ -6321,7 +6480,7 @@ void GUI_App::start_sync_user_preset(bool with_progress_dlg)
 	}
 
 	m_sync_update_thread = Slic3r::create_thread(
-		[this, progressFn, cancelFn, finishFn, t = std::weak_ptr<int>(m_user_sync_token)]{
+		[this, progressFn, cancelFn, finishFn, t = std::weak_ptr(m_user_sync_token)]{
 			// get setting list, update setting list
 			std::string version = preset_bundle->get_vendor_profile_version(PresetBundle::QDT_BUNDLE).to_string();
 			BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << __LINE__ << " start sync user preset, m_is_closing = " << m_is_closing;
@@ -6454,7 +6613,7 @@ void GUI_App::stop_http_server()
 
 void GUI_App::switch_staff_pick(bool on)
 {
-    mainframe->m_webview->SendDesignStaffpick(on);
+    mainframe->m_webview->SendQidiModelList(on);
 }
 
 bool GUI_App::switch_language()
@@ -7747,33 +7906,34 @@ void GUI_App::open_mall_page_dialog()
 
     //model url
 
-    wxString language_code = this->current_language_code().BeforeFirst('_');
-    model_url = language_code.ToStdString();
+//y83
+    // wxString language_code = this->current_language_code().BeforeFirst('_');
+    // model_url = language_code.ToStdString();
 
-    if (getAgent() && mainframe) {
+    // if (getAgent() && mainframe) {
 
-        //login already
-        if (getAgent()->is_user_login()) {
-            std::string ticket;
-            result = getAgent()->request_bind_ticket(&ticket);
+    //     //login already
+    //     if (getAgent()->is_user_login()) {
+    //         std::string ticket;
+    //         result = getAgent()->request_bind_ticket(&ticket);
 
-            if(result == 0){
-                link_url = host_url + "api/sign-in/ticket?to=" + host_url + url_encode(model_url) + "&ticket=" + ticket;
-            }
-        }
-    }
+    //         if(result == 0){
+    //             link_url = host_url + "api/sign-in/ticket?to=" + host_url + url_encode(model_url) + "&ticket=" + ticket;
+    //         }
+    //     }
+    // }
 
-    if (result < 0) {
-       link_url = host_url + model_url;
-    }
+    // if (result < 0) {
+    //    link_url = host_url + model_url;
+    // }
 
-    if (link_url.find("?") != std::string::npos) {
-        link_url += "&from=qidistudio";
-    } else {
-        link_url += "?from=qidistudio";
-    }
+    // if (link_url.find("?") != std::string::npos) {
+    //     link_url += "&from=qidistudio";
+    // } else {
+    //     link_url += "?from=qidistudio";
+    // }
 
-    wxLaunchDefaultBrowser(link_url);
+    wxLaunchDefaultBrowser(host_url);
 }
 
 void GUI_App::open_publish_page_dialog()

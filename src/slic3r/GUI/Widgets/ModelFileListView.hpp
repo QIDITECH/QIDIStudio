@@ -39,7 +39,9 @@ public:
     ~ModelFileListView() override;
 
     void ClearAll();
-    void AddItem(const wxString& storage_path, const wxBitmap& image, double weight, const wxString& estimated_time);
+    void AddItem(const wxString& storage_path, const wxBitmap& image, double weight, const wxString& estimated_time, const wxString& file_path);
+    //cj_5 Call once after batch AddItem to flush layout (expensive per-row: ~60ms each).
+    void FlushBatchAdd();
     bool UpdateItemThumbnail(const wxString& storage_path, const wxBitmap& image);
     void RemoveItemByStoragePath(const wxString& storage_path);
     bool HasActiveFileDownload() const;

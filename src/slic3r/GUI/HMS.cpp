@@ -513,6 +513,15 @@ bool HMSQuery::is_internal_error(const MachineObject *obj, int print_error)
     return _is_internal_error(get_dev_id_type(obj), std::string(buf), lang_code);
 }
 
+// cj_5: overload for QDSDevice (no MachineObject)
+bool HMSQuery::is_internal_error(const std::string& dev_id_type, int print_error)
+{
+    char buf[32];
+    ::sprintf(buf, "%08X", print_error);
+    std::string lang_code = HMSQuery::hms_language_code();
+    return _is_internal_error(dev_id_type, std::string(buf), lang_code);
+}
+
 wxString HMSQuery::query_print_error_msg(const MachineObject *obj, int print_error)
 {
     if (!obj)
@@ -546,6 +555,14 @@ wxString HMSQuery::query_print_image_action(const MachineObject* obj, int print_
     ::sprintf(buf, "%08X", print_error);
     //The first three digits of SN number
     return _query_error_image_action(get_dev_id_type(obj),std::string(buf), button_action);
+}
+
+// cj_5: overload for QDSDevice (no MachineObject)
+wxString HMSQuery::query_print_image_action(const std::string& dev_id_type, int print_error, std::vector<int>& button_action)
+{
+    char buf[32];
+    ::sprintf(buf, "%08X", print_error);
+    return _query_error_image_action(dev_id_type.substr(0, 3), std::string(buf), button_action);
 }
 
 wxImage HMSQuery::query_image_from_local(const wxString& image_name)

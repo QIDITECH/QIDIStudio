@@ -15,7 +15,10 @@
 #include <wx/filename.h>
 #include <wx/popupwin.h>
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+
+#include "nlohmann/json.hpp"
 
 namespace Slic3r::GUI {
 
@@ -246,7 +249,8 @@ static wxColour file_list_context_menu_disabled_text_colour()
 class FileListContextMenuPopup : public wxPopupTransientWindow
 {
 public:
-    FileListContextMenuPopup(wxWindow* parent, ModelFileListView* host, const wxString& storage_path, bool downloading, bool reveal_enabled);
+//y83
+    FileListContextMenuPopup(wxWindow* parent, ModelFileListView* host, const wxString& storage_path, bool downloading, bool reveal_enabled, const wxString& printer_file_path);
 
     void PopupAt(const wxPoint& screen_origin);
 
@@ -258,12 +262,15 @@ private:
 
     ModelFileListView* m_host{ nullptr };
     wxString           m_storage_path;
+    wxString           m_printer_file_path;
 };
 
-FileListContextMenuPopup::FileListContextMenuPopup(wxWindow* parent, ModelFileListView* host, const wxString& storage_path, bool downloading, bool reveal_enabled)
+//y83
+FileListContextMenuPopup::FileListContextMenuPopup(wxWindow* parent, ModelFileListView* host, const wxString& storage_path, bool downloading, bool reveal_enabled, const wxString& printer_file_path)
     : wxPopupTransientWindow(parent, wxBORDER_NONE | wxPU_CONTAINS_CONTROLS)
     , m_host(host)
     , m_storage_path(storage_path)
+    , m_printer_file_path(printer_file_path)
 {
     SetCursor(wxCURSOR_HAND);
     const wxColour border_color = wxGetApp().dark_mode() ? wxColour(90, 90, 98) : wxColour(205, 205, 212);
@@ -308,8 +315,20 @@ FileListContextMenuPopup::FileListContextMenuPopup(wxWindow* parent, ModelFileLi
             auto activate = [this, cmd](wxMouseEvent&) {
                 ModelFileListView* h = m_host;
                 const wxString     p = m_storage_path;
-                if (h)
-                    h->post_list_command(cmd, p);
+                //y83
+                const wxString     s = m_printer_file_path;
+                auto json_path = nlohmann::json::object();
+                //y83
+                json_path["storage_path"] = p.ToStdString(wxConvUTF8);
+                json_path["printer_file_path"] = s.ToStdString(wxConvUTF8);
+                std::string json_str = json_path.dump();
+                if (h){
+                    if(cmd == ModelFileListCommandType::Download)
+                        //y83
+                        h->post_list_command(cmd, wxString::FromUTF8(json_str));
+                    else
+                        h->post_list_command(cmd, p);
+                }
                 Dismiss();
             };
             row->Bind(wxEVT_LEFT_DOWN, activate);
@@ -348,7 +367,7 @@ FileListContextMenuPopup::FileListContextMenuPopup(wxWindow* parent, ModelFileLi
     };
 
     add_row(_L("Print"), ModelFileListCommandType::Print, !downloading);
-    add_row(_L("Download"), ModelFileListCommandType::Download, !downloading);
+    add_row(_L("Download"), ModelFileListCommandType::Download, !downloading && !reveal_enabled);
     add_row(_L("Delete"), ModelFileListCommandType::Delete, !downloading);
     add_row(_L("Open Folder"), ModelFileListCommandType::RevealLocal, !downloading && reveal_enabled);
 
@@ -405,7 +424,8 @@ public:
         const wxString&     storage_path,
         const wxBitmap&     image,
         double              weight,
-        const wxString&     estimated_time);
+        const wxString&     estimated_time,
+        const wxString&    file_path);
 
     ~ModelFileListRow() override;
 
@@ -447,6 +467,7 @@ private:
     bool               m_is_usb{ false };
     double             m_weight{ 0. };
     wxString           m_estimated_time;
+    wxString           m_printer_file_path;
     bool               m_hover{ false };
     bool               m_local_copy_exists{ false };
     float              m_download_fraction{ -1.f };
@@ -472,7 +493,8 @@ ModelFileListRow::ModelFileListRow(ModelFileListView* host,
     const wxString&     storage_path,
     const wxBitmap&     image,
     double              weight,
-    const wxString&     estimated_time)
+    const wxString&     estimated_time,
+    const wxString&     file_path)
     : wxPanel(parent, wxID_ANY)
     , m_host(host)
     , m_storage_path(storage_path)
@@ -480,6 +502,7 @@ ModelFileListRow::ModelFileListRow(ModelFileListView* host,
     , m_is_usb(model_file_list_path_is_usb(storage_path))
     , m_weight(weight)
     , m_estimated_time(estimated_time)
+    , m_printer_file_path(file_path)
 {
     const int row_lead         = parent->FromDIP(10);
     const int thumb_sz         = parent->FromDIP(kFileListThumbDip);
@@ -700,7 +723,7 @@ void ModelFileListRow::show_row_context_menu(const wxPoint& screen_pt)
 {
     const bool dl = is_file_downloading();
     //cj_4
-    auto* pop = new FileListContextMenuPopup(this, m_host, m_storage_path, dl, m_local_copy_exists);
+    auto* pop = new FileListContextMenuPopup(this, m_host, m_storage_path, dl, m_local_copy_exists, m_printer_file_path);
     pop->PopupAt(screen_pt);
 }
 
@@ -1227,9 +1250,10 @@ void ModelFileListView::ClearAll()
     FitInside();
 }
 
-void ModelFileListView::AddItem(const wxString& storage_path, const wxBitmap& image, double weight, const wxString& estimated_time)
+void ModelFileListView::AddItem(const wxString& storage_path, const wxBitmap& image, double weight, const wxString& estimated_time, const wxString& file_path)
 {
-    auto* row = new ModelFileListRow(this, this, storage_path, image, weight, estimated_time);
+    auto* row = new ModelFileListRow(this, this, storage_path, image, weight, estimated_time, file_path);
+
     m_rows.push_back(row);
     m_main_sizer->Add(row, 0, wxEXPAND);
     sync_new_item_mount_visibility(row);
@@ -1237,6 +1261,12 @@ void ModelFileListView::AddItem(const wxString& storage_path, const wxBitmap& im
     const wxColour fg = file_list_primary_text_colour();
     row->set_local_copy_exists(local_file_exists_in_download_dir(storage_path));
     row->sync_row_surface_colours(bg, fg, false);
+    //cj_5 refresh_mount_usb_toggle_visibility / Layout / FitInside moved to
+    // FlushBatchAdd() to avoid O(n) per-row cost during batch loads.
+}
+
+void ModelFileListView::FlushBatchAdd()
+{
     refresh_mount_usb_toggle_visibility();
     m_main_sizer->Layout();
     FitInside();

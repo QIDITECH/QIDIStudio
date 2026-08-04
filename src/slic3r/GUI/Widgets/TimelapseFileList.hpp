@@ -122,6 +122,8 @@ public:
     ~TimelapseFileListCtrl() override;
 
     void AddItem(const wxString& name, const wxBitmap& image, const wxString& size_text, const wxString& modified_text);
+    //cj_5 Call once after batch AddItem to flush layout instead of per-row.
+    void FlushBatchAdd();
     void RemoveSelectedItems();
     //cj_3
     void RemoveItems(const std::vector<TimelapseFileItem*>& rows);

@@ -4,6 +4,8 @@
 
 #include <boost/log/trivial.hpp>
 
+#include <ctime>
+
 #include <wx/webviewarchivehandler.h>
 #include <wx/webviewfshandler.h>
 #include <wx/dynlib.h>
@@ -24,6 +26,9 @@
 #include <gtk/gtk.h>
 #define WEBKIT_API
 struct WebKitWebView;
+struct WebKitWebContext;
+struct WebKitCookieManager;
+struct SoupCookie;
 #if defined(QDT_WEBKITGTK_4_1)
 struct _JSCValue;
 typedef struct _JSCValue JSCValue;
@@ -59,6 +64,31 @@ webkit_web_view_run_javascript_finish                (WebKitWebView             
 WEBKIT_API void
 webkit_javascript_result_unref                       (WebKitJavascriptResult    *js_result);
 #endif
+
+//y83
+WEBKIT_API WebKitWebContext *
+webkit_web_view_get_context                           (WebKitWebView             *web_view);
+WEBKIT_API WebKitCookieManager *
+webkit_web_context_get_cookie_manager                 (WebKitWebContext          *context);
+WEBKIT_API void
+webkit_cookie_manager_add_cookie                      (WebKitCookieManager       *cookie_manager,
+                                                       SoupCookie                *cookie,
+                                                       GCancellable              *cancellable,
+                                                       GAsyncReadyCallback        callback,
+                                                       gpointer                   user_data);
+WEBKIT_API SoupCookie *
+soup_cookie_new                                       (const char                *name,
+                                                       const char                *value,
+                                                       const char                *domain,
+                                                       const char                *path,
+                                                       int                        max_age);
+WEBKIT_API void
+soup_cookie_set_secure                                (SoupCookie                *cookie,
+                                                       gboolean                   secure);
+WEBKIT_API void
+soup_cookie_set_http_only                             (SoupCookie                *cookie,
+                                                       gboolean                   http_only);
+//y83
 }
 
 static GOnce register_handler_once = G_ONCE_INIT;
@@ -233,6 +263,12 @@ public:
         assert(iter != g_webviews.end());
         if (iter != g_webviews.end())
             g_webviews.erase(iter);
+        // Also drop it from the delayed list so a pending flush of g_delay_webviews
+        // never calls AddScriptMessageHandler() on an already-destroyed view.
+        // See bambulab/BambuStudio #11004 and #10968.
+        auto diter = std::find(g_delay_webviews.begin(), g_delay_webviews.end(), m_webView);
+        if (diter != g_delay_webviews.end())
+            g_delay_webviews.erase(diter);
     }
     wxWebView *m_webView;
 };
@@ -344,6 +380,14 @@ wxWebView* WebView::CreateWebView(wxWindow * parent, wxString const & url)
         };
 #ifndef __WIN32__
         webView->CallAfter([webView, addScriptMessageHandler] {
+            // This async callback may fire after webView has already been destroyed,
+            // which would call AddScriptMessageHandler() on a dangling pointer
+            // (use-after-free -> pointer-authentication crash on Apple Silicon, or a
+            // long hang during startup on macOS 26.5+). g_webviews lists every live
+            // view, so bail out if this one is already gone.
+            // See bambulab/BambuStudio #11004 and #10968.
+            if (std::find(g_webviews.begin(), g_webviews.end(), webView) == g_webviews.end())
+                return;
 #endif
             if (Slic3r::GUI::wxGetApp().is_adding_script_handler()) {
                 g_delay_webviews.push_back(webView);
@@ -426,6 +470,41 @@ bool WebView::RunScript(wxWebView *webView, wxString const &javascript)
     } catch (std::exception &/*e*/) {
         return false;
     }
+}
+
+//y83
+void WebView::SetTokenCookie(wxWebView * webView, wxString const & name, wxString const & value,
+                             wxString const & domain, wxString const & path,
+                             bool secure, bool httpOnly, double expires)
+{
+    if (webView == nullptr)
+        return;
+#ifdef __WXMAC__
+    Slic3r::GUI::WKWebView_setTokenCookie(webView->GetNativeBackend(),
+        name.ToUTF8().data(), value.ToUTF8().data(),
+        domain.ToUTF8().data(), path.ToUTF8().data(),
+        secure, httpOnly, expires);
+#elif defined(__linux__)
+    WebKitWebView *     wkWebView = (WebKitWebView *) webView->GetNativeBackend();
+    if (wkWebView == nullptr)
+        return;
+    WebKitWebContext * context = webkit_web_view_get_context(wkWebView);
+    if (context == nullptr)
+        return;
+    WebKitCookieManager * cookieManager = webkit_web_context_get_cookie_manager(context);
+    if (cookieManager == nullptr)
+        return;
+    int maxAge = (int) (expires - (double) std::time(nullptr));
+    if (maxAge < 0)
+        maxAge = -1; /* session cookie */
+    SoupCookie * cookie = soup_cookie_new(name.ToUTF8().data(), value.ToUTF8().data(),
+                                          domain.ToUTF8().data(), path.ToUTF8().data(), maxAge);
+    if (cookie == nullptr)
+        return;
+    soup_cookie_set_secure(cookie, secure ? TRUE : FALSE);
+    soup_cookie_set_http_only(cookie, httpOnly ? TRUE : FALSE);
+    webkit_cookie_manager_add_cookie(cookieManager, cookie, NULL, NULL, NULL);
+#endif
 }
 
 void WebView::RecreateAll()

@@ -74,8 +74,14 @@ public:
 
 public:
     wxString show_error_code(int error_code);
-    void     set_action_json(const nlohmann::json &action_json) { m_action_json = action_json; }
 
+    //cj_5 
+    void     show_error(const wxString& error_code);
+    void     set_action_json(const nlohmann::json &action_json) { m_action_json = action_json; }
+    // cj_5: set 3-char dev_id prefix for HMS lookup when no MachineObject
+    void     set_dev_id_type(const std::string& type) { m_dev_id_type = type; }
+    // cj_5
+    void set_show_msg(const wxString& msg) { m_error_msg = msg; };
 protected:
     void init_button_list();
     void init_button(ActionButton style, wxString buton_text);
@@ -96,7 +102,10 @@ protected:
     bool get_fail_snapshot_from_local(const wxString& image_url);
 
 private:
-    MachineObject* m_obj;
+    MachineObject* m_obj;  // nullable, nullptr for display-only mode
+    std::string    m_dev_id_type; // cj_5: 3-char dev_id prefix for HMS lookup (used when m_obj==nullptr)
+    wxString m_error_code_str; //cj_5;
+    wxString m_error_msg;   // cj_5
 
     int m_error_code = 0;
     std::unordered_set<Button*> m_used_button;

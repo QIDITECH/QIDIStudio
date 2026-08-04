@@ -52,7 +52,7 @@
 #include "Notebook.hpp"
 #include "BitmapCache.hpp"
 #include "BindDialog.hpp"
-#include "PrinterWebView.hpp"
+#include "QDSPrinterWebView.hpp"
 //cj_2
 #include "QDSDeviceManager.hpp"
 
@@ -1285,7 +1285,7 @@ void SelectMachineDialog::sync_ams_mapping_result(const std::vector<FilamentInfo
     };
 
     for (auto f = result.begin(); f != result.end(); f++) {
-        // BOOST_LOG_TRIVIAL(trace) << "ams_mapping f id = " << f->id << ", tray_id = " << f->tray_id << ", color = " << f->color << ", type = " << f->type;
+        BOOST_LOG_TRIVIAL(info) << "ams_mapping f id = " << f->id << ", tray_id = " << f->tray_id << ", color = " << f->color << ", type = " << f->type;
 
         MaterialHash::iterator iter = m_materialList.begin();
         while (iter != m_materialList.end()) {
@@ -2312,6 +2312,7 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
                 machine_url = machine.url;
                 machine_ip = machine.ip;
                 machine_apikey = machine.apikey;
+				m_is_local_transitioned = false;
                 break;
             }
         }
@@ -2328,6 +2329,7 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
                 machine_apikey = "";
                 machine_link_url = machine.link_url;
                 machine_is_special = machine.is_special;
+                m_is_local_transitioned = machine.is_local_transitioned;
                 break;
             }
         }
@@ -2708,8 +2710,13 @@ void SelectMachineDialog::start_to_send(PrintHostJob upload_job) {
     }
 
     //y80
+    //cj_5 Detect if this cloud device was transitioned to local (URL is plain IP
+    // instead of a full URL). If so, skip cloud CDN upload and send directly.
+    bool is_local_transitioned = m_is_local_transitioned;
+
     bool success = false;
-    if(!wxGetApp().is_link_connect() && wxGetApp().app_config->get("user_token") != "" && m_isNetMode){
+    if(!wxGetApp().is_link_connect() && wxGetApp().app_config->get("user_token") != "" && m_isNetMode
+        && !is_local_transitioned){
 
         auto dev_manager = wxGetApp().qdsdevmanager;
         auto obj = dev_manager->getDevice(m_printer_last_select);
@@ -2846,9 +2853,7 @@ void SelectMachineDialog::start_to_send(PrintHostJob upload_job) {
                 for (auto item : m_checkbox_list) {
                     if(item.second->getParam() == "enable_multi_box"){
                         if (item.second->getValue() == "on" && !m_ams_mapping_result.empty()){
-                            body_json_2["coolerEnable"] = true;
                             std::vector<int> consumable_t (16, -1);
-
                             for (auto result : m_ams_mapping_result) {
                                 consumable_t[result.id] = std::stoi(result.slot_id);
                                 std::cout << "result id is  " << result.id << " and slot id is " << result.slot_id << std::endl;
@@ -2856,7 +2861,6 @@ void SelectMachineDialog::start_to_send(PrintHostJob upload_job) {
                             body_json_2["consumable"] = consumable_t;
                         }
                         else{
-                            body_json_2["coolerEnable"] = false;
                             body_json_2["consumable"] = nullptr;
                         }
                     } else if (item.second->getParam() == "bed_leveling") {
@@ -3033,7 +3037,6 @@ void SelectMachineDialog::start_to_send(PrintHostJob upload_job) {
                 }
             }
         }
-
         success = upload_job.printhost->upload(std::move(upload_job.upload_data),
             [this](Http::Progress progress, bool& cancel) {
                 cancel = this->m_is_canceled;
@@ -3156,14 +3159,14 @@ void SelectMachineDialog::send_to_sd_card(){
                 else {
                     bodyJson["levelingEnable"] = false;
                 }
-            } else if(item.second->getParam() == "timelapse" && select_machine.timelapse){
+            } else if(item.second->getParam() == "timelapse"){
                 if (item.second->getValue() == "on") {
                     bodyJson["delayVideoEnable"] = true;
                 }
                 else {
                     bodyJson["delayVideoEnable"] = false;
                 }
-            } else if(item.second->getParam() == "enable_polar_cooler" && select_machine.enable_polar_cooler){
+            } else if(item.second->getParam() == "enable_polar_cooler"){
                 //y80
                 if (item.second->getValue() == "on" && obj->m_enable_polar_cooler) {
                     bodyJson["coolerEnable"] = true;
@@ -4341,9 +4344,8 @@ void SelectMachineDialog::on_refresh(wxCommandEvent &event)
 
     //y65
     //update_user_machine_list();
-    update_user_printer();
-    EnableEditing(true);
     show_status(PrintDialogStatus::PrintStatusInit);
+    update_user_printer();
 }
 
 void SelectMachineDialog::on_set_finish_mapping(wxCommandEvent &evt)
@@ -4401,7 +4403,7 @@ void SelectMachineDialog::on_set_finish_mapping(wxCommandEvent &evt)
 
                 new_info = m_ams_mapping_result[i];
             }
-            // BOOST_LOG_TRIVIAL(trace) << "The box mapping result: id is " << m_ams_mapping_result[i].id << "tray_id is " << m_ams_mapping_result[i].tray_id;
+            BOOST_LOG_TRIVIAL(info) << "The box mapping result: id is " << m_ams_mapping_result[i].id << "tray_id is " << m_ams_mapping_result[i].tray_id;
         }
 
         for (auto i = 0; i < m_ams_mapping_result.size(); i++) {
@@ -4639,10 +4641,11 @@ void SelectMachineDialog::update_user_printer()
             machine.display_name = machine.name + " (" + machine.ip + ")";
             machine.link_url = device.link_url;
             machine.is_special = device.isSpecialMachine;
+            machine.is_local_transitioned = device.is_local_transitioned;
             machine_list_link.push_back(machine);
         }
     }
-#endif 
+#endif
 
     show_status(PrintDialogStatus::PrintStatusInit);
 
@@ -4849,7 +4852,7 @@ void SelectMachineDialog::on_printer_combobox_dropdown(wxCommandEvent& event)
     MainFrame* main = wxGetApp().mainframe;
     if (!main || !main->m_printer_view)
         return;
-    PrinterWebView* pw = main->m_printer_view;
+    QDSPrinterWebView* pw = main->m_printer_view;
     MakerHttpHandle::getInstance().setSSEHandle(
         [pw](const std::string& sse_event, const std::string& data) { pw->onSSEMessageHandle(sse_event, data); });
 #endif
@@ -4930,40 +4933,40 @@ void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
         //y81
         auto qds_device = wxGetApp().qdsdevmanager->getDevice(m_printer_last_select);
         std::string box_ip = wxGetApp().plater()->sidebar().box_list_printer_ip;
-        if(!wxGetApp().is_link_connect()){
-            int extruders_size = wxGetApp().plater()->get_partplate_list().get_curr_plate()->get_used_filaments().size();
 
-            //y65
-            if(qds_device == nullptr){
+        int extruders_size = wxGetApp().plater()->get_partplate_list().get_curr_plate()->get_used_filaments().size();
+        
+        if (box_ip.empty())
+            has_box_machine = false;
+        else
+            has_box_machine = true;
+
+
+        //y65
+        if(qds_device == nullptr && !has_box_machine){
+            has_box_machine = false;
+            return;
+        }
+        bool is_can_change_color = m_plater->is_can_change_color();
+        if (extruders_size > 1 && !is_can_change_color) {
+            if (qds_device->m_box_count == 0) {
+                show_status(PrintDialogStatus::PrinterNotConnectBox);
                 has_box_machine = false;
-                return;
             }
-            bool is_can_change_color = m_plater->is_can_change_color();
-            if (extruders_size > 1 && !is_can_change_color) {
-                if (qds_device->m_box_count == 0) {
-                    show_status(PrintDialogStatus::PrinterNotConnectBox);
-                    has_box_machine = false;
-                }
-                else 
-                    has_box_machine = true;
+            else 
+                has_box_machine = true;
 
-                if (extruders_size > wxGetApp().preset_bundle->filament_ams_list.size()){
-                    show_status(PrintDialogStatus::PrinterNotConnectBox);
-                }
-            }
-            else {
-                if (qds_device->m_box_count <= 0)
-                    has_box_machine = false;
-                else
-                    has_box_machine = true;
+            if (extruders_size > wxGetApp().preset_bundle->filament_ams_list.size()){
+                show_status(PrintDialogStatus::PrinterNotConnectBox);
             }
         }
         else {
-            if (!box_ip.empty())
-                has_box_machine = true;
-            else
+            if (qds_device->m_box_count <= 0)
                 has_box_machine = false;
+            else
+                has_box_machine = true;
         }
+
 
         //y68 //y70
         if (!preset_typename_normalized.empty() && preset_typename_normalized.find(NormalizeVendor(select_machine_type)) == std::string::npos && !selection_name.empty())
@@ -8187,7 +8190,7 @@ bool SelectMachineDialog::slicing_with_fila_switch() const
     }
 
     if (m_print_type == FROM_NORMAL) {
-        auto has_filament_switcher = wxGetApp().preset_bundle->full_config().option<ConfigOptionBool>("has_filament_switcher");
+        auto has_filament_switcher = wxGetApp().preset_bundle->project_config.option<ConfigOptionBool>("has_filament_switcher");
         if (has_filament_switcher) {
             return has_filament_switcher->value;
         }
@@ -9484,6 +9487,10 @@ void PrinterInfoBox::SetQDTPrinters(std::vector<Machine_info> machine_list, bool
     event.SetEventObject(m_comboBox_printer);
     event.SetString(m_comboBox_printer->GetValue());
     m_comboBox_printer->GetEventHandler()->ProcessEvent(event);
+
+    //y83
+    bool enable_editing = m_comboBox_printer->GetCount() != 0;
+    EnableEditing(enable_editing);
 }
 
 //y65

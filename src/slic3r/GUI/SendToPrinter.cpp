@@ -25,7 +25,7 @@
 #include "DeviceCore/DevManager.h"
 #include "DeviceCore/DevStorage.h"
 #include "slic3r/Utils/FileTransferUtils.hpp"
-#include "PrinterWebView.hpp"
+#include "QDSPrinterWebView.hpp"
 #include "OctoPrint.hpp"
 namespace Slic3r {
 namespace GUI {

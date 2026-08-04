@@ -187,6 +187,14 @@ void CalibrationPanel::create_preset_box(wxWindow* parent, wxBoxSizer* sizer_sid
     Refresh();
 }
 
+//y83
+void CalibrationPanel::update_preset_choices()
+{
+    if (m_printer_choice) m_printer_choice->update();
+    if (m_filament_choice) m_filament_choice->update();
+    if (m_print_choice) m_print_choice->update();
+}
+
 void CalibrationPanel::init_tabpanel() {
     //w29
 

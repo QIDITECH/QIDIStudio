@@ -172,7 +172,7 @@ TimelapseContextMenuPopup::TimelapseContextMenuPopup(
             if (m_host && m_host->m_event_target)
                 m_host->m_event_target->ProcessWindowEvent(del);
         });
-        add_row(_L("Download"), true, [this]() {
+        add_row(_L("Download"), !reveal_ok, [this]() {
             wxCommandEvent out(EVT_TIMELAPSE_DOWNLOAD_ONE, wxID_ANY);
             out.SetString(m_file_name);
             if (m_host && m_host->m_event_target)

@@ -9,6 +9,8 @@
 #endif
 
 #include <wx/sizer.h>
+#include <boost/log/trivial.hpp>
+#include <chrono>
 
 namespace Slic3r { namespace GUI {
 
@@ -16,23 +18,47 @@ namespace Slic3r { namespace GUI {
 #define DEVICE_USE_HTTP_SERVER
 #endif
 
-DeviceWebHost::DeviceWebHost(wxWindow* parent, DeviceWebHostMode mode, std::string initial_path)
+static std::uint64_t TimeNowMs() {
+    return static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count());
+}
+
+DeviceWebHost::DeviceWebHost(wxWindow* parent, DeviceWebHostMode mode,
+                             std::string initial_path, bool allow_lazy)
     : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize)
     , m_mode(mode)
     , m_initial_path(std::move(initial_path))
+    , m_allow_lazy(allow_lazy)
 {
+    if (!m_allow_lazy) {
+        EnsureBuilt();
+    }
+    // Ensure the panel has a valid minimum size even before the webview is built,
+    // so the tab placeholder renders correctly.
+    SetMinSize(wxSize(FromDIP(320), FromDIP(260)));
+}
+
+void DeviceWebHost::EnsureBuilt()
+{
+    if (m_built) return;
+    m_built = true;
+
+    auto t0 = TimeNowMs();
+
 #ifdef DEVICE_USE_HTTP_SERVER
     m_device_http_server = std::make_unique<DeviceHttpServer>();
 #endif
 
-#if 0
-    m_device_webview    = new PrinterWebView(this);
-    SetMinSize(wxSize(FromDIP(320), FromDIP(260)));
+    m_device_webview = new PrinterWebView(this);
     m_device_webview->SetMinSize(wxSize(FromDIP(320), FromDIP(260)));
     m_device_web_bridge = std::make_unique<DeviceWebBridge>(m_device_webview->GetWebView());
+    m_device_web_bridge->SetReportEnabledHandler([this]() {
+        return CanReportToWeb();
+    });
 
     m_device_web_mgr = std::make_unique<DeviceWebManager>();
-    if (m_mode == DeviceWebHostMode::FilamentManager || m_mode == DeviceWebHostMode::AllForDebug) {
+    if (!wxGetApp().is_fila_manager_disabled() &&
+        (m_mode == DeviceWebHostMode::FilamentManager || m_mode == DeviceWebHostMode::AllForDebug)) {
         m_device_web_mgr->Register(std::make_unique<FilamentManagerVM>());
     }
     m_device_web_mgr->SetBridge(m_device_web_bridge.get());
@@ -54,12 +80,32 @@ DeviceWebHost::DeviceWebHost(wxWindow* parent, DeviceWebHostMode mode, std::stri
     });
 
     LoadUrl();
-    Layout();
-    web_sizer->Layout();
-    m_device_webview->Layout();
-#endif
 
-    Fit();
+    // When built lazily the panel already has its final size; force the webview
+    // to fill it immediately rather than waiting for the next SIZE event.
+    if (m_allow_lazy) {
+        const wxSize cur = GetClientSize();
+        if (cur.GetWidth() > 0 && cur.GetHeight() > 0) {
+            m_device_webview->SetSize(cur);
+            if (auto* wv = m_device_webview->GetWebView()) {
+                wv->SetSize(m_device_webview->GetClientSize());
+            }
+        }
+        Layout();
+        web_sizer->Layout();
+        m_device_webview->Layout();
+        if (GetParent()) GetParent()->Layout();
+    } else {
+        Layout();
+        web_sizer->Layout();
+        m_device_webview->Layout();
+        Fit();
+    }
+
+    BOOST_LOG_TRIVIAL(info) << "[DevWebPerf] EnsureBuilt: done in " << (TimeNowMs() - t0) << "ms";
+    // Mark so NavigateTo skips the next call: LoadUrl already loaded the correct URL,
+    // and running JS hash navigation before the page is ready causes a white screen.
+    m_just_built = true;
 }
 
 DeviceWebHost::~DeviceWebHost()
@@ -90,22 +136,70 @@ wxString DeviceWebHost::BuildUrl(const std::string& path) const
 
 void DeviceWebHost::LoadUrl()
 {
-    const wxString url = BuildUrl(m_initial_path);
-    //m_device_webview->load_url(url);
+    if (!m_device_webview) return;
+    m_device_webview->load_url(BuildUrl(m_initial_path));
 }
 
-void DeviceWebHost::NavigateTo(const std::string& path)
+void DeviceWebHost::NavigateTo(const std::string& path, bool re_init)
 {
     if (!m_device_webview) {
+        // Lazy first build, already loaded by EnsureBuilt(). Clear the guard so
+        // a later return to this tab can reload and re-run init().
+        EnsureBuilt();
+        m_just_built = false;
         return;
     }
-    //y
-    //m_device_webview->load_url(BuildUrl(path));
+
+    // Non-lazy hosts loaded in the constructor: skip the first NavigateTo to
+    // avoid a redundant reload / white screen (unless suspended to about:blank).
+    if (m_just_built && !m_suspended) {
+        m_just_built = false;
+        return;
+    }
+
+    if (m_suspended) {
+        // macOS: resume from about:blank; loading the real URL re-runs init().
+        m_suspended = false;
+        m_device_webview->load_url(BuildUrl(path));
+        return;
+    }
+
+    if (re_init) {
+        // Same URL is a no-op in WebView2; force a real reload to re-run init().
+        if (auto* wv = m_device_webview->GetWebView()) {
+            wv->Reload();
+            return;
+        }
+    }
+
+    m_device_webview->load_url(BuildUrl(path));
+}
+
+void DeviceWebHost::Suspend()
+{
+    // Nothing running yet if the webview was never built, or already suspended.
+    if (!m_device_webview || m_suspended)
+        return;
+
+    m_suspended = true;
+    // Replace the live React SPA with an empty document so the WKWebView stops
+    // animating/compositing/running timers and lets the macOS run loop go idle.
+    m_device_webview->load_url("about:blank");
+}
+
+bool DeviceWebHost::CanReportToWeb() const
+{
+    return m_built && m_device_webview && IsShownOnScreen();
+}
+
+bool DeviceWebHost::CanBuildDeviceState() const
+{
+    return CanReportToWeb();
 }
 
 void DeviceWebHost::NotifyFilamentSessionState()
 {
-    if (!m_device_web_mgr)
+    if (!m_device_web_mgr || !CanReportToWeb())
         return;
 
     m_device_web_mgr->NotifyState("filament", "sync", "state");
@@ -114,7 +208,7 @@ void DeviceWebHost::NotifyFilamentSessionState()
 
 void DeviceWebHost::NotifyFilamentMachineChanged()
 {
-    if (!m_device_web_mgr)
+    if (!m_device_web_mgr || !CanReportToWeb())
         return;
 
     m_device_web_mgr->NotifyState("filament", "machine", "selected_changed");

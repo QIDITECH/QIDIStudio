@@ -1523,6 +1523,7 @@ GLCanvas3D::GLCanvas3D(wxGLCanvas* canvas, Bed3D &bed)
 #endif // ENABLE_RETINA_GL
     }
     m_timer_set_color.Bind(wxEVT_TIMER, &GLCanvas3D::on_set_color_timer, this);
+    m_render_fallback_timer.Bind(wxEVT_TIMER, &GLCanvas3D::on_render_fallback_timer, this);
     load_arrange_settings();
 
     m_selection.set_volumes(&m_volumes.volumes);
@@ -1683,6 +1684,21 @@ void GLCanvas3D::on_change_color_mode(bool is_dark, bool reinit) {
 void GLCanvas3D::set_as_dirty()
 {
     m_dirty = true;
+}
+
+void GLCanvas3D::kick_render_fallback()
+{
+#if defined(__WXOSX__)
+    // STUDIO-18472: when a canvas is brought to front by a tab switch its first
+    // frame (and the scene loaded by reload_print/do_reslice) is normally drawn
+    // from wxEVT_IDLE. After the Filament Manager WKWebView churn idle is starved
+    // on macOS, so the Preview tab stays blank for a few seconds until idle
+    // finally fires. Mark dirty and arm the CFRunLoopTimer-backed fallback so the
+    // freshly loaded scene paints promptly; on_idle() stops it as soon as real
+    // idle resumes.
+    m_dirty = true;
+    _ensure_render_fallback_running();
+#endif
 }
 
 const float GLCanvas3D::get_scale() const
@@ -3964,11 +3980,8 @@ void GLCanvas3D::on_size(wxSizeEvent& evt)
     m_dirty = true;
 }
 
-void GLCanvas3D::on_idle(wxIdleEvent& evt)
+bool GLCanvas3D::_do_idle_work()
 {
-    if (!m_initialized)
-        return;
-
     const auto& p_main_toolbar = get_main_toolbar();
     if (p_main_toolbar) {
         m_dirty |= p_main_toolbar->update_items_state();
@@ -3992,7 +4005,7 @@ void GLCanvas3D::on_idle(wxIdleEvent& evt)
 #endif // ENABLE_ENHANCED_IMGUI_SLIDER_FLOAT
 
     if (!m_dirty)
-        return;
+        return false;
 
 #if ENABLE_ENHANCED_IMGUI_SLIDER_FLOAT
     // this needs to be done here.
@@ -4002,17 +4015,33 @@ void GLCanvas3D::on_idle(wxIdleEvent& evt)
 
     _refresh_if_shown_on_screen();
 
+    bool wants_more_frames;
 #if ENABLE_ENHANCED_IMGUI_SLIDER_FLOAT
-    if (m_extra_frame_requested || mouse3d_controller_applied || imgui_requires_extra_frame || wxGetApp().imgui()->requires_extra_frame()) {
-#else
-    if (m_extra_frame_requested || mouse3d_controller_applied) {
-        m_dirty = true;
-#endif // ENABLE_ENHANCED_IMGUI_SLIDER_FLOAT
-        m_extra_frame_requested = false;
-        evt.RequestMore();
-    }
-    else
+    wants_more_frames = m_extra_frame_requested || mouse3d_controller_applied || imgui_requires_extra_frame || wxGetApp().imgui()->requires_extra_frame();
+    if (!wants_more_frames)
         m_dirty = false;
+#else
+    wants_more_frames = m_extra_frame_requested || mouse3d_controller_applied;
+    m_dirty = wants_more_frames;
+#endif // ENABLE_ENHANCED_IMGUI_SLIDER_FLOAT
+    m_extra_frame_requested = false;
+    return wants_more_frames;
+}
+
+void GLCanvas3D::on_idle(wxIdleEvent& evt)
+{
+    if (!m_initialized)
+        return;
+
+    // A real wxEVT_IDLE means the CFRunLoop reached its idle phase, so the macOS
+    // render-fallback timer (started from input handlers) is not needed and can
+    // stand down until idle gets starved again by a busy WKWebView tab.
+    m_render_fallback_quiet_ticks = 0;
+    if (m_render_fallback_timer.IsRunning())
+        m_render_fallback_timer.Stop();
+
+    if (_do_idle_work())
+        evt.RequestMore();
 }
 
 void GLCanvas3D::on_char(wxKeyEvent& evt)
@@ -4835,6 +4864,11 @@ void GLCanvas3D::on_mouse_wheel(wxMouseEvent& evt)
         auto new_zoom = camera.get_zoom();
         camera.translate((-displacement) / (new_zoom / origin_zoom));
     }
+#if defined(__WXOSX__)
+    // macOS: keep zoom responsive even if wxEVT_IDLE is starved by a busy
+    // WKWebView tab (no-op elsewhere).
+    _ensure_render_fallback_running();
+#endif
 }
 
 void GLCanvas3D::on_timer(wxTimerEvent& evt)
@@ -4849,6 +4883,45 @@ void GLCanvas3D::on_render_timer(wxTimerEvent& evt)
     // right after this event, idle event is fired
     // m_dirty = true;
     // wxWakeUpIdle();
+}
+
+void GLCanvas3D::_ensure_render_fallback_running()
+{
+#if defined(__WXOSX__)
+    // Root cause (STUDIO-18472): on macOS wxWidgets only emits wxEVT_IDLE from
+    // the CFRunLoop's kCFRunLoopBeforeWaiting observer, i.e. only when the run
+    // loop is about to sleep. After visiting the Filament Manager tab its
+    // WKWebView (a live React app + bridge) keeps signalling the main run loop,
+    // so it rarely reaches the "before waiting" phase and wxEVT_IDLE is starved.
+    // The lightweight Home web page goes quiet, which is why it never triggers
+    // this. Because the slicer drives its canvas render/picking from idle, a
+    // starved idle freezes camera moves, drags and gizmo highlighting.
+    //
+    // A wxTimer is backed by a CFRunLoopTimer, which the run loop services every
+    // iteration even while it is too busy to ever go idle. So we drive the same
+    // work the idle handler does from this timer whenever the canvas is being
+    // interacted with. on_idle() stops the timer as soon as real idle events
+    // start flowing again, so there is no extra work on the normal (healthy)
+    // path.
+    m_render_fallback_quiet_ticks = 0;
+    if (!m_render_fallback_timer.IsRunning())
+        m_render_fallback_timer.Start(1000 / 60);
+#endif
+}
+
+void GLCanvas3D::on_render_fallback_timer(wxTimerEvent& evt)
+{
+    if (!m_initialized)
+        return;
+
+    const bool wants_more_frames = _do_idle_work();
+    // Stand the timer down once the scene has been quiet for a short while; the
+    // next canvas interaction re-arms it (and a healthy wxEVT_IDLE stops it
+    // immediately).
+    if (wants_more_frames || m_dirty)
+        m_render_fallback_quiet_ticks = 0;
+    else if (++m_render_fallback_quiet_ticks >= 60)//Wait for a maximum of 60 frames to ensure the idle mechanism returns to normal
+        m_render_fallback_timer.Stop();
 }
 
 void GLCanvas3D::on_set_color_timer(wxTimerEvent& evt)
@@ -4997,6 +5070,11 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
     if (!m_initialized || !_set_current(true))
         return;
 
+#if defined(__WXOSX__)
+    // macOS: keep the canvas redrawing during interaction even if wxEVT_IDLE is
+    // currently starved by a busy WKWebView tab (no-op elsewhere).
+    _ensure_render_fallback_running();
+#endif
     // QDS: single snapshot
     Plater::SingleSnapshot single(wxGetApp().plater());
 
@@ -7678,6 +7756,9 @@ void GLCanvas3D::_resize(unsigned int w, unsigned int h)
 #endif
 
     this->request_extra_frame();
+
+    // // ensures that this canvas is current
+    // _set_current(true);
 }
 
 BoundingBoxf3 GLCanvas3D::_max_bounding_box(bool include_gizmos, bool include_bed_model, bool include_plates, bool volumes_limit_to_expand_plate) const

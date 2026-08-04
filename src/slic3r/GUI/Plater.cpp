@@ -2213,7 +2213,6 @@ bool Sidebar::priv::sync_extruder_list(bool &only_external_material, bool is_man
         if (isSucceed) {
             try {
                 json resultJson = json::parse(resultBody);
-                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "/get/database/config/all return is " << resultJson;
                 //y79
                 if (resultJson.contains("data") && resultJson["data"].is_object()) {
                     if (resultJson["data"].contains("printing.polar_cooler") && resultJson["data"]["printing.polar_cooler"].is_string()) {
@@ -4015,6 +4014,10 @@ void Sidebar::update_presets(Preset::Type preset_type)
 
     default: break;
     }
+
+    //y83
+    if (wxGetApp().mainframe)
+        wxGetApp().mainframe->update_calibration_preset_combos();
 
     // Synchronize config.ini with the current selections.
     wxGetApp().preset_bundle->export_selections(*wxGetApp().app_config);
@@ -9291,7 +9294,7 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                             if (bed_type_opt != nullptr) {
                                 BedType bed_type = (BedType)bed_type_opt->getInt();
                                 // update app config for bed type
-                                bool is_qdt_preset = preset_bundle->printers.get_edited_preset().is_qdt_vendor_preset(&(*preset_bundle));
+                                bool is_qdt_preset = true;// preset_bundle->printers.get_edited_preset().is_qdt_vendor_preset(&(*preset_bundle));
                                 if (is_qdt_preset) {
                                     AppConfig* app_config = wxGetApp().app_config;
                                     if (app_config)
@@ -12471,6 +12474,20 @@ void Plater::priv::set_current_panel(wxPanel* panel, bool no_slice)
     }
 
     current_panel->SetFocusFromKbd();
+
+#ifdef __WXMAC__
+    // STUDIO-18472: the newly shown canvas marks itself dirty and expects its
+    // first frame (incl. the scene reloaded above) to be drawn from wxEVT_IDLE.
+    // After the Filament Manager WKWebView churn idle is starved on macOS, so the
+    // tab would otherwise stay blank for a few seconds. Arm the render-fallback
+    // timer so it paints promptly; it stands down once real idle resumes.
+    if (current_panel == view3D)
+        view3D->get_canvas3d()->kick_render_fallback();
+    else if (current_panel == preview)
+        preview->get_canvas3d()->kick_render_fallback();
+    else if (current_panel == assemble_view)
+        assemble_view->get_canvas3d()->kick_render_fallback();
+#endif // __WXMAC__
 
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": successfully, exit");
 }

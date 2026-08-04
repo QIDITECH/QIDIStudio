@@ -104,11 +104,15 @@ public:
     // Login
     void SendLoginInfo();
     void ShowNetpluginTip();
+    void onLineToLogin();  //cj_5
+    
 
     //MW
     void SetMakerworldModelID(std::string ModelID);
     void OpenMakerworldSearchPage(std::string KeyWord);
     void SetPrintHistoryTaskID(int TaskID);
+    void downloadFile(std::string url); // cj_5
+    void MWLoad();
     
     //DisconnectPage
     wxString MakeDisconnectUrl(std::string MenuName);
@@ -133,6 +137,7 @@ public:
     std::string m_online_last_url; //last url
 
     void SendDesignStaffpick(bool on);
+    void SendQidiModelList(bool on);  // cj_5: fetch QIDI Maker model list
     void get_design_staffpick(int offset, int limit, std::function<void(std::string)> callback);
     void get_user_mw_4u_config(std::function<void(std::string)> callback);
     void get_4u_staffpick(int seed, int limit, std::function<void(std::string)> callback);
@@ -157,6 +162,13 @@ public:
     //wiki
     bool m_WikiFirst;
     wxString m_Wiki_LastUrl;
+
+    // Login overlay
+    bool        m_is_login_showing { false };
+    std::string m_pre_login_contentname;  // page name before login overlay opened
+    void ShowLoginOverlay();
+    void HideLoginOverlay();
+    bool IsLoginShowing() const { return m_is_login_showing; }
 
     //Common UI
     void SetWebviewShow(wxString name, bool show);
@@ -190,6 +202,7 @@ private:
     wxWebView  *m_browserPH { nullptr };               //PrintHistory
     wxWebView  *m_browserML { nullptr };               //MakerLab
     wxWebView  *m_browserWiki { nullptr };
+    wxWebView  *m_browserLogin { nullptr };               // Login overlay
 
     //Basic Browser
     wxBoxSizer *bSizer_toolbar { nullptr };
@@ -248,6 +261,10 @@ private:
     // Last executed JavaScript snippet, for convenience.
     wxString m_javascript;
     wxString m_response_js;
+
+    // cj_5
+    std::string m_online_moddlId; 
+
 
     bool m_has_pending_staff_pick { false };
 

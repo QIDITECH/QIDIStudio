@@ -1,5 +1,5 @@
 #include "MainFrame.hpp"
-#include "PrinterWebView.hpp"
+#include "QDSPrinterWebView.hpp"
 
 #include "GLToolbar.hpp"
 #include <wx/panel.h>
@@ -1272,6 +1272,15 @@ void MainFrame::init_tabpanel()
         //    SupportRecommendDialog* dialog = new SupportRecommendDialog(nullptr, _L("Notice"));;
 
         //    wxArrayString params;
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
+        //    params.Add(wxString::FromUTF8("支撑独立层高：关闭"));
 
         //    std::vector<wxString> objects;
         //    for (int i = 0; i < 10; i++) {
@@ -1402,13 +1411,22 @@ void MainFrame::init_tabpanel()
             // Defer hash navigation until after the notebook paints (macOS + WKWebView).
             CallAfter([this]() {
                 if (m_web_device && m_tabpanel && m_tabpanel->GetCurrentPage() == m_web_device)
-                    m_web_device->NavigateTo("/filament_manager");
+                    m_web_device->NavigateTo("/filament_manager", /*re_init=*/true);
             });
 #else
-            m_web_device->NavigateTo("/filament_manager");
+            // Switching back to this tab: re-run init() to pick up changes.
+            m_web_device->NavigateTo("/filament_manager", /*re_init=*/true);
 #endif
         }
-
+#if defined(__WXOSX__)
+        // macOS root cause fix: suspend the Filament Manager WKWebView whenever it
+        // is not the visible tab. Its live React SPA, if left mounted in a hidden
+        // webview, keeps the CFRunLoop busy and starves wxEVT_IDLE app-wide, which
+        // freezes the 3D canvas / tab switching on the prepare page and breaks the
+        // language-switch GUI rebuild. Returning to the tab reloads it (NavigateTo).
+        if (m_web_device && panel != m_web_device)
+            m_web_device->Suspend();
+#endif
         
 #ifndef __APPLE__
         if (sel == tp3DEditor) {
@@ -1479,7 +1497,7 @@ void MainFrame::init_tabpanel()
     //cj_5
     wxGetApp().qdsdevmanager->refreshLocalDevices(true, {});
 
-    m_printer_view = new PrinterWebView(m_tabpanel);
+    m_printer_view = new QDSPrinterWebView(m_tabpanel);
     // y3
     // y5
     m_tabpanel->AddPage(m_printer_view, _L("Device"), std::string("tab_monitor_active"), std::string("tab_monitor_active"), false);
@@ -1511,8 +1529,10 @@ void MainFrame::init_tabpanel()
      m_tabpanel->AddPage(m_calibration, _L("Calibration"), std::string("tab_calibration_active"), std::string("tab_calibration_active"), false);
 
      //y81
-    // m_web_device = new DeviceWebPage(m_tabpanel);
-    //m_tabpanel->AddPage(m_web_device, _L("Filament Manager"), std::string("tab_filament_active"), std::string("tab_filament_active"), false);
+    // if (!wxGetApp().is_fila_manager_disabled()) {
+    //     m_web_device = new DeviceWebPage(m_tabpanel);
+    //     m_tabpanel->AddPage(m_web_device, _L("Filament Manager"), std::string("tab_filament_active"), std::string("tab_filament_active"), false);
+    // }
 
      m_filament = new FilamentPanel(m_tabpanel, wxID_ANY, wxDefaultPosition, wxDefaultSize);
      m_filament->SetBackgroundColour(*wxWHITE);
@@ -4662,6 +4682,13 @@ void MainFrame::update_side_preset_ui()
 
     //take off multi machine
     // if(m_multi_machine){m_multi_machine->clear_page();}
+}
+
+//y83
+void MainFrame::update_calibration_preset_combos()
+{
+    if (m_calibration)
+        m_calibration->update_preset_choices();
 }
 
 void MainFrame::on_select_default_preset(SimpleEvent& evt)

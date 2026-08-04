@@ -7,6 +7,7 @@
 #include "libslic3r_version.h"
 #include "../Utils/Http.hpp"
 
+#include <ctime>
 #include <regex>
 #include <utility>
 
@@ -15,6 +16,9 @@
 #include <boost/chrono.hpp>
 #include <boost/beast/core/detail/base64.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 #include <wx/sizer.h>
 #include <wx/toolbar.h>
@@ -25,6 +29,11 @@
 
 #include <slic3r/GUI/Widgets/WebView.hpp>
 #include "slic3r/GUI/Widgets/StateColor.hpp"
+
+#ifdef __WXMSW__
+#include <WebView2.h>
+#include <wrl/client.h>
+#endif
 
 namespace pt = boost::property_tree;
 
@@ -44,6 +53,115 @@ namespace GUI {
         wxString lower = url.Lower();
         return lower.StartsWith("about:blank");
     }
+
+#ifdef __WXMSW__
+    // Set an HttpOnly cookie via WebView2 CookieManager.
+    // This must be called when the WebView is already created (e.g. after
+    // about:blank has loaded). The cookie is synced to the WebView2 profile
+    // so it will be sent on the next navigation to a matching origin.
+    // expires > 0: Unix timestamp (seconds), passed to put_Expires();
+    // expires = 0: session cookie with no explicit expiration.
+    void SetWebView2Cookie(wxWebView *webView,
+                           const wxString &name,
+                           const wxString &value,
+                           const wxString &domain,
+                           const wxString &path = "/",
+                           bool secure = true,
+                           bool httpOnly = true,
+                           double expires = 0)
+    {
+        if (!webView)
+            return;
+
+        ICoreWebView2 *webView2 = static_cast<ICoreWebView2 *>(webView->GetNativeBackend());
+        if (!webView2)
+            return;
+
+        Microsoft::WRL::ComPtr<ICoreWebView2_2> webView2_2;
+        HRESULT hr = webView2->QueryInterface(IID_PPV_ARGS(&webView2_2));
+        if (FAILED(hr))
+            return;
+
+        Microsoft::WRL::ComPtr<ICoreWebView2CookieManager> cookieManager;
+        hr = webView2_2->get_CookieManager(cookieManager.GetAddressOf());
+        if (FAILED(hr))
+            return;
+
+        Microsoft::WRL::ComPtr<ICoreWebView2Cookie> cookie;
+        hr = cookieManager->CreateCookie(name.wc_str(), value.wc_str(),
+                                         domain.wc_str(), path.wc_str(),
+                                         cookie.GetAddressOf());
+        if (FAILED(hr))
+            return;
+
+        cookie->put_IsHttpOnly(httpOnly ? TRUE : FALSE);
+        cookie->put_IsSecure(secure ? TRUE : FALSE);
+        if (expires > 0)
+            cookie->put_Expires(expires);
+
+        hr = cookieManager->AddOrUpdateCookie(cookie.Get());
+        if (FAILED(hr)) {
+            BOOST_LOG_TRIVIAL(warning)
+                << "SetWebView2Cookie: AddOrUpdateCookie failed for "
+                << name.ToStdString();
+        }
+    }
+
+    // Parse a Set-Cookie header string and add it via WebView2.
+    // Max-Age is honored by computing Expires = current_time + max_age.
+    // An explicit Expires in the header is ignored in favor of Max-Age
+    // when both are present; if only Expires is given it is kept as-is.
+    // Example: "token=abc123; Path=/; Domain=.example.com; Max-Age=604800; Secure; HttpOnly"
+    void SetWebView2CookieFromHeader(wxWebView *webView, const wxString &header)
+    {
+        wxString name, value, domain, path = "/";
+        bool secure = false, httpOnly = false;
+        double maxAge = 0;
+        double expires = 0;
+
+        wxArrayString parts = wxSplit(header, ';');
+        for (size_t i = 0; i < parts.size(); ++i) {
+            wxString part = parts[i];
+            part.Trim(true).Trim(false);
+
+            if (i == 0) {
+                int eqPos = part.Find('=');
+                if (eqPos != wxNOT_FOUND) {
+                    name  = part.Left(eqPos);
+                    value = part.Mid(eqPos + 1);
+                }
+            } else {
+                wxString lower = part.Lower();
+                if (lower.StartsWith("domain=")) {
+                    domain = part.Mid(7);
+                } else if (lower.StartsWith("path=")) {
+                    path = part.Mid(5);
+                } else if (lower.StartsWith("max-age=")) {
+                    maxAge = wxAtof(part.Mid(8));
+                } else if (lower.StartsWith("expires=")) {
+                    // Only used as fallback if Max-Age is not set
+                    // (parsing GMT date strings here would add complexity;
+                    //  kept as documentation-only for now).
+                } else if (lower == "secure") {
+                    secure = true;
+                } else if (lower == "httponly") {
+                    httpOnly = true;
+                }
+            }
+        }
+
+        // Compute expiration from Max-Age if present
+        if (maxAge > 0) {
+            expires = static_cast<double>(std::time(nullptr)) + maxAge;
+        }
+
+        if (!name.IsEmpty() && !value.IsEmpty() && !domain.IsEmpty()) {
+            SetWebView2Cookie(webView, name, value, domain, path,
+                              secure, httpOnly, expires);
+        }
+    }
+#endif // __WXMSW__
+
     }
 
     BEGIN_EVENT_TABLE(WebViewPanel, wxPanel)
@@ -67,25 +185,43 @@ WebViewPanel::WebViewPanel(wxWindow *parent)
     Bind(wxEVT_WEBVIEW_NEWWINDOW, &WebViewPanel::OnNewWindow, this);
     Bind(wxEVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED, &WebViewPanel::OnScriptMessage, this);
     Bind(EVT_RESPONSE_MESSAGE, &WebViewPanel::OnScriptResponseMessage, this);
+    // Reposition login overlay when panel is resized
+    Bind(wxEVT_SIZE, [this](wxSizeEvent& e) {
+        e.Skip();
+        if (m_is_login_showing && m_browserLogin) {
+            int leftWidth = FromDIP(224);
+            int totalW    = GetSize().GetWidth();
+            int totalH    = GetSize().GetHeight();
+            m_browserLogin->SetSize(leftWidth, 0, totalW - leftWidth, totalH);
+        }
+    });
 
     wxString UrlLeft  = wxString::Format("file://%s/web/homepage3/left.html", from_u8(resources_dir()));
     wxString UrlRight = wxString::Format("file://%s/web/homepage3/home.html", from_u8(resources_dir()));
     wxString UrlWiki  = wxString::Format("file://%s/web/homepage3/wiki.html", from_u8(resources_dir()));
-    wxString wiki_region_param;
+
+    //y83
+    wxString region_param;
     if (!m_Region.empty())
-        wiki_region_param = wxString::Format("region=%s", from_u8(m_Region));
-    if (!wiki_region_param.empty())
-        UrlWiki = wxString::Format("file://%s/web/homepage3/wiki.html?%s", from_u8(resources_dir()), wiki_region_param);
+        region_param = wxString::Format("region=%s", from_u8(m_Region));
 
     wxString strlang = GetStudioLanguage();
+    //y83
     if (strlang != "")
     {
-        UrlLeft = wxString::Format("file://%s/web/homepage3/left.html?lang=%s", from_u8(resources_dir()), strlang);
-        UrlRight = wxString::Format("file://%s/web/homepage3/home.html?lang=%s", from_u8(resources_dir()), strlang);
-        if (!wiki_region_param.empty())
-            UrlWiki = wxString::Format("file://%s/web/homepage3/wiki.html?lang=%s&%s", from_u8(resources_dir()), strlang, wiki_region_param);
-        else
+        if (!region_param.empty()) {
+            UrlLeft = wxString::Format("file://%s/web/homepage3/left.html?lang=%s&%s", from_u8(resources_dir()), strlang, region_param);
+            UrlRight = wxString::Format("file://%s/web/homepage3/home.html?lang=%s&%s", from_u8(resources_dir()), strlang, region_param);
+            UrlWiki = wxString::Format("file://%s/web/homepage3/wiki.html?lang=%s&%s", from_u8(resources_dir()), strlang, region_param);
+        } else {
+            UrlLeft = wxString::Format("file://%s/web/homepage3/left.html?lang=%s", from_u8(resources_dir()), strlang);
+            UrlRight = wxString::Format("file://%s/web/homepage3/home.html?lang=%s", from_u8(resources_dir()), strlang);
             UrlWiki = wxString::Format("file://%s/web/homepage3/wiki.html?lang=%s", from_u8(resources_dir()), strlang);
+        }
+    } else if (!region_param.empty()) {
+        UrlLeft = wxString::Format("file://%s/web/homepage3/left.html?%s", from_u8(resources_dir()), region_param);
+        UrlRight = wxString::Format("file://%s/web/homepage3/home.html?%s", from_u8(resources_dir()), region_param);
+        UrlWiki = wxString::Format("file://%s/web/homepage3/wiki.html?%s", from_u8(resources_dir()), region_param);
     }
 
     topsizer = new wxBoxSizer(wxVERTICAL);
@@ -237,6 +373,14 @@ WebViewPanel::WebViewPanel(wxWindow *parent)
     m_browserWiki->Hide();
     m_WikiFirst = false;
 
+    // Login overlay webview
+    m_browserLogin = WebView::CreateWebView(this, "about:blank");
+    if (m_browserLogin == nullptr) {
+        wxLogError("Could not init m_browserLogin");
+        return;
+    }
+    m_browserLogin->Hide();
+
     // Position
     m_home_web->Add(m_browserLeft, 0, wxEXPAND | wxALL, 0);
     m_home_web->Add(m_browser, 1, wxEXPAND | wxALL, 0);
@@ -363,7 +507,7 @@ WebViewPanel::WebViewPanel(wxWindow *parent)
 
     Bind(wxEVT_SHOW, [this](auto &e) {
         if (e.IsShown() && m_has_pending_staff_pick) {
-            SendDesignStaffpick(true);
+            SendQidiModelList(true);
         }
     });
  }
@@ -390,35 +534,200 @@ void WebViewPanel::ResetWholePage()
 
     m_Region = tmp_Region;
 
-    //loginstatus
-    m_loginstatus = -1;
+    //y83 Build new URLs with updated region
+    wxString region_param;
+    if (!m_Region.empty())
+        region_param = wxString::Format("region=%s", from_u8(m_Region));
 
-    //left
-    if (m_browserLeft != nullptr && m_leftfirst) m_browserLeft->Reload();
+    wxString strlang = GetStudioLanguage();
 
-    //right
-    json m_Res           = json::object();
-    m_Res["command"]     = "homepage_rightarea_reset";
-    m_Res["sequence_id"] = "10001";
+    // ---- Left browser ----
+    if (m_browserLeft != nullptr) {
+        wxString newLeftUrl;
+        if (strlang != "") {
+            if (!region_param.empty())
+                newLeftUrl = wxString::Format("file://%s/web/homepage3/left.html?lang=%s&%s", from_u8(resources_dir()), strlang, region_param);
+            else
+                newLeftUrl = wxString::Format("file://%s/web/homepage3/left.html?lang=%s", from_u8(resources_dir()), strlang);
+        } else if (!region_param.empty()) {
+            newLeftUrl = wxString::Format("file://%s/web/homepage3/left.html?%s", from_u8(resources_dir()), region_param);
+        } else {
+            newLeftUrl = wxString::Format("file://%s/web/homepage3/left.html", from_u8(resources_dir()));
+        }
+        m_browserLeft->LoadURL(newLeftUrl);
+    }
+    m_leftfirst = false;
 
-    wxString strJS = wxString::Format("window.postMessage(%s)", m_Res.dump(-1, ' ', false, json::error_handler_t::ignore));
-    RunScript(strJS);
+    // ---- Right (home) browser ----
+    if (m_browser != nullptr) {
+        wxString newRightUrl;
+        if (strlang != "") {
+            if (!region_param.empty())
+                newRightUrl = wxString::Format("file://%s/web/homepage3/home.html?lang=%s&%s", from_u8(resources_dir()), strlang, region_param);
+            else
+                newRightUrl = wxString::Format("file://%s/web/homepage3/home.html?lang=%s", from_u8(resources_dir()), strlang);
+        } else if (!region_param.empty()) {
+            newRightUrl = wxString::Format("file://%s/web/homepage3/home.html?%s", from_u8(resources_dir()), region_param);
+        } else {
+            newRightUrl = wxString::Format("file://%s/web/homepage3/home.html", from_u8(resources_dir()));
+        }
+        m_browser->LoadURL(newRightUrl);
+    }
 
-    //online
+    // ---- Wiki browser ----
+    if (m_browserWiki != nullptr) {
+        wxString newWikiUrl;
+        if (strlang != "") {
+            if (!region_param.empty())
+                newWikiUrl = wxString::Format("file://%s/web/homepage3/wiki.html?lang=%s&%s", from_u8(resources_dir()), strlang, region_param);
+            else
+                newWikiUrl = wxString::Format("file://%s/web/homepage3/wiki.html?lang=%s", from_u8(resources_dir()), strlang);
+        } else if (!region_param.empty()) {
+            newWikiUrl = wxString::Format("file://%s/web/homepage3/wiki.html?%s", from_u8(resources_dir()), region_param);
+        } else {
+            newWikiUrl = wxString::Format("file://%s/web/homepage3/wiki.html", from_u8(resources_dir()));
+        }
+        m_browserWiki->LoadURL(newWikiUrl);
+    }
+    m_WikiFirst = false;
+    m_Wiki_LastUrl.Clear();
+
+    // ---- Online / MakerWorld ----
     SetMakerworldModelID("");
+    if (wxGetApp().app_config->get("staff_pick_switch") == "true")
+        SendQidiModelList(true);
+    else
+        SendQidiModelList(false);
     m_onlinefirst = false;
 
-    //PrintHistory
+    // ---- PrintHistory ----
     SetPrintHistoryTaskID(0);
     m_printhistoryfirst = false;
 
-    //MakerLab
+    // ---- MakerLab ----
     m_MakerLabFirst = false;
     SetMakerlabUrl("");
+}
 
-    //Wiki
-    m_WikiFirst = false;
-    m_Wiki_LastUrl.Clear();
+//cj_5
+void WebViewPanel::onLineToLogin()
+{
+    // cj_5: Directly trigger Maker login flow (index=1) without showing the login overlay
+    wxWebViewEvent evt(wxEVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED, GetId(), wxString(), wxString());
+    evt.SetString("{\"index\": 1}");
+    WebViewPanel::onLoginHandle(evt);
+}
+
+//cj_5
+void WebViewPanel::downloadFile(std::string urlRaw)
+{
+    wxString url(urlRaw);
+	if (url.StartsWith("File://") || url.StartsWith("file://")) {
+		if (!url.Contains("/web/homepage3/")) {
+			auto file = wxURL::Unescape(wxURL(url).GetPath());
+#ifdef _WIN32
+			if (file.StartsWith('/'))
+				file = file.Mid(1);
+#endif
+			wxGetApp().plater()->load_files(wxArrayString{ 1, &file });
+			return;
+		}
+	}
+	else {
+		wxString surl = url;
+// 		if (m_isPerformingBack) {
+// 			// When navigating backward in MakeWorld, prevent going back if the next page is about:blank.
+// 			m_isPerformingBack = false;
+// 			if (IsBlankWebUrl(url)) {
+// 				return;
+// 			}
+// 		}
+		if (surl.find("?") != std::string::npos) {
+			surl = surl.substr(0, surl.find("?")).Lower();
+		}
+
+		if (surl.EndsWith(".zip") ||
+			surl.EndsWith(".pdf") ||
+			surl.EndsWith(".stl") ||
+			surl.EndsWith(".3mf") ||
+			surl.EndsWith(".xlsx") ||
+			surl.EndsWith(".xls") ||
+			surl.EndsWith(".txt") ||
+			surl.EndsWith("qdscfg") ||
+			surl.EndsWith("qdsflmt")
+			)
+		{
+			wxLaunchDefaultBrowser(url);
+
+			return;
+		}
+	}
+}
+
+//cj_5
+void WebViewPanel::MWLoad()
+{
+
+	wxString mw_jumpurl = "";
+    wxString language_code = wxString::FromUTF8(GetStudioLanguage()).BeforeFirst('_');
+    mw_jumpurl = wxString::Format("https://www.qidimaker.com/en/studio?_lang=%s&_modelId=%s", language_code, wxString(m_online_moddlId));
+    //mw_jumpurl = wxString::Format("https://api-test.qidi3dprinter.com/zh/studio?_lang=%s&_modelId=%s", language_code, wxString(m_online_moddlId));
+
+	m_online_moddlId = "";
+	
+#ifdef __WXMSW__
+	{
+		// Read the auth token from config (set by login flow).
+		std::string authToken = wxGetApp().app_config->get("user_token");
+		if (authToken.empty()) {
+			wxGetApp().CallAfter([this, mw_jumpurl]() {
+				m_browserMW->LoadURL(mw_jumpurl);
+				//cj_5 inject localStorage
+                WebView::RunScript(m_browserMW, "window.localStorage.removeItem('user')");
+				});
+			return;
+		}
+		if (boost::starts_with(authToken, "Bearer "))
+			authToken = authToken.substr(7);
+		
+		double expires = static_cast<double>(std::time(nullptr)) + 604800.0;
+		SetWebView2Cookie(m_browserMW, "token",
+			wxString::FromUTF8(authToken),
+			"www.qidimaker.com", "/",
+			//"192.168.110.105:443", "/",
+			true /*secure*/, true /*httpOnly*/,
+			expires);
+
+		// SetWebView2Cookie(m_browserMW, "token",
+		// 	wxString::FromUTF8(authToken),
+		// 	"https://api-test.qidi3dprinter.com", "/",
+		// 	//"192.168.110.105:443", "/",
+		// 	true /*secure*/, true /*httpOnly*/,
+		// 	expires);
+	}
+#endif
+    wxGetApp().CallAfter([this, mw_jumpurl]() {
+#ifndef __WXMSW__
+		std::string authToken = wxGetApp().app_config->get("user_token");
+		if (!authToken.empty()) {
+			if (boost::starts_with(authToken, "Bearer "))
+				authToken = authToken.substr(7);
+
+			double expires = static_cast<double>(std::time(nullptr)) + 604800.0;
+			WebView::SetTokenCookie(m_browserMW, "token",
+				wxString::FromUTF8(authToken),
+				"www.qidimaker.com", "/",
+				true /*secure*/, true /*httpOnly*/,
+				expires);
+		}
+#endif
+		m_browserMW->LoadURL(mw_jumpurl);
+		//cj_5 inject localStorage
+		WebView::RunScript(m_browserMW, "window.localStorage.setItem('user', JSON.stringify({ uuidName: 'test' }))");
+
+        });
+	
+	
 }
 
 wxString WebViewPanel::MakeDisconnectUrl(std::string MenuName)
@@ -716,6 +1025,7 @@ void WebViewPanel::OnFreshLoginStatus(wxTimerEvent &event)
     }
 }
 
+
 void WebViewPanel::onLoginHandle(const wxWebViewEvent& evt)
 {
     int index = 3;
@@ -727,33 +1037,71 @@ void WebViewPanel::onLoginHandle(const wxWebViewEvent& evt)
 
     }
 
-	switch (index)
-	{
-	case 1:
+    switch (index)
+    {
+    case 1:   // Link login
 	{
 		wxGetApp().app_config->set("login_method", "Maker");
 	}
 	break;
-	case 2:
+	case 2: // Maker login
 	{
-        wxGetApp().app_config->set("login_method", "Link");
-
+		wxGetApp().app_config->set("login_method", "Link");
 	}
 	break;
-	default:
-        m_contentname = "home";
-        wxString UrlRight = wxString::Format("file://%s/web/homepage3/home.html", from_u8(resources_dir()));
-        load_url(UrlRight);
+	default:     // Cancel / close: just hide the overlay, restore previous page
+	{
+		HideLoginOverlay();
 		return;
-		break;
 	}
-    CallAfter([this] {
-        m_contentname = "home";
-        wxGetApp().request_login(true);
-		wxString UrlRight = wxString::Format("file://%s/web/homepage3/home.html", from_u8(resources_dir()));
-        load_url(UrlRight);
-        m_browser->Unbind(wxEVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED, &WebViewPanel::onLoginHandle, this, m_browser->GetId());
-    });
+	}
+	// Login success: keep overlay visible during the modal login dialog,
+	// then hide it and restore the previous page once the flow completes.
+	CallAfter([this] {
+		wxGetApp().request_login(true);
+			// Capture prev BEFORE HideLoginOverlay clears m_pre_login_contentname
+			std::string prev = m_pre_login_contentname.empty() ? "home" : m_pre_login_contentname;
+			HideLoginOverlay();
+// 		if (prev == "online" || prev == "makerlab" || prev == "printhistory") {
+// 			SwitchWebContent(prev, 1 /*refresh*/);
+// 		} else {
+// 			SwitchWebContent(prev, 0);
+// 		}
+	});
+}
+
+// Login overlay helpers
+
+void WebViewPanel::ShowLoginOverlay()
+{
+    if (!m_browserLogin) return;
+
+    // Save current page BEFORE SwitchWebContent overwrites m_contentname
+    m_pre_login_contentname = m_contentname;
+
+    // Position the login WebView to cover the content area (right of left menu).
+    // Left menu is FromDIP(224) wide; login overlay fills the rest.
+    int leftWidth  = FromDIP(224);
+    int totalW     = GetSize().GetWidth();
+    int totalH     = GetSize().GetHeight();
+    m_browserLogin->SetSize(leftWidth, 0, totalW - leftWidth, totalH);
+    m_browserLogin->Raise();
+
+    SwitchWebContent("login", 0);
+
+}
+
+void WebViewPanel::HideLoginOverlay()
+{
+    if (!m_browserLogin || !m_is_login_showing) return;
+
+    m_is_login_showing = false;
+    m_browserLogin->Unbind(wxEVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED,
+                           &WebViewPanel::onLoginHandle, this, m_browserLogin->GetId());
+    m_browserLogin->Hide();
+
+    // The underlying content was never hidden ¡ª just covered. No restore needed.
+    m_pre_login_contentname.clear();
 }
 
 void WebViewPanel::SendRecentList(int images)
@@ -851,10 +1199,10 @@ void WebViewPanel::SendDesignStaffpick(bool on)
             {
                 // Default : Staff Pick
                 get_design_staffpick(0, 10, [this](std::string body) {
-                    if (body.empty() || body.front() != '{') {
-                        BOOST_LOG_TRIVIAL(warning) << "get_design_staffpick failed " + body;
-                        return;
-                    }
+                    //if (body.empty() || body.front() != '{') {
+                    //    BOOST_LOG_TRIVIAL(warning) << "get_design_staffpick failed " + body;
+                   //     return;
+                   // }
                     CallAfter([this, body] {
                         if (!wxGetApp().has_model_mall()) return;
 
@@ -882,6 +1230,103 @@ void WebViewPanel::SendDesignStaffpick(bool on)
     } catch (std::exception &e) {
         // wxMessageBox(e.what(), "", MB_OK);
         // wxLogMessage("GUIDE: LoadFamily Error: %s", e.what());
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": parse got exception: " << e.what();
+        return;
+    }
+
+    m_has_pending_staff_pick = false;
+}
+
+// cj_5: Fetch QIDI Maker model list instead of MakerWorld StaffPick
+void WebViewPanel::SendQidiModelList(bool on)
+{
+    static long long QidiModelListMs = 0;
+
+    auto      now       = std::chrono::system_clock::now();
+    long long TmpMs     = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+    long long nInterval = TmpMs - QidiModelListMs;
+    if (nInterval < 500) return;
+    QidiModelListMs = TmpMs;
+
+    BOOST_LOG_TRIVIAL(info) << "Begin SendQidiModelList: " << nInterval;
+
+    try {
+        if (on) {
+            std::string sguide = wxGetApp().app_config->get("firstguide", "finish");
+            if (sguide != "true") return;
+
+            if (!IsShownOnScreen()) {
+                m_has_pending_staff_pick = true;
+                return;
+            }
+
+            // QIDI Maker model list API (POST)
+            std::string api_url = "https://www.qidimaker.com/community/v1/sliceModel/getModelPagePublic";
+            // std::string api_url = "https://api-test.qidi3dprinter.com/community/v1/sliceModel/getModelPagePublic";
+
+            // Generate UUID nonce and timestamp
+            boost::uuids::random_generator uuid_gen;
+            boost::uuids::uuid u = uuid_gen();
+            std::string nonce = boost::uuids::to_string(u);
+            auto ts_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
+            std::string timestamp = std::to_string(ts_ms);
+
+            // Request body
+            std::string post_body = "{\"pageNum\":1, \"pageSize\":20, \"modelCollect\":true}";
+
+            // Region header
+            std::string region = wxGetApp().app_config->get("region") == "China" ? "CN" : "NA";
+
+            auto http = Http::post(api_url);
+            http.timeout_connect(20)
+                .timeout_max(60)
+                .header("Accept", "application/json")
+                .header("Content-Type", "application/json")
+                .header("Accept-Language", "zh_CN")
+                .header("X-Timezone", "+08:00")
+                .header("X-DeviceType", "Web")
+                .header("X-Version", "1.0.0")
+                .header("X-Nonce", nonce)
+                .header("X-Timestamp", timestamp)
+                .header("X-Signature", "dsa213f24df254tgdb6")
+                .header("X-Platform", "pc")
+                .header("X-Region", region)
+                .header("X-DeviceId", "WebTest")
+                .set_post_body(post_body)
+                .on_complete([this](std::string body, unsigned status) {
+                    if (status == 200) {
+                        CallAfter([this, body] {
+                            if (!wxGetApp().has_model_mall()) return;
+
+                            auto body2 = from_u8(body);
+                            body2.insert(1, "\"command\": \"qidi_model_list_get\", ");
+                            RunScript(wxString::Format("window.postMessage(%s)", body2));
+
+                            m_online_type = "browse";
+                            SetLeftMenuShow("online", 1);
+                            MWLoad();
+                        });
+                    } else {
+                        BOOST_LOG_TRIVIAL(warning) << "SendQidiModelList HTTP " << status << ": " << body;
+                    }
+                })
+                .on_error([this](std::string body, std::string error, unsigned status) {
+                    BOOST_LOG_TRIVIAL(error) << "SendQidiModelList error: " << error << " (HTTP " << status << ")";
+                })
+                .perform();
+        } else {
+            std::string body2 = "{\"code\":200, \"data\":{\"records\":[]}}";
+            body2.insert(1, "\"command\": \"qidi_model_list_get\", ");
+            RunScript(wxString::Format("window.postMessage(%s)", body2));
+
+            m_online_type = "";
+            SetLeftMenuShow("online", 0);
+        }
+    } catch (nlohmann::detail::parse_error &err) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": parse got a nlohmann::detail::parse_error, reason = " << err.what();
+        return;
+    } catch (std::exception &e) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": parse got exception: " << e.what();
         return;
     }
@@ -1183,6 +1628,7 @@ void WebViewPanel::OpenMakerlab3mf(std::string Base64Buf, std::string FileName)
 
 void WebViewPanel::SaveMakerlabStl(int SequenceID, std::string Base64Buf, std::string FileName)
 {
+   
     // Save
     wxString SavePath, SaveFile;
     bool     bRet = SaveBase64ToLocal(Base64Buf, FileName, "stl", SavePath, SaveFile);
@@ -1314,17 +1760,24 @@ bool WebViewPanel::GetJumpUrl(bool login, wxString ticket, wxString targeturl, w
 
 void WebViewPanel::UpdateMakerworldLoginStatus()
 {
-    NetworkAgent *agent = GUI::wxGetApp().getAgent();
-    if (agent == nullptr) return;
+    //cj_5
+	std::string newticket;
 
-    std::string newticket;
-    int ret = agent->request_bind_ticket(&newticket);
-    if (ret==0)
-        SetMakerworldPageLoginStatus(true, newticket);
-    else {
-        wxString UrlDisconnect = MakeDisconnectUrl("online");
-        m_browserMW->LoadURL(UrlDisconnect);
-    }
+	SetMakerworldPageLoginStatus(true, newticket);
+    return;
+    //cj_5
+    //NetworkAgent *agent = GUI::wxGetApp().getAgent();
+    //if (agent == nullptr) return;
+
+    //int ret = agent->request_bind_ticket(&newticket);
+//     int ret = 0;
+//     std::string newticket;
+//     if (ret==0)
+//         SetMakerworldPageLoginStatus(true, newticket);
+//     else {
+//         wxString UrlDisconnect = MakeDisconnectUrl("online");
+//         m_browserMW->LoadURL(UrlDisconnect);
+//     }
 }
 
 
@@ -1361,14 +1814,12 @@ void WebViewPanel::SetMakerworldPageLoginStatus(bool login ,wxString ticket)
     } else {
         //std::cout << "The string does not match the pattern." << std::endl;
     }
+    BOOST_LOG_TRIVIAL(trace) << m_browserMW->GetCurrentURL();
+    if (m_browserMW->GetCurrentURL() == "about:blank" || !m_online_moddlId.empty()) {
 
-    wxString mw_jumpurl = "";
-
-    bool b = GetJumpUrl(login, ticket, mw_currenturl, mw_jumpurl);
-    if (b) {
-        m_browserMW->LoadURL(mw_jumpurl);
-        m_online_LastUrl = "";
+        MWLoad();
     }
+
 }
 
 
@@ -1551,7 +2002,7 @@ void WebViewPanel::OnNavigationRequest(wxWebViewEvent& evt)
     */
 void WebViewPanel::OnNavigationComplete(wxWebViewEvent& evt)
 {
-    if (m_browserMW!=nullptr && evt.GetId() == m_browserMW->GetId())
+    if (m_browserMW!=nullptr && evt.GetId() == m_browserMW->GetId() && m_contentname!="login")
     {
         wxString current_url = m_browserMW->GetCurrentURL();
         std::string TmpNowUrl = current_url.ToStdString();
@@ -1582,6 +2033,7 @@ void WebViewPanel::OnNavigationComplete(wxWebViewEvent& evt)
         }
 
         UpdateOnlineToolbarState();
+			
     }
 
     if (m_browserML != nullptr && evt.GetId() == m_browserML->GetId())
@@ -1601,9 +2053,9 @@ void WebViewPanel::OnNavigationComplete(wxWebViewEvent& evt)
     { 
         SwitchWebContent(m_contentname);
         if (wxGetApp().app_config->get("staff_pick_switch") == "true")
-            SendDesignStaffpick(true);
+            SendQidiModelList(true);
         else
-            SendDesignStaffpick(false);
+            SendQidiModelList(false);
         SendMakerlabList();
     }
 
@@ -1630,6 +2082,9 @@ void WebViewPanel::OnDocumentLoaded(wxWebViewEvent& evt)
     else if (m_browserLeft!=nullptr && evt.GetId() == m_browserLeft->GetId())
     {
         m_leftfirst = true;
+    }
+    else if (m_browserMW != nullptr && evt.GetId() == m_browserMW->GetId()) {
+
     }
 
     UpdateState();
@@ -1668,7 +2123,7 @@ void WebViewPanel::OnNewWindow(wxWebViewEvent& evt)
 
 void WebViewPanel::OnScriptMessage(wxWebViewEvent& evt)
 {
-    // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": " << evt.GetString().ToUTF8().data();
+     //BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": " << evt.GetString().ToUTF8().data();
     // update login status
     if (m_LoginUpdateTimer == nullptr) {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " Create Timer";
@@ -1993,6 +2448,27 @@ void WebViewPanel::OnError(wxWebViewEvent& evt)
 
 void WebViewPanel::OpenMakerworldSearchPage(std::string KeyWord)
 {
+    //cj_5
+	wxString mw_jumpurl = "";
+    wxString language_code = wxString::FromUTF8(GetStudioLanguage()).BeforeFirst('_');
+    mw_jumpurl = wxString::Format(
+        "https://www.qidimaker.com/en/studio/models?_lang=%s&keyword=%s&from_library=true",
+        language_code,
+        wxString(KeyWord)
+    );
+    // mw_jumpurl = wxString::Format(
+    //     "https://api-test.qidi3dprinter.com/en/studio/models?_lang=%s&keyword=%s&from_library=true",
+    //     language_code,
+    //     wxString(KeyWord)
+    // );
+
+	wxGetApp().CallAfter([this, mw_jumpurl]() {
+		m_browserMW->LoadURL(mw_jumpurl);
+        SwitchLeftMenu("online");
+	});
+
+    //cj_5
+/*
     if (KeyWord.empty()) return;
 
     auto host = wxGetApp().get_model_http_url(wxGetApp().app_config->get_country_code());
@@ -2006,18 +2482,26 @@ void WebViewPanel::OpenMakerworldSearchPage(std::string KeyWord)
     m_online_LastUrl = (boost::format("%1%%2%/studio/webview/search?from=qidistudio&keyword=%3%&from_studio_home=true") % host % language_code.mb_str() % UrlEncode(KeyWord)).str();
     SwitchWebContent("online");
     //SwitchLeftMenu("online");
+*/
 }
 
 void WebViewPanel::SetMakerworldModelID(std::string ModelID)
 {
-    auto host = wxGetApp().get_model_http_url(wxGetApp().app_config->get_country_code());
+    // cj_5: QIDI Maker detail page URL
+    m_online_moddlId = ModelID;
+
+    //m_browserMW->RunScript(script);
+    return;
+
+    std::string host = "https://www.qidimaker.com";
+    // std::string host = "https://api-test.qidi3dprinter.com";
 
     wxString language_code = wxString::FromUTF8(GetStudioLanguage()).BeforeFirst('_');
 
     if (ModelID != "")
-        m_online_LastUrl = (boost::format("%1%%2%/studio/webview?modelid=%3%&from=qidistudio") % host % language_code.mb_str() % ModelID).str();
+        m_online_LastUrl = (boost::format("%1%/%2%/models/%3%?from=qidistudio") % host % language_code.mb_str() % ModelID).str();
     else
-        m_online_LastUrl = (boost::format("%1%%2%/studio/webview?from=qidistudio") % host % language_code.mb_str()).str();
+        m_online_LastUrl = (boost::format("%1%/%2%/explore?from=qidistudio") % host % language_code.mb_str()).str();
 }
 
 void WebViewPanel::SetPrintHistoryTaskID(int TaskID)
@@ -2034,8 +2518,13 @@ void WebViewPanel::SetPrintHistoryTaskID(int TaskID)
 
 void WebViewPanel::SwitchWebContent(std::string modelname, int refresh)
 {
-
-    m_contentname = modelname;
+    // Dismiss login overlay when switching to any non-login page
+    if (modelname != "login" && m_is_login_showing) {
+        HideLoginOverlay();
+    }
+    if (modelname != "login") {
+        m_contentname = modelname;
+    }
 
     bool show_online_toolbar = false;
     CheckMenuNewTag();
@@ -2188,7 +2677,16 @@ void WebViewPanel::SwitchWebContent(std::string modelname, int refresh)
     } else if (modelname.compare("home") == 0 || modelname.compare("recent") == 0 ) {
         if (!m_browser) return;
 		if (!m_browser->GetCurrentURL().Contains("home.html")) {
-			wxString UrlRight = wxString::Format("file://%s/web/homepage3/home.html?lang=%s", from_u8(resources_dir()), GetStudioLanguage());
+            //y83
+			wxString lang_param = wxString::Format("lang=%s", GetStudioLanguage());
+			wxString region_param;
+			if (!m_Region.empty())
+				region_param = wxString::Format("region=%s", from_u8(m_Region));
+			wxString UrlRight;
+			if (!region_param.empty())
+				UrlRight = wxString::Format("file://%s/web/homepage3/home.html?%s&%s", from_u8(resources_dir()), lang_param, region_param);
+			else
+				UrlRight = wxString::Format("file://%s/web/homepage3/home.html?%s", from_u8(resources_dir()), lang_param);
 			load_url(UrlRight);
 		}
         json m_Res           = json::object();
@@ -2206,36 +2704,33 @@ void WebViewPanel::SwitchWebContent(std::string modelname, int refresh)
         SetWebviewShow("right", true);
         SetWebviewShow("makerlab", false);
         SetWebviewShow("wiki", false);
-        m_browser->Unbind(wxEVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED, &WebViewPanel::onLoginHandle, this, m_browser->GetId());
+
     }
-    //cj_1
+    //cj_1 login overlay: overlays the current content without destroying it
     else if (modelname.compare("login") == 0) {
-        if (!m_browser) return;
-		SetWebviewShow("online", false);
-		SetWebviewShow("printhistory", false);
-		SetWebviewShow("right", true);
-		SetWebviewShow("makerlab", false);
-		SetWebviewShow("wiki", false);
-        if (m_browser->GetCurrentURL().Contains("login.html")) {
-            return;
-        }
+        if (!m_browserLogin) return;
+
+        // m_pre_login_contentname was already saved by ShowLoginOverlay()
+        m_is_login_showing = true;
 
         wxString regionStr = "";
-		std::string region = wxGetApp().app_config->get("region");
-		if (region == "China") {
+        std::string region = wxGetApp().app_config->get("region");
+        if (region == "China") {
             regionStr = "CN";
-		}
-		else {
+        } else {
             regionStr = "Other";
-		}
-		wxString htmlUrl = wxString::Format("file:///%s/web/homepage3/login.html?lang=%s&region=%s", from_u8(resources_dir()), GetStudioLanguage(),regionStr);
+        }
+        wxString htmlUrl = wxString::Format("file:///%s/web/homepage3/login.html?lang=%s&region=%s",
+                                            from_u8(resources_dir()), GetStudioLanguage(), regionStr);
 
-		m_browser->LoadURL(htmlUrl);
+        m_browserLogin->LoadURL(htmlUrl);
+        SetWebviewShow("login", true);
 
-		m_browser->Bind(wxEVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED, &WebViewPanel::onLoginHandle, this, m_browser->GetId());
-
-		
-		
+        m_browserLogin->Bind(wxEVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED,
+                             &WebViewPanel::onLoginHandle, this, m_browserLogin->GetId());
+        GetSizer()->Layout();
+        return;
+        
     }
 
     SetOnlineToolbarVisible(show_online_toolbar);
@@ -2329,6 +2824,8 @@ void WebViewPanel::SetWebviewShow(wxString name, bool show)
         TmpWeb = m_browserML;
     else if (name == "wiki")
         TmpWeb = m_browserWiki;
+    else if (name == "login")
+        TmpWeb = m_browserLogin;
 
     if (TmpWeb != nullptr) {
         if (show)

@@ -46,9 +46,11 @@ public:
     wxString  query_hms_msg(const std::string& dev_id, const std::string& long_error_code);
 
     bool      is_internal_error(const MachineObject *obj, int print_error);
+    bool      is_internal_error(const std::string& dev_id_type, int print_error); // cj_5: QDSDevice overload
     wxString  query_print_error_msg(const MachineObject* obj, int print_error);
     wxString  query_print_error_msg(const std::string& dev_id, int print_error);
     wxString  query_print_image_action(const MachineObject* obj, int print_error, std::vector<int>& button_action);
+    wxString  query_print_image_action(const std::string& dev_id_type, int print_error, std::vector<int>& button_action); // cj_5: QDSDevice overload
 
     // query local images
     wxImage   query_image_from_local(const wxString& image_name);

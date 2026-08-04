@@ -32,12 +32,14 @@ void wxMediaCtrl_OnSize(wxWindow * ctrl, wxSize const & videoSize, int width, in
 #define QIDI_DYNAMIC
 #include <condition_variable>
 #include <thread>
+
 //y82
 // #ifndef _WIN32
 // #include <wx/image.h>
 // #endif
 #include <wx/image.h>
 //y82
+
 #include "Printer/QIDITunnel.h"
 
 #ifdef _WIN32
@@ -121,6 +123,7 @@ private:
 
 #endif
 
+
 //y76
 class VideoPanel : public wxPanel
 {
@@ -132,6 +135,7 @@ public:
     
     virtual ~VideoPanel();
 
+    // 媒体控制接口
     void Load(const std::string& url);
     void Play();
     void Stop();
@@ -168,6 +172,12 @@ private:
     
     wxImage m_idle_image;
     wxImage m_frame;
+
+#if 0
+    wxBitmap m_cached_scaled_bitmap;  // 缓存缩放后的bitmap，避免每帧重缩放
+    wxSize m_last_window_size = wxDefaultSize; // 上次缩放时的窗口大小
+#endif
+
     wxSize m_video_size = wxDefaultSize;
     wxSize m_frame_size = wxDefaultSize;
     
@@ -182,9 +192,13 @@ private:
     std::condition_variable m_cond;
     std::thread m_thread;
     std::atomic<bool> m_exit_flag{false};
-    
+
+    // P2P 相关
+    std::atomic<bool> m_start_video_requested{false};
+    std::atomic<bool> m_stop_video_requested{false};
+
+    // 事件表
     wxDECLARE_EVENT_TABLE();
 };
-//y76
 
 #endif /* wxMediaCtrl3_h */

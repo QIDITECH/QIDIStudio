@@ -7,10 +7,10 @@
 namespace Slic3r::GUI {
 
 //cj_4
-// Posted from StatusPanel (toolbar / context delete); PrinterWebView shows delete dialog (local vs printer).
+// Posted from StatusPanel (toolbar / context delete); QDSPrinterWebView shows delete dialog (local vs printer).
 wxDECLARE_EVENT(EVT_TIMELAPSE_DELETE_UI, wxCommandEvent);
 //cj_4
-// Posted to StatusPanel; PrinterWebView handles play/reveal/download-one.
+// Posted to StatusPanel; QDSPrinterWebView handles play/reveal/download-one.
 wxDECLARE_EVENT(EVT_TIMELAPSE_PLAY_FILE, wxCommandEvent);
 wxDECLARE_EVENT(EVT_TIMELAPSE_REVEAL_FILE, wxCommandEvent);
 wxDECLARE_EVENT(EVT_TIMELAPSE_DOWNLOAD_ONE, wxCommandEvent);

@@ -62,7 +62,7 @@ class MainFrame;
 class ParamsDialog;
 class FilamentGroupPopup;
 class DeviceWebPage;
-class PrinterWebView;
+class QDSPrinterWebView;
 
 
 
@@ -317,6 +317,10 @@ public:
     //QDS
     void        show_sync_dialog();
     void        update_side_preset_ui();
+    
+    //y83
+    void        update_calibration_preset_combos();
+
     void        on_select_default_preset(SimpleEvent& evt);
 
     bool        is_loaded() const { return m_loaded; }
@@ -404,7 +408,7 @@ public:
     //w
     FilamentPanel*        m_filament{nullptr};
     WebViewPanel*         m_webview { nullptr };
-    PrinterWebView*       m_printer_view;
+    QDSPrinterWebView*       m_printer_view;
     wxLogWindow*          m_log_window { nullptr };
     // QDS
     //wxBookCtrlBase*       m_tabpanel { nullptr };

@@ -1,0 +1,493 @@
+#ifndef slic3r_QDSPrinterWebView_hpp_
+#define slic3r_QDSPrinterWebView_hpp_
+
+
+#include "wx/artprov.h"
+#include "wx/cmdline.h"
+#include "wx/notifmsg.h"
+#include "wx/settings.h"
+#include "wx/webview.h"
+
+#if wxUSE_WEBVIEW_EDGE
+#include "wx/msw/webview_edge.h"
+#endif
+
+#include "wx/webviewarchivehandler.h"
+#include "wx/webviewfshandler.h"
+#include "wx/numdlg.h"
+#include "wx/infobar.h"
+#include "wx/filesys.h"
+#include "wx/fs_arc.h"
+#include "wx/fs_mem.h"
+#include "wx/stdpaths.h"
+#include <wx/panel.h>
+#include <wx/tbarbase.h>
+#include "wx/textctrl.h"
+#include <wx/timer.h>
+
+//B35
+//B45
+#if defined __linux__
+#include <boost/log/trivial.hpp>
+#include <wx/wx.h>
+#include <thread>
+#include <boost/format.hpp>
+#endif
+
+//B45
+#include "PrintHostDialogs.hpp"
+#include <wx/tokenzr.h>
+
+//B64
+//cj_2
+#if QDT_RELEASE_TO_PUBLIC
+#include "../QIDI/QIDINetworkTypes.hpp"
+#endif
+
+#include <boost/thread.hpp>
+
+
+#include <atomic>
+//cj_3
+#include <chrono>
+#include <thread>
+#include "./Widgets/SwitchButton.hpp"
+
+#include "./Widgets/DeviceButton.hpp"
+
+
+#include "OctoPrint.hpp"
+#include "PrinterTaskDispatcher.hpp"
+
+
+
+
+namespace Slic3r {
+namespace GUI {
+
+//cj_4
+class TimelapseFileItem;
+//cj_5 Forward declaration for TransitionToNetDeviceViaLocal parameter
+struct LocalDiscoveredDevice;
+
+wxDECLARE_EVENT(EVT_PRINTER_TASK_RESULT, wxCommandEvent);
+
+//y28
+enum WebState
+{
+    isDisconnect,
+    isLocalWeb,
+	isNetWeb
+};
+
+enum class MonitorConnectionPhase
+{
+    Disconnected,
+    LocalPrinter,
+    CloudPrinter
+};
+//cj_2
+class StatusPanel;
+//cj_2
+class QDSDeviceManager;
+//cj_5
+class QDSDevice;
+//cj_3
+class LoadingOverlayWithGif;
+//y83
+class DeviceErrorDialog;
+
+
+class QDSPrinterWebView : public wxPanel {
+public:
+    QDSPrinterWebView(wxWindow *parent);
+    virtual ~QDSPrinterWebView();
+
+
+
+
+
+    wxBoxSizer *init_menu_bar(wxPanel *Panel);
+    void        init_scroll_window(wxPanel *Panel);
+    void        CreatThread();
+    void load_url(wxString& url);
+    void        load_net_url(wxString& url, wxString& ip);
+    void UpdateState();
+    void OnClose(wxCloseEvent& evt);
+
+    void        OnRefreshButtonClick(wxCommandEvent &event);
+    void OnAddButtonClick(wxCommandEvent &event);
+    void OnDeleteButtonClick(wxCommandEvent &event);
+    void OnEditButtonClick(wxCommandEvent &event);
+
+    void RunScript(const wxString &javascript);
+    //void OnScriptMessageReceived(wxWebViewEvent &event);
+    void OnScriptMessage(wxWebViewEvent &evt);
+    void UpdateLayout();
+    void OnScroll(wxScrollWinEvent &event);
+    void OnScrollup(wxScrollWinEvent &event);
+    void OnScrolldown(wxScrollWinEvent &event);
+
+    void onStatusPanelTask(wxCommandEvent& event);
+    //cj_1
+    void onSetBoxTask(wxCommandEvent& event);
+    //cj_1
+    void onRefreshRfid(wxCommandEvent& event);
+    //cj_3
+    void onTimelapseDeleteUi(wxCommandEvent& event);
+    void run_delete_timelapse_files(const std::vector<TimelapseFileItem*>& items, bool also_remove_local_copy);
+    //cj_3
+    void downloadTimelapseFile(wxCommandEvent& event);
+    //cj_4
+    void playTimelapseFile(wxCommandEvent& event);
+    void revealTimelapseFile(wxCommandEvent& event);
+    void downloadTimelapseOne(wxCommandEvent& event);
+
+
+
+    //void SendRecentList(int images);
+    void SetButtons(std::vector<DeviceButton *> buttons);
+    void  AddButton(const wxString &                           device_name,
+                    const wxString &                           ip,
+                    const wxString &                           machine_type,
+                    const wxString &                           fullname,
+                    bool                                       isSelected,
+                    //cj_3_cursor
+                    bool                                       expert_mode,
+                    const wxString &                           apikey);
+    void                        DeleteButton();
+    void                        UnSelectedButton();
+    void ShowNetPrinterButton();
+    void ShowLocalPrinterButton();
+#if QDT_RELEASE_TO_PUBLIC
+    void AddNetButton(const NetDevice device);
+#endif
+
+    void DeleteNetButton();
+    void                        RefreshButton();
+    void SetUpdateHandler(const std::function<void(wxCommandEvent &)> &handler) { m_handlerl = handler; }
+    void SetPresetChanged(bool status);
+    void SetLoginStatus(bool status);
+    std::string NormalizeVendor(const std::string& str);
+    //cj_4
+    bool select_device_by_id(const std::string& device_id);
+
+
+    std::vector<DeviceButton *> GetButton() { return m_buttons; };
+    bool                        GetNetMode() { return m_isNetMode; };
+    std::vector<DeviceButton *> GetNetButton() { return m_net_buttons; };
+    wxString GetWeburl(){ return m_web; };
+
+    //y53
+    wxString GetWebIp(){return m_ip;};
+    MonitorConnectionPhase GetConnectionPhase() const;
+    bool IsNetUrl() const {return GetConnectionPhase() == MonitorConnectionPhase::CloudPrinter;};
+    void load_disconnect_url();
+    void FormatNetUrl(std::string link_url, std::string local_ip, bool isSpecialMachine);
+    void FormatUrl(std::string link_url);
+
+    //y74
+    QDSDeviceManager* m_device_manager;
+
+    void onSSEMessageHandle(const std::string& event, const std::string& data);
+    void onTaskDispatchResult(wxCommandEvent& event);
+    //cj_3
+    void onModelFileListCommand(wxCommandEvent& event);
+    void downloadSinglePrinterFile(const wxString& storage_path);
+    void deleteSinglePrinterFile(const wxString& storage_path);
+    void run_delete_printer_file_task(const wxString& storage_path, bool also_remove_local_copy = false);
+    void revealDownloadedPrinterFile(const wxString& storage_path);
+    //cj_4
+    void downloadTimelapseItems(const std::vector<TimelapseFileItem*>& items);
+
+    //y76
+    void pauseCamera();
+
+    //y83
+    // P2P download with progress; returns true if P2P download was attempted
+    bool downloadSinglePrinterFileViaP2P(const wxString& wx_printer_file_path,
+                                         const std::shared_ptr<QDSDevice>& device,
+                                         const std::string& localPath,
+                                         const std::string& fileName);
+    void ExecuteP2PDownload(const wxString& wx_printer_file_path,
+                           const std::string& localPath,
+                           const std::string& fileName);
+    // P2P timelapse download for a single item; returns true if started
+    bool downloadTimelapseFileViaP2P(TimelapseFileItem* item,
+                                     const std::shared_ptr<QDSDevice>& device,
+                                     const std::string& downloadPath);
+
+
+private:
+    //cj_5
+    struct DisconnectTransitionOptions {
+        bool clear_button_selection { false };
+        bool clear_status_panel { false };
+        bool clear_device_selection { false };
+        bool clear_current_target { false };
+        bool clear_persisted_selection { false };
+        bool reset_mainframe_context { false };
+        bool set_mainframe_not_webview { false };
+        bool blank_browser { false };
+        bool load_placeholder { true };
+    };
+
+    // cj_1
+    // 
+    //cj_5
+    void SetConnectionPhase(MonitorConnectionPhase phase);
+    //cj_5
+    wxString BuildDisconnectUrl() const;
+    //cj_5
+    wxString BuildLocalUrl(const std::string& link_url) const;
+    //cj_5
+    wxString BuildNetUrl(const std::string& link_url, bool isSpecialMachine);
+    //cj_5
+    void LoadDisconnectPageOnly();
+    //cj_5
+    bool LoadLocalUrlOnly(wxString& url);
+    //cj_5
+    bool LoadNetUrlOnly(wxString& url, wxString& ip);
+    //cj_5
+    void TransitionToDisconnected(const DisconnectTransitionOptions& options);
+    //cj_5
+    void TransitionToLocalDevice(DeviceButton* machine_button, const wxString& ip);
+#if QDT_RELEASE_TO_PUBLIC
+    //cj_5
+    void TransitionToCloudDevice(const NetDevice& device, DeviceButton* machine_button);
+    //cj_5 Transition a Maker net device to local WebSocket when LAN match found.
+    // Button stays in net section; connection uses ws://<local_ip>:7125/websocket
+    void TransitionToNetDeviceViaLocal(const NetDevice& net_device,
+                                        const LocalDiscoveredDevice& local_device,
+                                        DeviceButton* machine_button);
+#endif
+	void HideDeviceButtons(std::vector<DeviceButton*>& buttons);
+	void HideAllDeviceButtons();
+
+    // cj_1 
+	void cancelAllDevButtonSelect();
+
+    // cj_1 
+    void clearStatusPanelData();
+
+    //cj_5
+    void ApplyStatusContext(const std::string& device_id, MonitorConnectionPhase phase);
+    //cj_5
+    void ResetStatusPanel();
+    //cj_5
+    void ApplyDeviceDataToStatusPanel(const std::string& device_id, std::shared_ptr<QDSDevice> device);
+    //cj_5
+    void RefreshStatusFileLists(const std::shared_ptr<QDSDevice>& device);
+    //cj_5
+    wxWindow* GetStatusDialogParent() const;
+    //cj_5
+    void PrintStatusModelFile(const wxString& storage_path);
+    //cj_5
+    void BeginStatusModelFileDownload(const wxString& storage_path, const std::string& task_id);
+    //cj_5
+    void EndStatusModelFileDownload(const wxString& storage_path, bool failed);
+    //cj_5
+    void SetStatusModelFileDownloadProgress(const wxString& storage_path, float progress);
+    //cj_5
+    void RefreshStatusModelFileLocalState();
+    //cj_5
+    void RemoveStatusModelFileRow(const wxString& storage_path);
+    //cj_5
+    TimelapseFileItem* FindStatusTimelapseItem(const wxString& name) const;
+    //cj_5
+    std::vector<TimelapseFileItem*> GetSelectedStatusTimelapseItems() const;
+    //cj_5
+    void RefreshStatusTimelapseLocalState();
+    //cj_5
+    void RemoveStatusTimelapseRows(const std::vector<TimelapseFileItem*>& items);
+
+    void ShowDeviceButtons(std::vector<DeviceButton*>& buttons, bool isShow = true);
+
+
+	void updateDeviceButton(const std::string& device_id, std::string new_status);
+	//cj_3 删除线上按钮前从 m_device_id_to_button 移除，避免悬空指针
+	void removeDeviceButtonMapEntriesForButtons(const std::vector<DeviceButton*>& buttons);
+	void updateDeviceParameter(const std::string& device_id);
+	void InitDeviceManager();
+	void initEventToTaskPath();
+	void bindTaskHandle();
+    void init_select_machine();
+    /** 本地/线上分区仅展开一侧：有上次选中则展开对应分区，否则展开本地。 */
+    void syncDeviceSectionExpandFromLastSelection();
+    void emitTaskDispatchResult(PrinterTaskType task_type, const PrinterTaskResult& result);
+    //cj_3
+    void showLoadingOverlay();
+    void hideLoadingOverlay();
+    void startLegacyStatusPolling();
+    void stopLegacyStatusPolling();
+    //cj_3
+    void resetProgressWatchdogHeartbeat();
+    void onProgressWatchdogTimer(wxTimerEvent& event);
+    //y83 Coalesced, bounded-rate status refresh (UI thread)
+    void requestStatusRefresh(const std::string& device_id);
+    void onStatusRefreshTimer(wxTimerEvent& event);
+
+private:
+
+    wxBoxSizer *leftallsizer;
+
+    wxBoxSizer *                          devicesizer;
+    wxBoxSizer *                          allsizer;
+    bool                                  m_isNetMode    = false;
+
+    int height = 0; 
+    wxString  m_web;
+    wxString m_ip;
+    std::function<void(wxCommandEvent &)> m_handlerl;
+    std::function<void(wxCommandEvent &)> m_delete_handlerl;
+
+    wxScrolledWindow *          leftScrolledWindow;
+    wxPanel *         leftPanel;
+
+    StatusPanel* t_status_page;
+    std::vector<DeviceButton *>           m_buttons;
+    std::vector<DeviceButton *>           m_net_buttons;
+
+
+    std::string                           m_select_type;
+
+    wxWebView* m_browser;
+    long m_zoomFactor;
+
+    DeviceButton*                         add_button{ nullptr };
+    DeviceButton *                        delete_button;
+    DeviceButton *                        edit_button;
+    DeviceButton *                        refresh_button;
+    wxStaticBitmap *                      staticBitmap;
+
+    std::map<std::string, DynamicPrintConfig> m_machine;
+    std::string select_machine_name{ "" };
+    //std::string m_teststr;
+    std::string m_cur_deviceId{ "" };
+    WebState webisNetMode = isDisconnect;
+    std::set<std::string> m_exit_host;
+    bool m_isfluidd_1;             //y35
+
+    //y74
+    wxSimplebook* m_status_book;
+    std::mutex m_ui_map_mutex;
+    std::unordered_map<std::string, DeviceButton*> m_device_id_to_button;
+    //cj_3_cursor
+    std::unordered_map<std::string, bool> m_device_id_to_expert_mode;
+    std::unordered_map<std::string, DynamicPrintConfig> m_device_id_to_config;
+    std::thread m_legacy_status_thread;
+    std::atomic<bool> m_stop_legacy_status_polling { false };
+
+
+    std::string m_userInfo;
+
+#if QDT_RELEASE_TO_PUBLIC
+    std::vector<NetDevice> m_net_devices;
+    Environment m_env;
+
+#endif
+    std::atomic<bool> m_isloginin{false};
+    std::atomic<bool> m_isDestroying{false};  //cj_4 guard SSE CallAfter during destruction
+    std::unique_ptr<PrinterTaskDispatcher> m_task_dispatcher;
+    
+
+    //cj_2
+    wxPanel* m_localPanel;
+    DeviceButton* m_localDeviceExpand{ nullptr };
+    wxStaticText* m_localTabel{ nullptr };
+    bool m_localIsExpand{ true };
+
+	wxPanel* m_netPanel;
+    DeviceButton* m_netDeviceExpand{ nullptr };
+    wxStaticText* m_netTable;
+	bool m_netIsExpand{ true };
+
+    //cj_2
+    bool m_isUpdating = false;
+    //cj_3 首次打开：init_select_machine 内模拟点击期间不显示遮罩
+    bool m_printer_view_bootstrap{ true };
+    //cj_3
+    std::unique_ptr<LoadingOverlayWithGif> m_loading_overlay;
+    wxTimer* m_progress_watchdog_timer { nullptr };
+    std::chrono::steady_clock::time_point m_last_progress_heartbeat {};
+    std::string m_last_progress_signature;
+    bool m_watchdog_camera_active { false };
+
+//y83
+    wxTimer* m_status_refresh_timer { nullptr };
+    std::mutex m_status_refresh_mutex;
+    bool m_status_refresh_pending { false };
+    std::string m_status_refresh_device_id;
+    static constexpr int kStatusRefreshIntervalMs = 400;
+    DeviceErrorDialog* m_device_error_dlg { nullptr };
+    std::mutex m_sse_mutex;
+    bool m_sse_refresh_pending { false };
+    std::string m_sse_pending_device_id;
+    std::string m_sse_pending_status_json;
+//y83
+};
+
+
+// y13
+class RoundButton : public wxButton
+{
+public:
+    RoundButton(wxWindow* parent, wxWindowID id, const wxString& label, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize)
+        : wxButton(parent, id, label, pos, size, wxBORDER_NONE)
+    {
+        m_hovered = false;
+        Bind(wxEVT_ENTER_WINDOW, &RoundButton::OnMouseEnter, this);
+        Bind(wxEVT_LEAVE_WINDOW, &RoundButton::OnMouseLeave, this);
+        Bind(wxEVT_PAINT, &RoundButton::OnPaint, this);
+    }
+
+protected:
+    void OnMouseEnter(wxMouseEvent& event)
+    {
+        m_hovered = true;
+        Refresh();
+    }
+
+    void OnMouseLeave(wxMouseEvent& event)
+    {
+        m_hovered = false;
+        Refresh();
+    }
+
+    void OnPaint(wxPaintEvent& event)
+    {
+        wxPaintDC dc(this);
+
+
+        wxSize size = GetClientSize();
+        int x = size.x;
+        int y = size.y;
+
+        if (m_hovered)
+        {
+            dc.SetBrush(wxBrush(wxColour(60, 60, 63), wxBRUSHSTYLE_SOLID));  
+        }
+        else
+        {
+            dc.SetBrush(wxBrush(GetBackgroundColour(), wxBRUSHSTYLE_SOLID));  
+        }
+
+        dc.SetPen(wxPen(GetBackgroundColour(), 1, wxPENSTYLE_TRANSPARENT));
+
+
+        wxBitmap img = GetBitmap();
+        wxSize img_size = img.GetSize();
+  
+        int radius = std::max(img_size.x, img_size.y) / 2;
+        dc.DrawCircle(size.x / 2, size.y / 2, radius + 5);
+        dc.DrawBitmap(img, (size.x - img_size.x) / 2, (size.y - img_size.y) / 2);
+    }
+
+private:
+    bool m_hovered;  
+};
+
+} // GUI
+} // Slic3r
+
+#endif /* slic3r_Tab_hpp_ */

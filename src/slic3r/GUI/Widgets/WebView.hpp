@@ -12,6 +12,11 @@ public:
 
     static bool RunScript(wxWebView * webView, wxString const & msg);
 
+    //y83
+    static void SetTokenCookie(wxWebView * webView, wxString const & name, wxString const & value,
+                               wxString const & domain, wxString const & path,
+                               bool secure, bool httpOnly, double expires);
+
     static void RecreateAll();
 
     /*Find a user data path*/

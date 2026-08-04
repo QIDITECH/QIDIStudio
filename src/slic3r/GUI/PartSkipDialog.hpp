@@ -163,6 +163,9 @@ private:
     void DownloadOneFile(const std::string &remote_name, const std::string &local_path);
     void OnAllDownloadsFinished();
 
+    //y83
+    void DownloadOneFileViaP2P(const std::string &remote_name, const std::string &local_path);
+
     void OnZoomIn(wxCommandEvent &event);
     void OnZoomOut(wxCommandEvent &event);
     void OnSwitchDrag(wxCommandEvent &event);

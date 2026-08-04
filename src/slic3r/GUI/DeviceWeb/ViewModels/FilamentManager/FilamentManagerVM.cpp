@@ -57,6 +57,11 @@ std::string normalize_ams_hex_for_web(const std::string& raw)
     return hex;
 }
 
+std::string normalize_ams_rfid_for_web(const std::string& tray_uuid, const std::string& tag_uid)
+{
+    return tag_uid.size() == 16 && tag_uid.substr(12, 2) == "01" ? tray_uuid : std::string();
+}
+
 } // namespace
 
 FilamentManagerVM::FilamentManagerVM()
@@ -158,6 +163,12 @@ void FilamentManagerVM::ReportState(const std::string& submod, const std::string
     if (submod == "spool") {
         nlohmann::json body = MakeResp("spool", "list", 0, "", build_spool_list());
         m_bridge->ReportMsg(body);
+        return;
+    }
+
+    // Push login / cloud-sync state on login/logout (NotifyFilamentSessionState).
+    if (submod == "sync") {
+        publish_sync_state();
         return;
     }
 
@@ -941,7 +952,8 @@ nlohmann::json FilamentManagerVM::build_ams_data()
                         t["slot_id"]   = slot_id;
                         t["is_exists"] = tray && tray->is_exists;
                         if (tray && tray->is_exists) {
-                            t["tag_uid"]    = tray->tag_uid;
+                            t["tag_uid"]    = normalize_ams_rfid_for_web(tray->uuid, tray->tag_uid);
+                            t["tray_id_name"] = tray->tray_id_name;
                             t["setting_id"] = tray->setting_id;
                             t["fila_type"]  = tray->m_fila_type;
                             t["sub_brands"] = tray->sub_brands;
@@ -964,14 +976,14 @@ nlohmann::json FilamentManagerVM::build_ams_data()
 
                             if (!tray->setting_id.empty() && !colors.empty()) {
                                 if (auto* clr_query = wxGetApp().get_filament_color_code_query()) {
-                                    FilamentColor fc;
+                                    std::vector<wxString> hex_colors;
                                     for (const auto& c : colors) {
                                         if (c.is_string()) {
-                                            fc.m_colors.emplace(wxColour(wxString::FromUTF8(c.get<std::string>())));
+                                            hex_colors.emplace_back(wxString::FromUTF8(c.get<std::string>()));
                                         }
                                     }
-                                    fc.m_color_type = to_filament_color_type(color_type, colors.size());
-                                    if (auto* color_info = clr_query->GetFilaInfo(wxString::FromUTF8(tray->setting_id), fc)) {
+                                    if (auto* color_info = clr_query->GetFilaInfo(
+                                            wxString::FromUTF8(tray->setting_id), hex_colors, color_type)) {
                                         t["color_name"]      = color_info->GetFilaColorName().utf8_string();
                                         t["fila_color_code"] = color_info->GetFilaColorCode().utf8_string();
                                     }

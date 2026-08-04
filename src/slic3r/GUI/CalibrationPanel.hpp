@@ -36,6 +36,8 @@ public:
     TabPresetComboBox* m_filament_choice{ nullptr };
     TabPresetComboBox* m_print_choice{ nullptr };
     void create_preset_box(wxWindow* parent, wxBoxSizer* sizer_side_tools);
+    //y83
+    void update_preset_choices();
 
 protected:
     void init_tabpanel();

@@ -2,6 +2,12 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/asio.hpp>
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <iphlpapi.h>
+#pragma comment(lib, "Iphlpapi.lib")
+#endif
 #include <random>
 #include "libslic3r/Utils.hpp"
 #include "GUI_App.hpp"
@@ -20,9 +26,12 @@
 #include <unordered_set>
 #include <wx/datetime.h>
 
+
+
 //cj_2
 #if QDT_RELEASE_TO_PUBLIC
 #include "../QIDI/QIDINetwork.hpp"
+#include "../QIDI/P2PManager.hpp"
 #endif
 
 //cj_2
@@ -471,30 +480,76 @@ void SSDPDiscovery::refresh(bool force, RefreshCallback callback)
                     });
             };
 
-            // Bind to SSDP port, join multicast, send M-SEARCH.
-            auto sock = std::make_unique<udp::socket>(io);
-            sock->open(udp::v4());
-            sock->set_option(asio::socket_base::reuse_address(true));
-            sock->bind(udp::endpoint(asio::ip::address_v4::any(), SSDP_MCAST_PORT));
-            try {
-                sock->set_option(asio::ip::multicast::join_group(
-                    asio::ip::make_address(SSDP_MCAST_ADDR).to_v4()));
-            } catch (const std::exception& e) {
-                BOOST_LOG_TRIVIAL(error)
-                    << "[SSDP] multicast join_group failed: " << e.what();
+            //cj_5 Enumerate local IPv4 addresses and create a socket per interface.
+            // Binding to 0.0.0.0 causes the OS to pick a single default interface,
+            // which is wrong on multi-homed machines (WiFi+Ethernet+VPN).
+            std::vector<asio::ip::address_v4> local_addrs;
+#ifdef _WIN32
+            {
+                ULONG bufLen = 0;
+                GetAdaptersAddresses(AF_INET, GAA_FLAG_INCLUDE_PREFIX, nullptr, nullptr, &bufLen);
+                if (bufLen > 0) {
+                    std::vector<BYTE> buf(bufLen);
+                    auto* adapters = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buf.data());
+                    if (GetAdaptersAddresses(AF_INET, GAA_FLAG_INCLUDE_PREFIX, nullptr, adapters, &bufLen) == NO_ERROR) {
+                        for (auto* a = adapters; a; a = a->Next) {
+                            if (a->OperStatus != IfOperStatusUp) continue;
+                            for (auto* ua = a->FirstUnicastAddress; ua; ua = ua->Next) {
+                                if (ua->Address.lpSockaddr->sa_family == AF_INET) {
+                                    auto* sin = reinterpret_cast<sockaddr_in*>(ua->Address.lpSockaddr);
+                                    asio::ip::address_v4 ip(ntohl(sin->sin_addr.s_addr));
+                                    if (!ip.is_loopback()) {
+                                        bool dup = false;
+                                        for (auto& ex : local_addrs) { if (ex == ip) { dup = true; break; } }
+                                        if (!dup) local_addrs.push_back(ip);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+#endif
+            if (local_addrs.empty())
+                local_addrs.push_back(asio::ip::address_v4::any());
+
+            std::vector<std::unique_ptr<udp::socket>> socks;
+            boost::system::error_code ec;
+            const auto mcast_addr = asio::ip::make_address(SSDP_MCAST_ADDR).to_v4();
+            for (const auto& iface_addr : local_addrs) {
+                auto sock = std::make_unique<udp::socket>(io);
+                sock->open(udp::v4(), ec);
+                if (ec) continue;
+                sock->set_option(asio::socket_base::reuse_address(true), ec);
+                sock->bind(udp::endpoint(iface_addr, SSDP_MCAST_PORT), ec);
+                if (ec) {
+                    BOOST_LOG_TRIVIAL(info) << "[SSDP] bind " << iface_addr.to_string()
+                                            << " failed: " << ec.message() << " (continuing)";
+                    continue;
+                }
+                try {
+                    sock->set_option(asio::ip::multicast::join_group(mcast_addr, iface_addr));
+                } catch (const std::exception& e) {
+                    BOOST_LOG_TRIVIAL(info) << "[SSDP] join_group " << iface_addr.to_string()
+                                            << " failed: " << e.what() << " (continuing)";
+                    continue;
+                }
+                BOOST_LOG_TRIVIAL(info) << "[SSDP] listening on " << iface_addr.to_string()
+                                        << ":" << SSDP_MCAST_PORT;
+
+                start_receive(sock.get());
+                sock->send_to(asio::buffer(msearch),
+                    udp::endpoint(asio::ip::make_address(SSDP_MCAST_ADDR), SSDP_MCAST_PORT), 0, ec);
+                socks.push_back(std::move(sock));
             }
 
-            start_receive(sock.get());
-
-            boost::system::error_code ec;
-            sock->send_to(asio::buffer(msearch),
-                udp::endpoint(asio::ip::make_address(SSDP_MCAST_ADDR), SSDP_MCAST_PORT), 0, ec);
-
-            // Retry loop
+            // Retry loop — send M-SEARCH on all sockets
             for (int retry = 0; retry < SSDP_RETRIES && !p->stopping; ++retry) {
                 if (retry > 0) {
-                    sock->send_to(asio::buffer(msearch),
-                        udp::endpoint(asio::ip::make_address(SSDP_MCAST_ADDR), SSDP_MCAST_PORT), 0, ec);
+                    for (auto& s : socks) {
+                        s->send_to(asio::buffer(msearch),
+                            udp::endpoint(asio::ip::make_address(SSDP_MCAST_ADDR), SSDP_MCAST_PORT), 0, ec);
+                    }
                 }
                 asio::steady_timer timer(io);
                 timer.expires_after(std::chrono::seconds(SSDP_TIMEOUT_SEC));
@@ -509,11 +564,6 @@ void SSDPDiscovery::refresh(bool force, RefreshCallback callback)
         finishRefresh();
     });
 }
-
-std::vector<QDSDevice::Filament> QDSDevice::m_general_filamentConfig;
-bool QDSDevice::m_is_init_general = false;
-std::mutex QDSDevice::m_general_mtx;
-
 
 template<typename T>
 bool is_json_type(const json& j)
@@ -538,6 +588,7 @@ bool is_json_type(const json& j)
 		return true;  // 任何 JSON 对象都匹配
 	}
 	else {
+		// 用户自定义类型，需要特殊处理
 		return false;
 	}
 }
@@ -563,13 +614,25 @@ QDSDevice::QDSDevice(const std::string dev_id, const std::string& dev_name, cons
     m_url = "ws://" + dev_url + ":7125/websocket";
 
     last_update = std::chrono::steady_clock::now();
-    
-    QDSDevice::initGeneralData();
-    m_filamentConfig = m_general_filamentConfig;
 }
 
 void QDSDevice::updateByJsonData(const json& status)
 {
+    if (status.contains("print_stats_manager")) {
+//          BOOST_LOG_TRIVIAL(trace) << "-------------------------------------------------";
+//          BOOST_LOG_TRIVIAL(trace) << status;
+//  		BOOST_LOG_TRIVIAL(trace) << "************************************************" <<endl;
+
+    }
+    // cj_5  When 'main_status' exists, use 'main_status'; otherwise, use 'sub_status'.
+	parseJsonForPath(status, m_print_msg, "/print_stats_manager/sub_status");
+    std::string main_status;
+	parseJsonForPath(status, main_status, "/print_stats_manager/main_status");
+    if (main_status == "printing") {
+        m_print_msg = "Printing";
+    }
+
+
 	if (status.contains("print_stats") && status["print_stats"].contains("state")) {
 
 		if (m_status != status["print_stats"]["state"].get<std::string>()) {
@@ -587,10 +650,12 @@ void QDSDevice::updateByJsonData(const json& status)
                 m_print_duration = "";
                 m_print_total_time = "";
                 m_filament_weight = "";
+                m_print_msg = "";
             }
 		}
 
 	}
+
 	if (status.contains("print_stats") && status["print_stats"].contains("info")
 		&& status["print_stats"]["info"].contains("total_layer") && status["print_stats"]["info"]["total_layer"].is_number_integer())
 	{
@@ -718,6 +783,18 @@ void QDSDevice::updateByJsonData(const json& status)
 
 void QDSDevice::updateBoxDataByJson(const json status)
 {
+    //y83
+    if (m_filamentConfig.size() == 0) {
+        // Filament config not yet loaded — store the entire status so it can
+        // be re-processed after updateFilamentConfig() completes.
+        std::lock_guard<std::mutex> lock(m_config_mtx);
+        if (m_filamentConfig.size() == 0) {
+            m_pending_save_variables = status;
+            m_has_pending_box_update = true;
+            return;
+        }
+        // Config became ready while we waited for the lock — fall through.
+    }
 	json saveVariables = status["save_variables"];
 	for (int i = 0; i < 17; ++i) {
 		std::string serial = "slot" + std::to_string(i);
@@ -802,13 +879,19 @@ void QDSDevice::updateBoxDataByJson(const json status)
     std::vector<std::string> filament_id(17);
     std::vector<std::string> filament_colors(17);
     std::vector<std::string> filament_type(17);
+
+    //y83
+    std::set<std::pair<std::string, std::string>> mapping;
+    auto vendor_presets = wxGetApp().preset_bundle->printers.get_presets();
+    for(auto preset : vendor_presets){
+        std::string printer_model = preset.config.opt_string("printer_model");
+        std::string box_id = preset.config.opt_string("box_id");
+
+        if (!printer_model.empty() && !box_id.empty()) {
+            mapping.emplace(printer_model, box_id);
+        }
+    }
     
-    std::unordered_map<std::string, std::string> mapping = {
-        {"X-Plus 4", "0"},
-        {"Q2", "1"},
-        {"Q2C", "2"},
-        {"X-Max 4", "3"}
-    };
     for(int i = 0; i < 17; ++i){
         if(m_boxData[i].hasMaterial){
             slot_state[i] = m_boxData[i].hasMaterial;
@@ -818,7 +901,17 @@ void QDSDevice::updateBoxDataByJson(const json status)
 
             std::string slot_vendor = m_boxData[i].vendor;
 
-            std::string test_type = mapping[m_type];
+            //y83
+            std::string test_type = "";
+            auto it = std::find_if(mapping.begin(), mapping.end(),
+                [&](const std::pair<std::string, std::string>& pair) {
+                    return pair.first == m_type;
+                });
+
+            if (it != mapping.end()) {
+                test_type = it->second;
+            }
+
             std::string test_vendor = slot_vendor == "QIDI" ? "1" : "0";
             std::string tset_idx = std::to_string(m_boxData[i].filament_idex);
             std::string test_id = "QD_" + test_type + "_" +  test_vendor + "_" + tset_idx;
@@ -831,114 +924,228 @@ void QDSDevice::updateBoxDataByJson(const json status)
     m_slot_id = slot_id;
     m_slot_state = slot_state;
 
-    box_is_update = true;
+    //y83
+    std::string sig;
+    sig.reserve(384);
+    for (int i = 0; i < 17; ++i) {
+        const Filament& f = m_boxData[i];
+        sig += (f.hasMaterial ? '1' : '0');
+        sig += ':';
+        sig += std::to_string(f.filament_idex);
+        sig += ':';
+        sig += f.name;
+        sig += ':';
+        sig += f.type;
+        sig += ':';
+        sig += f.vendor;
+        sig += ':';
+        sig += f.colorHexCode;
+        sig += ';';
+    }
+    sig += std::to_string(m_box_count);
+    sig += '|';
+    sig += m_cur_slot;
+    sig += '|';
+    sig += (m_auto_read_rfid ? '1' : '0');
+    sig += (m_init_detect ? '1' : '0');
+    sig += (m_auto_reload_detect ? '1' : '0');
+    if (sig != m_box_signature) {
+        m_box_signature = std::move(sig);
+        box_is_update = true;
+    }
 }
 
 void QDSDevice::updateFilamentConfig()
 {
-    if (!m_is_init_filamentConfig) {
-       
+    // ── Double-checked locking: skip if already initialized ──
+    if (m_is_init_filamentConfig) {
+        return;
+    }
+    {
         std::lock_guard<std::mutex> lock(m_config_mtx);
         if (m_is_init_filamentConfig) {
             return;
         }
     }
-    
-    auto future1 = std::async(std::launch::async, [this]() {
-        std::lock_guard<std::mutex> lock(m_config_mtx);
-        std::string url = m_frp_url + "/api/qidiclient/config/offical_filament_list";
-        Slic3r::Http httpPost = Slic3r::Http::get(url);
+
+    // ── Helper: process any save_variables that arrived before config ──
+    // Must be called while holding m_config_mtx.
+    auto flushPendingBoxUpdate = [this]() {
+        if (m_has_pending_box_update.exchange(false)) {
+            json pending = std::move(m_pending_save_variables);
+            m_pending_save_variables = json(); // clear
+            updateBoxDataByJson(pending);
+        }
+    };
+
+    auto future1 = std::async(std::launch::async, [this, flushPendingBoxUpdate]() {
         std::string resultBody;
-        httpPost.timeout_max(5)
-            .header("accept", "application/json")
-            .header("Content-Type", "application/json")
-            .on_complete(
-                [&resultBody](std::string body, unsigned status) {
-                    resultBody = body;
-                }
-            )
-            .on_error(
-                [this](std::string body, std::string error, unsigned status) {
+        //y83
+        std::lock_guard<std::mutex> lock(m_config_mtx);
 
+        // ── Shared lambda: parse result JSON body into m_filamentConfig ──
+        auto parseFilamentJson = [this, &flushPendingBoxUpdate](const json &resultJson) -> bool {
+            try {
+                auto parseToString = [&resultJson](const std::string &name, std::vector<std::string> &data) {
+                    if (!resultJson.contains(name) || !resultJson[name].is_object()) return;
+                    data.resize(100);
+                    for (auto &element : resultJson[name].items()) {
+                        int index = std::stoi(element.key());
+                        data[index] = element.value().get<std::string>();
+                    }
+                };
+                auto parseToInt = [&resultJson](const std::string &name, std::vector<int> &data) {
+                    if (!resultJson.contains(name) || !resultJson[name].is_object()) return;
+                    data.resize(100);
+                    for (auto &element : resultJson[name].items()) {
+                        int index = std::stoi(element.key());
+                        data[index] = element.value().get<int>();
+                    }
+                };
+
+                std::vector<std::string> names, types, colorHexCodes, vendors;
+                parseToString("filament", names);
+                parseToString("type", types);
+                parseToString("colordict", colorHexCodes);
+                parseToString("vendor_list", vendors);
+                std::vector<int> minTemps, maxTemps, boxMinTemps, boxMaxTemps;
+                parseToInt("min_temp", minTemps);
+                parseToInt("max_temp", maxTemps);
+                parseToInt("box_min_temp", boxMinTemps);
+                parseToInt("box_max_temp", boxMaxTemps);
+
+                m_filamentConfig.resize(names.size());
+                for (int i = 1; i < (int)m_filamentConfig.size(); ++i) {
+                    m_filamentConfig[i].name        = names[i];
+                    m_filamentConfig[i].type        = types[i];
+                    m_filamentConfig[i].minTemp     = minTemps[i];
+                    m_filamentConfig[i].maxTemp     = maxTemps[i];
+                    m_filamentConfig[i].boxMinTemp  = boxMinTemps[i];
+                    m_filamentConfig[i].boxMaxTemp  = boxMaxTemps[i];
+                    m_filamentConfig[i].vendor      = vendors[i];
+                    m_filamentConfig[i].colorHexCode= colorHexCodes[i];
                 }
-                ).perform_sync();
-        try {
-            json bodyJson = json::parse(resultBody);
-            if (!bodyJson.is_object()) {
+                m_is_init_filamentConfig = true;
+
+                // Flush any save_variables that were queued while config was loading.
+                flushPendingBoxUpdate();
+
+                return true;
+            } catch (...) {
+                return false;
+            }
+        };
+
+        if (active_p2p) {
+            auto& qds_p2p = P2PManager::instance();
+            if (!qds_p2p.isConnected())
+                return;
+
+            std::mutex              syncMutex;
+            std::condition_variable syncCV;
+            bool                    received = false;
+
+            int textToken = qds_p2p.onText([&](uint8_t type, int64_t reqId, int32_t,
+                                                const uint8_t *data, size_t len) {
+                std::string text((const char *)data, len);
+                {
+                    std::lock_guard<std::mutex> lock(syncMutex);
+                    resultBody = std::move(text);
+                    received = true;
+                }
+                syncCV.notify_one();
+            });
+
+            int64_t reqId = (int64_t)(std::chrono::system_clock::now().time_since_epoch().count());
+            bool sent = false;
+            for (int retry = 0; retry < 5; retry++) {
+                if (qds_p2p.sendTextCommand(R"({"method":"fetch_offical_filament_list"})", reqId) >= 0) {
+                    sent = true;
+                    break;
+                }
+                std::this_thread::sleep_for(500ms);
+            }
+
+            if (!sent) {
+                BOOST_LOG_TRIVIAL(error) << "QDSDevice: failed to send fetch_filas_cfg";
+                qds_p2p.off(textToken);
                 return;
             }
-            if (!bodyJson.contains("result")) {
-                return;
-            }
-            json resultJson = bodyJson["result"];
-            if (!resultJson.is_object()) {
-                return;
-            }
-            auto parseToString = [&resultJson](std::string name, std::vector<std::string>& data) {
-                if (!resultJson.contains(name) || !resultJson[name].is_object()) {
+
+            {
+                std::unique_lock<std::mutex> lock(syncMutex);
+                if (!syncCV.wait_for(lock, std::chrono::seconds(30), [&] { return received; })) {
+                    BOOST_LOG_TRIVIAL(error) << "QDSDevice: fetch_filas_cfg timeout";
+                    qds_p2p.off(textToken);
                     return;
                 }
-                data.resize(100);
-                for (auto& element : resultJson[name].items()) {
-                    std::string key = element.key();
-                    int index = std::stoi(key);
-                    data[index] = element.value().get<std::string>();
-                }
-            };
-            auto parseToInt = [&resultJson](std::string name, std::vector<int>& data) {
-                if (!resultJson.contains(name) || !resultJson[name].is_object()) {
-                    return;
-                }
-                data.resize(100);
-                for (auto& element : resultJson[name].items()) {
-                    std::string key = element.key();
-                    int index = std::stoi(key);
-                    data[index] = element.value().get<int>();
-                }
-            };
-
-            std::vector<std::string> names;
-			std::vector<std::string> types;
-			std::vector<std::string> colorHexCodes;
-			std::vector<std::string> vendors;
-            parseToString("filament", names);
-			parseToString("type", types);
-			parseToString("colordict", colorHexCodes);
-			parseToString("vendor_list", vendors);
-			std::vector<int> minTemps;
-			std::vector<int> maxTemps;
-			std::vector<int> boxMinTemps;
-			std::vector<int> boxMaxTemps;
-			parseToInt("min_temp", minTemps);
-			parseToInt("max_temp", maxTemps);
-			parseToInt("box_min_temp", boxMinTemps);
-			parseToInt("box_max_temp", boxMaxTemps);
-
-            if(minTemps.size() != m_filamentConfig.size() || maxTemps.size() != m_filamentConfig.size() || boxMinTemps.size() != m_filamentConfig.size() || boxMaxTemps.size() != m_filamentConfig.size())
-                return;
-            for (int i = 1; i < m_filamentConfig.size(); ++i) {
-				m_filamentConfig[i].name = names[i];
-				m_filamentConfig[i].type = types[i];
-				m_filamentConfig[i].minTemp = minTemps[i];
-				m_filamentConfig[i].maxTemp = maxTemps[i];
-				m_filamentConfig[i].boxMinTemp = boxMinTemps[i];
-				m_filamentConfig[i].boxMaxTemp = boxMaxTemps[i];
-
-				m_filamentConfig[i].vendor = vendors[i];
-				m_filamentConfig[i].colorHexCode = colorHexCodes[i];
             }
-            m_is_init_filamentConfig = true;
+
+            qds_p2p.off(textToken);
+
+            if (!resultBody.empty()) {
+                json jsonBody_ = json::parse(resultBody);
+                parseFilamentJson(jsonBody_);
+            }
 
         }
-        catch (...) {
+        else {
+            if(is_net_device){
+                HttpData httpData;
+                json bodyJson;
+                bodyJson["serialNumber"] = m_id;
+                httpData.body = bodyJson.dump();
+                std::string region = wxGetApp().app_config->get("region");
+                if (region == "China") {
+                    httpData.env = PRODUCTIONENV;
+                }
+                else {
+                    httpData.env = FOREIGNENV;
+                }
+                httpData.target = PRINTERTYPE;
+                httpData.taskPath = "/get/filament/config/all";
+                bool isSucceed = false;
+                std::string resultBody = MakerHttpHandle::getInstance().httpPostTask(httpData, isSucceed);
 
+                if (isSucceed) {
+                    try {
+                        json resultJson = json::parse(resultBody);
+                        json resultJson_ = resultJson["data"];
+                        if (!resultJson_.empty())
+                            parseFilamentJson(resultJson_);
+                    }
+                    catch (...) {
+                    }
+                }
+                else {
+                    BOOST_LOG_TRIVIAL(error) << "http error" << isSucceed << "   " << "httpDatabody:  " <<httpData.body <<  "   " << __FUNCTION__;
+                }
+            } else {
+                std::string url = m_frp_url + "/api/qidiclient/config/offical_filament_list";
+                Slic3r::Http httpPost = Slic3r::Http::get(url);
+                httpPost.timeout_max(5)
+                    .header("accept", "application/json")
+                    .header("Content-Type", "application/json")
+                    .on_complete(
+                        [&resultBody](std::string body, unsigned status) {
+                            resultBody = body;
+                        }
+                    )
+                    .on_error(
+                        [this](std::string body, std::string error, unsigned status) {
+
+                        }
+                    ).perform_sync();
+
+                json bodyJson_ = json::parse(resultBody);
+                if (!bodyJson_.contains("result")) return;
+                json resultJson_ = bodyJson_["result"];
+                if (!resultJson_.is_object()) return;
+                if (!resultJson_.empty())
+                    parseFilamentJson(resultJson_);
+            }
         }
-
-        
 	});
-
-
-    
 }
 
 bool QDSDevice::is_online(){
@@ -976,7 +1183,36 @@ void QDSDevice::twoStageParse(const json& status, T& target, std::string first, 
     }
 }
 
+template<typename T>
+bool Slic3r::GUI::QDSDevice::parseJsonForPath(const json& jsonData, T& target, std::string path)
+{
+    // cj_5: manually walk the path to avoid exception noise from value(json_pointer)
+    // json_pointer in 3.10.4 is not iterable and find() only does top-level lookup
+    const json* ref = &jsonData;
+    size_t pos = 1; // skip leading '/'
+    while (pos < path.size()) {
+        size_t next = path.find('/', pos);
+        std::string token = (next == std::string::npos)
+            ? path.substr(pos) : path.substr(pos, next - pos);
+        // unescape ~1→/ and ~0→~ per RFC 6901
+        for (size_t esc; (esc = token.find("~1")) != std::string::npos; )
+            token.replace(esc, 2, "/");
+        for (size_t esc; (esc = token.find("~0")) != std::string::npos; )
+            token.replace(esc, 2, "~");
+        if (!ref->contains(token)) return false;
+        ref = &(*ref)[token];
+        pos = (next == std::string::npos) ? path.size() : next + 1;
+    }
 
+    //y83
+    if (ref->is_null()) {
+        target = T{};
+        return false;
+    }
+
+    target = ref->get<T>();
+    return true;
+}
 
 int QDSDevice::getJsonCurStageToInt(const json& jsonData, std::string jsonName)
 {
@@ -987,76 +1223,8 @@ int QDSDevice::getJsonCurStageToInt(const json& jsonData, std::string jsonName)
 }
 
 bool extractNumberWithSscanf(const std::string& str, int& result) {
+	// 使用 sscanf 直接匹配格式并提取数字
 	return (sscanf(str.c_str(), "fila%d", &result) == 1);
-}
-
-void QDSDevice::initGeneralData()
-{
-    if (QDSDevice::m_is_init_general) {
-        return;
-    }
-    std::lock_guard<std::mutex> lock(QDSDevice::m_general_mtx);
-	if (QDSDevice::m_is_init_general) {
-		return;
-	}
-
-    QDSDevice::m_general_filamentConfig.resize(100);
-    std::string cfg_path = Slic3r::resources_dir() + "/profiles/officiall_filas_list.cfg";
-	pt::ptree pt;
-	try {
-		pt::ini_parser::read_ini(cfg_path, pt);
-	}
-	catch (const std::exception& e) {
-		std::cerr << "Error reading config file: " << e.what() << std::endl;
-		return ;
-	}
-	for (const auto& section : pt) {
-        std::string sectionName = section.first;
-        if (sectionName == "colordict") {
-            for (const auto& item : section.second) {
-                int index = std::stoi(item.first);
-                m_general_filamentConfig[index].colorHexCode = item.second.data();
-            }
-        }
-		if (sectionName == "vendor_list") {
-			for (const auto& item : section.second) {
-				int index = std::stoi(item.first);
-				m_general_filamentConfig[index].vendor = item.second.data();
-			}
-		}
-
-        int filaIndex = 0;
-        if (!extractNumberWithSscanf(sectionName,filaIndex)) {
-            continue;
-        }
-		for (const auto& item : section.second) {
-            if (item.first == "filament") {
-                m_general_filamentConfig[filaIndex].name = item.second.data();
-            }
-			if (item.first == "type") {
-				m_general_filamentConfig[filaIndex].type = item.second.data();
-
-			}
-            if (item.first == "min_temp") {
-                m_general_filamentConfig[filaIndex].minTemp = item.second.get_value<int>(0);
-			}
-            if (item.first == "max_temp") {
-				m_general_filamentConfig[filaIndex].maxTemp = item.second.get_value<int>(0);
-
-			}
-			if (item.first == "box_min_temp") {
-				m_general_filamentConfig[filaIndex].boxMinTemp = item.second.get_value<int>(0);
-
-			}
-			if (item.first == "box_max_temp") {
-				m_general_filamentConfig[filaIndex].boxMaxTemp = item.second.get_value<int>(0);
-
-			}
-		}
-	}
-	
-
-    QDSDevice::m_is_init_general = true;
 }
 
 std::vector<float> QDSDevice::getNozzleDiameter(){
@@ -1065,12 +1233,26 @@ std::vector<float> QDSDevice::getNozzleDiameter(){
 
 //y79
 void QDSDevice::updatePrinterStatusData(json& status){
+
+    if (m_print_msg == "Printing")
+        return;
+
     std::lock_guard<std::mutex> lock(m_config_mtx);
     maker_job_is_update = true;
     maker_job_state = status.contains("jobState") ? status["jobState"].get<std::string>() : maker_job_state;
     maker_job_progress = status.contains("progress") ? status["progress"].get<std::string>() : maker_job_progress;
+
+    if(maker_job_state == "Generating_Gcode"){
+        m_print_msg = maker_job_state + " layer : " + maker_job_progress;
+    } else if(maker_job_state == "SLICING_FINISHED"){
+        m_print_msg = maker_job_progress;
+    } else {
+        m_print_msg = maker_job_state + " : " + maker_job_progress + "%";
+    }
+    is_update = true;
+
     if(status.contains("failCause") && !status["failCause"].empty()){
-        std::cout << "some error is " << status << std::endl;
+        BOOST_LOG_TRIVIAL(trace) << "some error is " << status << std::endl;
         maker_job_is_update = false;
     }
 }
@@ -1089,6 +1271,80 @@ void QDSDevice::setMakerJobIsUpdate(bool value) {
     std::lock_guard<std::mutex> lock(m_config_mtx);
     maker_job_is_update = value;
 }
+
+void QDSDevice::updateAllErrorData(json& jsonData)
+{
+    {
+        std::lock_guard<std::mutex> lock(m_errorData_mtx);
+        m_errorData.clear();
+    }
+    std::string event_value = "";
+    if(jsonData.contains("event"))
+    if (jsonData.contains("results") && jsonData["results"].is_array()) {
+        for (auto& obj : jsonData["results"]) {
+            updateErrorDataSingle(obj, "");
+        }
+    }
+}
+
+void QDSDevice::updateErrorDataForNotiry(json& jsonData)
+{
+    BOOST_LOG_TRIVIAL(trace) << "notify result is :" << jsonData;
+    if (jsonData.contains("data") && jsonData["data"].is_object()) {
+        std::string event_value = "";
+        if(jsonData["data"].contains("event")){
+            event_value = jsonData["data"]["event"].get<std::string>();
+        }
+        if (jsonData["data"].contains("results") && jsonData["data"]["results"].is_object()) {
+            updateErrorDataSingle(jsonData["data"]["results"], event_value);
+        }
+    } 
+}
+
+void QDSDevice::updateErrorDataSingle(json& jsonData, std::string event_value)
+{
+    QDSDeviceErrorData errorData;
+    errorData.event_value = event_value;
+	parseJsonForPath(jsonData, errorData.error_code, "/error_code");
+	parseJsonForPath(jsonData, errorData.error_message, "/error_message");
+	parseJsonForPath(jsonData, errorData.error_popup, "/error_popup");
+	parseJsonForPath(jsonData, errorData.error_type, "/error_type");
+	parseJsonForPath(jsonData, errorData.error_weight, "/error_weight");
+	parseJsonForPath(jsonData, errorData.prossess_message, "/prossess_message");
+
+    std::lock_guard<std::mutex> lock(m_errorData_mtx);
+
+    if (errorData.event_value.empty() || errorData.event_value == "add") {
+        m_errorData.push_back(errorData);
+        m_needUpdateErrorData = true;
+    }
+    else if(errorData.event_value == "update"){
+        bool found = false;
+        for(auto &err : m_errorData){
+            if(err.error_code == errorData.error_code){
+                err = errorData;
+                found = true;
+                break;
+            }
+        }
+        if (!found)
+            m_errorData.push_back(errorData);
+        m_needUpdateErrorData = true;
+    } else if(errorData.event_value == "remove"){
+        for (auto it = m_errorData.begin(); it != m_errorData.end(); ) {
+            if (it->error_code == errorData.error_code) {
+                it = m_errorData.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+    std::sort(m_errorData.begin(), m_errorData.end(),
+        [](const QDSDeviceErrorData& a, const QDSDeviceErrorData& b) {
+            return a.error_type < b.error_type;
+        });
+}
+
 //y79
 
 QDSDeviceManager::QDSDeviceManager() {
@@ -1124,6 +1380,7 @@ void QDSDeviceManager::performHealthCheck() {
         auto now = std::chrono::steady_clock::now();
 
         for (const auto& [device_id, device] : devices_) {
+            // 检查设备状态
             bool needs_reconnect = false;
             std::string reason;
 
@@ -1135,12 +1392,14 @@ void QDSDeviceManager::performHealthCheck() {
                     (now - device->last_reconnect) < reconnect_cooldown) {
                     continue;
                 }
+                // 1. 检查设备状态
                 if (device->m_status == "Unauthorized")
                     continue;
                 if (device->m_status == "offline" || device->m_status == "error") {
                     needs_reconnect = true;
                     reason = "status is " + device->m_status;
                 }
+                // 2. 检查最后更新时间（超过30秒无更新认为连接异常）
                 else if (std::chrono::duration_cast<std::chrono::seconds>(now - device->last_update).count() > 60) {
                     needs_reconnect = true;
                     reason = "no update for " +
@@ -1157,6 +1416,7 @@ void QDSDeviceManager::performHealthCheck() {
         }
     }
 
+    // 重新连接需要重连的设备
     for (const auto& device_id : devices_to_reconnect) {
         reconnectDevice(device_id);
     }
@@ -1179,10 +1439,13 @@ void QDSDeviceManager::reconnectDevice(const std::string& device_id) {
     device->last_reconnect = std::chrono::steady_clock::now();
     BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[HealthCheck] Reconnecting device " << device_id << "..." << std::endl;
 
+    // 先断开连接
     stopConnection(device_id);
 
+    // 等待一小段时间
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
+    // 重新连接
     connectDevice(device_id);
 }
 
@@ -1340,6 +1603,8 @@ void QDSDeviceManager::safeStopConnection(const std::string& device_id) {
     
     try {
         websocketpp::lib::error_code ec;
+        
+        // 尝试正常关闭连接
         auto con = conn->client.get_con_from_hdl(conn->connection_hdl);
         if (con && con->get_state() == websocketpp::session::state::open) {
             conn->client.close(conn->connection_hdl, 
@@ -1351,6 +1616,7 @@ void QDSDeviceManager::safeStopConnection(const std::string& device_id) {
             }
         }
         
+        // 停止客户端
         conn->client.stop();
         conn->running = false;
         
@@ -1371,17 +1637,21 @@ void QDSDeviceManager::cleanupConnection(const std::string& device_id) {
         auto conn_it = connections_.find(device_id);
         if (conn_it == connections_.end()) return;
         conn = conn_it->second;
+        // 立即从 map 中移除，防止其他线程使用
         connections_.erase(conn_it);
     }
 
     BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Manager] Starting cleanup for device " << device_id << std::endl;
 
     if (conn) {
+        // 使用局部变量引用线程，避免通过 shared_ptr 多次访问
         std::thread& client_thread = conn->client_thread;
 
         if (client_thread.joinable()) {
             try {
+                // 尝试 join，设置超时避免无限等待
                 if (client_thread.joinable()) {
+                    // 可以添加超时机制
                     client_thread.join();
                 }
             }
@@ -1390,14 +1660,17 @@ void QDSDeviceManager::cleanupConnection(const std::string& device_id) {
                     << device_id << ": " << e.what()
                     << " (code: " << e.code() << ")" << std::endl;
 
+                // 根据错误代码处理
                 if (e.code() == std::errc::no_such_process ||
                     e.code() == std::errc::invalid_argument) {
+                    // 线程已经结束或无效，尝试 detach
                     try {
                         if (client_thread.joinable()) {
                             client_thread.detach();
                         }
                     }
                     catch (...) {
+                        // 如果 detach 也失败，记录日志
                         BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Cleanup] Failed to detach thread for device "
                             << device_id << std::endl;
                     }
@@ -1466,6 +1739,8 @@ bool QDSDeviceManager::removeDevice(const std::string& device_id) {
         removed = devices_.erase(device_id) > 0;
     }
     if (removed) {
+        //cj_5 Clear Plater sync status badges after device removal
+        GUI::wxGetApp().plater()->update_machine_sync_status();
         auto callback = getDeleteDeviceIDCallback();
         if (callback) {
             callback(device_id);
@@ -1491,10 +1766,12 @@ bool QDSDeviceManager::connectDevice(const std::string device_id) {
         connections_[device_id] = connection;
     }
 
+    //初始化websocket客户端
     connection->client.init_asio();
     connection->client.clear_access_channels(websocketpp::log::alevel::all);
     connection->client.clear_error_channels(websocketpp::log::elevel::all);
 
+    // 绑定事件处理器（使用 lambda 捕获 device_id）
     std::weak_ptr<WebSocketConnect> weak_conn = connection;
 
     connection->client.set_open_handler([this, device_id, weak_conn](auto hdl) {
@@ -1515,6 +1792,7 @@ bool QDSDeviceManager::connectDevice(const std::string device_id) {
             try {
                 onMessage(device_id, hdl, msg);
             } catch (...) {
+                // 捕获所有异常，确保processing_message被重置
             }
             
             conn->message_processing_count--;
@@ -1602,15 +1880,22 @@ void QDSDeviceManager::onOpen(const std::string& device_id, websocketpp::connect
     BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[WS] Device " << device_id << " connected." << std::endl;
     processConnectionStatus(device_id, "connected");
     
+    // 延迟发送订阅消息
     std::thread([this, device_id]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         sendSubscribeMessage(device_id);
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        getAllErrorList(device_id);
+
+
     }).detach();
 }
 void QDSDeviceManager::onMessage(const std::string& device_id, websocketpp::connection_hdl hdl, WebSocketClient::message_ptr msg) {
     std::string msg_str;
     try {
         msg_str = msg->get_payload();
+        
+        // 检查连接是否正在停止
         std::shared_ptr<WebSocketConnect> conn;
         {
             std::lock_guard<std::mutex> lock(manager_mutex_);
@@ -1620,6 +1905,7 @@ void QDSDeviceManager::onMessage(const std::string& device_id, websocketpp::conn
             }
         }
         
+        // 解析JSON
         json message_json;
         try {
             message_json = json::parse(msg_str);
@@ -1634,9 +1920,11 @@ void QDSDeviceManager::onMessage(const std::string& device_id, websocketpp::conn
             dev->last_update = std::chrono::steady_clock::now();
         }
         
+        // 处理消息
         handleDeviceMessage(device_id, message_json);
         
     } catch (const std::exception& e) {
+        // 使用已保存的消息字符串
 //         BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Message] Error in onMessage for device " << device_id 
 //                   << ": " << e.what() 
 //                   << ", message length: " << msg_str.length() << std::endl;
@@ -1750,6 +2038,7 @@ void QDSDeviceManager::sendSubscribeMessage(const std::string& device_id) {
             // {"stepper_enable", nullptr},
             // {"motion_report", nullptr},
             // {"query_endstops", nullptr},
+            // // 盒子信息
             // {"box_extras", nullptr},
             // {"box_stepper slot0", nullptr},
             // {"box_stepper slot1", nullptr},
@@ -1822,6 +2111,7 @@ void QDSDeviceManager::sendSubscribeMessage(const std::string& device_id) {
             // {"idle_timeout", nullptr},
             // {"system_stats", nullptr},
             // {"manual_probe", nullptr},
+            { "print_stats_manager",nullptr},
             {"print_stats", nullptr},
             {"display_status", nullptr},
             // {"webhooks", nullptr},
@@ -1852,7 +2142,8 @@ void QDSDeviceManager::sendSubscribeMessage(const std::string& device_id) {
             {"box_stepper slot13", nullptr},
             {"box_stepper slot14", nullptr},
             {"box_stepper slot15", nullptr},
-            {"box_stepper slot16", nullptr}
+            {"box_stepper slot16", nullptr},
+             {"data",nullptr}
         }}
     }}
     };
@@ -1875,6 +2166,11 @@ void QDSDeviceManager::sendSubscribeMessage(const std::string& device_id) {
         BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << "[Send] Exception sending to device " << device_id 
                   << ": " << e.what() << std::endl;
     }
+}
+
+void QDSDeviceManager::getAllErrorList(const std::string& device_id)
+{
+    sendCommand(device_id, "method", "get_all_error_list", "server.extensions.request");
 }
 
 void QDSDeviceManager::sendCommand(const std::string& device_id, const std::string& script){
@@ -2055,24 +2351,39 @@ void QDSDeviceManager::updateDeviceMsg(const std::string& device_id, const json&
                 }
 
             }
+
+
+            if (message.at("method").is_string()&&message.at("method").get<std::string>() == "notify_agent_event" && message.at("params").is_array()) {
+                json result = message.at("params").at(0);
+                device->updateErrorDataForNotiry(result);
+            }
+
         }
         
         // 处理状态更新
         if (message.contains("result")) {
-            
-            if(message.at("result").contains("files")){
+
+            if (message.at("result").contains("files")) {
                 const json& result = message.at("result");
                 updateDeviceFileInfo(device, result);
                 is_file_info_update = true;
             }
-            if(message.at("result").contains("status")){
+            if (message.at("result").contains("status")) {
                 const json& result = message.at("result").at("status");
-                
+
                 updateDeviceData(device, result, new_status, is_update);
+            }
+
+            if (message.at("result").contains("event") && message["result"]["event"].is_string()
+                    && message["result"]["event"].get<std::string>() == "GetAll") {
+                json jsonResult = message["result"];
+
+                device->updateAllErrorData(jsonResult);
             }
         }
 
         
+        // 打印记录修改
         if(message.contains("method")){
             if(message.at("method").get<std::string>() == "notify_history_changed"){
                 updatePrintThumbUrl(device, message);
@@ -2085,6 +2396,7 @@ void QDSDeviceManager::updateDeviceMsg(const std::string& device_id, const json&
         //     }
         // }
         
+        // 处理通知更新
         if (message.contains("method") && 
             message.at("method").get<std::string>() == "notify_status_update" && 
             message.at("params").is_array() && 
@@ -2099,6 +2411,7 @@ void QDSDeviceManager::updateDeviceMsg(const std::string& device_id, const json&
 // 			}
         }
         
+        // 处理错误
         if (message.contains("error") && 
             message["error"].contains("message") &&
             message["error"]["message"] == "Unauthorized") {
@@ -2111,6 +2424,7 @@ void QDSDeviceManager::updateDeviceMsg(const std::string& device_id, const json&
         }
     }
     
+    // 触发回调
     if (!new_status.empty()) {
         updateDeviceStatus(device_id, new_status);
     }
@@ -2149,8 +2463,8 @@ void QDSDeviceManager::updateDeviceData(std::shared_ptr<QDSDevice>& device,
         new_status = device->m_status;
     }
 
-    // Propagate device update flag to caller.
-    if (device->is_update) {
+    // y83
+    if (device->is_update.exchange(false)) {
         is_update = true;
     }
 
@@ -2174,10 +2488,10 @@ std::string extractAfterGcodes(const std::string& fullPath) {
 	return "";  // 没找到返回空字符串
 }
 
-void QDSDeviceManager::updateDeviceFileInfo(std::shared_ptr<QDSDevice>& device, const json& result){
+void QDSDeviceManager::updateDeviceFileInfo(std::shared_ptr<QDSDevice>& device, const json& result, bool support_p2p){
     device->file_info.clear();
+    const auto& result_array = support_p2p ? result : result["result"];
     //y78
-    const auto& result_array = result["result"];
     for(const auto& file_item : result_array){
         GCodeFileInfo file_info;
         //cj_2 filter cache file
@@ -2234,23 +2548,38 @@ void QDSDeviceManager::updateDeviceFileInfo(std::shared_ptr<QDSDevice>& device, 
 
                 file_info.plates.emplace_back(plate_info);
 
-                DownloadManager::getInstance().downloadThumbnail(
-                    UrlEncodeForFilename(plate_info.thumb_url),
-                    file_info.file_name,
-                    [device](ThumbnailResult result) {
-                        if (!result.success)
-                            return;
+                // y83
+                if (support_p2p) {
+                    std::string p2pKey = file_info.file_path + "|" + plate_info.index;
+                    auto it = m_p2p_thumbnails.find(p2pKey);
+                    if (it != m_p2p_thumbnails.end() && !it->second.empty()) {
+                        // Update the already-emplaced plate_info's thumbnailData
+                        auto &emplaced = file_info.plates.back();
+                        emplaced.thumbnailData.pixels.assign(
+                            (const unsigned char *)it->second.data(),
+                            (const unsigned char *)it->second.data() + it->second.size());
+                        BOOST_LOG_TRIVIAL(trace) << "QDSDeviceManager: use P2P thumbnail for "
+                                                  << p2pKey << " (" << it->second.size() << " bytes)";
+                    }
+                } else {
+                    DownloadManager::getInstance().downloadThumbnail(
+                        UrlEncodeForFilename(plate_info.thumb_url),
+                        file_info.file_name,
+                        [device](ThumbnailResult result) {
+                            if (!result.success)
+                                return;
 
-                        for (auto& file_info_item : device->file_info) {
-                            for (auto& plate_info_item : file_info_item.plates) {
-                                if (UrlEncodeForFilename(plate_info_item.thumb_url) == result.url) {
-                                    plate_info_item.thumbnailData.pixels.assign(result.png_data.begin(), result.png_data.end());
-                                    return;
+                            for (auto& file_info_item : device->file_info) {
+                                for (auto& plate_info_item : file_info_item.plates) {
+                                    if (UrlEncodeForFilename(plate_info_item.thumb_url) == result.url) {
+                                        plate_info_item.thumbnailData.pixels.assign(result.png_data.begin(), result.png_data.end());
+                                        return;
+                                    }
                                 }
                             }
                         }
-                    }
-                );
+                    );
+                }
             }
         }
         file_info.show_thumb_url = file_info.plates.empty() ? "" : file_info.plates[0].thumb_url;
@@ -2269,17 +2598,23 @@ void QDSDeviceManager::updateDeviceFileInfo(std::shared_ptr<QDSDevice>& device, 
 }
 
 void QDSDeviceManager::updatePrintThumbUrl(std::shared_ptr<QDSDevice>& device, const json& message){
-    const json& result = message.at("params")[0];
-    if(result["action"] == "added"){
-        BOOST_LOG_TRIVIAL(trace) << result;
-		device->m_print_filename = result["job"]["filename"];
-		std::string thumb_path = result["job"]["metadata"]["thumbnails"]["relative_path"];
-		device->m_print_png_url = device->m_frp_url + "/server/files/gcodes/" + thumb_path;
-	}
-	else if (result["action"] == "finished") {
-        device->m_print_filename = "";
-		device->m_print_png_url = "";
-	}
+//y83
+    try{
+        const json& result = message.at("params")[0];
+        if(result["action"] == "added"){
+            BOOST_LOG_TRIVIAL(trace) << result;
+            device->m_print_filename = result["job"]["filename"];
+            std::string thumb_path = result["job"]["metadata"]["thumbnails"]["relative_path"];
+            device->m_print_png_url = device->m_frp_url + "/server/files/gcodes/" + thumb_path;
+        }
+        else if (result["action"] == "finished") {
+            device->m_print_filename = "";
+            device->m_print_png_url = "";
+        }
+    }
+    catch(...) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << "get json error in message, message is "<< message;
+    }
 }
 
 void QDSDeviceManager::updatePrintThumbUrlWithOutMsg(std::shared_ptr<QDSDevice>& device){
@@ -2482,9 +2817,388 @@ void QDSDeviceManager::upBoxInfoToBoxMsg(std::shared_ptr<QDSDevice>& device){
     GUI::wxGetApp().sidebar().load_box_list();
 }
 
-//y78
+//y83
+bool QDSDeviceManager::getFileInfoViaP2P()
+{
+    auto &p2p = P2PManager::instance();
+
+    // ── Step 1: fetch file list (text command) ──
+    std::mutex syncMutex;
+    std::condition_variable syncCV;
+    bool listReceived = false;
+    std::string fileListJson;
+
+    int textToken = p2p.onText([&](uint8_t type, int64_t reqId, int32_t,
+                                    const uint8_t *data, size_t len) {
+        std::string text((const char *)data, len);
+        BOOST_LOG_TRIVIAL(trace) << "QDSDeviceManager: fetch_model_list response, reqId=" << reqId;
+        {
+            std::lock_guard<std::mutex> lock(syncMutex);
+            fileListJson = text;
+            listReceived = true;
+        }
+        syncCV.notify_one();
+    });
+
+    int64_t listReqId = (int64_t)(std::chrono::system_clock::now().time_since_epoch().count());
+    bool sent = false;
+    for (int retry = 0; retry < 5; retry++) {
+        if (p2p.sendTextCommand(R"({"method":"fetch_model_list"})", listReqId) >= 0) {
+            sent = true;
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    if (!sent) {
+        BOOST_LOG_TRIVIAL(error) << "QDSDeviceManager: failed to send fetch_model_list";
+        p2p.off(textToken);
+        syncCV.notify_one();
+    }
+
+    {
+        std::unique_lock<std::mutex> lock(syncMutex);
+        if (!syncCV.wait_for(lock, std::chrono::seconds(30), [&] { return listReceived; })) {
+            BOOST_LOG_TRIVIAL(error) << "QDSDeviceManager: fetch_model_list timeout";
+            p2p.off(textToken);
+            return false;
+        }
+    }
+
+    // Keep text token alive; we may unregister after thumbnails
+    m_text_from_p2p = fileListJson;
+
+    // ── Step 2: build thumbnail request list ──
+    struct ThumbReq {
+        std::string filePath;
+        std::string plateIndex;
+    };
+    std::vector<ThumbReq> pendingThumbs;
+
+    try {
+        json parsed = json::parse(fileListJson);
+        json arr = parsed.is_array() ? parsed : (parsed.contains("result") ? parsed["result"] : parsed);
+        if (arr.is_array()) {
+            for (const auto &file : arr) {
+                std::string filePath = file.value("filepath", "");
+                if (filePath.find("/.cache/") != std::string::npos)
+                    continue;
+                if (file.contains("plates") && file["plates"].is_array()) {
+                    for (const auto &plate : file["plates"]) {
+                        ThumbReq req;
+                        req.filePath   = filePath;
+                        req.plateIndex = plate.value("plate_index", "0");
+                        pendingThumbs.push_back(req);
+                    }
+                }
+            }
+        }
+    } catch (const std::exception &e) {
+        BOOST_LOG_TRIVIAL(error) << "QDSDeviceManager: parse file list failed: " << e.what();
+        p2p.off(textToken);
+        return false;
+    }
+
+    // ── Step 3: fetch thumbnails one by one ──
+    if (!pendingThumbs.empty()) {
+        m_p2p_thumbnails.clear();
+
+        // Shared state accessed from both main thread and P2P event-loop thread
+        std::mutex              xferMutex;
+        std::condition_variable xferCV;
+        bool                    xferDone   = false;
+        bool                    xferCancel = false;
+        std::vector<char>       xferBuf;
+
+        int fileToken = p2p.onFile([&](uint8_t type, int64_t transferId, int32_t sequence,
+                                        const uint8_t *data, size_t len) {
+            if (type == 0x20) { // FILE_BEGIN
+                std::lock_guard<std::mutex> lock(xferMutex);
+                xferBuf.clear();
+                xferDone   = false;
+                xferCancel = false;
+            } else if (type == 0x21) { // FILE_CHUNK
+                std::lock_guard<std::mutex> lock(xferMutex);
+                xferBuf.insert(xferBuf.end(), data, data + len);
+            } else if (type == 0x22) { // FILE_END
+                {
+                    std::lock_guard<std::mutex> lock(xferMutex);
+                    xferDone = true;
+                }
+                xferCV.notify_one();
+            } else if (type == 0x23) { // FILE_CANCEL
+                {
+                    std::lock_guard<std::mutex> lock(xferMutex);
+                    xferCancel = true;
+                    xferBuf.clear();
+                }
+                xferCV.notify_one();
+            }
+        });
+
+        for (size_t i = 0; i < pendingThumbs.size(); i++) {
+            const auto &req = pendingThumbs[i];
+            // Reset state under lock
+            {
+                std::lock_guard<std::mutex> lock(xferMutex);
+                xferBuf.clear();
+                xferDone   = false;
+                xferCancel = false;
+            }
+
+            json imgReq;
+            imgReq["method"]              = "request_model_image";
+            imgReq["params"]["file_path"]   = req.filePath;
+            imgReq["params"]["plate_index"] = req.plateIndex;
+
+            int64_t imgReqId = (int64_t)(std::chrono::system_clock::now().time_since_epoch().count() + i + 1);
+            p2p.sendTextCommand(imgReq.dump(), imgReqId);
+            BOOST_LOG_TRIVIAL(trace) << "QDSDeviceManager: request thumbnail for "
+                                     << req.filePath << " plate=" << req.plateIndex;
+
+            // Wait for file transfer to complete (max 15s per thumbnail)
+            std::vector<char> received;
+            {
+                std::unique_lock<std::mutex> lock(xferMutex);
+                bool ok = xferCV.wait_for(lock, std::chrono::seconds(15),
+                                          [&] { return xferDone || xferCancel; });
+                if (ok && xferDone && !xferBuf.empty()) {
+                    received = std::move(xferBuf);
+                }
+            }
+
+            if (!received.empty()) {
+                std::string key = req.filePath + "|" + req.plateIndex;
+                m_p2p_thumbnails[key] = std::move(received);
+                BOOST_LOG_TRIVIAL(trace) << "QDSDeviceManager: received thumbnail ("
+                                         << m_p2p_thumbnails[key].size() << " bytes) for "
+                                         << req.filePath << " plate=" << req.plateIndex;
+            } else {
+                BOOST_LOG_TRIVIAL(warning) << "QDSDeviceManager: thumbnail fetch "
+                                           << "failed for " << req.filePath
+                                           << " plate=" << req.plateIndex;
+            }
+        }
+
+
+
+
+        p2p.off(fileToken);
+    }
+
+    p2p.off(textToken);
+    return true;
+}
+
+//y83
+bool QDSDeviceManager::getTimelapseInfoP2P(){
+    auto &p2p = P2PManager::instance();
+
+    // ── Step 1: fetch timelapse list (text command) ──
+    std::mutex syncMutex;
+    std::condition_variable syncCV;
+    bool listReceived = false;
+    std::string fileListJson;
+
+    int textToken = p2p.onText([&](uint8_t type, int64_t reqId, int32_t,
+                                    const uint8_t *data, size_t len) {
+        std::string text((const char *)data, len);
+        BOOST_LOG_TRIVIAL(trace) << "QDSDeviceManager: fetch_timelapse_list response, reqId=" << reqId;
+        {
+            std::lock_guard<std::mutex> lock(syncMutex);
+            fileListJson = text;
+            listReceived = true;
+        }
+        syncCV.notify_one();
+    });
+
+    int64_t listReqId = (int64_t)(std::chrono::system_clock::now().time_since_epoch().count());
+    bool sent = false;
+    for (int retry = 0; retry < 5; retry++) {
+        if (p2p.sendTextCommand(R"({"method":"fetch_timelapse_list","params":{}})", listReqId) >= 0) {
+            sent = true;
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+
+    if (!sent) {
+        BOOST_LOG_TRIVIAL(error) << "QDSDeviceManager: failed to send fetch_timelapse_list";
+        p2p.off(textToken);
+        return false;
+    }
+
+    {
+        std::unique_lock<std::mutex> lock(syncMutex);
+        if (!syncCV.wait_for(lock, std::chrono::seconds(30), [&] { return listReceived; })) {
+            BOOST_LOG_TRIVIAL(error) << "QDSDeviceManager: fetch_timelapse_list timeout";
+            p2p.off(textToken);
+            return false;
+        }
+    }
+
+    m_text_from_p2p = fileListJson;
+
+    // ── Step 2: extract .jpg thumbnail filenames from the list ──
+    struct JpgReq {
+        std::string jpgFileName;  // e.g. "timelapse_20240718.mp4" → "timelapse_20240718.jpg"
+    };
+    std::vector<JpgReq> pendingJpgs;
+
+    try {
+        json parsed = json::parse(fileListJson);
+        // The JSON may be a direct array or wrapped in {"result": {...}}
+        const json *pArr = nullptr;
+        if (parsed.is_array()) {
+            pArr = &parsed;
+        } else if (parsed.contains("result") && parsed["result"].is_object()
+                   && parsed["result"].contains("files") && parsed["result"]["files"].is_array()) {
+            pArr = &parsed["result"]["files"];
+        }
+        if (pArr) {
+            std::unordered_set<std::string> allNames;
+            for (const auto &f : *pArr) {
+                if (f.is_object() && f.contains("filename") && f["filename"].is_string())
+                    allNames.insert(f["filename"].get<std::string>());
+            }
+            for (const auto &f : *pArr) {
+                if (!f.is_object() || !f.contains("filename") || !f["filename"].is_string())
+                    continue;
+                std::string fname = f["filename"].get<std::string>();
+                size_t dot = fname.rfind('.');
+                if (dot == std::string::npos)
+                    continue;
+                std::string ext = fname.substr(dot);
+                for (char &c : ext)
+                    c = (char)std::tolower((unsigned char)c);
+                if (ext != ".mp4")
+                    continue;
+                std::string jpgName = fname.substr(0, dot) + ".jpg";
+                if (allNames.find(jpgName) != allNames.end()) {
+                    pendingJpgs.push_back({std::move(jpgName)});
+                }
+            }
+        }
+    } catch (const std::exception &e) {
+        BOOST_LOG_TRIVIAL(error) << "QDSDeviceManager: parse timelapse list failed: " << e.what();
+        p2p.off(textToken);
+        return false;
+    }
+
+    // ── Step 3: fetch thumbnail images one by one ──
+    if (!pendingJpgs.empty()) {
+        m_p2p_timelapse_thumbnails.clear();
+
+        std::mutex              xferMutex;
+        std::condition_variable xferCV;
+        bool                    xferDone   = false;
+        bool                    xferCancel = false;
+        std::vector<char>       xferBuf;
+
+        int fileToken = p2p.onFile([&](uint8_t type, int64_t transferId, int32_t sequence,
+                                        const uint8_t *data, size_t len) {
+            if (type == 0x20) { // FILE_BEGIN
+                std::lock_guard<std::mutex> lock(xferMutex);
+                xferBuf.clear();
+                xferDone   = false;
+                xferCancel = false;
+            } else if (type == 0x21) { // FILE_CHUNK
+                std::lock_guard<std::mutex> lock(xferMutex);
+                const uint8_t* jpegData = data + 12;
+                size_t jpegLen = len - 12;
+                xferBuf.insert(xferBuf.end(), jpegData, jpegData + jpegLen);
+            } else if (type == 0x22) { // FILE_END
+                {
+                    std::lock_guard<std::mutex> lock(xferMutex);
+                    xferDone = true;
+                }
+                xferCV.notify_one();
+            } else if (type == 0x23) { // FILE_CANCEL
+                {
+                    std::lock_guard<std::mutex> lock(xferMutex);
+                    xferCancel = true;
+                    xferBuf.clear();
+                }
+                xferCV.notify_one();
+            }
+        });
+
+        for (size_t i = 0; i < pendingJpgs.size(); i++) {
+            const auto &req = pendingJpgs[i];
+            {
+                std::lock_guard<std::mutex> lock(xferMutex);
+                xferBuf.clear();
+                xferDone   = false;
+                xferCancel = false;
+            }
+
+            // Request the .jpg thumbnail file via P2P
+            json imgReq;
+            imgReq["method"] = "request_file";
+            imgReq["params"]["file_path"] = "/home/qidi/printer_data/timelapse/" + req.jpgFileName;
+            int64_t imgReqId = (int64_t)(std::chrono::system_clock::now().time_since_epoch().count() + i + 1);
+            p2p.sendTextCommand(imgReq.dump(), imgReqId);
+            BOOST_LOG_TRIVIAL(trace) << "QDSDeviceManager: request timelapse thumbnail " << req.jpgFileName;
+
+            // Wait for file transfer (max 15s per thumbnail)
+            std::vector<char> received;
+            {
+                std::unique_lock<std::mutex> lock(xferMutex);
+                bool ok = xferCV.wait_for(lock, std::chrono::seconds(15),
+                                          [&] { return xferDone || xferCancel; });
+                if (ok && xferDone && !xferBuf.empty()) {
+                    received = std::move(xferBuf);
+                }
+            }
+
+            if (!received.empty()) {
+                m_p2p_timelapse_thumbnails[req.jpgFileName] = std::move(received);
+                BOOST_LOG_TRIVIAL(trace) << "QDSDeviceManager: received timelapse thumbnail "
+                                         << req.jpgFileName
+                                         << " (" << m_p2p_timelapse_thumbnails[req.jpgFileName].size() << " bytes)";
+            } else {
+                BOOST_LOG_TRIVIAL(warning) << "QDSDeviceManager: failed to get timelapse thumbnail "
+                                           << req.jpgFileName;
+            }
+        }
+
+        p2p.off(fileToken);
+    }
+
+    p2p.off(textToken);
+    return true;
+}
+
 void QDSDeviceManager::getFileInfo(const std::string& device_id){
-    new std::thread([this,device_id]() {
+    std::shared_ptr<QDSDevice> device = getDevice(device_id);
+
+    //y83
+    if(device && device->active_p2p){
+        new std::thread([this, &device_id](){
+            std::shared_ptr<QDSDevice> device = getDevice(device_id);
+            bool has_p2p_result = getFileInfoViaP2P();
+            if(has_p2p_result){
+                json bodyJson = json::parse(m_text_from_p2p);
+                updateDeviceFileInfo(device, bodyJson, has_p2p_result);
+            } else{
+                BOOST_LOG_TRIVIAL(error) << "getFileInfo failed!";
+            }
+
+            bool p2p_get_timelapse_file = getTimelapseInfoP2P();
+            if(p2p_get_timelapse_file){
+                updateDeviceTimelapseFileInfo(device, m_text_from_p2p);
+
+                auto file_cb = getFileInfoUpdateCallback();
+                if (file_cb) {
+                    file_cb(device_id);
+                }
+            } else {
+                BOOST_LOG_TRIVIAL(error) << "getTimelapseInfo failed!";
+            }
+        });
+        return;
+    }
+
+    new std::thread([this, &device_id]() {
         std::shared_ptr<QDSDevice> device = getDevice(device_id);
         if (!device) {
             return;
@@ -2605,6 +3319,18 @@ void QDSDeviceManager::updateDeviceTimelapseFileInfo(std::shared_ptr<QDSDevice>&
 
             const std::string jpg_name = fname.substr(0, dot) + ".jpg";
             
+
+            // Try to populate thumbnail from P2P-fetched data first
+            auto p2pIt = m_p2p_timelapse_thumbnails.find(jpg_name);
+            if (p2pIt != m_p2p_timelapse_thumbnails.end() && !p2pIt->second.empty()) {
+                info.thumbnailData.pixels.assign(
+                    (const unsigned char *)p2pIt->second.data(),
+                    (const unsigned char *)p2pIt->second.data() + p2pIt->second.size());
+                BOOST_LOG_TRIVIAL(trace) << "QDSDeviceManager: use P2P timelapse thumbnail "
+                                         << jpg_name << " (" << p2pIt->second.size() << " bytes)";
+            }
+
+
             if (name_set.find(jpg_name) != name_set.end()) {
                 info.thumb_url = device->m_frp_url + "/server/files/timelapse/" + UrlEncodeForFilename(jpg_name);
             }

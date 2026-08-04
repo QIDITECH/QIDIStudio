@@ -28,6 +28,7 @@
 #include "slic3r/GUI/GLEnums.hpp"
 
 #include <wx/app.h>
+#include <wx/timer.h>
 #include <wx/colour.h>
 #include <wx/font.h>
 #include <wx/string.h>
@@ -284,6 +285,20 @@ private:
     bool            m_app_conf_exists{ false };
     EAppMode        m_app_mode{ EAppMode::Editor };
     bool            m_is_recreating_gui{ false };
+#if defined(__WXOSX__)
+    // STUDIO-18472: after the Filament Manager WKWebView has churned (tab visit +
+    // language-switch GUI rebuilds) macOS stops reliably waking the run loop to
+    // dispatch wx pending events (wxQueueEvent / wxPostEvent). This strands
+    // deferred actions: the post-rebuild project restore (blank prepare canvas)
+    // and the top tab-bar page switches (ButtonsListCtrl posts the selection via
+    // wxPostEvent -> tab clicks appear dead) until some unrelated wakeup occurs.
+    // A wxTimer is backed by a CFRunLoopTimer that fires regardless of run-loop
+    // state, so we use it to drain the pending-event queue ourselves. Armed once
+    // a rebuild has happened and left running for the session; the
+    // HasPendingEvents() guard keeps the idle cost negligible.
+    wxTimer         m_macos_pending_pump_timer;
+    void            on_macos_pending_pump(wxTimerEvent& evt);
+#endif
 #ifdef __linux__
     bool            m_opengl_initialized{ false };
 #endif
@@ -346,6 +361,7 @@ private:
     wgtFilaManagerCloudClient*      m_fila_manager_cloud_client { nullptr };
     wgtFilaManagerCloudSync*        m_fila_manager_cloud_sync   { nullptr };
     wgtFilaManagerCloudDispatcher*  m_fila_manager_cloud_disp   { nullptr };
+    bool                            m_disable_fila_manager      { false };
     std::vector<std::string> need_delete_presets;   // store setting ids of preset
     std::vector<bool> m_create_preset_blocked { false, false, false, false, false, false }; // excceed limit
     bool m_networking_compatible { false };
@@ -409,6 +425,7 @@ public:
     wgtFilaManagerCloudClient*      fila_manager_cloud_client() { return m_fila_manager_cloud_client; }
     wgtFilaManagerCloudSync*        fila_manager_cloud_sync()   { return m_fila_manager_cloud_sync; }
     wgtFilaManagerCloudDispatcher*  fila_manager_cloud_disp()   { return m_fila_manager_cloud_disp; }
+    bool                            is_fila_manager_disabled() const { return m_disable_fila_manager; }
 #if !QDT_RELEASE_TO_PUBLIC
     void set_fila_debug_sink(std::function<void(const nlohmann::json&)> sink)
     {
@@ -507,6 +524,8 @@ public:
 //y76
     std::vector<NetDevice> get_devices();
     void                set_devices(std::vector<NetDevice> devices);
+    //y83
+    bool                is_selected_device_support_p2p();
 #endif
 
 
@@ -543,6 +562,10 @@ public:
     //cj_5 online_login: 1 = manual (show sync dialog), 0 = auto (skip dialog).
     void            get_login_info(int online_login = 0);
     bool            is_user_login();
+
+    //y83
+    void            set_login_info();
+
     // y21
     bool            is_QIDILogin() { return m_qidi_login; };
     //y77

@@ -89,6 +89,11 @@
 #include <wx/utils.h>
 //cj_3
 #include "DownloadManager.hpp"
+
+#if QDT_RELEASE_TO_PUBLIC
+#include "../QIDI/P2PManager.hpp"
+#endif
+
 namespace Slic3r { namespace GUI {
 
 namespace {
@@ -1465,7 +1470,7 @@ void PrintingTaskPanel::create_panel(wxWindow *parent)
     m_printing_stage_underline->SetBackgroundColour(wxColour(146, 146, 146));
     m_printing_stage_underline->Hide();
 
-    m_printing_stage_value = new wxStaticText(m_printing_stage_panel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT | wxST_ELLIPSIZE_END);
+    m_printing_stage_value = new wxStaticText(m_printing_stage_panel, wxID_ANY, "11111", wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT | wxST_ELLIPSIZE_END);
     m_printing_stage_value->Wrap(-1);
     m_printing_stage_value->SetMaxSize(wxSize(FromDIP(800), -1));
 #ifdef __WXOSX_MAC__
@@ -1861,6 +1866,7 @@ void PrintingTaskPanel::show_error_msg(wxString msg)
     m_staticline->Show();
     m_panel_error_txt->Show();
     m_error_text->SetLabel(msg);
+    Layout();
 }
 
 void PrintingTaskPanel::reset_printing_value()
@@ -1959,7 +1965,7 @@ void PrintingTaskPanel::update_subtask_name(wxString name)
 
 void PrintingTaskPanel::update_stage_value(wxString stage, int val)
 {
-    m_printing_stage_value->SetLabelText(stage);
+	m_printing_stage_value->SetLabelText(_L(stage));
     m_gauge_progress->SetValue(val);
 }
 
@@ -2354,7 +2360,9 @@ wxBoxSizer *StatusBasePanel::create_monitoring_page()
     wxBoxSizer *sizer = new wxBoxSizer(wxVERTICAL);
 
     m_panel_monitoring_title = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(-1, PAGE_TITLE_HEIGHT), wxTAB_TRAVERSAL);
-    m_panel_monitoring_title->SetBackgroundColour(StateColor::themed_surface_f8(wxGetApp().dark_mode()));
+    //cj_5 Match HMSDialog page_bg.
+    m_panel_monitoring_title->SetBackgroundColour(
+        wxGetApp().dark_mode() ? wxColour(45, 45, 49) : wxColour(245, 245, 248));
 
     wxBoxSizer *bSizer_monitoring_title;
     bSizer_monitoring_title = new wxBoxSizer(wxHORIZONTAL);
@@ -2421,6 +2429,27 @@ wxBoxSizer *StatusBasePanel::create_monitoring_page()
     m_setting_button->Hide();
 
     bSizer_monitoring_title->Add(m_bitmap_sdcard_img, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
+
+    //cj_5 HMS notification button ¡ª inserted after visible sdcard button, before hidden items.
+    m_hms_btn = new HMSIndicatorButton(m_panel_monitoring_title);
+    m_hms_btn->SetToolTip(_L("QDC Notifications"));
+    m_hms_btn->set_has_errors(false);
+    m_hms_btn->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent&) {
+        //cj_5 Look up machine type for wiki URL
+        std::string machine_type;
+        if (auto* qdsdev = wxGetApp().qdsdevmanager) {
+            if (auto dev = qdsdev->getDevice(m_hms_device_id))
+                machine_type = dev->m_type;
+        }
+        auto* dlg = new HMSDialog(wxGetApp().mainframe, m_hms_items, machine_type);
+        m_hms_dlg = dlg;
+        dlg->ShowModal();
+        m_hms_dlg = nullptr;
+        dlg->Destroy();
+        //cj_5 Mark all as read after dialog closes.
+        clear_hms_unread();
+    });
+
     bSizer_monitoring_title->Add(m_bitmap_timelapse_img, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
     bSizer_monitoring_title->Add(m_bitmap_recording_img, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
     bSizer_monitoring_title->Add(m_bitmap_vcamera_img, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
@@ -2428,6 +2457,7 @@ wxBoxSizer *StatusBasePanel::create_monitoring_page()
     bSizer_monitoring_title->Add(m_setting_button, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
 
     bSizer_monitoring_title->Add(FromDIP(13), 0, 0);
+    bSizer_monitoring_title->Add(m_hms_btn, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
 
     m_panel_monitoring_title->SetSizer(bSizer_monitoring_title);
     m_panel_monitoring_title->Layout();
@@ -3806,7 +3836,7 @@ StatusPanel::~StatusPanel()
 }
 
 //cj_1
-void StatusPanel::update_progress(std::string fileName, std::string layer, std::string totalTime, std::string weight, float remainingTime, float progress)
+void StatusPanel::update_progress(std::string fileName, std::string layer, std::string totalTime, std::string weight, float remainingTime, float progress, std::string msg)
 {
     //return;
     if (m_project_task_panel == nullptr) {
@@ -3834,7 +3864,7 @@ void StatusPanel::update_progress(std::string fileName, std::string layer, std::
     else {
         m_project_task_panel->update_progress_percent("N/A", "");
     }
-	m_project_task_panel->update_stage_value("", (int)(progress * 100));
+	m_project_task_panel->update_stage_value(msg, (int)(progress * 100));
     m_project_task_panel->show_priting_use_info(true, totalTime,weight);
     m_project_task_panel->Layout();
     
@@ -3891,17 +3921,102 @@ void StatusPanel::update_thumbnail(std::string url)
 
 	m_request_url = wxString(url);
     if (!m_request_url.IsEmpty()) {
-        wxImage                               img;
-        std::map<wxString, wxImage>::iterator it = img_list.find(m_request_url);
-        if (it != img_list.end()) {
-            img = it->second;
-            wxImage resize_img = img.Scale(m_project_task_panel->get_bitmap_thumbnail()->GetSize().x, m_project_task_panel->get_bitmap_thumbnail()->GetSize().y);
-            m_project_task_panel->set_thumbnail_img(resize_img, "");
+        //y83
+        bool get_msg_from_p2p = false;
+        auto dev_set = wxGetApp().qdsdevmanager->getSelectedDevice();
+        if(dev_set->active_p2p){
+            auto &p2p = P2PManager::instance();
+
+            std::mutex              xferMutex;
+            std::condition_variable xferCV;
+            bool                    xferDone   = false;
+            bool                    xferCancel = false;
+            std::vector<char>       xferBuf;
+            int fileToken = p2p.onFile([&](uint8_t type, int64_t transferId, int32_t sequence,
+                                            const uint8_t *data, size_t len) {
+                if (type == 0x20) { // FILE_BEGIN
+                    std::lock_guard<std::mutex> lock(xferMutex);
+                    xferBuf.clear();
+                    xferDone   = false;
+                    xferCancel = false;
+                } else if (type == 0x21) { // FILE_CHUNK
+                    std::lock_guard<std::mutex> lock(xferMutex);
+                    xferBuf.insert(xferBuf.end(), data, data + len);
+                } else if (type == 0x22) { // FILE_END
+                    {
+                        std::lock_guard<std::mutex> lock(xferMutex);
+                        xferDone = true;
+                    }
+                    xferCV.notify_one();
+                } else if (type == 0x23) { // FILE_CANCEL
+                    {
+                        std::lock_guard<std::mutex> lock(xferMutex);
+                        xferCancel = true;
+                        xferBuf.clear();
+                    }
+                    xferCV.notify_one();
+                }
+            });
+
+            {
+                std::lock_guard<std::mutex> lock(xferMutex);
+                xferBuf.clear();
+                xferDone   = false;
+                xferCancel = false;
+            }
+
+            json imgReq;
+            imgReq["method"]              = "request_model_image";
+            imgReq["params"]["file_path"]   = dev_set->m_print_png_path_for_p2p;
+            imgReq["params"]["plate_index"] = dev_set->m_print_png_plate_index;
+
+            int64_t imgReqId = (int64_t)(std::chrono::system_clock::now().time_since_epoch().count());
+            p2p.sendTextCommand(imgReq.dump(), imgReqId);
+            
+            std::vector<char> received;
+            {
+                std::unique_lock<std::mutex> lock(xferMutex);
+                bool ok = xferCV.wait_for(lock, std::chrono::seconds(15),
+                                            [&] { return xferDone || xferCancel; });
+                if (ok && xferDone && !xferBuf.empty()) {
+                    received = std::move(xferBuf);
+                }
+            }     
+            std::vector<char> receice_png_msg;
+            if (!received.empty()) {
+                receice_png_msg = std::move(received);
+            } else {
+                BOOST_LOG_TRIVIAL(warning) << "QDSDeviceManager: thumbnail fetch "
+                                            << "failed for " << dev_set->m_print_png_path_for_p2p
+                                            << " plate=" << dev_set->m_print_png_plate_index;
+            }
+            p2p.off(fileToken);
+
+            wxMemoryInputStream stream(receice_png_msg.data(), receice_png_msg.size());
+            wxImage image(stream, wxBITMAP_TYPE_ANY);
+            if(image.IsOk()){
+                wxImage resize_img = image.Scale(m_project_task_panel->get_bitmap_thumbnail()->GetSize().x, m_project_task_panel->get_bitmap_thumbnail()->GetSize().y);
+                m_project_task_panel->set_thumbnail_img(resize_img, "");
+                get_msg_from_p2p = true;
+            } else {
+                get_msg_from_p2p = false;
+            }
+
         }
-        else {
-            web_request = wxWebSession::GetDefault().CreateRequest(this, m_request_url);
-            web_request.Start();
-            m_start_loading_thumbnail = false;
+
+        if(!get_msg_from_p2p){
+            wxImage                               img;
+            std::map<wxString, wxImage>::iterator it = img_list.find(m_request_url);
+            if (it != img_list.end()) {
+                img = it->second;
+                wxImage resize_img = img.Scale(m_project_task_panel->get_bitmap_thumbnail()->GetSize().x, m_project_task_panel->get_bitmap_thumbnail()->GetSize().y);
+                m_project_task_panel->set_thumbnail_img(resize_img, "");
+            }
+            else {
+                web_request = wxWebSession::GetDefault().CreateRequest(this, m_request_url);
+                web_request.Start();
+                m_start_loading_thumbnail = false;
+            }
         }
     }
     else {
@@ -4218,12 +4333,13 @@ void StatusPanel::error_info_reset() { m_project_task_panel->error_info_reset();
 
 void StatusPanel::on_print_error_clean(wxCommandEvent &event)
 {
+    //y83
     error_info_reset();
-    skip_print_error = obj->print_error;
-    char buf[32];
-    ::sprintf(buf, "%08X", skip_print_error);
-    BOOST_LOG_TRIVIAL(info) << "skip_print_error: " << buf;
-    before_error_code = obj->print_error;
+    //skip_print_error = obj->print_error;
+    //char buf[32];
+    //::sprintf(buf, "%08X", skip_print_error);
+    //BOOST_LOG_TRIVIAL(info) << "skip_print_error: " << buf;
+    //before_error_code = obj->print_error;
 }
 
 void StatusPanel::on_webrequest_state(wxWebRequestEvent &evt)
@@ -4422,8 +4538,15 @@ void StatusPanel::show_recenter_dialog()
     } 
 }
 
-void StatusPanel::update_error_message()
+//y83
+void StatusPanel::update_error_message(std::string qds_error_msg)
 {
+    if(!qds_error_msg.empty()){
+        wxString errormsg = from_u8(qds_error_msg);
+        m_project_task_panel->show_error_msg(errormsg);
+    }
+
+
     if (!obj) return;
 
     static int last_error = -1;
@@ -4736,7 +4859,6 @@ void StatusPanel::update_AMS_humidity(int amsId, int humidity)
 void StatusPanel::request_refresh_file_lists()
 {
     clear_model_items_only();
-    clear_timelapse_file_list();
     sync_model_file_toolbar(0);
 
     QDSDeviceManager* mgr = wxGetApp().qdsdevmanager;
@@ -4756,6 +4878,7 @@ void StatusPanel::clear_model_items_only()
     if (m_model_panel) {
         m_model_panel->ClearAll();
     }
+    clear_timelapse_file_list();
     Layout();
 }
 
@@ -4768,14 +4891,15 @@ void StatusPanel::clear_model_item()
     Layout();
 }
 
-void StatusPanel::add_model_item(std::string modelName, std::string weight, std::string preTime, std::string imgPath, int imgSize)
+//y83
+void StatusPanel::add_model_item(std::string modelName, std::string weight, std::string preTime, std::string imgPath, int imgSize, std::string file_path)
 {
 	//cj_3
 	wxBitmap sampleImage = ScalableBitmap(this, "monitor_placeholder", 18).bmp();
-	m_model_panel->AddItem(from_u8(modelName), sampleImage, std::atoi(weight.c_str()), preTime);    
-    m_model_panel->Refresh();
+	m_model_panel->AddItem(from_u8(modelName), sampleImage, std::atoi(weight.c_str()), preTime, file_path);
+    //cj_5 Per-row Refresh moved to flush_model_batch() for batch loads.
 
-    if (imgPath.empty())
+    if(imgPath.empty())
         return;
 
     const std::string file_name = modelName;
@@ -4788,6 +4912,38 @@ void StatusPanel::add_model_item(std::string modelName, std::string weight, std:
             this->refreshThumbnailItem(result.file_name, result.png_data);
         }
     );
+}
+
+void StatusPanel::freeze_model_list()
+{
+    //cj_5 Prevent wxBoxSizer from recalculating layout on every Add.
+    if (m_model_panel) {
+        m_model_panel->Freeze();
+    }
+}
+
+void StatusPanel::flush_model_batch()
+{
+    if (m_model_panel) {
+        m_model_panel->Thaw();
+        m_model_panel->FlushBatchAdd();
+        m_model_panel->Refresh();
+    }
+}
+
+void StatusPanel::freeze_timelapse_list()
+{
+    if (m_timelapse_host && m_timelapse_host->GetFileList()) {
+        m_timelapse_host->GetFileList()->Freeze();
+    }
+}
+
+void StatusPanel::flush_timelapse_batch()
+{
+    if (m_timelapse_host && m_timelapse_host->GetFileList()) {
+        m_timelapse_host->GetFileList()->Thaw();
+        m_timelapse_host->GetFileList()->FlushBatchAdd();
+    }
 }
 
 void StatusPanel::refreshThumbnailItem(const std::string& file_name,
@@ -7288,27 +7444,37 @@ void StatusPanel::clear_timelapse_file_list()
     sync_timelapse_file_toolbar(0);
 }
 
-//cj_3
-void StatusPanel::add_timelapse_file_item(const std::string& file_name,
-    const std::string& file_size,
-    const std::string& modified_time,
-    const std::string& thumb_url)
+//cj_3 y83
+void StatusPanel::add_timelapse_file_item(const TimelapseFileInfo& timelapse_info)
 {
     if (m_timelapse_host == nullptr)
         return;
 	
-    //cj_3
+    //cj_3 y83
     const wxBitmap placeholder = ScalableBitmap(this, "monitor_placeholder", 18).bmp();
     m_timelapse_host->GetFileList()->AddItem(
-        from_u8(file_name),
+        from_u8(timelapse_info.file_name),
         placeholder,
-        from_u8(file_size),
-        from_u8(modified_time));
+        from_u8(timelapse_info.file_size),
+        from_u8(timelapse_info.modified_time));
 
-    if (!thumb_url.empty()) {
+    // Use P2P-fetched thumbnail data if available
+    if (!timelapse_info.thumbnailData.pixels.empty()) {
+        wxMemoryInputStream stream(timelapse_info.thumbnailData.pixels.data(),
+                                   timelapse_info.thumbnailData.pixels.size());
+        wxImage image(stream, wxBITMAP_TYPE_JPEG);
+        if (image.IsOk()) {
+            const int thumb_px = FromDIP(18);
+            wxImage resized = image.Scale(thumb_px, thumb_px, wxIMAGE_QUALITY_HIGH);
+            m_timelapse_host->GetFileList()->UpdateItemThumbnail(from_u8(timelapse_info.file_name), wxBitmap(resized));
+            m_timelapse_host->GetFileList()->Refresh();
+            BOOST_LOG_TRIVIAL(trace) << "StatusPanel: use P2P timelapse thumbnail for "
+                                     << timelapse_info.file_name;
+        }
+    } else if (!timelapse_info.thumb_url.empty()) {
         DownloadManager::getInstance().downloadThumbnail(
-            thumb_url,
-            file_name,
+            timelapse_info.thumb_url,
+            timelapse_info.file_name,
             [this](ThumbnailResult result) {
                 if (!result.success || m_timelapse_host == nullptr)
                     return;
@@ -8417,6 +8583,39 @@ void RectTextPanel::OnPaint(wxPaintEvent &event)
     dc.DrawRoundedRectangle(size, FromDIP(4));
     dc.SetTextForeground(wxColour(255, 255, 255));
     dc.DrawText(text, wxPoint(FromDIP(2), FromDIP(2)));
+}
+
+//cj_5
+void StatusBasePanel::update_hms_data(const std::vector<QDSDeviceErrorData>& items, const std::string& device_id)
+{
+    // Device changed ¡ª reset state
+    if (m_hms_device_id != device_id) {
+        m_hms_device_id = device_id;
+        m_hms_items.clear();
+        m_hms_has_unread = false;
+    }
+
+    // New errors appeared ¡ª mark as unread
+    if (items.size() > m_hms_items.size())
+        m_hms_has_unread = true;
+
+    m_hms_items = items;
+
+    if (m_hms_btn)
+        m_hms_btn->set_has_errors(m_hms_has_unread && !m_hms_items.empty());
+
+    //cj_5 Notify open HMS dialog to refresh when new data arrives
+    if (m_hms_dlg)
+        m_hms_dlg->notify_new_data();
+
+    
+}
+
+void StatusBasePanel::clear_hms_unread()
+{
+    m_hms_has_unread = false;
+    if (m_hms_btn)
+        m_hms_btn->set_has_errors(false);
 }
 
 }} // namespace Slic3r::GUI
