@@ -2837,6 +2837,7 @@ void QDSPrinterWebView::ExecuteP2PDownload(
     const std::string& localPath,
     const std::string& fileName)
 {
+#if QDT_RELEASE_TO_PUBLIC
     auto& p2p = P2PManager::instance();
     
     if(!p2p.isConnected())
@@ -3015,6 +3016,7 @@ void QDSPrinterWebView::ExecuteP2PDownload(
         BOOST_LOG_TRIVIAL(error) << "P2P download: write exception: " << e.what();
         EndStatusModelFileDownload(fileName, true);
     }
+#endif
 }
 
 //cj_4
@@ -4028,6 +4030,7 @@ void QDSPrinterWebView::OnScroll(wxScrollWinEvent& event)
 	 return path.substr(startPos, endPos - startPos);
  }
 
+#if QDT_RELEASE_TO_PUBLIC
  void QDSPrinterWebView::onSSEMessageHandle(const std::string& event, const std::string& data)
  {
 	 //cj_4 Bail out if we're being destroyed — SSE thread may still deliver messages
@@ -4264,6 +4267,7 @@ void QDSPrinterWebView::OnScroll(wxScrollWinEvent& event)
 
 	 }
  }
+#endif
 
 //y74
 void QDSPrinterWebView::InitDeviceManager(){
@@ -4592,11 +4596,6 @@ void QDSPrinterWebView::ApplyDeviceDataToStatusPanel(const std::string& device_i
                 m_device_error_dlg = new DeviceErrorDialog(nullptr, this);
                 m_device_error_dlg->set_show_msg(from_u8(err.error_message));
                 m_device_error_dlg->show_error(from_u8(err.error_code));
-                if (err.error_type == 0) {
-                    // Pop once, then drop the transient message so it does not
-                    // re-popup on subsequent status updates.
-                    device->m_errorData.erase(device->m_errorData.begin() + i);
-                }
                 break;
             }
         }

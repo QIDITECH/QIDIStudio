@@ -3925,6 +3925,7 @@ void StatusPanel::update_thumbnail(std::string url)
         bool get_msg_from_p2p = false;
         auto dev_set = wxGetApp().qdsdevmanager->getSelectedDevice();
         if(dev_set->active_p2p){
+#if QDT_RELEASE_TO_PUBLIC
             auto &p2p = P2PManager::instance();
 
             std::mutex              xferMutex;
@@ -4001,7 +4002,7 @@ void StatusPanel::update_thumbnail(std::string url)
             } else {
                 get_msg_from_p2p = false;
             }
-
+#endif
         }
 
         if(!get_msg_from_p2p){

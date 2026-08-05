@@ -185,8 +185,6 @@ void HMSDialog::refresh_ui()
     //y83
     for (size_t idx = m_items.size(); idx-- > 0; ) {
         const auto& item = m_items[idx];
-        if(item.error_type == 0)
-            continue;
         int level = item.error_type;
 
         auto* row_panel = new wxPanel(card);

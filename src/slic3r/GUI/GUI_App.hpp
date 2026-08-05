@@ -453,7 +453,7 @@ public:
     bool     show_3d_navigator() const { return app_config->get_bool("show_3d_navigator"); }
     void     toggle_show_3d_navigator() const { app_config->set_bool("show_3d_navigator", !show_3d_navigator()); }
 
-    // cj_1 判断登录后是link还是maker
+    // cj_1
     bool is_link_connect() { return app_config->get("login_method") == "Link"; }
 
     wxString get_inf_dialog_contect () {return m_info_dialog_content;};
@@ -524,9 +524,9 @@ public:
 //y76
     std::vector<NetDevice> get_devices();
     void                set_devices(std::vector<NetDevice> devices);
+#endif;
     //y83
     bool                is_selected_device_support_p2p();
-#endif
 
 
     const wxFont&   small_font()            { return m_small_font; }

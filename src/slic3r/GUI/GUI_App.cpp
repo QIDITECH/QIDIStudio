@@ -1508,16 +1508,16 @@ void GUI_App::set_devices(std::vector<NetDevice> devices)
 {
     qdsdevmanager->setNetDevices(devices);
 }
+#endif
 
 //y83
-bool GUI_App::is_selected_device_support_p2p(){
+bool GUI_App::is_selected_device_support_p2p() {
     auto qds_set = qdsdevmanager->getSelectedDevice();
-    if(qds_set)
+    if (qds_set)
         return qds_set->active_p2p;
     return false;
 }
 
-#endif
 std::string GUI_App::get_http_url(std::string country_code, std::string path)
 {
     std::string url;

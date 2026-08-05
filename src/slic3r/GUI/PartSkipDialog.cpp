@@ -486,6 +486,7 @@ void PartSkipDialog::DownloadPartsFile()
 
 //y83
 void PartSkipDialog::DownloadOneFileViaP2P(const std::string &remote_name, const std::string &local_path){
+#if QDT_RELEASE_TO_PUBLIC
     auto& p2p = P2PManager::instance();
     if(!p2p.isConnected()){
         m_download_failed.store(true);
@@ -642,6 +643,7 @@ void PartSkipDialog::DownloadOneFileViaP2P(const std::string &remote_name, const
     if (left == 0) {
         CallAfter([this] { OnAllDownloadsFinished(); });
     }
+#endif
 }
 
 //cj_4

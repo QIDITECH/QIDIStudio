@@ -783,12 +783,8 @@ void VideoPanel::PlayThread()
         bool support_p2p = qds_dev_obj->active_p2p;
 
         if(support_p2p){
-            // ============================================================
-            // 方式一：P2P 接收视频流
-            // ============================================================
-
-            // Receive VIDEO_FRAME (HTTP headers already stripped by P2PManager,
-            // but the 12-byte ptsUs+flags header is still present)
+#if QDT_RELEASE_TO_PUBLIC
+            // get from p2p
             auto &p2p = P2PManager::instance();
             int videoToken = p2p.onVideo([this, &shouldContinue](uint8_t type, int64_t,
                                           int32_t, const uint8_t *data, size_t len) {
@@ -867,6 +863,7 @@ void VideoPanel::PlayThread()
             }
             p2p.off(videoToken);
             p2p.off(stateToken);
+#endif
             m_frame = m_idle_image;
         } else {
             // ============================================================

@@ -1037,6 +1037,7 @@ void QDSDevice::updateFilamentConfig()
         };
 
         if (active_p2p) {
+#if QDT_RELEASE_TO_PUBLIC
             auto& qds_p2p = P2PManager::instance();
             if (!qds_p2p.isConnected())
                 return;
@@ -1087,10 +1088,11 @@ void QDSDevice::updateFilamentConfig()
                 json jsonBody_ = json::parse(resultBody);
                 parseFilamentJson(jsonBody_);
             }
-
+#endif
         }
         else {
             if(is_net_device){
+#if QDT_RELEASE_TO_PUBLIC
                 HttpData httpData;
                 json bodyJson;
                 bodyJson["serialNumber"] = m_id;
@@ -1120,6 +1122,7 @@ void QDSDevice::updateFilamentConfig()
                 else {
                     BOOST_LOG_TRIVIAL(error) << "http error" << isSucceed << "   " << "httpDatabody:  " <<httpData.body <<  "   " << __FUNCTION__;
                 }
+#endif
             } else {
                 std::string url = m_frp_url + "/api/qidiclient/config/offical_filament_list";
                 Slic3r::Http httpPost = Slic3r::Http::get(url);
@@ -1313,6 +1316,9 @@ void QDSDevice::updateErrorDataSingle(json& jsonData, std::string event_value)
 	parseJsonForPath(jsonData, errorData.prossess_message, "/prossess_message");
 
     std::lock_guard<std::mutex> lock(m_errorData_mtx);
+
+    if(errorData.error_type == 0)
+        return;
 
     if (errorData.event_value.empty() || errorData.event_value == "add") {
         m_errorData.push_back(errorData);
@@ -2820,6 +2826,7 @@ void QDSDeviceManager::upBoxInfoToBoxMsg(std::shared_ptr<QDSDevice>& device){
 //y83
 bool QDSDeviceManager::getFileInfoViaP2P()
 {
+#if QDT_RELEASE_TO_PUBLIC
     auto &p2p = P2PManager::instance();
 
     // ── Step 1: fetch file list (text command) ──
@@ -2986,11 +2993,13 @@ bool QDSDeviceManager::getFileInfoViaP2P()
     }
 
     p2p.off(textToken);
+#endif
     return true;
 }
 
 //y83
 bool QDSDeviceManager::getTimelapseInfoP2P(){
+#if QDT_RELEASE_TO_PUBLIC
     auto &p2p = P2PManager::instance();
 
     // ── Step 1: fetch timelapse list (text command) ──
@@ -3165,6 +3174,7 @@ bool QDSDeviceManager::getTimelapseInfoP2P(){
     }
 
     p2p.off(textToken);
+#endif
     return true;
 }
 

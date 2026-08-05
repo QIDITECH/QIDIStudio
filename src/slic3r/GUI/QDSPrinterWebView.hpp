@@ -161,6 +161,7 @@ public:
     void ShowLocalPrinterButton();
 #if QDT_RELEASE_TO_PUBLIC
     void AddNetButton(const NetDevice device);
+    void onSSEMessageHandle(const std::string& event, const std::string& data);
 #endif
 
     void DeleteNetButton();
@@ -189,7 +190,6 @@ public:
     //y74
     QDSDeviceManager* m_device_manager;
 
-    void onSSEMessageHandle(const std::string& event, const std::string& data);
     void onTaskDispatchResult(wxCommandEvent& event);
     //cj_3
     void onModelFileListCommand(wxCommandEvent& event);
