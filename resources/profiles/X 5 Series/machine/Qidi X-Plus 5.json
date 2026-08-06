@@ -1,0 +1,13 @@
+{
+    "type": "machine_model",
+    "name": "X-Plus 5",
+    "model_id": "X-Plus 5",
+    "nozzle_diameter": "0.4;0.2;0.6;0.8",
+    "machine_tech": "FFF",
+    "family": "Qidi",
+    "bed_model": "X-Plus 5_bed.stl",
+    "bed_texture": "X-Plus 5_bed.svg",
+    "hotend_model": "X-Series_gen3_hotend.stl",
+    "image_bed_type": "X-Plus 5",
+	"default_materials": "Generic ABS @Qidi X-Plus 5 0.4 nozzle;Generic PLA @Qidi X-Plus 5 0.4 nozzle;QIDI ABS Odorless @Qidi X-Plus 5 0.4 nozzle;QIDI ABS Rapido @Qidi X-Plus 5 0.4 nozzle;QIDI PLA Rapido @Qidi X-Plus 5 0.4 nozzle;QIDI PLA Rapido Matte @Qidi X-Plus 5 0.4 nozzle;QIDI PLA-CF @Qidi X-Plus 5 0.4 nozzle;Generic PLA Silk @Qidi X-Plus 5 0.4 nozzle;QIDI PLA Silk @Qidi X-Plus 5 0.4 nozzle;QIDI ASA @Qidi X-Plus 5 0.4 nozzle;QIDI PETG Basic @Qidi X-Plus 5 0.4 nozzle;QIDI PETG Rapido @Qidi X-Plus 5 0.4 nozzle;QIDI PETG Tough @Qidi X-Plus 5 0.4 nozzle;QIDI PETG Translucent @Qidi X-Plus 5 0.4 nozzle;QIDI PLA Basic @Qidi X-Plus 5 0.4 nozzle;QIDI PLA Matte Basic @Qidi X-Plus 5 0.4 nozzle;Generic PETG @Qidi X-Plus 5 0.4 nozzle"
+}

@@ -5,14 +5,21 @@ var m_ForUModelList=null;
 
 var m_MakerlabList=null;
 var m_PrintHistoryList=null;
+//y83
+var m_Region = GetQueryString("region");
 
 function OnHomeInit()
 {
 	//-----Official-----
     TranslatePage();
 
+	//y83 Hide "Online Models" sections in mainland China
+	if (m_Region === "CN") {
+		$('#HotModelArea').hide();
+	}
+
 	SendMsg_GetRecentFile();
-	SendMsg_GetStaffPick();
+	SendMsg_GetQidiModelList();
     SendMsg_GetMakerlabList();
 	SendMsg_GetPrintHistory();	    
 	
@@ -170,6 +177,9 @@ function HandleStudio( pVal )
 	}
 	else if( strCmd=="modelmall_model_advise_get")
 	{
+		//y83 Do not show Online Models in mainland China
+		if (m_Region === "CN") return;
+
 		//alert('hot');
 		if( m_HotModelList!=null && pVal['hits'].length>0 )
 		{
@@ -185,6 +195,9 @@ function HandleStudio( pVal )
 	}
 	else if( strCmd=="modelmall_model_customized_get")
 	{
+		//y83 Do not show Online Models in mainland China
+		if (m_Region === "CN") return;
+
 		//alert('For U');	
 		if( m_ForUModelList!=null && pVal['hits'].length>0 )
 		{
@@ -197,6 +210,32 @@ function HandleStudio( pVal )
 		
 	    m_ForUModelList=pVal['hits'];		
 		Show4UPick( m_ForUModelList );
+	}
+	else if( strCmd=='qidi_model_list_get')
+	{
+		//y83 Do not show Online Models in mainland China
+		if (m_Region === "CN") return;
+
+		//cj_5 QIDI Maker model list
+		let records = pVal['data'] && pVal['data']['records'] ? pVal['data']['records'] : null;
+		if (!records || records.length == 0)
+		{
+			$('#HotModelList').html('');
+			$('#HotModelArea').hide();
+			return;
+		}
+
+		if( m_HotModelList!=null && records.length>0 )
+		{
+			let SS1=JSON.stringify(records);
+			let SS2=JSON.stringify(m_HotModelList);
+
+			//if( SS1==SS2 )
+				//return;
+		}
+
+		m_HotModelList=records;
+		ShowQidiModelList( m_HotModelList );
 	}
 	else if(strCmd=='homepage_makerlab_get')
 	{			
@@ -537,6 +576,16 @@ function BeginDownloadNetworkPlugin()
 	SendWXMessage( JSON.stringify(tSend) );		
 }
 
+// cj_5: Request QIDI Maker model list from C++ side
+function SendMsg_GetQidiModelList()
+{
+	var tSend={};
+	tSend["sequence_id"]=Math.round(new Date() / 1000);
+	tSend["command"]="qidi_model_list_get";
+	
+	SendWXMessage( JSON.stringify(tSend) );
+}
+
 function SendMsg_GetMakerlabList()
 {
 	var tSend={};
@@ -666,15 +715,10 @@ function InitStaffPick()
 
 }
 
+// cj_5: Replaced by C++-triggered QIDI model list fetch
 function SendMsg_GetStaffPick()
 {
-	var tSend={};
-	tSend['sequence_id']=Math.round(new Date() / 1000);
-	tSend['command']="modelmall_model_advise_get";
-	
-	SendWXMessage( JSON.stringify(tSend) );
-	
-    setTimeout("SendMsg_GetStaffPick()",3600*1000*6);
+	// No-op: QIDI model list is now fetched via SendQidiModelList() on C++ side
 }
 
 function ExNumber( number )
@@ -730,7 +774,7 @@ function ShowStaffPick( ModelList )
 		NumZan=ExNumber(NumZan);
 		NumDownload=ExNumber(NumDownload);
 			
-		strPickHtml+='			<div class="HotModelPiece GuideBlock" onClick="OpenOneStaffPickModel('+ModelID+')">'+
+		strPickHtml+='			<div class="HotModelPiece GuideBlock" onClick="OpenOneStaffPickModel(\''+ModelID+'\')">'+
 				'<div class="HotModel_PrevBlock">'+
 				'	<img class="HotModel_PrevImg" src="'+ModelCover+'" />'+
 				'</div>'+
@@ -750,6 +794,65 @@ function ShowStaffPick( ModelList )
 				'  </div>'+
 				'</div>'+
 			    '</div>';					
+	}
+
+	$('#HotModelList').html(strPickHtml);
+	InitStaffPick();
+	$('#HotModelArea').show();
+	$('#HotModel_Search_Bar').css('display','flex');
+}
+
+// cj_5: Render QIDI Maker model list data
+function ShowQidiModelList( ModelList )
+{
+	let PickTotal=ModelList.length;
+	if(PickTotal==0)
+	{
+		$('#HotModelList').html('');
+		$('#HotModelArea').hide();
+		return;
+	}
+
+	$("#Online_Models_Bar").css('display','flex');
+	$("#ForU_Models_Bar").css('display','none');
+
+	let strPickHtml='';
+	for(let a=0;a<PickTotal;a++)
+	{
+		let OnePickModel=ModelList[a];
+
+		let ModelID=OnePickModel['id'] || '';
+		let ModelName=OnePickModel['modelName'] || '';
+		let ModelCover=OnePickModel['modelPictureWeb'] || '';
+
+		let DesignerName=(OnePickModel['sliceModelUserVO'] && OnePickModel['sliceModelUserVO']['nickname']) ? OnePickModel['sliceModelUserVO']['nickname'] : '';
+		let DesignerAvatar=(OnePickModel['sliceModelUserVO'] && OnePickModel['sliceModelUserVO']['avatar']) ? OnePickModel['sliceModelUserVO']['avatar'] : '';
+
+		let NumZan=OnePickModel['modelUpvote'] || 0;
+		let NumDownload=OnePickModel['modelDownloads'] || 0;
+		NumZan=ExNumber(NumZan);
+		NumDownload=ExNumber(NumDownload);
+
+		strPickHtml+='			<div class="HotModelPiece GuideBlock" onClick="OpenOneStaffPickModel(\''+ModelID+'\')">'+
+				'<div class="HotModel_PrevBlock">'+
+				'	<img class="HotModel_PrevImg" src="'+ModelCover+'" />'+
+				'</div>'+
+				'<div class="HotModel_Designer_Info">'+
+				'  <div class="HotModel_Author_HeadIcon">'+
+				'    <img src="'+DesignerAvatar+'" />'+
+				'  </div>'+
+				'  <div class="HotModel_Right_1">'+
+				'    <div class="HotModel_Name TextS1">'+ModelName+'</div>'+
+				'    <div class="HotModel_Right_1_2">'+
+				'      <div class="HotModel_Author_Name TextS2">'+DesignerName+'</div>'+
+				'      <div class="HotModel_click_info TextS2">'+
+				'        <div class="Model_Click_Number"><img src="img/zan.svg"><span>'+NumZan+'</span></div>'+
+				'        <div class="Model_Click_Number"><img src="img/xia.svg"><span>'+NumDownload+'</span></div>'+
+			    '		  </div>'+
+				'    </div>'+
+				'  </div>'+
+				'</div>'+
+			    '</div>';
 	}
 
 	$('#HotModelList').html(strPickHtml);
@@ -789,7 +892,7 @@ function Show4UPick( ModelList )
 		NumZan=ExNumber(NumZan);
 		NumDownload=ExNumber(NumDownload);
 		
-		strPickHtml+='			<div class="HotModelPiece GuideBlock" onClick="OpenOneStaffPickModel('+ModelID+')">'+
+		strPickHtml+='			<div class="HotModelPiece GuideBlock" onClick="OpenOneStaffPickModel(\''+ModelID+'\')">'+
 				'<div class="HotModel_PrevBlock">'+
 				'	<img class="HotModel_PrevImg" src="'+ModelCover+'" />'+
 				'</div>'+

@@ -98,25 +98,26 @@
     "skin_infill_depth": "2.0",
     "skin_infill_line_width": "0.45",
     "skirt_distance": "2",
+    "skirt_per_object": "1",
     "skirt_height": "1",
     "skirt_loops": "0",
     "slowdown_start_height": [
         "0"
     ],
     "slowdown_start_speed": [
-        "1000"
+        "500"
     ],
     "slowdown_start_acc": [
-        "100000"
+        "10000"
     ],
     "slowdown_end_height": [
         "400"
     ],
     "slowdown_end_speed": [
-        "1000"
+        "500"
     ],
     "slowdown_end_acc": [
-        "100000"
+        "10000"
     ],
     "small_perimeter_speed": ["50%"],
     "small_perimeter_threshold": ["4"],
@@ -175,7 +176,7 @@
     "travel_speed": ["500"],
     "tree_support_branch_angle": "45",
     "tree_support_branch_diameter": "2",
-    "tree_support_wall_count": "0",
+    "tree_support_wall_count": "-1",
     "vertical_shell_speed": ["80%"],
     "wall_generator": "classic",
     "wall_infill_order": "inner wall/outer wall/infill",

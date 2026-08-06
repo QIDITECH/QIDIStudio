@@ -530,7 +530,7 @@ WebViewPanel::~WebViewPanel()
 void WebViewPanel::ResetWholePage()
 {
     std::string tmp_Region = wxGetApp().app_config->get_country_code();
-    if (tmp_Region == m_Region) return;
+    //if (tmp_Region == m_Region) return;
 
     m_Region = tmp_Region;
 

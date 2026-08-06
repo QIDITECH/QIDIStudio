@@ -2285,7 +2285,7 @@ void GUI_App::init_networking_callbacks()
                     if (sel && sel->get_dev_id() == dev_id) {
                         obj->parse_json("cloud", msg);
                         GUI::wxGetApp().sidebar().load_ams_list(obj);
-                        // STUDIO-18155: AMS ×´Ì¬±ä»¯Çý¶¯ºÄ²ÄÍ¬²½£¨±¾µØ store + ½ÚÁ÷ºóÔÆ¶Ë£©
+                        // STUDIO-18155: AMS ×´Ì¬ï¿½ä»¯ï¿½ï¿½ï¿½ï¿½ï¿½Ä²ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ store + ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶Ë£ï¿½
                         if (auto* sync = wxGetApp().fila_manager_sync()) sync->on_device_update(obj);
                     } else {
                         obj->parse_json("cloud", msg, true);
@@ -2334,7 +2334,7 @@ void GUI_App::init_networking_callbacks()
                     obj->parse_json("lan", msg);
                     if (this->m_device_manager->get_selected_machine() == obj) {
                         GUI::wxGetApp().sidebar().load_ams_list(obj);
-                        // STUDIO-18155: AMS ×´Ì¬±ä»¯Çý¶¯ºÄ²ÄÍ¬²½£¨±¾µØ store + ½ÚÁ÷ºóÔÆ¶Ë£©
+                        // STUDIO-18155: AMS ×´Ì¬ï¿½ä»¯ï¿½ï¿½ï¿½ï¿½ï¿½Ä²ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ store + ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶Ë£ï¿½
                         if (auto* sync = wxGetApp().fila_manager_sync()) sync->on_device_update(obj);
                     }
                 }
@@ -3370,7 +3370,7 @@ bool GUI_App::on_init_inner()
             m_fila_manager_sync = new wgtFilaManagerSync(m_fila_manager_store);
             BOOST_LOG_TRIVIAL(info) << "Filament Manager sync initialized";
         }
-        // Cloud layer ¡ª owns HTTP client, high-level sync and the serialization dispatcher.
+        // Cloud layer ï¿½ï¿½ owns HTTP client, high-level sync and the serialization dispatcher.
         if (!m_fila_manager_cloud_client) {
             m_fila_manager_cloud_client = new wgtFilaManagerCloudClient();
             BOOST_LOG_TRIVIAL(info) << "Filament Manager cloud client initialized";
@@ -4641,6 +4641,7 @@ void GUI_App::get_login_info(int online_login)
         BOOST_LOG_TRIVIAL(info) << "user token msg: login method is " << wxGetApp().app_config->get("login_method") << __FUNCTION__;
 			if (m_qidi_login) {
 				m_pending_manual_login = false;
+                set_login_info();
                 return;
 			}
 		//cj_5 Save old user ID before login overwrites preset_folder, used to decide if we need to clear old presets.
@@ -4726,7 +4727,7 @@ std::string GUI_App::get_current_user_id() const
 bool GUI_App::is_user_login()
 {
 #if QDT_RELEASE_TO_PUBLIC
-    // cj_5 Check token-based login (Maker) ¡ª no longer depends on deprecated m_agent DLL.
+    // cj_5 Check token-based login (Maker) ï¿½ï¿½ no longer depends on deprecated m_agent DLL.
     if (app_config && !app_config->get("user_token").empty())
         return true;
     if (m_agent)
@@ -4829,8 +4830,8 @@ void GUI_App::request_user_logout()
         if (!m_disable_fila_manager && m_fila_manager_cloud_disp) {
             m_fila_manager_cloud_disp->clear_pending();
         }
-        // STUDIO-18155: Çå AMS auto-push ½ÚÁ÷ÕË±¾£¬±ÜÃâÕËºÅ A µÄ cooldown
-        // Ó°ÏìµÇÈëÕËºÅ B ºóµÚÒ»´Î sync ´¥·¢ push µÄÊ±»ú¡£
+        // STUDIO-18155: ï¿½ï¿½ AMS auto-push ï¿½ï¿½ï¿½ï¿½ï¿½Ë±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ëºï¿½ A ï¿½ï¿½ cooldown
+        // Ó°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ëºï¿½ B ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ sync ï¿½ï¿½ï¿½ï¿½ push ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
         if (!m_disable_fila_manager && m_fila_manager_cloud_sync) {
             m_fila_manager_cloud_sync->throttle().clear_all();
         }
@@ -5542,8 +5543,8 @@ void GUI_App::on_user_login_handle(wxCommandEvent &evt)
 //     });
 
     //cj_5 Load user presets and optionally start cloud sync.
-    // online_login=1: manual login ¡ª show sync dialog for first-time config.
-    // online_login=0: auto login  ¡ª load presets silently, sync if already enabled.
+    // online_login=1: manual login ï¿½ï¿½ show sync dialog for first-time config.
+    // online_login=0: auto login  ï¿½ï¿½ load presets silently, sync if already enabled.
     {
         std::string new_user_id = get_current_user_id();
 
@@ -6461,7 +6462,7 @@ void GUI_App::start_sync_user_preset(bool with_progress_dlg)
 		cancelFn = [this, dlg]() {
 			 return is_closing() || dlg->WasCanceled();
 		};
-		finishFn = [this, userid = m_agent->get_user_id(), dlg, t = std::weak_ptr(m_user_sync_token)](bool ok) {
+		finishFn = [this, userid = m_agent->get_user_id(), dlg, t = std::weak_ptr<int>(m_user_sync_token)](bool ok) {
 			CallAfter([=] {
 				dlg->Destroy();
 				if (ok && m_agent && t.lock() == m_user_sync_token && userid == m_agent->get_user_id()) reload_settings();
@@ -6469,7 +6470,7 @@ void GUI_App::start_sync_user_preset(bool with_progress_dlg)
 		};
 	}
 	else {
-		finishFn = [this, userid = m_agent->get_user_id(), t = std::weak_ptr(m_user_sync_token)](bool ok) {
+		finishFn = [this, userid = m_agent->get_user_id(), t = std::weak_ptr<int>(m_user_sync_token)](bool ok) {
 			CallAfter([=] {
 				if (ok && m_agent && t.lock() == m_user_sync_token && userid == m_agent->get_user_id()) reload_settings();
 				});
@@ -6480,7 +6481,7 @@ void GUI_App::start_sync_user_preset(bool with_progress_dlg)
 	}
 
 	m_sync_update_thread = Slic3r::create_thread(
-		[this, progressFn, cancelFn, finishFn, t = std::weak_ptr(m_user_sync_token)]{
+		[this, progressFn, cancelFn, finishFn, t = std::weak_ptr<int>(m_user_sync_token)]{
 			// get setting list, update setting list
 			std::string version = preset_bundle->get_vendor_profile_version(PresetBundle::QDT_BUNDLE).to_string();
 			BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << __LINE__ << " start sync user preset, m_is_closing = " << m_is_closing;

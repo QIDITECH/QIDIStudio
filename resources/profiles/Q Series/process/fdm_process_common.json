@@ -84,6 +84,7 @@
     "print_in_clockwise": "0",
     "print_extruder_id": ["1"],
     "prime_tower_width": "35",
+    "prime_tower_brim_width": "3",
     "print_sequence": "by layer",
     "print_settings_id": "",
     "raft_layers": "0",
@@ -98,28 +99,18 @@
     "skin_infill_depth": "2.0",
     "skin_infill_line_width": "0.45",
     "skirt_distance": "2",
+    "skirt_per_object": "1",
     "skirt_height": "1",
     "skirt_loops": "0",
-    "slowdown_start_height": [
-        "0"
-    ],
-    "slowdown_start_speed": [
-        "1000"
-    ],
-    "slowdown_start_acc": [
-        "100000"
-    ],
-    "slowdown_end_height": [
-        "400"
-    ],
-    "slowdown_end_speed": [
-        "1000"
-    ],
-    "slowdown_end_acc": [
-        "100000"
-    ],
+    "slowdown_start_height": ["0"],
+    "slowdown_start_speed": ["500"],
+    "slowdown_start_acc": ["10000"],
+    "slowdown_end_height": ["400"],
+    "slowdown_end_speed": ["500"],
+    "slowdown_end_acc": ["10000"],
     "small_perimeter_speed": ["50%"],
     "small_perimeter_threshold": ["4"],
+    "sparse_infill_acceleration": ["100%"],
     "smooth_coefficient": "90",
     "smooth_speed_discontinuity_area": "1",
     "sparse_infill_density": "15%",
@@ -170,12 +161,14 @@
     "top_surface_pattern": "monotonicline",
     "top_surface_density": "100",
     "top_surface_speed": ["200"],
+    "top_solid_infill_flow_ratio": ["1"],
     "travel_acceleration": ["10000"],
     "travel_short_distance_acceleration": ["250"],
     "travel_speed": ["500"],
+    "travel_speed_z": ["0"],
     "tree_support_branch_angle": "45",
     "tree_support_branch_diameter": "2",
-    "tree_support_wall_count": "0",
+    "tree_support_wall_count": "-1",
     "vertical_shell_speed": ["80%"],
     "wall_generator": "classic",
     "wall_infill_order": "inner wall/outer wall/infill",

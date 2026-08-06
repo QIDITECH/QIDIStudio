@@ -1,50 +1,29 @@
-var cardData = {
-  "code":"000000",
-  "msg":"operation.successful",
-  "traceId":"71ce01ec38ce414692a88a2fd44e7330.18616.17631185286483121",
-  "data":[
-    {
-      "id":"Max4",
-      "printerType":"X-Max 4",
-      "img":"img/printer_xmax4.png"
-    },
-    {
-      "id":"Q2",
-      "printerType":"Q2",
-      "img":"img/printer_q2.png"
-    },
-    {
-      "id":"X-Plus4",
-      "printerType":"X-Plus 4",
-      "img":"img/printer_xplus4.png"
-    },
-    {
-      "id":"Q1-Pro",
-      "printerType":"Q1 Pro",
-      "img":"img/printer_q1pro.png"
-    },
-    {
-      "id":"X-Max3",
-      "printerType":"X-Max 3",
-      "img":"img/printer_xmax3.png"
-    },
-    {
-      "id": "X-Plus3",
-      "printerType":"X-Plus 3",
-      "img":"img/printer_xplus3.png"
-    },
-    {
-      "id":"X-Smart3",
-      "printerType":"X-Smart 3",
-      "img":"img/printer_xsmart3.png"
-    },
-    {
-      "id":"software/qidi-studio",
-      "printerType":"QIDI Studio",
-      "img":"img/QIDIStudio.png"
-    }
-  ]
-};
+var tabData = [
+  {
+  "id":"1083712862729134080",
+  "name": "Printer",
+  "name_cn": "打印机",
+  "sort": 1,
+  "childList": [
+    {"id": "Plus5", "printerType": "X-Plus 5", "img": "img/printer_xplus5.png", "sort": 8},
+    {"id": "Max4", "printerType": "X-Max 4", "img": "img/printer_xmax4.png", "sort": 7},
+    {"id": "Q2", "printerType": "Q2", "img": "img/printer_q2.png", "sort": 6},
+    {"id": "X-Plus4", "printerType": "X-Plus 4", "img": "img/printer_xplus4.png", "sort": 5},
+    {"id": "Q1-Pro", "printerType": "Q1 Pro", "img": "img/printer_q1pro.png", "sort": 4},
+    {"id": "X-Max3", "printerType": "X-Max 3", "img": "img/printer_xmax3.png", "sort": 3},
+    {"id": "X-Plus3", "printerType": "X-Plus 3", "img": "img/printer_xplus3.png", "sort": 2},
+    {"id": "X-Smart3", "printerType": "X-Smart 3", "img": "img/printer_xsmart3.png", "sort": 1}
+  ]},
+  {
+    "id":"1083712862729134081",
+    "name": "Software",
+    "name_cn": "软件",
+    "sort": 2,
+    "childList": [
+      {"id": "software/qidi-studio", "printerType": "QIDI Studio", "img": "img/QIDIStudio.png", "sort": 0}
+    ]
+  }
+];
 
 // var youtubeData = [
 //   {
@@ -396,7 +375,13 @@ function initAcademyTabs(data) {
   $('#academy_content').scrollLeft(0);
   for (let i = 0; i < currentTabData.length; i++) {
     let activeClass = i === 0 ? 'active' : '';
-    let html = `<div class="academyTab ${activeClass}" data-idx="${i}" onclick="switchAcademyTab(${i})">${currentTabData[i].name}</div>`;
+    let title;
+    if (IsChinese()){
+      title = currentTabData[i].name_cn;
+    } else {
+      title = currentTabData[i].name;
+    }
+    let html = `<div class="academyTab ${activeClass}" data-idx="${i}" onclick="switchAcademyTab(${i})">${title}</div>`;
     $('#academy_tabs').append(html);
   }
   renderAcademyCards(0);
@@ -413,7 +398,7 @@ function switchAcademyTab(idx) {
 }
 
 function renderAcademyCards(idx) {
-  let children = currentTabData[idx].childList.slice().sort((a, b) => a.sort - b.sort);
+  let children = currentTabData[idx].childList.slice().sort((a, b) => b.sort - a.sort);
   for (let i = 0; i < children.length; i++) {
     let item = children[i];
     let html = `<div class="card" data-idx="${i}" onclick="openAcademyUrl('${item.id}')">
@@ -431,29 +416,6 @@ function getAcademyData() {
 	tSend['command']="get_academy_list";
 	SendWXMessage( JSON.stringify(tSend) );
 }
-
-//y80
-function createCardHTML(data) {
-  for (let i = 0; i < data.length; i++) {
-    let html = `<div class="card" data-idx="${i}" onclick="openAcademyUrl('${data[i].id}')">
-                  <img class="cardImg" src="${get_image_url(data[i].printerType)}" />
-                  <div class="cardTitle TextS1">${data[i].printerType}</div>
-                </div>`;
-    $('#academy_Card_Content').append(html)
-  }
-}
-
-function get_image_url(printer_type) {
-  if (!printer_type) return 'img/printer_q2.png';
-  
-  const found = cardData.data.find(item => 
-    item.printerType.toLowerCase() === printer_type.toLowerCase() ||
-    item.id.toLowerCase() === printer_type.toLowerCase()
-  );
-  
-  return found ? found.img : 'img/printer_q2.png';
-}
-//y80
 
 function stepCardSize() {
   const $first = $('#academy_Card_Content').children().first();
@@ -476,16 +438,13 @@ function clampScroll(x) {
 function updateButtons() {
   const x = Math.round($('#academy_content').scrollLeft());
   const max = Math.round(maxScrollLeft());
-
-//y80
-  // if (max <= 0) {
-  //   $prev.hide();
-  //   $next.hide();
-  //   return;
-  // }
-  // $prev.show();
-  // $next.show();
-//y80
+  if (max <= 0) {
+    $prev.hide();
+    $next.hide();
+    return;
+  }
+  $prev.show();
+  $next.show();
   $prev.prop('disabled', x <= 0);
   $next.prop('disabled', x >= max);
 }
@@ -682,9 +641,7 @@ function HandleStudio( pVal )
 	{
 		updateSearchResult(pVal['data']);
 	}else if(strCmd=='academy_list_get') {
-    //y80
-    //initAcademyTabs(cardData['data']);
-    createCardHTML(cardData['data']);
+    initAcademyTabs(tabData);
   }
 }
 

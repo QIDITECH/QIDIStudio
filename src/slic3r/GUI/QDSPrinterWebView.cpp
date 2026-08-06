@@ -526,7 +526,7 @@ void QDSPrinterWebView::TransitionToLocalDevice(DeviceButton* machine_button, co
     bool expert_mode = true;
     std::string device_id = m_cur_deviceId;
     for (auto it = m_device_id_to_button.begin(); it != m_device_id_to_button.end(); ++it) {
-        if (it->second->getIPLabel() == machine_button->getIPLabel()) {
+        if (it->second == machine_button) {
             device_id = it->first;
             auto mode_it = m_device_id_to_expert_mode.find(device_id);
             if (mode_it != m_device_id_to_expert_mode.end()) {
@@ -4178,7 +4178,7 @@ void QDSPrinterWebView::OnScroll(wxScrollWinEvent& event)
                         if (arr.is_array()) {
                             for (const auto &file : arr) {
                                 if (file.contains("filename") && file["filename"].is_string()) {
-                                    std::string jsonFileName = from_u8(file["filename"].get<std::string>()).ToStdString();
+                                    std::string jsonFileName = file["filename"].get<std::string>();
                                     if (jsonFileName == dev_sp->m_print_filename){
                                         if (file.contains("show_filament_weight") && file["show_filament_weight"].is_string())
 										    dev_sp->m_filament_weight = file["show_filament_weight"].get<std::string>();
@@ -4224,12 +4224,8 @@ void QDSPrinterWebView::OnScroll(wxScrollWinEvent& event)
                                     if (!resultJson.is_array()) return;
                                     for (json fileData : resultJson) {
                                         if (!fileData.is_object()) continue;
-                                        if (fileData.contains("filepath") && fileData["filepath"].is_string()) {
-                                            if (fileData["filepath"].get<std::string>().find("/.cache/") != std::string::npos)
-                                                continue;
-                                        } else continue;
                                         if (fileData.contains("filename") && fileData["filename"].is_string()) {
-                                            std::string jsonFileName = from_u8(fileData["filename"].get<std::string>()).ToStdString();
+                                            std::string jsonFileName = fileData["filename"].get<std::string>();
                                             if (jsonFileName != dev_sp->m_print_filename) continue;
                                         } else continue;
                                         if (fileData.contains("show_filament_weight") && fileData["show_filament_weight"].is_string())

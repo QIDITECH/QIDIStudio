@@ -3,11 +3,18 @@
 var m_HotModelList=null;
 var m_HasNetworkPlugin=true;
 var m_GetPrintHistoryStatus=false;
+//y83
+var m_Region = GetQueryString("region");
 
 function OnInit()
 {
 	//-----Official-----
     TranslatePage();
+
+	//y83 Hide "Online Models" entry in mainland China
+	if (m_Region === "CN") {
+		ShowMenuBtn('online', 0);
+	}
 
 	SendMsg_GetLoginInfo();
 	GotoMenu( 'home' );
@@ -79,6 +86,10 @@ function HandleStudio( pVal )
 		let NewMenu=pVal['menu'];
 		let nShow=pVal['show'];
 		
+		//y83 Do not show "online" menu in mainland China
+		if (NewMenu === 'online' && m_Region === "CN" && nShow === 1)
+			return;
+		
 		ShowMenuBtn(NewMenu,nShow);
 	}
 	else if(strCmd=='printhistory_task_show')
@@ -91,10 +102,21 @@ var NowMenu='';
 function GotoMenu( strMenu )
 {
 	ShowMenuNewTag(strMenu,0);
-	
+
+	// Always send the message to C++, even for same-menu clicks.
+	// C++ will decide whether to dismiss login overlay or no-op.
 	if(NowMenu==strMenu && strMenu!='makersupply')
+	{
+		// Still notify C++ — it may need to dismiss the login overlay
+		var tSend={};
+		tSend['sequence_id']=Math.round(new Date() / 1000);
+		tSend['command']="homepage_leftmenu_clicked";
+		tSend['menu']=strMenu;
+		tSend['refresh']=0;
+		SendWXMessage( JSON.stringify(tSend) );
 		return;
-	
+	}
+
 	NowMenu=strMenu;
 	
 	let MenuList=$(".BtnItem");

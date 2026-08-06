@@ -67,7 +67,7 @@ function HandleModelList( pVal )
 
 	//w22
 	let pModel = pVal['model'];
-	const vendorOrder = ["Q Series", "X 4 Series", "X 3 Series"];
+	const vendorOrder = ["X 5 Series", "Q Series", "X 4 Series", "X 3 Series"];
 	pModel.sort((a, b) => {
 		const indexA = vendorOrder.indexOf(a.vendor);
 		const indexB = vendorOrder.indexOf(b.vendor);
@@ -151,6 +151,7 @@ function HandleModelList( pVal )
 	let nSelect=AlreadySelect.length;
 	if(nSelect==0)
 	{	
+		$("div.OneVendorBlock[vendor='X 5 Series'] .ModelCheckBox").addClass('ModelCheckBoxSelected');
 		$("div.OneVendorBlock[vendor='Q Series'] .ModelCheckBox").addClass('ModelCheckBoxSelected');
 		$("div.OneVendorBlock[vendor='X 4 Series'] .ModelCheckBox").addClass('ModelCheckBoxSelected');
 		$("div.OneVendorBlock[vendor='X 3 Series'] .ModelCheckBox").addClass('ModelCheckBoxSelected');
