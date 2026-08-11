@@ -10,13 +10,14 @@ function usage() {
     echo "   -i: Build and export an AppImage"
     echo "   -v: Build System Version:ubu22 or ubu24"
     echo "   -b: Build beta version (internal testing=2)"
+    echo "   -n: Build without QIDI's proprietary cloud layer (auto-detected by default)."
     echo "   -h: this help output"
     echo "If you only need to run the program on a built Docker container, just use './DockerBuild.sh -c'"
     echo "If you need to build an AppImage using Docker, first run './DockerBuild.sh -d', then run './DockerBuild.sh -i'."
 }
 
 unset name
-while getopts "hcdibv:" opt; do
+while getopts "hcdibnv:" opt; do
   case ${opt} in
     c )
         BUILD_RUNNER=1
@@ -29,6 +30,9 @@ while getopts "hcdibv:" opt; do
         ;;
     b )
         BUILD_BETA="--build-arg INTERNAL_TESTING=2"
+        ;;
+    n )
+        BUILD_NO_CLOUD="--build-arg QDT_RELEASE_TO_PUBLIC=0"
         ;;
     v )
         SYSTEM_VERSION="$OPTARG"
@@ -54,10 +58,10 @@ fi
 
 if [[ -n "${BUILD_APPIMAGE}" ]]; then
   if [ "$SYSTEM_VERSION" == "ubu22" ]; then
-    docker build -f docker/BuildAppimageDockerfile --build-arg VERSION=studio_dep_22 ${BUILD_BETA} -o type=local,dest=./build .
+    docker build -f docker/BuildAppimageDockerfile --build-arg VERSION=studio_dep_22 ${BUILD_BETA} ${BUILD_NO_CLOUD} -o type=local,dest=./build .
     mv build/QIDIStudio_ubu64.AppImage build/QIDIStudio_ubu22.AppImage
   else
-    docker build -f docker/BuildAppimageDockerfile --build-arg VERSION=studio_dep_24 ${BUILD_BETA} -o type=local,dest=./build .
+    docker build -f docker/BuildAppimageDockerfile --build-arg VERSION=studio_dep_24 ${BUILD_BETA} ${BUILD_NO_CLOUD} -o type=local,dest=./build .
     mv build/QIDIStudio_ubu64.AppImage build/QIDIStudio_ubu24.AppImage
   fi
 fi
