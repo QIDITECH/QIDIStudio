@@ -46,10 +46,7 @@ else ()
         endif()
     endif()
 
-    set(_build_j -j)
-    if(DEFINED ENV{CMAKE_BUILD_PARALLEL_LEVEL})
-        set(_build_j "-j$ENV{CMAKE_BUILD_PARALLEL_LEVEL}")
-    endif()
+    set(_build_j "-j${NPROC}")
 
     ExternalProject_Add(dep_FFMPEG
         URL https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n7.0.2.tar.gz

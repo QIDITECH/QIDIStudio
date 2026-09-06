@@ -4,6 +4,22 @@
 export ROOT=`pwd`
 export NCORES=`nproc --all`
 export CMAKE_BUILD_PARALLEL_LEVEL=${NCORES}
+# An active conda/miniforge environment prepends its own bin/ to PATH, and
+# CMake's find_package(... CONFIG) search treats PATH entries as candidate
+# install prefixes -- so a conda env can silently shadow a perfectly good
+# Fedora system library (e.g. zstd, used transitively by Boost::iostreams)
+# with an older/incompatible copy, baking that path into the built binary's
+# RPATH. Strip any active conda environment's bin dirs from PATH so the
+# Fedora system toolchain and libraries are used consistently.
+if [[ -n "$CONDA_PREFIX" ]]; then
+    PATH=$(echo "$PATH" | tr ':' '\n' | grep -vF "$CONDA_PREFIX" | paste -sd:)
+fi
+# Several bundled/third-party dependencies (and their own nested try_compile()
+# checks) declare cmake_minimum_required() below 3.5, which newer CMake
+# (>=4.0) refuses to configure at all. Setting this env var (rather than only
+# passing -DCMAKE_POLICY_VERSION_MINIMUM on the command line) makes CMake
+# auto-apply it to every nested build tree it creates, not just the top level.
+export CMAKE_POLICY_VERSION_MINIMUM=3.5
 #FOUND_GTK2=$(dnf list installed | grep gtk2)
 #FOUND_GTK3=$(dnf list installed | grep gtk3)
 FOUND_GTK3=1
@@ -52,7 +68,7 @@ while getopts ":dsiuhgbr" opt; do
     r )
 	SKIP_RAM_CHECK="1"
 	;;
-    h ) echo "Usage: ./BuildLinux.sh [-i][-u][-d][-s][-b][-g]"
+    h ) echo "Usage: ./BuildFedora.sh [-i][-u][-d][-s][-b][-g]"
         echo "   -i: Generate appimage (optional)"
         echo "   -g: force gtk2 build"
         echo "   -b: build in debug mode"
@@ -60,8 +76,8 @@ while getopts ":dsiuhgbr" opt; do
         echo "   -s: build qidi-studio (optional)"
         echo "   -u: only update clock & dependency packets (optional and need sudo)"
 	echo "   -r: skip free ram check (low ram compiling)"
-        echo "For a first use, you want to 'sudo ./BuildLinux.sh -u'"
-        echo "   and then './BuildLinux.sh -dsi'"
+        echo "For a first use, you want to 'sudo ./BuildFedora.sh -u'"
+        echo "   and then './BuildFedora.sh -dsi'"
         exit 0
         ;;
   esac
@@ -69,7 +85,7 @@ done
 
 if [ $OPTIND -eq 1 ]
 then
-    echo "Usage: ./BuildLinux.sh [-i][-u][-d][-s][-b][-g]"
+    echo "Usage: ./BuildFedora.sh [-i][-u][-d][-s][-b][-g]"
     echo "   -i: Generate appimage (optional)"
     echo "   -g: force gtk2 build"
     echo "   -b: build in debug mode"
@@ -77,8 +93,8 @@ then
     echo "   -s: build qidi-studio (optional)"
     echo "   -u: only update clock & dependency packets (optional and need sudo)"
     echo "   -r: skip free ram check (low ram compiling)"
-    echo "For a first use, you want to 'sudo ./BuildLinux.sh -u'"
-    echo "   and then './BuildLinux.sh -dsi'"
+    echo "For a first use, you want to 'sudo ./BuildFedora.sh -u'"
+    echo "   and then './BuildFedora.sh -dsi'"
     exit 0
 fi
 
@@ -101,25 +117,28 @@ if [[ -n "$UPDATE_LIB" ]]
 then
     echo -n -e "Updating linux ...\n"
     # hwclock -s # DeftDawg: Why does SuperSlicer want to do this?
-    apt update
+    dnf makecache
+    # NOTE: cereal is intentionally NOT installed from Fedora's cereal-devel here.
+    # deps/CMakeLists.txt always builds its own bundled cereal (no toggle to skip
+    # it, unlike GLFW), and it exports an imported target literally named
+    # `cereal`. Fedora's cereal-devel instead exports the namespaced
+    # `cereal::cereal`, which this project's target_link_libraries(... cereal)
+    # calls don't match -- if cereal_DIR resolves to the system package, CMake
+    # silently treats the unmatched "cereal" as a raw "-lcereal" linker flag,
+    # which fails since there is no such standalone library. Only the
+    # deps-built cereal-config.cmake is compatible with this codebase.
     if [[ -z "$FOUND_GTK3" ]]
     then
-        echo -e "\nInstalling: libgtk2.0-dev libglew-dev libudev-dev libdbus-1-dev cmake git\n"
-        apt install -y libgtk2.0-dev libglew-dev libudev-dev libdbus-1-dev cmake git
+        echo -e "\nInstalling: gtk2-devel glew-devel systemd-devel dbus-devel cmake git glfw-devel NLopt-devel openvdb-devel imath-devel openexr-devel nasm webkit2gtk4.1-devel boost-static mesa-compat-libOSMesa-devel\n"
+        dnf install -y gtk2-devel glew-devel systemd-devel dbus-devel cmake git glfw-devel NLopt-devel openvdb-devel imath-devel openexr-devel nasm webkit2gtk4.1-devel boost-static mesa-compat-libOSMesa-devel
     else
-        echo -e "\nFind libgtk-3, installing: libgtk-3-dev libglew-dev libudev-dev libdbus-1-dev cmake git\n"
-        apt install -y libgtk-3-dev libglew-dev libudev-dev libdbus-1-dev cmake git
-    fi
-    # for ubuntu 22.04:
-    ubu_version="$(cat /etc/issue)"
-    if [[ $ubu_version == "Ubuntu 22.04"* ]]
-    then
-        apt install -y curl libssl-dev libcurl4-openssl-dev m4
+        echo -e "\nFind gtk3-devel, installing: gtk3-devel glew-devel systemd-devel dbus-devel cmake git glfw-devel NLopt-devel openvdb-devel imath-devel openexr-devel nasm webkit2gtk4.1-devel boost-static mesa-compat-libOSMesa-devel\n"
+        dnf install -y gtk3-devel glew-devel systemd-devel dbus-devel cmake git glfw-devel NLopt-devel openvdb-devel imath-devel openexr-devel nasm webkit2gtk4.1-devel boost-static mesa-compat-libOSMesa-devel
     fi
     if [[ -n "$BUILD_DEBUG" ]]
     then
-        echo -e "\nInstalling: libssl-dev libcurl4-openssl-dev\n"
-        apt install -y libssl-dev libcurl4-openssl-dev
+        echo -e "\nInstalling: openssl-devel libcurl-devel\n"
+        dnf install -y openssl-devel libcurl-devel
     fi
     echo -e "done\n"
     exit 0
@@ -168,10 +187,28 @@ fi
 if [[ -n "$BUILD_DEPS" ]]
 then
     echo "[3/9] Configuring dependencies..."
-    BUILD_ARGS=""
+    # Use Fedora's glfw-devel (ships a proper glfw3Config.cmake) instead of
+    # building GLFW from source, which on Linux additionally requires KDE's
+    # extra-cmake-modules (ECM) for Wayland support that we don't otherwise need.
+    #
+    # Also skip building OpenVDB (and its OpenEXR/Imath dependency) here: the
+    # main app build is configured to use Fedora's system openvdb-devel
+    # instead (see SLIC3R_STATIC_EXCLUDE_OPENVDB below), since Fedora's
+    # openvdb-devel has no static .a to link against. But all deps share one
+    # install prefix/include root, so if deps ALSO installed its own (older,
+    # ABI-incompatible) OpenVDB headers here, the compiler would pick those up
+    # instead of Fedora's system headers regardless of any CMake variable
+    # override, causing undefined-symbol link errors from an ABI mismatch.
+    #
+    # Also skip building expat here: the final QIDIStudio link pulls in
+    # Fedora's system libwebkit2gtk-4.1.so (for wxWebView), which itself
+    # needs a matching dynamic libexpat.so to resolve its own XML_* symbols.
+    # If the app instead links deps' own static libexpat.a, those symbols
+    # go unresolved and the final link fails.
+    BUILD_ARGS="-DDEP_BUILD_GLFW=OFF -DDEP_BUILD_OPENVDB=OFF -DDEP_BUILD_EXPAT=OFF"
     if [[ -n "$FOUND_GTK3_DEV" ]]
     then
-        BUILD_ARGS="-DDEP_WX_GTK3=ON"
+        BUILD_ARGS="${BUILD_ARGS} -DDEP_WX_GTK3=ON"
     fi
     if [[ -n "$BUILD_DEBUG" ]]
     then
@@ -216,10 +253,19 @@ fi
 if [[ -n "$BUILD_QIDI_STUDIO" ]]
 then
     echo "[7/9] Configuring Slic3r..."
-    BUILD_ARGS=""
+    # Fedora's glew-devel/openvdb-devel packages only ship shared .so libs, no
+    # static .a, so linking them statically (the SLIC3R_STATIC default) always
+    # fails to find them.
+    BUILD_ARGS="-DSLIC3R_STATIC_EXCLUDE_GLEW=1 -DSLIC3R_STATIC_EXCLUDE_OPENVDB=1"
+    # wx-config (generated by the bundled wxWidgets build) hardcodes "-L.../lib"
+    # for its own dependencies, e.g. "-Wl,-Bstatic -lzlibstatic". But zlib's own
+    # CMakeLists installs via GNUInstallDirs, which resolves to "lib64" on
+    # Fedora, so that -lzlibstatic can't otherwise be found. Add lib64 as an
+    # extra linker search path to cover this dep-install-layout mismatch.
+    BUILD_ARGS="${BUILD_ARGS} -DCMAKE_EXE_LINKER_FLAGS=-L$PWD/deps/build/destdir/usr/local/lib64"
     if [[ -n "$FOUND_GTK3_DEV" ]]
     then
-        BUILD_ARGS="-DSLIC3R_GTK=3"
+        BUILD_ARGS="${BUILD_ARGS} -DSLIC3R_GTK=3"
     fi
     if [[ -n "$BUILD_DEBUG" ]]
     then
@@ -235,7 +281,7 @@ then
 
         # make Slic3r
         echo "[8/9] Building Slic3r..."
-        make -j4 QIDIStudio
+        make -j$NCORES QIDIStudio
 
         # make .mo
         # make gettext_po_to_mo # FIXME: DeftDawg: complains about msgfmt not existing even in SuperSlicer, did this ever work?

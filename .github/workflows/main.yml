@@ -114,7 +114,7 @@ jobs:
           export CPPFLAGS="-I$CURL_PATH/include -I$BOOST_PATH/include -I$ICU_PATH/include -I$ZLIB_PATH/include -I$ZSTD_PATH/include"
           export PKG_CONFIG_PATH="$CURL_PATH/lib/pkgconfig:$BOOST_PATH/lib/pkgconfig:$ICU_PATH/lib/pkgconfig:$ZLIB_PATH/lib/pkgconfig:$ZSTD_PATH/lib/pkgconfig"
           export CMAKE_PREFIX_PATH="$BOOST_PATH;$CURL_PATH;$ICU_PATH"
-          sed -i '' -e 's/-DCMAKE_PREFIX_PATH="$DEPS/-DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH;$DEPS/' BuildMac.sh
+          sed -i '' -e 's/-DCMAKE_PREFIX_PATH="$DEPS\/usr\/local"/-DCMAKE_PREFIX_PATH="$DEPS\/usr\/local;$CMAKE_PREFIX_PATH"/' BuildMac.sh
           sed -i '' -e 's/-DQDT_INTERNAL_TESTING=0/-DQDT_INTERNAL_TESTING=1/' BuildMac.sh 
           sed -i '' -e 's/-DQDT_RELEASE_TO_PUBLIC=1/-DQDT_RELEASE_TO_PUBLIC=0/' BuildMac.sh
           chmod +x BuildMac.sh

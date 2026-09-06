@@ -20,8 +20,8 @@
 # therefore, unfortunately, the installation cannot be copied/moved elsewhere without re-installing wxWidgets.
 #
 
+cmake_minimum_required(VERSION 3.5)
 project(QIDIStudio-deps)
-cmake_minimum_required(VERSION 3.2)
 
 include(ExternalProject)
 include(ProcessorCount)
@@ -40,6 +40,8 @@ option(DEP_BUILD_TIFF "Compile libtiff" ON)
 option(DEP_BUILD_BOOST "Compile boost" ON)
 option(DEP_BUILD_OPENSSL "Compile openssl" ON)
 option(DEP_BUILD_GLFW "Compile GLFW" ON)
+option(DEP_BUILD_OPENVDB "Compile OpenVDB" ON)
+option(DEP_BUILD_EXPAT "Compile expat" ON)
 option(DEP_BUILD_BLOSC "Compile Blosc" ON)
 option(DEP_BUILD_FREETYPE "Compile freetype" ON)
 option(DEP_BUILD_WXWIDGETS "Compile wxWidgets" ON)
@@ -145,6 +147,9 @@ function(qidistudio_add_cmake_project projectname)
             -DCMAKE_C_COMPILER:STRING=${CMAKE_C_COMPILER}
             -DCMAKE_CXX_COMPILER:STRING=${CMAKE_CXX_COMPILER}
             -DCMAKE_TOOLCHAIN_FILE:STRING=${CMAKE_TOOLCHAIN_FILE}
+            # Several bundled dependencies declare cmake_minimum_required() below
+            # 3.5, which newer CMake (>=4.0) refuses to configure at all.
+            -DCMAKE_POLICY_VERSION_MINIMUM:STRING=3.5
             -DBUILD_SHARED_LIBS:BOOL=OFF
             ${_cmake_osx_arch}
             "${_configs_line}"
@@ -218,7 +223,7 @@ if (DEP_BUILD_TIFF AND NOT TIFF_FOUND)
     set(TIFF_PKG dep_TIFF)
 endif()
 set(EXPAT_PKG "")
-if (NOT EXPAT_FOUND) 
+if (DEP_BUILD_EXPAT AND NOT EXPAT_FOUND)
     include(EXPAT/EXPAT.cmake)
     set(EXPAT_PKG dep_EXPAT)
 endif ()
@@ -248,8 +253,10 @@ if (DEP_BUILD_BLOSC)
     include(Blosc/Blosc.cmake)
     set(BLOSC_PKG dep_Blosc)
 endif ()
-include(OpenEXR/OpenEXR.cmake)
-include(OpenVDB/OpenVDB.cmake)
+if (DEP_BUILD_OPENVDB)
+    include(OpenEXR/OpenEXR.cmake)
+    include(OpenVDB/OpenVDB.cmake)
+endif ()
 
 include(GMP/GMP.cmake)
 include(MPFR/MPFR.cmake)
@@ -294,6 +301,11 @@ if (DEP_BUILD_WEBSOCKET)
     set(WEBSOCKETPP_PKG dep_WebSocketPP)
 endif()
 
+set(OPENVDB_PKG "")
+if (DEP_BUILD_OPENVDB)
+    set(OPENVDB_PKG dep_OpenVDB)
+endif ()
+
 set(_dep_list
     ${BOOST_PKG}
     dep_TBB
@@ -302,7 +314,7 @@ set(_dep_list
     dep_Cereal
     dep_NLopt
     dep_libnoise
-    dep_OpenVDB
+    ${OPENVDB_PKG}
     dep_OpenCSG
     dep_OpenCV
     dep_CGAL

@@ -241,8 +241,6 @@ set(SLIC3R_GUI_SOURCES
     GUI/DownloadManager.hpp
     GUI/QDSDeviceManager.cpp
     GUI/QDSDeviceManager.hpp
-    QIDI/UserPresetSyncManager.cpp
-    QIDI/UserPresetSyncManager.hpp
     GUI/BedShapeDialog.cpp
     GUI/BedShapeDialog.hpp
     GUI/Plater.cpp
@@ -683,6 +681,8 @@ if(QDT_RELEASE_TO_PUBLIC)
 			QIDI/QIDISSEClientV2.hpp
             QIDI/P2PManager.cpp
 		    QIDI/P2PManager.hpp
+		    QIDI/UserPresetSyncManager.cpp
+		    QIDI/UserPresetSyncManager.hpp
 		)
 endif ()
 
