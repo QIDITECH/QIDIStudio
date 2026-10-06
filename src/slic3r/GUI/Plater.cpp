@@ -3832,6 +3832,13 @@ void Sidebar::update_all_preset_comboboxes()
     }
 }
 
+void Sidebar::refresh_filament_presets()
+{
+    for (auto* combo : p->combos_filament)
+        combo->update();
+    dynamic_filament_list.update();
+}
+
 void Sidebar::update_presets(Preset::Type preset_type)
 {
     PresetBundle &preset_bundle = *wxGetApp().preset_bundle;
@@ -7022,6 +7029,12 @@ public:
     SendToPrinterDialog* m_send_to_sdcard_dlg = nullptr;
     PublishDialog *m_publish_dlg = nullptr;
 
+    // Accessed only on the GUI thread. The dialog itself is stack-owned by the
+    // EVT_RESTORE_PROJECT handler, so MCP code must never retain or dereference
+    // this pointer outside that thread.
+    MessageDialog* m_project_recovery_dialog = nullptr;
+    Plater::ProjectRecoveryState m_project_recovery_state = Plater::ProjectRecoveryState::None;
+
     // Data
     Slic3r::DynamicPrintConfig *config;        // FIXME: leak?
     Slic3r::Print               fff_print;
@@ -8191,12 +8204,30 @@ Plater::priv::priv(Plater* q, MainFrame* main_frame)
                 MessageDialog dlg(this->q, log_string, wxString(SLIC3R_APP_FULL_NAME) + " - " + _L("Restore"), wxYES_NO | wxYES_DEFAULT | wxCENTRE);
                 dlg.SetButtonLabel(wxID_YES, _L("Restore"));
                 dlg.SetButtonLabel(wxID_NO, _L("Cancel"));
-                auto result = dlg.ShowModal();
+                m_project_recovery_dialog = &dlg;
+                m_project_recovery_state = Plater::ProjectRecoveryState::Prompted;
+                int result = wxID_CANCEL;
+                try {
+                    result = dlg.ShowModal();
+                } catch (...) {
+                    m_project_recovery_dialog = nullptr;
+                    m_project_recovery_state = Plater::ProjectRecoveryState::None;
+                    throw;
+                }
+                m_project_recovery_dialog = nullptr;
                 if (result == wxID_YES) {
-                    this->q->load_project(from_path(last_backup), from_path(originfile));
-                    Slic3r::backup_soon();
+                    m_project_recovery_state = Plater::ProjectRecoveryState::Restoring;
+                    try {
+                        this->q->load_project(from_path(last_backup), from_path(originfile));
+                        Slic3r::backup_soon();
+                    } catch (...) {
+                        m_project_recovery_state = Plater::ProjectRecoveryState::None;
+                        throw;
+                    }
+                    m_project_recovery_state = Plater::ProjectRecoveryState::None;
                     return;
                 }
+                m_project_recovery_state = Plater::ProjectRecoveryState::Cancelling;
             }
             try {
                 if (originfile != "<lock>") // see qds_3mf.cpp for lock detail
@@ -8205,8 +8236,14 @@ Plater::priv::priv(Plater* q, MainFrame* main_frame)
             catch (...) {}
             if (this->q->get_project_filename().IsEmpty() && this->q->is_empty_project()) {
                 int skip_confirm = e.GetInt();
-                this->q->new_project(skip_confirm, true);
+                try {
+                    this->q->new_project(skip_confirm, true);
+                } catch (...) {
+                    m_project_recovery_state = Plater::ProjectRecoveryState::None;
+                    throw;
+                }
             }
+            m_project_recovery_state = Plater::ProjectRecoveryState::None;
         });
         //wxPostEvent(this->q, wxCommandEvent{EVT_RESTORE_PROJECT});
     }
@@ -18184,6 +18221,16 @@ bool Plater::Show(bool show)
 
 bool Plater::is_project_dirty() const { return p->is_project_dirty(); }
 bool Plater::is_presets_dirty() const { return p->is_presets_dirty(); }
+Plater::ProjectRecoveryState Plater::project_recovery_state() const { return p->m_project_recovery_state; }
+bool Plater::resolve_project_recovery(bool restore)
+{
+    if (p->m_project_recovery_state != ProjectRecoveryState::Prompted ||
+        p->m_project_recovery_dialog == nullptr ||
+        !p->m_project_recovery_dialog->IsModal())
+        return false;
+    p->m_project_recovery_dialog->EndModal(restore ? wxID_YES : wxID_NO);
+    return true;
+}
 void Plater::set_plater_dirty(bool is_dirty) { p->set_plater_dirty(is_dirty); }
 void Plater::update_project_dirty_from_presets() { p->update_project_dirty_from_presets(); }
 int  Plater::save_project_if_dirty(const wxString& reason) { return p->save_project_if_dirty(reason); }

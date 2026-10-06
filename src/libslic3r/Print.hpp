@@ -942,7 +942,7 @@ public:
     
     // Sequential print support.
     bool                        is_sequential_print() const {
-        return config().print_sequence == PrintSequence::ByObject && m_objects.size() > 1;
+        return config().print_sequence == PrintSequence::ByObject && num_object_instances() > 1;
     }
 
     // 判断是否会出现耗材动态映射

@@ -373,9 +373,9 @@ enum ReduceInfillRetractionMode {
 };
 
 // QDS: filament metal stickiness level (used in Auto mode of reduce_infill_retraction)
-// None means untested/custom filament — treated as Low for backward compatibility.
+// None means untested/custom filament -- treated as Low for backward compatibility.
 enum FilamentMetalStickiness {
-    fmsNone = 0,    // Not specified / untested — behaves like Low for reduce_infill_retraction
+    fmsNone = 0,    // Not specified / untested -- behaves like Low for reduce_infill_retraction
     fmsLow,         // Low metal stickiness (e.g. PLA) - reduce infill retraction is beneficial
     fmsMedium,      // Medium metal stickiness
     fmsHigh         // High metal stickiness (e.g. PETG) - retraction should not be skipped
@@ -387,7 +387,7 @@ inline bool is_auto_filament_map_mode(FilamentMapMode mode) {
 
 extern std::string get_extruder_variant_string(ExtruderType extruder_type, NozzleVolumeType nozzle_volume_type);
 
-// 最基础的参数idx查找方法，遍历varint list寻找对应的idx
+// Find parameter idx and lookup corresponding idx in variant list
 extern int get_config_index_base(NozzleVolumeType volume_type, ExtruderType extruder_type, int variant_id_1based, const std::vector<std::string>& variant_list, const std::vector<int>& variant_ids_1based);
 
 
@@ -1996,7 +1996,7 @@ static void set_flush_volumes_matrix(std::vector<T> &out_matrix, const std::vect
 
 size_t get_extruder_index(const GCodeConfig& config, unsigned int filament_id);
 
-// 从GCode Config中调用基础的参数idx查找方法
+// Find parameter idx in GCode Config for the given user
 size_t get_process_config_idx(const GCodeConfig &config, unsigned int filament_id);
 size_t get_filament_config_idx(const GCodeConfig& config, unsigned int filament_id);
 

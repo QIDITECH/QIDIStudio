@@ -1,5 +1,6 @@
 #include "QDSPrinterWebView.hpp"
 
+#include "QidiMcpServer.hpp"
 #include "I18N.hpp"
 #include "slic3r/GUI/wxExtensions.hpp"
 #include "slic3r/GUI/GUI_App.hpp"
@@ -1398,6 +1399,9 @@ QDSPrinterWebView::QDSPrinterWebView(wxWindow* parent) :
 
     //y74
     InitDeviceManager();
+    m_mcp_server = std::make_unique<QidiMcpServer>(m_device_manager);
+    if (!m_mcp_server->start())
+        m_mcp_server.reset();
     //cj_4
     startLegacyStatusPolling();
     m_task_dispatcher = std::make_unique<PrinterTaskDispatcher>(m_device_manager);
@@ -2051,6 +2055,9 @@ QDSPrinterWebView::~QDSPrinterWebView()
 {
     //cj_4 Mark as destroying FIRST so any in-flight SSE / CallAfter can bail out.
     m_isDestroying = true;
+
+    // Stop MCP before the device manager and its data begin teardown.
+    m_mcp_server.reset();
 
     //cj_4 Stop SSE client before any other teardown, so no new SSE messages
     // can CallAfter a partially-destroyed this.

@@ -33,3 +33,6 @@ test.js
 /.cache/
 .clangd
 /src/slic3r/QIDI/
+/src/slic3r/GUI/DeviceWeb/device_page/node_modules/
+/src/slic3r/GUI/DeviceWeb/device_page/dist/
+/resources/web/device_page/

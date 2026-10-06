@@ -223,9 +223,9 @@ SET PS_PROJECT_IS_OPEN=
 FOR /F "tokens=2 delims=," %%I in (
     'tasklist /V /FI "IMAGENAME eq devenv.exe " /NH /FO CSV ^| find "%PS_SOLUTION_NAME%"'
 ) do SET PS_PROJECT_IS_OPEN=%%~I
-%PS_CMAKE_EXE% .. %PS_CMAKE_GENERATOR_ARGS% -DCMAKE_PREFIX_PATH="%PS_DESTDIR%\usr\local" -DCMAKE_CONFIGURATION_TYPES=%PS_CONFIG_LIST%
+%PS_CMAKE_EXE% .. %PS_CMAKE_GENERATOR_ARGS% -DCMAKE_PREFIX_PATH="%PS_DESTDIR%\usr\local" -DCMAKE_CONFIGURATION_TYPES=%PS_CONFIG_LIST% -DQDT_RELEASE_TO_PUBLIC=0 -DPKG_CONFIG_EXECUTABLE="C:\Strawberry\perl\bin\perl.exe" -DPKG_CONFIG_ARGN="C:\Strawberry\perl\bin\pkg-config"
 IF %ERRORLEVEL% NEQ 0 IF "%PS_STEPS_DIRTY%" NEQ "" (
-    (del CMakeCache.txt && %PS_CMAKE_EXE% .. %PS_CMAKE_GENERATOR_ARGS% -DCMAKE_PREFIX_PATH="%PS_DESTDIR%\usr\local" -DCMAKE_CONFIGURATION_TYPES=%PS_CONFIG_LIST%) || GOTO :END
+    (del CMakeCache.txt && %PS_CMAKE_EXE% .. %PS_CMAKE_GENERATOR_ARGS% -DCMAKE_PREFIX_PATH="%PS_DESTDIR%\usr\local" -DCMAKE_CONFIGURATION_TYPES=%PS_CONFIG_LIST% -DQDT_RELEASE_TO_PUBLIC=0 -DPKG_CONFIG_EXECUTABLE="C:\Strawberry\perl\bin\perl.exe" -DPKG_CONFIG_ARGN="C:\Strawberry\perl\bin\pkg-config") || GOTO :END
 ) ELSE GOTO :END
 REM Skip the build step if we're using the undocumented app-cmake to regenerate the full config from inside devenv
 IF "%PS_STEPS%" NEQ "app-cmake" msbuild /m ALL_BUILD.vcxproj /p:Configuration=%PS_CONFIG% /v:quiet || GOTO :END
@@ -243,6 +243,7 @@ SET EXIT_STATUS=5
 SET PS_CURRENT_STEP=run
 IF "%PS_RUN%" EQU "none" GOTO :PROLOGUE
 cd src\%PS_CONFIG% || GOTO :END
+SET "PATH=%PS_DESTDIR%\usr\local\bin;%PS_DESTDIR%\usr\local\bin\occt;%PATH%"
 SET PS_PROJECT_IS_OPEN=
 FOR /F "tokens=2 delims=," %%I in (
     'tasklist /V /FI "IMAGENAME eq devenv.exe " /NH /FO CSV ^| find "%PS_SOLUTION_NAME%"'

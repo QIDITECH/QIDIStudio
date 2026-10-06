@@ -1,5 +1,6 @@
 #include "MainFrame.hpp"
 #include "QDSPrinterWebView.hpp"
+#include "TunnelManagerDialog.hpp"
 
 #include "GLToolbar.hpp"
 #include <wx/panel.h>
@@ -2788,6 +2789,18 @@ static const wxString sep = " - ";
 static const wxString sep_space = "";
 #endif
 
+static wxMenu* generate_mcp_menu(MainFrame* parent)
+{
+    wxMenu* mcp_menu = new wxMenu();
+    append_menu_item(mcp_menu, wxID_ANY, _L("Tunnel Manager..."),
+        _L("Configure and control the QIDI Studio MCP tunnel"),
+        [parent](wxCommandEvent&) {
+            TunnelManagerDialog dialog(parent);
+            dialog.ShowModal();
+        });
+    return mcp_menu;
+}
+
 static wxMenu* generate_help_menu()
 {
     wxMenu* helpMenu = new wxMenu();
@@ -3630,6 +3643,10 @@ void MainFrame::init_menubar_as_editor()
     //m_topbar->AddDropDownMenuItem(printer_item);
     //m_topbar->AddDropDownMenuItem(language_item);
     //m_topbar->AddDropDownMenuItem(config_item);
+#ifdef _WIN32
+    auto mcpMenu = generate_mcp_menu(this);
+    m_topbar->AddDropDownSubMenu(mcpMenu, _L("MCP"));
+#endif
     m_topbar->AddDropDownSubMenu(helpMenu, _L("Help"));
 
      // OrcaSlicer calibrations
@@ -3960,12 +3977,18 @@ void MainFrame::init_menubar_as_gcodeviewer()
 
     // helpmenu
     auto helpMenu = generate_help_menu();
+#ifdef _WIN32
+    auto mcpMenu = generate_mcp_menu(this);
+#endif
 
     m_menubar = new wxMenuBar();
     m_menubar->Append(fileMenu, _L("&File"));
     if (viewMenu != nullptr) m_menubar->Append(viewMenu, _L("&View"));
     // Add additional menus from C++
     wxGetApp().add_config_menu(m_menubar);
+#ifdef _WIN32
+    m_menubar->Append(mcpMenu, _L("&MCP"));
+#endif
     m_menubar->Append(helpMenu, _L("&Help"));
     SetMenuBar(m_menubar);
 

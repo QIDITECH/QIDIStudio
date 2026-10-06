@@ -785,6 +785,43 @@ function(qidistudio_copy_sos target config postfix output_sos)
     )
 endfunction()
 
+# Stage the independently running OpenAI Secure MCP Tunnel companion beside
+# the Windows application.  It is not linked into qidi-studio.exe and keeps
+# its profile and credentials in the current user's local application data.
+if (WIN32)
+    set(QIDI_MCP_TUNNEL_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tools/mcp-tunnel")
+    set(QIDI_MCP_TUNNEL_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/src/$<CONFIG>/mcp-tunnel")
+    set(QIDI_MCP_TUNNEL_FILES
+        tunnel-client.exe
+        setup-qidi-mcp-tunnel.cmd
+        setup-qidi-mcp-tunnel.ps1
+        install-qidi-mcp-tunnel.ps1
+        update-qidi-mcp-tunnel.ps1
+        uninstall-qidi-mcp-tunnel.ps1
+        qidi-mcp-tunnel.ps1
+        manage-qidi-mcp-tunnel.ps1
+        README.md
+        TUNNEL-CLIENT-LICENSE.txt
+        TUNNEL-CLIENT-NOTICE.txt
+    )
+
+    foreach(QIDI_MCP_TUNNEL_FILE IN LISTS QIDI_MCP_TUNNEL_FILES)
+        if (NOT EXISTS "${QIDI_MCP_TUNNEL_SOURCE_DIR}/${QIDI_MCP_TUNNEL_FILE}")
+            message(FATAL_ERROR "Missing QIDI MCP tunnel companion file: ${QIDI_MCP_TUNNEL_FILE}")
+        endif()
+    endforeach()
+
+    add_custom_target(QIDIStudio_mcp_tunnel ALL
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${QIDI_MCP_TUNNEL_OUTPUT_DIR}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${QIDI_MCP_TUNNEL_FILES}
+                "${QIDI_MCP_TUNNEL_OUTPUT_DIR}"
+        WORKING_DIRECTORY "${QIDI_MCP_TUNNEL_SOURCE_DIR}"
+        COMMENT "Staging QIDI Studio MCP tunnel companion"
+        VERBATIM
+    )
+endif()
+
 # libslic3r, QIDIStudio GUI and the QIDIStudio executable.
 add_subdirectory(src)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT QIDIStudio_app_gui)

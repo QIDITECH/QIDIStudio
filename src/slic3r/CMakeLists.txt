@@ -241,8 +241,6 @@ set(SLIC3R_GUI_SOURCES
     GUI/DownloadManager.hpp
     GUI/QDSDeviceManager.cpp
     GUI/QDSDeviceManager.hpp
-    QIDI/UserPresetSyncManager.cpp
-    QIDI/UserPresetSyncManager.hpp
     GUI/BedShapeDialog.cpp
     GUI/BedShapeDialog.hpp
     GUI/Plater.cpp
@@ -321,6 +319,10 @@ set(SLIC3R_GUI_SOURCES
     GUI/QDSPrinterWebView.hpp
     GUI/PrinterWebView.cpp
     GUI/PrinterWebView.hpp
+    GUI/QidiMcpServer.cpp
+    GUI/QidiMcpServer.hpp
+    GUI/TunnelManagerDialog.cpp
+    GUI/TunnelManagerDialog.hpp
     GUI/PrinterTaskDispatcher.cpp
     GUI/PrinterTaskDispatcher.hpp
     GUI/WebDownPluginDlg.hpp

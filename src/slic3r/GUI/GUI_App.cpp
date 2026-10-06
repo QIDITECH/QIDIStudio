@@ -373,11 +373,20 @@ public:
         memDc.SetTextForeground(StateColor::darkModeColorFor(wxColor(134, 134, 134)));
         memDc.DrawLabel(m_constant_text.version, version_rect, wxALIGN_LEFT | wxALIGN_BOTTOM);
 
+        // Identify this fork without replacing QIDI's splash artwork.
+        const wxString edition_text = "MCP Edition";
+        memDc.SetFont(m_constant_text.credits_font);
+        const wxSize edition_size = memDc.GetTextExtent(edition_text);
+        const int edition_top = version_rect.GetBottom() + FromDIP(10 * m_scale);
+        const wxRect edition_rect(wxPoint(0, edition_top), wxSize(width, edition_size.GetHeight()));
+        memDc.SetTextForeground(StateColor::darkModeColorFor(wxColour(54, 120, 225)));
+        memDc.DrawLabel(edition_text, edition_rect, wxALIGN_CENTER | wxALIGN_TOP);
+
 #if QDT_INTERNAL_TESTING
         wxString versionText = QDT_INTERNAL_TESTING == 1 ? _L("Internal Version") : _L("Beta Version");
         wxSize text_rect = memDc.GetTextExtent(versionText);
         int start_x = (title_rect.GetLeft() + version_rect.GetRight()) / 2 - text_rect.GetWidth();
-        int start_y = version_rect.GetBottom() + 10;
+        int start_y = edition_rect.GetBottom() + FromDIP(6 * m_scale);
         wxRect internal_sign_rect(wxPoint(start_x, start_y), wxSize(text_rect));
         memDc.SetFont(m_constant_text.title_font);
         memDc.DrawLabel(versionText, internal_sign_rect, wxALIGN_TOP | wxALIGN_LEFT);

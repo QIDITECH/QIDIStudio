@@ -2100,13 +2100,8 @@ std::vector<const PrintInstance*> sort_object_instances_by_model_order(const Pri
     for (const PrintObject *print_object : print.objects())
         for (const PrintInstance &print_instance : print_object->instances())
         {
-            if (init_order) {
-                if (print.objects().size() == 1) {
-                    const_cast<ModelInstance *>(print_instance.model_instance)->arrange_order = 1;
-                } else {
-                    const_cast<ModelInstance *>(print_instance.model_instance)->arrange_order = print_instance.model_instance->id().id;
-                }
-            }
+            if (init_order)
+                const_cast<ModelInstance *>(print_instance.model_instance)->arrange_order = print_instance.model_instance->id().id;
             model_instance_to_print_instance.emplace_back(print_instance.model_instance, &print_instance);
         }
     std::sort(model_instance_to_print_instance.begin(), model_instance_to_print_instance.end(), [](auto &l, auto &r) { return l.first->arrange_order < r.first->arrange_order; });
@@ -2173,7 +2168,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
     // How many times will be change_layer() called?
     // change_layer() in turn increments the progress bar status.
     m_layer_count = 0;
-    if (print.config().print_sequence == PrintSequence::ByObject && print.objects().size() > 1) {
+    if (print.is_sequential_print()) {
         // Add each of the object's layers separately.
         for (auto object : print.objects()) {
             std::vector<coordf_t> zs;
@@ -3027,15 +3022,11 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
         if (print.is_sequential_print() && !has_wipe_tower){
             const auto& by_obj_print_data = print.sequential_print_data().value();
 
-            const PrintObject * prev_object = nullptr;
             size_t finished_objects = 0;
 
             for(auto instance : by_obj_print_data.print_instance_order){
                 const PrintObject* object = instance->print_object;
                 const auto tool_ordering = by_obj_print_data.object_tool_ordering_map.at(object);
-                if(object == prev_object)
-                    continue;
-
                 unsigned int new_extruder_id = tool_ordering.first_extruder();
                 if (new_extruder_id == (unsigned int) -1)
                     // Skip this object.
@@ -3118,7 +3109,6 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
                 // Flag indicating whether the nozzle temperature changes from 1st to 2nd layer were performed.
                 // Reset it when starting another object from 1st layer.
                 m_second_layer_things_done = false;
-                prev_object                = object;
             }
         } else {
             // Sort layers by Z.
@@ -4847,7 +4837,7 @@ GCode::LayerResult GCode::process_layer(
         ctx.curr_layer = this->layer();
         ctx.curr_extruder_id = m_writer.filament()->extruder_id();
         ctx.picture_extruder_id = most_used_extruder;
-        if (m_config.print_sequence == PrintSequence::ByObject && print.objects().size() > 1)
+        if (print.is_sequential_print())
             ctx.printed_objects = printed_objects;
 
         auto timelapse_pos=m_timelapse_pos_picker.pick_pos(ctx);

@@ -219,6 +219,8 @@ public:
 
 
 private:
+    std::unique_ptr<class QidiMcpServer> m_mcp_server;
+
     //cj_5
     struct DisconnectTransitionOptions {
         bool clear_button_selection { false };

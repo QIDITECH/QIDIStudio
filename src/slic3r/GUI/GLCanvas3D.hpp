@@ -610,6 +610,11 @@ private:
 #endif
     unsigned int m_last_w, m_last_h;
     bool m_in_render;
+    bool m_capture_framebuffer_requested{ false };
+    bool m_capture_framebuffer_succeeded{ false };
+    std::vector<unsigned char> m_capture_framebuffer_pixels;
+    unsigned int m_capture_framebuffer_width{ 0 };
+    unsigned int m_capture_framebuffer_height{ 0 };
     wxTimer m_timer;
     wxTimer m_timer_set_color;
     int m_color_input_value = -1;
@@ -976,6 +981,8 @@ public:
     bool is_dragging() const { return m_gizmos.is_dragging() || m_moving; }
 
     void render(bool only_init = false);
+    bool capture_framebuffer(std::vector<unsigned char>& pixels,
+                             unsigned int& width, unsigned int& height);
     bool is_rendering_enabled()
     {
         return m_enable_render;

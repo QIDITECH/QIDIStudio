@@ -196,6 +196,7 @@ public:
     void update_all_preset_comboboxes();
     //void update_partplate(PartPlateList& list);
     void update_presets(Slic3r::Preset::Type preset_type);
+    void refresh_filament_presets();
     //QDS
     const std::vector<BedType>& get_cur_combox_bed_types() { return m_cur_combox_bed_types; }
     void update_presets_from_to(Slic3r::Preset::Type preset_type, std::string from, std::string to);
@@ -355,6 +356,13 @@ class Plater: public wxPanel
 public:
     using fs_path = boost::filesystem::path;
 
+    enum class ProjectRecoveryState {
+        None,
+        Prompted,
+        Restoring,
+        Cancelling
+    };
+
     Plater(wxWindow *parent, MainFrame *main_frame);
     Plater(Plater &&) = delete;
     Plater(const Plater &) = delete;
@@ -366,6 +374,8 @@ public:
 
     bool is_project_dirty() const;
     bool is_presets_dirty() const;
+    ProjectRecoveryState project_recovery_state() const;
+    bool resolve_project_recovery(bool restore);
     void set_plater_dirty(bool is_dirty);
     void update_project_dirty_from_presets();
     int  save_project_if_dirty(const wxString& reason);
@@ -1085,6 +1095,10 @@ public:
     //y59
     Box_msg box_msg;
 
+    // Public entry point used by the local MCP integration. The underlying
+    // implementation remains QIDI Studio's native horizontal-cut path.
+    void cut_horizontal(size_t obj_idx, size_t instance_idx, double z, ModelObjectCutAttributes attributes);
+
 private:
     struct priv;
     std::unique_ptr<priv> p;
@@ -1128,7 +1142,6 @@ private:
     std::chrono::system_clock::time_point m_time_p;
     //w29
     GCodeWriter m_writer;
-    void cut_horizontal(size_t obj_idx, size_t instance_idx, double z, ModelObjectCutAttributes attributes);
 };
 
 class SuppressBackgroundProcessingUpdate

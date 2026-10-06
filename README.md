@@ -1,126 +1,268 @@
+![QIDI Studio logo](/resources/images/QIDIStudio.png?raw=true)
 
-![QIDIStudio logo](/resources/images/QIDIStudio.png?raw=true)
+# QIDI Studio MCP Edition
 
-# QIDIStudio
-QIDIStudio is a professional 3D printer slicing software，which is perfectly compatible with all printers and 3D printing filaments of QIDI Technology. Multi-platform support, simple inerface, easy to use, complate functions, easy to learn 3D printing.
+QIDI Studio MCP Edition is a Windows community fork of
+[QIDI Studio](https://github.com/QIDITECH/QIDIStudio) that adds a native Model
+Context Protocol server. It lets ChatGPT inspect and operate the slicer through
+explicit, structured tools instead of mouse and keyboard automation.
 
-QIDIStudio is based on [BambuStudio](https://github.com/bambulab/BambuStudio) by Bambu Lab, Bambu Studio is based on [PrusaSlicer](https://github.com/prusa3d/PrusaSlicer) by Prusa Research, which is from [Slic3r](https://github.com/Slic3r/Slic3r) by Alessandro Ranellucci and the RepRap community.
-Thanks to Bambulab, PrusaSlicer and OrcaSlicer for their contributions to the 3D printing community.
+This project is not an official QIDI Technology product. For printer warranty,
+hardware, account, or official QIDI Studio support, use
+[QIDI Support](https://qidi3d.com/pages/warranty-policy-after-sales-support).
 
-See the [QIDI's homepage](https://qidi3d.com) for more information.
+## Current release
 
-<details open>
-  <summary>Content Navigation</summary>
-  <ol>
-    <li>
-      <a href="#function-introduction">Function Introduction</a>
-    </li>
-    <li>
-      <a href="#wiki">Wiki</a>
-    </li>
-    <li>
-      <a href="#Supporting-QIDI-Link-App">Supporting QIDI Link App</a>
-    </li>
-    <li>
-      <a href="#report-issues-and-make-suggestions">Report Issues and Make Suggestions</a>
-      <ul>
-        <li><a href="#some-formatting-requirements">Some Formatting Requirements</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#license">License</a>
-    </li>
-  </ol>
-</details>
+- MCP integration: **v1.11.0**
+- Advertised tools: **118**
+- QIDI Studio target: **2.7.2.10**
+- Validated platform: **Windows x64, RelWithDebInfo**
+- Local MCP endpoint: `http://127.0.0.1:8765/mcp`
 
-----
-## Function Introduction
+See [CHANGELOG.md](CHANGELOG.md) for release history and validation details.
 
-<p align="center">
-  <img src="/readmeRes/UI.png" alt="UI">
-</p>
+## What the MCP edition adds
 
-### Key features are:
+| Area | Capabilities |
+| --- | --- |
+| Project and models | Create, load, import ChatGPT-attached models, inspect, transform, arrange, orient, cut, split, merge, repair, and export projects and models. |
+| Settings | Read and update print, filament, printer, object, and volume settings; inspect native metadata, inheritance, limits, and enum choices; preview proposed updates without mutation. |
+| Slicing | Validate configurations, slice plates, inspect warnings and toolpaths, analyze the first layer, check filament quantity, and export G-code. |
+| Advanced preparation | Adaptive layer height, support and seam facet painting, print-by-object ordering and clearance validation, orientation candidates, and printability analysis. |
+| Printers | Discover printers, inspect capabilities and readiness, monitor jobs, capture camera frames, control the case light, and pause, resume, or cancel jobs. |
+| Print workflow | Select and lock an explicit QIDI Box or external filament source before slicing, run preflight checks, and use a confirmation-gated local/LAN print-start workflow. |
+| Recovery and visibility | Resolve recovery prompts, inspect UI state, capture Prepare or Preview in the background with OpenGL composition, display images directly in ChatGPT, and provide expiring local download links. |
+| Connectivity | Manage the Secure MCP Tunnel from QIDI Studio, including setup, status, start, stop, restart, diagnostics, logs, and dashboard access. |
 
-* **Slicer:** Fast and stable 3D model slicer
-* **Printer:** Perfect compatibility with all high-speed 3D printers of QIDI TECH
-* **Filament:** Perfect compatibility with all filaments of QIDI TECH and some general filaments
-* **LAN:** The printer can be directly connected through IP, convenient, safe and stable
-* **Internet:** Remote connection, start printing anytime, anywhere
+## Connect QIDI Studio to ChatGPT
 
-### Other major features are:
+### Requirements
 
-* **Model:** A variety of model operations, move, scale, rotate, crop, color, repair, combine, split, and more
-* **Parameter:** Rich parameter Settings, fine adjustment for a variety of complex models and application scenarios
-* **Calibration:** Multiple calibration functions to adjust the best parameters according to the actual situation
+- Windows x64
+- QIDI Studio MCP Edition v1.8.0 or later
+- A ChatGPT account or workspace that permits developer mode and custom MCP
+  connections
+- An OpenAI Secure MCP Tunnel ID and Runtime API key
 
-----
+### 1. Configure the tunnel
 
-## wiki
-The wiki below aims to provide a detailed explanation of the QIDIStudio settings, how to get the most out of them as well as how to calibrate and setup your printer.
+1. Start QIDI Studio MCP Edition.
+2. Open **MCP > Tunnel Manager**.
+3. Select **Open Tunnels Page** and create or choose a tunnel.
+4. Select **Open Runtime Keys Page** and create a Runtime API key.
+5. Paste the `tunnel_id` and Runtime API key into the manager.
+6. Select **Save / Repair and Connect**.
+7. Select **Run Diagnostics** and confirm the tunnel is healthy.
 
-The wiki is work in progress so bear with us while we get it up and running!
+The tunnel runs as a per-user Windows scheduled task and can remain available
+when QIDI Studio restarts. Use the same dialog to start, stop, restart, repair,
+or inspect it. Detailed companion documentation is in
+[tools/mcp-tunnel/README.md](tools/mcp-tunnel/README.md).
 
-**[Access the wiki here](https://wiki.qidi3d.com/en/software/qidi-studio)**
+### 2. Add the connection in ChatGPT
 
-----
+1. In ChatGPT, open **Settings > Security and login** and enable **Developer
+   mode** if your account or workspace requires it.
+2. Open [ChatGPT Plugins](https://chatgpt.com/plugins) and select the plus button.
+3. Enter a name such as `Qidi Studio MCP` and a short description.
+4. Under **Connection**, choose **Tunnel**, then select the available tunnel or
+   enter its `tunnel_id`.
+5. Create the connection and confirm that 118 tools are discovered.
+6. Start a new conversation and enable **Qidi Studio MCP** from the tools menu.
 
-## Supporting QIDI Link App
+Example checks:
 
-**[Access QIDI Link App Guide Here](https://wiki.qidi3d.com/en/app)**
+```text
+@Qidi Studio MCP call get_suite_capabilities
+@Qidi Studio MCP call get_project_state
+@Qidi Studio MCP call list_setting_definitions with scope print and query layer height
+```
 
-The supporting QIDI Link App supports IOS and Android platforms. In the app, you can scan the code to connect to the printer, remotely monitor the printer's printing progress, control the printer's printing parameters, and perform operations such as feeding and returning materials.
-<p align="center">
-  <img  src="/readmeRes/qidilink.png" alt="Add filament option ——Seal">
-</p>
+If a release changes tool names, descriptions, or schemas, open the connection
+at [ChatGPT Plugins](https://chatgpt.com/plugins), select **Refresh**, confirm the
+new tool count, and start a new conversation. This follows the
+[official OpenAI connection workflow](https://developers.openai.com/plugins/deploy/connect-chatgpt).
 
-----
+## Attachment-to-print workflow
 
-## Report Issues and Make Suggestions
+Version 1.10.0 supports a guarded conversational workflow from a ChatGPT file
+attachment through physical printing. Attached STL, 3MF, OBJ, AMF, STEP, STP,
+and PLY files can be imported without first copying them to the QIDI Studio
+computer.
 
-Please send your question in the form of video or pictures to us through the [After-Sales Service](https://qidi3d.com/pages/warranty-policy-after-sales-support), we will reply to your information within 12 hours.
+The physical filament source must be chosen **before slicing**. The MCP does not
+infer a QIDI Box bay or silently default to the external feeder.
 
-Please try to contact us through [After-Sales Service](https://qidi3d.com/pages/warranty-policy-after-sales-support) and report problems or suggestions. On github, we cannot obtain your order information, operation records and other private intelligence, nor can we generate after-sales orders, send repair files, etc. Thank you for your understanding and cooperation.
+### Filament numbering
 
-### Some formatting requirements
+- `project_filament_index` is zero-based within the QIDI Studio project.
+- Object and volume `extruder` values are one-based. Project filament index `3`
+  therefore uses extruder `4`.
+- Physical `slot_id` is a zero-based global feeder index. QIDI Box slots are
+  `0` through `15`; the external feeder is slot `16`.
+- With one QIDI Box, its physically labeled bays 1 through 4 correspond to
+  global slot IDs `0` through `3`.
 
-#### Issue Title:
+For example, a red spool in the fourth bay of the first QIDI Box is physical
+slot `3`. If its matching project filament is index `3`, the model must use
+extruder `4` and be sliced after that assignment.
 
-Briefly describe the issue (e.g., `could not open file`)
+### Guarded sequence
 
-#### Description:
+1. Attach the model in ChatGPT and call `import_attached_models`, optionally
+   with arrangement enabled.
+2. Call `get_printer_details`, show the available QIDI Box and external sources,
+   and ask the user which physical filament to use.
+3. Assign every printable model part to the matching project filament with
+   `set_object_extruder` or `set_volume_extruder`. These operations invalidate
+   an older slice.
+4. Review settings and slice the active plate.
+5. Call `prepare_print_job` with the matching project and physical source. A
+   QIDI Box example is:
 
-Provide a detailed description of the issue.This will help our engineers quickly locate the problem and assist you in
-resolving it
+   ```json
+   {
+     "device_id": "printer-device-id",
+     "filament_source": {
+       "project_filament_index": 3,
+       "source": "qidi_box",
+       "slot_id": 3
+     },
+     "bed_leveling": true,
+     "timelapse": false
+   }
+   ```
 
-- **Issue Description**:
-  - A clear explanation of the problem.
-  - Compare the expected behavior with the actual behavior.
+   For the external feeder, use `"source": "external"`; physical slot `16` is
+   derived automatically.
+6. Review the returned summary and physical checks. Preparation rejects stale
+   or mismatched slices and returns a short-lived, single-use confirmation
+   token. It does not upload or print.
+7. Only after explicit user approval, call `start_print_job` with that token and
+   `confirm: true`.
+8. Poll `get_print_job_status`. The previously loaded toolhead slot may remain
+   `pending_physical_load` during layer-zero heating and QIDI Box exchange.
+   Printing is confirmed only after telemetry reports both the matching job and
+   selected physical slot. Cancellation is recommended if the first print layer
+   begins while the slot still mismatches.
 
-- **Steps to Reproduce**:
-  1. Step one
-  2. Step two
-  3. Step three
+Guarded direct start currently supports exactly one sliced project filament.
+Use QIDI Studio's native Send-to-Printer dialog for multi-filament jobs until a
+complete per-filament physical mapping is available through MCP.
 
-  - Specific steps to reproduce the issue. Include a precise sequence of actions if possible.
+Example conversation requests:
 
-- **Additional Information**:
-  - **Screenshots/Images**: Attach relevant screenshots or images that help in understanding the issue. Please add or
-    link to images here.
-  - **Environment Information**:
-    - Operating System Version
-    - Browser/Application Version
-    - Other relevant environment details
+```text
+Import this attached model, arrange it, and report its dimensions and printability. Do not slice or print.
 
-----
+Use red PETG from QIDI Box physical slot 3. Assign the matching project filament, slice, run preflight, and prepare the print. Stop before start_print_job.
+
+Use only the newest prepared token, start with confirmation, and monitor until the selected physical slot and printing are both confirmed.
+```
+
+## Background captures and inline images
+
+Version 1.11.0 can capture QIDI Studio's Prepare or Preview view while the
+application is minimized, hidden, or behind other windows. The native window
+and active OpenGL canvas are captured separately and composited so the build
+plate, models, toolpaths, and camera view remain visible.
+
+`capture_studio_screenshot` accepts `target: "current"`, `"prepare"`, or
+`"preview"`. Its `background` option defaults to `true`. After capture, QIDI
+Studio restores the original window placement, visibility, minimized state,
+and selected tab.
+
+Compatible ChatGPT clients display Studio screenshots, printer-camera frames,
+and monitoring snapshots directly in the conversation through the bundled MCP
+App viewer. The PNG bytes remain inside the authenticated MCP result, so the
+inline image can be viewed from another device, including a phone. The
+short-lived `127.0.0.1` download link is only a fallback for the computer
+running QIDI Studio and is not remotely reachable.
+
+Capturing an image does not modify the project, change settings, slice, upload,
+or print. During application startup, check `gl_canvas_composited`; if it is
+`false`, wait for the Prepare or Preview canvas to finish initializing and
+retry the capture.
+
+Example requests:
+
+```text
+Capture the QIDI Studio Prepare view in the background and display the image directly in ChatGPT. Do not modify, slice, upload, or print anything.
+
+Capture the Preview view in the background, report whether the OpenGL canvas was composited, and restore the original tab.
+```
+## Security and operational boundaries
+
+- The MCP server listens only on `127.0.0.1`; remote access is provided by the
+  separate Secure MCP Tunnel companion.
+- The Runtime API key is protected for the current Windows user with DPAPI. It
+  is not stored in QIDI Studio preferences, tunnel JSON, command lines, logs, or
+  source control.
+- Credential values and tunnel command lines are never returned by MCP tools.
+- Preview tools are read-only and explicitly report `mutated: false`.
+- Model and settings mutations use QIDI Studio's native data structures and
+  undo/reslice paths where applicable.
+- Print preparation requires an explicit physical filament source and verifies
+  that the valid slice uses its matching project filament. Print start uses a
+  prepared confirmation token plus explicit confirmation, applies QIDI's native
+  Box/external mapping, and verifies the physically loaded slot through printer
+  telemetry. Cancel and destructive operations also require confirmation where
+  applicable.
+- Software checks cannot verify physical conditions such as plate cleanliness,
+  correct filament loading, an empty build plate, or safe machine access. The
+  operator remains responsible for the printer and surrounding area.
+
+Intentionally unsupported or deferred capabilities include embedded tunnel
+credentials, automatic visual failure detection and cancellation, automated
+multi-filament physical-source mapping, cloud-only print start, and operations
+that cannot be exposed safely through stable native QIDI Studio state.
+
+## Build from source
+
+This fork follows QIDI Studio's Windows build system. From a Visual Studio 2022
+developer environment, run:
+
+```powershell
+.\build_win.bat -s app -c RelWithDebInfo
+```
+
+The application is produced under `build\src\RelWithDebInfo`. Development-only
+incremental rebuilds can use `-s app-dirty` after the initial dependency and
+application build.
+
+## Versioning
+
+The MCP integration uses semantic versions independently of the upstream QIDI
+Studio application version. `get_suite_capabilities` reports both the MCP suite
+version and its QIDI Studio target. Tool counts in the changelog refer to the
+registry advertised by the source at that release.
+
+Before creating a release tag or archive, run the documentation preflight:
+
+```powershell
+.\tools\verify-release-docs.ps1 -Version 1.11.0 -RequireAccepted
+```
+
+Use the version being released. The check requires the README current-release
+line and newest changelog heading to match, and can reject a release whose
+acceptance status is still pending.
+
+## Upstream QIDI Studio
+
+QIDI Studio provides the slicer, printer profiles, device integration, and user
+interface on which this fork is built. It descends from
+[Bambu Studio](https://github.com/bambulab/BambuStudio),
+[PrusaSlicer](https://github.com/prusa3d/PrusaSlicer), and
+[Slic3r](https://github.com/Slic3r/Slic3r), with contributions from the broader
+3D-printing community, including OrcaSlicer.
+
+- [Official QIDI Studio repository](https://github.com/QIDITECH/QIDIStudio)
+- [QIDI Studio wiki](https://wiki.qidi3d.com/en/software/qidi-studio)
+- [QIDI homepage](https://qidi3d.com)
+
 ## License
 
-QIDIStudio is licensed under the _GNU Affero General Public License, version 3_. QIDIStudio is based on BambuStudio by Bambu Lab.
-
-BambuStudio is licensed under the _GNU Affero General Public License, version 3_. BambuStudio is based on PrusaSlicer by PrusaResearch.
-
-PrusaSlicer is licensed under the _GNU Affero General Public License, version 3_. PrusaSlicer is owned by Prusa Research. PrusaSlicer is originally based on Slic3r by Alessandro Ranellucci.
-
-Slic3r is licensed under the _GNU Affero General Public License, version 3_. Slic3r was created by Alessandro Ranellucci with the help of many other contributors.
-
-The _GNU Affero General Public License, version 3_ ensures that if you use any part of this software in any way (even behind a web server), your software must be released under the same license.
+QIDI Studio MCP Edition is licensed under the
+[GNU Affero General Public License, version 3](LICENSE), consistent with
+QIDI Studio and its upstream projects. Modified source distributed or operated
+as a network service remains subject to the AGPL-3.0 requirements.
