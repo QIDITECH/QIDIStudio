@@ -1025,8 +1025,8 @@ static std::vector<Vec2d> get_path_of_change_filament(const Print& print)
         if (need_travel_after_change_filament_gcode) {
             // After a filament change, the travel path leading to the wipe tower:
             // start_point inside the previous printed object,
-            // end_point at the tower¡¯s start_pos or at the starting point of the tower¡¯s detour path.
-            // In this case, disable ¡°avoid crossing perimeters¡± to prevent inserting additional path points inside the previous printed object.
+            // end_point at the towerâ€™s start_pos or at the starting point of the towerâ€™s detour path.
+            // In this case, disable â€œavoid crossing perimetersâ€ to prevent inserting additional path points inside the previous printed object.
             gcodegen.m_avoid_crossing_perimeters.disable_once();
             // move to start_pos for wiping after toolchange
             if (!is_used_travel_avoid_perimeter) {
@@ -3914,7 +3914,7 @@ int GCode::get_highest_bed_temperature(const bool is_first_layer, const Print& p
 {
     auto bed_type = m_config.curr_bed_type;
     int bed_temp = 0;
-    // ×ÜÊÇÈ¡ËùÓÐÊ×²ãºÄ²ÄÖÐÎÂ¶È×î¸ßµÄ£¬±£Ö¤ÈÈÎÈ¶¨
+    // æ€»æ˜¯å–æ‰€æœ‰é¦–å±‚è€—æä¸­æ¸©åº¦æœ€é«˜çš„ï¼Œä¿è¯çƒ­ç¨³å®š
     for (auto fidx : print.get_slice_used_filaments(true)) {
         bed_temp = std::max(bed_temp, get_bed_temperature(fidx, is_first_layer, bed_type));
     }
@@ -8158,7 +8158,12 @@ inline std::string polygon_to_string(const Polygon& polygon, Print* print) {
     return gcode.str();
 }
 // this function iterator PrintObject and assign a seqential id to each object.
-// this id is used to generate unique object id for each object.
+/**
+ * @brief Assigns unique object and instance identifiers and generates Klipper exclusion definitions.
+ *
+ * @param print Print data containing the objects, instances, calibration settings, and wipe-tower configuration.
+ * @return std::string G-code defining exclusion areas for eligible objects, calibration areas, and the wipe tower.
+ */
 std::string GCode::set_object_info(Print* print)
 {
     std::ostringstream gcode;
@@ -8213,7 +8218,7 @@ std::string GCode::set_object_info(Print* print)
 
                     double sum_x = 0;
                     double sum_y = 0;
-                    Vec2d first_v(print->translate_to_print_space(polygon.points.at(0)).x()+ ext_x, print->translate_to_print_space(polygon.points.at(0)).y());
+                    const Vec2d first_v(print->translate_to_print_space(polygon.points.at(0)).x()+ ext_x, print->translate_to_print_space(polygon.points.at(0)).y());
                     
                     for (int i = 0; i < polygon.points.size(); i++) {
                         const auto v = print->translate_to_print_space(polygon.points.at(i));
@@ -8221,7 +8226,6 @@ std::string GCode::set_object_info(Print* print)
                             pa_area_poly_gcode << "[" << v.x() + ext_x << "," << v.y() << "],";
                             sum_x += v.x() + ext_x;
                             sum_y += v.y();
-                            first_v(v.x() + ext_x, v.y());
                         }
                         else if(i==1 || i == 2){
                             pa_area_poly_gcode << "[" << v.x()+ box_width << "," << v.y() << "],";
