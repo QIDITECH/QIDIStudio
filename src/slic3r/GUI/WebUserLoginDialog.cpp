@@ -52,14 +52,7 @@ ZUserLogin::ZUserLogin() : wxDialog((wxWindow*)(wxGetApp().mainframe), wxID_ANY,
     TargetUrl = "";
 
 #if QDT_RELEASE_TO_PUBLIC
-    wxString    msg;
-    QIDINetwork m_qidinetwork;
-    if (wxGetApp().app_config->get("login_method") == "Maker") {
-        TargetUrl = m_qidinetwork.get_maker_host();
-    }
-    else {
-        TargetUrl = m_qidinetwork.get_qidi_host();
-    }
+    TargetUrl = QIDIMakerUrlBuilder::getInstance().get_maker_host();
 #endif
 
     m_qdt_user_agent = wxString::Format("QDT-Slicer/v%s", SLIC3R_VERSION);

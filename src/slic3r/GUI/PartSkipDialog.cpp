@@ -44,6 +44,9 @@
 
 #if QDT_RELEASE_TO_PUBLIC
 #include "../QIDI/P2PManager.hpp"
+#include "../QIDI/QIDIFileManager.hpp"
+#include "../QIDI/QIDIDeviceApi.hpp"
+#include "QDSDeviceManager.hpp"
 #endif
 
 namespace Slic3r { namespace GUI {
@@ -460,236 +463,71 @@ void PartSkipDialog::DownloadPartsFile()
     m_target_paths.push_back(model_name);
     m_target_paths.push_back(slice_name);
 
-    if (m_frp_url.empty()) {
-        BOOST_LOG_TRIVIAL(warning) << "part skip: empty FRP url, skip download.";
-        m_download_failed.store(true);
-        CallAfter([this] { OnAllDownloadsFinished(); });
-        return;
-    }
-
     m_download_failed.store(false);
     m_pending_downloads.store(static_cast<int>(m_target_paths.size()));
 
-    bool support_p2p = Slic3r::GUI::wxGetApp().is_selected_device_support_p2p();
-
-    //y83
-    if(support_p2p){
-        for (size_t i = 0; i < m_target_paths.size(); ++i) {
-            DownloadOneFileViaP2P(m_target_paths[i], m_local_paths[i]);
-        }
-    } else {
-        for (size_t i = 0; i < m_target_paths.size(); ++i) {
-            DownloadOneFile(m_target_paths[i], m_local_paths[i]);
-        }
+    for (size_t i = 0; i < m_target_paths.size(); ++i) {
+        DownloadOneFile(m_target_paths[i], m_local_paths[i]);
     }
 }
 
-//y83
-void PartSkipDialog::DownloadOneFileViaP2P(const std::string &remote_name, const std::string &local_path){
+
+//y84
+void PartSkipDialog::DownloadOneFile(const std::string &remote_name, const std::string &local_path)
+{
 #if QDT_RELEASE_TO_PUBLIC
-    auto& p2p = P2PManager::instance();
-    if(!p2p.isConnected()){
-        m_download_failed.store(true);
+    auto dev   = Slic3r::GUI::wxGetApp().qdsdevmanager->getSelectedDevice();
+    QIDIFileManager qdsfmsg(dev);
+
+    if (qdsfmsg.supportsP2P()) {
+        if (!P2PManager::instance().isConnected()) {
+            m_download_failed.store(true);
+            int left = m_pending_downloads.fetch_sub(1) - 1;
+            if (left == 0) CallAfter([this] { OnAllDownloadsFinished(); });
+            return;
+        }
+        std::string device_path = "/home/qidi/printer_data/.temp/" + remote_name;
+        P2PManager::FileTransferOptions opt;
+        opt.write_partial = true;
+
+        auto result = qdsfmsg.downloadFile(device_path, local_path, opt);
+        if (result.ok) {
+            BOOST_LOG_TRIVIAL(info) << "part skip: download completed: " << remote_name
+                << " (" << result.bytes << " bytes, " << result.chunks << " chunks)";
+        }
+        if (!result.ok)
+            m_download_failed.store(true);
+
         int left = m_pending_downloads.fetch_sub(1) - 1;
         if (left == 0) {
             CallAfter([this] { OnAllDownloadsFinished(); });
         }
-    }
-
-    // Synchronisation
-    std::mutex              xferMutex;
-    std::condition_variable xferCV;
-    bool                    xferDone = false;
-    bool                    xferCancel = false;
-
-    // Protocol state (protected by xferMutex)
-    int64_t                             totalFileSize = -1;
-    int64_t                             totalBytesReceived = 0;
-    std::map<int32_t, std::vector<char>> sequenceChunks;   // sequence → data (sorted by sequence)
-    bool                                fileBeginReceived = false;
-    bool                                fileEndReceived = false;
-    int32_t                             totalChunks = -1;
-
-    // Throttled progress reporting (~500ms)
-    std::atomic<int64_t> latestBytes{ 0 };
-    std::atomic<int64_t> latestTotal{ 0 };
-
-    int fileToken = p2p.onFile([&](uint8_t type, int64_t transferId, int32_t sequence,
-    const uint8_t* data, size_t len) {
-        std::lock_guard<std::mutex> lock(xferMutex);
-
-        if (type == 0x20) { // ── FILE_BEGIN ──
-            // payload: fileNameLen(4) + fileName + mimeTypeLen(4) + mimeType + fileSize(8) + chunkSize(4)
-            size_t pos = 0;
-            if (pos + 4 > len) return;
-            uint32_t fnLen = p2p.readU32BE(data + pos); pos += 4;
-            if (pos + fnLen > len) return;
-            pos += fnLen; // skip fileName
-
-            if (pos + 4 > len) return;
-            uint32_t mtLen = p2p.readU32BE(data + pos); pos += 4;
-            if (pos + mtLen > len) return;
-            pos += mtLen; // skip mimeType
-
-            if (pos + 8 > len) return;
-            totalFileSize = (int64_t)p2p.readU64BE(data + pos); pos += 8;
-            // chunkSize at pos+4, not needed for receiving
-
-            fileBeginReceived = true;
-            latestTotal = totalFileSize;
-            BOOST_LOG_TRIVIAL(trace) << "P2P download: FILE_BEGIN, fileSize=" << totalFileSize;
-
-        }
-        else if (type == 0x21) { // ── FILE_CHUNK ──
-            // P2P file chunk payload format:
-            //   [0..7]  offset     (Int64 Big Endian)
-            //   [8..11] chunkSize  (Int32 Big Endian) — extra field from device
-            //   [12..]  fileData
-            static constexpr size_t FILE_CHUNK_HDR = 12;
-            if (len < FILE_CHUNK_HDR) return;
-            int64_t offset = (int64_t)p2p.readU64BE(data);
-            size_t chunkLen = len - FILE_CHUNK_HDR;
-
-            // Dedup by sequence (map already contains this sequence → ignore)
-            if (sequenceChunks.find(sequence) != sequenceChunks.end())
-                return;
-            // Store chunk keyed by sequence for ordered reassembly
-            sequenceChunks[sequence].assign(data + FILE_CHUNK_HDR, data + FILE_CHUNK_HDR + chunkLen);
-            totalBytesReceived += chunkLen;
-            latestBytes = totalBytesReceived;
-
-        }
-        else if (type == 0x22) { // ── FILE_END ──
-            totalChunks = sequence; // sequence == totalChunks
-            if (len >= 8) {
-                int64_t endSize = (int64_t)p2p.readU64BE(data);
-                BOOST_LOG_TRIVIAL(trace) << ", totalChunks=" << totalChunks
-                    << ", received=" << totalBytesReceived;
-            }
-            fileEndReceived = true;
-            xferDone = true;
-            xferCV.notify_one();
-
-        }
-        else if (type == 0x23) { // ── FILE_CANCEL ──
-            std::string reason((const char*)data, len);
-            BOOST_LOG_TRIVIAL(warning) << "P2P download: FILE_CANCEL: " << reason;
-            xferCancel = true;
-            xferCV.notify_one();
-        }
-    });
-
-    json req;
-    req["method"] = "request_file";
-    std::string file_temp_path = "/home/qidi/printer_data/.temp/" + remote_name;
-    req["params"]["file_path"] = file_temp_path;
-    int64_t reqId = (int64_t)(std::chrono::system_clock::now().time_since_epoch().count());
-    const int maxRetries = 5;
-    for (int retry = 0; retry < maxRetries; retry++) {
-        int wrRet = p2p.sendTextCommand(req.dump(), reqId);
-        if (wrRet >= 0) {
-            BOOST_LOG_TRIVIAL(trace) << "VideoPanel: Sent request_video (reqId=" << reqId << ")";
-            break;
-        }
-        else {
-            BOOST_LOG_TRIVIAL(trace) << "VideoPanel: Failed to send request_video (attempt " << (retry + 1) << "/" << maxRetries << "), ret=" << wrRet;
-            if (retry < maxRetries - 1)
-                std::this_thread::sleep_for(500ms);
-        }
-    }
-
-    // Wait for transfer to complete (max 300s)
-    {
-        std::unique_lock<std::mutex> lock(xferMutex);
-        xferCV.wait_for(lock, std::chrono::seconds(300),
-            [&] { return xferDone || xferCancel; });
-    }
-
-    p2p.off(fileToken);
-
-    // ── Completion check ──
-    bool complete = xferDone && !xferCancel && fileEndReceived;
-    if (complete && totalFileSize > 0 && totalBytesReceived < totalFileSize) {
-        BOOST_LOG_TRIVIAL(warning) << "P2P download: incomplete (" << totalBytesReceived
-            << "/" << totalFileSize << " bytes)";
-    }
-
-    // ── Reassemble by sequence order and write to disk ──
-    try {
-        boost::filesystem::create_directories(
-            boost::filesystem::path(local_path).parent_path());
-        wxFile fout(wxString::FromUTF8(local_path), wxFile::write);
-        if (!fout.IsOpened()) {
-            BOOST_LOG_TRIVIAL(error) << "P2P download: cannot write " << local_path;
+    //y84
+    } else {
+        //y84: frp 设备的 .temp 文件走 QIDIDeviceApi 异步 HTTP 下载（device 内部路径不被 frp 通道支持）。
+        if (!dev || dev->m_frp_url.empty()) {
+            BOOST_LOG_TRIVIAL(warning) << "part skip: empty FRP url, skip download.";
             m_download_failed.store(true);
+            CallAfter([this] { OnAllDownloadsFinished(); });
             return;
         }
-
-        // Write chunks in sequence order (map is sorted by key = sequence)
-        for (auto& kv : sequenceChunks) {
-            fout.Write(kv.second.data(), kv.second.size());
-        }
-        fout.Close();
-
-        BOOST_LOG_TRIVIAL(info) << "P2P download completed: " << remote_name
-            << " (" << totalBytesReceived << " bytes, "
-            << sequenceChunks.size() << " chunks)";
+        QIDIDeviceApi::download_file_async(dev->m_frp_url, remote_name, local_path, 30, ".temp",
+            [this, remote_name](bool ok) {
+                if (!ok) {
+                    BOOST_LOG_TRIVIAL(warning) << "part skip: download failed, file=" << remote_name;
+                    m_download_failed.store(true);
+                }
+                int left = m_pending_downloads.fetch_sub(1) - 1;
+                if (left == 0) CallAfter([this] { OnAllDownloadsFinished(); });
+            });
     }
-    catch (const std::exception& e) {
-        BOOST_LOG_TRIVIAL(error) << "P2P download: write exception: " << e.what();
-        m_download_failed.store(true);
-    }
+#else
+
     int left = m_pending_downloads.fetch_sub(1) - 1;
     if (left == 0) {
         CallAfter([this] { OnAllDownloadsFinished(); });
     }
 #endif
-}
-
-//cj_4
-// Fire off a single async GET. The Http callbacks are invoked on the worker
-// thread, so we marshal completion/failure back to the GUI thread through
-// CallAfter() before touching any widget state.
-void PartSkipDialog::DownloadOneFile(const std::string &remote_name, const std::string &local_path)
-{
-    std::string url = m_frp_url + "/server/files/.temp/" + remote_name;
-    BOOST_LOG_TRIVIAL(info) << "part skip: download begin, url=" << url << ", local=" << local_path;
-
-    auto http = Http::get(url);
-    http.timeout_connect(10)
-        .timeout_max(30)
-        .on_complete([this, local_path, remote_name](std::string body, unsigned http_status) {
-            if (http_status >= 400) {
-                BOOST_LOG_TRIVIAL(warning) << "part skip: download http status=" << http_status
-                                           << ", file=" << remote_name;
-                m_download_failed.store(true);
-            } else {
-                try {
-                    boost::nowide::ofstream ofs(local_path, std::ios::binary | std::ios::trunc);
-                    ofs.write(body.data(), body.size());
-                    ofs.close();
-                } catch (const std::exception &e) {
-                    BOOST_LOG_TRIVIAL(error) << "part skip: write file failed, " << e.what()
-                                             << ", path=" << local_path;
-                    m_download_failed.store(true);
-                }
-            }
-
-            int left = m_pending_downloads.fetch_sub(1) - 1;
-            if (left == 0) {
-                CallAfter([this] { OnAllDownloadsFinished(); });
-            }
-        })
-        .on_error([this, remote_name](std::string body, std::string error, unsigned http_status) {
-            BOOST_LOG_TRIVIAL(warning) << "part skip: download error, file=" << remote_name
-                                       << ", status=" << http_status << ", err=" << error;
-            m_download_failed.store(true);
-            int left = m_pending_downloads.fetch_sub(1) - 1;
-            if (left == 0) {
-                CallAfter([this] { OnAllDownloadsFinished(); });
-            }
-        })
-        .perform();
 }
 
 //cj_4

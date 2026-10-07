@@ -16,6 +16,7 @@
 #include <wx/sizer.h>
 #include <wx/gbsizer.h>
 #include <wx/webrequest.h>
+#include <atomic>
 #include "MediaPlayCtrl.h"
 #include "AMSSetting.hpp"
 #include "Calibration.hpp"
@@ -42,6 +43,7 @@
 
 //y76
 #include "QDSDeviceManager.hpp"
+#include "DeviceSettingDialog.hpp"
 
 class StepIndicator;
 
@@ -78,8 +80,6 @@ namespace GUI {
 	wxDECLARE_EVENT(EVTSET_Y_AXIS, wxCommandEvent);
 	wxDECLARE_EVENT(EVTSET_Z_AXIS, wxCommandEvent);
 	wxDECLARE_EVENT(EVTSET_PRINT_CONTROL, wxCommandEvent); //print/control
-	wxDECLARE_EVENT(EVTSET_FILAMENT_TYPE, wxCommandEvent); ///filament/type
-	wxDECLARE_EVENT(EVTSET_FILAMENT_VENDOR, wxCommandEvent); ///filament/vendor
 	wxDECLARE_EVENT(EVTSET_FILAMENT_LOAD, wxCommandEvent); ///set/filament/load
 	wxDECLARE_EVENT(EVTSET_FILAMENT_UNLOAD, wxCommandEvent); ///set/filament/unload
     //cj_3
@@ -477,7 +477,8 @@ protected:
     CameraRecordingStatus m_state_recording{CameraRecordingStatus::RECORDING_NONE};
     CameraTimelapseStatus m_state_timelapse{CameraTimelapseStatus::TIMELAPSE_NONE};
 
-    CameraItem *m_setting_button;
+    //CameraItem *m_setting_button;
+    DevSettingButton* m_setting_button;
     CameraItem *m_camera_fullscreen_button{ nullptr };
     wxBoxSizer *m_camera_media_sizer{ nullptr };
     CameraFullscreenFrame *m_camera_fullscreen_frame{ nullptr };
@@ -517,7 +518,10 @@ protected:
     wxStaticBitmap *m_bitmap_static_use_weight;
 
 
-    wxMediaCtrl3 *  m_media_ctrl;
+    //y84
+    //wxMediaCtrl3 *  m_media_ctrl;
+    VideoPanel *    m_media_ctrl{ nullptr };
+
     MediaPlayCtrl * m_media_play_ctrl;
 
     Label *         m_staticText_printing;
@@ -656,6 +660,10 @@ public:
     std::string m_hms_device_id;
     bool m_hms_has_unread{ false };
     class HMSDialog* m_hms_dlg{ nullptr };
+
+    //y84
+    DeviceSettingDialog* m_setting_dlg {nullptr};
+    void update_setting_options();
 protected:
 
     //cj_4
@@ -815,16 +823,27 @@ public:
     //cj_3 Clear model list only; do not switch to Control tab (used when getFileInfo refreshes the list)
     void clear_model_items_only();
     // cj_2 y83
-    void add_model_item(std::string itemName, std::string weight, std::string preTime, std::string imgPath,int imgSize = 0, std::string file_path="");
+    //y84
+    void add_model_item(std::string itemName, std::string weight, std::string preTime, std::string imgPath,int imgSize = 0, std::string file_path="", std::vector<uint8_t> p2p_png = {});
     //cj_5 Call before batch add_model_item to freeze layout (avoid O(n²) sizer recalc).
     void freeze_model_list();
     //cj_5 Call after batch add_model_item to flush layout once instead of per-row.
     void flush_model_batch();
+
+    //y84
+    void show_model_file_list_error();
+    void show_timelapse_file_list_error();
+
     //cj_5 Call after batch add_timelapse_file_item to flush layout once.
     //cj_5 Call before batch add_timelapse_file_item to freeze layout.
     void freeze_timelapse_list();
     void flush_timelapse_batch();
     void refreshThumbnailItem(const std::string& file_name, const std::vector<uint8_t>& png_data);
+    //y84
+    void refreshTimelapseThumbnailItem(const std::string& file_name, const std::vector<uint8_t>& jpg_data);
+    //cj_6 Single batched refresh for thumbnail updates; call once after a batch of
+    // refreshThumbnailItem/refreshTimelapseThumbnailItem to avoid O(N²) per-item Repaint.
+    void flushThumbnailUpdates();
     //cj_3 Model file list (context menu drives actions; no multi-select).
     void print_model_for_storage_path(const wxString& storage_path);
     void remove_model_row_by_storage_path(const wxString& path);
@@ -848,6 +867,8 @@ public:
     	//cj_3 y83
 	void add_timelapse_file_item(const TimelapseFileInfo& timelapse_info);
     //cj_3
+    //y84
+    void update_camera_state(std::shared_ptr<QDSDevice> obj);
 protected:
     void after_timelapse_tab_shown() override;
     void request_refresh_file_lists() override;
@@ -1128,6 +1149,10 @@ private:
     //cj_3
     bool m_allow_print_speed_control{ false };
     bool m_monitor_misc_temp_area{ false };
+
+//y84
+    std::string m_p2p_thumbnail_key;
+    std::atomic<bool> m_thumbnail_loading{false};
 };
 }
 }

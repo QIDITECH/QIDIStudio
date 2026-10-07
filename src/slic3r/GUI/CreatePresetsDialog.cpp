@@ -1129,6 +1129,12 @@ wxBoxSizer *CreateFilamentPresetDialog::create_button_item()
                 }
             }
         }
+        // y84: kick off the new cloud-sync interface so a freshly created user-defined
+        // filament (marked sync_info = "create" by clone_presets_for_filament) is pushed to
+        // the cloud. Without this the new interface is never invoked from this dialog.
+#if QDT_RELEASE_TO_PUBLIC
+        UserPresetSyncManager::instance().triggerSync();
+#endif
         preset_bundle->update_compatible(PresetSelectCompatibleType::Always);
         EndModal(wxID_OK);
         });
@@ -2953,6 +2959,10 @@ wxBoxSizer *CreatePrinterPresetDialog::create_page2_btns_item(wxWindow *parent)
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " bisic info is not rewritten, may be printer_model, printer_variant, or nozzle_diameter";
         }
         preset_bundle->printers.save_current_preset(printer_preset_name, true, false, m_printer_preset);
+        // y84: trigger cloud sync for any freshly cloned user presets (filament/process).
+#if QDT_RELEASE_TO_PUBLIC
+        UserPresetSyncManager::instance().triggerSync();
+#endif
         preset_bundle->update_compatible(PresetSelectCompatibleType::Always);
         EndModal(wxID_OK);
 
@@ -5214,6 +5224,10 @@ wxBoxSizer *CreatePresetForPrinterDialog::create_button_sizer()
             return;
         }
 
+        // y84: trigger cloud sync for the newly created user-defined filament preset.
+#if QDT_RELEASE_TO_PUBLIC
+        UserPresetSyncManager::instance().triggerSync();
+#endif
         EndModal(wxID_OK);
         });
     m_cancel_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent &e) { EndModal(wxID_CANCEL); });

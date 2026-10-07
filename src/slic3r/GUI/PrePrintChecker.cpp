@@ -143,7 +143,8 @@ void PrePrintChecker::add(PrintDialogStatus state, wxString msg, wxString tip, c
         info.level = prePrintInfoLevel::Normal;
     }
 
-    if (is_error_printer(state)) {
+    //y84
+    if (is_error_printer(state) || is_info_printer(state)) {
         info.type = prePrintInfoType::Printer;
     } else if (is_error_filament(state)) {
         info.type = prePrintInfoType::Filament;

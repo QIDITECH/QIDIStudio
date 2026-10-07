@@ -39,6 +39,11 @@ public:
     ~ModelFileListView() override;
 
     void ClearAll();
+    //y84
+    void show_loading_state();
+    void show_load_failed_state();
+    void hide_state_panel();
+
     void AddItem(const wxString& storage_path, const wxBitmap& image, double weight, const wxString& estimated_time, const wxString& file_path);
     //cj_5 Call once after batch AddItem to flush layout (expensive per-row: ~60ms each).
     void FlushBatchAdd();
@@ -61,6 +66,10 @@ public:
 
 private:
     wxPanel* create_header_panel();
+
+    //y84
+    void create_state_panel();
+
     //cj_4
     void refresh_mount_usb_toggle_visibility();
     void apply_mount_filter_visibility();
@@ -76,6 +85,11 @@ private:
     std::vector<ModelFileListRow*> m_rows;
     wxPanel*        m_header_panel{ nullptr };
     wxPanel*        m_header_sep{ nullptr };
+
+    //y84
+    wxPanel*        m_state_panel{ nullptr };
+    wxStaticText*   m_state_text{ nullptr };
+
     ModelListMountFilterV2 m_mount_filter{ ModelListMountFilterV2::Local };
     Button*         m_btn_mount_local{ nullptr };
     Button*         m_btn_mount_usb{ nullptr };

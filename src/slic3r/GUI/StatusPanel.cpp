@@ -1,4 +1,5 @@
 #include "StatusPanel.hpp"
+#include <mutex>
 #include "I18N.hpp"
 #include "Widgets/Label.hpp"
 #include "Widgets/Button.hpp"
@@ -92,6 +93,9 @@
 
 #if QDT_RELEASE_TO_PUBLIC
 #include "../QIDI/P2PManager.hpp"
+#include "../QIDI/QIDIFileManager.hpp"
+#include "../QIDI/QIDIDeviceApi.hpp"
+#include "QDSDeviceManager.hpp"
 #endif
 
 namespace Slic3r { namespace GUI {
@@ -343,8 +347,6 @@ void RoundedToolButton::onLeftDown(wxMouseEvent& evt)
     wxDEFINE_EVENT(EVTSET_Y_AXIS, wxCommandEvent);
     wxDEFINE_EVENT(EVTSET_Z_AXIS, wxCommandEvent);
 	wxDEFINE_EVENT(EVTSET_PRINT_CONTROL, wxCommandEvent);
-	wxDEFINE_EVENT(EVTSET_FILAMENT_TYPE, wxCommandEvent);
-	wxDEFINE_EVENT(EVTSET_FILAMENT_VENDOR, wxCommandEvent);
     wxDEFINE_EVENT(EVTSET_FILAMENT_LOAD, wxCommandEvent); ///set/filament/load
 	wxDEFINE_EVENT(EVTSET_FILAMENT_UNLOAD, wxCommandEvent); ///set/filament/unload
     //cj_3
@@ -589,11 +591,14 @@ public:
         }
     }
 
-    void attach_media(wxMediaCtrl3 *media_ctrl)
+    //y84
+    //void attach_media(wxMediaCtrl3 *media_ctrl)
+    void attach_media(VideoPanel *media_ctrl)
     {
         m_media_ctrl = media_ctrl;
         m_saved_max_size = m_media_ctrl->GetMaxSize();
-        m_media_ctrl->SetConstrainByAspectRatio(false);
+        //y84
+        //m_media_ctrl->SetConstrainByAspectRatio(false)
         m_media_ctrl->SetMaxSize(wxDefaultSize);
         m_video_sizer->Add(m_media_ctrl, 1, wxEXPAND);
         m_media_ctrl->Bind(wxEVT_CHAR_HOOK, &CameraFullscreenFrame::on_char_hook, this);
@@ -615,7 +620,8 @@ public:
         m_media_ctrl->Unbind(wxEVT_KEY_DOWN, &CameraFullscreenFrame::on_char_hook, this);
         m_media_ctrl->Unbind(wxEVT_MOTION, &CameraFullscreenFrame::on_mouse_motion, this);
         m_video_sizer->Detach(m_media_ctrl);
-        m_media_ctrl->SetConstrainByAspectRatio(true);
+        //y84
+        // m_media_ctrl->SetConstrainByAspectRatio(true);
         m_media_ctrl->SetMaxSize(m_saved_max_size);
         m_media_ctrl = nullptr;
     }
@@ -819,7 +825,8 @@ private:
     wxWeakRef<wxWindow>          m_top_level;
     wxPanel                     *m_video_host{nullptr};
     wxBoxSizer                  *m_video_sizer{nullptr};
-    wxMediaCtrl3                *m_media_ctrl{nullptr};
+    // wxMediaCtrl3                *m_media_ctrl{nullptr};
+    VideoPanel                  *m_media_ctrl{nullptr};
     wxSize                       m_saved_max_size{wxDefaultSize};
     CameraFullscreenCloseButton *m_close_button{nullptr};
     wxTimer m_hide_timer;
@@ -2315,9 +2322,8 @@ void StatusBasePanel::close_camera_fullscreen()
 
 void StatusBasePanel::on_camera_fullscreen(wxMouseEvent &event)
 {
-    //y81
-    // if (m_camera_fullscreen_button)
-    //     m_camera_fullscreen_button->reset_hover();
+    if (m_camera_fullscreen_button)
+        m_camera_fullscreen_button->reset_hover();
     toggle_camera_fullscreen();
     event.Skip();
 }
@@ -2410,12 +2416,12 @@ wxBoxSizer *StatusBasePanel::create_monitoring_page()
     m_bitmap_vcamera_img->SetMinSize(wxSize(FromDIP(38), FromDIP(24)));
     m_bitmap_vcamera_img->Hide();
 
-    //y81
-    // m_camera_fullscreen_button = new CameraItem(m_panel_monitoring_title, "camera_fullscreen", "camera_fullscreen_hover");
-    // m_camera_fullscreen_button->SetMinSize(wxSize(FromDIP(38), FromDIP(24)));
-    // m_camera_fullscreen_button->SetBackgroundColour(STATUS_TITLE_BG);
+    m_camera_fullscreen_button = new CameraItem(m_panel_monitoring_title, "camera_fullscreen", "camera_fullscreen_hover");
+    m_camera_fullscreen_button->SetMinSize(wxSize(FromDIP(38), FromDIP(24)));
+    m_camera_fullscreen_button->SetBackgroundColour(STATUS_TITLE_BG);
 
-    m_setting_button = new CameraItem(m_panel_monitoring_title, "camera_setting", "camera_setting_hover");
+    //m_setting_button = new CameraItem(m_panel_monitoring_title, "camera_setting", "camera_setting_hover");
+    m_setting_button = new DevSettingButton(m_panel_monitoring_title);
     m_setting_button->SetMinSize(wxSize(FromDIP(38), FromDIP(24)));
     m_setting_button->SetBackgroundColour(StateColor::themed_surface_f8(wxGetApp().dark_mode()));
 
@@ -2423,14 +2429,32 @@ wxBoxSizer *StatusBasePanel::create_monitoring_page()
     m_bitmap_timelapse_img->SetToolTip(_L("Timelapse"));
     m_bitmap_recording_img->SetToolTip(_L("Video"));
     m_bitmap_vcamera_img->SetToolTip(_L("Go Live"));
-    //m_camera_fullscreen_button->SetToolTip(_L("Enter Camera Full Screen"));   //y81
-    m_setting_button->SetToolTip(_L("Camera Setting"));
+    m_camera_fullscreen_button->SetToolTip(_L("Enter Camera Full Screen"));
+    //m_setting_button->SetToolTip(_L("Camera Setting"));
+    m_setting_button->SetToolTip(_L("Printer Setting"));
+    //y84
+    m_setting_button->Bind(wxEVT_LEFT_UP, [this](wxMouseEvent&) {
+        static bool s_setting_dialog_opening = false;
+        if (s_setting_dialog_opening)
+            return;
+        s_setting_dialog_opening = true;
+        auto* dlg = new DeviceSettingDialog(wxGetApp().mainframe);
+        m_setting_dlg = dlg;
+        wxGetApp().CallAfter([this, dlg]() {
+            dlg->ShowModal();
+            if (m_setting_dlg == dlg)
+                m_setting_dlg = nullptr;
+            dlg->Destroy();
+            s_setting_dialog_opening = false;
+        });
+    });
+
     //cj
     m_setting_button->Hide();
 
     bSizer_monitoring_title->Add(m_bitmap_sdcard_img, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
 
-    //cj_5 HMS notification button �� inserted after visible sdcard button, before hidden items.
+    //cj_5 HMS notification button — inserted after visible sdcard button, before hidden items.
     m_hms_btn = new HMSIndicatorButton(m_panel_monitoring_title);
     m_hms_btn->SetToolTip(_L("QDC Notifications"));
     m_hms_btn->set_has_errors(false);
@@ -2453,7 +2477,7 @@ wxBoxSizer *StatusBasePanel::create_monitoring_page()
     bSizer_monitoring_title->Add(m_bitmap_timelapse_img, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
     bSizer_monitoring_title->Add(m_bitmap_recording_img, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
     bSizer_monitoring_title->Add(m_bitmap_vcamera_img, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
-    //bSizer_monitoring_title->Add(m_camera_fullscreen_button, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5)); //y81
+    bSizer_monitoring_title->Add(m_camera_fullscreen_button, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5)); //y81
     bSizer_monitoring_title->Add(m_setting_button, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(5));
 
     bSizer_monitoring_title->Add(FromDIP(13), 0, 0);
@@ -2473,6 +2497,7 @@ wxBoxSizer *StatusBasePanel::create_monitoring_page()
     // m_media_ctrl->SetMinSize(wxSize(PAGE_MIN_WIDTH, FromDIP(288)));
 
     VideoPanel* test_panel = new VideoPanel(this);
+    m_media_ctrl = test_panel;
 	m_media_play_ctrl = new MediaPlayCtrl(this, test_panel, wxDefaultPosition, wxSize(-1, FromDIP(40)));
 	
     // test_panel->SetStreamUrl("http://192.168.110.17/webcam/?action=snapshot");
@@ -3517,6 +3542,109 @@ void StatusBasePanel::update_light_status(bool on){
     m_switch_lamp->SetValue(on);
 }
 
+//y84
+void StatusPanel::update_camera_state(std::shared_ptr<QDSDevice> obj){
+    if (!obj) return;
+
+    // // sdcard
+    // auto sdcard_state = obj->GetStorage()->get_sdcard_state();
+    // if (m_last_sdcard != sdcard_state) {
+    //     if (sdcard_state == DevStorage::NO_SDCARD) {
+    //         m_bitmap_sdcard_img->SetBitmap(m_bitmap_sdcard_state_no.bmp());
+    //         m_bitmap_sdcard_img->SetToolTip(_L("No Storage"));
+    //     } else if (sdcard_state == DevStorage::HAS_SDCARD_NORMAL) {
+    //         m_bitmap_sdcard_img->SetBitmap(m_bitmap_sdcard_state_normal.bmp());
+    //         m_bitmap_sdcard_img->SetToolTip(_L("Storage"));
+    //     } else if (sdcard_state == DevStorage::HAS_SDCARD_ABNORMAL) {
+    //         m_bitmap_sdcard_img->SetBitmap(m_bitmap_sdcard_state_abnormal.bmp());
+    //         m_bitmap_sdcard_img->SetToolTip(_L("Storage Abnormal"));
+    //     } else {
+    //         m_bitmap_sdcard_img->SetBitmap(m_bitmap_sdcard_state_normal.bmp());
+    //         m_bitmap_sdcard_img->SetToolTip(_L("Storage"));
+    //     }
+    //     m_last_sdcard = sdcard_state;
+    //     m_panel_monitoring_title->Layout();
+    // }
+
+    // recording
+    // if (m_last_recording != (obj->is_recording() ? 1 : 0)) {
+    //     if (obj->is_recording()) {
+    //         m_bitmap_recording_img->SetBitmap(m_bitmap_recording_on.bmp());
+    //     } else {
+    //         m_bitmap_recording_img->SetBitmap(m_bitmap_recording_off.bmp());
+    //     }
+    //     m_last_recording = obj->is_recording() ? 1 : 0;
+    // }
+
+    // if (!m_bitmap_recording_img->IsShown()) {
+    //     m_bitmap_recording_img->Show();
+    //     m_panel_monitoring_title->Layout();
+    // }
+
+    /*if (m_bitmap_recording_img->IsShown())
+        m_bitmap_recording_img->Hide();*/
+
+    // timelapse
+    // 后续机型添加support_time之后修改为判断条件
+    if (true) {
+        if (m_last_timelapse != (obj->timelapse_state ? 1 : 0)) {
+            if (obj->timelapse_state) {
+                m_bitmap_timelapse_img->SetBitmap(m_bitmap_timelapse_on.bmp());
+            } else {
+                m_bitmap_timelapse_img->SetBitmap(m_bitmap_timelapse_off.bmp());
+            }
+            m_last_timelapse = obj->timelapse_state ? 1 : 0;
+        }
+
+        if (!m_bitmap_timelapse_img->IsShown()) {
+            m_bitmap_timelapse_img->Show();
+            m_panel_monitoring_title->Layout();
+        }
+    } else {
+        if (m_bitmap_timelapse_img->IsShown()) {
+            m_bitmap_timelapse_img->Hide();
+            m_panel_monitoring_title->Layout();
+        }
+    }
+
+    // // vcamera
+    // if (obj->virtual_camera) {
+    //     if (m_last_vcamera != (m_media_play_ctrl->IsStreaming() ? 1 : 0)) {
+    //         if (m_media_play_ctrl->IsStreaming()) {
+    //             m_bitmap_vcamera_img->SetBitmap(m_bitmap_vcamera_on.bmp());
+    //         } else {
+    //             m_bitmap_vcamera_img->SetBitmap(m_bitmap_vcamera_off.bmp());
+    //         }
+    //         m_last_vcamera = m_media_play_ctrl->IsStreaming() ? 1 : 0;
+    //     }
+
+    //     if (!m_bitmap_vcamera_img->IsShown()) {
+    //         m_bitmap_vcamera_img->Show();
+    //         m_panel_monitoring_title->Layout();
+    //     }
+    // } else {
+    //     if (m_bitmap_vcamera_img->IsShown()) {
+    //         m_bitmap_vcamera_img->Hide();
+    //         m_panel_monitoring_title->Layout();
+    //     }
+    // }
+
+    // // camera setting
+    // if (m_camera_popup && m_camera_popup->IsShown()) {
+    //     bool show_vcamera = m_media_play_ctrl->IsStreaming();
+    //     m_camera_popup->update(show_vcamera);
+    // }
+
+    // fullscreen button: enable only when media is playing
+    if (m_camera_fullscreen_button) {
+        bool playing = m_media_ctrl && m_media_ctrl->GetState() == wxMEDIASTATE_PLAYING;
+        if (m_camera_fullscreen_button->IsEnabled() != playing) {
+            m_camera_fullscreen_button->Enable(playing);
+            m_camera_fullscreen_button->Refresh();
+        }
+    }
+}
+
 void StatusPanel::update_camera_state(MachineObject* obj)
 {
     if (!obj) return;
@@ -3609,15 +3737,14 @@ void StatusPanel::update_camera_state(MachineObject* obj)
         m_camera_popup->update(show_vcamera);
     }
 
-    //y81
-    // // fullscreen button: enable only when media is playing
-    // if (m_camera_fullscreen_button) {
-    //     bool playing = m_media_ctrl && m_media_ctrl->GetState() == wxMEDIASTATE_PLAYING;
-    //     if (m_camera_fullscreen_button->IsEnabled() != playing) {
-    //         m_camera_fullscreen_button->Enable(playing);
-    //         m_camera_fullscreen_button->Refresh();
-    //     }
-    // }
+    // fullscreen button: enable only when media is playing
+    if (m_camera_fullscreen_button) {
+        bool playing = m_media_ctrl && m_media_ctrl->GetState() == wxMEDIASTATE_PLAYING;
+        if (m_camera_fullscreen_button->IsEnabled() != playing) {
+            m_camera_fullscreen_button->Enable(playing);
+            m_camera_fullscreen_button->Refresh();
+        }
+    }
 }
 
 StatusPanel::StatusPanel(wxWindow *parent, wxWindowID id, const wxPoint &pos, const wxSize &size, long style, const wxString &name)
@@ -3678,11 +3805,11 @@ StatusPanel::StatusPanel(wxWindow *parent, wxWindowID id, const wxPoint &pos, co
     m_project_task_panel->get_market_retry_buttom()->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(StatusPanel::on_market_retry), NULL, this);
     m_project_task_panel->get_clean_button()->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(StatusPanel::on_print_error_clean), NULL, this);
 
-    m_setting_button->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(StatusPanel::on_camera_enter), NULL, this);
-    m_setting_button->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(StatusPanel::on_camera_enter), NULL, this);
-    //y81
-    // m_camera_fullscreen_button->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(StatusBasePanel::on_camera_fullscreen), NULL, this);
-    // m_camera_fullscreen_button->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(StatusBasePanel::on_camera_fullscreen), NULL, this);
+    //m_setting_button->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(StatusPanel::on_camera_enter), NULL, this);
+    //m_setting_button->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(StatusPanel::on_camera_enter), NULL, this);
+
+    m_camera_fullscreen_button->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(StatusBasePanel::on_camera_fullscreen), NULL, this);
+    m_camera_fullscreen_button->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(StatusBasePanel::on_camera_fullscreen), NULL, this);
     m_tempCtrl_bed->Connect(wxEVT_KILL_FOCUS, wxFocusEventHandler(StatusPanel::on_bed_temp_kill_focus), NULL, this);
     m_tempCtrl_bed->Connect(wxEVT_SET_FOCUS, wxFocusEventHandler(StatusPanel::on_bed_temp_set_focus), NULL, this);
     m_tempCtrl_nozzle->Connect(wxEVT_KILL_FOCUS, wxFocusEventHandler(StatusPanel::on_nozzle_temp_kill_focus), NULL, this);
@@ -3732,33 +3859,8 @@ StatusPanel::StatusPanel(wxWindow *parent, wxWindowID id, const wxPoint &pos, co
     Bind(EVT_SECONDARY_CHECK_RESUME, &StatusPanel::on_subtask_pause_resume, this);
     Bind(EVT_SECONDARY_CHECK_RETRY, [this](auto &e) { if (m_ams_control) { m_ams_control->on_retry(); }});
     Bind(EVT_SELECTED_TYPE, &StatusPanel::on_selected_type, this);
-    //cj_1
-    Bind(EVT_SET_COLOR, [this](wxCommandEvent& e) {
-        
-        e.SetInt(curSelectSlotIndex);
-        e.Skip();  // Also let parent handlers run
-        });
-    //cj_1
-	Bind(EVT_SET_TYPE, [this](wxCommandEvent& e) {
-        wxString vendorAndType = e.GetString();
-		size_t spacePos = vendorAndType.find(' ');
-		wxString type = "";
-		wxString vendor = "";
-		if (spacePos != wxString::npos) {
-            vendor = vendorAndType.substr(0, spacePos);
-            type = vendorAndType.substr(spacePos + 1);
-		}
-
-		wxCommandEvent eventType(EVTSET_FILAMENT_TYPE);
-        eventType.SetInt(curSelectSlotIndex);
-        eventType.SetString(type);
-		wxPostEvent(GetParent(), eventType);
-
-		wxCommandEvent eventVendor(EVTSET_FILAMENT_VENDOR);
-        eventVendor.SetInt(curSelectSlotIndex);
-        eventVendor.SetString(vendor);
-		wxPostEvent(GetParent(), eventVendor);
-	});
+    //cj_1: color/type/vendor are sent as a single EVTSET_FILAMENT_INFO from
+    // AMSMaterialsSetting::on_select_ok (see PrinterTaskDispatcher), so no per-field forwarders here.
 
     //cj_1
     //Bind()
@@ -3774,6 +3876,9 @@ StatusPanel::StatusPanel(wxWindow *parent, wxWindowID id, const wxPoint &pos, co
 	m_ams_control->EnableUnLoadFilamentBtn(false, "", "", "");
     //cj_3
     m_ams_control->EnableEjectFilamentBtn(false, "", "", "");
+
+    //y84
+    rescale_camera_icons();
 }
 
 StatusPanel::~StatusPanel()
@@ -3787,13 +3892,13 @@ StatusPanel::~StatusPanel()
     m_project_task_panel->get_market_retry_buttom()->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(StatusPanel::on_market_retry), NULL, this);
     m_project_task_panel->get_clean_button()->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(StatusPanel::on_print_error_clean), NULL, this);
 
-    m_setting_button->Disconnect(wxEVT_LEFT_DOWN, wxMouseEventHandler(StatusPanel::on_camera_enter), NULL, this);
-    m_setting_button->Disconnect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(StatusPanel::on_camera_enter), NULL, this);
-    //y81
-    // if (m_camera_fullscreen_button) {
-    //     m_camera_fullscreen_button->Disconnect(wxEVT_LEFT_DOWN, wxMouseEventHandler(StatusBasePanel::on_camera_fullscreen), NULL, this);
-    //     m_camera_fullscreen_button->Disconnect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(StatusBasePanel::on_camera_fullscreen), NULL, this);
-    // }
+    //m_setting_button->Disconnect(wxEVT_LEFT_DOWN, wxMouseEventHandler(StatusPanel::on_camera_enter), NULL, this);
+    //m_setting_button->Disconnect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(StatusPanel::on_camera_enter), NULL, this);
+
+    if (m_camera_fullscreen_button) {
+        m_camera_fullscreen_button->Disconnect(wxEVT_LEFT_DOWN, wxMouseEventHandler(StatusBasePanel::on_camera_fullscreen), NULL, this);
+        m_camera_fullscreen_button->Disconnect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(StatusBasePanel::on_camera_fullscreen), NULL, this);
+    }
     m_tempCtrl_bed->Disconnect(wxEVT_KILL_FOCUS, wxFocusEventHandler(StatusPanel::on_bed_temp_kill_focus), NULL, this);
     m_tempCtrl_bed->Disconnect(wxEVT_SET_FOCUS, wxFocusEventHandler(StatusPanel::on_bed_temp_set_focus), NULL, this);
     m_tempCtrl_nozzle->Disconnect(wxEVT_KILL_FOCUS, wxFocusEventHandler(StatusPanel::on_nozzle_temp_kill_focus), NULL, this);
@@ -3912,117 +4017,118 @@ void StatusPanel::update_print_status(std::string status)
 	}
 }
 
-//cj_1
+//cj_1 y84
 void StatusPanel::update_thumbnail(std::string url)
 {
-    if (m_request_url == wxString(url)) {
-        return;
-    }
+    auto dev_set = wxGetApp().qdsdevmanager->getSelectedDevice();
 
-	m_request_url = wxString(url);
-    if (!m_request_url.IsEmpty()) {
-        //y83
-        bool get_msg_from_p2p = false;
-        auto dev_set = wxGetApp().qdsdevmanager->getSelectedDevice();
-        if(dev_set->active_p2p){
 #if QDT_RELEASE_TO_PUBLIC
-            auto &p2p = P2PManager::instance();
+    if (dev_set && dev_set->p2p_enable) {
 
-            std::mutex              xferMutex;
-            std::condition_variable xferCV;
-            bool                    xferDone   = false;
-            bool                    xferCancel = false;
-            std::vector<char>       xferBuf;
-            int fileToken = p2p.onFile([&](uint8_t type, int64_t transferId, int32_t sequence,
-                                            const uint8_t *data, size_t len) {
-                if (type == 0x20) { // FILE_BEGIN
-                    std::lock_guard<std::mutex> lock(xferMutex);
-                    xferBuf.clear();
-                    xferDone   = false;
-                    xferCancel = false;
-                } else if (type == 0x21) { // FILE_CHUNK
-                    std::lock_guard<std::mutex> lock(xferMutex);
-                    xferBuf.insert(xferBuf.end(), data, data + len);
-                } else if (type == 0x22) { // FILE_END
-                    {
-                        std::lock_guard<std::mutex> lock(xferMutex);
-                        xferDone = true;
-                    }
-                    xferCV.notify_one();
-                } else if (type == 0x23) { // FILE_CANCEL
-                    {
-                        std::lock_guard<std::mutex> lock(xferMutex);
-                        xferCancel = true;
-                        xferBuf.clear();
-                    }
-                    xferCV.notify_one();
-                }
-            });
-
-            {
-                std::lock_guard<std::mutex> lock(xferMutex);
-                xferBuf.clear();
-                xferDone   = false;
-                xferCancel = false;
+        std::string print_key = dev_set->m_print_filename;
+        if (m_p2p_thumbnail_key == print_key) {
+            if (print_key.empty()) {
+                m_project_task_panel->reset_printing_value();
+                m_p2p_thumbnail_key.clear();
             }
+            return;
+        }
 
+        if (m_thumbnail_loading.load()) {
+            return;
+        }
+
+        m_p2p_thumbnail_key = print_key;
+        m_thumbnail_loading.store(true);
+
+        auto dev_sp = dev_set;
+        std::thread([this, dev_sp, print_key]() {
+            QIDIFileManager qdsfmsg(dev_sp);
             json imgReq;
-            imgReq["method"]              = "request_model_image";
-            imgReq["params"]["file_path"]   = dev_set->m_print_png_path_for_p2p;
-            imgReq["params"]["plate_index"] = dev_set->m_print_png_plate_index;
+            imgReq["method"] = "fetch_printing_thumbnail";
+            P2PManager::FileTransferOptions opt;
+            opt.timeout = std::chrono::seconds(5);
+            opt.send_retries = 1;
+            opt.reassemble_by_sequence = false;
+            opt.strip_chunk_header = false;
 
-            int64_t imgReqId = (int64_t)(std::chrono::system_clock::now().time_since_epoch().count());
-            p2p.sendTextCommand(imgReq.dump(), imgReqId);
-            
-            std::vector<char> received;
-            {
-                std::unique_lock<std::mutex> lock(xferMutex);
-                bool ok = xferCV.wait_for(lock, std::chrono::seconds(15),
-                                            [&] { return xferDone || xferCancel; });
-                if (ok && xferDone && !xferBuf.empty()) {
-                    received = std::move(xferBuf);
+            auto thumb = qdsfmsg.fetchBuffer(imgReq.dump(), opt);
+            std::vector<char> png_msg = std::move(thumb.data);
+            const bool ok = thumb.ok && !png_msg.empty();
+
+            wxGetApp().CallAfter([this, ok, png_msg = std::move(png_msg), print_key]() {
+                if (m_p2p_thumbnail_key != print_key) {
+                    m_thumbnail_loading.store(false);
+                    return;
                 }
-            }     
-            std::vector<char> receice_png_msg;
-            if (!received.empty()) {
-                receice_png_msg = std::move(received);
-            } else {
-                BOOST_LOG_TRIVIAL(warning) << "QDSDeviceManager: thumbnail fetch "
-                                            << "failed for " << dev_set->m_print_png_path_for_p2p
-                                            << " plate=" << dev_set->m_print_png_plate_index;
-            }
-            p2p.off(fileToken);
+                if (ok) {
+                    wxMemoryInputStream stream(png_msg.data(), png_msg.size());
+                    wxImage image(stream, wxBITMAP_TYPE_ANY);
+                    if (image.IsOk()) {
+                        wxImage resize_img = image.Scale(m_project_task_panel->get_bitmap_thumbnail()->GetSize().x,
+                                                         m_project_task_panel->get_bitmap_thumbnail()->GetSize().y);
+                        m_project_task_panel->set_thumbnail_img(resize_img, "");
+                    } else {
+                        m_p2p_thumbnail_key.clear();
+                    }
+                } else {
+                    BOOST_LOG_TRIVIAL(warning) << "QDSDeviceManager: printing thumbnail fetch failed for device "
+                                               << print_key;
+                    m_p2p_thumbnail_key.clear();
+                }
+                m_thumbnail_loading.store(false);
+            });
+        }).detach();
+    }
+    else if (m_request_url != wxString(url)) {
+        if (url.empty()) {
+            m_request_url.clear();
+            m_project_task_panel->reset_printing_value();
+            return;
+        }
 
-            wxMemoryInputStream stream(receice_png_msg.data(), receice_png_msg.size());
-            wxImage image(stream, wxBITMAP_TYPE_ANY);
-            if(image.IsOk()){
-                wxImage resize_img = image.Scale(m_project_task_panel->get_bitmap_thumbnail()->GetSize().x, m_project_task_panel->get_bitmap_thumbnail()->GetSize().y);
-                m_project_task_panel->set_thumbnail_img(resize_img, "");
-                get_msg_from_p2p = true;
-            } else {
-                get_msg_from_p2p = false;
-            }
+        if (m_thumbnail_loading.load()) {
+            return;
+        }
+
+        if (!dev_set) {
+            return;
+        }
+
+        m_request_url = wxString(url);
+
+        m_thumbnail_loading.store(true);
+        const std::string req_url = url;
+        std::thread([this, req_url]() {
+            std::vector<char> png_msg;
+            const bool ok = QIDIDeviceApi::fetch_url_to_buffer(req_url, png_msg, 30);
+            wxGetApp().CallAfter([this, ok, png_msg = std::move(png_msg), req_url]() {
+                if (m_request_url != wxString(req_url)) {
+                    m_thumbnail_loading.store(false);
+                    return;
+                }
+                if (ok && !png_msg.empty()) {
+                    wxMemoryInputStream stream(png_msg.data(), png_msg.size());
+                    wxImage image(stream, wxBITMAP_TYPE_ANY);
+                    if (image.IsOk()) {
+                        wxImage resize_img = image.Scale(m_project_task_panel->get_bitmap_thumbnail()->GetSize().x,
+                                                         m_project_task_panel->get_bitmap_thumbnail()->GetSize().y);
+                        m_project_task_panel->set_thumbnail_img(resize_img, "");
+                        task_thumbnail_state = ThumbnailState::TASK_THUMBNAIL;
+                    } else {
+                        m_project_task_panel->set_thumbnail_img(m_thumbnail_brokenimg.bmp(), m_thumbnail_brokenimg.name());
+                        task_thumbnail_state = ThumbnailState::BROKEN_IMG;
+                    }
+                } else {
+                    BOOST_LOG_TRIVIAL(warning) << "StatusPanel: fetch printing thumbnail failed, url: " << req_url;
+                    m_project_task_panel->set_thumbnail_img(m_thumbnail_brokenimg.bmp(), m_thumbnail_brokenimg.name());
+                    task_thumbnail_state = ThumbnailState::BROKEN_IMG;
+                }
+                m_thumbnail_loading.store(false);
+            });
+        }).detach();
+    }
 #endif
-        }
-
-        if(!get_msg_from_p2p){
-            wxImage                               img;
-            std::map<wxString, wxImage>::iterator it = img_list.find(m_request_url);
-            if (it != img_list.end()) {
-                img = it->second;
-                wxImage resize_img = img.Scale(m_project_task_panel->get_bitmap_thumbnail()->GetSize().x, m_project_task_panel->get_bitmap_thumbnail()->GetSize().y);
-                m_project_task_panel->set_thumbnail_img(resize_img, "");
-            }
-            else {
-                web_request = wxWebSession::GetDefault().CreateRequest(this, m_request_url);
-                web_request.Start();
-                m_start_loading_thumbnail = false;
-            }
-        }
-    }
-    else {
-        m_project_task_panel->reset_printing_value();
-    }
 }
 
 //cj_1
@@ -4893,24 +4999,42 @@ void StatusPanel::clear_model_item()
 }
 
 //y83
-void StatusPanel::add_model_item(std::string modelName, std::string weight, std::string preTime, std::string imgPath, int imgSize, std::string file_path)
+void StatusPanel::add_model_item(std::string modelName, std::string weight, std::string preTime, std::string imgPath, int imgSize, std::string file_path, std::vector<uint8_t> p2p_png)
 {
 	//cj_3
 	wxBitmap sampleImage = ScalableBitmap(this, "monitor_placeholder", 18).bmp();
 	m_model_panel->AddItem(from_u8(modelName), sampleImage, std::atoi(weight.c_str()), preTime, file_path);
     //cj_5 Per-row Refresh moved to flush_model_batch() for batch loads.
 
-    if(imgPath.empty())
+    //y84
+    if (!p2p_png.empty()) {
+        BOOST_LOG_TRIVIAL(error) << "add_model_item: use P2P thumbnail for "
+                                 << modelName << " (" << p2p_png.size() << " bytes)";
+        refreshThumbnailItem(modelName, p2p_png);
         return;
+    }
+
+    if(imgPath.empty()) {
+        BOOST_LOG_TRIVIAL(error) << "add_model_item: NO thumbnail source (imgPath empty, no P2P data) for "
+                                 << modelName;
+        return;
+    }
+
+    BOOST_LOG_TRIVIAL(error) << "add_model_item: no P2P thumbnail, fallback to URL download for "
+                             << modelName << " url=" << imgPath;
 
     const std::string file_name = modelName;
     DownloadManager::getInstance().downloadThumbnail(
         UrlEncodeForFilename(imgPath),
         file_name,
         [this](ThumbnailResult result) {
-            if (!result.success)
+            if (!result.success) {
+                BOOST_LOG_TRIVIAL(error) << "add_model_item: URL thumbnail FAILED url="
+                                         << result.url << " err=" << result.error_msg;
                 return;
+            }
             this->refreshThumbnailItem(result.file_name, result.png_data);
+            this->flushThumbnailUpdates();
         }
     );
 }
@@ -4928,9 +5052,29 @@ void StatusPanel::flush_model_batch()
     if (m_model_panel) {
         m_model_panel->Thaw();
         m_model_panel->FlushBatchAdd();
+        //y84
+        m_model_panel->hide_state_panel();
         m_model_panel->Refresh();
     }
 }
+
+//y84
+void StatusPanel::show_model_file_list_error()
+{
+    if (m_model_panel) {
+        m_model_panel->show_load_failed_state();
+    }
+    Layout();
+}
+
+void StatusPanel::show_timelapse_file_list_error()
+{
+    if (m_timelapse_host && m_timelapse_host->GetFileList()) {
+        m_timelapse_host->GetFileList()->show_load_failed_state();
+    }
+    Layout();
+}
+//y84
 
 void StatusPanel::freeze_timelapse_list()
 {
@@ -4950,13 +5094,19 @@ void StatusPanel::flush_timelapse_batch()
 void StatusPanel::refreshThumbnailItem(const std::string& file_name,
                                        const std::vector<uint8_t>& png_data)
 {
+    BOOST_LOG_TRIVIAL(trace) << "[P2P_THUMB] refreshThumbnailItem: name=" << file_name
+                             << " png_bytes=" << png_data.size();
     if (m_model_panel == nullptr || png_data.empty())
         return;
 
     wxMemoryInputStream stream(png_data.data(), png_data.size());
     wxImage image(stream, wxBITMAP_TYPE_PNG);
-    if (!image.IsOk())
+    if (!image.IsOk()) {
+        //y84
+        BOOST_LOG_TRIVIAL(error) << "[y98] refreshThumbnailItem: PNG decode failed for "
+                                 << file_name << " (" << png_data.size() << " bytes)";
         return;
+    }
 
     //cj_3
     const double max_thumb_px = static_cast<double>(FromDIP(18));
@@ -4970,7 +5120,41 @@ void StatusPanel::refreshThumbnailItem(const std::string& file_name,
         wxIMAGE_QUALITY_HIGH);
 
     m_model_panel->UpdateItemThumbnail(from_u8(file_name), wxBitmap(resizedImage));
-    m_model_panel->Refresh();
+    BOOST_LOG_TRIVIAL(trace) << "[P2P_THUMB] refreshThumbnailItem OK: name=" << file_name;
+}
+
+//y84
+void StatusPanel::refreshTimelapseThumbnailItem(const std::string& file_name,
+                                                const std::vector<uint8_t>& jpg_data)
+{
+    BOOST_LOG_TRIVIAL(trace) << "[P2P_THUMB] refreshTimelapseThumbnailItem: name=" << file_name
+                             << " jpg_bytes=" << jpg_data.size();
+    if (m_timelapse_host == nullptr || m_timelapse_host->GetFileList() == nullptr || jpg_data.empty())
+        return;
+
+    wxMemoryInputStream stream(jpg_data.data(), jpg_data.size());
+    wxImage image(stream, wxBITMAP_TYPE_JPEG);
+    if (!image.IsOk()) {
+        BOOST_LOG_TRIVIAL(error) << "[y86-opt2] refreshTimelapseThumbnailItem: JPEG decode failed for "
+                                 << file_name << " (" << jpg_data.size() << " bytes)";
+        return;
+    }
+
+    const int thumb_px = FromDIP(18);
+    wxImage resized = image.Scale(thumb_px, thumb_px, wxIMAGE_QUALITY_HIGH);
+    m_timelapse_host->GetFileList()->UpdateItemThumbnail(from_u8(file_name), wxBitmap(resized));
+    //cj_6 per-item Refresh() removed; caller flushes once via flushThumbnailUpdates()
+    BOOST_LOG_TRIVIAL(trace) << "[P2P_THUMB] refreshTimelapseThumbnailItem OK: name=" << file_name;
+}
+
+//cj_6 Single batched refresh for thumbnail updates; call once after a batch of
+// refreshThumbnailItem/refreshTimelapseThumbnailItem to avoid O(N²) per-item Repaint.
+void StatusPanel::flushThumbnailUpdates()
+{
+    if (m_model_panel)
+        m_model_panel->Refresh();
+    if (m_timelapse_host && m_timelapse_host->GetFileList())
+        m_timelapse_host->GetFileList()->Refresh();
 }
 
 void StatusPanel::update_misc_ctrl(MachineObject *obj)
@@ -5790,6 +5974,10 @@ void StatusPanel::reset_printing_values()
 void StatusPanel::on_axis_ctrl_xy(wxCommandEvent &event)
 {
 
+    //dk12
+    if(event.GetInt() < 0 || event.GetInt() > 8){
+        return;
+    }
     if (event.GetInt() == 8) { 
         postEventValueAndEnable(EVTSET_RETURN_SAFEHOME, 1, "value"); 
         return;
@@ -6572,6 +6760,9 @@ void StatusPanel::on_ext_spool_edit(wxCommandEvent &event)
             int canIndexInAms = canInfoIndex % 4;
             can  = m_boxS[amsIndex].cans[canIndexInAms];
         }
+
+        //y84
+        m_filament_setting_dlg->slot_id = curSelectSlotIndex;
         
         m_filament_setting_dlg->Move(wxPoint(current_position_x, current_position_y));
 		m_filament_setting_dlg->set_color(can.material_colour);
@@ -6580,29 +6771,20 @@ void StatusPanel::on_ext_spool_edit(wxCommandEvent &event)
         wxArrayString filamentNames; {
 			for (auto filament : m_filamentConfig) {
 				if (filament.name.empty())continue;
-				filamentNames.Add("QIDI " + filament.name);
+				filamentNames.Add(filament.name);
 			}
-            for (auto filament : m_filamentConfig) {
-                if (filament.name.empty())continue;
-                filamentNames.Add("Generic " + filament.name);
-            }
         }
         m_filament_setting_dlg->setComboBoxData(filamentNames);
 		
         for (auto filament : m_filamentConfig) {
-            if (filament.name == can.material_name) {
+            if (filament.filament_id == can.filament_id) {
                 m_filament_setting_dlg->setMinMaxTemp(std::to_string(filament.minTemp), std::to_string(filament.maxTemp));
+                wxString curComboBoxValue = "";
+                curComboBoxValue = filament.name;
+                m_filament_setting_dlg->setComboBoxValue(curComboBoxValue);
             }
         }
-        wxString curComboBoxValue = "";
-        if (can.ctype == 0) {
-            curComboBoxValue = "Generic " + can.material_name;
-        }
-        else {
-			curComboBoxValue = "QIDI " + can.material_name;
 
-        }
-        m_filament_setting_dlg->setComboBoxValue(curComboBoxValue);
 
         m_filament_setting_dlg->Show(true);
         m_filament_setting_dlg->ShowModal();
@@ -7285,10 +7467,14 @@ void StatusPanel::print_model_for_storage_path(const wxString& storage_path)
     if (!obj)
         return;
 
-    std::vector<GCodeFileInfo> file_infos = obj->file_info;
+    std::vector<GCodeFileInfo> file_infos;
+    {
+        std::lock_guard<std::mutex> lock(obj->m_file_info_mtx);
+        file_infos = obj->file_info;
+    }
 
     std::string selected_items_name = into_u8(storage_path);
-    std::vector<PlateInfo> plates_info;
+    std::vector<QDSPlateInfo> plates_info;
 
     for (auto file_info : file_infos) {
         if (file_info.file_name == selected_items_name) {
@@ -7303,7 +7489,7 @@ void StatusPanel::print_model_for_storage_path(const wxString& storage_path)
     if (file_extension != ".3mf") {
         PrintHostJob upload_job(obj->m_ip, obj->m_ip);
         std::string send_api = "printer/print/start";
-        std::string send_msg = "{\"filename\":\"" + file_path + "\"}";
+        std::string send_msg = "{\"filename\":\"" + file_name + "\"}";
         bool        success  = upload_job.printhost->send_msg_to_printer(send_api, send_msg);
         if (success) {
             GUI::MessageDialog msgdialog(nullptr, _L("Print command sent successfully."), "", wxOK);
@@ -7553,10 +7739,7 @@ void StatusPanel::set_default()
     m_bitmap_recording_img->Hide();
     m_bitmap_vcamera_img->Hide();
 
-    //y76
-    m_setting_button->Hide();
-    //m_setting_button->Show();
-
+    m_setting_button->Show();
 
     m_tempCtrl_chamber->Show();
 
@@ -7617,8 +7800,8 @@ void StatusPanel::rescale_camera_icons()
     if (!GetParent() || IsBeingDeleted()) return;
     if (!m_setting_button || !m_media_play_ctrl || !m_bitmap_vcamera_img || !m_bitmap_sdcard_img || !m_bitmap_recording_img || !m_bitmap_timelapse_img) return;
 
-    m_setting_button->msw_rescale();
-    //if (m_camera_fullscreen_button) m_camera_fullscreen_button->msw_rescale();    //y81
+    //m_setting_button->msw_rescale();
+    if (m_camera_fullscreen_button) m_camera_fullscreen_button->msw_rescale();
 
     m_bitmap_sdcard_state_abnormal = ScalableBitmap(this, wxGetApp().dark_mode() ? "sdcard_state_abnormal_dark" : "sdcard_state_abnormal", 20);
     m_bitmap_sdcard_state_normal   = ScalableBitmap(this, wxGetApp().dark_mode() ? "sdcard_state_normal_dark" : "sdcard_state_normal", 20);
@@ -8589,14 +8772,14 @@ void RectTextPanel::OnPaint(wxPaintEvent &event)
 //cj_5
 void StatusBasePanel::update_hms_data(const std::vector<QDSDeviceErrorData>& items, const std::string& device_id)
 {
-    // Device changed �� reset state
+    // Device changed — reset state
     if (m_hms_device_id != device_id) {
         m_hms_device_id = device_id;
         m_hms_items.clear();
         m_hms_has_unread = false;
     }
 
-    // New errors appeared �� mark as unread
+    // New errors appeared — mark as unread
     if (items.size() > m_hms_items.size())
         m_hms_has_unread = true;
 
@@ -8617,6 +8800,12 @@ void StatusBasePanel::clear_hms_unread()
     m_hms_has_unread = false;
     if (m_hms_btn)
         m_hms_btn->set_has_errors(false);
+}
+
+//y84
+void StatusBasePanel::update_setting_options(){
+    if(m_setting_dlg)
+        m_setting_dlg->update_spaghetti_detection_from_device();
 }
 
 }} // namespace Slic3r::GUI

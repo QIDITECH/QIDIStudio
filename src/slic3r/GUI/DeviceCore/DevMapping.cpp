@@ -171,6 +171,17 @@ namespace Slic3r
                 box_filament_infos.push_back(box_fila_info);
             }
         }
+        //y84
+        if(!nozzle_has_ams_then_ignore_ext){
+            FilamentInfo box_fila_info;
+            box_fila_info.color = filament_colors[filament_colors.size() - 1].erase(0, 1) + "FF";
+            box_fila_info.type = filament_type[filament_colors.size() -1];
+            box_fila_info.filament_id = filament_id[filament_colors.size() -1];
+            box_fila_info.slot_id = "255";
+            box_fila_info.ams_id = 255;
+            box_fila_info.tray_id = 255;
+            box_filament_infos.push_back(box_fila_info);
+        }
 
         //y78
         if(!right_nozzle_has_ams){

@@ -31,6 +31,8 @@
 #if QDT_RELEASE_TO_PUBLIC
 #include "../QIDI/QIDINetwork.hpp"
 #endif
+
+#include "../QIDI/QIDIDeviceApi.hpp"
 using namespace Slic3r;
 using namespace Slic3r::GUI;
 
@@ -1242,10 +1244,10 @@ bool SyncBoxInfoDialog::do_ams_mapping(MachineObject* obj_)
     std::vector<bool> map_opt; // four values: use_left_ams, use_right_ams, use_left_ext, use_right_ext
     if (nozzle_nums > 1) {
         map_opt         = {true, true, true, true}; // four values: use_left_ams, use_right_ams, use_left_ext, use_right_ext
-        if (has_selector(obj_)) {//选料器
-            map_opt[2] = false;
-            map_opt[3] = false;
-        }
+        //if (has_selector(obj_)) {//选料器
+        //    map_opt[2] = false;
+        //    map_opt[3] = false;
+        //}
         //y80
         filament_result = DevMappingUtil::ams_filament_mapping(obj_, m_filaments, m_ams_mapping_result, map_opt, std::vector<int>(),
                                                      wxGetApp().app_config->get_bool("ams_sync_match_full_use_color_dist") ? false : true, false, "");
@@ -3405,7 +3407,6 @@ void GetBoxInfoDialog::on_dpi_changed(const wxRect &suggested_rect)
 
 void GetBoxInfoDialog::synchronization(wxCommandEvent &event)
 {
-#if QDT_RELEASE_TO_PUBLIC
     int selected_idx = m_comboBox_printer->GetSelection();
     std::string printer_ip = m_printer_ip[selected_idx];
     std::string printer_url = m_printer_url[selected_idx];
@@ -3415,7 +3416,7 @@ void GetBoxInfoDialog::synchronization(wxCommandEvent &event)
     if(!m_printer_api_key.empty())
         api_key = m_printer_api_key[selected_idx];
 
-    QIDINetwork qidi;
+    QIDIDeviceApi qidi;
     wxString msg = "";
     bool has_box = qidi.get_box_state(msg, printer_url, api_key);    //y70
     if (!has_box) {
@@ -3436,10 +3437,8 @@ void GetBoxInfoDialog::synchronization(wxCommandEvent &event)
             wxGetApp().app_config->set("machine_list_net", "0");
         this->EndModal(wxID_OK);
     }
-#endif
 }
 
-#if QDT_RELEASE_TO_PUBLIC
 void GetBoxInfoDialog::generate_filament_id(GUI::Box_info& machine_filament_info)
 {
     std::string filament_id = "QD";
@@ -3476,7 +3475,6 @@ void GetBoxInfoDialog::update_filament_info(GUI::Box_info& machine_filament_info
     std::string preset_name_box = wxGetApp().get_tab(Preset::TYPE_PRINTER)->get_presets()->get_edited_preset().name;
     m_plater->box_msg.box_list_preset_name = preset_name_box;
 }
-#endif
 
 void GetBoxInfoDialog::cancel(wxCommandEvent &event)
 {

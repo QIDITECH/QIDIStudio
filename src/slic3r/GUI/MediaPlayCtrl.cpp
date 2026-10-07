@@ -3,6 +3,7 @@
 #include "Widgets/CheckBox.hpp"
 #include "Widgets/Label.hpp"
 #include "GUI_App.hpp"
+#include "NotificationManager.hpp"
 #include "libslic3r/AppConfig.hpp"
 #include "I18N.hpp"
 #include "MsgDialog.hpp"
@@ -206,17 +207,17 @@ void MediaPlayCtrl::SetMachineObject(MachineObject* obj)
     if (machine == m_machine) {
         if (m_last_state == MEDIASTATE_IDLE && IsEnabled())
             Play();
-        // if (m_last_state == MEDIASTATE_LOADING || m_last_state == MEDIASTATE_INITIALIZING) {
-        //     auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
-        //         std::chrono::system_clock::now() - m_play_timer).count();
-        //     if (elapsed >= 15) {
-        //         BOOST_LOG_TRIVIAL(error) << "MediaPlayCtrl: loading/initializing timeout after " << elapsed
-        //                                  << "s, forcing stop";
-        //         m_failed_code = 2;
-        //         Stop(_L("Loading failed. Please check the network and try again."));
-        //         return;
-        //     }
-        // }
+        if (m_last_state == MEDIASTATE_LOADING || m_last_state == MEDIASTATE_INITIALIZING) {
+            auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+                std::chrono::system_clock::now() - m_play_timer).count();
+            if (elapsed >= 15) {
+                BOOST_LOG_TRIVIAL(error) << "MediaPlayCtrl: loading/initializing timeout after " << elapsed
+                                         << "s, forcing stop";
+                m_failed_code = 2;
+                Stop(_L("Loading failed. Please check the network and try again."));
+                return;
+            }
+        }
         if (m_last_state == wxMediaState::wxMEDIASTATE_PLAYING) {
             auto now = std::chrono::system_clock::now();
             if (m_play_timer <= now) {
@@ -313,10 +314,16 @@ void refresh_agora_url(char const* device, char const* dev_ver, char const* chan
 
 void MediaPlayCtrl::Play()
 {
-    //y76
+    //y84
+    // VideoPanel::Load() requires a non-empty URL; without it the play thread
+    // would never start and the status would stay stuck on "Loading...".
+    if (m_url.empty()) {
+        m_failed_code = 0;
+        SetStatus(_L("Please confirm if the printer is connected."), false);
+        return;
+    }
     load();
     m_button_play->SetIcon("media_stop");
-    SetStatus(_L("Playing..."), false);
     return;
 
     if (!m_next_retry.IsValid() || wxDateTime::Now() < m_next_retry)
@@ -488,6 +495,9 @@ void MediaPlayCtrl::Stop(wxString const &msg, wxString const &msg2)
                 });
 #endif
             SetStatus(msg2, false);
+            //y84
+            if (auto* plater = wxGetApp().plater())
+                plater->get_notification_manager()->push_general_error_notification(into_u8(msg2));
         } else
             SetStatus(_L("Video Stopped."), false);
         m_last_state = wxMEDIASTATE_STOPPED;
@@ -549,7 +559,9 @@ void MediaPlayCtrl::Stop(wxString const &msg, wxString const &msg2)
         if (agent) agent->track_event("stop_liveview", j.dump());
     }
 
-    m_url.clear();
+    //y84
+    //m_url.clear();
+
     ++m_failed_retry;
 
     // Set idle image after video stops
@@ -930,31 +942,55 @@ void MediaPlayCtrl::stopMonitor(bool is_without_print)
 
 void MediaPlayCtrl::onStateChanged(wxMediaEvent &event)
 {
-    //y76
+    //y84
     auto last_state = m_last_state;
-    auto state = m_media_ctrl->GetState();
-    if(state != last_state && state == wxMEDIASTATE_PLAYING){
-        SetStatus(_L("Playing..."), false);
-        m_last_state = state;
+    auto state      = m_media_ctrl->GetState();
+    BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl::onStateChanged: " << state << ", last_state: " << last_state;
+    if ((int) state < 0) return;
+    {
+        boost::unique_lock lock(m_mutex);
+        if (!m_tasks.empty()) {
+            BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl::onStateChanged: skip when task not finished";
+            return;
+        }
     }
-    //y76
-    // auto last_state = m_last_state;
-    // auto state      = m_media_ctrl->GetState();
-    // BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl::onStateChanged: " << state << ", last_state: " << last_state;
-    // if ((int) state < 0) return;
-    // {
-    //     boost::unique_lock lock(m_mutex);
-    //     if (!m_tasks.empty()) {
-    //         BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl::onStateChanged: skip when task not finished";
-    //         return;
-    //     }
-    // }
-    // if ((last_state == MEDIASTATE_IDLE || last_state == MEDIASTATE_INITIALIZING) && state == wxMEDIASTATE_STOPPED) { return; }
-    // if ((last_state == wxMEDIASTATE_PAUSED || last_state == wxMEDIASTATE_PLAYING) && state == wxMEDIASTATE_STOPPED) {
-    //     m_failed_code = m_media_ctrl->GetLastError();
-    //     Stop();
-    //     return;
-    // }
+    if ((last_state == MEDIASTATE_IDLE || last_state == MEDIASTATE_INITIALIZING) && state == wxMEDIASTATE_STOPPED) { return; }
+    if ((last_state == wxMEDIASTATE_PAUSED || last_state == wxMEDIASTATE_PLAYING) && state == wxMEDIASTATE_STOPPED) {
+        m_failed_code = m_media_ctrl->GetLastError();
+        Stop();
+        return;
+    }
+
+    // ============================================================================
+    // VideoPanel £ºafter Load() the play thread immediately switches to PLAYING
+    // (unlike wxMediaCtrl3 which first reports STOPPED with a valid video size),
+    // so a transition into PLAYING is the "stream started" success signal.
+    // ============================================================================
+    if (state == wxMEDIASTATE_PLAYING && last_state != wxMEDIASTATE_PLAYING && last_state != wxMEDIASTATE_PAUSED) {
+        wxSize size = m_media_ctrl->GetVideoSize();
+        BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl::onStateChanged: playing, size: " << size.x << "x" << size.y;
+        m_failed_code = m_media_ctrl->GetLastError();
+        m_last_state  = wxMEDIASTATE_PLAYING;
+        m_failed_code = 0;
+        SetStatus(_L("Playing..."), false);
+        m_print_idle = 0;
+        boost::unique_lock lock(m_mutex);
+        m_tasks.push_back("<play>");
+        m_cond.notify_all();
+        return;
+    }
+    if (state == wxMEDIASTATE_STOPPED && last_state != wxMEDIASTATE_STOPPED) {
+        // y84
+        if (event.GetId() != 0) {
+            m_failed_code = m_media_ctrl->GetLastError();
+            Stop();
+            return;
+        }
+        m_last_state = state;
+        return;
+    }
+    m_last_state = state;
+
     // if (last_state == MEDIASTATE_IDLE && (state == wxMEDIASTATE_STOPPED || state == wxMEDIASTATE_PAUSED)) {
     //     wxSize size = m_media_ctrl->GetVideoSize();
     //     BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl::onStateChanged: size: " << size.x << "x" << size.y;
@@ -1076,7 +1112,7 @@ bool MediaPlayCtrl::IsMonitorPlaying() const
 void MediaPlayCtrl::load()
 
 {
-    m_last_state = MEDIASTATE_IDLE;    //y76
+    m_last_state = MEDIASTATE_LOADING;
     SetStatus(_L("Loading..."));
     if (wxGetApp().app_config->get("internal_developer_mode") == "true") {
         std::string file_h264 = data_dir() + "/video.h264";
@@ -1117,11 +1153,6 @@ void MediaPlayCtrl::media_proc()
         }
         wxString url = m_tasks.front();
         if (m_tasks.size() >= 2 && !url.IsEmpty() && url[0] != '<' && m_tasks[1] == "<stop>") {
-
-#if !QDT_RELEASE_TO_PUBLIC
-            // BOOST_LOG_TRIVIAL(trace) << "MediaPlayCtrl: busy skip url: " << url;
-#endif
-            m_tasks.pop_front();
             m_tasks.pop_front();
             continue;
         }
@@ -1134,12 +1165,11 @@ void MediaPlayCtrl::media_proc()
         else if (url == "<exit>") {
             break;
         }
-        //y76
-        // else if (url == "<play>") {
-        //     BOOST_LOG_TRIVIAL(info) <<  "MediaPlayCtrl: start play";
-        //     m_media_ctrl->Play();
-        //     BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl: end play";
-        // }
+        else if (url == "<play>") {
+            BOOST_LOG_TRIVIAL(info) <<  "MediaPlayCtrl: start play";
+            m_media_ctrl->Play();
+            BOOST_LOG_TRIVIAL(info) << "MediaPlayCtrl: end play";
+        }
         else {
             BOOST_LOG_TRIVIAL(info) <<  "MediaPlayCtrl: start load";
             //m_media_ctrl->Load(wxURI(url), m_play_timer);

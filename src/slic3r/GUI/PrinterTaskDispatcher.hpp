@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <utility>
 
 #include <wx/event.h>
 
@@ -19,7 +20,8 @@ enum class PrinterTaskType {
     SetBox,
     RefreshRfid,
     UnbindDevice,
-    DeletePrinterFiles
+    DeletePrinterFiles,
+    SetPrintOptions
 };
 
 enum class PrinterTaskTransport {
@@ -69,6 +71,20 @@ struct PrinterTask {
 
     std::string cloud_task_path;
     std::string cloud_body{ "{}" };
+
+// y84
+    std::string filament_color;
+    std::string filament_vendor;
+    std::string filament_type;
+    // SetPrintOptions payload (mirrors DeviceSettingDialog::apply_print_options_to_device)
+    bool print_opt_spaghetti{ false };   // enable_noodle_detection
+    bool print_opt_fod{ false };          // enable_pre_print_model_check
+    int  print_opt_sensitivity{ 0 };      // 0-based selection index (LOW/MEDIUM/HIGH)
+
+    // Multi-request cloud batch: SetPrintOptions issues several independent cloud calls,
+    // each as a (path, body) pair. Empty for the single-call task types above.
+    std::vector<std::pair<std::string, std::string>> cloud_requests;
+//y84
 };
 
 class PrinterTaskDispatcher {

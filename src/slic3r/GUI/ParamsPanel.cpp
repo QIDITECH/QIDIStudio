@@ -1,9 +1,3 @@
-///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version 3.10.0-4761b0c)
-// http://www.wxformbuilder.org/
-//
-// PLEASE DO *NOT* EDIT THIS FILE!
-///////////////////////////////////////////////////////////////////////////
 #include "libslic3r/PresetBundle.hpp"
 #include "libslic3r/Preset.hpp"
 #include "ParamsPanel.hpp"
@@ -12,7 +6,6 @@
 #include "MainFrame.hpp"
 #include "GUI_App.hpp"
 #include "Plater.hpp"
-
 #include "Widgets/Label.hpp"
 #include "Widgets/SwitchButton.hpp"
 #include "Widgets/Button.hpp"
@@ -589,6 +582,15 @@ void ParamsPanel::OnToggled(wxCommandEvent& event)
         return;
     }
 
+    //QDS: in develop mode the advanced switch is locked "on" ¡ª
+    //snap it back and swallow the event so save_mode() is never reached
+    //DK 2026.9.14-1
+    if (Slic3r::GUI::wxGetApp().get_mode() == comDevelop) {
+        if (auto sw = dynamic_cast<SwitchButton *>(event.GetEventObject()))
+            sw->SetValue(true);
+        return;
+    }
+
     // this is from tab's mode switch
     bool value = dynamic_cast<SwitchButton*>(event.GetEventObject())->GetValue();
     int mode_id;
@@ -677,12 +679,20 @@ void ParamsPanel::update_mode()
     if (mode_view == nullptr) mode_view = m_mode_view;
     if (mode_view == nullptr) return;
 
-    //QDS: disable the mode tab and return directly when enable develop mode
+    //QDS: when develop mode is enabled, keep the advanced switch locked "on".
+    //Do NOT call Disable() here: a disabled window receives no mouse events,
+    //so the tooltip and the "no entry" cursor would not show. Clicks are blocked in OnToggled() instead.
+    //DK 2026.9.14-2
     if (app_mode == comDevelop)
     {
-        mode_view->Disable();
+        mode_view->SetValue(true);
+        mode_view->SetToolTip(_L("Developer mode enabled; advanced features are on by default."));
+        mode_view->SetCursor(wxCursor(wxCURSOR_NO_ENTRY));
         return;
     }
+    //QDS: restore tooltip and cursor when develop mode is off
+    mode_view->UnsetToolTip();
+    mode_view->SetCursor(wxCursor(wxCURSOR_ARROW));
     if (!mode_view->IsEnabled())
         mode_view->Enable();
 

@@ -14,6 +14,7 @@
 #include <wx/dcgraph.h>
 
 #include <boost/log/trivial.hpp>
+#include <algorithm>
 
 
 namespace Slic3r { namespace GUI {
@@ -714,6 +715,8 @@ void AMSControl::ClearAms() {
     m_sizer_prv_arrow_right->Clear();
     m_item_ids = { {}, {} };
     pair_id.clear();
+    //y84
+    m_ams_shape_signature.clear();
 }
 
 //cj_3
@@ -1262,6 +1265,25 @@ void AMSControl::SetData(const std::vector<AMSinfo>& ams_info,
     const std::string prev_show_ams_left = m_current_show_ams_left;
     const std::string prev_show_ams_right = m_current_show_ams_right;
 
+    // y84
+    bool is_box_v2 = false;
+    for (const auto& info : ams_info) {
+        if (info.identity == "box_v2") { is_box_v2 = true; break; }
+    }
+
+    //y84
+    const std::string new_shape = build_ams_shape_signature(ams_info, ext_info, total_ext_count);
+    if (!is_reset && !m_ams_shape_signature.empty() && new_shape == m_ams_shape_signature &&
+        try_update_ams_in_place(ams_info, ext_info)) {
+        m_dev_id = dev_id;
+        const bool only_ext = m_ams_info.empty() && !m_ext_info.empty();
+        m_button_extruder_eject->Show(!only_ext && !is_box_v2);
+        m_sizer_option_right->Show(m_button_extruder_eject, !only_ext && !is_box_v2);
+        m_amswin->Layout();
+        return;
+    }
+    m_ams_shape_signature = new_shape;
+
     // Lightweight data injection path that mirrors parts of UpdateAms but
     // does not require DevExtderSystem or MachineObject. This is intended
     // to decouple AMSControl from device-level structures: callers should
@@ -1283,14 +1305,78 @@ void AMSControl::SetData(const std::vector<AMSinfo>& ams_info,
     SetSize(wxSize(FromDIP(578), -1));
     SetMinSize(wxSize(FromDIP(578), -1));
 
-    //cj_4 Hide eject button when only external spool (no AMS boxes).
+    //y84
     const bool only_ext = m_ams_info.empty() && !m_ext_info.empty();
-    m_button_extruder_eject->Show(!only_ext);
-    m_sizer_option_right->Show(m_button_extruder_eject, !only_ext);
+    m_button_extruder_eject->Show(!only_ext && !is_box_v2);
+    m_sizer_option_right->Show(m_button_extruder_eject, !only_ext && !is_box_v2);
+
     m_amswin->Layout();
     //Layout();
 }
 
+
+// //y84
+std::string AMSControl::build_ams_shape_signature(const std::vector<AMSinfo>& ams_info,
+                                                  const std::vector<AMSinfo>& ext_info,
+                                                  int total_ext_count) const
+{
+    std::string sig;
+    sig.reserve(128);
+    sig += std::to_string(total_ext_count);
+    sig += '|';
+    sig += (m_ams_mixed ? '1' : '0');
+    for (const auto& info : ams_info) {
+        sig += '|';
+        sig += info.ams_id;
+        sig += ':';
+        sig += std::to_string(static_cast<int>(info.ams_type));
+        sig += ':';
+        sig += std::to_string(info.cans.size());
+    }
+    sig += '#';
+    for (const auto& info : ext_info) {
+        sig += '|';
+        sig += info.ams_id;
+        sig += ':';
+        sig += std::to_string(static_cast<int>(info.ams_type));
+        sig += ':';
+        sig += std::to_string(info.cans.size());
+    }
+    return sig;
+}
+
+// y84
+bool AMSControl::try_update_ams_in_place(const std::vector<AMSinfo>& ams_info,
+                                         const std::vector<AMSinfo>& ext_info)
+{
+    auto apply_update = [this](const std::vector<AMSinfo>& infos) {
+        for (const auto& info : infos) {
+            auto item_it = m_ams_item_list.find(info.ams_id);
+            if (item_it != m_ams_item_list.end() && item_it->second) {
+                item_it->second->Update(info);
+            }
+            auto preview_it = m_ams_preview_list.find(info.ams_id);
+            if (preview_it != m_ams_preview_list.end() && preview_it->second) {
+                preview_it->second->Update(info);
+            }
+        }
+    };
+
+    auto all_items_exist = [this](const std::vector<AMSinfo>& infos) {
+        return std::all_of(infos.begin(), infos.end(),
+            [this](const AMSinfo& info) { return m_ams_item_list.find(info.ams_id) != m_ams_item_list.end(); });
+    };
+
+    if (!all_items_exist(ams_info) || !all_items_exist(ext_info)) {
+        return false;
+    }
+
+    m_ams_info  = ams_info;
+    m_ext_info  = ext_info;
+    apply_update(m_ams_info);
+    apply_update(m_ext_info);
+    return true;
+}
 
 //cj_2
 void AMSControl::updateAmsTemp(int id, int temp)

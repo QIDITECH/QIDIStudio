@@ -7,6 +7,16 @@
 namespace Slic3r {
 namespace GUI {
 
+//dk12
+namespace {
+    static std::string resolve_multi_send_model_id(PresetBundle* preset_bundle, const std::string& model)
+    {
+        if (preset_bundle == nullptr || model.empty())
+            return std::string();
+
+        return preset_bundle->printers.get_edited_preset().get_printer_type_from_preset_name(preset_bundle, model);
+    }
+} 
 
 wxDEFINE_EVENT(EVT_MULTI_CLOUD_TASK_SELECTED, wxCommandEvent);
 wxDEFINE_EVENT(EVT_MULTI_LOCAL_TASK_SELECTED, wxCommandEvent);
@@ -118,37 +128,34 @@ std::string DeviceItem::NormalizeVendor(const std::string& str)
     return normalized;
 }
 
+//dk12
 bool DeviceItem::is_blocking_printing(MachineObject* obj_)
 {
-    //DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
-    //if (!dev) return true;
-    //auto target_model = obj_->printer_type;
-    //std::string source_model = "";
-
-    //PresetBundle* preset_bundle = wxGetApp().preset_bundle;
-    //source_model = preset_bundle->printers.get_edited_preset().get_printer_type(preset_bundle);
-
-    //if (source_model != target_model) {
-    //    std::vector<std::string> compatible_machine = obj_->get_compatible_machine();
-    //    vector<std::string>::iterator it = find(compatible_machine.begin(), compatible_machine.end(), source_model);
-    //    if (it == compatible_machine.end()) {
-    //        return true;
-    //    }
-    //}
-
-    //return false;
-
-    // y24
-    auto target_model = obj_->printer_type;
-    std::string source_model = "";
-    std::string source_model_normal = "";
-    PresetBundle* preset_bundle = wxGetApp().preset_bundle;
-    source_model = preset_bundle->printers.get_edited_preset().get_printer_type(preset_bundle);
-    source_model_normal = NormalizeVendor(source_model);
-    if (source_model_normal.find(NormalizeVendor(target_model)) != std::string::npos)
-        return false;
-    else
+    if (obj_ == nullptr)
         return true;
+
+    const std::string target_model = obj_->printer_type;
+    PresetBundle* preset_bundle = wxGetApp().preset_bundle;
+    if (preset_bundle == nullptr)
+        return true;
+
+    const std::string source_model =
+        preset_bundle->printers.get_edited_preset().get_printer_type(preset_bundle);
+    const std::string target_model_id = resolve_multi_send_model_id(preset_bundle, target_model);
+
+    if (!source_model.empty() && !target_model_id.empty())
+        return NormalizeVendor(source_model) != NormalizeVendor(target_model_id);
+
+    if (!source_model.empty() && NormalizeVendor(source_model) == NormalizeVendor(target_model))
+        return false;
+
+    const std::string source_model_normal = NormalizeVendor(source_model);
+    const std::string target_model_normal = NormalizeVendor(target_model);
+    if (source_model_normal.empty() || target_model_normal.empty())
+        return true;
+
+    return source_model_normal.find(target_model_normal) == std::string::npos &&
+           target_model_normal.find(source_model_normal) == std::string::npos;
 }
 
 void DeviceItem::update_item(const DeviceItem* item)

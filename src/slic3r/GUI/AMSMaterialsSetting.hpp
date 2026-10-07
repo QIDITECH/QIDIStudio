@@ -7,6 +7,7 @@
 #include "DeviceManager.hpp"
 #include "wx/clrpicker.h"
 #include "wx/colourdata.h"
+#include <wx/event.h>
 #include "Widgets/RadioBox.hpp"
 #include "Widgets/Button.hpp"
 #include "Widgets/RoundedRectangle.hpp"
@@ -228,8 +229,14 @@ protected:
 
 wxDECLARE_EVENT(EVT_SELECTED_COLOR, wxCommandEvent);
 wxDECLARE_EVENT(EVT_SELECTED_TYPE, wxCommandEvent);
-wxDECLARE_EVENT(EVT_SET_COLOR, wxCommandEvent);
-wxDECLARE_EVENT(EVT_SET_TYPE, wxCommandEvent);
+//y84
+wxDECLARE_EVENT(EVTSET_FILAMENT_INFO, wxCommandEvent);
+struct FilamentInfoPayload : public wxClientData {
+    std::string color;   // hex without '#', e.g. "FE717A"
+    std::string vendor;  // e.g. "QIDI"
+    std::string type;    // e.g. "TPU 95A-HF"
+};
+//y84
 
 }} // namespace Slic3r::GUI
 

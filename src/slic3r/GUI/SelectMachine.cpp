@@ -43,6 +43,9 @@
 
 #include <wx/display.h>
 #include <wx/progdlg.h>
+
+#include <thread>
+#include <chrono>
 #include <wx/clipbrd.h>
 #include <wx/dcgraph.h>
 #include <wx/mstream.h>
@@ -59,6 +62,8 @@
 #if QDT_RELEASE_TO_PUBLIC
 #include "slic3r/QIDI/QIDINetwork.hpp"
 #endif
+
+#include <boost/filesystem.hpp>
 
 // definitions
 #define S_RACK_NOZZLE_OFFSET_CALI_WARNING _L(\
@@ -168,7 +173,7 @@ SelectMachineDialog::SelectMachineDialog(Plater *plater)
     //y24 y58
     m_isNetMode = wxGetApp().app_config->get("machine_list_net") == "1";
     PresetBundle& preset_bundle = *wxGetApp().preset_bundle;
-    preset_typename = preset_bundle.printers.get_edited_preset().get_printer_type(&preset_bundle);
+    preset_typename = preset_bundle.printers.get_edited_preset().get_printer_name(&preset_bundle);
     preset_typename_normalized = NormalizeVendor(preset_typename);
 
 
@@ -1270,9 +1275,43 @@ void SelectMachineDialog::sync_ams_mapping_result(const std::vector<FilamentInfo
 {
     if (result.empty()) {
         BOOST_LOG_TRIVIAL(info) << "ams_mapping result is empty";
+//y84
+        // for (auto it = m_materialList.begin(); it != m_materialList.end(); it++) {
+        //     wxString ams_id = "Ext";//
+        //     wxColour ams_col = wxColour(0xCE, 0xCE, 0xCE);
+        //     it->second->item->set_ams_info(ams_col, ams_id);
+        //     it->second->item->set_nozzle_info(get_mapped_nozzle_str(it->first));
+        // }
+        // return;
+
+        std::string ext_filament_type;
+        if (auto qds_device = wxGetApp().qdsdevmanager->getDevice(m_printer_last_select);
+            qds_device && !qds_device->m_filament_type.empty()) {
+            ext_filament_type = qds_device->m_filament_type.back();
+        } else if (!m_plater->box_msg.filament_type.empty()) {
+            ext_filament_type = m_plater->box_msg.filament_type.back();
+        }
+
+        auto to_lower = [](const std::string& s) -> std::string {
+            std::string lower = s;
+            std::transform(lower.begin(), lower.end(), lower.begin(),
+                           [](unsigned char c) { return std::tolower(c); });
+            return lower;
+        };
+        const std::string ext_type_lower = to_lower(ext_filament_type);
+
         for (auto it = m_materialList.begin(); it != m_materialList.end(); it++) {
-            wxString ams_id = "Ext";//
+            wxString ams_id = "Ext";
             wxColour ams_col = wxColour(0xCE, 0xCE, 0xCE);
+
+            if (!ext_type_lower.empty() && it->first < (int) m_filaments.size()) {
+                const std::string slicing_type_lower = to_lower(m_filaments[it->first].type);
+                if (slicing_type_lower != ext_type_lower) {
+                    ams_id = "-";
+                    show_status(PrintDialogStatus::PrintStatusAmsMappingInvalid);
+                }
+            }
+// y84
             it->second->item->set_ams_info(ams_col, ams_id);
             it->second->item->set_nozzle_info(get_mapped_nozzle_str(it->first));
         }
@@ -1394,19 +1433,19 @@ bool SelectMachineDialog::do_ams_mapping(MachineObject *obj_,bool use_ams, bool 
             }
 
             bool has_left_ams = false, has_right_ams = false;
-            for (const auto& ams_item : obj_->GetFilaSystem()->GetAmsList()) {
-                if (ams_item.second->GetBindedExtruderSet().count(MAIN_EXTRUDER_ID) != 0) {
-                    has_right_ams = true;
-                }
+            //for (const auto& ams_item : obj_->GetFilaSystem()->GetAmsList()) {
+            //    if (ams_item.second->GetBindedExtruderSet().count(MAIN_EXTRUDER_ID) != 0) {
+            //        has_right_ams = true;
+            //    }
 
-                if (ams_item.second->GetBindedExtruderSet().count(DEPUTY_EXTRUDER_ID) != 0) {
-                    has_left_ams = true;
-                }
+            //    if (ams_item.second->GetBindedExtruderSet().count(DEPUTY_EXTRUDER_ID) != 0) {
+            //        has_left_ams = true;
+            //    }
 
-                if (has_left_ams && has_right_ams) {
-                    break;
-                }
-            }
+            //    if (has_left_ams && has_right_ams) {
+            //        break;
+            //    }
+            //}
 
             map_opt = {true, false, !has_left_ams, false};   //four values: use_left_ams, use_right_ams, use_left_ext, use_right_ext
             if (!use_ams) {
@@ -1450,8 +1489,8 @@ bool SelectMachineDialog::do_ams_mapping(MachineObject *obj_,bool use_ams, bool 
             map_opt[1] = false;
             map_opt[3] = true;
         }
-        //y80
-        filament_result = DevMappingUtil::ams_filament_mapping(obj_, m_filaments, m_ams_mapping_result, map_opt, {}, false, from_sdcard_view, m_printer_last_select);
+        //y84
+        filament_result = DevMappingUtil::ams_filament_mapping(obj_, m_filaments, m_ams_mapping_result, map_opt, {}, has_box_machine, from_sdcard_view, m_printer_last_select);
         // auto_supply_with_ext(obj_->vt_slot);
     }
 
@@ -1977,7 +2016,7 @@ void SelectMachineDialog::show_status(PrintDialogStatus status, std::vector<wxSt
             // auto target_print_name = wxString(DevPrinterConfigUtil::get_printer_display_name(target_model_id));
             // target_print_name.Replace(wxT("QIDI Tech "), wxEmptyString);
             PresetBundle& preset_bundle = *wxGetApp().preset_bundle;
-            std::string target_print_name = preset_bundle.printers.get_edited_preset().get_printer_type(&preset_bundle);
+            std::string target_print_name = preset_bundle.printers.get_edited_preset().get_printer_name(&preset_bundle);
             msg_text = wxString::Format(_L("The selected printer (%s) is incompatible with the print file configuration (%s). Please adjust the printer preset in the prepare page or choose a compatible printer on this page."), select_machine.type, target_print_name);
 
 
@@ -2100,6 +2139,8 @@ void SelectMachineDialog::show_status(PrintDialogStatus status, std::vector<wxSt
         msg = _L("Due to network issues, the file upload failed. Please check your network connection.");
         Enable_Refresh_Button(true);
         Enable_Send_Button(true);
+        //y84
+        EnableEditing(true);
     }
     //y72 
     else if(status == PrintDialogStatus::BedLevelingFailed){
@@ -2115,6 +2156,20 @@ void SelectMachineDialog::show_status(PrintDialogStatus status, std::vector<wxSt
         msg = _L("Failed to set the air condition...");
         Enable_Refresh_Button(true);
         Enable_Send_Button(true);
+    }
+    //y86: 补充 maker 设备获取盒子信息的三种状态显示
+    else if (status == PrintDialogStatus::QDTPrinterInfoSyncing) {
+        msg = _L("Synchronizing printer and BOX information...");
+        Enable_Refresh_Button(true);
+        Enable_Send_Button(false);
+    } else if (status == PrintDialogStatus::QDTPrinterInfoSyncSuccess) {
+        msg = _L("Printer and BOX information synchronized successfully.");
+        Enable_Refresh_Button(true);
+        Enable_Send_Button(true);
+    } else if (status == PrintDialogStatus::QDTPrinterInfoSyncFailed) {
+        msg = _L("Failed to synchronize printer and BOX information. Please check the network or refresh.");
+        Enable_Refresh_Button(true);
+        Enable_Send_Button(false);
     }
 
     /*enter perpare mode*/
@@ -2327,8 +2382,6 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
                 machine_url = machine.url;
                 machine_ip = machine.ip;
                 machine_apikey = "";
-                machine_link_url = machine.link_url;
-                machine_is_special = machine.is_special;
                 m_is_local_transitioned = machine.is_local_transitioned;
                 break;
             }
@@ -2693,8 +2746,17 @@ void SelectMachineDialog::on_ok_btn(wxCommandEvent &event)
 //y58
 void SelectMachineDialog::start_to_send(PrintHostJob upload_job) {
     wxString check_status_msg = "";
-    std::pair<std::string, float> state_progress = upload_job.printhost->get_status_progress(check_status_msg);
-    std::string printer_status = state_progress.first;
+    std::string printer_status;
+    auto dev_manager = wxGetApp().qdsdevmanager;
+    auto obj = dev_manager->getDevice(m_printer_last_select);
+    if (wxGetApp().app_config->get("user_token") != "" && m_isNetMode && !m_is_local_transitioned) {
+        printer_status = obj->m_status;
+    }
+    else {
+        std::pair<std::string, float> state_progress = upload_job.printhost->get_status_progress(check_status_msg);
+        printer_status = state_progress.first;
+    }
+
     //y60
     if (printer_status == "printing")
     {
@@ -2715,16 +2777,10 @@ void SelectMachineDialog::start_to_send(PrintHostJob upload_job) {
     bool is_local_transitioned = m_is_local_transitioned;
 
     bool success = false;
-    if(!wxGetApp().is_link_connect() && wxGetApp().app_config->get("user_token") != "" && m_isNetMode
+    if(wxGetApp().app_config->get("user_token") != "" && m_isNetMode
         && !is_local_transitioned){
 
-        auto dev_manager = wxGetApp().qdsdevmanager;
-        auto obj = dev_manager->getDevice(m_printer_last_select);
-
 #if QDT_RELEASE_TO_PUBLIC
-        std::string upload_url = "";
-        std::string cdn_prefix = "";
-
         //cj_5
         const std::string send_device_id = m_printer_last_select.empty() ? select_machine.device_id : m_printer_last_select;
         //cj_5
@@ -2755,168 +2811,229 @@ void SelectMachineDialog::start_to_send(PrintHostJob upload_job) {
                 << ", response_body=" << body;
         };
 
-        {
-            HttpData http_get_url;
-            json getJson{
-                {"useType", "model/sliced"},
-                {"fileNames", std::vector<std::string>{
-                    upload_job.upload_data.upload_path.string()
-                }}
-            };
-
-            http_get_url.body = getJson.dump();
-
-            std::string region = wxGetApp().app_config->get("region");
-            if (region == "China") {
-                http_get_url.env = PRODUCTIONENV;
-            }
-            else {
-                http_get_url.env = FOREIGNENV;
-            }
-            http_get_url.target = NONETYPE;
-
-            http_get_url.taskPath = "/file/upload/prepare";
-            //cj_5
-            log_cloud_send_context("prepare_upload_url");
-            //cj_5
-            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " send_job request, stage=prepare_upload_url, url=" << http_get_url.taskPath << ", body=" << http_get_url.body;
-            std::string resultBody = MakerHttpHandle::getInstance().getUploadUrl(http_get_url, success);
-
-            if(success){
-                try {
-                    json result_json = json::parse(resultBody);
-                    if (result_json.contains("data") &&
-                        result_json["data"].contains("urls") &&
-                        result_json["data"]["urls"].is_array()){
-                        upload_url = result_json["data"]["urls"].get<std::vector<std::string>>()[0];
-                        cdn_prefix = result_json["data"]["cdnPrefix"].get<std::string>();
-                        //cj_5
-                        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " send_job prepare_upload_url success, upload_url=" << upload_url << ", cdn_prefix=" << cdn_prefix;
-                    }
-                    else {
-                        //cj_5
-                        log_cloud_send_error("prepare_upload_url_invalid_response", resultBody);
-                        success = false;
-                    }
-                } catch (const std::exception& e) {
-                    //cj_5
-                    BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " send_job prepare_upload_url parse failed, error=" << e.what() << ", response_body=" << resultBody;
-                    success = false;
+        auto buildCdnUrl = [](const std::string& cdnPrefix,
+            const std::string& s3Url) -> std::string {
+                auto pos = s3Url.find(".com");
+                if (pos == std::string::npos) {
+                    return s3Url;
                 }
+                auto pathStart = s3Url.find('/', pos + 4);
+                if (pathStart == std::string::npos) {
+                    return s3Url;
+                }
+                auto queryPos = s3Url.find('?', pathStart);
+                std::string objectKey =
+                    queryPos != std::string::npos
+                    ? s3Url.substr(pathStart, queryPos - pathStart)
+                    : s3Url.substr(pathStart);
+                return cdnPrefix + objectKey;
+        };
+
+        // yxx: gen_cdns_file_name / calc_file_md5 are now provided by QIDINetwork
+        // (Slic3r::GUI::gen_cdns_file_name(ext) / Slic3r::GUI::calc_file_md5(path))
+        // yxx: presign a file via /community/v1/file/upload/cdns and, when the server
+        // reports it does not already exist (exist == false), PUT the file to the
+        // returned S3 url. Returns the CDN url to hand to the print/start request.
+        // yxx: declare msg here (before the upload_via_cdns lambda) so the progress
+        // callback below can capture it by reference; it was previously declared
+        // after the lambda, which made the [&msg] capture fail to resolve.
+        wxString msg = _L("Preparing to upload file...");
+        auto upload_via_cdns = [&](const std::string& local_path,
+                                   const std::string& original_name,
+                                   const std::string& use_type,
+                                   const std::string& ext,
+                                   std::string& out_cdn_url,
+                                   int progress_base = 10,
+                                   int progress_span = 25) -> bool {
+            out_cdn_url.clear();
+            bool ok = false;
+
+            boost::system::error_code ec;
+            uintmax_t file_size = boost::filesystem::file_size(local_path, ec);
+            if (ec) {
+                file_size = 0;
             }
-            else {
-                //cj_5
-                log_cloud_send_error("prepare_upload_url", resultBody);
+
+            std::string md5_hex = calc_file_md5(local_path);
+            std::string gen_name = gen_cdns_file_name(ext);
+
+            json cdns_body;
+            cdns_body["files"] = json::array({
+                {
+                    {"useType", use_type},
+                    {"md5", md5_hex},
+                    {"fileName", gen_name},
+                    {"originalName", original_name},
+                    {"fileSize", (int)file_size}
+                }
+            });
+
+            HttpData http_cdns;
+            http_cdns.env = QIDIMakerUrlBuilder::getInstance().getCurEnv();
+            http_cdns.target = NONETYPE;
+            http_cdns.taskPath = QIDIMakerUrlBuilder::MakerTaskPath::kUploadCdns;
+            http_cdns.body = cdns_body.dump();
+
+            log_cloud_send_context("cdns_presign");
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " send_job cdns request, stage=cdns_presign, url=" << http_cdns.taskPath << ", body=" << http_cdns.body;
+            std::string cdns_result = MakerHttpHandle::getInstance().httpPostTask(http_cdns, ok);
+            if (!ok) {
+                log_cloud_send_error("cdns_presign", cdns_result);
+                return false;
+            }
+
+            try {
+                json cdns_json = json::parse(cdns_result);
+                if (cdns_json.contains("code") && cdns_json["code"].get<int>() != 200) {
+                    log_cloud_send_error("cdns_presign_code", cdns_result);
+                    return false;
+                }
+                if (!cdns_json.contains("data") ||
+                    !cdns_json["data"].contains("urls") ||
+                    !cdns_json["data"]["urls"].is_array() ||
+                    cdns_json["data"]["urls"].empty()) {
+                    log_cloud_send_error("cdns_presign_invalid", cdns_result);
+                    return false;
+                }
+                auto url_obj = cdns_json["data"]["urls"][0];
+                std::string s3_url = url_obj.value("url", "");
+                std::string cdn_prefix = url_obj.value("cdnPrefix", "");
+                bool exist = url_obj.value("exist", false);
+                if (s3_url.empty() || cdn_prefix.empty()) {
+                    log_cloud_send_error("cdns_presign_missing", cdns_result);
+                    return false;
+                }
+
+                if (!exist) {
+                    HttpData http_upload;
+                    json up_body;
+                    up_body["upload_name"] = gen_name;
+                    up_body["upload_path"] = local_path;
+                    http_upload.body = up_body.dump();
+                    http_upload.taskPath = s3_url;
+
+                    log_cloud_send_context("cdns_upload_file");
+                    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " send_job cdns upload, url=" << s3_url;
+                    std::string up_result = MakerHttpHandle::getInstance().httpUploadTask(
+                        http_upload, ok,
+                        [&msg, this, progress_base, progress_span](Http::Progress progress, bool& cancel) {
+                            int gui_progress = progress.ultotal > 0 ? 100 * progress.ulnow / progress.ultotal : 0;
+                            msg = Slic3r::format(_u8L("Uploadling file : %1%%%"), std::to_string(gui_progress));
+                            m_status_bar->update_status(msg, m_is_canceled, progress_base + gui_progress * progress_span / 100, true);
+                        });
+                    if (!ok) {
+                        log_cloud_send_error("cdns_upload_file", up_result);
+                        return false;
+                    }
+                }
+
+                out_cdn_url = buildCdnUrl(cdn_prefix, s3_url);
+                return true;
+            } catch (const std::exception& e) {
+                log_cloud_send_error("cdns_parse", std::string(e.what()));
+                return false;
+            }
+        };
+
+        // yxx: step 1 — render the model thumbnail to a png and upload it (picture)
+        std::string image_cdn_url;
+        {
+            const ThumbnailData& tdata = m_preview_thumbnail_data;
+            if (tdata.is_valid()) {
+                wxImage image(tdata.width, tdata.height);
+                image.InitAlpha();
+                for (unsigned int r = 0; r < tdata.height; ++r) {
+                    unsigned int rr = (tdata.height - 1 - r) * tdata.width;
+                    for (unsigned int c = 0; c < tdata.width; ++c) {
+                        unsigned char* px = (unsigned char*)tdata.pixels.data() + 4 * (rr + c);
+                        image.SetRGB((int)c, (int)r, px[0], px[1], px[2]);
+                        image.SetAlpha((int)c, (int)r, px[3]);
+                    }
+                }
+                boost::system::error_code ec;
+                boost::filesystem::path thumb_path = boost::filesystem::temp_directory_path() / ("qidi_thumb_" + std::to_string(std::time(nullptr)) + ".png");
+                if (image.SaveFile(wxString::FromUTF8(thumb_path.string()))) {
+                    std::string original_name = send_upload_name;
+                    if (!boost::filesystem::path(original_name).has_extension()) {
+                        original_name += ".png";
+                    }
+                    if (!upload_via_cdns(thumb_path.string(), original_name, "model/picture", ".png", image_cdn_url, 10, 20)) {
+                        BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << " send_job thumbnail cdns upload failed, proceed without imageUrl";
+                        image_cdn_url.clear();
+                    }
+                    boost::filesystem::remove(thumb_path, ec);
+                } else {
+                    BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << " send_job failed to save thumbnail png, proceed without imageUrl";
+                }
+            } else {
+                BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << " send_job thumbnail data invalid, proceed without imageUrl";
             }
         }
 
-        if(success){
+        // yxx: step 2 — upload the sliced 3mf file
+        std::string file_cdn_url;
+        std::string source_path = upload_job.upload_data.source_path.string();
+        std::string original_3mf = upload_job.upload_data.upload_path.string();
+        std::string ext_3mf = boost::filesystem::path(source_path).extension().string();
+        bool file_ok = upload_via_cdns(source_path, original_3mf, "model/picture", ext_3mf, file_cdn_url, 30, 35);
+        if (!file_ok) {
+            success = false;
+            show_status(PrintDialogStatus::PrintStatusPublicUploadFiled);
+            return;
+        }
+        success = true;
+
+        // yxx: step 3 — notify the printer to start the print job
+        if (success) {
             HttpData http_data;
-            json bodyJson;
-            bodyJson["upload_name"] = upload_job.upload_data.upload_path.string();
-            bodyJson["upload_path"] = upload_job.upload_data.source_path.string();
-
-            http_data.body = bodyJson.dump();
-
-            std::string region = wxGetApp().app_config->get("region");
-            if (region == "China") {
-                http_data.env = PRODUCTIONENV;
-            }
-            else {
-                http_data.env = FOREIGNENV;
-            }
-            http_data.target = NONETYPE;
-
-            http_data.taskPath = upload_url;
-
-            wxString msg = _L("Preparing to upload file...");
-            m_status_bar->update_status(msg, m_is_canceled, 10, true);
-            //cj_5
-            log_cloud_send_context("upload_file");
-            //cj_5
-            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " send_job request, stage=upload_file, url=" << http_data.taskPath << ", body=" << http_data.body;
-            std::string resultBody = MakerHttpHandle::getInstance().httpUploadTask(http_data, success,
-                [&msg, this](Http::Progress progress, bool& cancel) {
-                    int gui_progress = progress.ultotal > 0 ? 100 * progress.ulnow / progress.ultotal : 0;
-                    msg = Slic3r::format(_u8L("Uploadling file : %1%%%"), std::to_string(gui_progress));
-                    m_status_bar->update_status(msg, m_is_canceled, 10 + gui_progress / 2, true);
-                }
-            );
-
-            if(success){
-                //cj_5
-                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " send_job upload_file success, response_body=" << resultBody;
-                http_data.taskPath = "/printer/sliced/print/start";
-                json body_json_2;
-                //y71
-                auto qds_dev = wxGetApp().qdsdevmanager->getDevice(m_printer_last_select);
-                for (auto item : m_checkbox_list) {
-                    if(item.second->getParam() == "enable_multi_box"){
-                        if (item.second->getValue() == "on" && !m_ams_mapping_result.empty()){
-                            std::vector<int> consumable_t (16, -1);
-                            for (auto result : m_ams_mapping_result) {
-                                consumable_t[result.id] = std::stoi(result.slot_id);
-                                std::cout << "result id is  " << result.id << " and slot id is " << result.slot_id << std::endl;
-                            }
-                            body_json_2["consumable"] = consumable_t;
+            json body_json_2;
+            //y71
+            auto qds_dev = wxGetApp().qdsdevmanager->getDevice(m_printer_last_select);
+            for (auto item : m_checkbox_list) {
+                if(item.second->getParam() == "enable_multi_box"){
+                    if (item.second->getValue() == "on" && !m_ams_mapping_result.empty()){
+                        std::vector<int> consumable_t (16, -1);
+                        for (auto result : m_ams_mapping_result) {
+                            consumable_t[result.id] = std::stoi(result.slot_id);
+                            std::cout << "result id is  " << result.id << " and slot id is " << result.slot_id << std::endl;
                         }
-                        else{
-                            body_json_2["consumable"] = nullptr;
-                        }
-                    } else if (item.second->getParam() == "bed_leveling") {
-                        body_json_2["levelingEnable"] = item.second->getValue() == "on" ? true : false;
-                    } else if(item.second->getParam() == "timelapse" && select_machine.timelapse){
-                        body_json_2["delayVideoEnable"] = item.second->getValue() == "on" ? true : false;
-                    } else if(item.second->getParam() == "enable_polar_cooler" && select_machine.enable_polar_cooler){
-                        //y80
-                        if(qds_dev->m_enable_polar_cooler)
-                            body_json_2["coolerEnable"] = item.second->getValue() == "on" ? true : false;
-                        else
-                            body_json_2["coolerEnable"] = false;
+                        body_json_2["consumable"] = consumable_t;
                     }
+                    else{
+                        body_json_2["consumable"] = nullptr;
+                    }
+                } else if (item.second->getParam() == "bed_leveling") {
+                    body_json_2["levelingEnable"] = item.second->getValue() == "on" ? true : false;
+                } else if(item.second->getParam() == "timelapse" && select_machine.timelapse){
+                    body_json_2["delayVideoEnable"] = item.second->getValue() == "on" ? true : false;
+                } else if(item.second->getParam() == "enable_polar_cooler" && select_machine.enable_polar_cooler){
+                    //y80
+                    if(qds_dev->m_enable_polar_cooler)
+                        body_json_2["coolerEnable"] = item.second->getValue() == "on" ? true : false;
+                    else
+                        body_json_2["coolerEnable"] = false;
                 }
-
-                body_json_2["serialNumber"] = select_machine.device_id;
-                body_json_2["fileName"] = upload_job.upload_data.upload_path.string();
-                body_json_2["plateIndex"] = m_print_plate_idx + 1;
-                
-                //y80
-                auto buildCdnUrl = [](const std::string& cdnPrefix,
-                    const std::string& s3Url) -> std::string {
-
-                        auto pos = s3Url.find(".com");
-                        if (pos == std::string::npos) {
-                            throw std::invalid_argument("Invalid S3 URL");
-                        }
-                        auto pathStart = s3Url.find('/', pos + 4);
-                        if (pathStart == std::string::npos) {
-                            throw std::invalid_argument("Invalid S3 URL path");
-                        }
-                        auto queryPos = s3Url.find('?', pathStart);
-                        std::string objectKey =
-                            queryPos != std::string::npos
-                            ? s3Url.substr(pathStart, queryPos - pathStart)
-                            : s3Url.substr(pathStart);
-
-                        return cdnPrefix + objectKey;
-                };
-
-                body_json_2["fileUrl"] = buildCdnUrl(cdn_prefix, upload_url);
-
-                http_data.body = body_json_2.dump();
-                wxString msg = _L("Cloud service notifies the printer to accept the printing task...");
-                m_status_bar->update_status(msg, m_is_canceled, 70, true);
-                //cj_5
-                log_cloud_send_context("start_print_task");
-                //cj_5
-                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " send_job request, stage=start_print_task, url=" << http_data.taskPath << ", body=" << http_data.body;
-                resultBody = MakerHttpHandle::getInstance().httpPostTask(http_data, success);
-            } else {
-                //cj_5
-                log_cloud_send_error("upload_file", resultBody);
-                show_status(PrintDialogStatus::PrintStatusPublicUploadFiled);
-                return;
             }
+
+            body_json_2["serialNumber"] = select_machine.device_id;
+            body_json_2["fileName"] = upload_job.upload_data.upload_path.string();
+            body_json_2["plateIndex"] = m_print_plate_idx + 1;
+            body_json_2["commandId"] = make_filament_info_command_id(select_machine.device_id);
+            body_json_2["imageUrl"] = image_cdn_url;
+            body_json_2["fileUrl"] = file_cdn_url;
+
+            http_data.env = QIDIMakerUrlBuilder::getInstance().getCurEnv();
+            http_data.target = NONETYPE;
+            http_data.taskPath = QIDIMakerUrlBuilder::MakerTaskPath::kSlicedPrintStart;
+            http_data.body = body_json_2.dump();
+
+            msg = _L("Cloud service notifies the printer to accept the printing task...");
+            m_status_bar->update_status(msg, m_is_canceled, 70, true);
+            //cj_5
+            log_cloud_send_context("start_print_task");
+            //cj_5
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " send_job request, stage=start_print_task, url=" << http_data.taskPath << ", body=" << http_data.body;
+            std::string resultBody = MakerHttpHandle::getInstance().httpPostTask(http_data, success);
 
             if(success){
                 //cj_5
@@ -2949,7 +3066,7 @@ void SelectMachineDialog::start_to_send(PrintHostJob upload_job) {
             }
         } else {
             //cj_5
-            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " send_job cloud failed before upload_file, device_id=" << QDTCrossTalk::Crosstalk_DevId(send_device_id);
+            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " send_job cloud failed before start_print_task, device_id=" << QDTCrossTalk::Crosstalk_DevId(send_device_id);
             show_status(PrintDialogStatus::PrintStatusPublicUploadFiled);
             return;
         }
@@ -3140,7 +3257,7 @@ void SelectMachineDialog::send_to_sd_card(){
                         item["filament"] = result.id;
                         item["slot"] = std::stoi(result.slot_id);
                         bodyJson["selects"].push_back(item);
-                        BOOST_LOG_TRIVIAL(trace) << "filament id" << item["filament"] << "  " << "slod_id is " << item["slot"] << std::endl;
+                        BOOST_LOG_TRIVIAL(info) << "filament id" << item["filament"] << "  " << "slod_id is " << item["slot"] << std::endl;
                     }
                 }
                 else{
@@ -3178,20 +3295,14 @@ void SelectMachineDialog::send_to_sd_card(){
         }
 
         bodyJson["serialNumber"] = obj->m_id;
-        bodyJson["fileName"] = m_required_data_file_path;
+        bodyJson["fileName"] = m_required_data_file_name;
         bodyJson["plateIndex"] = m_print_plate_idx + 1;
 
         http_data.body = bodyJson.dump();
-        std::string region = wxGetApp().app_config->get("region");
-        if (region == "China") {
-            http_data.env = PRODUCTIONENV;
-        }
-        else {
-            http_data.env = FOREIGNENV;
-        }
+        http_data.env = QIDIMakerUrlBuilder::getInstance().getCurEnv();
         http_data.target = PRINTERTYPE;
 
-        http_data.taskPath = "/set/print/start";
+        http_data.taskPath = QIDIMakerUrlBuilder::MakerTaskPath::kSetPrintStart;
 
         wxString msg = _L("Set printing task...");
         m_status_bar->update_status(msg, m_is_canceled, 100, true);
@@ -3316,7 +3427,7 @@ void SelectMachineDialog::send_to_sd_card(){
         wxString msg = _L("Set printing task...");
         m_status_bar->update_status(msg, m_is_canceled, 100, true);
         std::string send_api = "printer/print/start";
-        std::string send_msg = "{\"filename\":\"" + m_required_data_file_path + "\",\"plateindex\":\"" + std::to_string(m_print_plate_idx + 1) + "\"}";
+        std::string send_msg = "{\"filename\":\"" + m_required_data_file_name + "\",\"plateindex\":\"" + std::to_string(m_print_plate_idx + 1) + "\"}";
         bool success = upload_job.printhost->send_msg_to_printer(send_api, send_msg);
 
         if (success)
@@ -3381,6 +3492,14 @@ void SelectMachineDialog::EnableEditing(bool enable)
     /*mapping link*/
     //m_link_edit_nozzle->Enable(enable);
 
+    //y84
+    if (enable) {
+        for (auto it = m_materialList.begin(); it != m_materialList.end(); ++it) {
+            if (it->second && it->second->item)
+                it->second->item->enable();
+        }
+    }
+
     /*options*/
     for (auto iter : m_checkbox_list)
     {
@@ -3441,12 +3560,17 @@ void SelectMachineDialog::update_option_opts(MachineObject *obj)
 
     //y61
     auto presets = wxGetApp().preset_bundle->printers.get_presets();
+    //y84
+    select_machine.bed_leveling_force = false;
     for (auto preset : presets) {
         auto preset_config = preset.config;
         std::string type = preset_config.opt_string("printer_model");
         if (NormalizeVendor(type).find(NormalizeVendor(select_machine.type)) != std::string::npos) {
             select_machine.timelapse = preset_config.opt_bool("is_support_timelapse");
             select_machine.enable_polar_cooler = preset_config.opt_bool("is_support_polar_cooler");
+            //y84
+            if (preset_config.has("is_support_bed_leveling_force"))
+                select_machine.bed_leveling_force = preset_config.opt_bool("is_support_bed_leveling_force");
             break;
         }
     }
@@ -3911,10 +4035,13 @@ void SelectMachineDialog::load_option_vals(MachineObject *obj)
         //y75
         if (useExt) {
             m_checkbox_list["enable_multi_box"]->setValue("off");
-        } else {
+        }
+        else {
             m_checkbox_list["enable_multi_box"]->setValue("on");
         }
     } else {
+        //y84
+        m_checkbox_list["enable_multi_box"]->setValue("off");
         m_checkbox_list["enable_multi_box"]->enable(false);
         m_checkbox_list["enable_multi_box"]->update_tooltip(_L("The machine is not synchronized with the box, so the box cannot be activated."));
     }
@@ -3929,6 +4056,14 @@ void SelectMachineDialog::load_option_vals(MachineObject *obj)
     }
 
     update_option_dynamic_state(obj);
+
+    //y84
+    if (select_machine.bed_leveling_force) {
+        m_checkbox_list["bed_leveling"]->setValue("on");
+        m_checkbox_list["bed_leveling"]->enable(false);
+    } else {
+        m_checkbox_list["bed_leveling"]->enable(true);
+    }
 }
 
 void SelectMachineDialog::update_option_dynamic_state(MachineObject *obj)
@@ -4639,8 +4774,6 @@ void SelectMachineDialog::update_user_printer()
                 }
             }
             machine.display_name = machine.name + " (" + machine.ip + ")";
-            machine.link_url = device.link_url;
-            machine.is_special = device.isSpecialMachine;
             machine.is_local_transitioned = device.is_local_transitioned;
             machine_list_link.push_back(machine);
         }
@@ -4843,18 +4976,13 @@ void SelectMachineDialog::on_printer_combobox_dropdown(wxCommandEvent& event)
     event.Skip();
     if (!m_isNetMode)
         return;
-    if (wxGetApp().is_link_connect())
-        return;
     if (wxGetApp().app_config->get("user_token").empty())
-        return;
-    if (MakerHttpHandle::getInstance().isSSEConnected())
         return;
     MainFrame* main = wxGetApp().mainframe;
     if (!main || !main->m_printer_view)
         return;
     QDSPrinterWebView* pw = main->m_printer_view;
-    MakerHttpHandle::getInstance().setSSEHandle(
-        [pw](const std::string& sse_event, const std::string& data) { pw->onSSEMessageHandle(sse_event, data); });
+    pw->startCloudStatusStream();
 #endif
 }
 
@@ -4888,7 +5016,7 @@ void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
                     }
                     else
                     {
-                        wxString msg_text = wxString::Format(_L("The selected printer (%s) is incompatible with the chosen printer profile in the slicer (%s)."), machine.type, preset_typename);
+                        show_status(PrintDialogStatus::PrintStatusUnsupportedPrinter);
                         Enable_Refresh_Button(true);
                         Enable_Send_Button(false);
                         break;
@@ -4908,18 +5036,65 @@ void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
                     //y79
                     select_printer_ip = machine.ip;
                     //y81
-                    if(!wxGetApp().is_link_connect()){
-                        m_printer_last_select = machine.device_id;
-                    }
+                    m_printer_last_select = machine.device_id;
+
+                    //y84
+                    const std::string sel_key = m_printer_last_select;
                     if (preset_typename_normalized.find(NormalizeVendor(machine.type)) != std::string::npos)
                     {
+                        auto qdsdev = wxGetApp().qdsdevmanager->getDevice(sel_key);
+                        if (!qdsdev || !qdsdev->is_selected)
+                        {
+                            Enable_Send_Button(false);
+                            show_status(PrintDialogStatus::QDTPrinterInfoSyncing);
+
+                            if (wxGetApp().mainframe && wxGetApp().mainframe->m_printer_view)
+                                wxGetApp().mainframe->m_printer_view->select_device_by_id(sel_key);
+
+                            wxWeakRef<SelectMachineDialog> weakThis(this);
+                            std::thread([weakThis, sel_key]() {
+                                bool ok = false;
+                                for (int i = 0; i < 100; ++i) {
+                                    auto dev = wxGetApp().qdsdevmanager->getDevice(sel_key);
+                                    if (dev && dev->box_info_is_ready) {
+                                        ok = true;
+                                        break;
+                                    }
+                                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                                }
+                                wxGetApp().CallAfter([weakThis, ok, sel_key]() {
+                                    if (!weakThis)
+                                        return;
+                                    if (weakThis->m_printer_last_select != sel_key)
+                                        return;
+                                if (ok) {
+                                    auto dev = wxGetApp().qdsdevmanager->getDevice(sel_key);
+                                    weakThis->has_box_machine = (dev && dev->m_box_count > 0);
+                                    weakThis->m_is_printer_change = true;
+                                    weakThis->show_status(PrintDialogStatus::QDTPrinterInfoSyncSuccess);
+                                    weakThis->Enable_Send_Button(true);
+                                    int extruders_size = wxGetApp().plater()->get_partplate_list().get_curr_plate()->get_used_filaments().size();
+                                    bool is_can_change_color = wxGetApp().plater()->is_can_change_color();
+                                    if (extruders_size > 1 && !is_can_change_color && (!dev || dev->m_box_count == 0)) {
+                                        weakThis->show_status(PrintDialogStatus::PrinterNotConnectBox);
+                                        weakThis->has_box_machine = false;
+                                    }
+                                    weakThis->update_show_status();
+                                }
+                                else {
+                                    weakThis->show_status(PrintDialogStatus::QDTPrinterInfoSyncFailed);
+                                }
+                                });
+                            }).detach();
+                            break;
+                        }
                         Enable_Refresh_Button(true);
                         Enable_Send_Button(true);
                         break;
                     }
                     else
                     {
-                        wxString msg_text = wxString::Format(_L("The selected printer (%s) is incompatible with the chosen printer profile in the slicer (%s)."), machine.type, preset_typename);
+                        show_status(PrintDialogStatus::PrintStatusUnsupportedPrinter);
                         Enable_Refresh_Button(true);
                         Enable_Send_Button(false);
                         break;
@@ -4949,15 +5124,18 @@ void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
         }
         bool is_can_change_color = m_plater->is_can_change_color();
         if (extruders_size > 1 && !is_can_change_color) {
-            if (qds_device->m_box_count == 0) {
-                show_status(PrintDialogStatus::PrinterNotConnectBox);
-                has_box_machine = false;
-            }
-            else 
-                has_box_machine = true;
+            //y84
+            if (qds_device->box_info_is_ready) {
+                if (qds_device->m_box_count == 0) {
+                    show_status(PrintDialogStatus::PrinterNotConnectBox);
+                    has_box_machine = false;
+                }
+                else
+                    has_box_machine = true;
 
-            if (extruders_size > wxGetApp().preset_bundle->filament_ams_list.size()){
-                show_status(PrintDialogStatus::PrinterNotConnectBox);
+                if (extruders_size > wxGetApp().preset_bundle->filament_ams_list.size()){
+                    show_status(PrintDialogStatus::PrinterNotConnectBox);
+                }
             }
         }
         else {
@@ -4966,18 +5144,6 @@ void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
             else
                 has_box_machine = true;
         }
-
-
-        //y68 //y70
-        if (!preset_typename_normalized.empty() && preset_typename_normalized.find(NormalizeVendor(select_machine_type)) == std::string::npos && !selection_name.empty())
-        {
-            show_status(PrintDialogStatus::PrintStatusUnsupportedPrinter);
-            has_box_machine = false;
-        }
-        else {
-            show_status(PrintDialogStatus::PrintStatusInit);
-        }
-
     } else {
         auto qds_dev = GUI::wxGetApp().qdsdevmanager;
         auto qds_obj = qds_dev->getSelectedDevice();
@@ -5239,6 +5405,12 @@ void SelectMachineDialog::update_show_status(MachineObject* obj_)
         }
     }
 
+    if (!m_check_flag) {
+        //update_select_layout(obj_);
+        //update_ams_check(obj_); 
+        m_check_flag = true;
+    }
+
     //y80
     if (m_is_printer_change) {
         m_ams_mapping_result.clear();
@@ -5252,19 +5424,6 @@ void SelectMachineDialog::update_show_status(MachineObject* obj_)
 
     reset_timeout();
 
-    //y75
-    if (!has_box_machine || m_checkbox_list["enable_multi_box"]->getValue() == "off") {
-        m_ams_mapping_result.clear();
-        sync_ams_mapping_result(m_ams_mapping_result);
-        return;
-    }
-
-    if (!m_check_flag) {
-        //update_select_layout(obj_);
-        //update_ams_check(obj_);
-        m_check_flag = true;
-    }
-
     if (m_ams_mapping_result.empty()) {
         do_ams_mapping(obj_, true);
         update_filament_change_count();
@@ -5277,6 +5436,18 @@ void SelectMachineDialog::update_show_status(MachineObject* obj_)
                 m_checkbox_list["nozzle_offset_cali"]->setValue("off");
             }
         }
+    }
+
+    //y84
+    if (has_box_machine && !m_ams_mapping_result.empty() && _HasExt(m_ams_mapping_result)) {
+        m_checkbox_list["enable_multi_box"]->setValue("off");
+    }
+
+    //y84
+    if (m_checkbox_list["enable_multi_box"]->getValue() == "off") {
+        m_ams_mapping_result.clear();
+        sync_ams_mapping_result(m_ams_mapping_result);
+        return;
     }
 
     /* multi color external change assist*/
@@ -5316,23 +5487,25 @@ void SelectMachineDialog::update_show_status(MachineObject* obj_)
         }
     }
 
-    //y67 y75
-    //const auto &full_config = wxGetApp().preset_bundle->full_config();
-    //size_t      nozzle_nums = full_config.option<ConfigOptionFloatsNullable>("nozzle_diameter")->values.size();
+    //y67 y75 y84
+    const auto &full_config = wxGetApp().preset_bundle->full_config();
+    size_t      nozzle_nums = full_config.option<ConfigOptionFloatsNullable>("nozzle_diameter")->values.size();
     //if (!DevPrinterConfigUtil::support_ams_ext_mix_print(obj_->printer_type))
-    // if (nozzle_nums == 1) {
-    //     bool useAms = _HasAms(m_ams_mapping_result);
-    //     bool useExt = _HasExt(m_ams_mapping_result);
-    //     if (useAms && useExt) {
-    //         show_status(PrintDialogStatus::PrintStatusAmsMappingMixInvalid);
-    //         return;
-    //     }
-    // }
+    if (nozzle_nums == 1) {
+        bool useAms = _HasAms(m_ams_mapping_result);
+        bool useExt = _HasExt(m_ams_mapping_result);
+        if (useAms && useExt) {
+            show_status(PrintDialogStatus::PrintStatusAmsMappingMixInvalid);
+            return;
+        }
+    }
 
     if (m_print_status == PrintDialogStatus::PrintStatusAmsMappingInvalid && m_ams_mapping_result.size() == 1 && _HasExt(m_ams_mapping_result)) {
         show_status(PrintDialogStatus::PrintStatusInit);
         return;
     }
+
+    //show_status(PrintDialogStatus::PrintStatusInit);
 
 #if 0
     m_pre_print_checker.clear();
@@ -5958,7 +6131,14 @@ void SelectMachineDialog::on_material_item_clicked(MaterialItem* item,
         return;/*STUDIO-11301*/
     }
 
-    if (!has_box_machine)
+//y84
+    int valid_mapping_count = 0;
+    for (const auto& mr : m_ams_mapping_result) {
+        if (mr.tray_id >= 0 && !mr.ams_id.empty() && !mr.slot_id.empty()) {
+            valid_mapping_count++;
+        }
+    }
+    if (valid_mapping_count < (int) m_filaments.size())
         return;
 
     MaterialHash::iterator iter = m_materialList.begin();
@@ -5986,6 +6166,11 @@ void SelectMachineDialog::on_material_item_clicked(MaterialItem* item,
         if (m_mapping_popup.IsShown()) return;
         if (preset_fila_infos.size() <= used_filament_idx) return;
         //if (obj_ && obj_->get_dev_id() == m_printer_last_select) {
+
+        //y84
+        bool use_box = has_box_machine && m_checkbox_list["enable_multi_box"]->getValue() == "on";
+        m_mapping_popup.EnableExtMappingFilaTypeCheck(!use_box);
+
         m_mapping_popup.set_parent_item(item);
         m_mapping_popup.set_current_filament_id(used_filament_idx);
         m_mapping_popup.set_tag_texture(preset_fila_infos[used_filament_idx].filament_type);
@@ -9181,27 +9366,33 @@ void PrinterInfoBox::UpdatePlate(const std::string& plate_name)
     }
     else
     {
+        //y84
+        auto pm       = wxGetApp().plater()->get_curr_printer_model();
+        std::string image_type = pm->image_bed_type;
+        std::string bed_type_name;
         wxString name;
         if (plate_name == "Cool Plate") {
             name = _L("Cool");
-            m_bed_image->SetBitmap(create_scaled_bitmap("bed_cool", this, 32));
+            bed_type_name = "bed_cool_" + image_type;
         }
         else if (plate_name == "Engineering Plate") {
             name = _L("Engineering");
-            m_bed_image->SetBitmap(create_scaled_bitmap("bed_engineering", this, 32));
+            bed_type_name = "bed_engineering_" + image_type;
         }
         else if (plate_name == "High Temp Plate") {
             name = _L("High Temp");
-            m_bed_image->SetBitmap(create_scaled_bitmap("bed_high_templ", this, 32));
+            bed_type_name = "bed_high_templ_" + image_type;
         }
         else if (plate_name == "Textured PEI Plate") {
             name = "PEI";
-            m_bed_image->SetBitmap(create_scaled_bitmap("bed_pei", this, 32));
+            bed_type_name = "bed_pei_" + image_type;
         }
         else if (plate_name == "Supertack Plate") {
             name = _L("Cool(Supertack)");
-            m_bed_image->SetBitmap(create_scaled_bitmap("bed_cool_supertack", this, 32));
+            bed_type_name = "bed_cool_supertack_" + image_type;
         }
+
+        m_bed_image->SetBitmap(create_scaled_bitmap(bed_type_name, this, 32));
 
         if (name.length() > 8) {
             m_text_bed_type->SetFont(Label::Body_9);
@@ -9407,13 +9598,7 @@ void PrinterInfoBox::OnBtnQuestionClicked(wxCommandEvent& event)
 //y78
 void PrinterInfoBox::SetQDTPrinters(std::vector<Machine_info> machine_list, bool is_from_sdcard_view)
 {
-    const auto enabled_vendors = wxGetApp().app_config->vendors();
-    for (const auto vendor : enabled_vendors) {
-        std::map<std::string, std::set<std::string>> model_map = vendor.second;
-        for (auto model_name : model_map) {
-            qidi_printers.emplace(model_name.first);
-        }
-    }
+    PresetBundle& preset_bundle = *wxGetApp().preset_bundle;
 
     m_comboBox_printer->Clear();
     m_comboBox_printer->SetValue(wxEmptyString);
@@ -9426,16 +9611,20 @@ void PrinterInfoBox::SetQDTPrinters(std::vector<Machine_info> machine_list, bool
         drop_item.text = wxString::FromUTF8(machine.display_name);
         drop_item.text_static_tips = wxString::FromUTF8(machine.ip);
 
+        //y84
+        std::string machine_model_id;
         std::string machine_type;
-        for (std::string machine_vendor : qidi_printers)
-        {
-            if (NormalizeVendor(machine_vendor) == NormalizeVendor(machine.type))
-            {
-                machine_type = machine_vendor;
-                break;
+        for (auto vendor_profile : preset_bundle.vendors) {
+            for (auto vendor_model : vendor_profile.second.models) {
+                if (NormalizeVendor(vendor_model.name).find(NormalizeVendor(machine.type)) != std::string::npos) {
+                    machine_model_id = vendor_model.model_id;
+                    machine_type = vendor_model.name;
+                    break;
+                }
             }
         }
-        std::string machine_icon_path = Slic3r::resources_dir() + "/" + "profiles" + "/" + "thumbnail" + "/" + machine_type + "_thumbnail.png";
+
+        std::string machine_icon_path = Slic3r::resources_dir() + "/" + "profiles" + "/" + "thumbnail" + "/" + machine_model_id + "_thumbnail.png";
         try{
             drop_item.icon = create_scaled_bitmap(machine_icon_path, this, 32);
             drop_item.icon_textctrl = create_scaled_bitmap(machine_icon_path, this, 52);
@@ -9449,8 +9638,7 @@ void PrinterInfoBox::SetQDTPrinters(std::vector<Machine_info> machine_list, bool
     }
     m_comboBox_printer->SetItems(drop_items);
 
-    PresetBundle& preset_bundle = *wxGetApp().preset_bundle;
-    std::string preset_typename = preset_bundle.printers.get_edited_preset().get_printer_type(&preset_bundle);
+    std::string preset_typename = preset_bundle.printers.get_edited_preset().get_printer_name(&preset_bundle);
 
     //y78
     std::string preset_typename_normalized;

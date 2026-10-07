@@ -1551,10 +1551,10 @@ void Tab::on_roll_back_value(const bool to_sys /*= true*/)
         //}
         for (const auto &kvp : group->opt_map()) {
             const std::string &opt_key = kvp.first;
-            
+
             std::string opt_key_with_index = opt_key + "#0";
             auto iter = m_options_list.find(opt_key_with_index);
-            
+
             if (iter != m_options_list.end()) {
                 Field* field = group->get_fieldc(opt_key, -1);
                 if (auto* multi_variant = dynamic_cast<MultiVariantTextCtrl*>(field)) {
@@ -3882,7 +3882,13 @@ void TabPrintPlate::update_bed_type_list()
     int new_sel = 0;
     for (size_t i = 0; i < bed_type_def->enum_labels.size(); i++) {
         const auto &label = bed_type_def->enum_labels[i];
-        if (pm && std::find(pm->not_support_bed_types.begin(), pm->not_support_bed_types.end(), label) != pm->not_support_bed_types.end())
+        //y84
+        // if (pm && std::find(pm->not_support_bed_types.begin(), pm->not_support_bed_types.end(), label) != pm->not_support_bed_types.end())
+        const auto &value = bed_type_def->enum_values[i];
+        // not_support_bed_types stores canonical enum_values names (e.g. "Supertack Plate"),
+        // not the localized display label ("QIDI Cool Plate SuperTack"), so match both.
+        if (pm && (std::find(pm->not_support_bed_types.begin(), pm->not_support_bed_types.end(), value) != pm->not_support_bed_types.end()
+                || std::find(pm->not_support_bed_types.begin(), pm->not_support_bed_types.end(), label) != pm->not_support_bed_types.end()))
             continue;
         combo->Append(_L(label));
         opt.enum_values.push_back(bed_type_def->enum_values[i]);
@@ -4330,8 +4336,9 @@ void TabFilament::build()
         optgroup->append_single_option_line("filament_adhesiveness_category");
         optgroup->append_single_option_line("filament_metal_stickiness");
         optgroup->append_single_option_line("filament_flow_ratio", "", 0);
-        optgroup->append_single_option_line("enable_pressure_advance");
-        optgroup->append_single_option_line("pressure_advance");
+//yzy3
+        optgroup->append_single_option_line("enable_pressure_advance", "" , 0);
+        optgroup->append_single_option_line("pressure_advance", "", 0);
         optgroup->append_single_option_line("filament_density");
         optgroup->append_single_option_line("filament_shrink");
         optgroup->append_single_option_line("filament_velocity_adaptation_factor");
@@ -4420,11 +4427,6 @@ void TabFilament::build()
         line.append_option(optgroup->get_option("textured_plate_temp"));
         optgroup->append_line(line);
 
-        line = { L("Nozzle"), L("Nozzle temperature when printing") };
-        line.append_option(optgroup->get_option("nozzle_temperature_initial_layer", 0));
-        line.append_option(optgroup->get_option("nozzle_temperature", 0));
-        optgroup->append_line(line);
-
         optgroup->m_on_change = [this, optgroup](t_config_option_key opt_key, boost::any value)
         {
             DynamicPrintConfig& filament_config = m_preset_bundle->filaments.get_edited_preset().config;
@@ -4458,6 +4460,11 @@ void TabFilament::build()
 
             on_value_change(opt_key, value);
         };
+
+        line = { L("Nozzle"), L("Nozzle temperature when printing") };
+        line.append_option(optgroup->get_option("nozzle_temperature_initial_layer", 0));
+        line.append_option(optgroup->get_option("nozzle_temperature", 0));
+        optgroup->append_line(line);
 
         //QDS
         optgroup = page->new_optgroup(L("Volumetric speed limitation"), L"param_volumetric_speed");
@@ -4621,7 +4628,8 @@ void TabFilament::build()
         option.opt.height = notes_field_height;
         optgroup->append_single_option_line(option);
         optgroup->m_on_change = [this, optgroup](const t_config_option_key &opt_key, const boost::any &value) { validate_custom_note_cb(this, optgroup, opt_key, value); };
-        
+
+
     page = add_options_page(L("Multi Filament"), "advanced");
         optgroup = page->new_optgroup(L("Multi Filament"));
         optgroup->append_single_option_line("filament_flush_temp", "", 0);
@@ -4690,13 +4698,13 @@ void TabFilament::toggle_options()
 {
     if (!m_active_page)
         return;
-
-    bool is_QDT_printer = false;
-    if (m_preset_bundle) {
-        is_QDT_printer =
-            m_preset_bundle->printers.get_edited_preset().is_qdt_vendor_preset(
-                m_preset_bundle);
-    }
+//yzy3
+    bool is_QDT_printer = true;
+    // if (m_preset_bundle) {
+    //     is_QDT_printer =
+    //         m_preset_bundle->printers.get_edited_preset().is_qdt_vendor_preset(
+    //             m_preset_bundle);
+    // }
     bool is_multi_extruder = m_preset_bundle->printers.get_edited_preset().config.option<ConfigOptionFloatsNullable>("nozzle_diameter")->size() > 1;
 
     //w34
@@ -4742,13 +4750,16 @@ void TabFilament::toggle_options()
 
         toggle_option("impact_strength_z", false);
         //QDS: hide these useless option for qidi printer
-        toggle_line("enable_pressure_advance", !is_QDT_printer);
-        if (is_QDT_printer)
-            toggle_line("pressure_advance", false);
-        else {
-            toggle_line("pressure_advance", true);
-            toggle_option("pressure_advance", m_config->opt_bool("enable_pressure_advance", 0));
-        }
+//yzy3
+        const int extruder_idx = m_variant_combo ? m_variant_combo->GetSelection() : 0;
+        toggle_line("enable_pressure_advance", is_QDT_printer, 256 + extruder_idx);
+        toggle_line("pressure_advance", m_config->opt_bool_nullable("enable_pressure_advance", extruder_idx), 256 + extruder_idx);
+        // if (is_QDT_printer)
+        //    toggle_line("pressure_advance", false);
+        // else {
+        //    toggle_line("pressure_advance", true);
+        //    toggle_option("pressure_advance", m_config->opt_bool("enable_pressure_advance", 0));
+        // }
 
         bool support_chamber_temp_control = this->m_preset_bundle->printers.get_edited_preset().config.opt_bool("support_chamber_temp_control");
         toggle_line("chamber_temperatures", support_chamber_temp_control);
@@ -5143,9 +5154,8 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line("nozzle_type");
         optgroup->append_single_option_line("auxiliary_fan");
         optgroup->append_single_option_line("fan_direction");
-        //y58
         optgroup->append_single_option_line("support_chamber_temp_control");
-
+        //y58
         optgroup->append_single_option_line("support_box_temp_control");
         optgroup->append_single_option_line("support_air_filtration");
         optgroup->append_single_option_line("cooling_filter_enabled");
@@ -5602,7 +5612,6 @@ void TabPrinter::build_unregular_pages(bool from_initial_build/* = false*/)
             // do not display this params now
             optgroup->append_single_option_line("long_retractions_when_cut", "", extruder_idx);
             optgroup->append_single_option_line("retraction_distances_when_cut", "", extruder_idx);
-
 #if 0
             //optgroup = page->new_optgroup(L("Preview"), -1, true);
 
@@ -7098,6 +7107,11 @@ void Tab::save_preset(std::string name /*= ""*/, bool detach, bool save_to_proje
     }
     new_preset->save_info();
 
+    // y84
+#if QDT_RELEASE_TO_PUBLIC
+    UserPresetSyncManager::instance().triggerSync();
+#endif
+
     // Mark the print & filament enabled if they are compatible with the currently selected preset.
     // If saving the preset changes compatibility with other presets, keep the now incompatible dependent presets selected, however with a "red flag" icon showing that they are no more compatible.
     m_preset_bundle->update_compatible(PresetSelectCompatibleType::Never);
@@ -7711,7 +7725,7 @@ std::vector<wxString> Tab::generate_extruder_options()
             }
             bool found = false;
             for (const auto& nozzle_type : known_nozzle_types) {
-                if (v.size() > nozzle_type.size() && 
+                if (v.size() > nozzle_type.size() &&
                     v.substr(v.size() - nozzle_type.size()) == nozzle_type &&
                     v[v.size() - nozzle_type.size() - 1] == ' ') {
                     drive = v.substr(0, v.size() - nozzle_type.size() - 1);

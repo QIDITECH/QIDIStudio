@@ -197,6 +197,9 @@ struct AMSinfo
 {
 public:
     std::string             ams_id;
+    // QDS multi-color controller generation marker, e.g. "box_v2".
+    // Empty for legacy AMS; used by AMSControl to hide the Unload button on gen-2 boxes.
+    std::string             identity;
     std::vector<Caninfo>    cans;
     std::string             current_can_id;
     AMSPassRoadSTEP         current_step = AMSPassRoadSTEP::AMS_ROAD_STEP_NONE;
@@ -218,6 +221,7 @@ public:
     bool operator== (const AMSinfo& other) const
     {
         if (ams_id == other.ams_id &&
+            identity == other.identity &&
             cans == other.cans &&
             current_can_id == other.current_can_id &&
             current_step == other.current_step &&

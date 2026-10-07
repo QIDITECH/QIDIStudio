@@ -229,7 +229,8 @@ public:
     void sync_ams_list(bool is_from_big_sync_btn = false);
     bool sync_extruder_list();
     bool need_auto_sync_extruder_list_after_connect_priner(const MachineObject* obj);
-    void update_sync_status(std::shared_ptr<QDSDevice> obj);    //y76
+    //y76 y84
+    void update_sync_status(std::shared_ptr<QDSDevice> obj, bool defer_combo_refresh = false);    //y76
     int get_sidebar_pos_right_x();
     void on_size(SimpleEvent &e);
     void on_full_screen(IntEvent &);

@@ -1440,11 +1440,33 @@ void PlaterPresetComboBox::update()
                         ShowBadge(selected_in_box);
                 }
             } else {
-                for (std::map<wxString, wxBitmap *>::const_iterator it = presets.begin(); it != presets.end(); ++it) {
-                    SetItemTooltip(Append(it->first, *it->second), preset_descriptions[it->first]);
-                    if (group == "System presets")
+                //y84
+                if (m_type == Preset::TYPE_PRINTER && group == "System presets") {
+                    // QDS: keep QIDI-branded printer models at the front when adding a printer
+                    std::vector<std::map<wxString, wxBitmap *>::const_iterator> printer_iters;
+                    for (auto it = presets.begin(); it != presets.end(); ++it)
+                        printer_iters.push_back(it);
+                    std::sort(printer_iters.begin(), printer_iters.end(),
+                        [](std::map<wxString, wxBitmap *>::const_iterator l,
+                           std::map<wxString, wxBitmap *>::const_iterator r) {
+                            bool l_qidi = l->first.Upper().Contains("QIDI");
+                            bool r_qidi = r->first.Upper().Contains("QIDI");
+                            if (l_qidi != r_qidi)
+                                return l_qidi; // QIDI-branded models come first
+                            return l->first < r->first;
+                        });
+                    for (auto it : printer_iters) {
+                        SetItemTooltip(Append(it->first, *it->second), preset_descriptions[it->first]);
                         set_label_marker(GetCount() - 1, LABEL_ITEM_PRINTER_MODELS);
-                    validate_selection(it->first == selected);
+                        validate_selection(it->first == selected);
+                    }
+                } else {
+                    for (std::map<wxString, wxBitmap *>::const_iterator it = presets.begin(); it != presets.end(); ++it) {
+                        SetItemTooltip(Append(it->first, *it->second), preset_descriptions[it->first]);
+                        if (group == "System presets")
+                            set_label_marker(GetCount() - 1, LABEL_ITEM_PRINTER_MODELS);
+                        validate_selection(it->first == selected);
+                    }
                 }
             }
         }
@@ -1762,44 +1784,41 @@ void TabPresetComboBox::update()
     Clear();
     invalidate_selection();
 
+//y84
     //QDS: add project embedded preset logic
-    if (!project_embedded_presets.empty())
-    {
-        set_label_marker(Append(_L("Project-inside presets"), wxNullBitmap, DD_ITEM_STYLE_SPLIT_ITEM));
-        for (std::map<wxString, std::pair<wxBitmap*, bool>>::iterator it = project_embedded_presets.begin(); it != project_embedded_presets.end(); ++it) {
-            int item_id = Append(it->first, *it->second.first);
-            SetItemTooltip(item_id, preset_descriptions[it->first]);
+    //QDS: helper to append presets with "QIDI" prefixed ones shown first (others alphabetical)
+    auto append_ordered = [&](const std::map<wxString, std::pair<wxBitmap*, bool>>& preset_map, const wxString& label) {
+        if (preset_map.empty())
+            return;
+        set_label_marker(Append(label, wxNullBitmap, DD_ITEM_STYLE_SPLIT_ITEM));
+        std::vector<wxString> ordered;
+        ordered.reserve(preset_map.size());
+        for (const auto& kv : preset_map)
+            ordered.push_back(kv.first);
+        std::stable_sort(ordered.begin(), ordered.end(), [](const wxString& a, const wxString& b) {
+            // QIDI prefixed presets go first, then alphabetical (mirrors Fiberon logic above)
+            bool qa = a.StartsWith("QIDI");
+            bool qb = b.StartsWith("QIDI");
+            if (qa == qb)
+                return a < b;
+            return qa;
+        });
+        for (const wxString& key : ordered) {
+            auto it = preset_map.find(key);
+            int item_id = Append(key, *it->second.first);
+            SetItemTooltip(item_id, preset_descriptions[key]);
             bool is_enabled = it->second.second;
             if (!is_enabled)
                 set_label_marker(item_id, LABEL_ITEM_DISABLED);
-            validate_selection(it->first == selected);
+            validate_selection(key == selected);
         }
-    }
-    if (!nonsys_presets.empty())
-    {
-        set_label_marker(Append(_L("User presets"), wxNullBitmap, DD_ITEM_STYLE_SPLIT_ITEM));
-        for (std::map<wxString, std::pair<wxBitmap*, bool>>::iterator it = nonsys_presets.begin(); it != nonsys_presets.end(); ++it) {
-            int item_id = Append(it->first, *it->second.first);
-            SetItemTooltip(item_id, preset_descriptions[it->first]);
-            bool is_enabled = it->second.second;
-            if (!is_enabled)
-                set_label_marker(item_id, LABEL_ITEM_DISABLED);
-            validate_selection(it->first == selected);
-        }
-    }
+    };
+
+    append_ordered(project_embedded_presets, _L("Project-inside presets"));
+    append_ordered(nonsys_presets, _L("User presets"));
     //QDS: move system to the end
-    if (!system_presets.empty())
-    {
-        set_label_marker(Append(_L("System presets"), wxNullBitmap, DD_ITEM_STYLE_SPLIT_ITEM));
-        for (std::map<wxString, std::pair<wxBitmap*, bool>>::iterator it = system_presets.begin(); it != system_presets.end(); ++it) {
-            int item_id = Append(it->first, *it->second.first);
-            SetItemTooltip(item_id, preset_descriptions[it->first]);
-            bool is_enabled = it->second.second;
-            if (!is_enabled)
-                set_label_marker(item_id, LABEL_ITEM_DISABLED);
-            validate_selection(it->first == selected);
-        }
-    }
+    append_ordered(system_presets, _L("System presets"));
+//y84
 
     if (m_type == Preset::TYPE_PRINTER)
     {

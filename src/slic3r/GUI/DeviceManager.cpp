@@ -874,8 +874,6 @@ void MachineObject::_parse_ams_status(int ams_status)
     } else {
         ams_status_main = AmsStatusMain::AMS_STATUS_MAIN_UNKNOWN;
     }
-
-    // BOOST_LOG_TRIVIAL(trace) << "ams_debug: main = " << ams_status_main_int << ", sub = " << ams_status_sub;
 }
 
 bool MachineObject::can_unload_filament()
@@ -1321,15 +1319,12 @@ int MachineObject::command_request_push_all(bool request_now)
 
     if (diff.count() < REQUEST_PUSH_MIN_TIME) {
         if (request_now) {
-            // BOOST_LOG_TRIVIAL(trace) << "static: command_request_push_all, dev_id=" << QDTCrossTalk::Crosstalk_DevId(get_dev_id());
             last_request_push = std::chrono::system_clock::now();
         }
         else {
-            // BOOST_LOG_TRIVIAL(trace) << "static: command_request_push_all, dev_id=" << QDTCrossTalk::Crosstalk_DevId(get_dev_id());
             return -1;
         }
     } else {
-        // BOOST_LOG_TRIVIAL(trace) << "static: command_request_push_all, dev_id=" << QDTCrossTalk::Crosstalk_DevId(get_dev_id());
         last_request_push = std::chrono::system_clock::now();
     }
 
@@ -1346,11 +1341,9 @@ int MachineObject::command_pushing(std::string cmd)
     auto curr_time = std::chrono::system_clock::now();
     auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(curr_time - last_request_start);
     if (diff.count() < REQUEST_START_MIN_TIME) {
-        // BOOST_LOG_TRIVIAL(trace) << "static: command_request_start: send request too fast, dev_id=" << QDTCrossTalk::Crosstalk_DevId(get_dev_id());
         return -1;
     }
     else {
-        // BOOST_LOG_TRIVIAL(trace) << "static: command_request_start, dev_id=" << QDTCrossTalk::Crosstalk_DevId(get_dev_id());
         last_request_start = std::chrono::system_clock::now();
     }
 

@@ -27,6 +27,12 @@
 #include "slic3r/Utils/FileTransferUtils.hpp"
 #include "QDSPrinterWebView.hpp"
 #include "OctoPrint.hpp"
+
+#if QDT_RELEASE_TO_PUBLIC
+#include "../QIDI/P2PManager.hpp"
+#endif
+#include <wx/weakref.h>
+
 namespace Slic3r {
 namespace GUI {
 
@@ -65,6 +71,51 @@ static std::string ParseErrorCode(int errorcde)
     auto it = error_messages.find(errorcde);
     if (it != error_messages.end()) { return it->second; }
     return "";
+}
+
+//dk12
+static std::string normalize_send_model_token(const std::string& value)
+{
+    std::string normalized;
+    normalized.reserve(value.size());
+    for (unsigned char c : value) {
+        if (std::isalnum(c))
+            normalized += static_cast<char>(std::tolower(c));
+    }
+    return normalized;
+}
+
+static std::string resolve_send_model_id(PresetBundle* preset_bundle, const std::string& model)
+{
+    if (preset_bundle == nullptr || model.empty())
+        return "";
+
+    Preset& active_printer = preset_bundle->printers.get_edited_preset();
+    return active_printer.get_printer_type_from_preset_name(preset_bundle, model);
+}
+
+static bool is_send_printer_model_compatible(const std::string& device_type)
+{
+    if (device_type.empty() || wxGetApp().preset_bundle == nullptr)
+        return false;
+
+    PresetBundle* preset_bundle = wxGetApp().preset_bundle;
+    Preset& active_printer = preset_bundle->printers.get_edited_preset();
+    const std::string preset_model_id = active_printer.get_printer_type(preset_bundle);
+    const std::string device_model_id = resolve_send_model_id(preset_bundle, device_type);
+
+    if (!preset_model_id.empty() && !device_model_id.empty())
+        return normalize_send_model_token(preset_model_id) == normalize_send_model_token(device_model_id);
+
+    if (!preset_model_id.empty() && normalize_send_model_token(preset_model_id) == normalize_send_model_token(device_type))
+        return true;
+
+    const std::string preset_name = active_printer.get_printer_name(preset_bundle);
+    const std::string lhs = normalize_send_model_token(preset_name.empty() ? preset_model_id : preset_name);
+    const std::string rhs = normalize_send_model_token(device_type);
+    if (lhs.empty() || rhs.empty())
+        return false;
+    return lhs == rhs || lhs.find(rhs) != std::string::npos || rhs.find(lhs) != std::string::npos;
 }
 
 void SendToPrinterDialog::stripWhiteSpace(std::string& str)
@@ -329,7 +380,7 @@ SendToPrinterDialog::SendToPrinterDialog(Plater *plater)
             {
                 //y24
                 m_comboBox_printer->Append(from_u8(machine.display_name));
-                if (m_comboBox_printer->GetValue().empty() && preset_typename_normalized.find(NormalizeVendor(machine.type)) != std::string::npos)
+                if (m_comboBox_printer->GetValue().empty() && is_send_printer_model_compatible(machine.type))
                 {
                     m_comboBox_printer->SetStringSelection(from_u8(machine.display_name));
                     wxCommandEvent event(wxEVT_COMBOBOX, m_comboBox_printer->GetId());
@@ -346,7 +397,7 @@ SendToPrinterDialog::SendToPrinterDialog(Plater *plater)
             {
                 //y24
                 m_comboBox_printer->Append(from_u8(machine.display_name));
-                if (m_comboBox_printer->GetValue().empty() && preset_typename_normalized.find(NormalizeVendor(machine.type)) != std::string::npos)
+                if (m_comboBox_printer->GetValue().empty() && is_send_printer_model_compatible(machine.type))
                 {
                     m_comboBox_printer->SetStringSelection(from_u8(machine.display_name));
                     wxCommandEvent event(wxEVT_COMBOBOX, m_comboBox_printer->GetId());
@@ -960,8 +1011,6 @@ void SendToPrinterDialog::on_ok(wxCommandEvent &event)
                 machine_url = machine.url;
                 machine_ip = machine.ip;
                 machine_apikey = "";
-                machine_link_url = machine.link_url;
-                machine_is_special = machine.is_special;
                 break;
             }
         }
@@ -1048,12 +1097,7 @@ void SendToPrinterDialog::on_ok(wxCommandEvent &event)
 
     if (m_isNetMode)
     {
-        PrintHostJob upload_job(machine_url, machine_ip);
-        upload_job.upload_data.upload_path = upload_file_name;
-        upload_job.upload_data.post_action = PrintHostPostUploadAction::None;
-        upload_job.upload_data.source_path = output_path.string();
-        upload_job.upload_data.is_3mf = qidi_3mf;
-        start_to_send(std::move(upload_job));
+        start_to_send_p2p(output_path.string(), upload_file_name, qidi_3mf);
     }
     else
     {
@@ -1323,6 +1367,90 @@ void SendToPrinterDialog::start_to_send(PrintHostJob upload_job) {
     }
 }
 
+//y84
+void SendToPrinterDialog::start_to_send_p2p(const std::string &source_path,
+                                            const std::string &remote_name,
+                                            bool is_3mf)
+{
+    BOOST_LOG_TRIVIAL(info) << "P2P upload start, source=" << source_path
+                            << ", remote=" << remote_name << ", is_3mf=" << is_3mf;
+
+    m_p2p_cancel = std::make_shared<std::atomic<bool>>(false);
+    auto cancel_flag = m_p2p_cancel;
+
+    wxWeakRef<SendToPrinterDialog> weakThis(this);
+
+    m_p2p_upload_thread = std::thread([weakThis, cancel_flag,
+                                       source_path, remote_name]() {
+
+        P2PManager::FileTransferOptions opt;
+        opt.cancel = cancel_flag.get();
+        opt.progress = [weakThis](int64_t received, int64_t total) {
+            int gui_progress = total > 0 ? (int)(100 * received / total) : 0;
+            wxGetApp().CallAfter([weakThis, gui_progress]() {
+                if (!weakThis) return;
+                wxString msg = _L("Sending...");
+                bool is_undisplay = false;
+                weakThis->m_status_bar->update_status(msg, is_undisplay,
+                                                      std::floor(10 + gui_progress * 0.9), true);
+            });
+        };
+
+        P2PManager::FileTransferResult res =
+            P2PManager::instance().uploadFile(source_path, remote_name, opt);
+
+        if (res.cancelled) {
+            wxGetApp().CallAfter([weakThis]() {
+                if (!weakThis) return;
+                weakThis->show_status(PrintDialogStatus::PrintStatusSendingCanceled);
+                weakThis->prepare_mode();
+            });
+            return;
+        }
+        if (!res.ok) {
+            wxGetApp().CallAfter([weakThis]() {
+                if (!weakThis) return;
+                weakThis->show_status(PrintDialogStatus::PrintStatusPublicUploadFiled);
+                weakThis->update_print_status_msg(_L("File upload failed, please try again."), false, true);
+            });
+            return;
+        }
+
+        bool is_switch_to_device =
+            wxGetApp().app_config->get("switch to device tab after upload") == "true";
+        for (int i = 3; i > 0; i--) {
+            if (cancel_flag->load())
+                break;
+            wxString msg = wxString::Format(
+                _L("Successfully sent. Will automatically jump to the device page in %s s."),
+                std::to_string(i));
+            if (!is_switch_to_device)
+                msg = wxString::Format(
+                    _L("Successfully sent. Close current page in %s s."),
+                    std::to_string(i));
+            wxGetApp().CallAfter([weakThis, msg]() mutable {
+                if (!weakThis) return;
+                weakThis->m_status_bar->update_status(msg, weakThis->m_is_canceled, 100, true);
+            });
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+        if (is_switch_to_device) {
+            wxGetApp().CallAfter([weakThis]() {
+                if (!weakThis) return;
+                wxString msg = _L("Switch to device tab...");
+                weakThis->m_status_bar->update_status(msg, weakThis->m_is_canceled, 100, true);
+                wxGetApp().mainframe->select_tab(size_t(3));
+            });
+        } else {
+            wxGetApp().CallAfter([weakThis]() {
+                if (!weakThis) return;
+                weakThis->EndDialog(wxID_CLOSE);
+            });
+        }
+    });
+    m_p2p_upload_thread.detach();
+}
+
 void SendToPrinterDialog::clear_ip_address_config(wxCommandEvent& e)
 {
     enable_prepare_mode = true;
@@ -1521,8 +1649,9 @@ void SendToPrinterDialog::update_user_printer()
                 }
             }
             machine.display_name = machine.name + " (" + machine.ip + ")";
-            machine.link_url = device.link_url;
-            machine.is_special = device.isSpecialMachine;
+            machine.device_id      = device.id;
+            machine.serial_number  = device.serial_number;
+            machine.p2p_license    = device.p2p_license;
             machine_list_link.push_back(machine);
         }
     }
@@ -1598,7 +1727,7 @@ void SendToPrinterDialog::on_selection_changed(wxCommandEvent &event)
             {
                 if (machine.display_name != selection_name)
                     continue;
-                else if (preset_typename_normalized.find(NormalizeVendor(machine.type)) != std::string::npos)
+                else if (is_send_printer_model_compatible(machine.type))
                 {
                     Enable_Send_Button(true);
                     update_print_status_msg(wxEmptyString, false, false);
@@ -1619,8 +1748,59 @@ void SendToPrinterDialog::on_selection_changed(wxCommandEvent &event)
             {
                 if (machine.display_name != selection_name)
                     continue;
-                else if (preset_typename_normalized.find(NormalizeVendor(machine.type)) != std::string::npos)
+                else if (is_send_printer_model_compatible(machine.type))
                 {
+                    const std::string sel_key = machine.serial_number;
+
+                    if (machine.p2p_license.empty()) {
+                        Enable_Send_Button(true);
+                        update_print_status_msg(wxEmptyString, false, false);
+                        break;
+                    }
+
+                    auto qdsdev = wxGetApp().qdsdevmanager->getDevice(sel_key);
+                    if (!qdsdev || !qdsdev->is_selected)
+                    {
+                        Enable_Send_Button(false);
+                        update_print_status_msg(_L("正在同步中..."), false, true);
+
+                        wxGetApp().CallAfter([sel_key]() {
+                            if (wxGetApp().mainframe && wxGetApp().mainframe->m_printer_view)
+                                wxGetApp().mainframe->m_printer_view->select_device_by_id(sel_key);
+                        });
+
+                        wxWeakRef<SendToPrinterDialog> weakThis(this);
+                        std::thread([weakThis, sel_key, qdsdev]() {
+                            bool ok = false;
+                            for (int i = 0; i < 60; ++i) {  // ~6s
+                                if (qdsdev && qdsdev->active_p2p.load()) {
+                                    ok = true;
+                                    break;
+                                }
+                                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                            }
+                            wxGetApp().CallAfter([weakThis, ok, sel_key]() {
+                                if (!weakThis) return;
+                                std::string cur = into_u8(weakThis->m_comboBox_printer->GetValue());
+                                bool still_target = false;
+                                for (auto &m : weakThis->machine_list_link) {
+                                    if (m.display_name == cur && m.serial_number == sel_key) {
+                                        still_target = true;
+                                        break;
+                                    }
+                                }
+                                if (!still_target) return;
+                                if (ok) {
+                                    weakThis->update_print_status_msg(wxEmptyString, false, false);
+                                    weakThis->Enable_Send_Button(true);
+                                } else {
+                                    weakThis->update_print_status_msg(_L("同步失败"), true, true);
+                                }
+                            });
+                        }).detach();
+                        break;
+                    }
+
                     Enable_Send_Button(true);
                     update_print_status_msg(wxEmptyString, false, false);
                     break;
@@ -1645,6 +1825,14 @@ void SendToPrinterDialog::update_show_status()
     DeviceManager* dev = Slic3r::GUI::wxGetApp().getDeviceManager();
     if (!agent) return;
     if (!dev) return;
+
+
+    if (!m_isNetMode) {
+        if (!m_is_in_sending_mode && !m_comboBox_printer->GetValue().empty())
+            show_status(PrintDialogStatus::PrintStatusReadingFinished);
+        return;
+    }
+
     MachineObject* obj_ = dev->get_my_machine(m_printer_last_select);
     if (!obj_) {
         if (agent) {

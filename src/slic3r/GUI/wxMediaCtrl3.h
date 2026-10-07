@@ -173,10 +173,10 @@ private:
     wxImage m_idle_image;
     wxImage m_frame;
 
-#if 0
-    wxBitmap m_cached_scaled_bitmap;  // 缓存缩放后的bitmap，避免每帧重缩放
-    wxSize m_last_window_size = wxDefaultSize; // 上次缩放时的窗口大小
-#endif
+    //y84
+    wxBitmap m_cached_scaled_bitmap;
+    wxSize   m_last_window_size = wxDefaultSize; // 上次缩放时的窗口大小
+    wxSize   m_last_frame_size  = wxDefaultSize; // 上次缩放时的源帧尺寸
 
     wxSize m_video_size = wxDefaultSize;
     wxSize m_frame_size = wxDefaultSize;
@@ -196,6 +196,10 @@ private:
     // P2P 相关
     std::atomic<bool> m_start_video_requested{false};
     std::atomic<bool> m_stop_video_requested{false};
+    std::atomic<bool> m_video_active{false};
+
+    //y84
+    std::atomic<bool> m_repaint_pending{false};
 
     // 事件表
     wxDECLARE_EVENT_TABLE();

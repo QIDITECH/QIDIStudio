@@ -958,6 +958,11 @@ ModelFileListView::ModelFileListView(wxWindow* parent, wxWindow* event_target, w
     m_main_sizer = new wxBoxSizer(wxVERTICAL);
     m_header_panel = create_header_panel();
     m_main_sizer->Add(m_header_panel, 0, wxEXPAND);
+
+    //y84
+    create_state_panel();
+    m_main_sizer->Add(m_state_panel, 1, wxEXPAND);
+
     SetSizer(m_main_sizer);
     //cj_4
     SetScrollRate(10, 90);
@@ -986,6 +991,9 @@ ModelFileListView::ModelFileListView(wxWindow* parent, wxWindow* event_target, w
         m_top_level_bound->Bind(wxEVT_SIZE, &ModelFileListView::on_download_overlay_top_size, this);
     }
     sync_file_list_surface_colours();
+
+    //y84
+    show_loading_state();
 }
 
 ModelFileListView::~ModelFileListView()
@@ -995,6 +1003,54 @@ ModelFileListView::~ModelFileListView()
         m_top_level_bound->Unbind(wxEVT_SIZE, &ModelFileListView::on_download_overlay_top_size, this);
     }
 }
+
+//y84
+void ModelFileListView::create_state_panel()
+{
+    m_state_panel = new wxPanel(this);
+    m_state_panel->SetBackgroundColour(file_list_panel_background());
+    wxBoxSizer* v = new wxBoxSizer(wxVERTICAL);
+    m_state_panel->SetSizer(v);
+    m_state_text = new wxStaticText(m_state_panel, wxID_ANY, wxEmptyString);
+    m_state_text->SetFont(Label::Body_15);
+    m_state_text->SetForegroundColour(file_list_primary_text_colour());
+    v->AddStretchSpacer(1);
+    v->Add(m_state_text, 0, wxALIGN_CENTER_HORIZONTAL);
+    v->AddStretchSpacer(1);
+    m_state_panel->Hide();
+}
+
+void ModelFileListView::show_loading_state()
+{
+    if (!m_state_panel || !m_state_text)
+        return;
+    m_state_text->SetLabel(wxString::FromUTF8("Model is loading.."));
+    m_state_text->SetForegroundColour(file_list_primary_text_colour());
+    m_state_panel->Show();
+    m_main_sizer->Layout();
+    Refresh();
+}
+
+void ModelFileListView::show_load_failed_state()
+{
+    if (!m_state_panel || !m_state_text)
+        return;
+    m_state_text->SetLabel(wxString::FromUTF8("Get model list faied, please refresh~"));
+    m_state_text->SetForegroundColour(file_list_primary_text_colour());
+    m_state_panel->Show();
+    m_main_sizer->Layout();
+    Refresh();
+}
+
+void ModelFileListView::hide_state_panel()
+{
+    if (!m_state_panel || !m_state_panel->IsShown())
+        return;
+    m_state_panel->Hide();
+    m_main_sizer->Layout();
+    Refresh();
+}
+//y84
 
 void ModelFileListView::on_download_overlay_scroll(wxScrollWinEvent& e)
 {
@@ -1246,6 +1302,9 @@ void ModelFileListView::ClearAll()
     m_hovered_row = nullptr;
     m_mount_filter = ModelListMountFilterV2::Local;
     refresh_mount_usb_toggle_visibility();
+
+    //y84
+    show_loading_state();
     m_main_sizer->Layout();
     FitInside();
 }
@@ -1255,6 +1314,10 @@ void ModelFileListView::AddItem(const wxString& storage_path, const wxBitmap& im
     auto* row = new ModelFileListRow(this, this, storage_path, image, weight, estimated_time, file_path);
 
     m_rows.push_back(row);
+
+    //y84
+    if (m_rows.size() == 1)
+        hide_state_panel();
     m_main_sizer->Add(row, 0, wxEXPAND);
     sync_new_item_mount_visibility(row);
     const wxColour bg = file_list_panel_background();
@@ -1267,6 +1330,8 @@ void ModelFileListView::AddItem(const wxString& storage_path, const wxBitmap& im
 
 void ModelFileListView::FlushBatchAdd()
 {
+    if (!m_rows.empty())
+        hide_state_panel();
     refresh_mount_usb_toggle_visibility();
     m_main_sizer->Layout();
     FitInside();
@@ -1322,6 +1387,12 @@ void ModelFileListView::sync_file_list_surface_colours()
     }
     if (m_header_sep)
         m_header_sep->SetBackgroundColour(file_list_row_separator_colour());
+    //y84
+    if (m_state_panel) {
+        m_state_panel->SetBackgroundColour(bg);
+        apply_surface_to_panels(m_state_panel, bg);
+        apply_fg_to_static_texts(m_state_panel, fg);
+    }
     for (ModelFileListRow* row : m_rows) {
         row->set_local_copy_exists(local_file_exists_in_download_dir(row->get_storage_path()));
         row->sync_row_surface_colours(bg, fg, row == m_hovered_row);

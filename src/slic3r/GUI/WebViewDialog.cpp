@@ -35,6 +35,10 @@
 #include <wrl/client.h>
 #endif
 
+#if QDT_RELEASE_TO_PUBLIC
+#include "../QIDI/QIDINetwork.hpp"
+#endif
+
 namespace pt = boost::property_tree;
 
 namespace Slic3r {
@@ -1028,33 +1032,6 @@ void WebViewPanel::OnFreshLoginStatus(wxTimerEvent &event)
 
 void WebViewPanel::onLoginHandle(const wxWebViewEvent& evt)
 {
-    int index = 3;
-    try {
-        json j = json::parse(evt.GetString());
-        index = j["index"].get<int>();
-    }
-    catch (...) {
-
-    }
-
-    switch (index)
-    {
-    case 1:   // Link login
-	{
-		wxGetApp().app_config->set("login_method", "Maker");
-	}
-	break;
-	case 2: // Maker login
-	{
-		wxGetApp().app_config->set("login_method", "Link");
-	}
-	break;
-	default:     // Cancel / close: just hide the overlay, restore previous page
-	{
-		HideLoginOverlay();
-		return;
-	}
-	}
 	// Login success: keep overlay visible during the modal login dialog,
 	// then hide it and restore the previous page once the flow completes.
 	CallAfter([this] {
@@ -1260,41 +1237,9 @@ void WebViewPanel::SendQidiModelList(bool on)
                 return;
             }
 
-            // QIDI Maker model list API (POST)
-            std::string api_url = "https://www.qidimaker.com/community/v1/sliceModel/getModelPagePublic";
-            // std::string api_url = "https://api-test.qidi3dprinter.com/community/v1/sliceModel/getModelPagePublic";
-
-            // Generate UUID nonce and timestamp
-            boost::uuids::random_generator uuid_gen;
-            boost::uuids::uuid u = uuid_gen();
-            std::string nonce = boost::uuids::to_string(u);
-            auto ts_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::system_clock::now().time_since_epoch()).count();
-            std::string timestamp = std::to_string(ts_ms);
-
-            // Request body
-            std::string post_body = "{\"pageNum\":1, \"pageSize\":20, \"modelCollect\":true}";
-
-            // Region header
-            std::string region = wxGetApp().app_config->get("region") == "China" ? "CN" : "NA";
-
-            auto http = Http::post(api_url);
-            http.timeout_connect(20)
-                .timeout_max(60)
-                .header("Accept", "application/json")
-                .header("Content-Type", "application/json")
-                .header("Accept-Language", "zh_CN")
-                .header("X-Timezone", "+08:00")
-                .header("X-DeviceType", "Web")
-                .header("X-Version", "1.0.0")
-                .header("X-Nonce", nonce)
-                .header("X-Timestamp", timestamp)
-                .header("X-Signature", "dsa213f24df254tgdb6")
-                .header("X-Platform", "pc")
-                .header("X-Region", region)
-                .header("X-DeviceId", "WebTest")
-                .set_post_body(post_body)
-                .on_complete([this](std::string body, unsigned status) {
+            // y84
+            MakerHttpHandle::getInstance().get_qidi_model_list(
+                [this](std::string body, unsigned status) {
                     if (status == 200) {
                         CallAfter([this, body] {
                             if (!wxGetApp().has_model_mall()) return;
@@ -1310,11 +1255,10 @@ void WebViewPanel::SendQidiModelList(bool on)
                     } else {
                         BOOST_LOG_TRIVIAL(warning) << "SendQidiModelList HTTP " << status << ": " << body;
                     }
-                })
-                .on_error([this](std::string body, std::string error, unsigned status) {
+                },
+                [this](std::string body, std::string error, unsigned status) {
                     BOOST_LOG_TRIVIAL(error) << "SendQidiModelList error: " << error << " (HTTP " << status << ")";
-                })
-                .perform();
+                });
         } else {
             std::string body2 = "{\"code\":200, \"data\":{\"records\":[]}}";
             body2.insert(1, "\"command\": \"qidi_model_list_get\", ");

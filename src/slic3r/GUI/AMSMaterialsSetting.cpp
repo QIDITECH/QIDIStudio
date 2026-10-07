@@ -25,8 +25,8 @@ namespace Slic3r { namespace GUI {
 
 wxDEFINE_EVENT(EVT_SELECTED_COLOR, wxCommandEvent);
 wxDEFINE_EVENT(EVT_SELECTED_TYPE, wxCommandEvent);
-wxDEFINE_EVENT(EVT_SET_COLOR, wxCommandEvent);
-wxDEFINE_EVENT(EVT_SET_TYPE, wxCommandEvent);
+//y84
+wxDEFINE_EVENT(EVTSET_FILAMENT_INFO, wxCommandEvent);
 
 static std::string float_to_string_with_precision(float value, int precision = 3)
 {
@@ -631,16 +631,26 @@ void AMSMaterialsSetting::on_select_ok(wxCommandEvent& event)
 		msg_dlg.ShowModal();
 		return;
 	}
-	wxCommandEvent setColorEvt(EVT_SET_COLOR);
-    setColorEvt.SetString(colorHex);
-    setColorEvt.SetInt(slot_id);
-    wxPostEvent(GetParent(), setColorEvt);
+	// y84
+	wxString vendor = "", type = "";
+	size_t spacePos = filamentName.find(' ');
+	if (spacePos != wxString::npos) {
+		vendor = filamentName.substr(0, spacePos);
+		type = filamentName.substr(spacePos + 1);
+	} else {
+		type = filamentName;
+	}
 
-
-
-	wxCommandEvent setTypeEvt(EVT_SET_TYPE);
-    setTypeEvt.SetString(filamentName);
-	wxPostEvent(GetParent(), setTypeEvt);
+	wxCommandEvent infoEvt(EVTSET_FILAMENT_INFO);
+	infoEvt.SetInt(slot_id);
+	FilamentInfoPayload* payload = new FilamentInfoPayload();
+	payload->color = colorHex.Upper().ToStdString();
+	if (!payload->color.empty() && payload->color[0] == '#')
+		payload->color.erase(0, 1); // strip leading '#'
+	payload->vendor = vendor.ToStdString();
+	payload->type = type.ToStdString();
+	infoEvt.SetClientObject(payload); // wxCommandEvent owns and deletes the payload
+	wxPostEvent(GetParent(), infoEvt);
 
     Close();
     return;

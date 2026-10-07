@@ -52,6 +52,9 @@ protected:
 
     bool    m_ams_mixed{false};
 
+    // y84
+    std::string m_ams_shape_signature;
+
     int         m_total_ext_count = 1;
     AMSextruder *m_extruder{nullptr};
     SwitcherImage *m_switcher{nullptr};    
@@ -198,6 +201,13 @@ public:
                  const std::string& series_name = std::string(),
                  const std::string& printer_type = std::string(),
                  bool is_reset = true);
+
+    // y84
+    std::string build_ams_shape_signature(const std::vector<AMSinfo>& ams_info,
+                                          const std::vector<AMSinfo>& ext_info,
+                                          int total_ext_count) const;
+    bool try_update_ams_in_place(const std::vector<AMSinfo>& ams_info,
+                                 const std::vector<AMSinfo>& ext_info);
 
     //cj_2
     void updateAmsTemp(int id, int temp);

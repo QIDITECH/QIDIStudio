@@ -1337,7 +1337,8 @@ wxWindow* PreferencesDialog::create_general_page()
     std::vector<std::string> FlushOptionValues = { "all","color change","disabled" };
     auto item_auto_flush = create_item_combobox(_L("Auto Flush"), page, _L("Auto calculate flush volumes"), "auto_calculate_flush", FlushOptionLabels, FlushOptionValues);
     //auto item_hints = create_item_checkbox(_L("Show \"Tip of the day\" notification after start"), page, _L("If enabled, useful hints are displayed at startup."), 50, "show_hints");
-    auto item_multi_machine = create_item_checkbox(_L("Multi-device Management(Take effect after restarting Studio)."), page, _L("With this option enabled, you can send a task to multiple devices at the same time and manage multiple devices."), 50, "enable_multi_machine");
+    //y84
+    //auto item_multi_machine = create_item_checkbox(_L("Multi-device Management(Take effect after restarting Studio)."), page, _L("With this option enabled, you can send a task to multiple devices at the same time and manage multiple devices."), 50, "enable_multi_machine");
     //y
     //    auto item_fila_manager = create_item_checkbox(_L("Filament Manager") + " (" + _L("Take effect after restarting Studio") + ")", page,
 //#if __APPLE__
@@ -1523,7 +1524,8 @@ wxWindow* PreferencesDialog::create_general_page()
     sizer_page->Add(item_single_instance, 0, wxTOP, FromDIP(3));
     sizer_page->Add(item_bed_type_follow_preset, 0, wxTOP, FromDIP(3));
     //sizer_page->Add(item_hints, 0, wxTOP, FromDIP(3));
-    sizer_page->Add(item_multi_machine, 0, wxTOP, FromDIP(3));
+    //y84
+    //sizer_page->Add(item_multi_machine, 0, wxTOP, FromDIP(3));
     //y
     //sizer_page->Add(item_fila_manager, 0, wxTOP, FromDIP(3));
     sizer_page->Add(item_12h_time_format, 0, wxTOP, FromDIP(3));

@@ -847,8 +847,8 @@ struct Sidebar::priv
     std::optional<NozzleOption> get_nozzle_options(MachineObject *obj, int extruder_count, bool support_multi_nozzle, bool is_manual);
     bool switch_diameter(bool single);
     void update_right_extruder_group_color();
-    //y76
-    void update_sync_status(std::shared_ptr<QDSDevice> obj);
+    //y76 y84
+    void update_sync_status(std::shared_ptr<QDSDevice> obj, bool defer_combo_refresh = false);
     void adjust_filament_title_layout();
     bool is_fila_switch_ready();
     void update_extruder_separator_icon(bool show, bool ready);
@@ -2195,6 +2195,7 @@ bool Sidebar::priv::sync_extruder_list(bool &only_external_material, bool is_man
         HttpData httpData;
         json bodyJson;
         bodyJson["serialNumber"] = obj->m_id;
+        bodyJson["commandId"] = make_filament_info_command_id(obj->m_id);
         httpData.body = bodyJson.dump();
         std::string region = wxGetApp().app_config->get("region");
         if (region == "China") {
@@ -2206,39 +2207,12 @@ bool Sidebar::priv::sync_extruder_list(bool &only_external_material, bool is_man
         httpData.target = PRINTERTYPE;
 
         //y78
-        httpData.taskPath = "/get/database/config/all";
+        httpData.taskPath = QIDIMakerUrlBuilder::MakerTaskPath::kDatabaseConfigAll;
         
         bool isSucceed = false;
         std::string resultBody = MakerHttpHandle::getInstance().httpPostTask(httpData, isSucceed);
         if (isSucceed) {
-            try {
-                json resultJson = json::parse(resultBody);
-                //y79
-                if (resultJson.contains("data") && resultJson["data"].is_object()) {
-                    if (resultJson["data"].contains("printing.polar_cooler") && resultJson["data"]["printing.polar_cooler"].is_string()) {
-                        obj->m_enable_polar_cooler = resultJson["data"]["printing.polar_cooler"].get<std::string>() == "1";
-                    }
-
-                    if (resultJson["data"].contains("nozzle.diameter")) {
-                        obj->m_nozzle_diameter.clear();
-                        std::vector<float> nozzle_diameter_temp;
-                        if (resultJson["data"]["nozzle.diameter"].is_string()) {
-                            nozzle_diameter_temp.push_back(std::stof(resultJson["data"]["nozzle.diameter"].get<std::string>()));
-                            obj->m_nozzle_diameter = nozzle_diameter_temp;
-                        }
-                        else if (resultJson["data"]["nozzle.diameter"].is_array()) {
-                            for (const auto& item : resultJson["data"]["nozzle.diameter"]) {
-                                if (item.is_string()) {
-                                    nozzle_diameter_temp.push_back(std::stof(item.get<std::string>()));
-                                }
-                            }
-                            obj->m_nozzle_diameter = nozzle_diameter_temp;
-                        }
-                    }
-                }
-            }
-            catch (...) {
-            }
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "Get device config success.";
         }
         else {
             BOOST_LOG_TRIVIAL(error) << "http error" << isSucceed << "   " << "httpDatabody:  " <<httpData.body <<  "   " << __FUNCTION__;
@@ -2259,13 +2233,13 @@ bool Sidebar::priv::sync_extruder_list(bool &only_external_material, bool is_man
 
     std::string machine_print_name = obj->m_type;
     PresetBundle *preset_bundle = wxGetApp().preset_bundle;
-    std::string target_model_id  = preset_bundle->printers.get_selected_preset().get_printer_type(preset_bundle);
+    std::string target_model_type  = preset_bundle->printers.get_selected_preset().get_printer_name(preset_bundle);
     Preset* machine_preset = get_printer_preset(obj);
-    if (!machine_preset) {
-       BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << __LINE__ << "check error: machine_preset empty";
-       return false;
-    }
-    if (machine_print_name != target_model_id) {
+    // if (!machine_preset) {
+    //    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << __LINE__ << "check error: machine_preset empty";
+    //    return false;
+    // }
+    if (machine_print_name != target_model_type || !machine_preset) {
        MessageDialog dlg(this->plater, _L("The currently selected machine preset is inconsistent with the connected printer type.\n"
                                            "Are you sure to continue syncing?"), _L("Sync printer information"), wxICON_WARNING | wxYES | wxNO);
        if (dlg.ShowModal() == wxID_NO) {
@@ -2369,12 +2343,12 @@ bool Sidebar::priv::sync_extruder_list(bool &only_external_material, bool is_man
     return true;
 }
 
-//y76
-void Sidebar::priv::update_sync_status(std::shared_ptr<QDSDevice> obj)
+//y76 y84
+void Sidebar::priv::update_sync_status(std::shared_ptr<QDSDevice> obj, bool defer_combo_refresh)
 {
     StateColor not_synced_colour(std::pair<wxColour, int>(wxColour("#4479FB"), StateColor::Normal));
     //cj_4
-    auto clear_all_sync_status = [this, &not_synced_colour]() {
+    auto clear_all_sync_status = [this, &not_synced_colour, defer_combo_refresh]() {
         panel_printer_preset->ShowBadge(false);
         panel_printer_bed->ShowBadge(false);
         left_extruder->ShowBadge(false);
@@ -2388,13 +2362,22 @@ void Sidebar::priv::update_sync_status(std::shared_ptr<QDSDevice> obj)
         //cj_4 clear filament combo badges and box filament data
         plater->sidebar().clear_combos_filament_badge();
         wxGetApp().preset_bundle->filament_ams_list.clear();
-        for (auto* combo : plater->sidebar().combos_filament()) {
-            combo->update();
+        // y84
+        if (!defer_combo_refresh) {
+            for (auto* combo : plater->sidebar().combos_filament()) {
+                combo->update();
+            }
         }
     };
 
     //y59 y76
     if (!obj) {
+        clear_all_sync_status();
+        return;
+    }
+
+    //y84
+    if (!obj->is_online()) {
         clear_all_sync_status();
         return;
     }
@@ -2411,14 +2394,17 @@ void Sidebar::priv::update_sync_status(std::shared_ptr<QDSDevice> obj)
     //const Preset &cur_preset = wxGetApp().preset_bundle->printers.get_edited_preset();
     //if (preset_bundle && preset_bundle->printers.get_edited_preset().get_printer_type(preset_bundle) == obj->get_show_printer_type()) {
     std::string cur_preset_name = wxGetApp().get_tab(Preset::TYPE_PRINTER)->get_presets()->get_edited_preset().name;
+    //y84
     if (preset_bundle && cur_preset_name.find(obj->m_type) != std::string::npos) {
-        panel_printer_preset->ShowBadge(true);
-        printer_synced = true;
+        if(obj->is_online())
+            printer_synced = true;
+    }
 
+    if(printer_synced){
+        panel_printer_preset->ShowBadge(true);
         wxGetApp().plater()->sidebar().udpate_combos_filament_badge();
     } else {
         clear_all_sync_status();
-
         wxGetApp().plater()->sidebar().clear_combos_filament_badge();
         return;
     }
@@ -2971,6 +2957,11 @@ Sidebar::Sidebar(Plater *parent)
             });
         p->right_extruder->SetOnHoverClick([this, parent]() {
             GUI::manuallySetNozzleCount(1);
+            wxGetApp().plater()->update();
+            });
+        //y84
+        p->single_extruder->SetOnHoverClick([this, parent]() {
+            GUI::manuallySetNozzleCount(0);
             wxGetApp().plater()->update();
             });
         p->single_extruder->SetEditEnabled(false);
@@ -3942,13 +3933,16 @@ void Sidebar::update_presets(Preset::Type preset_type)
         auto diameter = printer_preset.config.opt_string("printer_variant");
         auto extruder_max_nozzle_count = printer_preset.config.option<ConfigOptionIntsNullable>("extruder_max_nozzle_count");
         bool has_multiple_nozzle = std::any_of(extruder_max_nozzle_count->values.begin(), extruder_max_nozzle_count->values.end(), [](int i) { return i > 1; });
-        auto update_extruder_variant = [printer_model, extruders_def, extruders, nozzle_volumes_def, nozzle_volumes, extruder_variants,diameter,extruder_max_nozzle_count](ExtruderGroup & extruder, int index) {
+
+        auto extruder_count = wxGetApp().preset_bundle->get_printer_extruder_count();
+
+        auto update_extruder_variant = [printer_model, extruders_def, extruders, nozzle_volumes_def, nozzle_volumes, extruder_variants,diameter,extruder_max_nozzle_count, extruder_count](ExtruderGroup & extruder, int index) {
             extruder.combo_flow->Clear();
             auto type = extruders_def->enum_labels[extruders->values[index]];
             int select = -1;
             for (size_t i = 0; i < nozzle_volumes_def->enum_labels.size(); ++i) {
                 if (boost::algorithm::contains(extruder_variants->values[index], type + " " + nozzle_volumes_def->enum_labels[i]) ||
-                    extruder_max_nozzle_count->values[index] > 1 && nozzle_volumes_def->enum_keys_map->at(nozzle_volumes_def->enum_values[i]) == nvtHybrid) {
+                    extruder_count > 1 && extruder_max_nozzle_count->values[index] > 1 && nozzle_volumes_def->enum_keys_map->at(nozzle_volumes_def->enum_values[i]) == nvtHybrid) {
                     if (nozzle_volumes_def->enum_keys_map->at(nozzle_volumes_def->enum_values[i]) == NozzleVolumeType::nvtHighFlow &&(diameter == "0.2" ||
                         is_skip_high_flow_printer(printer_model)))
                         continue;
@@ -4001,7 +3995,7 @@ void Sidebar::update_presets(Preset::Type preset_type)
         //y81
         box_list_printer_ip = "";
 
-        //y80
+        //y83
         auto obj = wxGetApp().qdsdevmanager->getSelectedDevice();
         if (obj != nullptr) {
             obj->box_is_update = true;
@@ -4145,15 +4139,25 @@ bool Sidebar::reset_bed_type_combox_choices(bool is_sidebar_init)
     //y58
     //if (pm &&bed_type_def && bed_type_def->enum_keys_map) {
     if (pm){
-        int index = 0;
-        for (auto item : bed_type_def->enum_labels) {
-            index++;
-            bool find = std::find(pm->not_support_bed_types.begin(), pm->not_support_bed_types.end(), item) != pm->not_support_bed_types.end();
+        //y84
+        // int index = 0;
+        // for (auto item : bed_type_def->enum_labels) {
+        //     index++;
+        //     bool find = std::find(pm->not_support_bed_types.begin(), pm->not_support_bed_types.end(), item) != pm->not_support_bed_types.end();
+        for (size_t i = 0; i < bed_type_def->enum_labels.size(); i++) {
+            const auto &label = bed_type_def->enum_labels[i];
+            const auto &value = bed_type_def->enum_values[i];
+            // not_support_bed_types stores canonical enum_values names (e.g. "Supertack Plate"),
+            // not the localized display label ("QIDI Cool Plate SuperTack"), so match both.
+            bool find = std::find(pm->not_support_bed_types.begin(), pm->not_support_bed_types.end(), value) != pm->not_support_bed_types.end()
+                     || std::find(pm->not_support_bed_types.begin(), pm->not_support_bed_types.end(), label) != pm->not_support_bed_types.end();
             if (find) {
                 continue;
             }
-            m_cur_combox_bed_types.emplace_back(BedType(index));//BedType //btPC =1
-            p->combo_printer_bed->AppendString(_L(item));
+            // m_cur_combox_bed_types.emplace_back(BedType(index));//BedType //btPC =1
+            // p->combo_printer_bed->AppendString(_L(item));
+            m_cur_combox_bed_types.emplace_back(BedType(bed_type_def->enum_keys_map->at(value)));
+            p->combo_printer_bed->AppendString(_L(label));
         }
     }
     else {
@@ -4817,9 +4821,10 @@ bool Sidebar::need_auto_sync_extruder_list_after_connect_priner(const MachineObj
     return true;
 }
 
-void Sidebar::update_sync_status(std::shared_ptr<QDSDevice> obj)
+//y84
+void Sidebar::update_sync_status(std::shared_ptr<QDSDevice> obj, bool defer_combo_refresh)
 {
-    p->update_sync_status(obj);
+    p->update_sync_status(obj, defer_combo_refresh);
 }
 
 int Sidebar::get_sidebar_pos_right_x()
@@ -4871,6 +4876,8 @@ void Sidebar::reset_fila_switch()
 void Sidebar::enable_nozzle_count_edit(bool enable){
     p->left_extruder->SetEditEnabled(enable);
     p->right_extruder->SetEditEnabled(enable);
+    //y84
+    p->single_extruder->SetEditEnabled(enable);
 }
 
 void Sidebar::enable_purge_mode_btn(bool enable)
@@ -5216,20 +5223,27 @@ void Sidebar::sync_box_list(bool is_from_big_sync_btn)
     auto obj = qdsdev->getSelectedDevice();
     
     std::string cur_preset_name = wxGetApp().get_tab(Preset::TYPE_PRINTER)->get_presets()->get_edited_preset().name;
+    
+    //y84
+    if (obj == nullptr || !obj->is_online()) {
+        if (obj) {
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "obj->is_online(): " << obj->is_online();
+        }
+        auto printer_name = p->plater->get_selected_printer_name_in_combox();
+        p->plater->pop_warning_and_go_to_device_page(printer_name, Plater::PrinterWarningType::NOT_CONNECTED, _L("Sync printer information"));
+        return;
+    }
+    
+    if (!wxGetApp().plater()->is_same_printer_for_connected_and_selected()) {
+        return;
+    }
+    
     if (obj && qdsdev && cur_preset_name.find(obj->m_type) != std::string::npos) {
         //y80
         int box_count = obj->m_box_count; 
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "selected device box count is:" << box_count;
 
         qdsdev->upBoxInfoToBoxMsg(obj);
-    }
-    else {
-        GetBoxInfoDialog* m_get_box_dlg = new GetBoxInfoDialog(wxGetApp().plater());
-        if(m_get_box_dlg->ShowModal() == wxID_OK){
-            load_box_list();
-        } else {
-            return;
-        }
     }
     //y76
 
@@ -8773,6 +8787,8 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
     else
         old_preset_name = wxGetApp().preset_bundle->printers.get_edited_preset().name;
 
+    //y84
+    bool load_file_is_3mf = false;
 //y75
 
     for (size_t i = 0; i < input_files.size(); ++i) {
@@ -8820,6 +8836,7 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": is_project_file %1%, type_3mf %2%") % is_project_file % type_3mf;
         try {
             if (type_3mf) {
+                load_file_is_3mf = true;
                 DynamicPrintConfig config;
                 Semver             file_version;
                 En3mfType          en_3mf_file_type = En3mfType::From_QDS;
@@ -10011,7 +10028,8 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
     //cj_5 Deferred via CallAfter to avoid wxAsyncMethodCallEventFunctor crash:
     // load_current_presets at line 9366 may still have pending async callbacks
     // when this block runs synchronously. Queueing here lets those complete first.
-    if (_3mf_type != En3mfType::From_QDS) {
+    //y84
+    if (load_file_is_3mf && _3mf_type != En3mfType::From_QDS) {
         auto keys = qdt_different_keys;
         auto name = old_preset_name;
         auto types = imported_filament_types;
@@ -22166,10 +22184,10 @@ Preset *get_printer_preset(std::shared_ptr<QDSDevice> obj){
         ConfigOption               *printer_nozzle_opt  = printer_it->config.option("nozzle_diameter");
         ConfigOptionFloatsNullable *printer_nozzle_vals = nullptr;
         if (printer_nozzle_opt) printer_nozzle_vals = dynamic_cast<ConfigOptionFloatsNullable *>(printer_nozzle_opt);
-        std::string model_id = printer_it->get_current_printer_type(preset_bundle);
+        std::string model_id = printer_it->get_printer_name(preset_bundle);
 
         std::string printer_type = obj->m_type;
-        if (model_id.compare(printer_type) == 0 && printer_nozzle_vals && abs(printer_nozzle_vals->get_at(0) - machine_nozzle_diameter) < 1e-3) {
+        if (printer_type.find(model_id) != std::string::npos && printer_nozzle_vals && abs(printer_nozzle_vals->get_at(0) - machine_nozzle_diameter) < 1e-3) {
             printer_preset = &(*printer_it);
         }
     }
@@ -26207,15 +26225,16 @@ void Plater::update_filament_volume_map(int extruder_id, int volume_type)
 
 void Plater::show_wrapping_detect_dialog_if_necessary()
 {
-    if ((wxGetApp().app_config->get("show_wrapping_detect_dialog") == "true")) {
-        std::string printer_type = wxGetApp().preset_bundle->printers.get_edited_preset().get_printer_type(wxGetApp().preset_bundle);
-        if (DevPrinterConfigUtil::support_wrapping_detection(printer_type)) {
-            ImageMessageDialog dlg(this, wxID_ANY, _L("Parameter recommendation"), _L("In the process preset, under \"Others-Advanced\", check \"Enable clumping detection by probing\". This feature generates a small wipe "
-                "tower and performs probing detection to identify clumping issues early in the print and stop printing, preventing print failures or printer damage.\n"));
-            dlg.ShowModal();
-            wxGetApp().app_config->set("show_wrapping_detect_dialog", "false");
-        }
-    }
+    //y84
+    // if ((wxGetApp().app_config->get("show_wrapping_detect_dialog") == "true")) {
+    //     std::string printer_type = wxGetApp().preset_bundle->printers.get_edited_preset().get_printer_type(wxGetApp().preset_bundle);
+    //     if (DevPrinterConfigUtil::support_wrapping_detection(printer_type)) {
+    //         ImageMessageDialog dlg(this, wxID_ANY, _L("Parameter recommendation"), _L("In the process preset, under \"Others-Advanced\", check \"Enable clumping detection by probing\". This feature generates a small wipe "
+    //             "tower and performs probing detection to identify clumping issues early in the print and stop printing, preventing print failures or printer damage.\n"));
+    //         dlg.ShowModal();
+    //         wxGetApp().app_config->set("show_wrapping_detect_dialog", "false");
+    //     }
+    // }
 }
 
 bool Plater::get_machine_sync_status()

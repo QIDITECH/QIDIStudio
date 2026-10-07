@@ -145,10 +145,15 @@ struct Machine_info {
     std::string type;
     std::string display_name;
     std::string apikey;
-    std::string link_url = "";
     std::string device_id = "";
-    bool        is_special = false;
+    //y84
+    std::string serial_number = "";
+    std::string p2p_license = "";
+
     bool        bed_leveling = true;
+    //y84
+    bool        bed_leveling_force = false;
+
     bool        enable_multi_box = false;
     bool        timelapse = true;
     bool        enable_polar_cooler = false;
@@ -373,8 +378,6 @@ private:
     std::string                            machine_url;
     std::string                            machine_ip;
     std::string                            machine_apikey;
-    std::string                            machine_link_url = "";
-    bool                                   machine_is_special = false;
 
 	bool                                   m_is_local_transitioned = false;
     SwitchButton*                          m_switch_button{ nullptr };

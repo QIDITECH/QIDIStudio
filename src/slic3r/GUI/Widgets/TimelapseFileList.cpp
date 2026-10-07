@@ -672,6 +672,11 @@ TimelapseFileListCtrl::TimelapseFileListCtrl(wxWindow* parent, wxWindowID id)
     m_mainSizer = new wxBoxSizer(wxVERTICAL);
     m_header_panel = CreateHeaderPanel();
     m_mainSizer->Add(m_header_panel, 0, wxEXPAND);
+
+    //y84
+    create_state_panel();
+    m_mainSizer->Add(m_state_panel, 1, wxEXPAND);
+
     SetSizer(m_mainSizer);
     //cj_4
     SetScrollRate(10,  90);
@@ -705,7 +710,58 @@ TimelapseFileListCtrl::TimelapseFileListCtrl(wxWindow* parent, wxWindowID id)
         top->Bind(wxEVT_SIZE, &TimelapseFileListCtrl::on_download_overlay_top_size, this);
     }
     sync_file_list_surface_colours();
+
+    //y84
+    show_loading_state();
 }
+
+//y84
+void TimelapseFileListCtrl::create_state_panel()
+{
+    m_state_panel = new wxPanel(this);
+    m_state_panel->SetBackgroundColour(file_list_panel_background());
+    wxBoxSizer* v = new wxBoxSizer(wxVERTICAL);
+    m_state_panel->SetSizer(v);
+    m_state_text = new wxStaticText(m_state_panel, wxID_ANY, wxEmptyString);
+    m_state_text->SetFont(Label::Body_15);
+    m_state_text->SetForegroundColour(timelapse_file_list_header_text_colour());
+    v->AddStretchSpacer(1);
+    v->Add(m_state_text, 0, wxALIGN_CENTER_HORIZONTAL);
+    v->AddStretchSpacer(1);
+    m_state_panel->Hide();
+}
+
+void TimelapseFileListCtrl::show_loading_state()
+{
+    if (!m_state_panel || !m_state_text)
+        return;
+    m_state_text->SetLabel(wxString::FromUTF8("Timelapse is loading.."));
+    m_state_text->SetForegroundColour(timelapse_file_list_header_text_colour());
+    m_state_panel->Show();
+    m_mainSizer->Layout();
+    Refresh();
+}
+
+void TimelapseFileListCtrl::show_load_failed_state()
+{
+    if (!m_state_panel || !m_state_text)
+        return;
+    m_state_text->SetLabel(wxString::FromUTF8("Get timelapse list failed, please refresh~"));
+    m_state_text->SetForegroundColour(timelapse_file_list_header_text_colour());
+    m_state_panel->Show();
+    m_mainSizer->Layout();
+    Refresh();
+}
+
+void TimelapseFileListCtrl::hide_state_panel()
+{
+    if (!m_state_panel || !m_state_panel->IsShown())
+        return;
+    m_state_panel->Hide();
+    m_mainSizer->Layout();
+    Refresh();
+}
+//y84
 
 //cj_3 Mirror DeviceModelListCtrl::sync_file_list_surface_colours.
 void TimelapseFileListCtrl::sync_file_list_surface_colours()
@@ -720,6 +776,13 @@ void TimelapseFileListCtrl::sync_file_list_surface_colours()
     }
     if (m_header_sep)
         m_header_sep->SetBackgroundColour(file_list_row_separator_colour());
+    //y84
+    if (m_state_panel) {
+        m_state_panel->SetBackgroundColour(bg);
+        apply_surface_to_panels(m_state_panel, bg);
+        apply_fg_to_static_texts(m_state_panel, fg);
+    }
+
     for (TimelapseFileItem* it : m_items) {
         it->setLocalCopyExists(local_file_exists_in_download_dir(it->GetName()));
         it->sync_row_surface_colours(bg, fg, it == m_hovered_row);
@@ -995,6 +1058,11 @@ void TimelapseFileListCtrl::AddItem(const wxString& name, const wxBitmap& image,
 {
     TimelapseFileItem* item = new TimelapseFileItem(this, name, image, size_text, modified_text);
     m_items.push_back(item);
+
+    //y84
+    if (m_items.size() == 1)
+        hide_state_panel();
+
     m_mainSizer->Add(item, 0, wxEXPAND);
     //cj_3 Bind on the toggle itself: wxEVT_TOGGLEBUTTON is not propagated to the row panel by default.
     if (FileListBitmapCheckBox* cb = item->getCheckBox())
@@ -1007,6 +1075,10 @@ void TimelapseFileListCtrl::AddItem(const wxString& name, const wxBitmap& image,
 
 void TimelapseFileListCtrl::FlushBatchAdd()
 {
+    //y84
+    if (!m_items.empty())
+        hide_state_panel();
+
     m_mainSizer->Layout();
     FitInside();
 }
@@ -1066,6 +1138,7 @@ void TimelapseFileListCtrl::ClearAll()
     if (m_header_select_all_cb)
         m_header_select_all_cb->SetValue(false);
     postSelectionAggregateEvent();
+    show_loading_state();
     m_mainSizer->Layout();
     //cj_3
     FitInside();

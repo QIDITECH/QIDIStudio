@@ -38,6 +38,9 @@
 #include "Widgets/ScrolledWindow.hpp"
 #include <wx/simplebook.h>
 #include <wx/hashmap.h>
+#include <thread>
+#include <atomic>
+#include <memory>
 #include "Widgets/AnimaController.hpp"
 
 namespace Slic3r {
@@ -175,6 +178,11 @@ private:
     std::unique_ptr<FileTransferTunnel> m_filetransfer_tunnel;
     std::unique_ptr<FileTransferJob>    m_filetransfer_mediability_job;
     std::unique_ptr<FileTransferJob>    m_filetransfer_uploadfile_job;
+
+    //y84
+    std::thread                            m_p2p_upload_thread;
+    std::shared_ptr<std::atomic<bool>>     m_p2p_cancel = std::make_shared<std::atomic<bool>>(false);
+    
     wxDateTime                          m_last_refresh_time;
 
     // y16
@@ -184,8 +192,6 @@ private:
     std::string                             machine_url;
     std::string                             machine_ip;
     std::string                             machine_apikey;
-    std::string                             machine_link_url = "";
-    bool                                    machine_is_special = false;
     bool                                    m_isNetMode = false;
     std::string                             preset_typename_normalized;
     std::string                             preset_typename;
@@ -253,6 +259,9 @@ private:
 
     //y58
     void start_to_send(PrintHostJob upload_job);
+
+    //y84
+    void start_to_send_p2p(const std::string &source_path, const std::string &remote_name, bool is_3mf);
 };
 
 wxDECLARE_EVENT(EVT_CLEAR_IPADDRESS, wxCommandEvent);

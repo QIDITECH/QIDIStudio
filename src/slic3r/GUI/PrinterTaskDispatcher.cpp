@@ -1,6 +1,7 @@
 #include "PrinterTaskDispatcher.hpp"
 
 #include <boost/log/trivial.hpp>
+#include <random>
 #include <unordered_map>
 
 #include "libslic3r/Utils.hpp"
@@ -30,7 +31,22 @@ void normalize_delete_task_paths_to_unicode_utf8(PrinterTask& task)
         p = normalize_utf8_nfc(p.c_str());
     }
 }
+
+// SetPrintOptions: maps the 0-based selection index to the klipper SAVE_VARIABLE
+// level string (LOW/MEDIUM/HIGH), identical to DeviceSettingDialog::sensitivity_level_to_msg_string.
+enum class PrintOptSensitivity { LOW = 0, MEDIUM = 1, HIGH = 2 };
+std::string print_opt_sensitivity_to_string(PrintOptSensitivity level)
+{
+    switch (level) {
+        case PrintOptSensitivity::LOW:    return "LOW";
+        case PrintOptSensitivity::MEDIUM: return "MEDIUM";
+        case PrintOptSensitivity::HIGH:   return "HIGH";
+        default: return "";
+    }
+}
+//y84
 } // namespace
+
 
 PrinterTaskDispatcher::PrinterTaskDispatcher(QDSDeviceManager* device_manager)
     : m_device_manager(device_manager)
@@ -73,7 +89,7 @@ PrinterTaskResult PrinterTaskDispatcher::dispatch(const PrinterTask& input_task,
 
 PrinterTaskResult PrinterTaskDispatcher::build_local_task(PrinterTask& task) const
 {
-    if (task.type != PrinterTaskType::StatusPanel && task.type != PrinterTaskType::SetBox && task.type != PrinterTaskType::RefreshRfid && task.type != PrinterTaskType::DeletePrinterFiles) {
+    if (task.type != PrinterTaskType::StatusPanel && task.type != PrinterTaskType::SetBox && task.type != PrinterTaskType::RefreshRfid && task.type != PrinterTaskType::DeletePrinterFiles && task.type != PrinterTaskType::SetPrintOptions) {
         return { false, PrinterTaskErrorCode::UnsupportedEvent, "unsupported local task type" };
     }
 
@@ -91,9 +107,9 @@ PrinterTaskResult PrinterTaskDispatcher::build_local_task(PrinterTask& task) con
         {EVTSET_Y_AXIS, "G91\nG1 Y%d F7800\nG90"},
         {EVTSET_Z_AXIS, "G91\nG1 Z%d F600\nG90"},
         {EVTSET_RETURN_SAFEHOME, "G28"},
-        {EVTSET_INSERT_READ, "SAVE_VARIABLE VARIABLE=auto_read_rfid VALUE=\"%d\""},
-        {EVTSET_BOOT_READ, "SAVE_VARIABLE VARIABLE=auto_init_detect VALUE=\"%d\""},
-        {EVTSET_AUTO_FILAMENT, "SAVE_VARIABLE VARIABLE=auto_reload_detect VALUE=\"%d\""},
+        {EVTSET_INSERT_READ, "SET_ENABLE_RFID_READ ENABLE=\"%d\""},
+        {EVTSET_BOOT_READ, "SET_ENABLE_INIT_READ_RFID ENABLE=\"%d\""},
+        {EVTSET_AUTO_FILAMENT, "SET_ENABLE_AUTO RELOAD ENABLE=\"%d\""},
         {EVTSET_COOLLINGFAN_SPEED, "SET_FAN_SPEED FAN=cooling_fan SPEED="},
         {EVTSET_AUXILIARYFAN_SPEED, "SET_FAN_SPEED FAN=auxiliary_cooling_fan SPEED="},
         {EVTSET_CHAMBERFAN_SPEED, "SET_FAN_SPEED FAN=chamber_circulation_fan SPEED="},
@@ -156,19 +172,19 @@ PrinterTaskResult PrinterTaskDispatcher::build_local_task(PrinterTask& task) con
 
     if (task.type == PrinterTaskType::SetBox) {
         std::string script;
-        if (task.event_type == EVT_SET_COLOR) {
-            script = "SAVE_VARIABLE VARIABLE=color_slot" + std::to_string(task.slot_index) + " VALUE=\"" + std::to_string(task.filament_index) + "\"";
-        } else if (task.event_type == EVTSET_FILAMENT_VENDOR) {
-            script = "SAVE_VARIABLE VARIABLE=vendor_slot" + std::to_string(task.slot_index) + " VALUE=\"" + std::to_string(task.filament_index) + "\"";
-        } else if (task.event_type == EVTSET_FILAMENT_TYPE) {
-            script = "SAVE_VARIABLE VARIABLE=filament_slot" + std::to_string(task.slot_index) + " VALUE=\"" + std::to_string(task.filament_index) + "\"";
+        //y84
+        if (task.event_type == EVTSET_FILAMENT_INFO) {
+            script = "UPDATE_FILAMENT_INFORMATION SLOT=" + std::to_string(task.slot_index)
+                   + " COLOR='" + task.filament_color + "'"
+                   + " VENDOR='" + task.filament_vendor + "'"
+                   + " FILAMENT='" + task.filament_type + "'";
         } else if (task.event_type == EVTSET_FILAMENT_LOAD) {
-            script = "E_LOAD slot=" + std::to_string(task.slot_index);
+            script = "LOAD_FILAMENT_CONTROL SLOT=" + std::to_string(task.slot_index);
         } else if (task.event_type == EVTSET_FILAMENT_UNLOAD) {
-            script = "E_UNLOAD slot=" + std::to_string(task.slot_index);
+            script = "UNLOAD_FILAMENT_CONTROL SLOT=" + std::to_string(task.slot_index);
         //cj_3
         } else if (task.event_type == EVTSET_FILAMENT_EJECT) {
-            script = "E_BOX slot=" + std::to_string(task.slot_index);
+            script = "EJECT_FILAMENT_CONTROL SLOT=" + std::to_string(task.slot_index);
         } else {
             return { false, PrinterTaskErrorCode::UnsupportedEvent, "unsupported set-box local event" };
         }
@@ -179,7 +195,7 @@ PrinterTaskResult PrinterTaskDispatcher::build_local_task(PrinterTask& task) con
     }
 
     if (task.type == PrinterTaskType::RefreshRfid) {
-        std::string script = "RFID_READ SLOT=slot" + std::to_string(task.slot_index);
+        std::string script = "READ_RFID SLOT=" + std::to_string(task.slot_index);
         task.local_commands.push_back(LocalCommand{ false, "script", script, "" });
         return { true, PrinterTaskErrorCode::None, "" };
     }
@@ -197,6 +213,23 @@ PrinterTaskResult PrinterTaskDispatcher::build_local_task(PrinterTask& task) con
         return { true, PrinterTaskErrorCode::None, "" };
     }
 
+    //y84
+    if (task.type == PrinterTaskType::SetPrintOptions) {
+        auto send_var = [&](const std::string& name, const std::string& value) {
+            if (value.empty())
+                return;
+            task.local_commands.push_back(LocalCommand{ false, "script", "SAVE_VARIABLE VARIABLE=" + name + " VALUE=" + value, "" });
+        };
+
+        send_var("enable_noodle_detection",      task.print_opt_spaghetti ? "1" : "0");
+        send_var("enable_pre_print_model_check", task.print_opt_fod ? "1" : "0");
+
+        int sel = task.print_opt_sensitivity;
+        std::string lel = "\"'" + print_opt_sensitivity_to_string((PrintOptSensitivity) sel) + "'\"";
+        send_var("noodle_sensitivity_level", lel);
+        return { true, PrinterTaskErrorCode::None, "" };
+    }
+
     return { false, PrinterTaskErrorCode::UnsupportedEvent, "unsupported local task" };
 }
 
@@ -211,6 +244,8 @@ PrinterTaskResult PrinterTaskDispatcher::build_cloud_task(PrinterTask& task) con
 
     json body_json;
     body_json["serialNumber"] = task.device_id;
+    // y84
+    body_json["commandId"] = make_filament_info_command_id(task.device_id);
 
     if (task.type == PrinterTaskType::StatusPanel) {
         static const std::unordered_map<wxEventType, std::string> cloud_event_to_path = {
@@ -275,9 +310,8 @@ PrinterTaskResult PrinterTaskDispatcher::build_cloud_task(PrinterTask& task) con
 
     if (task.type == PrinterTaskType::SetBox) {
         static const std::unordered_map<wxEventType, std::string> cloud_box_event_to_path = {
-            {EVT_SET_COLOR, "/set/filament/color"},
-            {EVTSET_FILAMENT_TYPE, "/set/filament/type"},
-            {EVTSET_FILAMENT_VENDOR, "/set/filament/vendor"},
+            // y84
+            {EVTSET_FILAMENT_INFO, "/ams/filament/info/edit/new"},
             {EVTSET_FILAMENT_LOAD, "/set/filament/load"},
             {EVTSET_FILAMENT_UNLOAD, "/set/filament/unload"},
             //cj_3
@@ -289,11 +323,20 @@ PrinterTaskResult PrinterTaskDispatcher::build_cloud_task(PrinterTask& task) con
             return { false, PrinterTaskErrorCode::UnsupportedEvent, "unsupported set-box cloud event" };
 
         task.cloud_task_path = it->second;
-        body_json["slotIndex"] = task.slot_index;
-        //cj_3
-        if (task.event_type == EVT_SET_COLOR || task.event_type == EVTSET_FILAMENT_TYPE || task.event_type == EVTSET_FILAMENT_VENDOR) {
-            body_json["idx"] = task.filament_index;
+
+//y84
+        if (task.event_type == EVTSET_FILAMENT_INFO) {
+            // Body matches cloud contract /community/v1/printer/ams/filament/info/edit/new
+            // serialNumber is already injected at the top of build_cloud_task (== task.device_id)
+            body_json["slot"]       = task.slot_index;
+            body_json["vendor"]     = task.filament_vendor;
+            body_json["material"]   = task.filament_type;
+            body_json["color"]      = task.filament_color;
+            body_json["mqttDirect"] = false;
+        } else {
+            body_json["slotIndex"] = task.slot_index;
         }
+
         task.cloud_body = body_json.dump();
         return { true, PrinterTaskErrorCode::None, "" };
 
@@ -318,6 +361,21 @@ PrinterTaskResult PrinterTaskDispatcher::build_cloud_task(PrinterTask& task) con
         normalize_delete_task_paths_to_unicode_utf8(task);
         body_json["files"] = task.file_paths;
         task.cloud_body = body_json.dump();
+        return { true, PrinterTaskErrorCode::None, "" };
+    }
+
+//y84
+    if (task.type == PrinterTaskType::SetPrintOptions) {
+        if (task.device_id.empty())
+            return { false, PrinterTaskErrorCode::InvalidArgument, "device_id is empty" };
+
+        json enable_noodle = { {"serialNumber", task.device_id}, {"commandId", make_filament_info_command_id(task.device_id)}, {"enable", task.print_opt_spaghetti} };
+        json sens           = { {"serialNumber", task.device_id}, {"commandId", make_filament_info_command_id(task.device_id)}, {"sensitivity", task.print_opt_sensitivity + 1} };
+        json enable_fod     = { {"serialNumber", task.device_id}, {"commandId", make_filament_info_command_id(task.device_id)}, {"enable", task.print_opt_fod} };
+
+        task.cloud_requests.emplace_back("/detect/noodles/enable",        enable_noodle.dump());
+        task.cloud_requests.emplace_back("/detect/noodles/sensitivity",   sens.dump());
+        task.cloud_requests.emplace_back("/detect/foreign/matter/enable", enable_fod.dump());
         return { true, PrinterTaskErrorCode::None, "" };
     }
 
@@ -354,22 +412,40 @@ PrinterTaskResult PrinterTaskDispatcher::dispatch_local(const PrinterTask& task)
 #if QDT_RELEASE_TO_PUBLIC
 PrinterTaskResult PrinterTaskDispatcher::dispatch_cloud(const PrinterTask& task, Environment env, TargetType target) const
 {
-    if (task.device_id.empty() || task.cloud_task_path.empty())
+//y84
+    if (task.device_id.empty())
         return { false, PrinterTaskErrorCode::InvalidArgument, "invalid cloud request arguments" };
 
-    HttpData httpData;
-    httpData.env = env;
-    httpData.target = target;
-    httpData.taskPath = task.cloud_task_path;
-    httpData.body = task.cloud_body.empty() ? "{}" : task.cloud_body;
+    auto post_one = [&](const std::string& path, const std::string& body) -> bool {
+        HttpData httpData;
+        httpData.env = env;
+        httpData.target = target;
+        httpData.taskPath = path;
+        httpData.body = body.empty() ? "{}" : body;
 
-    bool isSucceed = false;
-    MakerHttpHandle::getInstance().httpPostTask(httpData, isSucceed);
-    if (!isSucceed) {
-        BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << " http error" << isSucceed << std::endl;
-        return { false, PrinterTaskErrorCode::SendFailed, "http post task failed" };
+        bool isSucceed = false;
+        MakerHttpHandle::getInstance().httpPostTask(httpData, isSucceed);
+        return isSucceed;
+    };
+
+    // SetPrintOptions issues several independent cloud calls at once.
+    if (!task.cloud_requests.empty()) {
+        for (const auto& req : task.cloud_requests) {
+            if (!post_one(req.first, req.second)) {
+                BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << "Request to machine is error, the task is : " << req.first << " , " << req.second << std::endl;
+                return { false, PrinterTaskErrorCode::SendFailed, "http post task failed" };
+            }
+        }
+        return { true, PrinterTaskErrorCode::None, "" };
     }
 
+    if (task.cloud_task_path.empty())
+        return { false, PrinterTaskErrorCode::InvalidArgument, "invalid cloud request arguments" };
+
+    if (!post_one(task.cloud_task_path, task.cloud_body)) {
+        return { false, PrinterTaskErrorCode::SendFailed, "http post task failed" };
+    }
+//y84
     return { true, PrinterTaskErrorCode::None, "" };
 }
 #endif

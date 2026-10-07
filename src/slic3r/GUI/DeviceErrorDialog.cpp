@@ -119,8 +119,6 @@ void DeviceErrorDialog::on_request_timeout(wxTimerEvent& event)
 
 void DeviceErrorDialog::on_webrequest_state(wxWebRequestEvent& evt)
 {
-    // BOOST_LOG_TRIVIAL(trace) << "monitor: monitor_panel web request state = " << evt.GetState();
-
     m_request_cancelled.store(true);
     clear_request_timer();
 
@@ -295,7 +293,6 @@ wxString DeviceErrorDialog::show_error_code(int error_code)
         }
         if (s_jump_liveview_error_codes.count(error_str)) { used_button.emplace_back(DeviceErrorDialog::JUMP_TO_LIVEVIEW); }
 
-        BOOST_LOG_TRIVIAL(trace) << error_level << "  " << error_msg << "  " << error_str;
         update_contents(error_level, error_msg, error_str, error_image_url, used_button);
     }
 
@@ -461,11 +458,9 @@ bool DeviceErrorDialog::get_fail_snapshot_from_local(const wxString& image_url)
     if (!img.IsOk() && image_url.Contains("http"))
     {
         web_request = wxWebSession::GetDefault().CreateRequest(this, image_url);
-        // BOOST_LOG_TRIVIAL(trace) << "monitor: create new webrequest, state = " << web_request.GetState();
         if (web_request.GetState() == wxWebRequest::State_Idle) {
             web_request.Start();
         }
-        // BOOST_LOG_TRIVIAL(trace) << "monitor: start new webrequest, state = " << web_request.GetState();
     }
     else
     {

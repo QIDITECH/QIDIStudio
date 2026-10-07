@@ -128,6 +128,12 @@ public:
     //cj_3
     void RemoveItems(const std::vector<TimelapseFileItem*>& rows);
     void ClearAll();
+
+    //y84
+    void show_loading_state();
+    void show_load_failed_state();
+    void hide_state_panel();
+
     std::vector<TimelapseFileItem*> GetSelectedItems();
     //cj_4
     TimelapseFileItem* FindItemByName(const wxString& name) const;
@@ -154,6 +160,8 @@ private:
     void on_download_overlay_top_size(wxSizeEvent& e);
 
     wxPanel* CreateHeaderPanel();
+    //y84
+    void create_state_panel();
     void onCheckChange(wxCommandEvent& e);
     //cj_3
     void postSelectionAggregateEvent();
@@ -165,6 +173,9 @@ private:
     wxPanel* m_header_panel{ nullptr };
     //cj_3
     wxPanel* m_header_sep{ nullptr };
+    //y84
+    wxPanel* m_state_panel{ nullptr };
+    wxStaticText* m_state_text{ nullptr };
     //cj_3
     FileListBitmapCheckBox* m_header_select_all_cb{ nullptr };
     //cj_3 Suppress per-row handlers during SelectAllRows (programmatic SetValue may emit toggle events).

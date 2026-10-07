@@ -42,12 +42,15 @@
 //cj_2
 #if QDT_RELEASE_TO_PUBLIC
 #include "../QIDI/QIDINetworkTypes.hpp"
+#include "../QIDI/QIDIMQTTManager.hpp"
 #endif
 
 #include <boost/thread.hpp>
 
 
 #include <atomic>
+#include <memory>
+#include <functional>
 //cj_3
 #include <chrono>
 #include <thread>
@@ -63,6 +66,8 @@
 
 
 namespace Slic3r {
+class Http;
+
 namespace GUI {
 
 //cj_4
@@ -151,6 +156,7 @@ public:
                     const wxString &                           ip,
                     const wxString &                           machine_type,
                     const wxString &                           fullname,
+                    const std::string&                         model_id,
                     bool                                       isSelected,
                     //cj_3_cursor
                     bool                                       expert_mode,
@@ -161,7 +167,15 @@ public:
     void ShowLocalPrinterButton();
 #if QDT_RELEASE_TO_PUBLIC
     void AddNetButton(const NetDevice device);
-    void onSSEMessageHandle(const std::string& event, const std::string& data);
+    
+    //y84
+    void onCloudDeviceMessage(const std::string& event, const std::string& data);
+    void onMqttMessageHandle(const std::string& topic, const std::string& payload);
+    void startCloudStatusStream();
+    void stopCloudStatusStream();
+    void startMqttDeviceStream(const std::string& serial);
+    void stopMqttDeviceStream();
+
 #endif
 
     void DeleteNetButton();
@@ -184,7 +198,6 @@ public:
     MonitorConnectionPhase GetConnectionPhase() const;
     bool IsNetUrl() const {return GetConnectionPhase() == MonitorConnectionPhase::CloudPrinter;};
     void load_disconnect_url();
-    void FormatNetUrl(std::string link_url, std::string local_ip, bool isSpecialMachine);
     void FormatUrl(std::string link_url);
 
     //y74
@@ -241,8 +254,6 @@ private:
     //cj_5
     wxString BuildLocalUrl(const std::string& link_url) const;
     //cj_5
-    wxString BuildNetUrl(const std::string& link_url, bool isSpecialMachine);
-    //cj_5
     void LoadDisconnectPageOnly();
     //cj_5
     bool LoadLocalUrlOnly(wxString& url);
@@ -251,7 +262,7 @@ private:
     //cj_5
     void TransitionToDisconnected(const DisconnectTransitionOptions& options);
     //cj_5
-    void TransitionToLocalDevice(DeviceButton* machine_button, const wxString& ip);
+    void TransitionToLocalDevice(const std::string& device_id, DeviceButton* machine_button, const wxString& ip);
 #if QDT_RELEASE_TO_PUBLIC
     //cj_5
     void TransitionToCloudDevice(const NetDevice& device, DeviceButton* machine_button);
@@ -304,6 +315,7 @@ private:
     void ShowDeviceButtons(std::vector<DeviceButton*>& buttons, bool isShow = true);
 
 
+    //y84
 	void updateDeviceButton(const std::string& device_id, std::string new_status);
 	//cj_3 删除线上按钮前从 m_device_id_to_button 移除，避免悬空指针
 	void removeDeviceButtonMapEntriesForButtons(const std::vector<DeviceButton*>& buttons);
@@ -314,11 +326,14 @@ private:
     void init_select_machine();
     /** 本地/线上分区仅展开一侧：有上次选中则展开对应分区，否则展开本地。 */
     void syncDeviceSectionExpandFromLastSelection();
+//y84
+    void applyLocalSectionExpand(bool expand);
+    void applyNetSectionExpand(bool expand);
+//y84
     void emitTaskDispatchResult(PrinterTaskType task_type, const PrinterTaskResult& result);
     //cj_3
     void showLoadingOverlay();
     void hideLoadingOverlay();
-    void startLegacyStatusPolling();
     void stopLegacyStatusPolling();
     //cj_3
     void resetProgressWatchdogHeartbeat();
@@ -326,6 +341,8 @@ private:
     //y83 Coalesced, bounded-rate status refresh (UI thread)
     void requestStatusRefresh(const std::string& device_id);
     void onStatusRefreshTimer(wxTimerEvent& event);
+    //cj_6 Coalesce per-thumbnail UI refreshes into one flush per timer tick
+    void onThumbFlushTimer(wxTimerEvent& event);
 
 private:
 
@@ -388,7 +405,18 @@ private:
 #endif
     std::atomic<bool> m_isloginin{false};
     std::atomic<bool> m_isDestroying{false};  //cj_4 guard SSE CallAfter during destruction
+
+    //y84
+    std::shared_ptr<int> m_lifetime{ std::make_shared<int>(0) };
+    std::shared_ptr<Http> m_file_list_request;
+    
     std::unique_ptr<PrinterTaskDispatcher> m_task_dispatcher;
+
+#if QDT_RELEASE_TO_PUBLIC
+//y84
+    MQTTManager::Subscription m_mqtt_subscription;
+    std::string m_mqtt_current_topic;
+#endif
     
 
     //cj_2
@@ -419,12 +447,38 @@ private:
     bool m_status_refresh_pending { false };
     std::string m_status_refresh_device_id;
     static constexpr int kStatusRefreshIntervalMs = 400;
+    // y85: coalesce rapid box-data renders. During initial box-info loading the
+    // printer pushes a burst of box/AMS status messages; each flip of
+    // box_is_update would otherwise rebuild the whole AMS control + filament
+    // combos on the UI thread every timer tick, freezing the UI until the
+    // stream settles. Throttle the heavy render to at most one per window.
+    static constexpr int kBoxRenderDebounceMs = 600;
+    std::string m_last_box_render_sig;
+    std::chrono::steady_clock::time_point m_last_box_render_time{};
+//y84
+    std::string m_list_render_device_id;
+    std::string m_rendered_model_sig;
+    std::string m_rendered_timelapse_sig;
     DeviceErrorDialog* m_device_error_dlg { nullptr };
-    std::mutex m_sse_mutex;
-    bool m_sse_refresh_pending { false };
-    std::string m_sse_pending_device_id;
-    std::string m_sse_pending_status_json;
-//y83
+    std::mutex m_cloud_mutex;
+    bool m_cloud_refresh_pending { false };
+    std::string m_cloud_pending_device_id;
+    std::string m_cloud_pending_status_json;
+//y84
+//cj_6 Coalesce thumbnail-ready callbacks so they don't flood CallAfter + per-item
+// Refresh() on the UI thread (was O(N²)-freezing the window while printing
+// "refreshing UI item"). Buffered from any thread, flushed once per tick.
+struct PendingThumb {
+    std::string          device_id;
+    bool                 is_timelapse { false };
+    std::string          file_name;
+    std::vector<uint8_t> bytes;
+};
+wxTimer*                    m_thumb_flush_timer { nullptr };
+std::mutex                  m_pending_thumbnails_mutex;
+std::vector<PendingThumb>   m_pending_thumbnails;
+static constexpr int        kThumbFlushIntervalMs = 30;
+//y84
 };
 
 

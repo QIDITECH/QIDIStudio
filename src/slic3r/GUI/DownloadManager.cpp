@@ -213,7 +213,6 @@ void ThumbnailDownloader::download(const std::string& url,
     task.url         = url;
     task.file_name   = file_name;
     task.callback    = std::move(callback);
-    BOOST_LOG_TRIVIAL(trace) << url;
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_queue.push(std::move(task));

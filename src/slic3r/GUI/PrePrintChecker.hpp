@@ -203,6 +203,10 @@ enum PrintDialogStatus : unsigned int {
     PrintStatusNeedUpgradingBox,
     PrinterNotConnectBox,
     QDTBoxErrorEnd,
+    //y84
+    QDTPrinterInfoSyncFailed,
+    QDTPrinterInfoSyncSuccess,
+    QDTPrinterInfoSyncing,
 
 };
 
@@ -230,6 +234,8 @@ public:
     static bool is_warning(PrintDialogStatus status) { return (PrintStatusWarningBegin < status) && (PrintStatusWarningEnd > status); };
     static bool is_warning_printer(PrintDialogStatus status) { return (PrintStatusPrinterWarningBegin < status) && (PrintStatusPrinterWarningEnd > status); };
     static bool is_warning_filament(PrintDialogStatus status) { return (PrintStatusFilamentWarningBegin < status) && (PrintStatusFilamentWarningEnd > status); };
+    //y84
+    static bool is_info_printer(PrintDialogStatus status) { return status == QDTPrinterInfoSyncFailed || status == QDTPrinterInfoSyncSuccess || status == QDTPrinterInfoSyncing; };
 };
 
 class SelectMachineDialog;

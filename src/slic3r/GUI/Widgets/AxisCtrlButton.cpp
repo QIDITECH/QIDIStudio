@@ -292,14 +292,17 @@ void AxisCtrlButton::mouseDown(wxMouseEvent& event)
     CaptureMouse();
 }
 
+//dk11
 void AxisCtrlButton::mouseReleased(wxMouseEvent& event)
 {
     event.Skip();
     if (pressedDown) {
         pressedDown = false;
         ReleaseMouse();
-        if (wxRect({ 0, 0 }, GetSize()).Contains(event.GetPosition()))
-            sendButtonEvent();
+        wxPoint pos = event.GetPosition() - center;          
+        double r2 = double(pos.x) * pos.x + double(pos.y) * pos.y;
+        if (r2 <= r_outer * r_outer)                          
+        sendButtonEvent();
     }
 }
 

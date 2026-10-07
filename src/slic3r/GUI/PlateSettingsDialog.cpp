@@ -391,12 +391,21 @@ PlateSettingsDialog::PlateSettingsDialog(wxWindow* parent, const wxString& title
         m_bed_type_choice->AppendString(_L("Same as Global Plate Type"));
         const ConfigOptionDef *bed_type_def = print_config_def.get("curr_bed_type");
         int                    index        = 0;
-        for (auto item : bed_type_def->enum_labels) {
-            index++;
-            bool find = std::find(pm->not_support_bed_types.begin(), pm->not_support_bed_types.end(), item) != pm->not_support_bed_types.end();
+        //y84
+        // for (auto item : bed_type_def->enum_labels) {
+        //     index++;
+        //     bool find = std::find(pm->not_support_bed_types.begin(), pm->not_support_bed_types.end(), item) != pm->not_support_bed_types.end();
+        for (size_t i = 0; i < bed_type_def->enum_labels.size(); i++) {
+            const auto &label = bed_type_def->enum_labels[i];
+            const auto &value = bed_type_def->enum_values[i];
+            bool find = std::find(pm->not_support_bed_types.begin(), pm->not_support_bed_types.end(), value) != pm->not_support_bed_types.end()
+                     || std::find(pm->not_support_bed_types.begin(), pm->not_support_bed_types.end(), label) != pm->not_support_bed_types.end();
             if (!find) {
-                m_bed_type_choice->AppendString(_L(item));
-                m_cur_combox_bed_types.emplace_back(BedType(index));
+                //y84
+                // m_bed_type_choice->AppendString(_L(item));
+                // m_cur_combox_bed_types.emplace_back(BedType(index));
+                m_bed_type_choice->AppendString(_L(label));
+                m_cur_combox_bed_types.emplace_back(BedType(bed_type_def->enum_keys_map->at(value)));
             }
         }
 

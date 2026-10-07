@@ -12,12 +12,17 @@ namespace Slic3r
 
 //Previous definitions
 class MachineObject;
-
+//y84
+namespace GUI { class QDSDevice; }
 
 class DevConfig
 {
 public:
     DevConfig(MachineObject* obj) : m_obj(obj) {};
+
+    //y84
+    DevConfig(GUI::QDSDevice* qds_dev) : m_qds_dev(qds_dev) {};
+
     ~DevConfig() = default;
 
 public:
@@ -55,6 +60,7 @@ public:
 
 private:
     MachineObject* m_obj;
+    GUI::QDSDevice* m_qds_dev;
 
     /*configure vals*/
     // chamber

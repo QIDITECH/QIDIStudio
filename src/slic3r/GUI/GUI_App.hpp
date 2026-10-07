@@ -453,9 +453,6 @@ public:
     bool     show_3d_navigator() const { return app_config->get_bool("show_3d_navigator"); }
     void     toggle_show_3d_navigator() const { app_config->set_bool("show_3d_navigator", !show_3d_navigator()); }
 
-    // cj_1
-    bool is_link_connect() { return app_config->get("login_method") == "Link"; }
-
     wxString get_inf_dialog_contect () {return m_info_dialog_content;};
 
     std::vector<std::string> split_str(std::string src, std::string separator);
@@ -524,10 +521,7 @@ public:
 //y76
     std::vector<NetDevice> get_devices();
     void                set_devices(std::vector<NetDevice> devices);
-#endif;
-    //y83
-    bool                is_selected_device_support_p2p();
-
+#endif
 
     const wxFont&   small_font()            { return m_small_font; }
     const wxFont&   bold_font()             { return m_bold_font; }
@@ -562,6 +556,9 @@ public:
     //cj_5 online_login: 1 = manual (show sync dialog), 0 = auto (skip dialog).
     void            get_login_info(int online_login = 0);
     bool            is_user_login();
+
+    //y84
+    void            fetch_and_connect_mqtt_license();
 
     //y83
     void            set_login_info();
@@ -601,7 +598,9 @@ public:
     std::chrono::system_clock::time_point  last_active_point;
 
     void            check_update(bool show_tips, int by_user);
+#if QDT_RELEASE_TO_PUBLIC
     void            check_new_version(bool show_tips = false, int by_user = 0);
+#endif
     void            check_cert();
     bool            process_network_msg(std::string dev_id, std::string msg);
     void            check_beta_version(bool show_tips_when_no_beta = false);
@@ -916,3 +915,4 @@ static std::vector<wxLanguage> s_supported_languages = {
 } // Slic3r
 
 #endif // slic3r_GUI_App_hpp_
+
