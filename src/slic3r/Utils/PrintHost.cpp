@@ -46,7 +46,7 @@ PrintHost* PrintHost::get_print_host(DynamicPrintConfig *config)
         const auto host_type = opt != nullptr ? opt->value : htOctoPrint;
 
         switch (host_type) {
-            case htOctoPrint: return new OctoPrint(config, true);
+            case htOctoPrint: return new OctoPrint(config, false);
             case htDuet:      return new Duet(config);
             case htFlashAir:  return new FlashAir(config);
             case htAstroBox:  return new AstroBox(config);

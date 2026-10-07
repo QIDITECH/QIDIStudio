@@ -103,9 +103,7 @@ std::string substitute_host(const std::string& orig_addr, std::string sub_addr)
 #endif // WIN32
 
 OctoPrint::OctoPrint(DynamicPrintConfig *config, bool add_port)
-    : m_host(add_port ? config->opt_string("print_host").find(":") == std::string::npos ? config->opt_string("print_host") + ":10088" :
-        config->opt_string("print_host") :
-        config->opt_string("print_host"))
+    : m_host(config->opt_string("print_host"))
     , m_show_ip(config->opt_string("print_host"))
     , m_apikey(config->opt_string("printhost_apikey"))
 {
@@ -627,7 +625,7 @@ bool OctoPrint::send_msg_to_printer(std::string api, std::string msg) const
 }
 
 SL1Host::SL1Host(DynamicPrintConfig *config) : 
-    OctoPrint(config, true),
+    OctoPrint(config, false),
     m_authorization_type(dynamic_cast<const ConfigOptionEnum<AuthorizationType>*>(config->option("printhost_authorization_type"))->value),
     m_username(config->opt_string("printhost_user")),
     m_password(config->opt_string("printhost_password"))
@@ -672,7 +670,7 @@ void SL1Host::set_auth(Http &http) const
 
 // PrusaLink
 PrusaLink::PrusaLink(DynamicPrintConfig* config) :
-    OctoPrint(config, true),
+    OctoPrint(config, false),
     m_authorization_type(dynamic_cast<const ConfigOptionEnum<AuthorizationType>*>(config->option("printhost_authorization_type"))->value),
     m_username(config->opt_string("printhost_user")),
     m_password(config->opt_string("printhost_password"))

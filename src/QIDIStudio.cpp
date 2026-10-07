@@ -2186,9 +2186,10 @@ int CLI::run(int argc, char **argv)
                             current_process_system_name = current_inherits_group[0];
                             BOOST_LOG_TRIVIAL(info) << boost::format("inherits of process valid, current_process_system_name is %1%") %current_process_system_name;
                         }
-
-                        current_filaments_system_name.resize(size - 2);
-                        for (int index = 1; index < (size - 1); index++) {
+                        //y84
+                        size_t filament_inherits_count = (size >= 2) ? (size - 2) : 0;
+                        current_filaments_system_name.resize(filament_inherits_count);
+                        for (int index = 1; index < (int)size - 1; index++) {
                             if (current_inherits_group[index].empty()) {
                                 current_filaments_system_name[index-1] = current_filaments_name[index-1];
                             }
@@ -2205,7 +2206,12 @@ int CLI::run(int argc, char **argv)
                     }
                     filament_count = current_filaments_name.size();
                     converted_filaments_system_name = current_filaments_system_name;
+                    //y84
+                    if (converted_filaments_system_name.size() < (size_t)filament_count)
+                        converted_filaments_system_name.resize(filament_count, std::string());
                     for (int f_index = 0; f_index < filament_count; f_index++) {
+                        if (converted_filaments_system_name[f_index].empty() && f_index < (int)current_filaments_name.size())
+                            converted_filaments_system_name[f_index] = current_filaments_name[f_index];
                         convert_filament_preset_name(current_printer_system_name, converted_filaments_system_name[f_index]);
                         used_filament_set.insert(f_index+1);
                     }

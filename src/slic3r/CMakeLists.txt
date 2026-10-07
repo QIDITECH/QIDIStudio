@@ -491,6 +491,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/Search.hpp
     GUI/FilamentGroupPopup.hpp
     GUI/FilamentGroupPopup.cpp
+    GUI/DeviceSettingDialog.hpp
+    GUI/DeviceSettingDialog.cpp
     GUI/NotificationManager.cpp
     GUI/NotificationManager.hpp
     GUI/UnsavedChangesDialog.cpp
@@ -679,10 +681,18 @@ if(QDT_RELEASE_TO_PUBLIC)
 			QIDI/QIDINetwork.cpp
 			QIDI/QIDINetwork.hpp
 			QIDI/QIDINetworkTypes.hpp
-			QIDI/QIDISSEClientV2.cpp
-			QIDI/QIDISSEClientV2.hpp
+			QIDI/QIDIMQTTClient.cpp
+			QIDI/QIDIMQTTClient.hpp
+			QIDI/QIDIMQTTManager.cpp
+			QIDI/QIDIMQTTManager.hpp
             QIDI/P2PManager.cpp
 		    QIDI/P2PManager.hpp
+            QIDI/QIDIFileManager.cpp
+            QIDI/QIDIFileManager.hpp
+            QIDI/QIDIDeviceApi.cpp
+            QIDI/QIDIDeviceApi.hpp
+            QIDI/QIDIDeviceWebSocket.cpp
+            QIDI/QIDIDeviceWebSocket.hpp
 		)
 endif ()
 
@@ -755,7 +765,7 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SLIC3R_GUI_SOURCES})
 
 encoding_check(libslic3r_gui)
 
-target_link_libraries(libslic3r_gui libslic3r cereal imgui imguizmo minilzo GLEW::GLEW OpenGL::GL hidapi ${wxWidgets_LIBRARIES} glfw libcurl OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(libslic3r_gui libslic3r cereal imgui imguizmo minilzo GLEW::GLEW OpenGL::GL hidapi ${wxWidgets_LIBRARIES} glfw libcurl OpenSSL::SSL OpenSSL::Crypto paho_mqtt)
 # pgLibConnect 按平台链接（Windows: 导入库；macOS/Linux: 静态库）
 if (WIN32)
     target_link_libraries(libslic3r_gui ${CMAKE_CURRENT_SOURCE_DIR}/../../deps/pgLibConnect/Lib/Windows/pgDllConnect.lib)
