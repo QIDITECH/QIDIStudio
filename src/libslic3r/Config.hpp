@@ -576,7 +576,7 @@ public:
             // Assign the first value of the rhs vector.
             auto other = static_cast<const ConfigOptionVector<T>*>(rhs);
 
-			if (this->values.size() != (diff_index.size() * stride)) {
+            if (this->values.size() != (diff_index.size() * stride)) {
                 std::string error_message = "ConfigOptionVector::set_only_diff(): Assigning from an vector with invalid diff_index size: key=" + key;
                 throw ConfigurationError(error_message);
             }
@@ -796,10 +796,10 @@ public:
         else
             this->values.resize(rhs_vec->size(), this->values.front());
 
-            assert(default_index.size() == rhs_vec->size());
+        assert(default_index.size() == rhs_vec->size());
 
-            bool modified = false;
-    
+        bool modified = false;
+
         for (size_t i = 0; i < rhs_vec->size(); ++i) {
             if (!rhs_vec->is_nil(i)) {
                 this->values[i] = rhs_vec->values[i];
@@ -2298,8 +2298,8 @@ public:
 		    case coEnum:            { auto opt = new ConfigOptionEnumGeneric(this->enum_keys_map); archive(*opt); return opt; }
             // QDS
             case coEnums:           { auto opt = new ConfigOptionEnumsGeneric(this->enum_keys_map); archive(*opt); return opt; }
-		    case coIntsGroups:      { auto opt = new ConfigOptionIntsGroups();      archive(*opt); return opt; }
-            default:                throw ConfigurationError(std::string("ConfigOptionDef::load_option_from_archive(): Unknown option type for option ") + this->opt_key);
+            case coIntsGroups:      { auto opt = new ConfigOptionIntsGroups();      archive(*opt); return opt; }
+		    default:                throw ConfigurationError(std::string("ConfigOptionDef::load_option_from_archive(): Unknown option type for option ") + this->opt_key);
 		    }
 		}
 	}
@@ -2334,8 +2334,8 @@ public:
 		    case coEnum:            archive(*static_cast<const ConfigOptionEnumGeneric*>(opt)); 	break;
             // QDS
             case coEnums:           archive(*static_cast<const ConfigOptionEnumsGeneric*>(opt));    break;
-		    case coIntsGroups:      archive(*static_cast<const ConfigOptionIntsGroups *>(opt));     break;
-            default:                throw ConfigurationError(std::string("ConfigOptionDef::save_option_to_archive(): Unknown option type for option ") + this->opt_key);
+            case coIntsGroups:      archive(*static_cast<const ConfigOptionIntsGroups *>(opt));     break;
+		    default:                throw ConfigurationError(std::string("ConfigOptionDef::save_option_to_archive(): Unknown option type for option ") + this->opt_key);
 		    }
 		}
 		// Make the compiler happy, shut up the warnings.
@@ -2588,6 +2588,7 @@ public:
     // An UnknownOptionException is thrown in case some option keys are not defined by this->def(),
     // or this ConfigBase is of a StaticConfig type and it does not support some of the keys, and ignore_nonexistent is not set.
     void apply_only(const ConfigBase &other, const t_config_option_keys &keys, bool ignore_nonexistent = false);
+
     // Are the two configs equal? Ignoring options not present in both configs.
     //QDS: add skipped_keys logic
     bool equals(const ConfigBase &other, const std::set<std::string>* skipped_keys = nullptr) const;
@@ -2837,6 +2838,7 @@ public:
     bool                opt_bool(const t_config_option_key &opt_key) const                      { return this->option<ConfigOptionBool>(opt_key)->value != 0; }
     bool                opt_bool(const t_config_option_key &opt_key, unsigned int idx) const;
     bool                opt_bool_nullable(const t_config_option_key &opt_key, unsigned int idx) const { return dynamic_cast<const ConfigOptionBoolsNullable*>(this->option(opt_key))->get_at(idx);}
+
 
     // Command line processing
     bool                read_cli(int argc, const char* const argv[], t_config_option_keys* extra, t_config_option_keys* keys = nullptr);

@@ -2464,7 +2464,7 @@ void Clipper::BuildIntersectList(const cInt topY)
     e = e->NextInAEL;
   }
 
-  //buqdtesort ...
+  //bubblesort ...
   bool isModified;
   do
   {

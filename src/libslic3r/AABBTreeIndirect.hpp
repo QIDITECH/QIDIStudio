@@ -160,7 +160,7 @@ private:
 			size_t center = (left + right) / 2;
 			CoordType pivot;
 			{
-				// Buqdte sort the input[left], input[center], input[right], so that a median of the three values
+				// bubble sort the input[left], input[center], input[right], so that a median of the three values
 				// will end up in input[center].
 				CoordType left_value   = input[left  ].centroid()(dimension);
 				CoordType center_value = input[center].centroid()(dimension);

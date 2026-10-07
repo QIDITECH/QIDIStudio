@@ -899,6 +899,7 @@ public:
     const PrintConfig&          config() const { return m_config; }
     const PrintObjectConfig&    default_object_config() const { return m_default_object_config; }
     const PrintRegionConfig&    default_region_config() const { return m_default_region_config; }
+    
     ConstPrintObjectPtrsAdaptor objects() const { return ConstPrintObjectPtrsAdaptor(&m_objects); }
     const PrintObject*          get_object(size_t idx) const { return m_objects[idx]; }
     PrintObject*                get_object(size_t idx) { return const_cast<PrintObject*>(m_objects[idx]); }
@@ -1181,7 +1182,7 @@ private:
     ToolOrdering 							m_tool_ordering;
     WipeTowerData                           m_wipe_tower_data {m_tool_ordering};
     
-    std::optional<ByObjectPrintData>        m_sequential_print_data;    
+    std::optional<ByObjectPrintData>        m_sequential_print_data;
 
     // Estimated print time, filament consumed.
     PrintStatistics                         m_print_statistics;

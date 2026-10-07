@@ -2,7 +2,6 @@
 
 namespace Slic3r {
 
-//1.9.5
 ExtrusionMultiPath thick_polyline_to_multi_path(const ThickPolyline& thick_polyline, ExtrusionRole role, const Flow& flow, const float tolerance, const float merge_tolerance, double overhang)
 {
     ExtrusionMultiPath multi_path;
@@ -91,7 +90,6 @@ ExtrusionMultiPath thick_polyline_to_multi_path(const ThickPolyline& thick_polyl
             }
         }
     }
-    //1.9.5
     if( path.polyline.is_valid() ) {
         path.overhang_degree = overhang;
         multi_path.paths.emplace_back(std::move(path));
@@ -126,7 +124,6 @@ static ExtrusionPaths thick_polyline_to_extrusion_paths_2(const ThickPolyline& t
             //QDS: 1 generate path from start_index to i(not included)
             if (start_index != i){
                 path = ExtrusionPath(role);
-                //1.9.5
                 double length = 0, sum = 0;
                 for (int idx = start_index; idx < i; idx++) {
                     length += lines[idx].length();
@@ -194,7 +191,6 @@ static ExtrusionPaths thick_polyline_to_extrusion_paths_2(const ThickPolyline& t
     size_t final_size = lines.size();
     if (start_index < final_size) {
         path = ExtrusionPath(role);
-        //1.9.5
         double length = 0, sum = 0;
         for (int idx = start_index; idx < final_size; idx++) {
             length += lines[idx].length();

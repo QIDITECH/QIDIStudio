@@ -133,7 +133,6 @@ unsigned int LayerTools::sparse_infill_filament(const PrintRegion &region) const
 	return resolve_mixed(result);
 }
 
-
 unsigned int LayerTools::solid_infill_filament(const PrintRegion &region) const
 {
 	assert(region.config().solid_infill_filament.value > 0);

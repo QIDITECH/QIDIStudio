@@ -549,7 +549,7 @@ static void merge_solid_parts_inside_object(ModelObjectPtrs &objects)
             mo->sort_volumes(true);
         }
     }
-}   
+}
 
 const ModelObjectPtrs &Cut::perform_by_contour(std::vector<Part> parts, int dowels_count)
 {

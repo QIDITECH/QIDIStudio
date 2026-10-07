@@ -390,7 +390,6 @@ extern std::string get_extruder_variant_string(ExtruderType extruder_type, Nozzl
 // 最基础的参数idx查找方法，遍历varint list寻找对应的idx
 extern int get_config_index_base(NozzleVolumeType volume_type, ExtruderType extruder_type, int variant_id_1based, const std::vector<std::string>& variant_list, const std::vector<int>& variant_ids_1based);
 
-
 static std::set<NozzleVolumeType> get_valid_nozzle_volume_type() {
     std::set<NozzleVolumeType> type;
     for (int i = 0; i <= nvtMaxNozzleVolumeType; ++i) {
@@ -1571,7 +1570,9 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
     //y65
     ((ConfigOptionBool,                is_support_multi_box))
     //y76
-    ((ConfigOptionBool,                is_support_polar_cooler)))
+    ((ConfigOptionBool,                is_support_polar_cooler))
+    //y84
+    ((ConfigOptionBool,                is_support_bed_leveling_force)))
 
 // This object is mapped to Perl as Slic3r::Config::Full.
 PRINT_CONFIG_CLASS_DERIVED_DEFINE0(

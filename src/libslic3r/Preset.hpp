@@ -346,6 +346,9 @@ public:
     std::string get_printer_name(PresetBundle *preset_bundle);
     std::string get_current_printer_type(PresetBundle *preset_bundle); // get current preset type
 
+    //y84
+    std::string get_printer_type_from_preset_name(PresetBundle* preset_bundle, std::string model_name);
+
     static void get_extruder_names_and_keysets(Type type, std::string& extruder_id_name, std::string& extruder_variant_name, std::set<std::string>** p_key_set1, std::set<std::string>** p_key_set2);
     std::string get_printer_id() const { return vendor ? vendor->id : ""; }
 
@@ -479,6 +482,9 @@ public:
     int  get_user_presets(PresetBundle *preset_bundle, std::vector<Preset> &result_presets);
     void set_sync_info_and_save(std::string name, std::string setting_id, std::string syncinfo, long long update_time);
     bool need_sync(std::string name, std::string setting_id, long long update_time);
+
+    //y84
+    static std::function<void()> s_on_sync_state_changed;
 
     //QDS: add function to generate differed preset for save
     //the pointer should be freed by the caller
@@ -959,12 +965,14 @@ public:
     const std::deque<PhysicalPrinter>& operator()() const { return m_printers; }
 
     // Load ini files of the particular type from the provided directory path.
+//cj
     void            load_printers(const std::string& dir_path, const std::string& subdir, PresetsConfigSubstitutions& substitutions, ForwardCompatibilitySubstitutionRule rule,
                                   const PrinterPresetCollection* printer_presets = nullptr);
     void            load_printers_from_presets(PrinterPresetCollection &printer_presets);
     // Load printer from the loaded configuration
     void            load_printer(const std::string& path, const std::string& name, DynamicPrintConfig&& config, bool select, bool save=false,
                                   const PrinterPresetCollection* printer_presets = nullptr);
+//cj
 
     // Save the printer under a new name. If the name is different from the old one,
     // a new printer is stored into the list of printers.

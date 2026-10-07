@@ -259,7 +259,6 @@ MeshAndShip its_split_and_save_relationship(const Its &its)
     return mesh_ship;
 }
 
-
 template<class Its>
 bool its_is_splittable(const Its &m)
 {

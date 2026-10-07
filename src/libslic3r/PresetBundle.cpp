@@ -2319,6 +2319,7 @@ void PresetBundle::export_selections(AppConfig &config)
                                                                    "|");
     config.set("flush_multiplier_fast", flush_multiplier_fast_str);
 
+
     // Mixed filament metadata
     if (auto* opt = project_config.option<ConfigOptionBools>("filament_is_mixed")) {
         std::string s;
@@ -3752,6 +3753,7 @@ ConfigSubstitutions PresetBundle::load_config_file(const std::string &path, Forw
     return ConfigSubstitutions{};
 }
 
+
 // some filament presets split from one to sperate ones
 // following map recording these filament presets
 // for example: previously ''QIDI PLA Basic @Qidi Q2 0.6 nozzle' was saved in ''QIDI PLA Basic @Qidi Q2' with 0.4
@@ -3907,6 +3909,7 @@ void PresetBundle::load_config_file_config(const std::string &name_or_path, bool
     config.erase("enable_filament_dynamic_map");
     if (this->extruder_ams_counts.empty())
         this->extruder_ams_counts = get_extruder_ams_count(extruder_ams_count);
+
 
     // 1) Create a name from the file name.
     // Keep the suffix (.ini, .gcode, .amf, .3mf etc) to differentiate it from the normal profiles.
@@ -4852,7 +4855,6 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
     // 3) paste the process/filament/print configs
     PresetCollection         *presets = nullptr;
     size_t                   presets_loaded = 0;
-
 #if PARALLEL_LOAD_PRESET
     struct ParallelPresetLoadData
     {
@@ -4971,7 +4973,7 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
 
                     config.apply_only(include_config, keys);
 
-                    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": Applied include " << name << " to " << preset_name;
+                    //BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": Applied include " << name << " to " << preset_name;
                 }
                 else
                     BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": can not find include " << name << " for " << preset_name;
@@ -5086,6 +5088,7 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
                 }
             }
         }
+
         // Derive the profile logical name aka alias from the preset name if the alias was not stated explicitely.
         if (alias_name.empty()) {
             size_t end_pos = preset_name.find_first_of("@");
@@ -5220,7 +5223,7 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
 
                     config.apply_only(include_config, keys);
 
-                    // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": Applied include " << name << " to " << preset_name;
+                    //BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": Applied include " << name << " to " << preset_name;
                 }
                 else
                     BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": can not find include " << name << " for " << preset_name;
@@ -5322,7 +5325,7 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
             loaded.description = description;
             loaded.setting_id = setting_id;
             loaded.filament_id = filament_id;
-            // BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << " " << __LINE__ << ", " << loaded.name << " load filament_id: " << filament_id;
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " " << __LINE__ << ", " << loaded.name << " load filament_id: " << filament_id;
             if (presets_collection->type() == Preset::TYPE_FILAMENT) {
                 if (filament_id.empty() && "Template" != vendor_name) {
                     BOOST_LOG_TRIVIAL(error) << __FUNCTION__<< ": can not find filament_id for " << preset_name;

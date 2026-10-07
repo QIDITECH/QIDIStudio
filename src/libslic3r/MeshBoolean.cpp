@@ -738,14 +738,14 @@ bool do_boolean_single(McutMesh &srcMesh, const McutMesh &cutMesh, const std::st
         // query the faces
         numBytes = 0;
         err      = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_FACE_TRIANGULATION, 0, NULL, &numBytes);
-        
+
         if (progress_cb) {
             progress_cb(temp_progress + 60.0 / numConnComps * 0.3f);
         }
 
         std::vector<uint32_t> ccFaceIndices(numBytes / sizeof(uint32_t), 0);
         err = mcGetConnectedComponentData(context, connComp, MC_CONNECTED_COMPONENT_DATA_FACE_TRIANGULATION, numBytes, ccFaceIndices.data(), NULL);
-        
+
         if (progress_cb) {
             progress_cb(temp_progress + 60.0 / numConnComps * 0.4f);
         }

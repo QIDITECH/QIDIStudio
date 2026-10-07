@@ -366,6 +366,7 @@ void set_log_path_and_level(const std::string& file, unsigned int level, const L
 	return;
 }
 
+//y
 void setup_console_sink()
 {
     static boost::shared_ptr<boost::log::sinks::synchronous_sink<boost::log::sinks::text_ostream_backend>> console_sink;
@@ -1593,6 +1594,5 @@ void load_string_file(const boost::filesystem::path& p, std::string& str)
     str.resize(sz, '\0');
     file.read(&str[0], sz);
 }
-
 
 }; // namespace Slic3r

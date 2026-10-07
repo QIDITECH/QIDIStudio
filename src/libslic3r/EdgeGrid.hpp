@@ -98,7 +98,7 @@ public:
 
 	// Fill in the grid with open polylines or closed contours.
 	// If open flag is indicated, then polylines_or_polygons are considered to be open by default.
-	// Only if the first point of a polyline is equal to the last point of a polyline, 
+	// Only if the first point of a polyline is equal to the last point of a polyline,
 	// then the polyline is considered to be closed and the last repeated point is removed when
 	// inserted into the EdgeGrid.
 	// Most of the Grid functions expect all the contours to be closed, you have been warned!
@@ -425,8 +425,8 @@ protected:
 			// there is a CCW outmost contour so the out of domain cells are outside.
 			return false;
 		const Cell &cell = m_cells[r * m_cols + c];
-		return 
-			(cell.begin < cell.end) || 
+		return
+			(cell.begin < cell.end) ||
 			(! m_signed_distance_field.empty() && m_signed_distance_field[r * (m_cols + 1) + c] <= 0.f);
 	}
 

@@ -169,9 +169,9 @@ Point Point::projection_onto(const Line &line) const
     */
     double lx = (double)(line.b(0) - line.a(0));
     double ly = (double)(line.b(1) - line.a(1));
-    double theta = ( (double)(line.b(0) - (*this)(0))*lx + (double)(line.b(1)- (*this)(1))*ly ) 
+    double theta = ( (double)(line.b(0) - (*this)(0))*lx + (double)(line.b(1)- (*this)(1))*ly )
           / ( sqr<double>(lx) + sqr<double>(ly) );
-    
+
     if (0.0 <= theta && theta <= 1.0)
         return (theta * line.a.cast<coordf_t>() + (1.0-theta) * line.b.cast<coordf_t>()).cast<coord_t>();
 
@@ -250,7 +250,7 @@ Points collect_duplicates(Points pts /* Copy */)
 
 template<bool IncludeBoundary>
 BoundingBox get_extents(const Points &pts)
-{ 
+{
     BoundingBox out;
     BoundingBox::construct<IncludeBoundary>(out, pts.begin(), pts.end());
     return out;

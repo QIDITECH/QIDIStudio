@@ -82,7 +82,7 @@ void PlaceholderParser::update_timestamp(DynamicConfig &config)
     time_t rawtime;
     time(&rawtime);
     struct tm* timeinfo = localtime(&rawtime);
-    
+
     {
         std::ostringstream ss;
         ss << (1900 + timeinfo->tm_year);
@@ -221,7 +221,7 @@ namespace client
             this->it_range  = rhs.it_range;
             if (rhs.type == TYPE_STRING)
                 this->data.s = new std::string(*rhs.data.s);
-            else 
+            else
                 this->data.set(rhs.data);
             return *this;
         }
@@ -559,7 +559,7 @@ namespace client
         static void throw_if_not_numeric(const expr &param)
         {
             const char *err_msg = "Not a numeric type.";
-            param.throw_if_not_numeric(err_msg);      
+            param.throw_if_not_numeric(err_msg);
         }
 
         enum Function2ParamsType {
@@ -1119,7 +1119,7 @@ namespace client
 
         // This function is called during the actual parsing process
         template <typename Iterator, typename Context , typename Skipper, typename Attribute>
-        bool parse(Iterator& first, Iterator const& last, Context& context, Skipper const& skipper, Attribute& attr) const 
+        bool parse(Iterator& first, Iterator const& last, Context& context, Skipper const& skipper, Attribute& attr) const
         {
             // The skipper shall always be empty, any white space will be accepted.
             // skip_over(first, last, skipper);
@@ -1360,32 +1360,32 @@ namespace client
                 static void noexpr(expr<Iterator> &out) { out.reset(); }
             };
             unary_expression = iter_pos[px::bind(&FactorActions::set_start_pos, _1, _val)] >> (
-                scalar_variable_reference(_r1)                  [ _val = _1 ]
-            |   (lit('(')  > conditional_expression(_r1) > ')' > iter_pos) [ px::bind(&FactorActions::expr_, _1, _2, _val) ]
-            |   (lit('-')  > unary_expression(_r1)           )  [ px::bind(&FactorActions::minus_,  _1,     _val) ]
-            |   (lit('+')  > unary_expression(_r1) > iter_pos)  [ px::bind(&FactorActions::expr_,   _1, _2, _val) ]
-            |   ((kw["not"] | '!') > unary_expression(_r1) > iter_pos) [ px::bind(&FactorActions::not_, _1, _val) ]
-            |   (kw["min"] > '(' > conditional_expression(_r1) [_val = _1] > ',' > conditional_expression(_r1) > ')')
-                                                                [ px::bind(&expr<Iterator>::min, _val, _2) ]
-            |   (kw["max"] > '(' > conditional_expression(_r1) [_val = _1] > ',' > conditional_expression(_r1) > ')')
-                                                                [ px::bind(&expr<Iterator>::max, _val, _2) ]
-            |   (kw["random"] > '(' > conditional_expression(_r1) [_val = _1] > ',' > conditional_expression(_r1) > ')')
-                                                                [ px::bind(&MyContext::random<Iterator>, _r1, _val, _2) ]
-            |   (kw["filament_change"] > '(' > conditional_expression(_r1) > ')') [ px::bind(&MyContext::filament_change<Iterator>, _r1, _1) ]
-            |   (kw["digits"] > '(' > conditional_expression(_r1) [_val = _1] > ',' > conditional_expression(_r1) > optional_parameter(_r1))
-                                                                [ px::bind(&expr<Iterator>::template digits<false>, _val, _2, _3) ]
-            |   (kw["zdigits"] > '(' > conditional_expression(_r1) [_val = _1] > ',' > conditional_expression(_r1) > optional_parameter(_r1))
-                                                                [ px::bind(&expr<Iterator>::template digits<true>, _val, _2, _3) ]
-            |   (kw["int"]   > '(' > conditional_expression(_r1) > ')') [ px::bind(&FactorActions::to_int,  _1, _val) ]
-            |   (kw["round"] > '(' > conditional_expression(_r1) > ')') [ px::bind(&FactorActions::round,   _1, _val) ]
-            |   (kw["ceil"]  > '(' > conditional_expression(_r1) > ')') [ px::bind(&FactorActions::ceil,    _1, _val) ]
-            |   (kw["floor"] > '(' > conditional_expression(_r1) > ')') [ px::bind(&FactorActions::floor,   _1, _val) ]
-            |   (strict_double > iter_pos)                      [ px::bind(&FactorActions::double_, _1, _2, _val) ]
-            |   (int_      > iter_pos)                          [ px::bind(&FactorActions::int_,    _1, _2, _val) ]
-            |   (kw[bool_] > iter_pos)                          [ px::bind(&FactorActions::bool_,   _1, _2, _val) ]
-            |   raw[lexeme['"' > *((utf8char - char_('\\') - char_('"')) | ('\\' > char_)) > '"']]
-                                                                [ px::bind(&FactorActions::string_, _1,     _val) ]
-            );
+                    scalar_variable_reference(_r1)                  [ _val = _1 ]
+                |   (lit('(')  > conditional_expression(_r1) > ')' > iter_pos) [ px::bind(&FactorActions::expr_, _1, _2, _val) ]
+                |   (lit('-')  > unary_expression(_r1)           )  [ px::bind(&FactorActions::minus_,  _1,     _val) ]
+                |   (lit('+')  > unary_expression(_r1) > iter_pos)  [ px::bind(&FactorActions::expr_,   _1, _2, _val) ]
+                |   ((kw["not"] | '!') > unary_expression(_r1) > iter_pos) [ px::bind(&FactorActions::not_, _1, _val) ]
+                |   (kw["min"] > '(' > conditional_expression(_r1) [_val = _1] > ',' > conditional_expression(_r1) > ')')
+                                                                    [ px::bind(&expr<Iterator>::min, _val, _2) ]
+                |   (kw["max"] > '(' > conditional_expression(_r1) [_val = _1] > ',' > conditional_expression(_r1) > ')')
+                                                                    [ px::bind(&expr<Iterator>::max, _val, _2) ]
+                |   (kw["random"] > '(' > conditional_expression(_r1) [_val = _1] > ',' > conditional_expression(_r1) > ')')
+                                                                    [ px::bind(&MyContext::random<Iterator>, _r1, _val, _2) ]
+                |   (kw["filament_change"] > '(' > conditional_expression(_r1) > ')') [ px::bind(&MyContext::filament_change<Iterator>, _r1, _1) ]
+                |   (kw["digits"] > '(' > conditional_expression(_r1) [_val = _1] > ',' > conditional_expression(_r1) > optional_parameter(_r1))
+                                                                    [ px::bind(&expr<Iterator>::template digits<false>, _val, _2, _3) ]
+                |   (kw["zdigits"] > '(' > conditional_expression(_r1) [_val = _1] > ',' > conditional_expression(_r1) > optional_parameter(_r1))
+                                                                    [ px::bind(&expr<Iterator>::template digits<true>, _val, _2, _3) ]
+                |   (kw["int"]   > '(' > conditional_expression(_r1) > ')') [ px::bind(&FactorActions::to_int,  _1, _val) ]
+                |   (kw["round"] > '(' > conditional_expression(_r1) > ')') [ px::bind(&FactorActions::round,   _1, _val) ]
+                |   (kw["ceil"]  > '(' > conditional_expression(_r1) > ')') [ px::bind(&FactorActions::ceil,    _1, _val) ]
+                |   (kw["floor"] > '(' > conditional_expression(_r1) > ')') [ px::bind(&FactorActions::floor,   _1, _val) ]
+                |   (strict_double > iter_pos)                      [ px::bind(&FactorActions::double_, _1, _2, _val) ]
+                |   (int_      > iter_pos)                          [ px::bind(&FactorActions::int_,    _1, _2, _val) ]
+                |   (kw[bool_] > iter_pos)                          [ px::bind(&FactorActions::bool_,   _1, _2, _val) ]
+                |   raw[lexeme['"' > *((utf8char - char_('\\') - char_('"')) | ('\\' > char_)) > '"']]
+                                                                    [ px::bind(&FactorActions::string_, _1,     _val) ]
+                );
             unary_expression.name("unary_expression");
 
             optional_parameter = iter_pos[px::bind(&FactorActions::set_start_pos, _1, _val)] >> (

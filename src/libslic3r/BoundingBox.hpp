@@ -108,7 +108,7 @@ class BoundingBox3Base : public BoundingBoxBase<PointClass>
 public:
     BoundingBox3Base() : BoundingBoxBase<PointClass>() {}
     BoundingBox3Base(const PointClass &pmin, const PointClass &pmax) :
-        BoundingBoxBase<PointClass>(pmin, pmax) 
+        BoundingBoxBase<PointClass>(pmin, pmax)
         { if (pmin(2) >= pmax(2)) BoundingBoxBase<PointClass>::defined = false; }
     BoundingBox3Base(const PointClass &p1, const PointClass &p2, const PointClass &p3) :
         BoundingBoxBase<PointClass>(p1, p1) { merge(p2); merge(p3); }

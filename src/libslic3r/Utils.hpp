@@ -380,6 +380,7 @@ bool is_log_trivival_valid();
 void set_log_path_and_level(const std::string& file, unsigned int level, const LogEncOptions& enc_options);
 void update_log_sink(const std::string& file, const LogEncOptions& enc_options);
 void flush_logs();
+//y
 void setup_console_sink();
 
 // A special type for strings encoded in the local Windows 8-bit code page.

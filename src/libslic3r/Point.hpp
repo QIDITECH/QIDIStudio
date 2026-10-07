@@ -166,7 +166,6 @@ inline const Vec3d get_x_base(const Transform3d::LinearPart &transform) { return
 inline const Vec3d get_y_base(const Transform3d::LinearPart &transform) { return get_base(1, transform); }
 inline const Vec3d get_z_base(const Transform3d::LinearPart &transform) { return get_base(2, transform); }
 
-
 template<int N, class T> using Vec = Eigen::Matrix<T,  N, 1, Eigen::DontAlign, N, 1>;
 
 class Point : public Vec2crd
@@ -199,7 +198,7 @@ public:
     Point& operator-=(const Point& rhs) { this->x() -= rhs.x(); this->y() -= rhs.y(); return *this; }
 	Point& operator*=(const double &rhs) { this->x() = coord_t(this->x() * rhs); this->y() = coord_t(this->y() * rhs); return *this; }
     Point operator*(const double &rhs) { return Point(this->x() * rhs, this->y() * rhs); }
-    bool   both_comp(const Point &rhs, const std::string& op) { 
+    bool   both_comp(const Point &rhs, const std::string& op) {
         if (op == ">")
             return this->x() > rhs.x() && this->y() > rhs.y();
         else if (op == "<")
@@ -248,8 +247,8 @@ public:
     bool   is_in_lines(const Points &pts) const;
 };
 
-inline bool operator<(const Point &l, const Point &r) 
-{ 
+inline bool operator<(const Point &l, const Point &r)
+{
     return l.x() < r.x() || (l.x() == r.x() && l.y() < r.y());
 }
 
@@ -379,7 +378,7 @@ struct PointHash {
 template<typename ValueType, typename PointAccessor> class ClosestPointInRadiusLookup
 {
 public:
-    ClosestPointInRadiusLookup(coord_t search_radius, PointAccessor point_accessor = PointAccessor()) : 
+    ClosestPointInRadiusLookup(coord_t search_radius, PointAccessor point_accessor = PointAccessor()) :
 		m_search_radius(search_radius), m_point_accessor(point_accessor), m_grid_log2(0)
     {
         // Resolution of a grid, twice the search radius + some epsilon.
@@ -468,8 +467,8 @@ public:
                 }
             }
         }
-        return (value_min != nullptr && dist_min < coordf_t(m_search_radius) * coordf_t(m_search_radius)) ? 
-            std::make_pair(value_min, dist_min) : 
+        return (value_min != nullptr && dist_min < coordf_t(m_search_radius) * coordf_t(m_search_radius)) ?
+            std::make_pair(value_min, dist_min) :
             std::make_pair(nullptr, std::numeric_limits<double>::max());
     }
 
@@ -589,9 +588,9 @@ inline coord_t align_to_grid(const coord_t coord, const coord_t spacing) {
     assert(aligned <= coord);
     return aligned;
 }
-inline Point   align_to_grid(Point   coord, Point   spacing) 
+inline Point   align_to_grid(Point   coord, Point   spacing)
     { return Point(align_to_grid(coord.x(), spacing.x()), align_to_grid(coord.y(), spacing.y())); }
-inline coord_t align_to_grid(coord_t coord, coord_t spacing, coord_t base) 
+inline coord_t align_to_grid(coord_t coord, coord_t spacing, coord_t base)
     { return base + align_to_grid(coord - base, spacing); }
 inline Point   align_to_grid(Point   coord, Point   spacing, Point   base)
     { return Point(align_to_grid(coord.x(), spacing.x(), base.x()), align_to_grid(coord.y(), spacing.y(), base.y())); }
@@ -654,16 +653,16 @@ namespace std {
 namespace boost { namespace polygon {
     template <>
     struct geometry_concept<Slic3r::Point> { using type = point_concept; };
-   
+
     template <>
     struct point_traits<Slic3r::Point> {
         using coordinate_type = coord_t;
-    
+
         static inline coordinate_type get(const Slic3r::Point& point, orientation_2d orient) {
             return static_cast<coordinate_type>(point((orient == HORIZONTAL) ? 0 : 1));
         }
     };
-    
+
     template <>
     struct point_mutable_traits<Slic3r::Point> {
         using coordinate_type = coord_t;

@@ -335,11 +335,11 @@ static double get_distance_raw(const Vec3f &p, const Interior &interior)
     return interior.accessor->getValue(grididx) ;
 }
 
-struct TriangleBuqdte { Vec3f center; double R; };
+struct TriangleBubble { Vec3f center; double R; };
 
-// Return the distance of buqdte center to the interior boundary or NaN if the
+// Return the distance of bubble center to the interior boundary or NaN if the
 // triangle is too big to be measured.
-static double get_distance(const TriangleBuqdte &b, const Interior &interior)
+static double get_distance(const TriangleBubble &b, const Interior &interior)
 {
     double R = b.R * interior.voxel_scale;
     double D = get_distance_raw(b.center, interior);
@@ -473,21 +473,21 @@ void remove_inside_triangles(TriangleMesh &mesh, const Interior &interior,
             return false;
         }
 
-        TriangleBuqdte buqdte{facebb.center().cast<float>(), facebb.radius()};
+        TriangleBubble bubble{facebb.center().cast<float>(), facebb.radius()};
 
-        double D = get_distance(buqdte, interior);
-        double R = buqdte.R * interior.voxel_scale;
+        double D = get_distance(bubble, interior);
+        double R = bubble.R * interior.voxel_scale;
 
         if (std::isnan(D)) // The distance cannot be measured, triangle too big
             return true;
 
-        // Distance of the buqdte wall to the interior wall. Negative if the
-        // buqdte is overlapping with the interior
-        double buqdte_distance = D - R;
+        // Distance of the bubble wall to the interior wall. Negative if the
+        // bubble is overlapping with the interior
+        double bubble_distance = D - R;
 
         // The face is crossing the interior or inside, it must be removed and
         // parts of it re-added, that are outside the interior
-        if (buqdte_distance < 0.) {
+        if (bubble_distance < 0.) {
             if (f.faceid != NEW_FACE)
                 mesh_mods.to_remove[f.faceid] = true;
 

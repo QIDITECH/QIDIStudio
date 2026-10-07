@@ -1188,6 +1188,7 @@ Print::ApplyStatus Print::apply(const Model &model, DynamicPrintConfig new_full_
 	new_full_config.option("printer_settings_id",          true);
     // QDS
     std::vector <unsigned int> used_filaments = this->extruders(true);
+
     std::unordered_set <unsigned int> used_filament_set(used_filaments.begin(), used_filaments.end());
 
     auto* is_mixed_opt = new_full_config.option<ConfigOptionBools>("filament_is_mixed");
@@ -1525,7 +1526,7 @@ Print::ApplyStatus Print::apply(const Model &model, DynamicPrintConfig new_full_
 	    m_default_region_config.apply_only(new_full_config, region_diff, true);
         //m_full_print_config = std::move(new_full_config);
         m_full_print_config = new_full_config;
-        update_filament_self_index_cache();        
+        update_filament_self_index_cache();
         if (num_extruders  != m_config.filament_diameter.size()) {
             num_extruders  = m_config.filament_diameter.size();
             num_extruders_changed  = true;

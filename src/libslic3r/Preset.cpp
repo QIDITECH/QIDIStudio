@@ -82,7 +82,7 @@ namespace Slic3r {
                                               "QIDI PC FR",
                                               "QIDI PETG-CF",
                                               "QIDI ABS-GF",
-                                              "QIDI ASA-CF",
+                                              "QIDI ASA-CF20 Core",
                                               "QIDI PA6-CF",
                                               "QIDI PA6-GF",
                                               "QIDI PAHT-CF",
@@ -872,6 +872,21 @@ std::string Preset::get_printer_type(PresetBundle *preset_bundle)
     return "";
 }
 
+//y84
+std::string Preset::get_printer_type_from_preset_name(PresetBundle* preset_bundle, std::string model_name) {
+    if (preset_bundle) {
+        std::string vendor_name;
+        for (auto vendor_profile : preset_bundle->vendors) {
+            for (auto vendor_model : vendor_profile.second.models) {
+                if (vendor_model.name == model_name) {
+                    return vendor_model.model_id;
+                }
+            }
+        }
+    }
+    return "";
+}
+
 std::string Preset::get_printer_name(PresetBundle *preset_bundle)
 {
     if (preset_bundle) {
@@ -1193,6 +1208,8 @@ static std::vector<std::string> s_Preset_printer_options {
     , "is_support_multi_box"
     , "is_support_mqtt"
     , "is_support_polar_cooler"
+    //y84
+    , "is_support_bed_leveling_force"
 };
 
 static std::vector<std::string> s_Preset_sla_print_options {
@@ -1661,9 +1678,11 @@ int PresetCollection::get_differed_values_to_update(Preset& preset, std::map<std
             key_values[QDT_JSON_KEY_FILAMENT_ID] = preset.filament_id;
         }
     }
+    //cj
     if (!preset.setting_id.empty()) {
         key_values[QDT_JSON_KEY_SETTING_ID] = preset.setting_id;
     }
+    
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " uploading user preset name is: " << preset.name << "and create filament_id is: " << preset.filament_id
                             << " and base_id is: " << preset.base_id
                             << " and setting_id is: " << preset.setting_id;
@@ -1829,6 +1848,9 @@ bool PresetCollection::reset_project_embedded_presets()
     return re_select;
 }
 
+//y84
+std::function<void()> PresetCollection::s_on_sync_state_changed;
+
 void PresetCollection::set_sync_info_and_save(std::string name, std::string setting_id, std::string syncinfo, long long update_time)
 {
     lock();
@@ -1857,6 +1879,8 @@ void PresetCollection::set_sync_info_and_save(std::string name, std::string sett
         }
     }
     unlock();
+    //y84
+    if (s_on_sync_state_changed) s_on_sync_state_changed();
 }
 
 bool PresetCollection::need_sync(std::string name, std::string setting_id, long long update_time)
@@ -2082,6 +2106,7 @@ bool PresetCollection::load_user_preset(std::string name, std::map<std::string, 
             // Find a default preset for the config. The PrintPresetCollection provides different default preset based on the "printer_technology" field.
             new_config = default_preset.config;
         }
+
 
         if (inherit_preset) {
             extend_default_config_length(cloud_config, inherit_preset->config, false, {});
@@ -2590,6 +2615,8 @@ bool PresetCollection::clone_presets_for_filament(Preset const *const &     pres
             preset.config.apply_only(dynamic_config, {"filament_vendor", "compatible_printers", "filament_type"},true);
 
             preset.filament_id = filament_id;
+            // y84
+            preset.sync_info = "create";
             auto compatible = dynamic_cast<ConfigOptionStrings *>(preset.config.option("compatible_printers"));
             if (compatible->values.empty()) {
                 BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " " << __LINE__ << preset.name << " apply compatible_printer failed";
@@ -3415,7 +3442,8 @@ void PresetCollection::set_printer_hold_alias(const std::string &alias, Preset &
                 }
             }
         }
-    
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " " << " preset name : " << preset.name << " remove action: " << remove << " insert success: "
+                                << insert_success << " remove success: " << remove_success << " alias: " << alias;
     }
 }
 
@@ -3847,6 +3875,7 @@ PhysicalPrinterCollection::PhysicalPrinterCollection( const std::vector<std::str
 
 // Load all printers found in dir_path.
 // Throws an exception on error.
+//cj
 void PhysicalPrinterCollection::load_printers(
     const std::string& dir_path, const std::string& subdir,
     PresetsConfigSubstitutions& substitutions, ForwardCompatibilitySubstitutionRule substitution_rule,
@@ -3910,13 +3939,13 @@ void PhysicalPrinterCollection::load_printers(
         throw Slic3r::RuntimeError(errors_cummulative);
 }
 
+//cj
 void PhysicalPrinterCollection::load_printer(const std::string& path, const std::string& name, DynamicPrintConfig&& config, bool select, bool save/* = false*/,
     const PrinterPresetCollection* printer_presets_mqtt)
 {
     auto it = this->find_printer_internal(name);
     if (it == m_printers.end() || it->name != name) {
-        // The preset was not found. Create a new preset.
-        it = m_printers.emplace(it, PhysicalPrinter(name, config));
+        // The preset was not found. Create a new preset.        it = m_printers.emplace(it, PhysicalPrinter(name, config));
     }
 
     it->file = path;

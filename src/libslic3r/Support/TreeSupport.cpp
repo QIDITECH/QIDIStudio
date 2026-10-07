@@ -2871,7 +2871,6 @@ void TreeSupport::drop_nodes()
     // enabled only when the wall count is set to auto or dual-wall is explicitly enabled by the user.
     const bool bottom_expand_enabled = config.tree_support_wall_count > 1 || config.tree_support_wall_count < 0;
 
-
     auto get_max_move_dist = [this, &config, tan_angle, wall_count, support_extrusion_width](const SupportNode *node, int power = 1) {
         if (node->max_move_dist == 0) {
             node->radius        = get_radius(node);

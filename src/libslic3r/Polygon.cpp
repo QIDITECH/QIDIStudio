@@ -145,7 +145,7 @@ Polygons Polygon::simplify(double tolerance) const
     points.push_back(points.front());
     Polygon p(MultiPoint::_douglas_peucker(points, tolerance));
     p.points.pop_back();
-    
+
     Polygons pp;
     pp.push_back(p);
     return simplify_polygons(pp);
@@ -160,7 +160,7 @@ void Polygon::triangulate_convex(Polygons* polygons) const
         p.points.push_back(this->points.front());
         p.points.push_back(*(it-1));
         p.points.push_back(*it);
-        
+
         // this should be replaced with a more efficient call to a merge_collinear_segments() method
         if (p.area() > 0) polygons->push_back(p);
     }
@@ -276,7 +276,7 @@ Points filter_points_by_vectors(const Points &poly, FilterFn filter)
         v1 = v2;
         p1 = p2;
     }
-    
+
     return out;
 }
 
@@ -408,8 +408,8 @@ Polygon Polygon::transform(const Transform3d& trafo) const
     return dstpoly;
 }
 
-BoundingBox get_extents(const Polygon &poly) 
-{ 
+BoundingBox get_extents(const Polygon &poly)
+{
     return poly.bounding_box();
 }
 
@@ -424,8 +424,8 @@ BoundingBox get_extents(const Polygons &polygons)
     return bb;
 }
 
-BoundingBox get_extents_rotated(const Polygon &poly, double angle) 
-{ 
+BoundingBox get_extents_rotated(const Polygon &poly, double angle)
+{
     return get_extents_rotated(poly.points, angle);
 }
 
@@ -570,7 +570,7 @@ bool remove_sticks(Polygons &polys)
     for (size_t i = 0; i < polys.size(); ++ i) {
         modified |= remove_sticks(polys[i]);
         if (polys[i].points.size() >= 3) {
-            if (j < i) 
+            if (j < i)
                 std::swap(polys[i].points, polys[j].points);
             ++ j;
         }
@@ -586,7 +586,7 @@ bool remove_degenerate(Polygons &polys)
     size_t j = 0;
     for (size_t i = 0; i < polys.size(); ++ i) {
         if (polys[i].points.size() >= 3) {
-            if (j < i) 
+            if (j < i)
                 std::swap(polys[i].points, polys[j].points);
             ++ j;
         } else
@@ -603,7 +603,7 @@ bool remove_small(Polygons &polys, double min_area)
     size_t j = 0;
     for (size_t i = 0; i < polys.size(); ++ i) {
         if (std::abs(polys[i].area()) >= min_area) {
-            if (j < i) 
+            if (j < i)
                 std::swap(polys[i].points, polys[j].points);
             ++ j;
         } else
@@ -707,7 +707,7 @@ bool overlaps(const Polygons& polys1, const Polygons& polys2)
 
 bool contains(const Polygon &polygon, const Point &p, bool border_result)
 {
-    if (const int poly_count_inside = ClipperLib::PointInPolygon(p, polygon.points); 
+    if (const int poly_count_inside = ClipperLib::PointInPolygon(p, polygon.points);
         poly_count_inside == -1)
         return border_result;
     else

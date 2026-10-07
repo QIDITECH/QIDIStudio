@@ -178,7 +178,6 @@ time_t get_current_time_utc()
     return clk::to_time_t(clk::now());
 }
 
-//1.9.5
 time_t get_current_milliseconds_time_utc()
 {
     using clk = std::chrono::system_clock;

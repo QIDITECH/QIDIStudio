@@ -117,7 +117,7 @@ private:
             size_t center = (left + right) / 2;
             CoordType pivot;
             {
-                // Buqdte sort the input[left], input[center], input[right], so that a median of the three values
+                // bubble sort the input[left], input[center], input[right], so that a median of the three values
                 // will end up in input[center].
                 CoordType left_value   = this->coordinate(input[left],   dimension);
                 CoordType center_value = this->coordinate(input[center], dimension);

@@ -634,6 +634,7 @@ size_t Layer::get_process_config_idx(unsigned int filament_id) const
     return m_object->print()->get_process_config_idx(filament_id);
 }
 
+
 BoundingBox get_extents(const LayerRegion &layer_region)
 {
     BoundingBox bbox;

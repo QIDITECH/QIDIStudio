@@ -156,7 +156,7 @@ public:
      * Reverse the parent-child relationship all the way to the root, from this node onward.
      * This has the effect of 're-rooting' the tree at the current node if no immediate parent is given as argument.
      * That is, the current node will become the root, it's (former) parent if any, will become one of it's children.
-     * This is then recursively buqdted up until it reaches the (former) root, which then will become a leaf.
+     * This is then recursively bubbled up until it reaches the (former) root, which then will become a leaf.
      * \param new_parent The (new) parent-node of the root, useful for recursing or immediately attaching the node to another tree.
      */
     void reroot(const NodeSPtr &new_parent = nullptr);

@@ -756,44 +756,6 @@ double configBrimWidthByVolumes(double deltaT, double adhension, double maxSpeed
     return brim_width;
 }
 
-static ExPolygons make_brim_ears(const PrintObject* object, const double& flowWidth, float brim_offset, Flow &flow, bool is_outer_brim)
-{
-    ExPolygons mouse_ears_ex;
-    BrimPoints brim_ear_points = object->model_object()->brim_points;
-    if (brim_ear_points.size() <= 0) {
-        return mouse_ears_ex;
-    }
-    const Geometry::Transformation& trsf = object->model_object()->instances[0]->get_transformation();
-    Transform3d model_trsf = trsf.get_matrix(true);
-    const Point &center_offset = object->center_offset();
-    model_trsf = model_trsf.pretranslate(Vec3d(- unscale<double>(center_offset.x()), - unscale<double>(center_offset.y()), 0));
-    for (auto &pt : brim_ear_points) {
-        Transform3d v_trsf = Transform3d::Identity();
-        if (pt.volume_idx > -1)
-            v_trsf = object->model_object()->volumes[pt.volume_idx]->get_matrix();
-        Vec3f world_pos = pt.transform(trsf.get_matrix() * v_trsf);
-        if ( world_pos.z() > 0) continue;
-        Polygon point_round;
-        float brim_width = floor(scale_(pt.head_front_radius) / flowWidth / 2) * flowWidth * 2;
-        if (is_outer_brim) {
-            double flowWidthScale = flowWidth / SCALING_FACTOR;
-            brim_width = floor(brim_width / flowWidthScale / 2) * flowWidthScale * 2;
-        }
-        coord_t size_ear = (brim_width - brim_offset - flow.scaled_spacing());
-        for (size_t i = 0; i < POLY_SIDE_COUNT; i++) {
-            double angle = (2.0 * PI * i) / POLY_SIDE_COUNT;
-            point_round.points.emplace_back(size_ear * cos(angle), size_ear * sin(angle));
-        }
-        mouse_ears_ex.emplace_back();
-        mouse_ears_ex.back().contour = point_round;
-        Vec3f pos = pt.transform(model_trsf * v_trsf);
-        int32_t pt_x = scale_(pos.x());
-        int32_t pt_y = scale_(pos.y());
-        mouse_ears_ex.back().contour.translate(Point(pt_x, pt_y));
-    }
-    return mouse_ears_ex;
-}
-
 //QDS: config brimwidth by group of volumes
 double configBrimWidthByVolumeGroups(double adhension, double maxSpeed, const std::vector<ModelVolume*> modelVolumePtrs, const ExPolygons& expolys, double &groupHeight)
 {
@@ -841,6 +803,44 @@ double configBrimWidthByVolumeGroups(double adhension, double maxSpeed, const st
     if (brim_width > 18) brim_width = 18.;
 
     return brim_width;
+}
+
+static ExPolygons make_brim_ears(const PrintObject* object, const double& flowWidth, float brim_offset, Flow &flow, bool is_outer_brim)
+{
+    ExPolygons mouse_ears_ex;
+    BrimPoints brim_ear_points = object->model_object()->brim_points;
+    if (brim_ear_points.size() <= 0) {
+        return mouse_ears_ex;
+    }
+    const Geometry::Transformation& trsf = object->model_object()->instances[0]->get_transformation();
+    Transform3d model_trsf = trsf.get_matrix(true);
+    const Point &center_offset = object->center_offset();
+    model_trsf = model_trsf.pretranslate(Vec3d(- unscale<double>(center_offset.x()), - unscale<double>(center_offset.y()), 0));
+    for (auto &pt : brim_ear_points) {
+        Transform3d v_trsf = Transform3d::Identity();
+        if (pt.volume_idx > -1)
+            v_trsf = object->model_object()->volumes[pt.volume_idx]->get_matrix();
+        Vec3f world_pos = pt.transform(trsf.get_matrix() * v_trsf);
+        if ( world_pos.z() > 0) continue;
+        Polygon point_round;
+        float brim_width = floor(scale_(pt.head_front_radius) / flowWidth / 2) * flowWidth * 2;
+        if (is_outer_brim) {
+            double flowWidthScale = flowWidth / SCALING_FACTOR;
+            brim_width = floor(brim_width / flowWidthScale / 2) * flowWidthScale * 2;
+        }
+        coord_t size_ear = (brim_width - brim_offset - flow.scaled_spacing());
+        for (size_t i = 0; i < POLY_SIDE_COUNT; i++) {
+            double angle = (2.0 * PI * i) / POLY_SIDE_COUNT;
+            point_round.points.emplace_back(size_ear * cos(angle), size_ear * sin(angle));
+        }
+        mouse_ears_ex.emplace_back();
+        mouse_ears_ex.back().contour = point_round;
+        Vec3f pos = pt.transform(model_trsf * v_trsf);
+        int32_t pt_x = scale_(pos.x());
+        int32_t pt_y = scale_(pos.y());
+        mouse_ears_ex.back().contour.translate(Point(pt_x, pt_y));
+    }
+    return mouse_ears_ex;
 }
 
 //QDS: create all brims
@@ -1125,7 +1125,6 @@ static ExPolygons outer_inner_brim_area(const Print& print,
     for (const PrintObject* object : print.objects()) {
         const auto it = obj_physical_extruders.find(object->id());
         const std::vector<int> physical_exts = (it != obj_physical_extruders.end()) ? it->second : std::vector<int>{0};
-
 
         // Combine global no_brim with outside areas of all nozzles this filament may use.
         // Union of outside areas == outside of intersection of printable areas.

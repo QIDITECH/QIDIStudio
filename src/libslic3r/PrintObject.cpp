@@ -776,7 +776,7 @@ void PrintObject::infill()
                for (size_t layer_idx = range.begin(); layer_idx < range.end(); ++ layer_idx) {
                    m_print->throw_if_canceled();
                    m_layers[layer_idx]->make_fills(adaptive_fill_octree.get(), support_fill_octree.get(), this->m_lightning_generator.get());
-               }
+                }
            }
         );
         m_print->throw_if_canceled();

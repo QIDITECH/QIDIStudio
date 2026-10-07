@@ -782,7 +782,7 @@ static std::vector<Vec2d> get_path_of_change_filament(const Print& print)
         }
 
         //QDS: increase toolchange count
-        // gcodegen.m_toolchange_count++;
+        //gcodegen.m_toolchange_count++;
 
         std::string toolchange_gcode_str;
 
@@ -1783,7 +1783,7 @@ void GCode::do_export(Print* print, const char* path, GCodeProcessorResult* resu
             );
 
     m_processor.result().long_retraction_when_cut = activate_long_retraction_when_cut;
-   
+
     {   //QDS:check bed and filament compatible
         const ConfigOptionInts *bed_temp_opt = m_config.option<ConfigOptionInts>(get_bed_temp_1st_layer_key(m_config.curr_bed_type));
         std::vector<int> conflict_filament;
@@ -2158,6 +2158,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
     // init as filament map
     update_layer_related_config(0);
 
+
     // modifies m_silent_time_estimator_enabled
     DoExport::init_gcode_processor(print.config(), m_processor, m_silent_time_estimator_enabled, m_writer.extruders(), print.get_nozzle_group_result());
     // resets analyzer's tracking data
@@ -2237,8 +2238,6 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
 #else /* HAS_PRESSURE_EQUALIZER */
     m_enable_extrusion_role_markers = false;
 #endif /* HAS_PRESSURE_EQUALIZER */
-    //w12
-    //const GCodeThumbnailsFormat m_gcode_thumbnail_format = print.full_print_config().opt_enum<GCodeThumbnailsFormat>("thumbnails_formats");
 
     file.write_format("; HEADER_BLOCK_START\n");
     // Write information on the generator.
@@ -2249,7 +2248,6 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
     //QDS: total layer number
     file.write_format(";%s\n", GCodeProcessor::reserved_tag(GCodeProcessor::ETags::Total_Layer_Number_Placeholder).c_str());
 
-    //1.9.7.52
     //QDS: total filament used in mm
     file.write_format(";%s\n", GCodeProcessor::reserved_tag(GCodeProcessor::ETags::Used_Filament_Length_Placeholder).c_str());
     //QDS: total filament used in cm3
@@ -5116,7 +5114,7 @@ GCode::LayerResult GCode::process_layer(
                 bool object_layer_over_raft = layer_to_print.object_layer && layer_to_print.object_layer->id() > 0 &&
                     instance_to_print.print_object.slicing_parameters().raft_layers() == layer_to_print.object_layer->id();
                 m_config.apply(print.default_region_config());
-                    m_config.apply(instance_to_print.print_object.config(), true);
+                m_config.apply(instance_to_print.print_object.config(), true);
                 m_layer = layer_to_print.layer();
                 m_object_layer_over_raft = object_layer_over_raft;
                 if (m_config.reduce_crossing_wall)
@@ -6044,8 +6042,8 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
             //QDS: clip end and start to get better seam
             new_loop.clip_slope(slope_gap);
             // QDS: slowdown speed to improve seam, to be fix, cooling need to be apply correctly
-            //new_loop.target_speed = get_path_speed(new_loop.starts.back());
-            //new_loop.slowdown_slope_speed();
+            // new_loop.target_speed = get_path_speed(new_loop.starts.back());
+            // new_loop.slowdown_slope_speed();
             // QDS: smooth speed of discontinuity areas
             if (m_config.detect_overhang_wall && m_config.smooth_speed_discontinuity_area && loop.is_set_speed_discontinuity_area()) {
                 // set smoothing_cof
@@ -6078,7 +6076,6 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
     }
 
     if (!enable_seam_slope || slope_has_overhang) {
-        //1.9.5
         // QDS: smooth speed of discontinuity areas
         if (m_config.detect_overhang_wall && m_config.smooth_speed_discontinuity_area && loop.is_set_speed_discontinuity_area()){
             // set smoothing_cof
@@ -6424,7 +6421,6 @@ void GCode::GCodeOutputStream::write_format(const char* format, ...)
     va_end(args);
 }
 
-//1.9.5
 // QDS: f(x)=2x^2
 double GCode::mapping_speed(double dist)
 {
@@ -6456,7 +6452,6 @@ double GCode::get_overhang_degree_corr_speed(float normal_speed, double path_deg
         return use_filament_overhang_speed ? m_config.get_abs_value_at(filament_overhang_speed_key_map[lower_degree_bound].c_str(), filament_idx) :
                                              m_config.get_abs_value_at(overhang_speed_key_map[lower_degree_bound].c_str(), get_nozzle_config_index(m_writer.filament()->id()));
     }
-
     int upper_degree_bound = lower_degree_bound + 1;
 
     double lower_speed_bound = lower_degree_bound == 0     ? normal_speed :
@@ -6994,7 +6989,7 @@ std::string GCode::_extrude(const ExtrusionPath &path, std::string description, 
                 speed = path.smooth_speed;
             else if (is_enable_overhang_speed()) {
                 double new_speed = 0;
-                new_speed = get_overhang_degree_corr_speed(speed, path.overhang_degree);
+                new_speed        = get_overhang_degree_corr_speed(speed, path.overhang_degree);
                 //w16 //y58
                 if (m_resonance_avoidance) {
                     if (new_speed > 0) {
@@ -7175,8 +7170,8 @@ std::string GCode::_extrude(const ExtrusionPath &path, std::string description, 
             //QDS: Overhang_threshold_none means Overhang_threshold_1_4 and forcing cooling for all external perimeter
             int overhang_threshold = FILAMENT_CONFIG(overhang_fan_threshold) == Overhang_threshold_none ?
                 Overhang_threshold_none : FILAMENT_CONFIG(overhang_fan_threshold) - 1;
-            if ((FILAMENT_CONFIG(overhang_fan_threshold) == Overhang_threshold_none && path.role() == erExternalPerimeter) || (path.get_overhang_degree() > overhang_threshold ||
-                is_bridge(path.role()))) {
+            if ((path.get_overhang_degree() > overhang_threshold) ||
+                is_bridge(path.role())) {
                 //yzy1
                 if (m_overhang_fan_can_start){
                     gcode += ";_OVERHANG_FAN_START\n";
@@ -7234,7 +7229,7 @@ std::string GCode::_extrude(const ExtrusionPath &path, std::string description, 
                     gcode += m_writer.extrude_to_xy(
                         this->point_to_gcode(line.b),
                         e_per_mm * line_length,
-                        comment, path.is_force_no_extrusion());
+                        comment,path.is_force_no_extrusion());
                 } else {
                     // Sloped extrusion
                     auto dE = e_per_mm * line_length;
@@ -7313,8 +7308,8 @@ std::string GCode::_extrude(const ExtrusionPath &path, std::string description, 
             int overhang_threshold = FILAMENT_CONFIG(overhang_fan_threshold) == Overhang_threshold_none ?
                 Overhang_threshold_none : FILAMENT_CONFIG(overhang_fan_threshold) - 1;
             //yzy1
-            if ((FILAMENT_CONFIG(overhang_fan_threshold) == Overhang_threshold_none && path.role() == erExternalPerimeter) || ((!m_overhang_fan_can_start && !path.get_overhang_degree() > overhang_threshold) ||
-                is_bridge(path.role()))) {
+            if ((!m_overhang_fan_can_start && (!path.get_overhang_degree() > overhang_threshold)) ||
+                is_bridge(path.role())) {
                 m_overhang_fan_can_start = true;
                 gcode += ";_OVERHANG_FAN_END\n";
                 }

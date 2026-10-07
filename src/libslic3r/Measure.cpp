@@ -57,7 +57,7 @@ static std::tuple<Vec3d, double, double> get_center_and_radius(const std::vector
 
     double error = std::numeric_limits<double>::max();
     auto circle = Geometry::circle_ransac(out, iter, &error);
-    
+
     return std::make_tuple(trafo.inverse() * Vec3d(circle.center.x(), circle.center.y(), z), circle.radius, error);
 }
 
@@ -184,7 +184,7 @@ void MeasuringImpl::update_planes()
         m_planes.back().normal = normal_ptr->cast<double>();
         std::sort(m_planes.back().facets.begin(), m_planes.back().facets.end());
     }
-    
+
     // Check that each facet is part of one of the planes.
     assert(std::none_of(m_face_to_plane.begin(), m_face_to_plane.end(), [](size_t val) { return val == size_t(-1); }));
 
@@ -254,7 +254,7 @@ void MeasuringImpl::update_planes()
                     he = sm.opposite(he);
                     if (he.is_invalid())
                         goto PLANE_FAILURE;
-                    
+
                     Face_index fi = he.face();
                     auto face_it = std::lower_bound(facets.begin(), facets.end(), int(fi));
                     if (face_it == facets.end() || *face_it != int(fi)) // This indicates a broken mesh.
@@ -1011,7 +1011,7 @@ MeasurementResult get_measurement(const SurfaceFeature &a, const SurfaceFeature 
             const auto [c0, r0, n0] = f1.get_circle();
             const auto [c1, r1, n1] = f2.get_circle();
 
-            // The following code is an adaptation of the algorithm found in: 
+            // The following code is an adaptation of the algorithm found in:
             // https://github.com/davideberly/GeometricTools/blob/master/GTE/Mathematics/DistCircle3Circle3.h
             // and described in:
             // https://www.geometrictools.com/Documentation/DistanceToCircle3.pdf
@@ -1230,7 +1230,7 @@ MeasurementResult get_measurement(const SurfaceFeature &a, const SurfaceFeature 
                 const double dist      = (c0 - c1).norm();
                 result.distance_strict = std::make_optional(DistAndPoints{dist, c0, c1});
             }
-            
+
     ///////////////////////////////////////////////////////////////////////////
         } else if (f2.get_type() == SurfaceFeatureType::Plane) {
             const auto [center, radius, normal1] = f1.get_circle();
@@ -1380,7 +1380,7 @@ void SurfaceFeature::translate(const Vec3d& displacement) {
     }
 }
 
-void SurfaceFeature::translate(const Transform3d &tran) 
+void SurfaceFeature::translate(const Transform3d &tran)
 {
     switch (get_type()) {
     case Measure::SurfaceFeatureType::Point: {

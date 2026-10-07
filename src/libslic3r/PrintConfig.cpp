@@ -2083,19 +2083,21 @@ void PrintConfigDef::init_fff_params()
     def->max     = 2;
     def->min     = 0.01;
     def->set_default_value(new ConfigOptionFloat(1));
-
+//yzy3
     def = this->add("enable_pressure_advance", coBools);
     def->label = L("Enable pressure advance");
+    def->mode = comAdvanced;
     def->tooltip = L("Enable pressure advance, auto calibration result will be overwriten once enabled.");
-    def->set_default_value(new ConfigOptionBools{ false });
+    def->nullable = true;
+    def->set_default_value(new ConfigOptionBoolsNullable {false});
 
     def = this->add("pressure_advance", coFloats);
     def->label = L("Pressure advance");
     def->tooltip = L("Pressure advance(Klipper) AKA Linear advance factor(Marlin).");
     def->max = 2;
     def->mode = comAdvanced;
-    def->set_default_value(new ConfigOptionFloats{ 0.02 });
-
+    def->nullable = true;
+    def->set_default_value(new ConfigOptionFloatsNullable{ 0.02 });
 
     def = this->add("filament_notes",coString);
     def->label= L("Filament notes");
@@ -4442,6 +4444,11 @@ void PrintConfigDef::init_fff_params()
 
 //y76
     def = this->add("is_support_polar_cooler", coBool);
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(false));
+
+//y84
+    def = this->add("is_support_bed_leveling_force", coBool);
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBool(false));
 
@@ -7345,6 +7352,9 @@ std::set<std::string> filament_options_with_variant = {
     "filament_retract_before_wipe",
     "filament_long_retractions_when_cut",
     "filament_retraction_distances_when_cut",
+    //yzy3
+    "enable_pressure_advance",
+    "pressure_advance",
     "long_retractions_when_ec",
     "retraction_distances_when_ec",
     "nozzle_temperature_initial_layer",

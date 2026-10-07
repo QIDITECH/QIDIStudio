@@ -88,7 +88,7 @@ void SVG::draw(const Lines &lines, std::string stroke, coordf_t stroke_width)
 void SVG::draw(const ExPolygon &expolygon, std::string fill, const float fill_opacity)
 {
     this->fill = fill;
-    
+
     std::string d;
     for (const Polygon &p : to_polygons(expolygon))
         d += this->get_path_d(p, true) + " ";
@@ -203,7 +203,7 @@ void SVG::draw(const Point &point, std::string fill, coord_t iradius)
     svg << "   <circle cx=\"" << to_svg_x(point(0) - origin(0)) << "\" cy=\"" << to_svg_y(point(1) - origin(1))
         << "\" r=\"" << radius << "\" "
         << "style=\"stroke: none; fill: " << fill << "\" />";
-    
+
     fprintf(this->f, "%s\n", svg.str().c_str());
 }
 
@@ -249,7 +249,7 @@ void SVG::path(const std::string &d, bool fill, coordf_t stroke_width, const flo
         d.c_str(),
         fill ? this->fill.c_str() : "none",
         this->stroke.c_str(),
-        lineWidth, 
+        lineWidth,
         (this->arrows && !fill) ? " marker-end=\"url(#endArrow)\"" : "",
         fill_opacity
     );

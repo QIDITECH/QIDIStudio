@@ -130,7 +130,7 @@ void update_selected_items_inflation(ArrangePolygons& selected, const DynamicPri
         // 仅在自动档位（用户没显式设 min_obj_distance）下生效，避免污染显式间距语义。
         // 默认 0 = 关闭，保持各 arrange 路径的旧行为；FillBedJob 会在调用前主动设置。
         if (params.min_obj_distance == 0 && params.min_inflation_floor > 0)
-            ap.inflation = std::max(ap.inflation, params.min_inflation_floor);    
+            ap.inflation = std::max(ap.inflation, params.min_inflation_floor);
         });
     params.brim_skirt_distance = std::max(params.brim_skirt_distance, float(params.brim_max));
 }

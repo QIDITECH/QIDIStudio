@@ -538,7 +538,7 @@ void AppConfig::set_defaults()
         set_bool("play_tpu_printing_video", true);
     }
     if (get("show_wrapping_detect_dialog").empty()) {
-        set_bool("show_wrapping_detect_dialog", true);
+        set_bool("show_wrapping_detect_dialog", false);
     }
     if (get("show_support_recommend_dialog").empty()) {
         set_bool("show_support_recommend_dialog", true);

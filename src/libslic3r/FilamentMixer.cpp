@@ -8,8 +8,8 @@
 #include <limits>
 #include <sstream>
 #include <numeric>
-#include <boost/log/trivial.hpp>
 
+#include <boost/log/trivial.hpp>
 
 #include "FilamentMixerModel.hpp"
 #include "LocalesUtils.hpp"

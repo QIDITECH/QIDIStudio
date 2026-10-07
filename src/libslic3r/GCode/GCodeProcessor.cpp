@@ -641,7 +641,6 @@ void GCodeProcessor::TimeProcessor::post_process(const std::string& filename, st
 
         // remove trailing '\n'
         auto line = std::string_view(gcode_line).substr(0, gcode_line.length() - 1);
-
         std::string ret;
         if (line.length() > 1) {
             line = line.substr(1);
