@@ -22188,3 +22188,39 @@ msgstr "Z-lutningsjustering"
 
 msgid "auto_bed_adjust"
 msgstr "Automatisk bäddnivellering"
+
+msgid "Device Info"
+msgstr "Enhetsinformation"
+
+msgid "Polar Cooler"
+msgstr "Polär kylare"
+
+msgid "Enable the Polar cooler and lower the temperature of the extruder."
+msgstr "Aktivera den polära kylaren och sänk temperaturen på extrudern."
+
+msgid "Machine Type"
+msgstr "Maskintyp"
+
+msgid "Machine Serial"
+msgstr "Maskinseriens nummer"
+
+msgid "Firmware Version"
+msgstr "Fast programvaruversion"
+
+msgid "The communication module is incompatible. Please update the QIDI Maker APP and the printer firmware."
+msgstr "Kommunikationsmodulen är inkompatibel. Uppdatera QIDI Maker-appen och skrivarens firmware."
+
+msgid "The firmware version of the device(%s) is too low. Please upgrade it as soon as possible."
+msgstr "Enhetens (%s) firmwareversion är för låg. Uppgradera den så snart som möjligt."
+
+msgid "Developer mode enabled; advanced features are on by default."
+msgstr "Utvecklarläge aktiverat; avancerade funktioner är på som standard."
+
+msgid "Disable set remaining print timr."
+msgstr "Inaktivera M73: återstående utskriftstid."
+
+msgid "Disable generating of the M73: Set remaining print time in the final\nG-code."
+msgstr "Inaktivera generering av M73: Ange återstående utskriftstid i den slutliga G-koden."
+
+msgid "Click to drop current modifications and reset to saved value."
+msgstr "Klicka för att förkasta aktuella ändringar och återställa till sparat värde."

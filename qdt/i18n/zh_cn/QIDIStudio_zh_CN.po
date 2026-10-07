@@ -26145,3 +26145,39 @@ msgstr "打印平台倾斜校准"
 
 msgid "auto_bed_adjust"
 msgstr "自动热床调平"
+
+msgid "Device Info"
+msgstr "设备信息"
+
+msgid "Polar Cooler"
+msgstr "极地冷却器"
+
+msgid "Enable the Polar cooler and lower the temperature of the extruder."
+msgstr "启用极地冷却器并降低挤出机的温度。"
+
+msgid "Machine Type"
+msgstr "机器类型"
+
+msgid "Machine Serial"
+msgstr "机器序列号"
+
+msgid "Firmware Version"
+msgstr "固件版本"
+
+msgid "The communication module is incompatible. Please update the QIDI Maker APP and the printer firmware."
+msgstr "通信模块不兼容。请更新QIDI Maker APP和打印机固件。"
+
+msgid "The firmware version of the device(%s) is too low. Please upgrade it as soon as possible."
+msgstr "设备(%s)的固件版本过低，请尽快升级。"
+
+msgid "Developer mode enabled; advanced features are on by default."
+msgstr "开发者模式已开启；高级功能默认打开。"
+
+msgid "Disable set remaining print timr."
+msgstr "禁用M73剩余打印时间"
+
+msgid "Disable generating of the M73: Set remaining print time in the final\nG-code."
+msgstr "在最终生成的G-code中禁用M73命令:设置剩余打印时间"
+
+msgid "Click to drop current modifications and reset to saved value."
+msgstr "点击该图标，失去当前的修改，恢复到上次保存的数值。"

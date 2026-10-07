@@ -1,7 +1,6 @@
 {
     "type": "filament",
-    "filament_id": "QD_1_1_18",
-    "setting_id": "GFSA04",
+    "filament_id": "QFB01",
     "name": "QIDI ASA@Q2-Series",
     "from": "system",
     "instantiation": "false",

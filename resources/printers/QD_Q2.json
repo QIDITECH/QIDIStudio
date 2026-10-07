@@ -1,0 +1,69 @@
+{
+	"00.00.00.00": {
+		"display_name": "Q2",
+		"print": {
+			"ipcam": {
+				"resolution_supported": [ "1080p" ],
+				"liveview": {
+					"remote": "frp"
+				},
+				"file": {
+					"local": "local",
+					"remote": "frp",
+					"model_download": "enabled"
+				}
+			},
+			"nozzle_temp_range": [ 0, 375 ],
+			"bed_temp_range": [ 0, 125 ],
+			"support_tunnel_mqtt": true,
+			"support_mqtt_alive": true,
+			"support_ssl_for_mqtt": true,
+			"support_command_ams_switch": true,
+			"support_cloud_print_only": false,
+			"support_1080dpi": true,
+			"support_prompt_sound": false,
+			"support_ams_humidity": true,
+			"support_auto_recovery_step_loss": false,
+			"support_bed_leveling": 2,
+			"support_update_remain": false,
+			"support_timelapse": true,
+			"support_filament_backup": true,
+			"support_chamber_fan": true,
+			"support_aux_fan": true,
+			"support_send_to_sd": true,
+			"support_print_all": false,
+			"support_print_without_sd": true,
+			"support_nozzle_offset_calibration": false,
+			"support_high_tempbed_calibration": true,
+			"support_ai_monitoring": true,
+			"support_save_remote_print_file_to_storage": true,
+			"support_chamber": true,
+			"support_chamber_temp_edit": true,
+			"support_chamber_temp_edit_range": [0, 65],
+			"support_user_preset": false,
+			"support_ams_ext_mix_print": true
+		},
+		"model_id": "QD_Q2",
+		"support_wrapping_detection": true,
+		"compatible_machine": [],
+		"printer_type": "QD_Q2",
+		"use_ams_type": "generic",
+		"printer_arch": "core_xy",
+		"printer_series": "series_m4",
+		"has_cali_line": true,
+		"printer_is_enclosed": true
+	},
+  	"01.01.03.01": {
+		"print": {
+			"ipcam": {
+				"liveview": {
+				"remote": "p2p"
+				},
+				"file": {
+				"remote": "p2p"
+				}
+			},
+			"support_no_sse" : true
+		}
+  	}
+}

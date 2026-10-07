@@ -1,7 +1,6 @@
 {
     "type": "filament",
-    "filament_id": "GFA05",
-    "setting_id": "GFSL99_01",
+    "filament_id": "QFA92",
     "name": "Generic PLA Silk@Q-Series",
     "from": "system",
     "instantiation": "false",

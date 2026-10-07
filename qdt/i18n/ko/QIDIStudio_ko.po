@@ -19998,3 +19998,39 @@ msgstr "Z 틸트 조정"
 
 msgid "auto_bed_adjust"
 msgstr "자동 베드 레벨링"
+
+msgid "Device Info"
+msgstr "장치 정보"
+
+msgid "Polar Cooler"
+msgstr "폴라 쿨러"
+
+msgid "Enable the Polar cooler and lower the temperature of the extruder."
+msgstr "폴라 쿨러를 활성화하고 압출기의 온도를 낮추십시오."
+
+msgid "Machine Type"
+msgstr "기계 유형"
+
+msgid "Machine Serial"
+msgstr "기계 일련번호"
+
+msgid "Firmware Version"
+msgstr "펌웨어 버전"
+
+msgid "The communication module is incompatible. Please update the QIDI Maker APP and the printer firmware."
+msgstr "통신 모듈이 호환되지 않습니다. QIDI Maker 앱과 프린터 펌웨어를 업데이트해 주세요."
+
+msgid "The firmware version of the device(%s) is too low. Please upgrade it as soon as possible."
+msgstr "장치(%s)의 펌웨어 버전이 너무 낮습니다. 가능한 한 빨리 업그레이드해 주세요."
+
+msgid "Developer mode enabled; advanced features are on by default."
+msgstr "개발자 모드가 활성화되었습니다. 고급 기능이 기본적으로 켜져 있습니다."
+
+msgid "Disable set remaining print timr."
+msgstr "M73 비활성화: 남은 인쇄 시간"
+
+msgid "Disable generating of the M73: Set remaining print time in the final\nG-code."
+msgstr "M73 생성 비활성화: 최종 G-code에 남은 인쇄 시간 설정"
+
+msgid "Click to drop current modifications and reset to saved value."
+msgstr "클릭하면 현재 수정 사항을 취소하고 저장된 값으로 재설정합니다."

@@ -18,6 +18,7 @@
     "extruder_offset": ["0x0"],
     "gcode_flavor": "klipper",
     "group_algo_with_time": "0",
+    "is_support_bed_leveling_force" : "0",
     "layer_change_gcode": "",
     "machine_end_gcode": "M141 S0\nM104 S0\nM140 S0\nG1 E-3 F1800\nG0 Z{max_layer_z + 3} F600\nG0 X0 Y0 F12000\n{if max_layer_z < max_print_height / 2}G1 Z{max_print_height / 2 + 10} F600{else}G1 Z{min(max_print_height, max_layer_z + 3)}{endif}",
     "machine_hotend_change_time": "0",

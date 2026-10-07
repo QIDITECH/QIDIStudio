@@ -1,0 +1,10 @@
+{
+    "type": "filament",
+    "setting_id": "QFSB51_06",
+    "name": "QIDI ASA-CF20 Core @Qidi Q2 0.4 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI ASA-CF20 Core@Q2-Series",
+    "pressure_advance": ["0.03"],
+	"compatible_printers": ["Q2 0.4 nozzle"]
+}

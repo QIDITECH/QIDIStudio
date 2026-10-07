@@ -1,0 +1,12 @@
+{
+    "type": "filament",
+    "setting_id": "QFSB51_03",
+    "instantiation": "true",
+    "filament_settings_id": ["QIDI ASA-CF20 Core @Qidi Q1 Pro 0.6 nozzle"],
+    "inherits": "QIDI ASA-CF20 Core@Q-Series",
+    "name": "QIDI ASA-CF20 Core @Qidi Q1 Pro 0.6 nozzle",
+    "during_print_exhaust_fan_speed": ["0"],
+    "filament_max_volumetric_speed": ["13"],
+    "pressure_advance": ["0.014"],
+    "compatible_printers": ["Q1 Pro 0.6 nozzle"]
+}

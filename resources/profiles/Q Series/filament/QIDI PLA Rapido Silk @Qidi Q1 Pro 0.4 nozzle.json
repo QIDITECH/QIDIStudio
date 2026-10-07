@@ -1,7 +1,6 @@
 {
     "type": "filament",
-	"filament_id": "GFL99",
-    "setting_id": "GFSL99",
+    "setting_id": "QFSA05_02",
     "name": "QIDI PLA Silk @Qidi Q1 Pro 0.4 nozzle",
     "from": "system",
     "instantiation": "true",

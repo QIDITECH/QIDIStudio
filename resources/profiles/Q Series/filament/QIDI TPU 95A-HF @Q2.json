@@ -1,7 +1,6 @@
 {
     "type": "filament",
-    "filament_id": "QD_1_1_50",
-    "setting_id": "GFSR99",
+    "filament_id": "QFU01",
     "name": "QIDI TPU 95A-HF@Q2-Series",
     "from": "system",
     "instantiation": "false",

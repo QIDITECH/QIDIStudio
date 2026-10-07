@@ -22090,3 +22090,39 @@ msgstr "Z軸傾斜調整"
 
 msgid "auto_bed_adjust"
 msgstr "自動ベッドレベリング"
+
+msgid "Device Info"
+msgstr "デバイス情報"
+
+msgid "Polar Cooler"
+msgstr "ポーラークーラー"
+
+msgid "Enable the Polar cooler and lower the temperature of the extruder."
+msgstr "ポーラークーラーを有効にして、押出機の温度を下げてください。"
+
+msgid "Machine Type"
+msgstr "機械タイプ"
+
+msgid "Machine Serial"
+msgstr "機械シリアル番号"
+
+msgid "Firmware Version"
+msgstr "ファームウェアバージョン"
+
+msgid "The communication module is incompatible. Please update the QIDI Maker APP and the printer firmware."
+msgstr "通信モジュールに互換性がありません。QIDI Makerアプリとプリンターのファームウェアを更新してください。"
+
+msgid "The firmware version of the device(%s) is too low. Please upgrade it as soon as possible."
+msgstr "デバイス（%s）のファームウェアバージョンが古すぎます。できるだけ早くアップグレードしてください。"
+
+msgid "Developer mode enabled; advanced features are on by default."
+msgstr "開発者モードが有効です。詳細機能はデフォルトでオンになっています。"
+
+msgid "Disable set remaining print timr."
+msgstr "M73 を無効にする：残りの印刷時間"
+
+msgid "Disable generating of the M73: Set remaining print time in the final\nG-code."
+msgstr "M73 の生成を無効にする：最終Gコードに残りの印刷時間を設定する"
+
+msgid "Click to drop current modifications and reset to saved value."
+msgstr "クリックすると現在の変更を破棄し、保存された値にリセットします。"

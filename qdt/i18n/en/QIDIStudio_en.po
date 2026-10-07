@@ -20923,3 +20923,21 @@ msgstr "Z tilt adjustment"
 
 msgid "auto_bed_adjust"
 msgstr "Auto bed leveling"
+
+msgid "The communication module is incompatible. Please update the QIDI Maker APP and the printer firmware."
+msgstr ""
+
+msgid "The firmware version of the device(%s) is too low. Please upgrade it as soon as possible."
+msgstr ""
+
+msgid "Developer mode enabled; advanced features are on by default."
+msgstr ""
+
+msgid "Disable set remaining print timr."
+msgstr ""
+
+msgid "Disable generating of the M73: Set remaining print time in the final\nG-code."
+msgstr ""
+
+msgid "Click to drop current modifications and reset to saved value."
+msgstr ""

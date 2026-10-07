@@ -1,7 +1,6 @@
 {
     "type": "filament",
-    "filament_id": "QD_2_0_50",
-    "setting_id": "GFSR99",
+    "filament_id": "QFU91",
     "name": "Generic TPU 95A@Q2C-Series",
     "from": "system",
     "instantiation": "false",

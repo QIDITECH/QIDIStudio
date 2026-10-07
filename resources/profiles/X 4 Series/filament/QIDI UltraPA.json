@@ -1,7 +1,6 @@
 {
     "type": "filament",
-    "filament_id": "QD_0_1_24",
-    "setting_id": "GFSN98",
+    "filament_id": "QFN20",
     "name": "QIDI UltraPA@X4",
     "from": "system",
     "instantiation": "false",

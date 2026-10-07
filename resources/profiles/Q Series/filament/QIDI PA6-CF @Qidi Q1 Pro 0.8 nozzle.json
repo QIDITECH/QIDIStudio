@@ -1,7 +1,6 @@
 {
     "type": "filament",
-    "filament_id": "GFB99",
-    "setting_id": "GFSA04",
+    "setting_id": "QFSN05_04",
     "instantiation": "true",
     "filament_settings_id": ["QIDI PA6-CF @Qidi Q1 Pro 0.8 nozzle"],
     "inherits": "QIDI PA6-CF@Q-Series",

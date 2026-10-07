@@ -1,7 +1,6 @@
 {
     "type": "filament",
-    "filament_id": "QD_3_1_25",
-    "setting_id": "GFSN99",
+    "filament_id": "QFN05",
     "name": "QIDI PA6-CF@X-Max 4-Series",
     "from": "system",
     "instantiation": "false",

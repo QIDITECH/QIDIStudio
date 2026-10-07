@@ -1,0 +1,11 @@
+{
+    "type": "filament",
+    "setting_id": "QFSB51_31",
+    "name": "QIDI ASA-CF20 Core @Qidi X-Plus 4 0.6 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI ASA-CF20 Core@X4",
+    "filament_max_volumetric_speed": ["13"],
+    "pressure_advance": ["0.014"],
+	"compatible_printers": ["X-Plus 4 0.6 nozzle"]
+}

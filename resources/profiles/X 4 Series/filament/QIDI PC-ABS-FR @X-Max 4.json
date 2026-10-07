@@ -1,7 +1,6 @@
 {
     "type": "filament",
-    "filament_id": "QD_3_1_34",
-    "setting_id": "GFSA04",
+    "filament_id": "QFC02",
     "name": "QIDI PC/ABS-FR@X-Max 4-Series",
     "from": "system",
     "instantiation": "false",

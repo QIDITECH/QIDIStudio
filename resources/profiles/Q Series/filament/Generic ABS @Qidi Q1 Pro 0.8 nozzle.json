@@ -1,7 +1,6 @@
 {
     "type": "filament",
-    "filament_id": "GFB99",
-    "setting_id": "GFSA04",
+    "setting_id": "QFSB91_04",
     "name": "Generic ABS @Qidi Q1 Pro 0.8 nozzle",
     "from": "system",
     "instantiation": "true",

@@ -1,6 +1,6 @@
 {
     "name": "X-4-Series",
-    "version": "02.07.02.60",
+    "version": "02.07.02.73",
     "force_update": "0",
     "description": "X-4-Series configurations",
     "machine_model_list": [     
@@ -1161,20 +1161,20 @@
             "sub_path": "filament/QIDI PEBA 95A @Qidi X-Plus 4 0.6 nozzle.json"
         },
         {
-            "name": "QIDI ASA-CF@X4",
-            "sub_path": "filament/QIDI ASA-CF.json"
+            "name": "QIDI ASA-CF20 Core@X4",
+            "sub_path": "filament/QIDI ASA-CF20 Core.json"
         },
         {
-            "name": "QIDI ASA-CF @Qidi X-Plus 4 0.4 nozzle",
-            "sub_path": "filament/QIDI ASA-CF @Qidi X-Plus 4 0.4 nozzle.json"
+            "name": "QIDI ASA-CF20 Core @Qidi X-Plus 4 0.4 nozzle",
+            "sub_path": "filament/QIDI ASA-CF20 Core @Qidi X-Plus 4 0.4 nozzle.json"
         },
         {
-            "name": "QIDI ASA-CF @Qidi X-Plus 4 0.6 nozzle",
-            "sub_path": "filament/QIDI ASA-CF @Qidi X-Plus 4 0.6 nozzle.json"
+            "name": "QIDI ASA-CF20 Core @Qidi X-Plus 4 0.6 nozzle",
+            "sub_path": "filament/QIDI ASA-CF20 Core @Qidi X-Plus 4 0.6 nozzle.json"
         },
         {
-            "name": "QIDI ASA-CF @Qidi X-Plus 4 0.8 nozzle",
-            "sub_path": "filament/QIDI ASA-CF @Qidi X-Plus 4 0.8 nozzle.json"
+            "name": "QIDI ASA-CF20 Core @Qidi X-Plus 4 0.8 nozzle",
+            "sub_path": "filament/QIDI ASA-CF20 Core @Qidi X-Plus 4 0.8 nozzle.json"
         },
         {
             "name": "QIDI TPU-GF@X4",
@@ -2149,20 +2149,20 @@
             "sub_path": "filament/QIDI PEBA 95A @Qidi X-Max 4 0.6 nozzle.json"
         },
         {
-            "name": "QIDI ASA-CF@X-Max 4-Series",
-            "sub_path": "filament/QIDI ASA-CF @X-Max 4.json"
+            "name": "QIDI ASA-CF20 Core@X-Max 4-Series",
+            "sub_path": "filament/QIDI ASA-CF20 Core @X-Max 4.json"
         },
         {
-            "name": "QIDI ASA-CF @Qidi X-Max 4 0.4 nozzle",
-            "sub_path": "filament/QIDI ASA-CF @Qidi X-Max 4 0.4 nozzle.json"
+            "name": "QIDI ASA-CF20 Core @Qidi X-Max 4 0.4 nozzle",
+            "sub_path": "filament/QIDI ASA-CF20 Core @Qidi X-Max 4 0.4 nozzle.json"
         },
         {
-            "name": "QIDI ASA-CF @Qidi X-Max 4 0.6 nozzle",
-            "sub_path": "filament/QIDI ASA-CF @Qidi X-Max 4 0.6 nozzle.json"
+            "name": "QIDI ASA-CF20 Core @Qidi X-Max 4 0.6 nozzle",
+            "sub_path": "filament/QIDI ASA-CF20 Core @Qidi X-Max 4 0.6 nozzle.json"
         },
         {
-            "name": "QIDI ASA-CF @Qidi X-Max 4 0.8 nozzle",
-            "sub_path": "filament/QIDI ASA-CF @Qidi X-Max 4 0.8 nozzle.json"
+            "name": "QIDI ASA-CF20 Core @Qidi X-Max 4 0.8 nozzle",
+            "sub_path": "filament/QIDI ASA-CF20 Core @Qidi X-Max 4 0.8 nozzle.json"
         },
         {
             "name": "QIDI TPU-GF@X-Max 4-Series",

@@ -19356,3 +19356,39 @@ msgstr "Коррекция наклона Z"
 
 msgid "auto_bed_adjust"
 msgstr "Автоматическая калибровка стола"
+
+msgid "Device Info"
+msgstr "Информация об устройстве"
+
+msgid "Polar Cooler"
+msgstr "Полярный охладитель"
+
+msgid "Enable the Polar cooler and lower the temperature of the extruder."
+msgstr "Включите полярный охладитель и снизьте температуру экструдера."
+
+msgid "Machine Type"
+msgstr "Тип машины"
+
+msgid "Machine Serial"
+msgstr "Серийный номер машины"
+
+msgid "Firmware Version"
+msgstr "Версия прошивки"
+
+msgid "The communication module is incompatible. Please update the QIDI Maker APP and the printer firmware."
+msgstr "Модуль связи несовместим. Пожалуйста, обновите приложение QIDI Maker и прошивку принтера."
+
+msgid "The firmware version of the device(%s) is too low. Please upgrade it as soon as possible."
+msgstr "Версия прошивки устройства (%s) слишком старая. Пожалуйста, обновите её как можно скорее."
+
+msgid "Developer mode enabled; advanced features are on by default."
+msgstr "Режим разработчика включён; расширенные функции включены по умолчанию."
+
+msgid "Disable set remaining print timr."
+msgstr "Отключить M73: оставшееся время печати."
+
+msgid "Disable generating of the M73: Set remaining print time in the final\nG-code."
+msgstr "Отключить генерацию M73: Установить оставшееся время печати в конечном G-коде."
+
+msgid "Click to drop current modifications and reset to saved value."
+msgstr "Нажмите, чтобы отменить текущие изменения и сбросить до сохранённого значения."

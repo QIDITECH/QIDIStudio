@@ -1,7 +1,6 @@
 {
     "type": "filament",
-    "filament_id": "GFN98",
-    "setting_id": "GFSN99",
+    "filament_id": "QFN05",
     "name": "QIDI PA6-CF@Q-Series",
     "from": "system",
     "instantiation": "false",

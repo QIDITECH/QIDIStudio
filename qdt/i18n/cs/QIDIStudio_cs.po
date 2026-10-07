@@ -18933,3 +18933,39 @@ msgstr "Korekce náklonu Z"
 
 msgid "auto_bed_adjust"
 msgstr "Automatické vyrovnání podložky"
+
+msgid "Device Info"
+msgstr "Informace o zařízení"
+
+msgid "Polar Cooler"
+msgstr "Polární chladič"
+
+msgid "Enable the Polar cooler and lower the temperature of the extruder."
+msgstr "Zapněte polární chladič a snižte teplotu extrudéru."
+
+msgid "Machine Type"
+msgstr "Typ stroje"
+
+msgid "Machine Serial"
+msgstr "Sériové číslo stroje"
+
+msgid "Firmware Version"
+msgstr "Verze firmwaru"
+
+msgid "The communication module is incompatible. Please update the QIDI Maker APP and the printer firmware."
+msgstr "Komunikační modul je nekompatibilní. Aktualizujte prosím aplikaci QIDI Maker a firmware tiskárny."
+
+msgid "The firmware version of the device(%s) is too low. Please upgrade it as soon as possible."
+msgstr "Verze firmwaru zařízení (%s) je příliš nízká. Proveďte prosím co nejdříve aktualizaci."
+
+msgid "Developer mode enabled; advanced features are on by default."
+msgstr "Režim pro vývojáře povolen; pokročilé funkce jsou ve výchozím nastavení zapnuty."
+
+msgid "Disable set remaining print timr."
+msgstr "Zakázat M73: zbývající čas tisku."
+
+msgid "Disable generating of the M73: Set remaining print time in the final\nG-code."
+msgstr "Zakázat generování M73: Nastavit zbývající čas tisku v konečném G-kódu."
+
+msgid "Click to drop current modifications and reset to saved value."
+msgstr "Kliknutím zrušíte aktuální úpravy a obnovíte uloženou hodnotu."

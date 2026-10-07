@@ -22089,3 +22089,39 @@ msgstr "Ajuste de inclinação Z"
 
 msgid "auto_bed_adjust"
 msgstr "Nivelamento automático da mesa"
+
+msgid "Device Info"
+msgstr "Informações do dispositivo"
+
+msgid "Polar Cooler"
+msgstr "Resfriador polar"
+
+msgid "Enable the Polar cooler and lower the temperature of the extruder."
+msgstr "Ative o resfriador polar e reduza a temperatura da extrusora."
+
+msgid "Machine Type"
+msgstr "Tipo de máquina"
+
+msgid "Machine Serial"
+msgstr "Número de série da máquina"
+
+msgid "Firmware Version"
+msgstr "Versão do firmware"
+
+msgid "The communication module is incompatible. Please update the QIDI Maker APP and the printer firmware."
+msgstr "O módulo de comunicação é incompatível. Atualize o aplicativo QIDI Maker e o firmware da impressora."
+
+msgid "The firmware version of the device(%s) is too low. Please upgrade it as soon as possible."
+msgstr "A versão de firmware do dispositivo (%s) é muito baixa. Atualize-a o mais rápido possível."
+
+msgid "Developer mode enabled; advanced features are on by default."
+msgstr "Modo desenvolvedor ativado; os recursos avançados estão ativados por padrão."
+
+msgid "Disable set remaining print timr."
+msgstr "Desativar M73: tempo restante de impressão."
+
+msgid "Disable generating of the M73: Set remaining print time in the final\nG-code."
+msgstr "Desativar a geração do M73: Definir o tempo restante de impressão no G-code final."
+
+msgid "Click to drop current modifications and reset to saved value."
+msgstr "Clique para descartar as modificações atuais e restaurar o valor salvo."

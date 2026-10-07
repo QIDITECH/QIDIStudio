@@ -1,7 +1,6 @@
 {
     "type": "filament",
-    "filament_id": "GFB99",
-    "setting_id": "GFSA04",
+    "setting_id": "QFSL62_02",
     "instantiation": "true",
     "inherits": "Overture ABS@Q-Series",
     "name": "Overture ABS @Qidi Q1 Pro 0.4 nozzle",

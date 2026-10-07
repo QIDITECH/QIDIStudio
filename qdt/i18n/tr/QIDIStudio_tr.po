@@ -19990,3 +19990,39 @@ msgstr "Z eğim ayarı"
 
 msgid "auto_bed_adjust"
 msgstr "Otomatik tabla seviyeleme"
+
+msgid "Device Info"
+msgstr "Cihaz Bilgisi"
+
+msgid "Polar Cooler"
+msgstr "Kutupsal Soğutucu"
+
+msgid "Enable the Polar cooler and lower the temperature of the extruder."
+msgstr "Kutupsal soğutucuyu etkinleştirin ve ekstrüderin sıcaklığını düşürün."
+
+msgid "Machine Type"
+msgstr "Makine Türü"
+
+msgid "Machine Serial"
+msgstr "Makine Seri Numarası"
+
+msgid "Firmware Version"
+msgstr "Donanım Yazılımı Sürümü"
+
+msgid "The communication module is incompatible. Please update the QIDI Maker APP and the printer firmware."
+msgstr "İletişim modülü uyumsuz. Lütfen QIDI Maker uygulamasını ve yazıcı yazılımını güncelleyin."
+
+msgid "The firmware version of the device(%s) is too low. Please upgrade it as soon as possible."
+msgstr "Cihazın (%s) yazılım sürümü çok düşük. Lütfen mümkün olan en kısa sürede yükseltin."
+
+msgid "Developer mode enabled; advanced features are on by default."
+msgstr "Geliştirici modu etkin; gelişmiş özellikler varsayılan olarak açık."
+
+msgid "Disable set remaining print timr."
+msgstr "M73'ü devre dışı bırak: kalan yazdırma süresi."
+
+msgid "Disable generating of the M73: Set remaining print time in the final\nG-code."
+msgstr "M73 oluşturmayı devre dışı bırak: Kalan yazdırma süresini son G-code'da ayarla."
+
+msgid "Click to drop current modifications and reset to saved value."
+msgstr "Mevcut değişiklikleri bırakmak ve kayıtlı değere sıfırlamak için tıklayın."

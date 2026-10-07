@@ -22113,3 +22113,39 @@ msgstr "Z-kanteling aanpassen"
 
 msgid "auto_bed_adjust"
 msgstr "Automatische bednivellering"
+
+msgid "Device Info"
+msgstr "Apparaatinformatie"
+
+msgid "Polar Cooler"
+msgstr "Polaire koeler"
+
+msgid "Enable the Polar cooler and lower the temperature of the extruder."
+msgstr "Schakel de polaire koeler in en verlaag de temperatuur van de extruder."
+
+msgid "Machine Type"
+msgstr "Machinetype"
+
+msgid "Machine Serial"
+msgstr "Machineserienummer"
+
+msgid "Firmware Version"
+msgstr "Firmwareversie"
+
+msgid "The communication module is incompatible. Please update the QIDI Maker APP and the printer firmware."
+msgstr "De communicatiemodule is incompatibel. Werk de QIDI Maker-app en de printerfirmware bij."
+
+msgid "The firmware version of the device(%s) is too low. Please upgrade it as soon as possible."
+msgstr "De firmwareversie van het apparaat (%s) is te laag. Voer zo snel mogelijk een upgrade uit."
+
+msgid "Developer mode enabled; advanced features are on by default."
+msgstr "Ontwikkelaarsmodus ingeschakeld; geavanceerde functies zijn standaard ingeschakeld."
+
+msgid "Disable set remaining print timr."
+msgstr "M73 uitschakelen: resterende printtijd."
+
+msgid "Disable generating of the M73: Set remaining print time in the final\nG-code."
+msgstr "Genereren van M73 uitschakelen: Resterende printtijd instellen in de uiteindelijke G-code."
+
+msgid "Click to drop current modifications and reset to saved value."
+msgstr "Klik om huidige wijzigingen te verwerpen en terug te zetten naar de opgeslagen waarde."

@@ -1,7 +1,6 @@
 {
     "type": "filament",
-    "filament_id": "GPC99",
-    "setting_id": "GPC99",
+    "setting_id": "QFSA50_02",
     "instantiation": "true",
     "filament_settings_id": ["QIDI PLA-CF @Qidi Q1 Pro 0.4 nozzle"],
     "inherits": "QIDI PLA-CF@Q-Series",

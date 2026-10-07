@@ -1,7 +1,6 @@
 {
     "type": "filament",
-    "filament_id": "QD_1_1_31",
-    "setting_id": "GFSN99",
+    "filament_id": "QFN14",
     "name": "QIDI PAHT-GF@Q2-Series",
     "from": "system",
     "instantiation": "false",

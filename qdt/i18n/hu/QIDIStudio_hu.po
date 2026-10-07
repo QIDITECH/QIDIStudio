@@ -22062,3 +22062,39 @@ msgstr "Z dőlés beállítás"
 
 msgid "auto_bed_adjust"
 msgstr "Automatikus ágynemű szintezés"
+
+msgid "Device Info"
+msgstr "Eszközinformációk"
+
+msgid "Polar Cooler"
+msgstr "Poláris hűtő"
+
+msgid "Enable the Polar cooler and lower the temperature of the extruder."
+msgstr "Kapcsolja be a poláris hűtőt, és csökkentse az extruder hőmérsékletét."
+
+msgid "Machine Type"
+msgstr "Géptípus"
+
+msgid "Machine Serial"
+msgstr "Gép sorozatszáma"
+
+msgid "Firmware Version"
+msgstr "Firmware verzió"
+
+msgid "The communication module is incompatible. Please update the QIDI Maker APP and the printer firmware."
+msgstr "A kommunikációs modul nem kompatibilis. Kérjük, frissítse a QIDI Maker alkalmazást és a nyomtató firmware-ét."
+
+msgid "The firmware version of the device(%s) is too low. Please upgrade it as soon as possible."
+msgstr "A készülék (%s) firmware-verziója túl alacsony. Kérjük, a lehető leghamarabb frissítse."
+
+msgid "Developer mode enabled; advanced features are on by default."
+msgstr "Fejlesztői mód engedélyezve; a speciális funkciók alapértelmezés szerint be vannak kapcsolva."
+
+msgid "Disable set remaining print timr."
+msgstr "M73 letiltása: hátralévő nyomtatási idő."
+
+msgid "Disable generating of the M73: Set remaining print time in the final\nG-code."
+msgstr "Az M73 generálásának letiltása: A hátralévő nyomtatási idő beállítása a végső G-kódban."
+
+msgid "Click to drop current modifications and reset to saved value."
+msgstr "Kattintson az aktuális módosítások elvetéséhez és a mentett érték visszaállításához."

@@ -1,7 +1,6 @@
 {
     "type": "filament",
-    "filament_id": "GFB99",
-    "setting_id": "GFSA04",
+    "setting_id": "QFSG04_02",
     "instantiation": "true",
     "filament_settings_id": ["QIDI PETG Translucent @Qidi Q1 Pro 0.4 nozzle"],
     "inherits": "QIDI PETG Translucent@Q-Series",

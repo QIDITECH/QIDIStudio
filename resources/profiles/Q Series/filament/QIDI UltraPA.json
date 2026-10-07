@@ -1,7 +1,6 @@
 {
     "type": "filament",
-    "filament_id": "GFN99",
-    "setting_id": "GFSN98",
+    "filament_id": "QFN20",
     "name": "QIDI UltraPA@Q-Series",
     "from": "system",
     "instantiation": "false",
