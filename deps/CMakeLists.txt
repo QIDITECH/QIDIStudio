@@ -45,6 +45,8 @@ option(DEP_BUILD_FREETYPE "Compile freetype" ON)
 option(DEP_BUILD_WXWIDGETS "Compile wxWidgets" ON)
 option(DEP_BUILD_FFMPEG "Compile ffmpeg" ON)
 option(DEP_BUILD_WEBSOCKET "Comile websocket" ON)
+#y87
+option(DEP_BUILD_MQTT "Compile paho mqtt (C + C++)" ON)
 
 set(DESTDIR "${CMAKE_CURRENT_BINARY_DIR}/destdir" CACHE PATH "Destination directory")
 set(DEP_DOWNLOAD_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE PATH "Path for downloaded source packages.")
@@ -294,6 +296,13 @@ if (DEP_BUILD_WEBSOCKET)
     set(WEBSOCKETPP_PKG dep_WebSocketPP)
 endif()
 
+set(PAHO_MQTT_PKG "")
+if (DEP_BUILD_MQTT)
+    include(paho-mqtt-c/paho-mqtt-c.cmake)
+    include(paho-mqtt-cpp/paho-mqtt-cpp.cmake)
+    set(PAHO_MQTT_PKG dep_paho-mqtt-c dep_paho-mqtt-cpp)
+endif()
+
 set(_dep_list
     ${BOOST_PKG}
     dep_TBB
@@ -314,6 +323,7 @@ set(_dep_list
     ${FREETYPE_PKG}
     ${FFMPEG_PKG}
     ${WEBSOCKETPP_PKG}
+    ${PAHO_MQTT_PKG}
     )
 
 if (MSVC)

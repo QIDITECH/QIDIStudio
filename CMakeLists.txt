@@ -477,6 +477,41 @@ target_link_libraries(libcurl INTERFACE CURL::libcurl)
 find_package(ZLIB REQUIRED)
 target_link_libraries(libcurl INTERFACE ZLIB::ZLIB)
 
+# Find and configure Eclipse Paho MQTT (built by deps as static libs).
+# deps/paho-mqtt-c   -> package eclipse-paho-mqtt-c
+# deps/paho-mqtt-cpp -> package PahoMqttCpp
+# 静态变体 paho-mqttpp3-static 会通过 PUBLIC 依赖把 C 库一起带进来。
+find_package(PahoMqttCpp QUIET)
+
+add_library(paho_mqtt INTERFACE)
+
+if (TARGET PahoMqttCpp::paho-mqttpp3-static)
+    target_link_libraries(paho_mqtt INTERFACE PahoMqttCpp::paho-mqttpp3-static)
+    # deps 只编了 Release / Debug 两个配置，把 RelWithDebInfo / MinSizeRel 映射到 Release。
+    set(_paho_targets
+        "PahoMqttCpp::paho-mqttpp3-static"
+        "eclipse-paho-mqtt-c::paho-mqtt3as-static"
+        "eclipse-paho-mqtt-c::paho-mqtt3a-static"
+    )
+    slic3r_remap_configs("${_paho_targets}" RelWithDebInfo Release)
+    slic3r_remap_configs("${_paho_targets}" MinSizeRel Release)
+elseif (TARGET PahoMqttCpp::paho-mqttpp3)
+    target_link_libraries(paho_mqtt INTERFACE PahoMqttCpp::paho-mqttpp3)
+    slic3r_remap_configs("PahoMqttCpp::paho-mqttpp3" RelWithDebInfo Release)
+    slic3r_remap_configs("PahoMqttCpp::paho-mqttpp3" MinSizeRel Release)
+else ()
+    message(FATAL_ERROR
+        "Eclipse Paho MQTT C++ was not found in CMAKE_PREFIX_PATH.\n"
+        "Rebuild the dependency bundle so that deps/paho-mqtt-c and deps/paho-mqtt-cpp get built, "
+        "e.g.:  build_win.bat -s deps-dirty  (or pass -DDEP_BUILD_MQTT=ON when configuring deps).")
+endif ()
+
+if (WIN32)
+    # paho.mqtt.c 在 Windows 上依赖 winsock
+    target_link_libraries(paho_mqtt INTERFACE ws2_32)
+endif ()
+target_link_libraries(paho_mqtt INTERFACE OpenSSL::SSL OpenSSL::Crypto)
+
 # Fixing curl's cmake config script bugs
 if (NOT WIN32)
     # Required by libcurl
