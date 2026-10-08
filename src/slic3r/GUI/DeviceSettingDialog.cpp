@@ -305,7 +305,6 @@ wxPanel* DeviceSettingDialog::build_root_page(){
     m_item_device_info = new DeviceSettingItem(option_panel, _L("Device Info"), [this](){ShowPage(PAGE_DEVICE_INFO);});
     m_item_device_name = new DeviceSettingItem(option_panel, _L("Machine Name"), [this]() {ShowPage(PAGE_DEVICE_NAME); });
 
-    wxString dev_name = m_device_name.IsEmpty() ? wxEmptyString : m_device_name;
     m_item_device_name->SetValueText(m_device_name);
 
     auto make_hline = [option_panel]() {

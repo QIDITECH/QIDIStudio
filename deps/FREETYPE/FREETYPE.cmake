@@ -4,7 +4,8 @@ else()
     set(library_build_shared "0")
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+# y84
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR APPLE)
     set(_ft_disable_zlib "-D FT_DISABLE_ZLIB=FALSE")
 else()
     set(_ft_disable_zlib "-D FT_DISABLE_ZLIB=TRUE")
@@ -13,7 +14,8 @@ endif()
 qidistudio_add_cmake_project(FREETYPE
     URL https://github.com/freetype/freetype/archive/refs/tags/VER-2-12-1.tar.gz
     URL_HASH SHA256=0E72CAE32751598D126CFD4BCEDA909F646B7231AB8C52E28ABB686C20A2BEA1
-    #DEPENDS ${ZLIB_PKG}
+    #y84
+    DEPENDS ${ZLIB_PKG}
     #"${_patch_step}"
     CMAKE_ARGS
 	-D BUILD_SHARED_LIBS=${library_build_shared}

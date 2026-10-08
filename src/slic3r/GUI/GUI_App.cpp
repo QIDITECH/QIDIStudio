@@ -2287,7 +2287,7 @@ void GUI_App::init_networking_callbacks()
                     if (sel && sel->get_dev_id() == dev_id) {
                         obj->parse_json("cloud", msg);
                         GUI::wxGetApp().sidebar().load_ams_list(obj);
-                        // STUDIO-18155: AMS ×´Ì¬±ä»¯Çý¶¯ºÄ²ÄÍ¬²½£¨±¾µØ store + ½ÚÁ÷ºóÔÆ¶Ë£©
+                        // STUDIO-18155: AMS ×´Ì¬ï¿½ä»¯ï¿½ï¿½ï¿½ï¿½ï¿½Ä²ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ store + ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶Ë£ï¿½
                         if (auto* sync = wxGetApp().fila_manager_sync()) sync->on_device_update(obj);
                     } else {
                         obj->parse_json("cloud", msg, true);
@@ -2336,7 +2336,7 @@ void GUI_App::init_networking_callbacks()
                     obj->parse_json("lan", msg);
                     if (this->m_device_manager->get_selected_machine() == obj) {
                         GUI::wxGetApp().sidebar().load_ams_list(obj);
-                        // STUDIO-18155: AMS ×´Ì¬±ä»¯Çý¶¯ºÄ²ÄÍ¬²½£¨±¾µØ store + ½ÚÁ÷ºóÔÆ¶Ë£©
+                        // STUDIO-18155: AMS ×´Ì¬ï¿½ä»¯ï¿½ï¿½ï¿½ï¿½ï¿½Ä²ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ store + ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶Ë£ï¿½
                         if (auto* sync = wxGetApp().fila_manager_sync()) sync->on_device_update(obj);
                     }
                 }
@@ -3375,7 +3375,7 @@ bool GUI_App::on_init_inner()
             m_fila_manager_sync = new wgtFilaManagerSync(m_fila_manager_store);
             BOOST_LOG_TRIVIAL(info) << "Filament Manager sync initialized";
         }
-        // Cloud layer ¡ª owns HTTP client, high-level sync and the serialization dispatcher.
+        // Cloud layer ï¿½ï¿½ owns HTTP client, high-level sync and the serialization dispatcher.
         if (!m_fila_manager_cloud_client) {
             m_fila_manager_cloud_client = new wgtFilaManagerCloudClient();
             BOOST_LOG_TRIVIAL(info) << "Filament Manager cloud client initialized";
@@ -4709,7 +4709,7 @@ std::string GUI_App::get_current_user_id() const
 bool GUI_App::is_user_login()
 {
 #if QDT_RELEASE_TO_PUBLIC
-    // cj_5 Check token-based login (Maker) ¡ª no longer depends on deprecated m_agent DLL.
+    // cj_5 Check token-based login (Maker) ï¿½ï¿½ no longer depends on deprecated m_agent DLL.
     if (app_config && !app_config->get("user_token").empty())
         return true;
     if (m_agent)
@@ -4763,7 +4763,7 @@ void GUI_App::request_user_logout()
 #if QDT_RELEASE_TO_PUBLIC
     UserPresetSyncManager::instance().stop();
     //y84
-    // ÓÃ»§ÍË³öµÇÂ¼£ºÏÈÏÔÊ½ÍË¶© U/<userid>£¬ÔÙ¶Ï¿ª broker Á¬½Ó¡£
+    // ï¿½Ã»ï¿½ï¿½Ë³ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½Ë¶ï¿½ U/<userid>ï¿½ï¿½ï¿½Ù¶Ï¿ï¿½ broker ï¿½ï¿½ï¿½Ó¡ï¿½
     MQTTManager::instance().unsubscribe_user_topic();
     MQTTManager::instance().disconnect();
 #endif
@@ -4816,8 +4816,8 @@ void GUI_App::request_user_logout()
         if (!m_disable_fila_manager && m_fila_manager_cloud_disp) {
             m_fila_manager_cloud_disp->clear_pending();
         }
-        // STUDIO-18155: Çå AMS auto-push ½ÚÁ÷ÕË±¾£¬±ÜÃâÕËºÅ A µÄ cooldown
-        // Ó°ÏìµÇÈëÕËºÅ B ºóµÚÒ»´Î sync ´¥·¢ push µÄÊ±»ú¡£
+        // STUDIO-18155: ï¿½ï¿½ AMS auto-push ï¿½ï¿½ï¿½ï¿½ï¿½Ë±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ëºï¿½ A ï¿½ï¿½ cooldown
+        // Ó°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ëºï¿½ B ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ sync ï¿½ï¿½ï¿½ï¿½ push ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
         if (!m_disable_fila_manager && m_fila_manager_cloud_sync) {
             m_fila_manager_cloud_sync->throttle().clear_all();
         }
@@ -5529,8 +5529,8 @@ void GUI_App::on_user_login_handle(wxCommandEvent &evt)
 //     });
 
     //cj_5 Load user presets and optionally start cloud sync.
-    // online_login=1: manual login ¡ª show sync dialog for first-time config.
-    // online_login=0: auto login  ¡ª load presets silently, sync if already enabled.
+    // online_login=1: manual login ï¿½ï¿½ show sync dialog for first-time config.
+    // online_login=0: auto login  ï¿½ï¿½ load presets silently, sync if already enabled.
     {
         std::string new_user_id = get_current_user_id();
 
@@ -5593,7 +5593,7 @@ void GUI_App::fetch_and_connect_mqtt_license()
         lic.username   = mqtt_user;
         lic.password   = mqtt_pass;
         lic.server_url = mqtt_url;
-        // Òì²½½øÐÐ£¬±ÜÃâ×èÈûµÇÂ¼»Øµ÷Ö÷Ïß³Ì¡£
+        // ï¿½ì²½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½Øµï¿½ï¿½ï¿½ï¿½ß³Ì¡ï¿½
         std::thread([lic]() { MQTTManager::instance().connect(lic); }).detach();
     } else {
         BOOST_LOG_TRIVIAL(error) << "fetch_mqtt_license failed: " << mqtt_err;
@@ -7743,7 +7743,7 @@ void GUI_App::MacOpenURL(const wxString& url)
 #if QDT_RELEASE_TO_PUBLIC
         if (boost::starts_with(decoded_url, "http://makerworld") || boost::starts_with(decoded_url, "https://makerworld") || 
             boost::starts_with(decoded_url, "http://public-cdn.bblmw.com") || boost::starts_with(decoded_url, "https://public-cdn.bblmw.com") ||
-            boost::starts_with(input_str, "https://public-cdn.qidimaker") ||
+            boost::starts_with(decoded_url, "https://public-cdn.qidimaker") ||
             boost::algorithm::contains(decoded_url, "amazonaws.com") || boost::algorithm::contains(decoded_url, "aliyuncs.com") || boost::algorithm::contains(decoded_url, "qidimaker")) {
             download_file_url = decoded_url;
         } else {

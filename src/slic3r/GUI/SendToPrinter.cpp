@@ -1762,7 +1762,7 @@ void SendToPrinterDialog::on_selection_changed(wxCommandEvent &event)
                     if (!qdsdev || !qdsdev->is_selected)
                     {
                         Enable_Send_Button(false);
-                        update_print_status_msg(_L("正在同步中..."), false, true);
+                        update_print_status_msg(_L("Sync..."), false, true);
 
                         wxGetApp().CallAfter([sel_key]() {
                             if (wxGetApp().mainframe && wxGetApp().mainframe->m_printer_view)
@@ -1794,7 +1794,7 @@ void SendToPrinterDialog::on_selection_changed(wxCommandEvent &event)
                                     weakThis->update_print_status_msg(wxEmptyString, false, false);
                                     weakThis->Enable_Send_Button(true);
                                 } else {
-                                    weakThis->update_print_status_msg(_L("同步失败"), true, true);
+                                    weakThis->update_print_status_msg(_L("Sync Failed."), true, true);
                                 }
                             });
                         }).detach();

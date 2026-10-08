@@ -1971,7 +1971,7 @@ bool QDSPrinterWebView::select_device_by_id(const std::string& device_id)
 		LocalDiscoveredDevice local_dev;
 		auto* qds = wxGetApp().qdsdevmanager;
 		if (qds && !device.local_ip.empty()
-		    && qds->findSSDPDeviceByIP(device.local_ip, local_dev) && false) {
+		    && qds->findSSDPDeviceByIP(device.local_ip, local_dev)) {
 			TransitionToNetDeviceViaLocal(device, local_dev, machine_button);
 		} else {
 			TransitionToCloudDevice(device, machine_button);
