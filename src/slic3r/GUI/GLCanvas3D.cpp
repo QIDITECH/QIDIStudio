@@ -9601,38 +9601,43 @@ void GLCanvas3D::_render_return_toolbar()
         if (m_canvas_type == ECanvasType::CanvasView3D) {
             deselect_all();
         } else if (m_canvas_type == ECanvasType::CanvasAssembleView) {
-            if (m_canvas != nullptr)
-                wxPostEvent(m_canvas, SimpleEvent(EVT_GLVIEWTOOLBAR_3D));
-            const_cast<GLGizmosManager *>(&m_gizmos)->reset_all_states();
-            wxGetApp().plater()->get_view3D_canvas3D()->get_gizmos_manager().reset_all_states();
-            GLVolume::explosion_ratio  = 1.0;//in 3D view  GLVolume::explosion_ratio  = 1.0
-            wxGetApp().plater()->get_view3D_canvas3D()->reload_scene(true);
-            {
-                GLCanvas3D *                          view_3d       = wxGetApp().plater()->get_view3D_canvas3D();
-                const auto& p_main_toolbar = view_3d->get_main_toolbar();
-                if (!p_main_toolbar) {
-                    return;
+            // reload_scene() binds the Prepare canvas' shared GL context.
+            // Finish rendering and swapping the Overview frame before doing
+            // any work on the other canvas (GLX otherwise reports BadMatch).
+            _append_to_frame_callback([this]() {
+                if (m_canvas != nullptr)
+                    wxPostEvent(m_canvas, SimpleEvent(EVT_GLVIEWTOOLBAR_3D));
+                const_cast<GLGizmosManager *>(&m_gizmos)->reset_all_states();
+                wxGetApp().plater()->get_view3D_canvas3D()->get_gizmos_manager().reset_all_states();
+                GLVolume::explosion_ratio  = 1.0;//in 3D view  GLVolume::explosion_ratio  = 1.0
+                wxGetApp().plater()->get_view3D_canvas3D()->reload_scene(true);
+                {
+                    GLCanvas3D *                          view_3d       = wxGetApp().plater()->get_view3D_canvas3D();
+                    const auto& p_main_toolbar = view_3d->get_main_toolbar();
+                    if (!p_main_toolbar) {
+                        return;
+                    }
+                    std::shared_ptr<GLToolbarItem> assembly_item = p_main_toolbar->get_item("assembly_view");
+                    std::chrono::system_clock::time_point end           = std::chrono::system_clock::now();
+                    std::chrono::duration<int>            duration      = std::chrono::duration_cast<std::chrono::duration<int>>(end - assembly_item->get_start_time_point());
+                    int                                   times         = duration.count();
+
+                    NetworkAgent *agent = GUI::wxGetApp().getAgent();
+                    if (agent) {
+                        std::string name          = assembly_item->get_name() + "_duration";
+                        std::string value         = "";
+                        int         existing_time = 0;
+
+                        agent->track_get_property(name, value);
+                        try {
+                            if (value != "") { existing_time = std::stoi(value); }
+                        } catch (...) {}
+
+                        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " tool name:" << name << " duration: " << times + existing_time;
+                        agent->track_update_property(name, std::to_string(times + existing_time));
+                    }
                 }
-                std::shared_ptr<GLToolbarItem> assembly_item = p_main_toolbar->get_item("assembly_view");
-                std::chrono::system_clock::time_point end           = std::chrono::system_clock::now();
-                std::chrono::duration<int>            duration      = std::chrono::duration_cast<std::chrono::duration<int>>(end - assembly_item->get_start_time_point());
-                int                                   times         = duration.count();
-
-                NetworkAgent *agent = GUI::wxGetApp().getAgent();
-                if (agent) {
-                    std::string name          = assembly_item->get_name() + "_duration";
-                    std::string value         = "";
-                    int         existing_time = 0;
-
-                    agent->track_get_property(name, value);
-                    try {
-                        if (value != "") { existing_time = std::stoi(value); }
-                    } catch (...) {}
-
-                    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " tool name:" << name << " duration: " << times + existing_time;
-                    agent->track_update_property(name, std::to_string(times + existing_time));
-                }
-            }
+            });
         }
     }
     ImGui::PopStyleColor(5);
