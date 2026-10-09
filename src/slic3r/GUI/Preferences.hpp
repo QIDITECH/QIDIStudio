@@ -149,6 +149,8 @@ public:
 
     void Split(const std::string &src, const std::string &separator, std::vector<wxString> &dest);
     int m_current_language_selected = {0};
+    //y84
+    wxBoxSizer *create_item_software_env_combobox(wxString title, wxWindow *parent, wxString tooltip, std::vector<wxString> label_list, std::vector<std::string> value_list);
 
     std::unordered_map<int, Button *> m_button_list;
     std::unordered_map<int, ::CheckBox *> m_checkbox_list;

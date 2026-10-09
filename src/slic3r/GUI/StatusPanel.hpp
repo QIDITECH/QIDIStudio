@@ -17,6 +17,7 @@
 #include <wx/gbsizer.h>
 #include <wx/webrequest.h>
 #include <atomic>
+#include <functional>
 #include "MediaPlayCtrl.h"
 #include "AMSSetting.hpp"
 #include "Calibration.hpp"
@@ -750,6 +751,13 @@ public:
     void update_light_status(bool on);
     //cj_2
     void tabSiwtch(Button* button, wxPanel* panel);
+
+    //y84
+    bool is_model_list_visible() const;
+    bool is_timelapse_list_visible() const;
+    void set_file_list_tab_opened_callback(std::function<void()> cb) { m_file_list_tab_opened_cb = std::move(cb); }
+    std::function<void()> m_file_list_tab_opened_cb;
+
     //cj_3
     void sync_model_file_toolbar_after_list_download_change() { sync_model_file_toolbar(0); }
     //HMSIndicatorButton* m_hms_btn{ nullptr };

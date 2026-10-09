@@ -130,6 +130,7 @@
 #if QDT_RELEASE_TO_PUBLIC
 #include "../QIDI/QIDINetwork.hpp"
 #include "../QIDI/QIDIMQTTManager.hpp"
+#include "../QIDI/P2PManager.hpp"
 #endif
 
 #ifdef __WXMSW__
@@ -2287,7 +2288,7 @@ void GUI_App::init_networking_callbacks()
                     if (sel && sel->get_dev_id() == dev_id) {
                         obj->parse_json("cloud", msg);
                         GUI::wxGetApp().sidebar().load_ams_list(obj);
-                        // STUDIO-18155: AMS ×´Ì¬ï¿½ä»¯ï¿½ï¿½ï¿½ï¿½ï¿½Ä²ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ store + ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶Ë£ï¿½
+                        // STUDIO-18155: AMS ×´Ì¬±ä»¯Çý¶¯ºÄ²ÄÍ¬²½£¨±¾µØ store + ½ÚÁ÷ºóÔÆ¶Ë£©
                         if (auto* sync = wxGetApp().fila_manager_sync()) sync->on_device_update(obj);
                     } else {
                         obj->parse_json("cloud", msg, true);
@@ -2336,7 +2337,7 @@ void GUI_App::init_networking_callbacks()
                     obj->parse_json("lan", msg);
                     if (this->m_device_manager->get_selected_machine() == obj) {
                         GUI::wxGetApp().sidebar().load_ams_list(obj);
-                        // STUDIO-18155: AMS ×´Ì¬ï¿½ä»¯ï¿½ï¿½ï¿½ï¿½ï¿½Ä²ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ store + ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶Ë£ï¿½
+                        // STUDIO-18155: AMS ×´Ì¬±ä»¯Çý¶¯ºÄ²ÄÍ¬²½£¨±¾µØ store + ½ÚÁ÷ºóÔÆ¶Ë£©
                         if (auto* sync = wxGetApp().fila_manager_sync()) sync->on_device_update(obj);
                     }
                 }
@@ -3375,7 +3376,7 @@ bool GUI_App::on_init_inner()
             m_fila_manager_sync = new wgtFilaManagerSync(m_fila_manager_store);
             BOOST_LOG_TRIVIAL(info) << "Filament Manager sync initialized";
         }
-        // Cloud layer ï¿½ï¿½ owns HTTP client, high-level sync and the serialization dispatcher.
+        // Cloud layer ¡ª owns HTTP client, high-level sync and the serialization dispatcher.
         if (!m_fila_manager_cloud_client) {
             m_fila_manager_cloud_client = new wgtFilaManagerCloudClient();
             BOOST_LOG_TRIVIAL(info) << "Filament Manager cloud client initialized";
@@ -4709,7 +4710,7 @@ std::string GUI_App::get_current_user_id() const
 bool GUI_App::is_user_login()
 {
 #if QDT_RELEASE_TO_PUBLIC
-    // cj_5 Check token-based login (Maker) ï¿½ï¿½ no longer depends on deprecated m_agent DLL.
+    // cj_5 Check token-based login (Maker) ¡ª no longer depends on deprecated m_agent DLL.
     if (app_config && !app_config->get("user_token").empty())
         return true;
     if (m_agent)
@@ -4763,7 +4764,7 @@ void GUI_App::request_user_logout()
 #if QDT_RELEASE_TO_PUBLIC
     UserPresetSyncManager::instance().stop();
     //y84
-    // ï¿½Ã»ï¿½ï¿½Ë³ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½Ë¶ï¿½ U/<userid>ï¿½ï¿½ï¿½Ù¶Ï¿ï¿½ broker ï¿½ï¿½ï¿½Ó¡ï¿½
+    // ÓÃ»§ÍË³öµÇÂ¼£ºÏÈÏÔÊ½ÍË¶© U/<userid>£¬ÔÙ¶Ï¿ª broker Á¬½Ó¡£
     MQTTManager::instance().unsubscribe_user_topic();
     MQTTManager::instance().disconnect();
 #endif
@@ -4785,6 +4786,13 @@ void GUI_App::request_user_logout()
     if (mainframe && mainframe->m_webview) {
         mainframe->m_webview->MWLoad();
     }
+
+#if QDT_RELEASE_TO_PUBLIC
+    if (P2PManager::instance().isInited())
+        P2PManager::instance().shutdown();
+
+    MQTTManager::instance().disconnect();
+#endif
 
 #if 0
     if (m_agent && m_agent->is_user_login()) {
@@ -4816,8 +4824,8 @@ void GUI_App::request_user_logout()
         if (!m_disable_fila_manager && m_fila_manager_cloud_disp) {
             m_fila_manager_cloud_disp->clear_pending();
         }
-        // STUDIO-18155: ï¿½ï¿½ AMS auto-push ï¿½ï¿½ï¿½ï¿½ï¿½Ë±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ëºï¿½ A ï¿½ï¿½ cooldown
-        // Ó°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ëºï¿½ B ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ sync ï¿½ï¿½ï¿½ï¿½ push ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
+        // STUDIO-18155: Çå AMS auto-push ½ÚÁ÷ÕË±¾£¬±ÜÃâÕËºÅ A µÄ cooldown
+        // Ó°ÏìµÇÈëÕËºÅ B ºóµÚÒ»´Î sync ´¥·¢ push µÄÊ±»ú¡£
         if (!m_disable_fila_manager && m_fila_manager_cloud_sync) {
             m_fila_manager_cloud_sync->throttle().clear_all();
         }
@@ -5529,8 +5537,8 @@ void GUI_App::on_user_login_handle(wxCommandEvent &evt)
 //     });
 
     //cj_5 Load user presets and optionally start cloud sync.
-    // online_login=1: manual login ï¿½ï¿½ show sync dialog for first-time config.
-    // online_login=0: auto login  ï¿½ï¿½ load presets silently, sync if already enabled.
+    // online_login=1: manual login ¡ª show sync dialog for first-time config.
+    // online_login=0: auto login  ¡ª load presets silently, sync if already enabled.
     {
         std::string new_user_id = get_current_user_id();
 
@@ -5593,7 +5601,7 @@ void GUI_App::fetch_and_connect_mqtt_license()
         lic.username   = mqtt_user;
         lic.password   = mqtt_pass;
         lic.server_url = mqtt_url;
-        // ï¿½ì²½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½Øµï¿½ï¿½ï¿½ï¿½ß³Ì¡ï¿½
+        // Òì²½½øÐÐ£¬±ÜÃâ×èÈûµÇÂ¼»Øµ÷Ö÷Ïß³Ì¡£
         std::thread([lic]() { MQTTManager::instance().connect(lic); }).detach();
     } else {
         BOOST_LOG_TRIVIAL(error) << "fetch_mqtt_license failed: " << mqtt_err;

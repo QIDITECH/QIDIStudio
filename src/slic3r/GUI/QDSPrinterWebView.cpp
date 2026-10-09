@@ -3784,6 +3784,20 @@ void QDSPrinterWebView::InitDeviceManager(){
         });
     });
 
+    if (t_status_page != nullptr) {
+        t_status_page->set_file_list_tab_opened_callback([this, weak_life]() {
+            if (weak_life.expired())
+                return;
+            if (t_status_page == nullptr || m_device_manager == nullptr || m_cur_deviceId.empty())
+                return;
+            auto dev = m_device_manager->getDevice(m_cur_deviceId);
+            if (dev) {
+                RefreshStatusFileLists(dev);
+                t_status_page->sync_model_file_toolbar_after_list_download_change();
+            }
+        });
+    }
+
     //y84
     m_device_manager->setFileThumbnailReadyCallback(
         [this, weak_life](const std::string& device_id,
@@ -4134,8 +4148,13 @@ void QDSPrinterWebView::RefreshStatusFileLists(const std::shared_ptr<QDSDevice>&
         m_rendered_timelapse_sig.clear();
         m_list_render_device_id = device->m_id;
     }
+
+    const bool model_visible     = t_status_page->is_model_list_visible();
+    const bool timelapse_visible = t_status_page->is_timelapse_list_visible();
+
     bool model_rebuilt = false;
-    if (device->m_file_info_load_failed) {
+
+    if (device->m_file_info_load_failed && model_visible) {
         device->m_file_info_load_failed = false;
         if (!device->has_model_files_loaded()) {
             t_status_page->clear_model_items_only();
@@ -4144,7 +4163,7 @@ void QDSPrinterWebView::RefreshStatusFileLists(const std::shared_ptr<QDSDevice>&
             model_rebuilt = true;
         }
     }
-    if (!model_rebuilt) {
+    if (!model_rebuilt && model_visible) {
         const bool has_data = device->has_model_files_loaded();
         const std::string model_sig = device->model_list_signature();
         const bool need_rebuild = has_data &&
@@ -4201,7 +4220,7 @@ void QDSPrinterWebView::RefreshStatusFileLists(const std::shared_ptr<QDSDevice>&
         }
         t_status_page->flush_timelapse_batch();
     };
-    if (device->m_timelapse_info_load_failed) {
+    if (device->m_timelapse_info_load_failed && timelapse_visible) {
         device->m_timelapse_info_load_failed = false;
         if (!device->has_timelapse_files_loaded()) {
             t_status_page->clear_timelapse_file_list();
@@ -4209,7 +4228,7 @@ void QDSPrinterWebView::RefreshStatusFileLists(const std::shared_ptr<QDSDevice>&
             m_rendered_timelapse_sig.clear();
         }
     }
-    {
+    if (timelapse_visible) {
         const bool has_data = device->has_timelapse_files_loaded();
         const std::string tl_sig = device->timelapse_list_signature();
         const bool need_rebuild = has_data &&

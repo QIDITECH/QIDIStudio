@@ -195,7 +195,7 @@ PrinterTaskResult PrinterTaskDispatcher::build_local_task(PrinterTask& task) con
     }
 
     if (task.type == PrinterTaskType::RefreshRfid) {
-        std::string script = "READ_RFID SLOT=" + std::to_string(task.slot_index);
+        std::string script = "READ_RFID SLOT=slot" + std::to_string(task.slot_index);
         task.local_commands.push_back(LocalCommand{ false, "script", script, "" });
         return { true, PrinterTaskErrorCode::None, "" };
     }

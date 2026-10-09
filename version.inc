@@ -9,6 +9,7 @@ set(QDT_RELEASE_TO_PUBLIC "1")
 endif()
 if(NOT DEFINED QDT_INTERNAL_TESTING)
 set(QDT_INTERNAL_TESTING "0")
+set(QDT_RELEASE_TO_DEVELOPER "0")
 endif()
 
 # The build_version should start from 50 in master branch

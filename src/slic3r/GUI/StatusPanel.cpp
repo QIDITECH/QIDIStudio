@@ -3422,12 +3422,30 @@ void StatusBasePanel::on_model_tab(wxCommandEvent& event)
 {
 	tabSiwtch(m_model_tab, m_model_panel);
     Layout();
+    //y84
+    if (m_file_list_tab_opened_cb)
+        m_file_list_tab_opened_cb();
 }
 
 void StatusBasePanel::on_timelapse_tab(wxCommandEvent& event)
 {
 	tabSiwtch(m_timelapse_tab, m_timelapse_host);
     Layout();
+//y84
+    if (m_file_list_tab_opened_cb)
+        m_file_list_tab_opened_cb();
+}
+
+//y84
+bool StatusBasePanel::is_model_list_visible() const
+{
+    return m_model_panel != nullptr && m_model_panel->IsShown();
+}
+
+//y84
+bool StatusBasePanel::is_timelapse_list_visible() const
+{
+    return m_timelapse_host != nullptr && m_timelapse_host->IsShown();
 }
 
 //cj_3
@@ -4965,7 +4983,6 @@ void StatusPanel::update_AMS_humidity(int amsId, int humidity)
 //cj_3
 void StatusPanel::request_refresh_file_lists()
 {
-    clear_model_items_only();
     sync_model_file_toolbar(0);
 
     QDSDeviceManager* mgr = wxGetApp().qdsdevmanager;
@@ -4976,6 +4993,11 @@ void StatusPanel::request_refresh_file_lists()
     if (!dev) {
         return;
     }
+
+    //y84
+    dev->m_fresh_file_info            = true;
+    dev->m_fresh_timelapse_file_info  = true;
+
     mgr->getFileInfo(dev->m_id);
 }
 

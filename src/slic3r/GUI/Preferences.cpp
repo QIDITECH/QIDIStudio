@@ -358,6 +358,72 @@ wxBoxSizer *PreferencesDialog::create_item_region_combobox(wxString title, wxWin
     return m_sizer_combox;
 }
 
+//y84
+wxBoxSizer *PreferencesDialog::create_item_software_env_combobox(
+    wxString title, wxWindow *parent, wxString tooltip, std::vector<wxString> label_list, std::vector<std::string> value_list)
+{
+    wxBoxSizer *m_sizer_combox = new wxBoxSizer(wxHORIZONTAL);
+    m_sizer_combox->Add(0, 0, 0, wxEXPAND | wxLEFT, 23);
+
+    auto combo_title = new wxStaticText(parent, wxID_ANY, title, wxDefaultPosition, DESIGN_TITLE_SIZE, 0);
+    combo_title->SetForegroundColour(DESIGN_GRAY900_COLOR);
+    combo_title->SetFont(::Label::Body_13);
+    combo_title->SetToolTip(tooltip);
+    combo_title->Wrap(-1);
+    m_sizer_combox->Add(combo_title, 0, wxALIGN_CENTER | wxALL, 3);
+
+    auto combobox = new ::ComboBox(parent, wxID_ANY, wxEmptyString, wxDefaultPosition, DESIGN_LARGE_COMBOBOX_SIZE, 0, nullptr, wxCB_READONLY);
+    m_combobox_list[m_combobox_list.size()] = combobox;
+    combobox->SetFont(::Label::Body_13);
+    combobox->GetDropDown().SetFont(::Label::Body_13);
+    m_sizer_combox->Add(combobox, 0, wxALIGN_CENTER, 0);
+
+    for (auto &label : label_list) { combobox->Append(label); }
+
+    AppConfig *config = GUI::wxGetApp().app_config;
+
+    int current_idx = 0;
+    for (size_t i = 0; i < value_list.size(); i++) {
+        if (value_list[i] == config->get("software_env")) {
+            current_idx = (int) i;
+            break;
+        }
+    }
+    combobox->SetSelection(current_idx);
+
+    combobox->GetDropDown().Bind(wxEVT_COMBOBOX, [this, combobox, current_idx, value_list](wxCommandEvent &e) {
+        auto idx = e.GetSelection();
+        combobox->SetSelection(idx);
+
+        AppConfig  *config    = GUI::wxGetApp().app_config;
+        std::string new_value = value_list[idx];
+        if (new_value == config->get("software_env"))
+            return;
+
+        bool has_token = !config->get("user_token").empty();
+        if (has_token) {
+            MessageDialog msg_wingow(this, _L("Switch cloud environment, Please login again!") + "\n" + _L("Do you want to continue?"),
+                                     _L("Software Environment"), wxICON_QUESTION | wxOK | wxCANCEL);
+            if (msg_wingow.ShowModal() == wxID_CANCEL) {
+                combobox->SetSelection(current_idx);
+                return;
+            }
+        }
+
+        config->set("software_env", new_value);
+        config->save();
+
+        if (has_token) {
+            // 切换环境后自动退出登录
+            wxGetApp().request_user_logout();
+            EndModal(wxID_CANCEL);
+        }
+        wxGetApp().update_publish_status();
+    });
+
+    return m_sizer_combox;
+}
+
 wxBoxSizer *PreferencesDialog::create_item_loglevel_combobox(wxString title, wxWindow *parent, wxString tooltip, std::vector<wxString> vlist)
 {
     wxBoxSizer *m_sizer_combox = new wxBoxSizer(wxHORIZONTAL);
@@ -1336,6 +1402,17 @@ wxWindow* PreferencesDialog::create_general_page()
     std::vector<wxString> FlushOptionLabels = {_L("All"),_L("Color change"),_L("Disabled")};
     std::vector<std::string> FlushOptionValues = { "all","color change","disabled" };
     auto item_auto_flush = create_item_combobox(_L("Auto Flush"), page, _L("Auto calculate flush volumes"), "auto_calculate_flush", FlushOptionLabels, FlushOptionValues);
+
+    //y84
+#if QDT_RELEASE_TO_DEVELOPER
+    if (app_config->get("software_env").empty())
+        app_config->set("software_env", "production");
+    std::vector<wxString>    software_env_labels = { _L("Test"), _L("Product host") };
+    std::vector<std::string> software_env_values = { "test", "production" };
+    auto item_software_env = create_item_software_env_combobox(_L("Host Setting"), page, _L("Switch between the test and production cloud service environments."),
+                                                              software_env_labels, software_env_values);
+#endif
+
     //auto item_hints = create_item_checkbox(_L("Show \"Tip of the day\" notification after start"), page, _L("If enabled, useful hints are displayed at startup."), 50, "show_hints");
     //y84
     //auto item_multi_machine = create_item_checkbox(_L("Multi-device Management(Take effect after restarting Studio)."), page, _L("With this option enabled, you can send a task to multiple devices at the same time and manage multiple devices."), 50, "enable_multi_machine");
@@ -1521,6 +1598,11 @@ wxWindow* PreferencesDialog::create_general_page()
     sizer_page->Add(item_region, 0, wxTOP, FromDIP(3));
     sizer_page->Add(item_currency, 0, wxTOP, FromDIP(3));
     sizer_page->Add(item_auto_flush, 0, wxTOP, FromDIP(3));
+//y84
+#if QDT_RELEASE_TO_DEVELOPER
+    sizer_page->Add(item_software_env, 0, wxTOP, FromDIP(3));
+#endif
+
     sizer_page->Add(item_single_instance, 0, wxTOP, FromDIP(3));
     sizer_page->Add(item_bed_type_follow_preset, 0, wxTOP, FromDIP(3));
     //sizer_page->Add(item_hints, 0, wxTOP, FromDIP(3));

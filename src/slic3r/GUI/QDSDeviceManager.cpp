@@ -32,7 +32,7 @@
 #include <algorithm>
 #include <initializer_list>
 #include <iterator>
-#include <wx/datetime.h>。
+#include <wx/datetime.h>
 #include <wx/evtloop.h>
 
 //y84
@@ -858,7 +858,7 @@ void QDSDevice::updateByJsonData(const json& status)
     }
 
 	{
-		bool pin_on = false;
+		bool pin_on = m_case_light;
 		if (json_get(status, pin_on, { "output_pin caselight", "value" }) && m_case_light != pin_on) {
 			is_update = true;
 			m_case_light = pin_on;
@@ -866,8 +866,8 @@ void QDSDevice::updateByJsonData(const json& status)
 	}
 
 	//cj_3
-	{
-		bool pin_on = false;
+    {
+		bool pin_on = m_polar_cooler.load();
 		if (json_get(status, pin_on, { "output_pin polar_cooler", "value" }) && m_polar_cooler.load() != pin_on) {
 			is_update = true;
 			m_polar_cooler = pin_on;

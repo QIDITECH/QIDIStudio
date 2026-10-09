@@ -1089,6 +1089,10 @@
         {
             "name": "X-Plus 5 0.8 nozzle",
             "sub_path": "machine/Qidi X-Plus 5 0.8 nozzle.json"
+        },
+        {
+            "name": "X-Plus 5 0.2 nozzle",
+            "sub_path": "machine/Qidi X-Plus 5 0.2 nozzle.json"
         }
     ]
 }

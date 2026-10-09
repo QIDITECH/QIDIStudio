@@ -34,3 +34,4 @@ test.js
 .clangd
 /src/slic3r/QIDI/
 /deps/pgLibConnect
+.workbuddy

@@ -1931,11 +1931,13 @@ void GCodeProcessor::apply_config(const PrintConfig& config)
     for (size_t idx = 0; idx < filament_count; ++idx)
         m_filament_types[idx] = config.filament_type.get_at(idx);
 
+    m_nozzle_diameter = config.nozzle_diameter.values;
     m_hotend_cooling_rate = config.hotend_cooling_rate.values;
     m_hotend_heating_rate = config.hotend_heating_rate.values;
     m_filament_pre_cooling_temp = config.filament_pre_cooling_temperature.values;
     m_filament_preheat_temperature_delta = config.filament_preheat_temperature_delta.values;
     m_enable_pre_heating = config.enable_pre_heating;
+    m_has_filament_switcher = config.has_filament_switcher;
     m_physical_extruder_map = config.physical_extruder_map.values;
     m_extruder_max_nozzle_count = config.extruder_max_nozzle_count.values;
 

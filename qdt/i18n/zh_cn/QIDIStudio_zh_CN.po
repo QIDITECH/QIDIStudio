@@ -26181,3 +26181,12 @@ msgstr "在最终生成的G-code中禁用M73命令:设置剩余打印时间"
 
 msgid "Click to drop current modifications and reset to saved value."
 msgstr "点击该图标，失去当前的修改，恢复到上次保存的数值。"
+
+msgid "Production"
+msgstr "正式"
+
+msgid "Software Environment"
+msgstr "软件环境"
+
+msgid "Switch between the test and production cloud service environments."
+msgstr "在测试环境与正式环境之间切换。"
