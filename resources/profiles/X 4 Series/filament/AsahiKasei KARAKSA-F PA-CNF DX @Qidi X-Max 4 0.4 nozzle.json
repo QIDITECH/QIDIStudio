@@ -1,0 +1,10 @@
+{
+    "type": "filament",
+    "filament_id": "GFNAKDX1",
+    "setting_id": "GFSNAKDX41",
+    "name": "AsahiKasei KARAKSA-F PA-CNF DX @Qidi X-Max 4 0.4 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "AsahiKasei KARAKSA-F PA-CNF DX @X-Max 4-Series",
+    "compatible_printers": ["X-Max 4 0.4 nozzle"]
+}

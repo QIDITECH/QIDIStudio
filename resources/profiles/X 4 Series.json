@@ -205,6 +205,14 @@
             "sub_path": "filament/fdm_filament_common.json"
         },
         {
+            "name": "AsahiKasei KARAKSA-F PA-CNF DX @X-Max 4-Series",
+            "sub_path": "filament/AsahiKasei KARAKSA-F PA-CNF DX @X-Max 4-Series.json"
+        },
+        {
+            "name": "AsahiKasei KARAKSA-F PA-CNF DX @Qidi X-Max 4 0.4 nozzle",
+            "sub_path": "filament/AsahiKasei KARAKSA-F PA-CNF DX @Qidi X-Max 4 0.4 nozzle.json"
+        },
+        {
             "name": "Generic ABS@X4",
             "sub_path": "filament/Generic ABS.json"
         },
