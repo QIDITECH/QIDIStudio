@@ -1,0 +1,11 @@
+{
+    "type": "filament",
+    "setting_id": "QFSN14_40",
+    "name": "QIDI PAHT-GF @Qidi X-Smart 5 0.8 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PAHT-GF@X-Smart 5-Series",
+    "additional_cooling_fan_speed": ["0"],
+    "additional_cooling_fan_speed_unseal": ["0"],
+	"compatible_printers": ["X-Smart 5 0.8 nozzle"]
+}

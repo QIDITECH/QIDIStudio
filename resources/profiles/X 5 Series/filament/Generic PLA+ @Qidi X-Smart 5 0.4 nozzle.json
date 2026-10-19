@@ -1,0 +1,11 @@
+{
+    "type": "filament",
+    "setting_id": "QFSA91_38",
+    "name": "Generic PLA+ @Qidi X-Smart 5 0.4 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "Generic PLA+@X-Smart 5-Series",
+    "additional_cooling_fan_speed": ["0"],
+    "additional_cooling_fan_speed_unseal": ["0"],
+	"compatible_printers": ["X-Smart 5 0.4 nozzle"]
+}

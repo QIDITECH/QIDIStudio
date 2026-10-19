@@ -1,0 +1,9 @@
+{
+    "type": "filament",
+    "setting_id": "QFSG51_38",
+    "name": "QIDI PETG-GF @Qidi X-Smart 5 0.4 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PETG-GF@X-Smart 5-Series",
+	"compatible_printers": ["X-Smart 5 0.4 nozzle"]
+}

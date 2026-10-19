@@ -29,6 +29,7 @@
     "overhang_fan_threshold": ["10%"],
     "pressure_advance": ["0.054"],
     "slow_down_layer_time": ["8"],
+    "slow_down_min_speed": ["10"],
     "temperature_vitrification": ["70"],
     "textured_plate_temp_initial_layer" : ["70"],
     "textured_plate_temp" : ["70"],

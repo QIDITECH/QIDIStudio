@@ -1,0 +1,12 @@
+{
+    "type": "filament",
+	"setting_id": "QFSA05_39",
+    "name": "QIDI PLA Silk @Qidi X-Smart 5 0.6 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PLA Silk@X-Smart 5-Series",
+    "additional_cooling_fan_speed_unseal": ["0"],
+    "additional_cooling_fan_speed": ["0"],
+    "pressure_advance": ["0.016"],
+	"compatible_printers": ["X-Smart 5 0.6 nozzle"]
+}

@@ -6,5 +6,6 @@
     "instantiation": "true",
     "inherits": "QIDI PLA Rapido@X-Max 4-Series",
     "pressure_advance": ["0.008"],
+    "slow_down_layer_time": ["6"],
 	"compatible_printers": ["X-Max 4 0.8 nozzle"]
 }

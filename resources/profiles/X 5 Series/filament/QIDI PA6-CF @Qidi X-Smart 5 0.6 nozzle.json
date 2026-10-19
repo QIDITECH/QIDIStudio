@@ -1,0 +1,11 @@
+{
+    "type": "filament",
+    "setting_id": "QFSN05_39",
+    "name": "QIDI PA6-CF @Qidi X-Smart 5 0.6 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PA6-CF@X-Smart 5-Series",
+    "additional_cooling_fan_speed": ["0"],
+    "additional_cooling_fan_speed_unseal": ["0"],
+	"compatible_printers": ["X-Smart 5 0.6 nozzle"]
+}

@@ -1,0 +1,10 @@
+{
+    "type": "filament",
+    "setting_id": "QFSL60_39",
+    "name": "Overture PLA @Qidi X-Smart 5 0.6 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "Overture PLA@X-Smart 5-Series",
+    "pressure_advance": ["0.017"],
+    "compatible_printers": ["X-Smart 5 0.6 nozzle"]
+}

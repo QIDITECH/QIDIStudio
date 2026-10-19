@@ -1,0 +1,12 @@
+{
+    "type": "filament",
+    "setting_id": "QFSA02_40",
+    "name": "QIDI PLA Rapido @Qidi X-Smart 5 0.8 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PLA Rapido@X-Smart 5-Series",
+    "additional_cooling_fan_speed_unseal": ["0"],
+    "additional_cooling_fan_speed": ["0"],
+    "pressure_advance": ["0.008"],
+	"compatible_printers": ["X-Smart 5 0.8 nozzle"]
+}

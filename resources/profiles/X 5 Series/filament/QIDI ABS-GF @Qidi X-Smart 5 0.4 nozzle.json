@@ -1,0 +1,13 @@
+{
+    "type": "filament",
+    "setting_id": "QFSB50_38",
+    "name": "QIDI ABS-GF @Qidi X-Smart 5 0.4 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI ABS-GF@X-Smart 5-Series",
+    "additional_cooling_fan_speed_unseal": ["0"],
+    "additional_cooling_fan_speed": ["0"],
+    "chamber_temperatures": ["0"],
+    "during_print_exhaust_fan_speed": ["0"],
+	"compatible_printers": ["X-Smart 5 0.4 nozzle"]
+}

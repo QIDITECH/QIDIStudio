@@ -7,6 +7,7 @@
     "inherits": "Bambu ABS@X-Max 4-Series",
     "chamber_temperatures": ["0"],
     "filament_max_volumetric_speed": ["2"],
+    "fan_min_speed": ["40"],
     "pressure_advance": ["0.03"],
 	"compatible_printers": ["X-Max 4 0.2 nozzle"]
 }

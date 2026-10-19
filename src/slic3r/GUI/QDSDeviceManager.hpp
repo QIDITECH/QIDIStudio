@@ -292,7 +292,7 @@ public:
 	std::vector<int> m_boxHumidity;
     std::vector<int> m_boxState;
     std::vector<long> m_boxEndTime;
-    bool box_is_update;
+    std::atomic<bool> box_is_update{ false };
 
     //y83
     std::string m_box_signature;

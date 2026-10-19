@@ -2235,10 +2235,10 @@ bool Sidebar::priv::sync_extruder_list(bool &only_external_material, bool is_man
     PresetBundle *preset_bundle = wxGetApp().preset_bundle;
     std::string target_model_type  = preset_bundle->printers.get_selected_preset().get_printer_name(preset_bundle);
     Preset* machine_preset = get_printer_preset(obj);
-    // if (!machine_preset) {
-    //    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << __LINE__ << "check error: machine_preset empty";
-    //    return false;
-    // }
+    if (!machine_preset) {
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << __LINE__ << "check error: machine_preset empty";
+    return false;
+    }
     if (machine_print_name != target_model_type || !machine_preset) {
        MessageDialog dlg(this->plater, _L("The currently selected machine preset is inconsistent with the connected printer type.\n"
                                            "Are you sure to continue syncing?"), _L("Sync printer information"), wxICON_WARNING | wxYES | wxNO);
@@ -22184,10 +22184,10 @@ Preset *get_printer_preset(std::shared_ptr<QDSDevice> obj){
         ConfigOption               *printer_nozzle_opt  = printer_it->config.option("nozzle_diameter");
         ConfigOptionFloatsNullable *printer_nozzle_vals = nullptr;
         if (printer_nozzle_opt) printer_nozzle_vals = dynamic_cast<ConfigOptionFloatsNullable *>(printer_nozzle_opt);
-        std::string model_id = printer_it->get_printer_name(preset_bundle);
+        std::string model_id = printer_it->get_current_printer_type(preset_bundle);
 
-        std::string printer_type = obj->m_type;
-        if (printer_type.find(model_id) != std::string::npos && printer_nozzle_vals && abs(printer_nozzle_vals->get_at(0) - machine_nozzle_diameter) < 1e-3) {
+        std::string printer_type = obj->m_model_id;
+        if (model_id.compare(printer_type) == 0 && printer_nozzle_vals && abs(printer_nozzle_vals->get_at(0) - machine_nozzle_diameter) < 1e-3) {
             printer_preset = &(*printer_it);
         }
     }

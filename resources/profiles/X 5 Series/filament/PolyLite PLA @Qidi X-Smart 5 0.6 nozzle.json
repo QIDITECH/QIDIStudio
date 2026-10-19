@@ -1,0 +1,10 @@
+{
+    "type": "filament",
+    "setting_id": "QFSL20_39",
+    "name": "PolyLite PLA @Qidi X-Smart 5 0.6 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "PolyLite PLA@X-Smart 5-Series",
+    "pressure_advance": ["0.017"],
+    "compatible_printers": ["X-Smart 5 0.6 nozzle"]
+}

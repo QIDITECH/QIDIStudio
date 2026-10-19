@@ -648,6 +648,26 @@ bool json_get_int_str(const json& j, std::string& target, std::initializer_list<
     return false;
 }
 
+// y84
+bool json_get_str_array_first(const json& j, std::string& target, std::initializer_list<std::string> path)
+{
+    if (path.size() == 0) return false;
+    const json* cur = &j;
+    auto it = path.begin();
+    for (; std::next(it) != path.end(); ++it) {
+        if (!cur->contains(*it) || !(*cur)[*it].is_object()) return false;
+        cur = &(*cur)[*it];
+    }
+    const std::string& last = *it;
+    if (!cur->contains(last)) return false;
+    const json& v = (*cur)[last];
+    if (!v.is_array() || v.empty() || !v[0].is_string()) return false;
+    const std::string val = v[0].get<std::string>();
+    if (target == val) return false;
+    target = val;
+    return true;
+}
+
 } // namespace
 
 //y84
@@ -879,7 +899,6 @@ void QDSDevice::updateByJsonData(const json& status)
 	extract(m_chamber_fan_speed, status, { "fan_generic chamber_circulation_fan", "speed" });
 	extract(m_cooling_fan_speed, status, { "fan_generic cooling_fan", "speed" });
 	extract(m_home_axes, status, { "toolhead", "homed_axes" });
-	extract(m_extruder_filament, status, { "filament_switch_sensor filament_switch_sensor", "filament_detected" });
 
     apply_gcode_move_speed_percent(*this, status, nullptr);
 
@@ -937,60 +956,59 @@ void QDSDevice::updateBoxDataByJson(const json status)
     else if (boxContainer.contains("identity") && boxContainer["identity"].is_string())
         m_box_identity = boxContainer["identity"].get<std::string>();
 
-    if (json_get(mcc, count, { "box_count" }))
-        m_box_count = count;
-    else if (json_get(boxContainer, count, { "box_count" }))
+    //y84 
+    const bool box_count_reported = mcc.contains("box_count") || boxContainer.contains("box_count");
+    if (json_get(mcc, count, { "box_count" }) || json_get(boxContainer, count, { "box_count" }))
         m_box_count = count;
     has_box = m_box_count > 0;
 
     json_get(mcc, last_load_slot, { "last_load_slot" }) || json_get(boxContainer, last_load_slot, { "last_load_slot" });
 
-    std::vector<json> boxes;
-    if (boxContainer.contains("boxes") && boxContainer["boxes"].is_array()) {
-        for (const auto& b : boxContainer["boxes"]) {
-            if (b.is_object())
-                boxes.push_back(b);
+    //y84
+    constexpr int kSlotsPerBox = 4;
+    constexpr int kMaxBoxSlots = 16;
+
+    int box_num = kMaxBoxSlots / kSlotsPerBox;
+    if (box_num > (int)m_boxTemperature.size())
+        box_num = (int)m_boxTemperature.size();
+
+    for (int i = 0; i < box_num; ++i) {
+        const std::string boxPrefix = "box" + std::to_string(i) + "_";
+
+        json_get(boxContainer, m_boxTemperature[i], { boxPrefix + "aht20_temp" });
+        json_get(boxContainer, m_boxHumidity[i],    { boxPrefix + "aht20_humidity" });
+        json_get(boxContainer, m_boxState[i],       { boxPrefix + "dry_state" });
+        json_get(boxContainer, m_boxEndTime[i],     { boxPrefix + "end_time" });
+
+        for (int slotInBox = 0; slotInBox < kSlotsPerBox; ++slotInBox) {
+            const int boxData_index = i * kSlotsPerBox + slotInBox;
+            if (boxData_index >= kMaxBoxSlots || boxData_index >= (int)m_boxData.size())
+                break;
+
+            const std::string insKey = boxPrefix + "box_inserted_" + std::to_string(slotInBox);
+
+            if (boxContainer.contains(insKey)) {
+                int ins_val = 0;
+                json_get(boxContainer, ins_val, { insKey });
+                m_boxData[boxData_index].hasMaterial = has_box && (ins_val != 0);
+            }
+
+            const std::string fiPrefix = boxPrefix + "filament_info_" + std::to_string(slotInBox) + "_";
+            json_get(boxContainer, m_boxData[boxData_index].name,     { fiPrefix + "filament_str" });
+            json_get(boxContainer, m_boxData[boxData_index].type,     { fiPrefix + "filament_type" });
+            json_get(boxContainer, m_boxData[boxData_index].vendor,   { fiPrefix + "vendor_str" });
+            json_get_str_array_first(boxContainer, m_boxData[boxData_index].colorHexCode, { fiPrefix + "color_rgb_str" });
+            json_get(boxContainer, m_boxData[boxData_index].minTemp,  { fiPrefix + "min_temp" });
+            json_get(boxContainer, m_boxData[boxData_index].maxTemp,  { fiPrefix + "max_temp" });
+            json_get(boxContainer, m_boxData[boxData_index].boxMinTemp, { fiPrefix + "box_min_temp" });
+            json_get(boxContainer, m_boxData[boxData_index].boxMaxTemp, { fiPrefix + "box_max_temp" });
+            json_get(boxContainer, m_boxData[boxData_index].filament_id, { fiPrefix + "filament_id" });
         }
     }
 
-    for(int i = 0; i < boxes.size(); ++i){
-        const json& box = boxes[i];
-    //dk10    
-        json_get(box, m_boxTemperature[i], { "aht20_temp" });
-        json_get(box, m_boxHumidity[i], { "aht20_humidity" });
-        json_get(box, m_boxState[i], { "dry_state" });
-        json_get(box, m_boxEndTime[i], { "end_time" });
-
-        if (box.contains("filament_info") && box["filament_info"].is_array()){
-            int slot_num = (int)box["filament_info"].size();
-            for (int slotInBox = 0; slotInBox < slot_num; ++slotInBox) {
-                int boxData_index = i * 4 + slotInBox;
-
-                bool inserted = false;
-                std::string bInsKey = "box_inserted_" + std::to_string(slotInBox);
-                int ins_val = 0;
-                if (json_get(box, ins_val, { bInsKey }))
-                    inserted = (ins_val != 0);
-                m_boxData[boxData_index].hasMaterial = has_box ? inserted : false;
-                if(i >= (int)m_boxData.size() || !has_box || !inserted){
-                    m_boxData[boxData_index].hasMaterial = false;
-                    continue;
-                }
-
-                const json& fi = box["filament_info"][slotInBox];
-                json_get(fi, m_boxData[boxData_index].name, { "filament_str" });
-                json_get(fi, m_boxData[boxData_index].type, { "filament_type" });
-                json_get(fi, m_boxData[boxData_index].vendor, { "vendor_str" });
-                if (fi.contains("color_rgb_str") && fi["color_rgb_str"].is_array()
-                    && fi["color_rgb_str"].size() > 0 && fi["color_rgb_str"][0].is_string())
-                    m_boxData[boxData_index].colorHexCode = fi["color_rgb_str"][0].get<std::string>();
-                json_get(fi, m_boxData[boxData_index].minTemp, { "min_temp" });
-                json_get(fi, m_boxData[boxData_index].maxTemp, { "max_temp" });
-                json_get(fi, m_boxData[boxData_index].boxMinTemp, { "box_min_temp" });
-                json_get(fi, m_boxData[boxData_index].boxMaxTemp, { "box_max_temp" });
-                json_get(fi, m_boxData[boxData_index].filament_id, { "filament_id" });
-            }
-        }
+    if (box_count_reported && m_box_count <= 0) {
+        for (int k = 0; k < kMaxBoxSlots && k < (int)m_boxData.size(); ++k)
+            m_boxData[k].hasMaterial = false;
     }
 
     if (mcc.contains("extra") && mcc["extra"].contains("filament_info")
@@ -999,15 +1017,19 @@ void QDSDevice::updateBoxDataByJson(const json status)
         json_get(ex, m_boxData[16].name, { "filament_str" });
         json_get(ex, m_boxData[16].type, { "filament_type" });
         json_get(ex, m_boxData[16].vendor, { "vendor_str" });
-        if (ex.contains("color_str") && ex["color_str"].is_array()
-            && ex["color_str"].size() > 0 && ex["color_str"][0].is_string())
-            m_boxData[16].colorHexCode = ex["color_str"][0].get<std::string>();
+        json_get_str_array_first(ex, m_boxData[16].colorHexCode, { "color_rgb_str" });
         json_get(ex, m_boxData[16].filament_id, { "filament_id" });
     }
     m_boxData[16].hasMaterial = true;
 
     if (!last_load_slot.empty())
         m_cur_slot = last_load_slot;
+    if (mcc.contains("extruder_limit_state") || boxContainer.contains("extruder_limit_state")) {
+        bool extruder_limit_state = m_extruder_filament;
+        json_get(mcc, extruder_limit_state, { "extruder_limit_state" })
+            || json_get(boxContainer, extruder_limit_state, { "extruder_limit_state" });
+        m_extruder_filament            = extruder_limit_state;
+    }
 
     int autoReadInt = -1;
     if (json_get(mcc, autoReadInt, { "auto_read_rfid" }))
@@ -1072,12 +1094,15 @@ void QDSDevice::updateBoxDataByJson(const json status)
     sig += '|';
     sig += m_cur_slot;
     sig += '|';
+    sig += (m_extruder_filament ? '1' : '0');
+    sig += '|';
     sig += (m_auto_read_rfid ? '1' : '0');
     sig += (m_init_detect ? '1' : '0');
     sig += (m_auto_reload_detect ? '1' : '0');
     if (sig != m_box_signature) {
         m_box_signature = std::move(sig);
         box_is_update = true;
+        is_update = true;
     }
 }
 

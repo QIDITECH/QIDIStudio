@@ -30,7 +30,7 @@
     "overhang_fan_speed": ["60"],
     "overhang_fan_threshold": ["25%"],
     "pressure_advance": ["0.021"],
-    "slow_down_layer_time": ["2"],
+    "slow_down_layer_time": ["12"],
     "supertack_plate_temp_initial_layer": ["0"],
     "supertack_plate_temp": ["0"],
     "temperature_vitrification": ["100"],

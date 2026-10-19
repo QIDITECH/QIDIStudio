@@ -620,6 +620,7 @@ void QDSPrinterWebView::TransitionToCloudDevice(const NetDevice& device, DeviceB
         HttpData httpData;
         json bodyJson;
         bodyJson["serialNumber"] = serial_number;
+        bodyJson["commandId"] = make_filament_info_command_id(serial_number);
         httpData.body = bodyJson.dump();
         httpData.env = m_env;
         httpData.target = PRINTERTYPE;
@@ -663,10 +664,11 @@ void QDSPrinterWebView::TransitionToNetDeviceViaLocal(const NetDevice& net_devic
         return;
     }
 
-    // Close cloud SSE client if it was active from a previous net device
-    if (wxGetApp().app_config->get_bool("last_sel_machine_is_net")) {
-        stopCloudStatusStream();
-    }
+    stopCloudStatusStream();
+    //y84
+    if (P2PManager::instance().isConnected())
+        P2PManager::instance().disconnect();
+
 
     // Select this button, deselect others
     cancelAllDevButtonSelect();
@@ -689,6 +691,7 @@ void QDSPrinterWebView::TransitionToNetDeviceViaLocal(const NetDevice& net_devic
         // Keep is_net_device = true — the button stays in the net section.
         //y85
         device->is_local_transitioned = true;
+        device->active_p2p = false;
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__
             << " Updated net device " << device_id
             << " to use local WebSocket at " << device->m_url << std::endl;
@@ -2523,8 +2526,10 @@ void QDSPrinterWebView::ExecuteP2PDownload(
     auto p2p_dev = wxGetApp().qdsdevmanager->getSelectedDevice();
     QIDIFileManager qdsfmsg(p2p_dev);
 
-    if(!P2PManager::instance().isConnected())
+    if(!P2PManager::instance().isConnected()){
+        EndStatusModelFileDownload(fileName, true);
         return;
+    }
 
     //y84
     P2PManager::FileTransferOptions opt;
@@ -2585,7 +2590,7 @@ void QDSPrinterWebView::downloadSinglePrinterFile(const wxString& wx_storage_pat
 
     // P2P download first (force enabled; replace `true` with real condition later)
     auto obj = wxGetApp().qdsdevmanager->getSelectedDevice();
-    if (obj->p2p_enable) {
+    if (obj && obj->p2p_enable && obj->is_p2p_download_device()) {
         if (downloadSinglePrinterFileViaP2P(from_u8(printer_file_path), device, localPath, fileName)) {
             // P2P download started (async) – show indeterminate progress
             wxString wx_task_name = from_u8(fileName);
@@ -3005,7 +3010,8 @@ void QDSPrinterWebView::downloadTimelapseOne(wxCommandEvent& event)
 bool QDSPrinterWebView::downloadTimelapseFileViaP2P(
     TimelapseFileItem* item,
     const std::shared_ptr<QDSDevice>& device,
-    const std::string& downloadPath)
+    const std::string& downloadPath,
+    bool is_play)
 {
 #if QDT_RELEASE_TO_PUBLIC
 
@@ -3015,12 +3021,13 @@ bool QDSPrinterWebView::downloadTimelapseFileViaP2P(
     std::string filePath = "/home/qidi/printer_data/timelapse/" + fileName;
 
     auto timelapse_dev = wxGetApp().qdsdevmanager->getSelectedDevice();
-    std::thread([this, item, wxFileName, localPath, fileName, filePath, timelapse_dev]() {
+    std::thread([this, item, wxFileName, localPath, fileName, filePath, timelapse_dev, is_play]() {
         // Initialize UI: show download indicator
         CallAfter([item]() { item->beginFileDownload(""); });
 
         QIDIFileManager qdsfmsg(timelapse_dev);
         if (!P2PManager::instance().isConnected()) {
+            CallAfter([item]() { item->setDownloadProgressFraction(-1.f); });
             return;
         }
 
@@ -3034,6 +3041,7 @@ bool QDSPrinterWebView::downloadTimelapseFileViaP2P(
                 float pct = std::min(1.0f, float(double(bytes) / double(total)));
                 item->CallAfter([item, pct]() { item->setDownloadProgressFraction(pct); });
             }
+
         };
 
         auto result = qdsfmsg.downloadFile(filePath, localPath, opt);
@@ -3042,7 +3050,12 @@ bool QDSPrinterWebView::downloadTimelapseFileViaP2P(
         else
             BOOST_LOG_TRIVIAL(error) << "P2P timelapse download failed: " << filePath;
 
-        CallAfter([item]() { item->setDownloadProgressFraction(-1.f); });
+        CallAfter([item, localPath, is_play]() {
+            if (is_play) {
+                wxLaunchDefaultApplication(from_u8(localPath));
+            }
+            item->setDownloadProgressFraction(-1.f); 
+            });
     }).detach();
 
     return true;
@@ -3084,6 +3097,13 @@ void QDSPrinterWebView::playTimelapseFile(wxCommandEvent& event)
 	std::string urlStr = device->m_frp_url + "/server/files/timelapse/" + encodedName
 		+ "?date=" + std::to_string(wxGetUTCTimeMillis().GetValue());
 	const wxString openPath = wxString::FromUTF8(localPath);
+
+    if(device && device->p2p_enable && device->is_p2p_download_device()){
+        if (downloadTimelapseFileViaP2P(item, device, path, true)) {
+            return;
+        }
+    }
+
 	const std::string task_id = DownloadManager::getInstance().downloadFile(
 		urlStr,
 		localPath,
@@ -3164,8 +3184,7 @@ void QDSPrinterWebView::downloadTimelapseItems(const std::vector<TimelapseFileIt
 	const std::string path = downloadPath;
 	auto run_timelapse_downloads = [this, dev, path, items_to_fetch]() {
 		for (TimelapseFileItem* item : items_to_fetch) {
-			// Try P2P download first
-            if(dev->p2p_enable){
+            if(dev && dev->p2p_enable && dev->is_p2p_download_device()){
                 if (downloadTimelapseFileViaP2P(item, dev, path)) {
                     // P2P download started (async)
                     continue;
@@ -4085,6 +4104,7 @@ void QDSPrinterWebView::ApplyDeviceDataToStatusPanel(const std::string& device_i
             m_last_box_render_time = now;
         }
     }
+
 
     if (device->m_is_update_box_temp) {
         for (int i = 0; i < device->m_boxTemperature.size(); ++i) {

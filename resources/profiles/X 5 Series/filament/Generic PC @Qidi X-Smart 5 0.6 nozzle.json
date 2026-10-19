@@ -1,0 +1,12 @@
+{
+    "type": "filament",
+    "setting_id": "QFSC90_39",
+    "name": "Generic PC @Qidi X-Smart 5 0.6 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "Generic PC@X-Smart 5-Series",
+    "filament_flow_ratio": ["0.94"],
+    "filament_max_volumetric_speed": ["8"],
+    "pressure_advance": ["0.03"],
+	"compatible_printers": ["X-Smart 5 0.6 nozzle"]
+}

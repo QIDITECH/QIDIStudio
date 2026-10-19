@@ -22,6 +22,7 @@
     "nozzle_temperature": ["220"],
     "overhang_fan_threshold": ["50%"],
     "pressure_advance": ["0.024"],
+    "slow_down_layer_time": ["10"],
     "supertack_plate_temp_initial_layer": ["45"],
     "supertack_plate_temp": ["45"],
     "cool_plate_temp_initial_layer": ["45"],

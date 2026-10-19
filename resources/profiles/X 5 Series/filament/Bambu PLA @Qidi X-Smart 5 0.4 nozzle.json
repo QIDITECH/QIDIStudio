@@ -1,0 +1,12 @@
+{
+    "type": "filament",
+    "setting_id": "QFSL30_38",
+    "name": "Bambu PLA @Qidi X-Smart 5 0.4 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "Bambu PLA@X-Smart 5-Series",
+    "additional_cooling_fan_speed_unseal": ["0"],
+    "additional_cooling_fan_speed": ["0"],
+    "filament_max_volumetric_speed": ["19"],
+	"compatible_printers": ["X-Smart 5 0.4 nozzle"]
+}

@@ -228,7 +228,8 @@ public:
     // P2P timelapse download for a single item; returns true if started
     bool downloadTimelapseFileViaP2P(TimelapseFileItem* item,
                                      const std::shared_ptr<QDSDevice>& device,
-                                     const std::string& downloadPath);
+                                     const std::string& downloadPath,
+                                     bool is_play = false);
 
 
 private:

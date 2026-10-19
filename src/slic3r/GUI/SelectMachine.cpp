@@ -3130,7 +3130,7 @@ void SelectMachineDialog::start_to_send(PrintHostJob upload_job) {
                 else {
                     open_timelapse = false;
                 }
-                success &= upload_job.printhost->send_timelapse_status(check_status_msg, select_machine.url, open_timelapse);
+                success &= upload_job.printhost->send_timelapse_status(check_status_msg, select_machine.ip, open_timelapse);
                 if (!success) {
                     show_status(PrintDialogStatus::TimelapseSettingFailed);
                     return;
@@ -3297,6 +3297,7 @@ void SelectMachineDialog::send_to_sd_card(){
         bodyJson["serialNumber"] = obj->m_id;
         bodyJson["fileName"] = m_required_data_file_name;
         bodyJson["plateIndex"] = m_print_plate_idx + 1;
+        bodyJson["commandId"] = make_filament_info_command_id(obj->m_id);
 
         http_data.body = bodyJson.dump();
         http_data.env = QIDIMakerUrlBuilder::getInstance().getCurEnv();
@@ -3401,7 +3402,7 @@ void SelectMachineDialog::send_to_sd_card(){
                 else {
                     open_timelapse = false;
                 }
-                success &= upload_job.printhost->send_timelapse_status(check_status_msg, select_machine.url, open_timelapse);
+                success &= upload_job.printhost->send_timelapse_status(check_status_msg, select_machine.ip, open_timelapse);
                 if (!success) {
                     show_status(PrintDialogStatus::TimelapseSettingFailed);
                     return;
@@ -5008,6 +5009,9 @@ void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
                     select_machine_type = machine.type;
                     select_printer_ip = machine.ip;
                     m_printer_last_select = machine.device_id;
+
+                    if (m_print_type == FROM_SDCARD_VIEW)
+                        break;
                     if (preset_typename_normalized.find(NormalizeVendor(machine.type)) != std::string::npos)
                     {
                         Enable_Refresh_Button(true);
@@ -5040,6 +5044,8 @@ void SelectMachineDialog::on_selection_changed(wxCommandEvent &event)
 
                     //y84
                     const std::string sel_key = m_printer_last_select;
+                    if (m_print_type == FROM_SDCARD_VIEW)
+                        break;
                     if (preset_typename_normalized.find(NormalizeVendor(machine.type)) != std::string::npos)
                     {
                         auto qdsdev = wxGetApp().qdsdevmanager->getDevice(sel_key);

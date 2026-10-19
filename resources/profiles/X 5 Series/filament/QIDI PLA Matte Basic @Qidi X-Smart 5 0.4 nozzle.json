@@ -1,0 +1,12 @@
+{
+    "type": "filament",
+    "setting_id": "QFSA01_38",
+    "name": "QIDI PLA Matte Basic @Qidi X-Smart 5 0.4 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PLA Matte Basic@X-Smart 5-Series",
+    "additional_cooling_fan_speed_unseal": ["0"],
+    "additional_cooling_fan_speed": ["0"],
+    "filament_max_volumetric_speed": ["19"],
+	"compatible_printers": ["X-Smart 5 0.4 nozzle"]
+}

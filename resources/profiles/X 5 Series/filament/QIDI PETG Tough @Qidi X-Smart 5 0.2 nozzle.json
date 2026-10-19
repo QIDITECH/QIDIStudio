@@ -1,0 +1,12 @@
+{
+    "type": "filament",
+    "setting_id": "QFSG03_37",
+    "name": "QIDI PETG Tough @Qidi X-Smart 5 0.2 nozzle",
+    "from": "system",
+    "instantiation": "true",
+    "inherits": "QIDI PETG Tough@X-Smart 5-Series",
+    "additional_cooling_fan_speed_unseal": ["0"],
+    "additional_cooling_fan_speed": ["0"],
+    "filament_max_volumetric_speed": ["1"],
+	"compatible_printers": ["X-Smart 5 0.2 nozzle"]
+}
