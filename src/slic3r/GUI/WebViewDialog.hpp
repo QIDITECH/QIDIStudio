@@ -25,6 +25,7 @@
 #include <wx/tbarbase.h>
 #include "wx/textctrl.h"
 #include <wx/timer.h>
+#include "RecentProjectsRefresh.hpp"
 
 
 namespace Slic3r {
@@ -187,6 +188,9 @@ public:
 
     void update_mode();
 private:
+    void FlushRecentList();
+    RecentProjectsRefresh m_recent_projects_refresh;
+
     std::string m_Region;
 
     wxBoxSizer *topsizer { nullptr };

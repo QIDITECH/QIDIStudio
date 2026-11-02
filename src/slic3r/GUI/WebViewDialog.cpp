@@ -800,6 +800,8 @@ void WebViewPanel::UpdateState()
 
 void WebViewPanel::OnIdle(wxIdleEvent& WXUNUSED(evt))
 {
+    FlushRecentList();
+
 #if !QDT_RELEASE_TO_PUBLIC
     if (m_browser == nullptr) return;
 
@@ -1083,9 +1085,19 @@ void WebViewPanel::HideLoginOverlay()
 
 void WebViewPanel::SendRecentList(int images)
 {
+    m_recent_projects_refresh.request(images);
+    FlushRecentList();
+}
+
+void WebViewPanel::FlushRecentList()
+{
+    const auto images = m_recent_projects_refresh.take(m_browser && m_browser->IsShownOnScreen());
+    if (!images)
+        return;
+
     boost::property_tree::wptree req;
     boost::property_tree::wptree data;
-    wxGetApp().mainframe->get_recent_projects(data, images);
+    wxGetApp().mainframe->get_recent_projects(data, *images);
     req.put(L"sequence_id", "");
     req.put(L"command", L"get_recent_projects");
     req.put_child(L"response", data);
