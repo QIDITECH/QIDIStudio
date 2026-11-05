@@ -16,6 +16,9 @@ add_executable(${_TEST_NAME}_tests
 	test_support_material.cpp
 	test_trianglemesh.cpp
 	)
+if(SLIC3R_ENABLE_CUDA_SLICER OR SLIC3R_ENABLE_VULKAN_SLICER)
+    target_sources(${_TEST_NAME}_tests PRIVATE test_gpu_fill.cpp test_gpu_tree_contours.cpp)
+endif()
 target_link_libraries(${_TEST_NAME}_tests test_common libslic3r)
 set_property(TARGET ${_TEST_NAME}_tests PROPERTY FOLDER "tests")
 

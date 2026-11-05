@@ -185,6 +185,11 @@ function build_slicer() {
             resources_path=$(readlink ./QIDIStudio.app/Contents/Resources)
             rm ./QIDIStudio.app/Contents/Resources
             cp -R "$resources_path" ./QIDIStudio.app/Contents/Resources
+            gpu_shaders="$PROJECT_BUILD_DIR/src/libslic3r/resources/vulkan"
+            if [ -d "$gpu_shaders" ]; then
+                mkdir -p ./QIDIStudio.app/Contents/Resources/vulkan
+                cp "$gpu_shaders/"*.spv ./QIDIStudio.app/Contents/Resources/vulkan/
+            fi
             # delete .DS_Store file
             find ./QIDIStudio.app/ -name '.DS_Store' -delete
         )
