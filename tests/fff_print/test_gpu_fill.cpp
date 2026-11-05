@@ -73,7 +73,8 @@ void select_backend(Gpu::ComputeBackendPreference preference)
 
 Polylines fill_fixture(const ExPolygon& polygon, double angle)
 {
-    std::unique_ptr<Fill> filler(Fill::new_from_type("rectilinear"));
+    std::unique_ptr<Fill> filler(Fill::new_from_type(ipRectilinear));
+    REQUIRE(filler != nullptr);
     filler->bounding_box = get_extents(polygon.contour);
     filler->spacing = 0.45;
     filler->angle = float(angle);
