@@ -20,6 +20,12 @@
 
 #include "FillRectilinear.hpp"
 
+#ifdef SLIC3R_GPU_ENABLED
+#include "../Gpu/VerticalIntersectionCandidates.hpp"
+#include "../Gpu/VulkanSlicer.hpp"
+#include "../Utils.hpp"
+#endif
+
 // #define SLIC3R_DEBUG
 // #define INFILL_DEBUG_OUTPUT
 
@@ -818,6 +824,55 @@ enum DirectionMask
     DIR_BACKWARD = 2
 };
 
+#ifdef SLIC3R_GPU_ENABLED
+// Candidate traversal follows CPU contour/edge/scanline order. Only the
+// strict-interior arithmetic is accelerated; all vertex/topology rules stay
+// below on the established QIDI CPU path.
+static Gpu::VulkanVerticalIntersectionBatch prepare_vulkan_vertical_intersections(
+    const ExPolygonWithOffset &poly_with_offset, size_t n_vlines, coord_t x0, coord_t line_spacing)
+{
+    if ((!Gpu::VulkanSlicerBackend::compute_enabled() && !Gpu::VulkanSlicerBackend::cuda_enabled()) ||
+        n_vlines == 0 || n_vlines > size_t(std::numeric_limits<int>::max()) || line_spacing <= 0)
+        return {};
+    if (!Gpu::VulkanSlicerBackend::set_shader_directory(resources_dir() + "/vulkan"))
+        return {};
+
+    constexpr size_t maximum_requests = 256 * 1024;
+    size_t edge_count = 0;
+    for (size_t c = 0; c < poly_with_offset.n_contours; ++c) {
+        const auto &points = poly_with_offset.contour(c).points;
+        if (points.size() < 2)
+            continue;
+        if (points.size() > maximum_requests - edge_count) {
+            edge_count = maximum_requests;
+            break;
+        }
+        edge_count += points.size();
+    }
+    const size_t upper_bound = edge_count > maximum_requests / n_vlines ?
+        maximum_requests : edge_count * n_vlines;
+    if (!Gpu::VulkanSlicerBackend::should_dispatch_vertical_intersections(upper_bound))
+        return {};
+
+    std::vector<Gpu::VulkanVerticalIntersectionRequest> requests;
+    requests.reserve(std::min(upper_bound, size_t(32 * 1024)));
+    const bool complete = Gpu::visit_rectilinear_candidates(
+        true, poly_with_offset, n_vlines, x0, line_spacing,
+        [&requests](const Point &a, const Point &b, coord_t x) {
+            requests.push_back({
+                {{int64_t(a.x()), int64_t(a.y())}, {int64_t(b.x()), int64_t(b.y())}},
+                int64_t(x), uint64_t(requests.size())
+            });
+        });
+    if (!complete || !Gpu::VulkanSlicerBackend::should_dispatch_vertical_intersections(requests.size()))
+        return {};
+
+    // dispatched becomes true only after complete exact batch validation.
+    return Gpu::VulkanSlicerBackend::dispatch_vertical_intersections(requests);
+}
+#endif
+
+
 static std::vector<SegmentedIntersectionLine> slice_region_by_vertical_lines(const ExPolygonWithOffset &poly_with_offset, size_t n_vlines, coord_t x0, coord_t line_spacing)
 {
     // Allocate storage for the segments.
@@ -826,6 +881,11 @@ static std::vector<SegmentedIntersectionLine> slice_region_by_vertical_lines(con
         segs[i].idx = i;
         segs[i].pos = x0 + i * line_spacing;
     }
+#ifdef SLIC3R_GPU_ENABLED
+    const auto gpu_intersections =
+        prepare_vulkan_vertical_intersections(poly_with_offset, n_vlines, x0, line_spacing);
+    size_t gpu_intersection_index = 0;
+#endif
     // For each contour
     for (size_t iContour = 0; iContour < poly_with_offset.n_contours; ++ iContour) {
         const Points &contour = poly_with_offset.contour(iContour).points;
@@ -886,6 +946,13 @@ static std::vector<SegmentedIntersectionLine> slice_region_by_vertical_lines(con
                     is.pos_p = p2.y();
                     is.pos_q = 1;
                 } else {
+#ifdef SLIC3R_GPU_ENABLED
+                    if (gpu_intersections.dispatched) {
+                        const auto &result = gpu_intersections.intersections[gpu_intersection_index++];
+                        is.pos_p = result.numerator;
+                        is.pos_q = result.denominator;
+                    } else {
+#endif
                     // First calculate the intersection parameter 't' as a rational number with non negative denominator.
                     if (p2.x() > p1.x()) {
                         is.pos_p = this_x - p1.x();
@@ -899,6 +966,9 @@ static std::vector<SegmentedIntersectionLine> slice_region_by_vertical_lines(con
                     // Make an intersection point from the 't'.
                     is.pos_p *= int64_t(p2.y() - p1.y());
                     is.pos_p += p1.y() * int64_t(is.pos_q);
+#ifdef SLIC3R_GPU_ENABLED
+                    }
+#endif
                 }
                 // +-1 to take rounding into account.
                 assert(is.pos() + 1 >= std::min(p1.y(), p2.y()));
@@ -913,6 +983,14 @@ static std::vector<SegmentedIntersectionLine> slice_region_by_vertical_lines(con
             }
         }
     }
+
+#ifdef SLIC3R_GPU_ENABLED
+    if (gpu_intersections.dispatched) {
+        assert(gpu_intersection_index == gpu_intersections.intersections.size());
+        Gpu::VulkanSlicerBackend::note_vertical_intersection_usage(
+            gpu_intersection_index, gpu_intersection_index, false, "Exact GPU scanline batch accepted.");
+    }
+#endif
 
     // Sort the intersections along their segments, specify the intersection types.
     for (size_t i_seg = 0; i_seg < segs.size(); ++ i_seg) {

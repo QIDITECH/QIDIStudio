@@ -1,4 +1,8 @@
+#include <algorithm>
 #include <chrono>
+#include <cstdint>
+#include <limits>
+#include <vector>
 #include <math.h>
 
 #include "format.hpp"
@@ -16,6 +20,12 @@
 #include "TreeSupportCommon.hpp"
 #include "TreeSupport.hpp"
 #include "TreeSupport3D.hpp"
+#ifdef SLIC3R_GPU_ENABLED
+#include "Gpu/GpuBatchSafety.hpp"
+#include "Gpu/TreeContourCandidates.hpp"
+#include "Gpu/VulkanSlicer.hpp"
+#include "Utils.hpp"
+#endif
 #include <libnest2d/backends/libslic3r/geometries.hpp>
 #include <libnest2d/placers/nfpplacer.hpp>
 
@@ -3064,6 +3074,64 @@ void TreeSupport::drop_nodes()
             spanning_trees.emplace_back(points_to_buildplate);
         }
         profiler.stage_add(STAGE_MinimumSpanningTree);
+
+#ifdef SLIC3R_GPU_ENABLED
+        // Cache only disjoint WHOLE contour boxes. Boundary-edge boxes would
+        // reject contained branches; holes remain conservative CPU candidates.
+        const auto seed_gpu_tree_cache = [&]() {
+            const auto preference = Gpu::VulkanSlicerBackend::backend_preference();
+            if (!Gpu::VulkanSlicerBackend::compute_enabled() ||
+                (preference != Gpu::ComputeBackendPreference::Vulkan &&
+                 preference != Gpu::ComputeBackendPreference::Auto))
+                return;
+            std::vector<Gpu::Segment> contour_boxes;
+            if (!Gpu::visit_filled_contour_boxes(true, layer_contours,
+                    [&](coord_t min_x, coord_t min_y, coord_t max_x, coord_t max_y) {
+                        contour_boxes.push_back({
+                            {int64_t(min_x), int64_t(min_y)}, {int64_t(max_x), int64_t(max_y)}
+                        });
+                    }) || contour_boxes.empty())
+                return;
+            const size_t maximum_lines = std::min(
+                Gpu::maximum_tree_requests, Gpu::maximum_tree_pairs / contour_boxes.size());
+            std::vector<Line> lines;
+            for (size_t group = 0; group < nodes_per_part.size(); ++group) {
+                const MinimumSpanningTree& mst = spanning_trees[group];
+                for (const auto& entry : nodes_per_part[group]) {
+                    for (const Point& neighbour : mst.adjacent_nodes(entry.first)) {
+                        const Point& point = entry.first;
+                        if (point.x() > neighbour.x() ||
+                            (point.x() == neighbour.x() && point.y() >= neighbour.y()))
+                            continue;
+                        if (lines.size() == maximum_lines)
+                            return;
+                        lines.emplace_back(point, neighbour);
+                    }
+                }
+            }
+            if (lines.empty())
+                return;
+            std::vector<Gpu::VulkanTreeContourRequest> requests;
+            requests.reserve(lines.size());
+            for (size_t index = 0; index < lines.size(); ++index) {
+                const Line& line = lines[index];
+                requests.push_back({
+                    {{int64_t(line.a.x()), int64_t(line.a.y())},
+                     {int64_t(line.b.x()), int64_t(line.b.y())}}, uint64_t(index)
+                });
+            }
+            if (!Gpu::VulkanSlicerBackend::set_shader_directory(resources_dir() + "/vulkan"))
+                return;
+            const auto batch = Gpu::VulkanSlicerBackend::dispatch_tree_contour_candidates(requests, contour_boxes);
+            // The shared gate validates every negative before any cache write.
+            // Positives, malformed batches and failures retain exact clipping.
+            Gpu::consume_tree_negatives(batch, lines, [&](const Point& a, const Point& b) {
+                mst_line_x_layer_contour_cache.insert({Line(a, b), false});
+            });
+        };
+        seed_gpu_tree_cache();
+#endif
+
 
         //for (size_t i = 0; i < layer_contact_nodes.size(); i++) {
         //    SupportNode *p_node = layer_contact_nodes[i];

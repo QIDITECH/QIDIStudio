@@ -35,3 +35,7 @@ add_subdirectory(sla_print)
 add_subdirectory(fila_manager)
 add_subdirectory(cpp17 EXCLUDE_FROM_ALL)    # does not have to be built all the time
 # add_subdirectory(example)
+
+if(SLIC3R_ENABLE_CUDA_SLICER OR SLIC3R_ENABLE_VULKAN_SLICER)
+    add_subdirectory(gpu_geometry)
+endif()

@@ -44,3 +44,18 @@ endif()
 
 # catch_discover_tests(${_TEST_NAME}_tests TEST_PREFIX "${_TEST_NAME}: ")
 add_test(${_TEST_NAME}_tests ${_TEST_NAME}_tests ${CATCH_EXTRA_ARGS})
+
+add_executable(gpu_rectilinear_candidate_tests test_gpu_rectilinear_candidates.cpp)
+target_compile_features(gpu_rectilinear_candidate_tests PRIVATE cxx_std_17)
+add_test(NAME gpu_rectilinear_candidate_tests COMMAND gpu_rectilinear_candidate_tests)
+
+add_executable(gpu_tree_candidate_tests test_gpu_tree_candidates.cpp)
+target_compile_features(gpu_tree_candidate_tests PRIVATE cxx_std_17)
+add_test(NAME gpu_tree_candidate_tests COMMAND gpu_tree_candidate_tests)
+
+# The same production gate suite also runs with the product's native Catch
+# version when GPU support is built; standalone tests/gpu_safety covers OFF.
+if(SLIC3R_ENABLE_CUDA_SLICER OR SLIC3R_ENABLE_VULKAN_SLICER)
+    target_sources(${_TEST_NAME}_tests PRIVATE
+        test_gpu_exact_geometry.cpp test_gpu_batch_preflight.cpp)
+endif()
