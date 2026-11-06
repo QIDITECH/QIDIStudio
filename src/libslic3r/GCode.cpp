@@ -1851,7 +1851,9 @@ void GCode::do_export(Print* print, const char* path, GCodeProcessorResult* resu
     BOOST_LOG_TRIVIAL(info) << "Exporting G-code finished" << log_memory_info();
     print->set_done(psGCodeExport);
     //QDS: set enable_label_object
-    result->label_object_enabled = m_enable_label_object;
+    if (result != nullptr) {
+        result->label_object_enabled = m_enable_label_object;
+    }
     // Write the profiler measurements to file
     PROFILE_UPDATE();
     PROFILE_OUTPUT(debug_out_path("gcode-export-profile.txt").c_str());
