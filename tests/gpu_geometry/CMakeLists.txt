@@ -3,6 +3,7 @@
 add_executable(qidi_gpu_geometry_tests
     main.cpp
     ../libslic3r/test_gpu_exact_geometry.cpp
+    ../libslic3r/test_cuda_dispatch_buffers.cpp
     ../libslic3r/test_gpu_batch_preflight.cpp
     ../fff_print/test_gpu_fill.cpp
     ../fff_print/test_gpu_tree_contours.cpp)
