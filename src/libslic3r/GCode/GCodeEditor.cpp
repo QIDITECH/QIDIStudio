@@ -3,6 +3,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/log/trivial.hpp>
+#include <cctype>
 #include <iostream>
 #include <float.h>
 
@@ -308,7 +309,10 @@ std::vector<PerExtruderAdjustments> GCodeEditor::parse_layer_gcode(  const      
         else if (boost::starts_with(sline, "TIMELAPSE_TAKE_FRAME")) {
             ;
         } 
-        else if (boost::starts_with(sline, m_toolchange_prefix)) {
+        // Only "T<digits>" is a tool change. Klipper macros starting with "T" (TOOL_CHANGE_END, ...)
+        // would otherwise be parsed as T0 and apply the first filament's cooling settings.
+        else if (boost::starts_with(sline, m_toolchange_prefix) && sline.size() > m_toolchange_prefix.size() &&
+                 std::isdigit(static_cast<unsigned char>(sline[m_toolchange_prefix.size()]))) {
             unsigned int new_extruder = (unsigned int)atoi(sline.c_str() + m_toolchange_prefix.size());
             // Only change extruder in case the number is meaningful. User could provide an out-of-range index through custom gcodes - those shall be ignored.
             if (new_extruder < map_extruder_to_per_extruder_adjustment.size()) {
